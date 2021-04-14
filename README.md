@@ -1,7 +1,7 @@
 # ProxyStore
 
-[![Build Status](https://github.com/gpauloski/ProxyStore/actions/workflows/ci-build-test.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
-[![codecov](https://codecov.io/gh/gpauloski/ProxyStore/branch/main/graph/badge.svg?token=16KFBPKF0Y)](https://codecov.io/gh/gpauloski/ProxyStore)
+[![Build](https://github.com/gpauloski/ProxyStore/actions/workflows/build.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
+[![Coverage](https://codecov.io/gh/gpauloski/ProxyStore/branch/main/graph/badge.svg?token=16KFBPKF0Y)](https://codecov.io/gh/gpauloski/ProxyStore)
 
 
 Python Lazy Object Proxy Interface for Distributed Stores
