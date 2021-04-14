@@ -20,7 +20,6 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Add conda to system path
     - run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
         echo $CONDA/bin >> $GITHUB_PATH
     - name: Install dependencies
       run: |
@@ -33,4 +32,8 @@ jobs:
         flake8 . --count --show-source --statistics
     - name: Test with pytest
       run: |
-        pytest
+        pytest --cov=./
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v1
+      with:
+        fail_ci_if_error: true

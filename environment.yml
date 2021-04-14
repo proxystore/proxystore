@@ -1,0 +1,18 @@
+name: ProxyStore
+
+channels:
+    - defaults
+    - conda-forge
+
+dependencies:
+    - python==3.7.*
+    - pip
+    - redis
+    - redis-py
+    - coverage
+    - pytest
+    - pytest-cov
+    - flake8
+    - flake8-docstrings
+    - pip:
+        - -e .
