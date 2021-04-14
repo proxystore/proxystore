@@ -35,7 +35,7 @@ jobs:
 
     - name: Lint with flake8
       run: |
-        flake8 . --count --show-source --statistics
+        flake8 proxystore --count --show-source --statistics
 
     - name: Test with pytest
       run: |
