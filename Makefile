@@ -5,6 +5,6 @@ flake8:
 	flake8 proxystore --count --show-source --statistics
 
 pytest:
-	pytest --cache-clear --cov=proxystore proxystore 
+	pytest --cache-clear --cov=proxystore --cov-report term-missing proxystore 
 
 test: flake8 pytest

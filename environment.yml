@@ -14,5 +14,6 @@ dependencies:
     - pytest-cov
     - flake8
     - flake8-docstrings
+    - numpy
     - pip:
         - -e .

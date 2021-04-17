@@ -1,0 +1,94 @@
+import pickle as pkl
+import subprocess
+
+from pytest import mark, fixture
+
+import proxystore as ps
+from proxystore.backend import init_local_backend, init_redis_backend
+from proxystore.factory import BaseFactory, KeyFactory, RedisFactory
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 59465
+
+
+@fixture(scope='session', autouse=True)
+def init() -> None:
+    redis_handle = subprocess.Popen(['redis-server', '--port', str(REDIS_PORT)], 
+                                    stdout=subprocess.DEVNULL)
+    yield
+    redis_handle.kill()
+
+
+def test_base_factory() -> None:
+    """Test BaseFactory"""
+    x = [1, 2, 3]
+    f = BaseFactory(x)
+
+    # Test callable
+    assert f() == [1, 2, 3]
+    
+    # Test pickleable
+    f_pkl = pkl.dumps(f)
+    f = pkl.loads(f_pkl)
+    assert f() == [1, 2, 3]
+
+    # Test resolve
+    assert f.resolve() == [1, 2, 3]
+
+    # async_resolve should be a no-op
+    f.resolve_async()
+    assert f.resolve() == [1, 2, 3]
+
+
+def test_key_factory() -> None:
+    """Test KeyFactory"""
+    ps.store = None
+    init_local_backend()
+    
+    x = [1, 2, 3]
+    ps.store.set('key', x)
+    f = KeyFactory('key')
+    
+    # Test callable
+    assert f() == [1, 2, 3]
+
+    # Test pickleable
+    f_pkl = pkl.dumps(f)
+    f = pkl.loads(f_pkl)
+    assert f() == [1, 2, 3]
+
+    # Test resolve
+    assert f() == [1, 2, 3]
+
+    # async_resolve should be a no-op
+    f.resolve_async()
+    assert f() == [1, 2, 3]
+
+
+def test_redis_factory() -> None:
+    """Test RedisFactory"""
+    ps.store = None
+    init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+
+    x = [1, 2, 3]
+    ps.store.set('key', x)
+    f = RedisFactory('key', hostname=REDIS_HOST, port=REDIS_PORT)
+
+    # Test pickleable
+    f_pkl = pkl.dumps(f)
+    f = pkl.loads(f_pkl)
+    
+    # Test async resolving (value should not be cached)
+    f.resolve_async()
+    assert f() == [1, 2, 3]
+
+    # Test again now that value is cached
+    f.resolve_async()
+    assert f() == [1, 2, 3]
+
+    # Test if Factory can initialize backend on its own
+    ps.store = None
+    assert f() == [1, 2, 3]
+    ps.store = None
+    f.resolve_async()
+    assert f() == [1, 2, 3]

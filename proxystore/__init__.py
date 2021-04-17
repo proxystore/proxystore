@@ -1,0 +1,2 @@
+global store
+store = None
