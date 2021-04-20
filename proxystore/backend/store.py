@@ -1,5 +1,5 @@
+"""Backend Key-Value Store Implementations"""
 import os
-import pickle as pkl
 import redis
 import time
 
@@ -10,45 +10,94 @@ from proxystore.backend import serialize, deserialize
 from proxystore.backend.cache import LRUCache
 
 
-class BaseStore():
+class BaseStore:
     """Backend Store Abstract Class"""
+
     def evict(self, key: str) -> None:
+        """Evict value associated with key from store"""
         raise NotImplementedError
 
     def exists(self, key: str) -> bool:
+        """Check if key exists in store"""
         raise NotImplementedError
 
     def get(self, key: str, strict: bool = False) -> Optional[object]:
+        """Get value corresponding to key in store
+
+        Args:
+            key (str): key corresponding to value in the store
+            strict (bool): if True, guarentee returned value is the most
+                recent value associated with key
+
+        Returns:
+            value associated with key or None if key does not exist
+        """
         raise NotImplementedError
-    
+
     def is_cached(self, key: str, strict: bool = False) -> bool:
+        """Check if value associated with key is cached
+
+        Args:
+            key (str): key to check if cached
+            strict (bool): if True, guarentee that cached value is the most
+                recent value associated with key
+
+        Returns:
+            boolean
+        """
         raise NotImplementedError
 
     def set(self, key: str, obj: Any) -> None:
+        """Set key-value pair in store"""
         raise NotImplementedError
 
 
 class LocalStore(BaseStore):
     """Local Memory Store"""
+
     def __init__(self) -> None:
+        """Init LocalStore"""
         self.store = {}
 
     def evict(self, key: str) -> None:
+        """Evict value associated with key from store"""
         if key in self.store:
             del self.store[key]
 
     def exists(self, key: str) -> bool:
+        """Check if key exists in store"""
         return key in self.store
 
     def get(self, key: str, strict: bool = False) -> Optional[object]:
+        """Get value corresponding to key in store
+
+        Args:
+            key (str): key corresponding to value in the store
+            strict (bool): if `True`, guarentee returned value is the most
+                recent value associated with `key`
+
+        Returns:
+            value associated with `key` or None if `key` does not exist
+        """
         if key in self.store:
             return self.store[key]
         return None
-    
+
     def is_cached(self, key: str, strict: bool = False) -> bool:
+        """Check if value associated with key is cached
+
+        Args:
+            key (str): key to check if cached
+            strict (bool): if True, guarentee that cached value is the most
+                recent value associated with key
+
+        Returns:
+            boolean
+        """
         return key in self.store
 
     def set(self, key: str, obj: Any) -> None:
+        """Set key-value pair in store"""
         self.store[key] = obj
 
 
@@ -59,8 +108,10 @@ class CachedStore(BaseStore):
     `get_str()` and `set_str()`. The BaseStore handles the cache.
     The cache stores key: (timestamp, obj) pairs.
     """
+
     def __init__(self, cache_size: int = 16) -> None:
-        """
+        """Init CachedStore
+
         Args:
             cache_size (int): number of objects cache can hold
         """
@@ -72,19 +123,32 @@ class CachedStore(BaseStore):
         self._cache = LRUCache(cache_size) if cache_size > 0 else None
 
     def evict(self, key: str) -> None:
-        """Evict value corresponding to `key` from store"""
+        """Evict value associated with key from store"""
         raise NotImplementedError
 
     def exists(self, key: str) -> bool:
+        """Check if key exists in store"""
         raise NotImplementedError
 
     def get_str(self, key: str) -> Optional[str]:
+        """Get string associated with key from store"""
         raise NotImplementedError
 
     def set_str(self, key: str, data: str) -> None:
+        """Set key-string pair in store"""
         raise NotImplementedError
 
     def get(self, key: str, strict: bool = False) -> Optional[object]:
+        """Get value corresponding to key in store
+
+        Args:
+            key (str): key corresponding to value in the store
+            strict (bool): if `True`, guarentee returned value is the most
+                recent value associated with `key`
+
+        Returns:
+            value associated with `key` or None if `key` does not exist
+        """
         if self.is_cached(key, strict):
             return self._cache.get(key)[1]
 
@@ -93,12 +157,22 @@ class CachedStore(BaseStore):
             timestamp = float(self.get_str(key + '_timestamp'))
             obj = deserialize(value)
             if self._cache is not None:
-               self._cache.set(key, (timestamp, obj))
+                self._cache.set(key, (timestamp, obj))
             return obj
 
         return None
-    
+
     def is_cached(self, key: str, strict: bool = False) -> bool:
+        """Check if value associated with key is cached
+
+        Args:
+            key (str): key to check if cached
+            strict (bool): if True, guarentee that cached value is the most
+                recent value associated with key
+
+        Returns:
+            boolean
+        """
         if self._cache is None:
             return False
 
@@ -111,6 +185,7 @@ class CachedStore(BaseStore):
         return False
 
     def set(self, key: str, obj: Any) -> None:
+        """Set key-value pair in store"""
         obj = serialize(obj)
 
         self.set_str(key, obj)
@@ -119,34 +194,35 @@ class CachedStore(BaseStore):
 
 class RedisStore(CachedStore):
     """Redis backend class"""
-    def __init__(self,
-                 hostname: str,
-                 port: int,
-                 **kwargs: Dict[str, Any]
+
+    def __init__(
+        self, hostname: str, port: int, **kwargs: Dict[str, Any]
     ) -> None:
-        """
+        """Init RedisStore
+
         Args:
             hostname (str): Redis server hostname
             port (int): Redis server port
         """
         self.hostname = hostname
         self.port = port
-        self.redis_client = redis.StrictRedis(host=hostname, port=port,
-                                              decode_responses=True)
+        self.redis_client = redis.StrictRedis(
+            host=hostname, port=port, decode_responses=True
+        )
         super(RedisStore, self).__init__(**kwargs)
 
     def evict(self, key: str) -> None:
-        """Evict value corresponding to key from Redis"""
+        """Evict value corresponding to `key` from store"""
         self.redis_client.delete(key)
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in Redis"""
+        """Check if key exists in store"""
         return self.redis_client.exists(key)
 
     def get_str(self, key: str) -> Optional[str]:
-        """Get string associated with key from Redis"""
+        """Get string associated with key from store"""
         return self.redis_client.get(key)
 
     def set_str(self, key: str, data: str) -> None:
-        """Set `key` to `data` in Redis"""
+        """Set key-string pair in store"""
         self.redis_client.set(key, data)

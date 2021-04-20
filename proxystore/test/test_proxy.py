@@ -1,13 +1,14 @@
+"""Proxy Unit Tests"""
 import numpy as np
 import pickle as pkl
 import subprocess
 
-from pytest import fixture, mark, raises
+from pytest import fixture, raises
 
 import proxystore as ps
 import proxystore.backend.store as store
 from proxystore import backend
-from proxystore.factory import BaseFactory, RedisFactory
+from proxystore.factory import BaseFactory
 from proxystore.proxy import Proxy, to_proxy
 
 REDIS_HOST = 'localhost'
@@ -16,11 +17,13 @@ REDIS_PORT = 59465
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    redis_handle = subprocess.Popen(['redis-server', '--port', str(REDIS_PORT)], 
-                                    stdout=subprocess.DEVNULL)
+    """Launch Redis Server for Tests"""
+    redis_handle = subprocess.Popen(
+        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
+    )
     yield
     redis_handle.kill()
-    
+
 
 def test_proxy() -> None:
     """Test Proxy behavior"""
@@ -51,7 +54,7 @@ def test_proxy() -> None:
     # Now async resolve should be a no-op
     ps.utils.resolve_async(p)
     assert p[1] == 2
-    
+
     assert isinstance(p, Proxy)
     assert isinstance(p, np.ndarray)
     assert ps.utils.is_resolved(p)
@@ -61,7 +64,7 @@ def test_proxy() -> None:
     assert isinstance(x_, np.ndarray)
     assert not isinstance(x_, Proxy)
     assert np.array_equal(x, x_)
-    
+
     p = p + 1
     assert np.array_equal(p, [2, 3, 4])
     assert len(p) == 3

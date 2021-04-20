@@ -1,8 +1,9 @@
+"""Redis Backend Unit Tests"""
 import numpy as np
 import os
 import subprocess
 
-from pytest import raises, mark, fixture
+from pytest import raises, fixture
 
 import proxystore as ps
 from proxystore.backend import init_redis_backend, PROXYSTORE_CACHE_SIZE_ENV
@@ -14,8 +15,10 @@ REDIS_PORT = 59465
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    redis_handle = subprocess.Popen(['redis-server', '--port', str(REDIS_PORT)], 
-                                    stdout=subprocess.DEVNULL)
+    """Launch Redis Server for Tests"""
+    redis_handle = subprocess.Popen(
+        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
+    )
     yield
     redis_handle.kill()
 
@@ -28,12 +31,12 @@ def test_init_redis_backend() -> None:
     assert isinstance(ps.store, BaseStore)
     assert isinstance(ps.store, RedisStore)
     store = ps.store
-    
+
     # Calling init again should do nothing since we already
     # have a Redis backend initialized
     init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
     assert store is ps.store
-    
+
     ps.store = BaseStore()
 
     # Should raise error that a different backend is already used
@@ -44,29 +47,29 @@ def test_init_redis_backend() -> None:
 def test_redis_store_basic() -> None:
     """Test RedisStore backend"""
     store = RedisStore(hostname=REDIS_HOST, port=REDIS_PORT, cache_size=0)
-    
+
     # Set various object types
     value = 'test_value'
     store.set('key_bytes', str.encode(value))
     store.set('key_str', value)
     # TODO(gpauloski): add serialization support
-    #store.set('key_callable', lambda: value)
+    # store.set('key_callable', lambda: value)
     store.set('key_numpy', np.array([1, 2, 3]))
 
     # Get
     assert store.get('key_bytes') == str.encode(value)
     assert store.get('key_str') == value
-    #assert store.get('key_callable').__call__() == value
-    assert store.get('key_fake') == None
+    # assert store.get('key_callable').__call__() == value
+    assert store.get('key_fake') is None
     assert np.array_equal(store.get('key_numpy'), np.array([1, 2, 3]))
 
     # All keys should exists but none should be cached (cache_size = 0)
     assert store.exists('key_bytes')
     assert store.exists('key_str')
-    #assert store.exists('key_callable')
+    # assert store.exists('key_callable')
     assert not store.is_cached('key_bytes')
     assert not store.is_cached('key_str')
-    #assert not store.is_cached('key_callable')
+    # assert not store.is_cached('key_callable')
 
     # Test eviction
     store.evict('key_str')
@@ -75,7 +78,7 @@ def test_redis_store_basic() -> None:
 
     # Clear rest of keys from Redis for future tests
     store.evict('key_bytes')
-    #store.evict('key_callable')
+    # store.evict('key_callable')
     store.evict('key_numpy')
 
 
@@ -83,8 +86,8 @@ def test_redis_store_caching() -> None:
     """Test RedisStore backend with caching"""
     os.environ[PROXYSTORE_CACHE_SIZE_ENV] = '1'
     store = RedisStore(hostname=REDIS_HOST, port=REDIS_PORT)
-    
-    # Add our test value to 
+
+    # Add our test value to
     value = 'test_value'
     assert not store.exists('key')
     store.set('key', value)
@@ -114,7 +117,7 @@ def test_redis_store_strict() -> None:
     """Test RedisStore backend strict guarentees"""
     store = RedisStore(hostname=REDIS_HOST, port=REDIS_PORT, cache_size=2)
 
-    # Add our test value to 
+    # Add our test value to
     value = 'test_value'
     assert not store.exists('key')
     store.set('key', value)
@@ -130,7 +133,7 @@ def test_redis_store_strict() -> None:
     assert not store.is_cached('key', strict=True)
 
     # Access with strict=True so now most recent version should be cached
-    assert store.get('key', strict=True) == 'new_value' 
+    assert store.get('key', strict=True) == 'new_value'
     assert store.get('key') == 'new_value'
     assert store.is_cached('key')
     assert store.is_cached('key', strict=True)

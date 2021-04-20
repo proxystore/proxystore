@@ -1,6 +1,7 @@
+"""Cache Unit Tests"""
 import multiprocessing as mp
 
-from pytest import mark, raises
+from pytest import raises
 
 from proxystore.backend.cache import LRUCache
 
@@ -8,7 +9,7 @@ from proxystore.backend.cache import LRUCache
 def test_lru_raises() -> None:
     """Test LRU Error Handling"""
     with raises(ValueError):
-        c = LRUCache(0)
+        LRUCache(0)
 
 
 def test_lru_cache() -> None:
@@ -25,7 +26,7 @@ def test_lru_cache() -> None:
     assert c.exists('1')
     assert not c.exists('4')
     assert c.exists('5')
-    assert c.get('Fake Key', None) == None
+    assert c.get('Fake Key', None) is None
     assert c.get('Fake Key', 1) == 1
 
 

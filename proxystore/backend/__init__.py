@@ -13,10 +13,12 @@ def init_local_backend() -> None:
     if ps.store is not None:
         if isinstance(ps.store, ps.backend.store.LocalStore):
             return
-        raise ValueError('Backend is already initialized to {}. '
-                         'ProxyStore does not support using multiple backends '
-                         'at the same time.'.format(type(ps.store)))
-    
+        raise ValueError(
+            'Backend is already initialized to {}. '
+            'ProxyStore does not support using multiple backends '
+            'at the same time.'.format(type(ps.store))
+        )
+
     ps.store = ps.backend.store.LocalStore()
 
 
@@ -30,9 +32,10 @@ def init_redis_backend(hostname: str, port: int) -> None:
     if ps.store is not None:
         if isinstance(ps.store, ps.backend.store.RedisStore):
             return
-        raise ValueError('Backend is already initialized to {}. '
-                         'ProxyStore does not support using multiple backends '
-                         'at the same time.'.format(type(ps.store)))
-    
-    ps.store = ps.backend.store.RedisStore(hostname, port)
+        raise ValueError(
+            'Backend is already initialized to {}. '
+            'ProxyStore does not support using multiple backends '
+            'at the same time.'.format(type(ps.store))
+        )
 
+    ps.store = ps.backend.store.RedisStore(hostname, port)

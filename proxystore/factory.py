@@ -1,3 +1,4 @@
+"""ProxyStore Factory Implementations"""
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -6,20 +7,27 @@ import proxystore as ps
 default_pool = ThreadPoolExecutor()
 
 
-class BaseFactory():
-    """Base `Factory` class"""
+class BaseFactory:
+    """Base Factory class"""
+
     def __init__(self, obj: Any) -> None:
+        """Init BaseFactory
+
+        Args:
+            obj: object to be produced by Factory
+        """
         self.obj = obj
 
     def __call__(self) -> Any:
+        """Resolve object"""
         return self.resolve()
 
     def resolve(self) -> Any:
-        """Returns the underlying object"""
+        """Return underlying object"""
         return self.obj
 
     def resolve_async(self) -> None:
-        """Asynchronously resolves the underlying object
+        """Asynchronously resolves underlying object for next call to resolve()
 
         Note: The API has no requirements about the implementation
             details of this method, only that `resolve()` will
@@ -30,21 +38,30 @@ class BaseFactory():
 
 
 class KeyFactory(BaseFactory):
+    """Factory for LocalBackend (key-value store)"""
+
     def __init__(self, key: str) -> None:
+        """Init KeyFactory
+
+        Args:
+            key (str): key associated with object in the backend store that
+                the Factory will return upon being called
+        """
         self.key = key
 
     def resolve(self) -> Any:
+        """Return object associated with key"""
         return ps.store.get(self.key)
 
 
 class RedisFactory(KeyFactory):
     """Factory class for objects in Redis"""
-    def __init__(self,
-                 key: str,
-                 hostname: str,
-                 port: int,
-                 strict: bool = False) -> None:
-        """
+
+    def __init__(
+        self, key: str, hostname: str, port: int, strict: bool = False
+    ) -> None:
+        """Init RedisFactory
+
         Args:
             key (str): key used to retrive object from Redis
             hostname (str): hostname of Redis server
@@ -62,13 +79,19 @@ class RedisFactory(KeyFactory):
 
     def __reduce__(self):
         """Helper method for pickling"""
-        return RedisFactory, (self.key, self.hostname, self.port, self.strict,)
+        return RedisFactory, (
+            self.key,
+            self.hostname,
+            self.port,
+            self.strict,
+        )
 
     def __reduce_ex__(self, protocol):
         """See `__reduce__`"""
         return self.__reduce__()
 
     def resolve(self) -> Any:
+        """Return object associated with key"""
         if ps.store is None:
             ps.backend.init_redis_backend(self.hostname, self.port)
 
@@ -80,6 +103,7 @@ class RedisFactory(KeyFactory):
         return ps.store.get(self.key, strict=self.strict)
 
     def resolve_async(self) -> None:
+        """Asynchronously resolve object associated with key"""
         if ps.store is None:
             ps.backend.init_redis_backend(self.hostname, self.port)
 
@@ -90,4 +114,5 @@ class RedisFactory(KeyFactory):
             return
 
         self.obj_future = default_pool.submit(
-                ps.store.get, self.key, strict=self.strict)
+            ps.store.get, self.key, strict=self.strict
+        )

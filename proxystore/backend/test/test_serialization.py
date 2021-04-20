@@ -1,3 +1,4 @@
+"""Serialization Unit Tests"""
 import numpy as np
 
 from pytest import raises
@@ -11,11 +12,11 @@ def test_serialization() -> None:
     x = b'test string'
     b = serialize(x)
     assert deserialize(b) == x
-    
+
     x = 'test string'
     b = serialize(x)
     assert deserialize(b) == x
-    
+
     x = np.array([1, 2, 3])
     b = serialize(x)
     assert np.array_equal(deserialize(b), x)

@@ -10,4 +10,4 @@ flake8:
 pytest:
 	pytest --cache-clear --cov=proxystore --cov-report term-missing proxystore 
 
-test: flake8 pytest
+test: black flake8 pytest

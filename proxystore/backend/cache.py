@@ -1,10 +1,13 @@
+"""Simple Cache Implementation"""
 from typing import Any
 
 
 class LRUCache:
     """Simple LRU Cache"""
+
     def __init__(self, maxsize: int = 16) -> None:
-        """
+        """Init LRUCache
+
         Args:
             maxsize (int): maximum number of value to cache
         """

@@ -17,3 +17,4 @@ dependencies:
     - numpy
     - pip:
         - -e .
+        - black

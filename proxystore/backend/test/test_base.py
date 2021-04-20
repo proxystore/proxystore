@@ -1,10 +1,10 @@
+"""Base Store Unit Tests"""
 import numpy as np
-import os
 
-from pytest import raises, mark
+from pytest import raises
 
 import proxystore as ps
-from proxystore.backend import init_local_backend, init_redis_backend
+from proxystore.backend import init_local_backend
 from proxystore.backend.store import BaseStore, LocalStore, CachedStore
 
 REDIS_HOST = 'localhost'
@@ -18,7 +18,7 @@ def test_init_local_backend() -> None:
     assert isinstance(ps.store, BaseStore)
     assert isinstance(ps.store, LocalStore)
     store = ps.store
-    
+
     # Calling init again should do nothing since we already
     # have a Redis backend initialized
     init_local_backend()
@@ -34,7 +34,7 @@ def test_init_local_backend() -> None:
 def test_local_store_basic() -> None:
     """Test LocalStore backend"""
     store = LocalStore()
-    
+
     # Set various object types
     value = 'test_value'
     store.set('key_bytes', str.encode(value))
@@ -46,7 +46,7 @@ def test_local_store_basic() -> None:
     assert store.get('key_bytes') == str.encode(value)
     assert store.get('key_str') == value
     assert store.get('key_callable').__call__() == value
-    assert store.get('key_fake') == None
+    assert store.get('key_fake') is None
     assert np.array_equal(store.get('key_numpy'), np.array([1, 2, 3]))
 
     # All keys should exists but all should be cached since the store
@@ -74,6 +74,6 @@ def test_local_store_basic() -> None:
 
 def test_cached_store() -> None:
     """Test Cached Store"""
-    store = CachedStore(1)
+    CachedStore(1)
     with raises(ValueError):
         CachedStore(-1)

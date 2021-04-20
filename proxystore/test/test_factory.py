@@ -1,7 +1,8 @@
+"""Factory Unit Tests"""
 import pickle as pkl
 import subprocess
 
-from pytest import mark, fixture
+from pytest import fixture
 
 import proxystore as ps
 from proxystore.backend import init_local_backend, init_redis_backend
@@ -13,8 +14,10 @@ REDIS_PORT = 59465
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    redis_handle = subprocess.Popen(['redis-server', '--port', str(REDIS_PORT)], 
-                                    stdout=subprocess.DEVNULL)
+    """Launch Redis Server for Tests"""
+    redis_handle = subprocess.Popen(
+        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
+    )
     yield
     redis_handle.kill()
 
@@ -26,7 +29,7 @@ def test_base_factory() -> None:
 
     # Test callable
     assert f() == [1, 2, 3]
-    
+
     # Test pickleable
     f_pkl = pkl.dumps(f)
     f = pkl.loads(f_pkl)
@@ -44,11 +47,11 @@ def test_key_factory() -> None:
     """Test KeyFactory"""
     ps.store = None
     init_local_backend()
-    
+
     x = [1, 2, 3]
     ps.store.set('key', x)
     f = KeyFactory('key')
-    
+
     # Test callable
     assert f() == [1, 2, 3]
 
@@ -77,7 +80,7 @@ def test_redis_factory() -> None:
     # Test pickleable
     f_pkl = pkl.dumps(f)
     f = pkl.loads(f_pkl)
-    
+
     # Test async resolving (value should not be cached)
     f.resolve_async()
     assert f() == [1, 2, 3]

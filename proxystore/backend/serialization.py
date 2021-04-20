@@ -1,14 +1,18 @@
+"""Serialization Utilities"""
 import pickle
 
 from typing import Any
 
 
 class SerializationError(Exception):
+    """Base Serialization Exception"""
+
     pass
 
 
-class Serializer():
+class Serializer:
     """Serialization class based on Parsl's Serializer"""
+
     @staticmethod
     def serialize(obj: Any) -> str:
         """Serialize object to str string"""
@@ -29,13 +33,17 @@ class Serializer():
     def deserialize(string: str) -> Any:
         """Deserialize string"""
         if not isinstance(string, str):
-            raise ValueError('deserialize only accepts str arguments, '
-                             'not {}'.format(type(string)))
+            raise ValueError(
+                'deserialize only accepts str arguments, '
+                'not {}'.format(type(string))
+            )
         try:
             identifier, string = string.split('\n', 1)
         except ValueError:
-            raise SerializationError('String does not have required '
-                                     'identifier for deserialization')
+            raise SerializationError(
+                'String does not have required '
+                'identifier for deserialization'
+            )
         if identifier == '01':
             return bytes.fromhex(string)
         elif identifier == '02':
@@ -43,5 +51,7 @@ class Serializer():
         elif identifier == '03':
             return pickle.loads(bytes.fromhex(string))
         else:
-            raise SerializationError('Unknown identifier {} for '
-                                     'deserialization'.format(identifier))
+            raise SerializationError(
+                'Unknown identifier {} for '
+                'deserialization'.format(identifier)
+            )
