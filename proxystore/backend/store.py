@@ -129,6 +129,8 @@ class RedisStore(CachedStore):
             hostname (str): Redis server hostname
             port (int): Redis server port
         """
+        self.hostname = hostname
+        self.port = port
         self.redis_client = redis.StrictRedis(host=hostname, port=port,
                                               decode_responses=True)
         super(RedisStore, self).__init__(**kwargs)

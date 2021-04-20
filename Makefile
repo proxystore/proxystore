@@ -1,6 +1,9 @@
 build-conda:
 	conda env create --file environment.yml
 
+black:
+	black proxystore
+
 flake8:
 	flake8 proxystore --count --show-source --statistics
 

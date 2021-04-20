@@ -1,4 +1,5 @@
 import proxystore as ps
+
 from proxystore.backend.serialization import Serializer
 
 PROXYSTORE_CACHE_SIZE_ENV = 'PROXYSTORE_CACHE_SIZE'
