@@ -2,6 +2,7 @@
 import numpy as np
 import pickle as pkl
 import subprocess
+import time
 
 from pytest import fixture, raises
 
@@ -21,6 +22,7 @@ def init() -> None:
     redis_handle = subprocess.Popen(
         ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
     )
+    time.sleep(1)
     yield
     redis_handle.kill()
 

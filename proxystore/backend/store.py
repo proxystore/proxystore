@@ -1,9 +1,16 @@
 """Backend Key-Value Store Implementations"""
 import os
-import redis
 import time
 
 from typing import Any, Dict, Optional
+
+try:
+    import redis
+except ImportError as e:  # pragma: no cover
+    # We do not want to raise this ImportError if the user never
+    # uses the RedisStore so we delay raising the error until the
+    # constructor of RedisStore
+    redis = e
 
 from proxystore.backend import PROXYSTORE_CACHE_SIZE_ENV
 from proxystore.backend import serialize, deserialize
@@ -204,6 +211,12 @@ class RedisStore(CachedStore):
             hostname (str): Redis server hostname
             port (int): Redis server port
         """
+        if isinstance(redis, ImportError):  # pragma: no cover
+            raise ImportError(
+                'The redis-py package must be installed to use the '
+                'RedisStore backend'
+            )
+
         self.hostname = hostname
         self.port = port
         self.redis_client = redis.StrictRedis(

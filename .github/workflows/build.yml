@@ -29,6 +29,10 @@ jobs:
       run: |
         conda env update --file environment.yml --name base
 
+    - name: Lint with black
+      run: |
+        black --check proxystore
+
     - name: Lint with flake8
       run: |
         flake8 proxystore --count --show-source --statistics

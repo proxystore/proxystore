@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import subprocess
+import time
 
 from pytest import raises, fixture
 
@@ -19,6 +20,7 @@ def init() -> None:
     redis_handle = subprocess.Popen(
         ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
     )
+    time.sleep(1)
     yield
     redis_handle.kill()
 
