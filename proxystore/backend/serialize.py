@@ -30,15 +30,14 @@ def deserialize(string: str) -> Any:
     """Deserialize string"""
     if not isinstance(string, str):
         raise ValueError(
-            'deserialize only accepts str arguments, '
-            'not {}'.format(type(string))
+            'deserialize only accepts str arguments, not '
+            '{}'.format(type(string))
         )
     try:
         identifier, string = string.split('\n', 1)
     except ValueError:
         raise SerializationError(
-            'String does not have required '
-            'identifier for deserialization'
+            'String does not have required identifier for deserialization'
         )
     if identifier == '01':
         return bytes.fromhex(string)

@@ -8,7 +8,6 @@ from pytest import fixture, raises
 
 import proxystore as ps
 import proxystore.backend.store as store
-from proxystore import backend
 from proxystore.factory import BaseFactory
 from proxystore.proxy import Proxy
 
