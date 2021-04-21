@@ -11,7 +11,14 @@ class SerializationError(Exception):
 
 
 def serialize(obj: Any) -> str:
-    """Serialize object to str string"""
+    """Serialize object
+
+    Args:
+        obj: object to serialize
+
+    Returns:
+        `str` that can be passed to `deserialize()`
+    """
     if isinstance(obj, bytes):
         identifier = '01\n'
         obj = obj.hex()
@@ -27,7 +34,23 @@ def serialize(obj: Any) -> str:
 
 
 def deserialize(string: str) -> Any:
-    """Deserialize string"""
+    """Deserialize object
+
+    Args:
+        string (str): string produced by `serialize()`
+
+    Returns:
+        object that was serialized
+
+    Raises:
+        ValueError:
+            if `string` is not of type `str`
+        SerializationError:
+            if the identifier of `string` is missing or invalid.
+            The identifier is prepended to the string in `serialize()` to
+            indicate which serialization method was used
+            (e.g., no serialization, Pickle, etc.)
+    """
     if not isinstance(string, str):
         raise ValueError(
             'deserialize only accepts str arguments, not '

@@ -1,4 +1,10 @@
-"""ProxyStore Factory Implementations"""
+"""ProxyStore Factory Implementations
+
+Factories are callable classes that wrap up the functionality needed
+to resolve a proxy, where resolving is the process of retrieving the
+object from wherever it is stored such that the proxy can act as the
+object.
+"""
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
@@ -8,14 +14,30 @@ default_pool = ThreadPoolExecutor()
 
 
 class BaseFactory:
-    """Base Factory class"""
+    """Base Factory class
+
+    This class acts as the base class for all factory types, and as a simple
+    factory that stores an object as an attribute and returns the object
+    when called.
+
+    The `Proxy` constructor requires that all factories passed to it be
+    instances of this `BaseFactory`. All classes that inherit from
+    `BaseFactory` should implement `resolve()` and `resolve_async()`.
+
+    Note:
+        If a custom factory is not-pickleable, `__reduce__()` and
+        `__reduce_ex__()` may need to be implemented, as in `RedisFactory`.
+        Writing custom pickling functions is also beneifical to ensure that
+        a pickled factory does not contain the object itself, just what is
+        needed to resolve the object to keep the final, pickled factory as
+        small as possible.
+
+    Args:
+        obj: object to be produced by calling this factory
+    """
 
     def __init__(self, obj: Any) -> None:
-        """Init BaseFactory
-
-        Args:
-            obj: object to be produced by Factory
-        """
+        """Init BaseFactory"""
         self.obj = obj
 
     def __call__(self) -> Any:
@@ -39,15 +61,18 @@ class BaseFactory:
 
 
 class KeyFactory(BaseFactory):
-    """Factory for LocalBackend (key-value store)"""
+    """Factory for LocalBackend
+
+    The `KeyFactory` stores a key, and when called, the `KeyFactory` returns
+    the object associated with the key in the backend store.
+
+    Args:
+        key (str): key associated with object in the backend store that
+            the factory will return upon being called
+    """
 
     def __init__(self, key: str) -> None:
-        """Init KeyFactory
-
-        Args:
-            key (str): key associated with object in the backend store that
-                the Factory will return upon being called
-        """
+        """Init KeyFactory"""
         self.key = key
 
     def resolve(self) -> Any:
@@ -56,22 +81,30 @@ class KeyFactory(BaseFactory):
 
 
 class RedisFactory(KeyFactory):
-    """Factory class for objects in Redis"""
+    """Factory class for objects in Redis
+
+    Extension of `KeyFactory` with support for asynchronously retrieving
+    objects from a `RedisStore` backend and optional, strict guarentees
+    on object versions.
+
+    The `RedisFactory` also stores the hostname and port of the Redis server
+    so a connection to the Redis server can be established if the proxy
+    containing this factory is passed to a different process or machine.
+
+    Args:
+        key (str): key used to retrive object from Redis
+        hostname (str): hostname of Redis server
+        port (int): port Redis server is listening on
+        strict (bool): if `True`, ensures that the underlying object
+            retrieved from the store is the most up to date version.
+            Otherwise, an older version of an object associated with `key`
+            may be returned if it is cached locally.
+    """
 
     def __init__(
         self, key: str, hostname: str, port: int, strict: bool = False
     ) -> None:
-        """Init RedisFactory
-
-        Args:
-            key (str): key used to retrive object from Redis
-            hostname (str): hostname of Redis server
-            port (int): port Redis server is listening on
-            strict (bool): if `True`, ensures that the underlying object
-                retrieved from the store is the most up to date version.
-                Otherwise, an older version of an object associated with `key`
-                may be returned if it is cached locally.
-        """
+        """Init RedisFactory"""
         self.key = key
         self.hostname = hostname
         self.port = port
@@ -92,7 +125,7 @@ class RedisFactory(KeyFactory):
         return self.__reduce__()
 
     def resolve(self) -> Any:
-        """Return object associated with key"""
+        """Get object associated with key from Redis"""
         if ps.store is None:
             ps.init_redis_backend(self.hostname, self.port)
 
@@ -104,7 +137,7 @@ class RedisFactory(KeyFactory):
         return ps.store.get(self.key, strict=self.strict)
 
     def resolve_async(self) -> None:
-        """Asynchronously resolve object associated with key"""
+        """Asynchronously get object associated with key from Redis"""
         if ps.store is None:
             ps.init_redis_backend(self.hostname, self.port)
 

@@ -28,9 +28,6 @@ def init() -> None:
 
 def test_proxy() -> None:
     """Test Proxy behavior"""
-    ps.store = None
-    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
-
     with raises(TypeError):
         # Proxy requires type BaseFactory
         Proxy(lambda: 'fake object')
@@ -113,7 +110,7 @@ def test_to_proxy() -> None:
 def test_to_proxy_error_handling() -> None:
     """Test to_proxy() error handling"""
     ps.store = None
-    with raises(ValueError):
+    with raises(RuntimeError):
         # Raises backend not initialized
         ps.to_proxy('object', 'key')
 
@@ -131,3 +128,36 @@ def test_to_proxy_error_handling() -> None:
     with raises(TypeError):
         # Raises unknown backend
         ps.to_proxy('object', 'key')
+
+
+def test_utils() -> None:
+    """Test utils"""
+    ps.store = None
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+
+    x = np.array([1, 2, 3])
+    p = ps.to_proxy(x, key='mykey')
+
+    assert not ps.utils.is_resolved(p)
+    ps.utils.resolve(p)
+    assert ps.utils.is_resolved(p)
+
+    ps.utils.evict(p)
+    # Note: the value can still be in a local cache
+    assert not ps.store.exists('mykey')
+
+    p = ps.to_proxy(x)
+    assert not ps.utils.is_resolved(p)
+    # Evict will force resolve before eviction
+    ps.utils.evict(p)
+    assert ps.utils.is_resolved(p)
+
+    p = Proxy(BaseFactory(x))
+    # BaseFactory does not use the store but evict should not
+    # raise any errors
+    ps.utils.evict(p)
+
+    ps.store = None
+    with raises(RuntimeError):
+        # Raise backend not initialized error
+        ps.utils.evict(p)

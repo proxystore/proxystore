@@ -1,4 +1,11 @@
-"""Backend Key-Value Store Implementations"""
+"""Backend Key-Value Store Implementations
+
+The backend object is stored in `proxystore.store` and can be set manually;
+however, it is recommended to use the included initialization functions. E.g.,
+
+>>> import proxystore as ps
+>>> ps.init_redis_backend('localhost', 12345)
+"""
 import os
 import time
 
@@ -16,10 +23,14 @@ from proxystore.backend.serialize import serialize, deserialize
 from proxystore.backend.cache import LRUCache
 
 PROXYSTORE_CACHE_SIZE_ENV = 'PROXYSTORE_CACHE_SIZE'
+"""Environment variable name for specifying the cache size"""
 
 
 class BaseStore:
-    """Backend Store Abstract Class"""
+    """Backend Store Abstract Class
+
+    All store classes should extend and implement the following methods.
+    """
 
     def evict(self, key: str) -> None:
         """Evict value associated with key from store"""
@@ -33,12 +44,13 @@ class BaseStore:
         """Get value corresponding to key in store
 
         Args:
-            key (str): key corresponding to value in the store
-            strict (bool): if True, guarentee returned value is the most
-                recent value associated with key
+            key (str): key corresponding to value in the store.
+            strict (bool): if `True`, guarentee returned value is the most
+                recent value associated with key.
 
         Returns:
-            value associated with key or None if key does not exist
+            value associated with `key` or `None` if there is no value
+            associated with `key`.
         """
         raise NotImplementedError
 
@@ -47,21 +59,24 @@ class BaseStore:
 
         Args:
             key (str): key to check if cached
-            strict (bool): if True, guarentee that cached value is the most
-                recent value associated with key
+            strict (bool): if `True`, guarentee that cached value is the most
+                recent value associated with `key`
 
         Returns:
-            boolean
+            `bool`
         """
         raise NotImplementedError
 
     def set(self, key: str, obj: Any) -> None:
-        """Set key-value pair in store"""
+        """Put key object pair in store"""
         raise NotImplementedError
 
 
 class LocalStore(BaseStore):
-    """Local Memory Store"""
+    """Local Memory Store
+
+    Stores key value pairs in a dictionary attribute of the object.
+    """
 
     def __init__(self) -> None:
         """Init LocalStore"""
@@ -96,11 +111,11 @@ class LocalStore(BaseStore):
 
         Args:
             key (str): key to check if cached
-            strict (bool): if True, guarentee that cached value is the most
-                recent value associated with key
+            strict (bool): if `True`, guarentee that cached value is the most
+                recent value associated with `key`
 
         Returns:
-            boolean
+            `bool`
         """
         return key in self.store
 
@@ -115,19 +130,30 @@ class CachedStore(BaseStore):
     Classes extending `BaseStore` must implement `evict()`, `exists()`
     `get_str()` and `set_str()`. The BaseStore handles the cache.
     The cache stores key: (timestamp, obj) pairs.
+
+    `CachedStore` store key-string pairs, i.e. objects passed to `get` or `set`
+    will be appropriately (de)serialized. Functionality for serialized,
+    caching, and strict guarentees are already provided in implemented methods.
+
+    The local cache size can be overridden by setting the environment
+    variable defined in `proxystore.backend.store.PROXYSTORE_CACHE_SIZE_ENV`.
+
+    Args:
+        cache_size (int): number of objects cache can hold
+
+    Raise:
+        ValueError:
+            if the `cache_size` passed as a parameter or via the environment
+            is negative.
     """
 
     def __init__(self, cache_size: int = 16) -> None:
-        """Init CachedStore
-
-        Args:
-            cache_size (int): number of objects cache can hold
-        """
-        if cache_size < 0:
-            raise ValueError('Cache size cannot be negative')
+        """Init CachedStore"""
         env_cache_size = os.environ.get(PROXYSTORE_CACHE_SIZE_ENV, None)
         if env_cache_size is not None:
             cache_size = int(env_cache_size)
+        if cache_size < 0:
+            raise ValueError('Cache size cannot be negative')
         self._cache = LRUCache(cache_size) if cache_size > 0 else None
 
     def evict(self, key: str) -> None:
@@ -201,17 +227,22 @@ class CachedStore(BaseStore):
 
 
 class RedisStore(CachedStore):
-    """Redis backend class"""
+    """Redis backend class
+
+    Args:
+        hostname (str): Redis server hostname
+        port (int): Redis server port
+        **kwargs (dict): additional kwargs to pass to `CachedStore`
+
+    Raise:
+        ImportError:
+            if `redis-py` is not installed
+    """
 
     def __init__(
         self, hostname: str, port: int, **kwargs: Dict[str, Any]
     ) -> None:
-        """Init RedisStore
-
-        Args:
-            hostname (str): Redis server hostname
-            port (int): Redis server port
-        """
+        """Init RedisStore"""
         if isinstance(redis, ImportError):  # pragma: no cover
             raise ImportError(
                 'The redis-py package must be installed to use the '
