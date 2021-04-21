@@ -25,13 +25,11 @@ Installation
 
 .. code-block:: bash
 
-   $ git clone https://github.com/gpauloski/ProxyStore.git
-   $ cd ProxyStore
-   $ pip install .
+   $ pip install ProxyStore
 
 ProxyStore only requires installing the bare-minimum packages, and may require additional packages to be installed depending on which backends are used (e.g., `redis-py <https://redis-py.readthedocs.io/en/stable/>`_ is required for the Redis backend).
 
-Pip installation coming soon.
+Documentation on installing for local development is provided in :doc:`Contributing <./contributing>`.
 
 Usage
 -----
