@@ -15,16 +15,16 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 import proxystore
 
-def skip(app, what, name, obj, would_skip, options):
-    """Prevent docs skipping __init__ docstrings"""
-    if name == "__init__":
-        return False
-    return would_skip
+# def skip(app, what, name, obj, would_skip, options):
+#     """Prevent docs skipping __init__ docstrings"""
+#     if name == "__init__":
+#         return False
+#     return would_skip
 
 
-def setup(app):
-    """Setup sphinx docs"""
-    app.connect("autodoc-skip-member", skip)
+# def setup(app):
+#     """Setup sphinx docs"""
+#     app.connect("autodoc-skip-member", skip)
 
 
 # -- Project information -----------------------------------------------------
@@ -48,7 +48,7 @@ extensions = [
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+# templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
