@@ -4,7 +4,6 @@ import numpy as np
 from pytest import raises
 
 import proxystore as ps
-from proxystore.backend import init_local_backend
 from proxystore.backend.store import BaseStore, LocalStore, CachedStore
 
 REDIS_HOST = 'localhost'
@@ -13,7 +12,7 @@ REDIS_PORT = 59465
 
 def test_init_local_backend() -> None:
     """Test init_local_backend"""
-    init_local_backend()
+    ps.init_local_backend()
     assert ps.store is not None
     assert isinstance(ps.store, BaseStore)
     assert isinstance(ps.store, LocalStore)
@@ -21,14 +20,14 @@ def test_init_local_backend() -> None:
 
     # Calling init again should do nothing since we already
     # have a Redis backend initialized
-    init_local_backend()
+    ps.init_local_backend()
     assert store is ps.store
 
     ps.store = BaseStore()
 
     # Should raise error that a different backend is already used
     with raises(ValueError):
-        init_local_backend()
+        ps.init_local_backend()
 
 
 def test_local_store_basic() -> None:

@@ -7,7 +7,7 @@ import time
 from pytest import raises, fixture
 
 import proxystore as ps
-from proxystore.backend import init_redis_backend, PROXYSTORE_CACHE_SIZE_ENV
+from proxystore.backend.store import PROXYSTORE_CACHE_SIZE_ENV
 from proxystore.backend.store import BaseStore, RedisStore
 
 REDIS_HOST = 'localhost'
@@ -28,7 +28,7 @@ def init() -> None:
 def test_init_redis_backend() -> None:
     """Test init_redis_backend"""
     ps.store = None
-    init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
     assert ps.store is not None
     assert isinstance(ps.store, BaseStore)
     assert isinstance(ps.store, RedisStore)
@@ -36,14 +36,14 @@ def test_init_redis_backend() -> None:
 
     # Calling init again should do nothing since we already
     # have a Redis backend initialized
-    init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
     assert store is ps.store
 
     ps.store = BaseStore()
 
     # Should raise error that a different backend is already used
     with raises(ValueError):
-        init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+        ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
 
 
 def test_redis_store_basic() -> None:

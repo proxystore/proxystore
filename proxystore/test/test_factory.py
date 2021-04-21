@@ -6,7 +6,6 @@ import time
 from pytest import fixture
 
 import proxystore as ps
-from proxystore.backend import init_local_backend, init_redis_backend
 from proxystore.factory import BaseFactory, KeyFactory, RedisFactory
 
 REDIS_HOST = 'localhost'
@@ -48,7 +47,7 @@ def test_base_factory() -> None:
 def test_key_factory() -> None:
     """Test KeyFactory"""
     ps.store = None
-    init_local_backend()
+    ps.init_local_backend()
 
     x = [1, 2, 3]
     ps.store.set('key', x)
@@ -73,7 +72,7 @@ def test_key_factory() -> None:
 def test_redis_factory() -> None:
     """Test RedisFactory"""
     ps.store = None
-    init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
 
     x = [1, 2, 3]
     ps.store.set('key', x)

@@ -12,9 +12,10 @@ except ImportError as e:  # pragma: no cover
     # constructor of RedisStore
     redis = e
 
-from proxystore.backend import PROXYSTORE_CACHE_SIZE_ENV
-from proxystore.backend import serialize, deserialize
+from proxystore.backend.serialize import serialize, deserialize
 from proxystore.backend.cache import LRUCache
+
+PROXYSTORE_CACHE_SIZE_ENV = 'PROXYSTORE_CACHE_SIZE'
 
 
 class BaseStore:

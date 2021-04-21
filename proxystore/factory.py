@@ -29,7 +29,8 @@ class BaseFactory:
     def resolve_async(self) -> None:
         """Asynchronously resolves underlying object for next call to resolve()
 
-        Note: The API has no requirements about the implementation
+        Note:
+            The API has no requirements about the implementation
             details of this method, only that `resolve()` will
             correctly deal with any side-effects of a call to
             `resolve_async()`.
@@ -93,7 +94,7 @@ class RedisFactory(KeyFactory):
     def resolve(self) -> Any:
         """Return object associated with key"""
         if ps.store is None:
-            ps.backend.init_redis_backend(self.hostname, self.port)
+            ps.init_redis_backend(self.hostname, self.port)
 
         if self.obj_future is not None:
             obj = self.obj_future.result()
@@ -105,7 +106,7 @@ class RedisFactory(KeyFactory):
     def resolve_async(self) -> None:
         """Asynchronously resolve object associated with key"""
         if ps.store is None:
-            ps.backend.init_redis_backend(self.hostname, self.port)
+            ps.init_redis_backend(self.hostname, self.port)
 
         # If the value is locally cached by the value server, starting up
         # a separate thread to retrieve a cached value will be slower than

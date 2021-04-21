@@ -1,12 +1,10 @@
 """Utility Functions for Proxies"""
-from __future__ import annotations
-
 from typing import Any, Optional
 
-import proxystore as ps
+from proxystore.proxy import Proxy
 
 
-def get_key(proxy: ps.proxy.Proxy) -> Optional[str]:
+def get_key(proxy: Proxy) -> Optional[str]:
     """Returns key associated object wrapped by proxy
 
     Args:
@@ -20,17 +18,17 @@ def get_key(proxy: ps.proxy.Proxy) -> Optional[str]:
     return None
 
 
-def extract(proxy: ps.proxy.Proxy) -> Any:
+def extract(proxy: Proxy) -> Any:
     """Returns object wrapped by proxy"""
     return proxy.__wrapped__
 
 
-def is_resolved(proxy: ps.proxy.Proxy) -> bool:
+def is_resolved(proxy: Proxy) -> bool:
     """Check if a proxy is resolved"""
     return proxy.__resolved__
 
 
-def resolve_async(proxy: ps.proxy.Proxy) -> None:
+def resolve_async(proxy: Proxy) -> None:
     """Begin resolving proxy asynchronously"""
     if not is_resolved(proxy):
         proxy.__factory__.resolve_async()

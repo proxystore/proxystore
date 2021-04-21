@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import proxystore as ps
 import proxystore.backend.store as store
+from proxystore.factory import BaseFactory
 
 
 class Proxy(lazy_object_proxy.Proxy):
@@ -18,14 +19,14 @@ class Proxy(lazy_object_proxy.Proxy):
     lazy aspect of the proxy).
     """
 
-    def __init__(self, factory: ps.factory.BaseFactory) -> None:
+    def __init__(self, factory: BaseFactory) -> None:
         """Create a proxy object
 
         Args:
             factory (Factory): callable factory object that returns the
                                 underlying object when called
         """
-        if not isinstance(factory, ps.factory.BaseFactory):
+        if not isinstance(factory, BaseFactory):
             raise TypeError('factory must be of type ps.factory.BaseFactory')
         super(Proxy, self).__init__(factory)
 

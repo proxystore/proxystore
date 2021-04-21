@@ -10,7 +10,7 @@ import proxystore as ps
 import proxystore.backend.store as store
 from proxystore import backend
 from proxystore.factory import BaseFactory
-from proxystore.proxy import Proxy, to_proxy
+from proxystore.proxy import Proxy
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
@@ -30,7 +30,7 @@ def init() -> None:
 def test_proxy() -> None:
     """Test Proxy behavior"""
     ps.store = None
-    backend.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
 
     with raises(TypeError):
         # Proxy requires type BaseFactory
@@ -85,10 +85,10 @@ def test_proxy() -> None:
 def test_to_proxy() -> None:
     """Test to_proxy()"""
     ps.store = None
-    backend.init_local_backend()
+    ps.init_local_backend()
 
     x = np.array([1, 2, 3])
-    p = to_proxy(x, key='key')
+    p = ps.to_proxy(x, key='key')
     assert 'key' == ps.utils.get_key(p)
     assert isinstance(p, Proxy)
     assert isinstance(p, np.ndarray)
@@ -97,10 +97,10 @@ def test_to_proxy() -> None:
     assert np.array_equal(ps.store.get('key'), [1, 2, 3])
 
     ps.store = None
-    backend.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
+    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
 
     x = np.array([1, 2, 3])
-    p = to_proxy(x)
+    p = ps.to_proxy(x)
     key = ps.utils.get_key(p)
     assert not ps.store.is_cached(key)
     assert isinstance(p, Proxy)
@@ -116,19 +116,19 @@ def test_to_proxy_error_handling() -> None:
     ps.store = None
     with raises(ValueError):
         # Raises backend not initialized
-        to_proxy('object', 'key')
+        ps.to_proxy('object', 'key')
 
     ps.store = store.BaseStore()
     with raises(TypeError):
         # Raises BaseStore is an abstract class
-        to_proxy('object', 'key')
+        ps.to_proxy('object', 'key')
 
     ps.store = store.CachedStore()
     with raises(TypeError):
         # Raises CachedStore is an abstract class
-        to_proxy('object', 'key')
+        ps.to_proxy('object', 'key')
 
     ps.store = 'random object'
     with raises(TypeError):
         # Raises unknown backend
-        to_proxy('object', 'key')
+        ps.to_proxy('object', 'key')
