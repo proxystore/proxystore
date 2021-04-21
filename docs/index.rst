@@ -8,6 +8,8 @@ Welcome to ProxyStore's documentation!
 
 ProxyStore is a streamlined API for passing objects via remote object stores.
 
+ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
