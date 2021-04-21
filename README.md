@@ -9,7 +9,7 @@ Python Lazy Object Proxy Interface for Distributed Stores
 
 ## Installation
 
-Install via pip (coming soon):
+Install via pip:
 ```
 $ pip install ProxyStore
 ```
@@ -20,3 +20,7 @@ $ git clone https://github.com/gpauloski/ProxyStore.git
 $ cd ProxyStore
 $ conda env create --file environment.yml
 ```
+
+## Documentation
+
+Complete documentation for ProxyStore available [here](https://proxystore.readthedocs.io/en/latest).
