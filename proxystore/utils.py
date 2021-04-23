@@ -12,7 +12,7 @@ def evict(proxy: Proxy) -> None:
     has been resolved for the last time.
 
     Note:
-        if the proxy is not resolved, this function will force
+        If the proxy is not resolved, this function will force
         it to be resolved.
 
     Args:
