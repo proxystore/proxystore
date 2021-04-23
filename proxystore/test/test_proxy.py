@@ -84,9 +84,6 @@ def test_proxy() -> None:
     assert not isinstance(res, Proxy)
     assert np.array_equal(res, [2, 4, 6])
 
-    def sum_array(l):
-        return np.sum(l)
-
     # TODO(gpauloski): is this expected? (see issue #1)
     # p = Proxy(BaseFactory([np.array([1, 2, 3]), np.array([2, 3, 4])]))
     # res = np.sum(p)

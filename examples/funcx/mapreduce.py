@@ -16,6 +16,7 @@ def app_double(x: np.ndarray) -> np.ndarray:
 def app_sum(inputs: List[np.ndarray]) -> float:
     """Sums all elements in list of arrays"""
     import numpy as np
+
     if len(inputs) == 0:
         return
 
