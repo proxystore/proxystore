@@ -68,3 +68,9 @@ By default, ProxyStore does not guarentee a proxy resolves with the most recent 
 For example, let :code:`p = to_proxy(obj, key='custom-key')`.
 If the object associated with `custom-key` in the backend store later changes before `p` has been resolved, it is not guarenteed which version of the object will be returned (generally because the older version may be cached locally).
 To force strict guarentees that a proxy always resolves to the most recent value associated with a key, :code:`strict=True` can be passed to :code:`to_proxy()`.
+
+Known Issues
+------------
+
+* Calling :code:`np.sum` on a proxy wrapping a list of arrays returns itself (See `GitHub issue #1 <https://github.com/gpauloski/ProxyStore/issues/1>`_).
+

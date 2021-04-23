@@ -2,6 +2,7 @@
 import argparse
 import numpy as np
 import proxystore as ps
+import time
 
 from funcx.sdk.client import FuncXClient
 from typing import List
@@ -12,11 +13,16 @@ def app_double(x: np.ndarray) -> np.ndarray:
     return 2 * x
 
 
-def app_sum(inputs: List[np.ndarray] = []) -> float:
+def app_sum(inputs: List[np.ndarray]) -> float:
     """Sums all elements in list of arrays"""
     import numpy as np
+    if len(inputs) == 0:
+        return
 
-    return np.sum(np.sum(inputs))
+    out = inputs[0]
+    for x in inputs[1:]:
+        out += x
+    return np.sum(out)
 
 
 if __name__ == '__main__':
@@ -70,12 +76,21 @@ if __name__ == '__main__':
 
     batch_res = fxc.batch_run(batch)
     mapped_results = fxc.get_batch_result(batch_res)
+    for i, res in mapped_results.items():
+        while res['pending']:
+            time.sleep(0.1)
+
     mapped_results = [
         fxc.get_result(i) for i, status in mapped_results.items()
     ]
 
+    if args.proxy:
+        mapped_results = ps.to_proxy(mapped_results)
     total = fxc.run(
         mapped_results, endpoint_id=args.funcx_endpoint, function_id=sum_uuid
     )
+
+    while fxc.get_task(total)['pending']:
+        time.sleep(0.1)
 
     print('Sum:', fxc.get_result(total))
