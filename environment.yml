@@ -19,5 +19,5 @@ dependencies:
     - pip:
         - -e .
         - black
-        - funxc
+        - funcx
         - funcx_endpoint
