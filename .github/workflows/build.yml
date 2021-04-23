@@ -32,10 +32,12 @@ jobs:
     - name: Lint with black
       run: |
         black --check proxystore
+        black --check examples
+        black --check setup.py
 
     - name: Lint with flake8
       run: |
-        flake8 proxystore --count --show-source --statistics
+        flake8 . --count --show-source --statistics
 
     - name: Test with pytest
       run: |

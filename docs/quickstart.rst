@@ -57,3 +57,8 @@ When `p` is accessed for the first time, say because :code:`np.sum(p)` is called
 Now for the rest of its existence, `p` will just behave as `x` would.
 
 See :doc:`Advanced Usage <./advanced>` for more detailed functionality in ProxyStore.
+
+Examples
+--------
+
+Examples of integrating ProxyStore into distributed applications built on `FuncX <https://funcx.org/>`_ and `Parsl <https://parsl-project.org/>`_ are `here <https://github.com/gpauloski/ProxyStore/examples>`_.

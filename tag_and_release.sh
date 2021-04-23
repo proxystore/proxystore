@@ -16,7 +16,7 @@ fi
 create_tag () {
 
     echo "Creating tag"
-    git tag -a "$VERSION" -m "ProxyStore $VERSION"
+    git tag -a "v$VERSION" -m "ProxyStore $VERSION"
 
     echo "Pushing tag"
     git push origin --tags

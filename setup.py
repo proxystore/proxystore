@@ -1,3 +1,4 @@
+"""Build ProxyStore package"""
 import setuptools
 
 with open('requirements.txt') as f:
