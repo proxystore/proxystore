@@ -9,6 +9,7 @@ from pytest import raises, fixture
 import proxystore as ps
 from proxystore.backend.store import PROXYSTORE_CACHE_SIZE_ENV
 from proxystore.backend.store import BaseStore, RedisStore
+from proxystore.backend.serialize import SerializationError
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
@@ -78,8 +79,15 @@ def test_redis_store_basic() -> None:
     assert not store.exists('key_str')
     assert not store.is_cached('key_str')
 
+    # Test pre-serialized objects
+    store.set('key_str', value, serialize=False)
+    with raises(SerializationError):
+        assert store.get('key_str') == value
+    assert store.get('key_str', deserialize=False) == value
+
     # Clear rest of keys from Redis for future tests
     store.evict('key_bytes')
+    store.evict('key_str')
     # store.evict('key_callable')
     store.evict('key_numpy')
 

@@ -95,19 +95,27 @@ class RedisFactory(KeyFactory):
         key (str): key used to retrive object from Redis
         hostname (str): hostname of Redis server
         port (int): port Redis server is listening on
+        serialize (bool): if `True`, object in store is serialized and
+            should be deserialized upon retrival (default: True).
         strict (bool): if `True`, ensures that the underlying object
             retrieved from the store is the most up to date version.
             Otherwise, an older version of an object associated with `key`
-            may be returned if it is cached locally.
+            may be returned if it is cached locally (default: False).
     """
 
     def __init__(
-        self, key: str, hostname: str, port: int, strict: bool = False
+        self,
+        key: str,
+        hostname: str,
+        port: int,
+        serialize: bool = True,
+        strict: bool = False,
     ) -> None:
         """Init RedisFactory"""
         self.key = key
         self.hostname = hostname
         self.port = port
+        self.serialize = serialize
         self.strict = strict
         self.obj_future = None
 
@@ -117,6 +125,7 @@ class RedisFactory(KeyFactory):
             self.key,
             self.hostname,
             self.port,
+            self.serialize,
             self.strict,
         )
 
@@ -134,7 +143,9 @@ class RedisFactory(KeyFactory):
             self.obj_future = None
             return obj
 
-        return ps.store.get(self.key, strict=self.strict)
+        return ps.store.get(
+            self.key, deserialize=self.serialize, strict=self.strict
+        )
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from Redis"""
@@ -148,5 +159,8 @@ class RedisFactory(KeyFactory):
             return
 
         self.obj_future = default_pool.submit(
-            ps.store.get, self.key, strict=self.strict
+            ps.store.get,
+            self.key,
+            deserialize=self.serialize,
+            strict=self.strict,
         )

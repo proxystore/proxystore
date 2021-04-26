@@ -19,7 +19,8 @@ except ImportError as e:  # pragma: no cover
     # constructor of RedisStore
     redis = e
 
-from proxystore.backend.serialize import serialize, deserialize
+from proxystore.backend.serialize import serialize as serialize_obj
+from proxystore.backend.serialize import deserialize as deserialize_str
 from proxystore.backend.cache import LRUCache
 
 PROXYSTORE_CACHE_SIZE_ENV = 'PROXYSTORE_CACHE_SIZE'
@@ -172,11 +173,15 @@ class CachedStore(BaseStore):
         """Set key-string pair in store"""
         raise NotImplementedError
 
-    def get(self, key: str, strict: bool = False) -> Optional[object]:
+    def get(
+        self, key: str, deserialize: bool = True, strict: bool = False
+    ) -> Optional[object]:
         """Get value corresponding to key in store
 
         Args:
             key (str): key corresponding to value in the store
+            deserialize (bool): deserialize object if `True`. If objects
+                are custom serialized, set this as `False`. (default: True)
             strict (bool): if `True`, guarentee returned value is the most
                 recent value associated with `key`
 
@@ -189,10 +194,11 @@ class CachedStore(BaseStore):
         value = self.get_str(key)
         if value is not None:
             timestamp = float(self.get_str(key + '_timestamp'))
-            obj = deserialize(value)
+            if deserialize:
+                value = deserialize_str(value)
             if self._cache is not None:
-                self._cache.set(key, (timestamp, obj))
-            return obj
+                self._cache.set(key, (timestamp, value))
+            return value
 
         return None
 
@@ -218,9 +224,17 @@ class CachedStore(BaseStore):
             return True
         return False
 
-    def set(self, key: str, obj: Any) -> None:
-        """Set key-value pair in store"""
-        obj = serialize(obj)
+    def set(self, key: str, obj: Any, serialize: bool = True) -> None:
+        """Set key-value pair in store
+
+        Args:
+            key (str): key to associate with object in store
+            obj (object): object to place in store
+            serialize (bool): serialize object before placing in store. If
+                `obj` is already serialized, set as `False` (default: True).
+        """
+        if serialize:
+            obj = serialize_obj(obj)
 
         self.set_str(key, obj)
         self.set_str(key + '_timestamp', str(time.time()))

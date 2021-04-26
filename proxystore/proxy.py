@@ -60,7 +60,12 @@ class Proxy(lazy_object_proxy.Proxy):
         return self.__reduce__()
 
 
-def to_proxy(obj: Any, key: Optional[str] = None, strict: bool = False):
+def to_proxy(
+    obj: Any,
+    key: Optional[str] = None,
+    serialize: bool = True,
+    strict: bool = False,
+):
     """Place object in backend store and return Proxy reference
 
     This function automates the proxying process which involves:
@@ -74,8 +79,11 @@ def to_proxy(obj: Any, key: Optional[str] = None, strict: bool = False):
         obj: object to place in store and be proxied.
         key (str, optional): specify key associated with `obj` in store. If
             `key` is unspecified, a unique random key is generated.
-        strict (bool): if `True`, require store always returns most recent
-            object associated with `key` (default: False).
+        serialize (bool, optional): serialized object before placing in
+            backend. If `obj` has been manually serialized, set as `False`
+            (default: True).
+        strict (bool, optional): if `True`, require store always returns most
+            recent object associated with `key` (default: False).
 
     Returns:
         `Proxy` that acts as `obj`.
@@ -99,10 +107,16 @@ def to_proxy(obj: Any, key: Optional[str] = None, strict: bool = False):
 
     if isinstance(ps.store, store.LocalStore):
         f = ps.factory.KeyFactory(key)
+        ps.store.set(key, obj)
     elif isinstance(ps.store, store.RedisStore):
         f = ps.factory.RedisFactory(
-            key, hostname=ps.store.hostname, port=ps.store.port, strict=strict
+            key,
+            hostname=ps.store.hostname,
+            port=ps.store.port,
+            serialize=serialize,
+            strict=strict,
         )
+        ps.store.set(key, obj, serialize=serialize)
     elif isinstance(ps.store, (store.BaseStore, store.CachedStore)):
         raise TypeError(
             'Backend of type {} is an abstract '
@@ -111,5 +125,4 @@ def to_proxy(obj: Any, key: Optional[str] = None, strict: bool = False):
     else:
         raise TypeError('Unrecognized backend type: {}'.format(type(ps.store)))
 
-    ps.store.set(key, obj)
     return Proxy(f)
