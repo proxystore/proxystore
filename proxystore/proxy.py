@@ -1,14 +1,31 @@
 """ProxyStore Proxy Implementation"""
-import lazy_object_proxy
 import random
 from typing import Any, Optional
+
+from lazy_object_proxy import slots
 
 import proxystore as ps
 import proxystore.backend.store as store
 from proxystore.factory import BaseFactory
 
 
-class Proxy(lazy_object_proxy.Proxy):
+def _proxy_trampoline(factory: BaseFactory):
+    """Trampoline for helping Proxy pickling
+
+    `slots.Proxy` defines a property for ``__modules__`` which confuses
+    pickle when trying to locate the class in the module. The trampoline is
+    a top-level function so pickle can correctly find it in this module.
+
+    Args:
+        factory (BaseFactory): factory to pass to ``Proxy`` constructor.
+
+    Returns:
+        ``Proxy`` instance
+    """
+    return Proxy(factory)
+
+
+class Proxy(slots.Proxy):
     """Lazy Object Proxy
 
     An extension of the `Proxy` from
@@ -53,7 +70,9 @@ class Proxy(lazy_object_proxy.Proxy):
         Override `Proxy.__reduce__` so that we only pickle the Factory
         and not the object itself to reduce size of the pickle.
         """
-        return Proxy, (self.__factory__,)
+        return _proxy_trampoline, (
+            object.__getattribute__(self, '__factory__'),
+        )
 
     def __reduce_ex__(self, protocol):
         """See `__reduce__`"""
