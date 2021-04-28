@@ -54,15 +54,12 @@ Pull Requests
 We use the standard GitHub contribution cycle.
 
 1. Fork the repository and clone to your local machine
-
 2. Create local changes
 
    - Changes should conform to the style and testing guidelines, referenced above.
-
    - Commit messages should start with a sentence describing the changes followed by a blank line then a detailed description of what changed and why.
 
 3. Push commits to your fork
-
 4. Open a pull request in this repository
 
    - The pull request should include a description of the motivation for the PR and included changes.
