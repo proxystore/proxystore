@@ -1,7 +1,8 @@
 """Backend Key-Value Store Implementations
 
-The backend object is stored in `proxystore.store` and can be set manually;
-however, it is recommended to use the included initialization functions. E.g.,
+The backend object is stored in :attr:`proxystore.store` and can be set
+manually; however, it is recommended to use the included initialization
+functions. E.g.,
 
 >>> import proxystore as ps
 >>> ps.init_redis_backend('localhost', 12345)
@@ -47,7 +48,7 @@ class BaseStore:
         Args:
             key (str): key corresponding to value in the store.
             strict (bool): if `True`, guarentee returned value is the most
-                recent value associated with key.
+                recent value associated with `key` (default: `False`).
 
         Returns:
             value associated with `key` or `None` if there is no value
@@ -59,9 +60,9 @@ class BaseStore:
         """Check if value associated with key is cached
 
         Args:
-            key (str): key to check if cached
-            strict (bool): if `True`, guarentee that cached value is the most
-                recent value associated with `key`
+            key (str): key to check if cached.
+            strict (bool): if `True`, guarentee that cached value is the most.
+                recent value associated with `key` (default: `False`).
 
         Returns:
             `bool`
@@ -96,12 +97,12 @@ class LocalStore(BaseStore):
         """Get value corresponding to key in store
 
         Args:
-            key (str): key corresponding to value in the store
+            key (str): key corresponding to value in the store.
             strict (bool): if `True`, guarentee returned value is the most
-                recent value associated with `key`
+                recent value associated with `key` (default: `False`).
 
         Returns:
-            value associated with `key` or None if `key` does not exist
+            value associated with `key` or `None` if `key` does not exist.
         """
         if key in self.store:
             return self.store[key]
@@ -111,9 +112,9 @@ class LocalStore(BaseStore):
         """Check if value associated with key is cached
 
         Args:
-            key (str): key to check if cached
-            strict (bool): if `True`, guarentee that cached value is the most
-                recent value associated with `key`
+            key (str): key to check if cached.
+            strict (bool): if `True`, guarentee that cached value is the most.
+                recent value associated with `key` (default: `False`).
 
         Returns:
             `bool`
@@ -128,19 +129,22 @@ class LocalStore(BaseStore):
 class CachedStore(BaseStore):
     """Base class for backends with caching support
 
-    Classes extending `BaseStore` must implement `evict()`, `exists()`
-    `get_str()` and `set_str()`. The BaseStore handles the cache.
-    The cache stores key: (timestamp, obj) pairs.
+    Classes extending :class:`CachedStore` must implement :func:`evict()`,
+    :func:`exists()`, :func:`get_str()` and :func:`set_str()`. The
+    :class:`BaseStore` handles the caching. The cache stores
+    :data:`key: (timestamp, obj)` pairs.
 
-    `CachedStore` store key-string pairs, i.e. objects passed to `get` or `set`
-    will be appropriately (de)serialized. Functionality for serialized,
-    caching, and strict guarentees are already provided in implemented methods.
+    :class:`CachedStore` stores key-string pairs, i.e. objects passed to
+    :func:`get()` or :func:`set()` will be appropriately (de)serialized.
+    Functionality for serialized, caching, and strict guarentees are already
+    provided in :func:`get()` and :func:`set()`.
 
     The local cache size can be overridden by setting the environment
-    variable defined in `proxystore.backend.store.PROXYSTORE_CACHE_SIZE_ENV`.
+    variable defined in
+    :data:`proxystore.backend.store.PROXYSTORE_CACHE_SIZE_ENV`.
 
     Args:
-        cache_size (int): number of objects cache can hold
+        cache_size (int): number of objects cache can hold.
 
     Raise:
         ValueError:
@@ -179,14 +183,14 @@ class CachedStore(BaseStore):
         """Get value corresponding to key in store
 
         Args:
-            key (str): key corresponding to value in the store
+            key (str): key corresponding to value in the store.
             deserialize (bool): deserialize object if `True`. If objects
-                are custom serialized, set this as `False`. (default: True)
+                are custom serialized, set this as `False` (default: `True`).
             strict (bool): if `True`, guarentee returned value is the most
-                recent value associated with `key`
+                recent value associated with `key` (default: `False`).
 
         Returns:
-            value associated with `key` or None if `key` does not exist
+            value associated with `key` or None if `key` does not exist.
         """
         if self.is_cached(key, strict):
             return self._cache.get(key)[1]
@@ -206,12 +210,12 @@ class CachedStore(BaseStore):
         """Check if value associated with key is cached
 
         Args:
-            key (str): key to check if cached
+            key (str): key to check if cached.
             strict (bool): if True, guarentee that cached value is the most
-                recent value associated with key
+                recent value associated with key (default: `False`).
 
         Returns:
-            boolean
+            `bool`
         """
         if self._cache is None:
             return False
@@ -228,8 +232,8 @@ class CachedStore(BaseStore):
         """Set key-value pair in store
 
         Args:
-            key (str): key to associate with object in store
-            obj (object): object to place in store
+            key (str): key to associate with `obj` in store.
+            obj (object): object to place in store.
             serialize (bool): serialize object before placing in store. If
                 `obj` is already serialized, set as `False` (default: True).
         """
@@ -244,13 +248,14 @@ class RedisStore(CachedStore):
     """Redis backend class
 
     Args:
-        hostname (str): Redis server hostname
-        port (int): Redis server port
-        **kwargs (dict): additional kwargs to pass to `CachedStore`
+        hostname (str): Redis server hostname.
+        port (int): Redis server port.
+        **kwargs (dict): additional kwargs to pass to :class:`CachedStore`.
 
     Raise:
         ImportError:
-            if `redis-py` is not installed
+            if `redis-py <https://redis-py.readthedocs.io/en/stable/>`_
+            is not installed.
     """
 
     def __init__(
@@ -271,7 +276,7 @@ class RedisStore(CachedStore):
         super(RedisStore, self).__init__(**kwargs)
 
     def evict(self, key: str) -> None:
-        """Evict value corresponding to `key` from store"""
+        """Evict value corresponding to key from store"""
         self.redis_client.delete(key)
 
     def exists(self, key: str) -> bool:

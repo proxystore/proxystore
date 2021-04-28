@@ -28,9 +28,9 @@ def _proxy_trampoline(factory: BaseFactory):
 class Proxy(slots.Proxy):
     """Lazy Object Proxy
 
-    An extension of the `Proxy` from
-    https://github.com/ionelmc/python-lazy-object-proxy with better pickling
-    support.
+    An extension of the Proxy from
+    https://github.com/ionelmc/python-lazy-object-proxy with modified pickling
+    behavior.
 
     An object proxy acts as a thin wrapper around a Python object, i.e.
     the proxy behaves identically to the underlying object. The proxy is
@@ -49,13 +49,30 @@ class Proxy(slots.Proxy):
     >>> assert isinstance(p, np.ndarray)
     >>> assert np.array_equal(p, [1, 2, 3])
 
+    Note:
+        Due to ``Proxy`` modifying the ``__module__`` and ``__doc__``
+        attributes, Sphinx cannot create autodocumentation for this
+        class so any changes to the documentation here must be copied
+        to ``docs/source/proxystore.proxy.rst``.
+
+    Note:
+        The `factory`, by default, is only ever called once during the
+        lifetime of a proxy instance.
+
+    Note:
+        When a proxy instance is pickled, only the `factory` is pickled, not
+        the wrapped object. Thus, proxy instances can be pickled and passed
+        around cheaply, and once the proxy is unpickled and used, the `factory`
+        will be called again to resolve the object.
+
     Args:
         factory (BaseFactory): callable object that returns the
-            underlying object when called
+            underlying object when called.
 
     Raises:
         TypeError:
-            if `factory` is not an instance of `BaseFactory`
+            if `factory` is not an instance of `BaseFactory
+            <proxystore.factory.BaseFactory>`.
     """
 
     def __init__(self, factory: BaseFactory) -> None:
@@ -85,33 +102,35 @@ def to_proxy(
     serialize: bool = True,
     strict: bool = False,
 ):
-    """Place object in backend store and return Proxy reference
+    """Place object in backend store and return :class:`.Proxy`
 
     This function automates the proxying process which involves:
-    1) creating a key for the object if one is not specified,
-    2) creating a `Factory` for the object compatible with the current backend
-    (e.g., `RedisFactory` with a Redis backend)
-    3) creating a `Proxy` with the `Factory`, and
-    4) putting the object in the store with the key.
+
+    1. Creating a `key` for `obj` if one is not specified.
+    2. Creating a `factory` for the object compatible with the current backend
+       (e.g., :class:`RedisFactory <proxystore.factory.RedisFactory>` with a
+       Redis backend).
+    3. Creating a :class:`.Proxy` with the `factory`.
+    4. Placing `obj` in the backend store.
 
     Args:
         obj: object to place in store and be proxied.
-        key (str, optional): specify key associated with `obj` in store. If
-            `key` is unspecified, a unique random key is generated.
-        serialize (bool, optional): serialized object before placing in
+        key (str): specify key associated with `obj` in store. If `None`,
+            a unique random key is generated (default: `None`).
+        serialize (bool): serialized object before placing in
             backend. If `obj` has been manually serialized, set as `False`
-            (default: True).
-        strict (bool, optional): if `True`, require store always returns most
-            recent object associated with `key` (default: False).
+            (default: `True`).
+        strict (bool): if `True`, require store always returns most
+            recent object associated with `key` (default: `False`).
 
     Returns:
-        `Proxy` that acts as `obj`.
+        :class:`.Proxy` instance that will behave as and resolve `obj`.
 
     Raises:
         RuntimeError:
             if a backend has not been initialized, i.e.,
-            `proxystore.store` is `None`. The backend should be initialized
-            with one of the `proxystore.init_{type}_backend()` functions.
+            :obj:`proxystore.store` is `None`. The backend should be initialized
+            with one of the :func:`proxystore.init_{type}_backend()` functions.
     """
     if ps.store is None:
         raise RuntimeError('Backend store is not initialized yet')

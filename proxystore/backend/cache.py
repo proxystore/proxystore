@@ -1,5 +1,5 @@
 """Simple Cache Implementation"""
-from typing import Any
+from typing import Any, Optional
 
 
 class LRUCache:
@@ -29,7 +29,7 @@ class LRUCache:
         """Check if key is in cache"""
         return key in self.data
 
-    def get(self, key: Any, default: Any = None) -> Any:
+    def get(self, key: Any, default: Optional[object] = None) -> Any:
         """Get value for key if it exists else returns default"""
         if self.exists(key):
             # Move to front b/c most recently used

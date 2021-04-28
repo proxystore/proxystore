@@ -14,26 +14,30 @@ default_pool = ThreadPoolExecutor()
 
 
 class BaseFactory:
-    """Base Factory class
+    """Base Factory
 
-    This class acts as the base class for all factory types, and as a simple
+    This class acts as the base class for all factory types and as a simple
     factory that stores an object as an attribute and returns the object
     when called.
 
-    The `Proxy` constructor requires that all factories passed to it be
-    instances of this `BaseFactory`. All classes that inherit from
-    `BaseFactory` should implement `resolve()` and `resolve_async()`.
+    The :class:`Proxy <ps.proxy.Proxy>` constructor requires that all factories
+    passed to it be instances of this
+    :class:`BaseFactory <.BaseFactory>`. All classes that inherit from
+    :class:`BaseFactory <.BaseFactory>` should implement
+    :func:`resolve() <proxystore.factory.BaseFactory.resolve()>` and
+    :func:`resolve_async() <proxystore.factory.BaseFactory.resolve_async()>`.
 
     Note:
-        If a custom factory is not-pickleable, `__reduce__()` and
-        `__reduce_ex__()` may need to be implemented, as in `RedisFactory`.
+        If a custom factory is not-pickleable, :func:`__reduce__()` and
+        :func:`__reduce_ex__()` may need to be implemented, as in
+        :class:`RedisFactory <.RedisFactory>`.
         Writing custom pickling functions is also beneifical to ensure that
         a pickled factory does not contain the object itself, just what is
         needed to resolve the object to keep the final, pickled factory as
         small as possible.
 
     Args:
-        obj: object to be produced by calling this factory
+        obj: object to be produced by calling this factory.
     """
 
     def __init__(self, obj: Any) -> None:
@@ -49,13 +53,13 @@ class BaseFactory:
         return self.obj
 
     def resolve_async(self) -> None:
-        """Asynchronously resolves underlying object for next call to resolve()
+        """Asynchronously resolves underlying object
 
         Note:
             The API has no requirements about the implementation
-            details of this method, only that `resolve()` will
+            details of this method, only that :func:`resolve()` will
             correctly deal with any side-effects of a call to
-            `resolve_async()`.
+            :func:`resolve_async()`.
         """
         pass
 
@@ -63,12 +67,13 @@ class BaseFactory:
 class KeyFactory(BaseFactory):
     """Factory for LocalBackend
 
-    The `KeyFactory` stores a key, and when called, the `KeyFactory` returns
-    the object associated with the key in the backend store.
+    The :class:`KeyFactory <.KeyFactory>` stores a key, and when called,
+    the :class:`KeyFactory <.KeyFactory>` returns the object associated with
+    the key in the backend store.
 
     Args:
         key (str): key associated with object in the backend store that
-            the factory will return upon being called
+            the factory will return upon being called.
     """
 
     def __init__(self, key: str) -> None:
@@ -83,24 +88,26 @@ class KeyFactory(BaseFactory):
 class RedisFactory(KeyFactory):
     """Factory class for objects in Redis
 
-    Extension of `KeyFactory` with support for asynchronously retrieving
-    objects from a `RedisStore` backend and optional, strict guarentees
-    on object versions.
+    Extension of :class:`KeyFactory <.KeyFactory>` with support for
+    asynchronously retrieving objects from a
+    :class:`RedisStore <proxystore.backend.store.RedisStore>` backend and
+    optional, strict guarentees on object versions.
 
-    The `RedisFactory` also stores the hostname and port of the Redis server
-    so a connection to the Redis server can be established if the proxy
-    containing this factory is passed to a different process or machine.
+    The :class:`RedisFactory <.RedisFactory>` also stores the hostname and
+    port of the Redis server so a connection to the Redis server can be
+    established if the proxy containing this factory is passed to a different
+    process or machine.
 
     Args:
-        key (str): key used to retrive object from Redis
-        hostname (str): hostname of Redis server
-        port (int): port Redis server is listening on
+        key (str): key used to retrive object from Redis.
+        hostname (str): hostname of Redis server.
+        port (int): port Redis server is listening on.
         serialize (bool): if `True`, object in store is serialized and
-            should be deserialized upon retrival (default: True).
+            should be deserialized upon retrival (default: `True`).
         strict (bool): if `True`, ensures that the underlying object
             retrieved from the store is the most up to date version.
             Otherwise, an older version of an object associated with `key`
-            may be returned if it is cached locally (default: False).
+            may be returned if it is cached locally (default: `False`).
     """
 
     def __init__(

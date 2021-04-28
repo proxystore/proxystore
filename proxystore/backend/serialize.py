@@ -14,10 +14,10 @@ def serialize(obj: Any) -> str:
     """Serialize object
 
     Args:
-        obj: object to serialize
+        obj: object to serialize.
 
     Returns:
-        `str` that can be passed to `deserialize()`
+        `str` that can be passed to `deserialize()`.
     """
     if isinstance(obj, bytes):
         identifier = '01\n'
@@ -37,19 +37,19 @@ def deserialize(string: str) -> Any:
     """Deserialize object
 
     Args:
-        string (str): string produced by `serialize()`
+        string (str): string produced by `serialize()`.
 
     Returns:
-        object that was serialized
+        object that was serialized.
 
     Raises:
         ValueError:
-            if `string` is not of type `str`
+            if `string` is not of type `str`.
         SerializationError:
             if the identifier of `string` is missing or invalid.
             The identifier is prepended to the string in `serialize()` to
             indicate which serialization method was used
-            (e.g., no serialization, Pickle, etc.)
+            (e.g., no serialization, Pickle, etc.).
     """
     if not isinstance(string, str):
         raise ValueError(

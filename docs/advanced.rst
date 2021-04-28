@@ -72,5 +72,4 @@ To force strict guarentees that a proxy always resolves to the most recent value
 Known Issues
 ------------
 
-* Calling :code:`np.sum` on a proxy wrapping a list of arrays returns itself (See `GitHub issue #1 <https://github.com/gpauloski/ProxyStore/issues/1>`_).
-
+No known issues currently.
