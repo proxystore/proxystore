@@ -9,4 +9,4 @@ import proxystore.utils as utils
 global store
 store = None
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
