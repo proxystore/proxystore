@@ -83,11 +83,16 @@ def test_redis_factory() -> None:
     f = pkl.loads(f_pkl)
 
     # Test async resolving (value should not be cached)
+    assert f.obj_future is None
     f.resolve_async()
+    assert f.obj_future is not None
     assert f() == [1, 2, 3]
+    assert f.obj_future is None
 
-    # Test again now that value is cached
+    # Test again now that value is cached. resolve_async()
+    # should just return and have no side-effects (i.e., no process spawned)
     f.resolve_async()
+    assert f.obj_future is None
     assert f() == [1, 2, 3]
 
     # Test if Factory can initialize backend on its own
