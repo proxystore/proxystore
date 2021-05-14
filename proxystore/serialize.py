@@ -1,4 +1,5 @@
 """Serialization Utilities"""
+import cloudpickle
 import pickle
 
 from typing import Any
@@ -25,8 +26,13 @@ def serialize(obj: Any) -> str:
     elif isinstance(obj, str):
         identifier = '02\n'
     else:
-        identifier = '03\n'
-        obj = pickle.dumps(obj).hex()
+        # Use cloudpickle if pickle fails
+        try:
+            identifier = '03\n'
+            obj = pickle.dumps(obj).hex()
+        except:
+            identifier = '04\n'
+            obj = cloudpickle.dumps(obj).hex()
 
     assert isinstance(obj, str)
 
@@ -68,6 +74,8 @@ def deserialize(string: str) -> Any:
         return string
     elif identifier == '03':
         return pickle.loads(bytes.fromhex(string))
+    elif identifier == '04':
+        return cloudpickle.loads(bytes.fromhex(string))
     else:
         raise SerializationError(
             'Unknown identifier {} for deserialization'.format(identifier)
