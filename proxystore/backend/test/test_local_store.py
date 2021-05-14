@@ -1,38 +1,17 @@
-"""Base Store Unit Tests"""
+"""Local Store Unit Tests"""
 import numpy as np
 
 from pytest import raises
 
 import proxystore as ps
-from proxystore.backend.store import BaseStore, LocalStore, CachedStore
-
-REDIS_HOST = 'localhost'
-REDIS_PORT = 59465
+from proxystore.backend.store import Store, LocalStore
 
 
-def test_init_local_backend() -> None:
-    """Test init_local_backend"""
-    ps.init_local_backend()
-    assert ps.store is not None
-    assert isinstance(ps.store, BaseStore)
-    assert isinstance(ps.store, LocalStore)
-    store = ps.store
-
-    # Calling init again should do nothing since we already
-    # have a Redis backend initialized
-    ps.init_local_backend()
-    assert store is ps.store
-
-    ps.store = BaseStore()
-
-    # Should raise error that a different backend is already used
-    with raises(ValueError):
-        ps.init_local_backend()
-
-
-def test_local_store_basic() -> None:
-    """Test LocalStore backend"""
+def test_store() -> None:
+    """Test local Store backend"""
     store = LocalStore()
+
+    assert isinstance(store, Store)
 
     # Set various object types
     value = 'test_value'
@@ -69,10 +48,3 @@ def test_local_store_basic() -> None:
 
     # This key does not exists but no errors should be raised
     store.evict('key_fake')
-
-
-def test_cached_store() -> None:
-    """Test Cached Store"""
-    CachedStore(1)
-    with raises(ValueError):
-        CachedStore(-1)

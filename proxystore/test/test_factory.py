@@ -72,6 +72,7 @@ def test_key_factory() -> None:
 def test_redis_factory() -> None:
     """Test RedisFactory"""
     ps.store = None
+    ps.backend.store._cache.reset()
     ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
 
     x = [1, 2, 3]

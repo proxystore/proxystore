@@ -15,8 +15,8 @@ class LRUCache:
 
     def __init__(self, maxsize: int = 16) -> None:
         """Init LRUCache"""
-        if maxsize <= 0:
-            raise ValueError('Cache size must by > 0')
+        if maxsize < 0:
+            raise ValueError('Cache size must by >= 0')
         self.maxsize = maxsize
         self.data = {}
         self.lru = []
@@ -41,8 +41,21 @@ class LRUCache:
             self.misses += 1
             return default
 
+    def reset(self, size: Optional[int] = None) -> None:
+        """Reset cache and optionally set new size"""
+        if size is not None:
+            if size < 0:
+                raise ValueError('Cache size must be >= 0')
+            self.maxsize = size
+        self.data = {}
+        self.lru = []
+        self.hits = 0
+        self.misses = 0
+
     def set(self, key: Any, value: Any) -> None:
         """Set key to value"""
+        if self.maxsize == 0:
+            return
         if len(self.data) >= self.maxsize:
             lru_key = self.lru.pop()
             del self.data[lru_key]

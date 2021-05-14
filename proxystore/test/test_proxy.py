@@ -130,14 +130,14 @@ def test_to_proxy_error_handling() -> None:
         # Raises backend not initialized
         ps.to_proxy('object', 'key')
 
-    ps.store = store.BaseStore()
+    ps.store = store.Store()
     with raises(TypeError):
-        # Raises BaseStore is an abstract class
+        # Raises Store is an abstract class
         ps.to_proxy('object', 'key')
 
-    ps.store = store.CachedStore()
+    ps.store = store.RemoteStore()
     with raises(TypeError):
-        # Raises CachedStore is an abstract class
+        # Raises RemoteStore is an abstract class
         ps.to_proxy('object', 'key')
 
     ps.store = 'random object'

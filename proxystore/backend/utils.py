@@ -12,7 +12,7 @@ def init_local_backend() -> None:
     to send objects between separate processes).
 
     Note:
-        If a local memory backend has already been initialized, this function
+        If a local backend has already been initialized, this function
         will return, i.e., the backend will not be reset.
 
     Raises:

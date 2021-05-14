@@ -155,7 +155,7 @@ def to_proxy(
             strict=strict,
         )
         ps.store.set(key, obj, serialize=serialize)
-    elif isinstance(ps.store, (store.BaseStore, store.CachedStore)):
+    elif isinstance(ps.store, (store.Store, store.RemoteStore)):
         raise TypeError(
             'Backend of type {} is an abstract '
             'class!'.format(type(ps.store))
