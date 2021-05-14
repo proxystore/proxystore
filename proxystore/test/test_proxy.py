@@ -8,7 +8,7 @@ from pytest import fixture, raises
 
 import proxystore as ps
 import proxystore.backend.store as store
-from proxystore.factory import BaseFactory
+from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
 
 REDIS_HOST = 'localhost'
@@ -33,7 +33,7 @@ def test_proxy() -> None:
         Proxy(lambda: 'fake object')
 
     x = np.array([1, 2, 3])
-    f = BaseFactory(x)
+    f = SimpleFactory(x)
     p = Proxy(f)
 
     assert not ps.utils.is_resolved(p)
@@ -85,7 +85,7 @@ def test_proxy() -> None:
     assert np.array_equal(res, [2, 4, 6])
 
     # TODO(gpauloski): is this expected? (see issue #1)
-    p = Proxy(BaseFactory([np.array([1, 2, 3]), np.array([2, 3, 4])]))
+    p = Proxy(SimpleFactory([np.array([1, 2, 3]), np.array([2, 3, 4])]))
     res = np.sum(p, axis=0)
     assert not isinstance(res, Proxy)
     assert np.array_equal(res, [3, 5, 7])
@@ -168,7 +168,7 @@ def test_utils() -> None:
     ps.utils.evict(p)
     assert ps.utils.is_resolved(p)
 
-    p = Proxy(BaseFactory(x))
+    p = Proxy(SimpleFactory(x))
     # BaseFactory does not use the store but evict should not
     # raise any errors
     ps.utils.evict(p)

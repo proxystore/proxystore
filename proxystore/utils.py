@@ -1,9 +1,21 @@
 """Utility functions for interacting with proxies"""
 from __future__ import annotations
 
+import random
+
 from typing import Any, Optional
 
 import proxystore as ps
+
+
+def create_key(obj: Any) -> str:
+    """Generates key for the object
+
+    TODO: generate key based on object hash (Re: Issue #4)
+
+    TODO: consider how to deal with key collisions
+    """
+    return str(random.getrandbits(128))
 
 
 def evict(proxy: 'ps.proxy.Proxy') -> None:

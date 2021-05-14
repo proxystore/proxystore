@@ -1,15 +1,14 @@
 """ProxyStore Proxy Implementation"""
-import random
 from typing import Any, Optional
 
 from lazy_object_proxy import slots
 
 import proxystore as ps
 import proxystore.backend.store as store
-from proxystore.factory import BaseFactory
+from proxystore.factory import Factory
 
 
-def _proxy_trampoline(factory: BaseFactory):
+def _proxy_trampoline(factory: Factory):
     """Trampoline for helping Proxy pickling
 
     `slots.Proxy` defines a property for ``__modules__`` which confuses
@@ -17,7 +16,7 @@ def _proxy_trampoline(factory: BaseFactory):
     a top-level function so pickle can correctly find it in this module.
 
     Args:
-        factory (BaseFactory): factory to pass to ``Proxy`` constructor.
+        factory (Factory): factory to pass to ``Proxy`` constructor.
 
     Returns:
         ``Proxy`` instance
@@ -66,19 +65,19 @@ class Proxy(slots.Proxy):
         will be called again to resolve the object.
 
     Args:
-        factory (BaseFactory): callable object that returns the
+        factory (Factory): callable object that returns the
             underlying object when called.
 
     Raises:
         TypeError:
-            if `factory` is not an instance of `BaseFactory
-            <proxystore.factory.BaseFactory>`.
+            if `factory` is not an instance of `Factory
+            <proxystore.factory.Factory>`.
     """
 
-    def __init__(self, factory: BaseFactory) -> None:
+    def __init__(self, factory: Factory) -> None:
         """Init Proxy"""
-        if not isinstance(factory, BaseFactory):
-            raise TypeError('factory must be of type ps.factory.BaseFactory')
+        if not isinstance(factory, Factory):
+            raise TypeError('factory must be of type ps.factory.Factory')
         super(Proxy, self).__init__(factory)
 
     def __reduce__(self):
@@ -135,26 +134,17 @@ def to_proxy(
     if ps.store is None:
         raise RuntimeError('Backend store is not initialized yet')
 
-    if key is None:
-        # Make sure we don't have a key collision
-        # TODO(gpauloski): consider key based on object hash so
-        # identical objects are not duplicated?
-        key = str(random.getrandbits(128))
-        while ps.store.exists(key):
-            key = str(random.getrandbits(128))  # pragma: no cover
-
     if isinstance(ps.store, store.LocalStore):
-        f = ps.factory.KeyFactory(key)
-        ps.store.set(key, obj)
+        f = ps.factory.LocalFactory(obj, key=key)
     elif isinstance(ps.store, store.RedisStore):
         f = ps.factory.RedisFactory(
-            key,
+            obj,
+            key=key,
             hostname=ps.store.hostname,
             port=ps.store.port,
             serialize=serialize,
             strict=strict,
         )
-        ps.store.set(key, obj, serialize=serialize)
     elif isinstance(ps.store, (store.Store, store.RemoteStore)):
         raise TypeError(
             'Backend of type {} is an abstract '

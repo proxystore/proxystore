@@ -16,9 +16,10 @@ E.g.,
    x = np.array([1, 2, 3])
 
    ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
-   ps.store.set('my key', x)
+   # The RedisFactory constructor will place x into the store. If x was
+   # manually placed into the store, passing x to the factory can be skipped.
    f = ps.factory.RedisFactory(
-           key='my key', hostname=REDIS_HOST, port=REDIS_PORT)
+           x, key='my key', hostname=REDIS_HOST, port=REDIS_PORT)
    p = ps.proxy.Proxy(f)
 
 The three steps (putting the object in the store, creating a factory, and making the proxy) are neatly handled by :any:`to_proxy() <proxystore.to_proxy()>`.
