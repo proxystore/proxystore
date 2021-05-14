@@ -30,7 +30,7 @@ def serialize(obj: Any) -> str:
         try:
             identifier = '03\n'
             obj = pickle.dumps(obj).hex()
-        except:
+        except Exception:
             identifier = '04\n'
             obj = cloudpickle.dumps(obj).hex()
 

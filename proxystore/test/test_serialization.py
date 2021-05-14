@@ -20,7 +20,7 @@ def test_serialization() -> None:
     x = np.array([1, 2, 3])
     b = serialize(x)
     assert np.array_equal(deserialize(b), x)
- 
+
     b = serialize(lambda: [1, 2, 3])
     f = deserialize(b)
     assert f() == [1, 2, 3]

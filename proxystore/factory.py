@@ -6,7 +6,7 @@ object from wherever it is stored such that the proxy can act as the
 object.
 """
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import proxystore as ps
 
@@ -265,3 +265,30 @@ class RedisFactory(Factory):
             deserialize=self.serialize,
             strict=self.strict,
         )
+
+
+class LambdaFactory(Factory):
+    """Factory that takes any callable object
+
+    Args:
+        func (callable): callable object (function, class, lambda) that
+            when called produces an object.
+    """
+
+    def __init__(self, func: Callable) -> None:
+        """Init LambdaFactory"""
+        self.func = func
+        self.obj_future = None
+
+    def resolve(self) -> Any:
+        """Return underlying object"""
+        if self.obj_future is not None:
+            obj = self.obj_future.result()
+            self.obj_future = None
+            return obj
+
+        return self.func()
+
+    def resolve_async(self) -> None:
+        """Asynchronously resolves underlying object"""
+        self.obj_future = default_pool.submit(self.func)

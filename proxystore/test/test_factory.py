@@ -6,7 +6,7 @@ import time
 from pytest import fixture, raises
 
 import proxystore as ps
-from proxystore.factory import LocalFactory, RedisFactory
+from proxystore.factory import LambdaFactory, LocalFactory, RedisFactory
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
@@ -125,3 +125,29 @@ def test_redis_factory() -> None:
     assert ps.store.exists('key2')
     assert f() == [1, 2, 3, 4]
     assert not ps.store.exists('key2')
+
+
+def test_lambda_factory() -> None:
+    """Test LambdaFactory"""
+    f = LambdaFactory(lambda: [1, 2, 3])
+
+    # Test callable
+    assert f() == [1, 2, 3]
+
+    # Test pickleable
+    f_pkl = ps.serialize.serialize(f)
+    f = ps.serialize.deserialize(f_pkl)
+    assert f() == [1, 2, 3]
+
+    # Test async resolve
+    f.resolve_async()
+    assert f() == [1, 2, 3]
+
+    # Test with function
+    def myfunc() -> str:
+        return 'abc'
+
+    f = LambdaFactory(myfunc)
+    f_pkl = ps.serialize.serialize(f)
+    f = ps.serialize.deserialize(f_pkl)
+    assert f() == 'abc'
