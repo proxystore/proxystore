@@ -28,7 +28,7 @@ Note here that calling `f`, i.e., :code:`f()`, will return `x` from Redis.
 `p` will automatically call `f` the first time `p` is used.
 
 Custom backends and factories can be created and proxied following these steps.
-All factories should inherit from :any:`proxystore.factory.BaseFactory`, and all backend stores should inherit from :any:`proxystore.backend.store.BaseStore`.
+All factories should inherit from :any:`proxystore.factory.Factory`, and all backend stores should inherit from :any:`proxystore.backend.store.Store`.
 
 The :any:`proxystore.utils` modules provides many useful functions for interacting with proxies, including: :any:`is_resolved(p) <proxystore.utils.is_resolved()>`, :any:`extract(p) <proxystore.utils.extract()>`, and :any:`evict(p) <proxystore.utils.evict()>`.
 

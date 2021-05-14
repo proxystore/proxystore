@@ -7,4 +7,5 @@ API
    proxystore.backend
    proxystore.factory
    proxystore.proxy
+   proxystore.serialize
    proxystore.utils
