@@ -103,13 +103,19 @@ class LocalFactory(Factory):
         key (str): specify the key to use to retrieve the object from the store.
             If `obj=None`, this argument is required. If `obj` is provided but
             the key is not, a key will be generated (default: None).
+        evict (bool): If `True`, evict the object from the store once
+            :func:`resolve()` is called (default: False).
 
     Raise:
         ValueError if both `obj` and `key` are `None`.
     """
 
     def __init__(
-        self, obj: Optional[object] = None, *, key: Optional[str] = None
+        self,
+        obj: Optional[object] = None,
+        *,
+        key: Optional[str] = None,
+        evict: bool = False,
     ) -> None:
         """Init LocalFactory"""
         if obj is None and key is None:
@@ -121,14 +127,18 @@ class LocalFactory(Factory):
                 ps.init_local_backend()
             ps.store.set(key, obj)
         self.key = key
+        self.evict = evict
 
     def resolve(self) -> Any:
         """Return object associated with key"""
-        return ps.store.get(self.key)
+        obj = ps.store.get(self.key)
+        if self.evict:
+            ps.store.evict(self.key)
+        return obj
 
     def __getnewargs_ex__(self):
         """Helper method for pickling"""
-        return (None,), {'key': self.key}
+        return (None,), {'key': self.key, 'evict': self.evict}
 
 
 class RedisFactory(Factory):
@@ -154,6 +164,8 @@ class RedisFactory(Factory):
             from the current Redis backend will be used (default: None).
         port (int): port Redis server is listening on. If `None`, the port
             from the current Redis backend will be used (default: None).
+        evict (bool): If `True`, evict the object from the store once
+            :func:`resolve()` is called (default: False).
         serialize (bool): if `True`, object in store is serialized and
             should be deserialized upon retrival (default: `True`).
         strict (bool): if `True`, ensures that the underlying object
@@ -176,6 +188,7 @@ class RedisFactory(Factory):
         key: Optional[str] = None,
         hostname: Optional[str] = None,
         port: Optional[int] = None,
+        evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
@@ -202,6 +215,7 @@ class RedisFactory(Factory):
         self.key = key
         self.hostname = hostname
         self.port = port
+        self.evict = evict
         self.serialize = serialize
         self.strict = strict
         self.obj_future = None
@@ -212,6 +226,7 @@ class RedisFactory(Factory):
             'key': self.key,
             'hostname': self.hostname,
             'port': self.port,
+            'evict': self.evict,
             'serialize': self.serialize,
             'strict': self.strict,
         }
@@ -226,9 +241,12 @@ class RedisFactory(Factory):
             self.obj_future = None
             return obj
 
-        return ps.store.get(
+        obj = ps.store.get(
             self.key, deserialize=self.serialize, strict=self.strict
         )
+        if self.evict:
+            ps.store.evict(self.key)
+        return obj
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from Redis"""

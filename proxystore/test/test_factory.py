@@ -61,6 +61,12 @@ def test_local_factory() -> None:
     with raises(ValueError):
         f = LocalFactory()
 
+    # Test eviction
+    f = LocalFactory([1, 2, 3, 4], key='key2', evict=True)
+    assert ps.store.exists('key2')
+    assert f() == [1, 2, 3, 4]
+    assert not ps.store.exists('key2')
+
 
 def test_redis_factory() -> None:
     """Test RedisFactory"""
@@ -113,3 +119,9 @@ def test_redis_factory() -> None:
     ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
     f = RedisFactory([1, 2, 3])
     assert f() == [1, 2, 3]
+
+    # Test eviction
+    f = RedisFactory([1, 2, 3, 4], key='key2', evict=True)
+    assert ps.store.exists('key2')
+    assert f() == [1, 2, 3, 4]
+    assert not ps.store.exists('key2')

@@ -98,6 +98,7 @@ class Proxy(slots.Proxy):
 def to_proxy(
     obj: Any,
     key: Optional[str] = None,
+    evict: bool = False,
     serialize: bool = True,
     strict: bool = False,
 ):
@@ -116,6 +117,8 @@ def to_proxy(
         obj: object to place in store and be proxied.
         key (str): specify key associated with `obj` in store. If `None`,
             a unique random key is generated (default: `None`).
+        evict (bool): If `True`, evicts object from backend store once
+            the proxy has been resolved (default: `True`).
         serialize (bool): serialized object before placing in
             backend. If `obj` has been manually serialized, set as `False`
             (default: `True`).
@@ -135,13 +138,14 @@ def to_proxy(
         raise RuntimeError('Backend store is not initialized yet')
 
     if isinstance(ps.store, store.LocalStore):
-        f = ps.factory.LocalFactory(obj, key=key)
+        f = ps.factory.LocalFactory(obj, key=key, evict=evict)
     elif isinstance(ps.store, store.RedisStore):
         f = ps.factory.RedisFactory(
             obj,
             key=key,
             hostname=ps.store.hostname,
             port=ps.store.port,
+            evict=evict,
             serialize=serialize,
             strict=strict,
         )
