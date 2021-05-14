@@ -3,8 +3,8 @@ import numpy as np
 
 from pytest import raises
 
-from proxystore.backend.serialize import serialize, deserialize
-from proxystore.backend.serialize import SerializationError
+from proxystore.serialize import serialize, deserialize
+from proxystore.serialize import SerializationError
 
 
 def test_serialization() -> None:

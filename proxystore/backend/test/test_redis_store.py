@@ -1,15 +1,13 @@
 """Redis Backend Unit Tests"""
 import numpy as np
-import os
 import subprocess
 import time
 
 from pytest import raises, fixture
 
 import proxystore as ps
-from proxystore.backend.store import PROXYSTORE_CACHE_SIZE_ENV
 from proxystore.backend.store import Store, RedisStore
-from proxystore.backend.serialize import SerializationError
+from proxystore.serialize import SerializationError
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465

@@ -10,7 +10,7 @@ functions. E.g.,
 import os
 import time
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 try:
     import redis
@@ -20,8 +20,8 @@ except ImportError as e:  # pragma: no cover
     # constructor of RedisStore
     redis = e
 
-from proxystore.backend.serialize import serialize as serialize_obj
-from proxystore.backend.serialize import deserialize as deserialize_str
+from proxystore.serialize import serialize as serialize_obj
+from proxystore.serialize import deserialize as deserialize_str
 from proxystore.backend.cache import LRUCache
 
 PROXYSTORE_CACHE_SIZE_ENV = 'PROXYSTORE_CACHE_SIZE'
@@ -34,15 +34,16 @@ if _env_cache_size is not None:  # pragma: no cover
     try:
         _cache_size = int(_env_cache_size)
     except ValueError:
-        raise ValueError(f'Cannot parse {PROXYSTORE_CACHE_SIZE_ENV}='
-                         f'{env_cache_size} as integer')
+        raise ValueError(
+            f'Cannot parse {PROXYSTORE_CACHE_SIZE_ENV}='
+            f'{_env_cache_size} as integer'
+        )
 if _cache_size < 0:  # pragma: no cover
     raise ValueError('Cache size cannot be negative')
 _cache = LRUCache(_cache_size)
 
 
-
-class Store():
+class Store:
     """ProxyStore backend store abstract class"""
 
     def evict(self, key: str) -> None:

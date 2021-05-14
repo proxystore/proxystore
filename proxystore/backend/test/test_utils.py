@@ -1,5 +1,4 @@
 """Backend Initialization Tests"""
-import numpy as np
 import subprocess
 import time
 

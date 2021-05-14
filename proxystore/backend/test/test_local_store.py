@@ -1,9 +1,6 @@
 """Local Store Unit Tests"""
 import numpy as np
 
-from pytest import raises
-
-import proxystore as ps
 from proxystore.backend.store import Store, LocalStore
 
 
