@@ -2,6 +2,7 @@ Quick Start
 ###########
 
 ProxyStore is a package designed to simplify the use of remote object stores for transferring large Python objects, particularly in distributed environments.
+The goal of ProxyStore is to simplify the process of sending objects from a source and remove the need for any changes at the destination.
 
 Overview
 --------
@@ -13,13 +14,12 @@ A proxy that the does not redefine any functionality will behave just as the wra
 Lazy proxies, rather than wrapping an object directly, wrap a function which when called produces the actually object (referred to as the `factory`).
 A lazy proxy delays executing the factory until the first time the proxy is used.
 As a result, the lazy proxy is just a skeleton than can be passed around until needed.
-The process of calling the factory is referred to as `resolving` the proxy.
+The process of calling the factory is referred to as `resolving` the proxy, and proxies perform just-in-time resolution.
 
-ProxyStore uses these lazy proxies to efficiently pass objects between Python processes or physical devices via remote object stores.
-The proxies act as references to the data in a store, and the factories retrieve the data from the store when first needed.
-ProxyStore has three main components: 1) the :any:`Proxy <proxystore.proxy.Proxy>` implementation, 2) a set of useful :any:`Factory <proxystore.factory>` types, and 3) a unified interface for a backend object :any:`store <proxystore.backend.store>`.
+ProxyStore provides the :any:`Proxy <proxystore.proxy.Proxy>` and :any:`Factory <proxystore.factory.Factory>` building blocks for creating powerful just-in-time resolution functionality for Python objects.
 
-ProxyStore currently provides support for local memory store and `Redis <https://redis.io/>`_ stores.
+ProxyStore also provides implementations for interacting with remote object stores via proxies.
+Passing objects to remote machines via proxies is powerful because all the functionality for resolving the object is package with the proxy and the destination code does not need to be modified to handle the proxies.
 
 Installation
 ------------
@@ -29,15 +29,30 @@ Installation
    $ pip install ProxyStore
 
 ProxyStore only installs the bare-minimum dependencies.
-Additional packages may need to be installed depending on which backends are used (e.g., `redis-py <https://redis-py.readthedocs.io/en/stable/>`_ is required for the Redis backend).
+Additional packages may need to be installed depending on which object store interfaces are used (e.g., `redis-py <https://redis-py.readthedocs.io/en/stable/>`_ is required for interacting with Redis servers).
 
 Documentation on installing for local development is provided in :doc:`Contributing <./contributing>`.
 
 Usage
 -----
 
-ProxyStore exposes two primary methods for passing objects with proxies:
-a method to initialize the backend and a method to proxy an object.
+Proxies can be created easily using ProxyStore.
+
+.. code-block:: python
+
+   import proxystore as ps
+
+   def resolve_object(...):
+       # Function that produces the object of interest
+       return obj
+
+   p = ps.proxy.Proxy(ps.factory.LambdaFactory(resolve_object))
+
+:code:`resolve_object()` will be called when the proxy :code:`p` does its just-in-time resolution, and then :code:`p` will behave exactly like :code:`obj`.
+The :any:`LambdaFactory <proxystore.factory.LambdaFactory>` accepts any callable Python object (functions, lambdas, etc.).
+
+ProxyStore provides a :any:`Store <proxystore.store.base.Store>` interface for interacting with object stores.
+For example, proxies can be created for objects in a Redis server easily.
 
 .. code-block:: python
 
@@ -46,17 +61,14 @@ a method to initialize the backend and a method to proxy an object.
 
    x = np.array([1, 2, 3])
 
-   ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
-   p = ps.to_proxy(x)
+   store = ps.store.init_store('redis', hostname=REDIS_HOST, port=REDIS_PORT)
+   p = store.proxy(x)
 
-In this case, we have initialized a backend connected to a Redis server that is already running on :code:`REDIS_HOST:REDIS_PORT`.
-Then, we proxied our numpy array `x`.
-The process of proxying involves placing the array in the Redis server, creating a factory that can resolve the array when called, and then creating a proxy with the factory.
+A :any:`RedisStore <proxystore.store.redis.RedisStore>` interface is initialized to connect to a Redis server hosted at :code:`REDIS_HOST:REDIS_PORT`.
+The interface exposes standard :any:`get() <proxystore.store.redis.RedisStore.get>` and :any:`set() <proxystore.store.redis.RedisStore.set>` functionality for interacting with the remote Redis server.
 
-The proxy `p` now acts as a thin reference to the array which lives in the Redis server.
-This proxy can be cheaply serialized and sent to other processes.
-When `p` is accessed for the first time, say because :code:`np.sum(p)` is called on it, the factory is called and the array is retrieved from Redis.
-Now for the rest of its existence, `p` will just behave as `x` would.
+:any:`proxy() <proxystore.store.redis.RedisStore.proxy>` places :code:`x` into the Redis server and returns a proxy that will resolve to :code:`x`.
+The proxy can be cheaply serialized and sent anywhere that can still access the Redis server and be able to correctly resolve itself.
 
 See :doc:`Advanced Usage <./advanced>` for more detailed functionality in ProxyStore.
 

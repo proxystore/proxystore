@@ -1,12 +1,10 @@
 Advanced
 ########
 
-Proxying
---------
+Proxies
+=======
 
-ProxyStore provides the :any:`to_proxy() <proxystore.to_proxy()>` function to streamline the process of proxying an object in a method compatible with the backend.
-However, an object can by manually proxied.
-E.g.,
+Proxies are powerful because they can intercept and redefine functionality of an object while emulating the rest of the objects behavior.
 
 .. code-block:: python
 
@@ -15,60 +13,128 @@ E.g.,
 
    x = np.array([1, 2, 3])
 
-   ps.init_redis_backend(hostname=REDIS_HOST, port=REDIS_PORT)
-   # The RedisFactory constructor will place x into the store. If x was
-   # manually placed into the store, passing x to the factory can be skipped.
-   f = ps.factory.RedisFactory(
-           x, key='my key', hostname=REDIS_HOST, port=REDIS_PORT)
-   p = ps.proxy.Proxy(f)
+   class MyFactory(ps.factory.Factory):
+       def __init__(self, obj):
+           self.obj = obj
 
-The three steps (putting the object in the store, creating a factory, and making the proxy) are neatly handled by :any:`to_proxy() <proxystore.to_proxy()>`.
+       def resolve(self):
+           return self.obj
 
-Note here that calling `f`, i.e., :code:`f()`, will return `x` from Redis.
-`p` will automatically call `f` the first time `p` is used.
+   p = ps.proxy.Proxy(MyFactory(x))
 
-Custom backends and factories can be created and proxied following these steps.
-All factories should inherit from :any:`proxystore.factory.Factory`, and all backend stores should inherit from :any:`proxystore.backend.store.Store`.
+   # A proxy is an instance of its wrapped object
+   assert isinstance(p, ps.proxy.Proxy)
+   assert isinstance(p, np.ndarray)
 
-The :any:`proxystore.utils` modules provides many useful functions for interacting with proxies, including: :any:`is_resolved(p) <proxystore.utils.is_resolved()>`, :any:`extract(p) <proxystore.utils.extract()>`, and :any:`evict(p) <proxystore.utils.evict()>`.
+   # The proxy can do everything the numpy array can
+   assert np.array_equal(p, [1, 2, 3])
+   assert np.sum(p) == 6
+   y = x + p
+   assert np.array_equal(y, [2, 4, 6])
 
-Asynchronous Resolving
-----------------------
+The ProxyStore :any:`Proxy <proxystore.proxy.Proxy>` is built on the proxy from `lazy-object-proxy <https://github.com/ionelmc/python-lazy-object-proxy>`_ and intercepts all calls to the object's magic functions (:code:`__func_name__()` functions) and forwards the calls to the wrapped object.
+If the wrapped object has not been resolved yet, the proxy calls the :any:`Factory <proxystore.factory.Factory>` that was passed to the proxy constructor to retrieve the object that should be wrapped.
 
-A common design pattern for ProxyStore is a distributed computation environment where a coordinating node dispatches work (a input, function pair) to worker nodes.
-Inputs can be passed from the coordinating node to worker nodes efficiently with proxies (and vice-versa with outputs).
+Generally, a proxy is only ever resolved once.
+However, when a proxy is serialized, only the factory is serialized, and when the proxy is deserialized again and used, the factory will be called again to resolve the object.
 
-Not all inputs are needed at the start of a function, so proxies can be asynchronously resolved allowing for an overlap of communication with the backend store and computation.
+Proxystore provides some useful utility functions for dealing with proxies.
 
 .. code-block:: python
 
    import proxystore as ps
 
-   def complex_function(large_input):
-       ps.utils.resolve_async(large_input)
-       # more computation...
-       compute_input(large_input)
+   p = ps.proxy.Proxy(...)
 
-Here, by calling :any:`resolve_async(proxy) <proxystore.utils.resolve_async()>` prior to the proxy being needed, the cost of communication with the backend store can be amortized.
+   # Check if a proxy has been resolved yet
+   ps.proxy.is_resolved(p)
+
+   # Force a proxy to resolve itself
+   ps.proxy.resolve(p)
+
+   # Extract the wrapped object from the proxy
+   x = ps.proxy.extract(p)
+   assert not isinstance(x, ps.proxy.Proxy)
+
+   # Begin resolving a Factory asynchronously.
+   # Note: only supported by Factories the implement resolve_async()
+   ps.proxy.resolve_async(p)
+
+Remote Stores
+=============
+
+Proxies are valuable in distributed computing for delaying object communication of objects.
+In this context, passing a proxy is like passing a reference that also knows how to dereference itself as soon as it is needed.
+
+ProxyStore provides a :any:`Store <proxystore.store.base.Store>` interface for passing objects via proxies that resolve themselves from object stores.
+E.g., if you have some distributed object store accesible by all devices in your world, you can create a proxy that will resolve itself to an object that lives in the store.
+
+ProxyStore provides a couple base implementations:
+   
+  * :any:`LocalStore <proxystore.store.local.LocalStore>`: Object store that lives in local process memory.
+  * :any:`RedisStore <proxystore.store.redis.RedisStore>`: Interface to a Redis server.
+
+
+Redis Example
+-------------
+
+.. code-block:: python
+
+   import proxystore as ps
+
+   store = ps.store.init_store('redis', hostname=REDIS_HOST, port=REDIS_PORT)
+
+   # An already initialized store can be retrieved
+   store = ps.store.get_store('redis')
+
+   # Stores have basic get/set functionality
+   store.set('key', my_object)
+   assert my_object == store.get('key')
+
+   # Place an object in the store and return a proxy
+   p = store.proxy(my_other_object)
+
+   # Get a proxy reference for an object already in the store
+   p = store.proxy(key='key')
+
+The provided store implementations also provide factories that know how to interact with the store and initialize the store interface if needed again.
+For example, if a :any:`RedisStore <proxystore.store.redis.RedisStore>` is initialized in one Python process and a proxy referencing an object in the Redis server is created, serialized, and sent to another Python process, the proxy will be able to initialize another :any:`RedisStore <proxystore.store.redis.RedisStore>` interface on the new process to resolve the object.
+
+Asynchronous Resolving
+----------------------
+
+It is common in distributed computation for inputs to functions executed remotely to not be needed immediately upon execution.
+Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>` provide support for asynchronously resolving proxies to overlap communication and computation.
+
+.. code-block:: python
+
+   import proxystore as ps
+
+   def complex_function(large_proxied_input):
+       ps.proxy.resolve_async(large_proxied_input)
+       
+       # More computation...
+
+       # First access to the proxy will not be as expensive because
+       # of the asynchronous resolution
+       compute_input(large_proxied_input)
+
 The method by which factories asynchronously resolve objects is unique to the factory.
-For example, :any:`RedisFactory <proxystore.factory.RedisFactory>` will spawn a new process to get the object from Redis and stores a future to the result in the factory.
+For example, :any:`RedisFactory <proxystore.store.redis.RedisFactory>` will spawn a new thread to communicate with the remote Redis server to retrieve the object.
+A future for the thread is store inside the factory (and therefore inside the proxy).
 
 Caching
 -------
 
-Following with the distributed design pattern from the previous section, it is common for a worker to execute many tasks that use the same input data.
-Many of the ProxyStore backends, such as the Redis backend, will cache recently used value locally, speeding up the time it takes to initially resolve a proxy.
-
-The number of cached key value pairs can be specified in the environment, e.g., :code:`export PROXYSTORE_CACHE_SIZE=16`, or passed as the :code:`cache_size` argument to the backend store constructor in manually initializing the backend.
-If the cache size is 0, caching will not be used.
+The :any:`RemoteStore <proxystore.store.base.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
+Caches are local to the Python process but will speed up the resolution when multiple proxies refer to the same object in the Redis server.
 
 Transactional Guarentees
 ------------------------
 
 By default, ProxyStore does not guarentee a proxy resolves with the most recent version of an object.
-For example, let :code:`p = to_proxy(obj, key='custom-key')`.
-If the object associated with `custom-key` in the backend store later changes before `p` has been resolved, it is not guarenteed which version of the object will be returned (generally because the older version may be cached locally).
-To force strict guarentees that a proxy always resolves to the most recent value associated with a key, :code:`strict=True` can be passed to :any:`to_proxy() <proxystore.to_proxy()>`.
+If the object associated with `custom-key` in the backend store later changes before the proxy has been resolved, it is not guarenteed which version of the object will be returned (generally because the older version may be cached locally).
+:any:`Store.proxy() <proxystore.store.base.Store.proxy>` accepts a :code:`strict` flag to enforce that the proxy will always resolve to the most up to date version of the object associated with `custom-key`.
 
 Known Issues
 ------------

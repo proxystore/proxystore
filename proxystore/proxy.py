@@ -1,10 +1,10 @@
-"""ProxyStore Proxy Implementation"""
+"""ProxyStore Proxy Implementation and Utilities"""
+from __future__ import annotations
+
 from typing import Any, Optional
 
 from lazy_object_proxy import slots
 
-import proxystore as ps
-import proxystore.backend.store as store
 from proxystore.factory import Factory
 
 
@@ -34,7 +34,8 @@ class Proxy(slots.Proxy):
     An object proxy acts as a thin wrapper around a Python object, i.e.
     the proxy behaves identically to the underlying object. The proxy is
     initialized with a callable factory object. The factory returns the
-    underlying object when called, i.e. 'resolves' the proxy. The proxy
+    underlying object when called, i.e. 'resolves' the proxy. The does
+    just-in-time resolution, i.e., the proxy
     does not call the factory until the first access to the proxy (hence, the
     lazy aspect of the proxy).
 
@@ -43,7 +44,7 @@ class Proxy(slots.Proxy):
     object from the backend store.
 
     >>> x = np.array([1, 2, 3])
-    >>> f = ps.factory.BaseFactory(x)
+    >>> f = ps.factory.SimpleFactory(x)
     >>> p = ps.proxy.Proxy(f)
     >>> assert isinstance(p, np.ndarray)
     >>> assert np.array_equal(p, [1, 2, 3])
@@ -63,19 +64,20 @@ class Proxy(slots.Proxy):
         the wrapped object. Thus, proxy instances can be pickled and passed
         around cheaply, and once the proxy is unpickled and used, the `factory`
         will be called again to resolve the object.
-
-    Args:
-        factory (Factory): callable object that returns the
-            underlying object when called.
-
-    Raises:
-        TypeError:
-            if `factory` is not an instance of `Factory
-            <proxystore.factory.Factory>`.
     """
 
     def __init__(self, factory: Factory) -> None:
-        """Init Proxy"""
+        """Init Proxy
+
+        Args:
+            factory (Factory): callable object that returns the
+                underlying object when called.
+
+        Raises:
+            TypeError:
+                if `factory` is not an instance of `Factory
+                <proxystore.factory.Factory>`.
+        """
         if not isinstance(factory, Factory):
             raise TypeError('factory must be of type ps.factory.Factory')
         super(Proxy, self).__init__(factory)
@@ -95,66 +97,82 @@ class Proxy(slots.Proxy):
         return self.__reduce__()
 
 
-def to_proxy(
-    obj: Any,
-    key: Optional[str] = None,
-    evict: bool = False,
-    serialize: bool = True,
-    strict: bool = False,
-):
-    """Place object in backend store and return :class:`.Proxy`
+def extract(proxy: 'proxystore.proxy.Proxy') -> Any:  # noqa: F821
+    """Returns object wrapped by proxy
 
-    This function automates the proxying process which involves:
-
-    1. Creating a `key` for `obj` if one is not specified.
-    2. Creating a `factory` for the object compatible with the current backend
-       (e.g., :class:`RedisFactory <proxystore.factory.RedisFactory>` with a
-       Redis backend).
-    3. Creating a :class:`.Proxy` with the `factory`.
-    4. Placing `obj` in the backend store.
+    If the proxy has not been resolved yet, this will force
+    the proxy to be resolved prior.
 
     Args:
-        obj: object to place in store and be proxied.
-        key (str): specify key associated with `obj` in store. If `None`,
-            a unique random key is generated (default: `None`).
-        evict (bool): If `True`, evicts object from backend store once
-            the proxy has been resolved (default: `True`).
-        serialize (bool): serialized object before placing in
-            backend. If `obj` has been manually serialized, set as `False`
-            (default: `True`).
-        strict (bool): if `True`, require store always returns most
-            recent object associated with `key` (default: `False`).
+        proxy (Proxy): proxy instance to extract from.
 
     Returns:
-        :class:`.Proxy` instance that will behave as and resolve `obj`.
-
-    Raises:
-        RuntimeError:
-            if a backend has not been initialized, i.e.,
-            :obj:`proxystore.store` is `None`. The backend should be initialized
-            with one of the :func:`proxystore.init_{type}_backend()` functions.
+        object wrapped by proxy.
     """
-    if ps.store is None:
-        raise RuntimeError('Backend store is not initialized yet')
+    return proxy.__wrapped__
 
-    if isinstance(ps.store, store.LocalStore):
-        f = ps.factory.LocalFactory(obj, key=key, evict=evict)
-    elif isinstance(ps.store, store.RedisStore):
-        f = ps.factory.RedisFactory(
-            obj,
-            key=key,
-            hostname=ps.store.hostname,
-            port=ps.store.port,
-            evict=evict,
-            serialize=serialize,
-            strict=strict,
-        )
-    elif isinstance(ps.store, (store.Store, store.RemoteStore)):
-        raise TypeError(
-            'Backend of type {} is an abstract '
-            'class!'.format(type(ps.store))
-        )
-    else:
-        raise TypeError('Unrecognized backend type: {}'.format(type(ps.store)))
 
-    return Proxy(f)
+def get_key(proxy: 'proxystore.proxy.Proxy') -> Optional[str]:  # noqa: F821
+    """Returns key associated object wrapped by proxy
+
+    Keys are stored in the `factory` passed to the
+    :class:`Proxy <proxystore.proxy.Proxy>` constructor; however, not all
+    :mod:`Factory <proxystore.factory>` classes use a key.
+
+    Args:
+        proxy (Proxy): proxy instance to get key from.
+
+    Returns:
+        key (`str`) if it exists otherwise `None`.
+    """
+    if hasattr(proxy.__factory__, 'key'):
+        return proxy.__factory__.key
+    return None
+
+
+def is_resolved(proxy: 'proxystore.proxy.Proxy') -> bool:  # noqa: F821
+    """Check if a proxy is resolved
+
+    Args:
+        proxy (Proxy): proxy instance to check.
+
+    Returns:
+        `True` if `proxy` is resolved (i.e., the `factory` has been called) and
+        `False` otherwise.
+    """
+    return proxy.__resolved__
+
+
+def resolve(proxy: 'proxystore.proxy.Proxy') -> None:  # noqa: F821
+    """Force a proxy to resolve itself
+
+    Args:
+        proxy (Proxy): proxy instance to force resolve.
+    """
+    proxy.__wrapped__
+
+
+def resolve_async(proxy: 'proxystore.proxy.Proxy') -> None:  # noqa: F821
+    """Begin resolving proxy asynchronously
+
+    Useful if the user knows a proxy will be needed soon and wants to
+    resolve the proxy concurrently with other computation.
+
+    >>> ps.proxy.resolve_async(my_proxy)
+    >>> computation_without_proxy(...)
+    >>> # p is hopefully resolved
+    >>> computation_with_proxy(my_proxy, ...)
+
+    Note:
+        The asynchronous resolving functionality is implemented
+        in :func:`Factory.resolve_async()
+        <proxystore.factory.Factory.resolve_async()>`.
+        Most :mod:`Factory <proxystore.factory>` implementations will store a
+        future to the result and wait on that future the next
+        time the proxy is used.
+
+    Args:
+        proxy (Proxy): proxy instance to begin asynchronously resolving.
+    """
+    if not is_resolved(proxy):
+        proxy.__factory__.resolve_async()

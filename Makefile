@@ -11,3 +11,6 @@ pytest:
 	pytest --cache-clear --cov=proxystore --cov-report term-missing proxystore 
 
 test: black flake8 pytest
+
+html:
+	cd docs ; make html ; cd ..
