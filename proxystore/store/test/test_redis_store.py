@@ -201,3 +201,8 @@ def test_redis_store_proxy() -> None:
     with raises(ValueError):
         # Cannot make proxy from key that does not exist
         store.proxy(key='missing_key')
+
+    with raises(Exception):
+        # Array will not be serialized and should raise error when putting
+        # array into Redis
+        store.proxy(np.ndarray([1, 2, 3]), serialize=False)

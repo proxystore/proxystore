@@ -36,8 +36,8 @@ class RedisFactory(Factory):
     def __init__(
         self,
         key: str,
-        hostname: Optional[str],
-        port: Optional[int],
+        hostname: str,
+        port: str,
         *,
         evict: bool = False,
         serialize: bool = True,
@@ -216,7 +216,10 @@ class RedisStore(RemoteStore):
         if key is None:
             key = ps.utils.create_key(obj)
         if obj is not None:
-            self.set(key, obj)
+            if 'serialize' in kwargs:
+                self.set(key, obj, serialize=kwargs['serialize'])
+            else:
+                self.set(key, obj)
         elif not self.exists(key):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
