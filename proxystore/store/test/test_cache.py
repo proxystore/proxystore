@@ -3,13 +3,13 @@ import multiprocessing as mp
 
 from pytest import raises
 
-from proxystore.backend.cache import LRUCache
+from proxystore.store.cache import LRUCache
 
 
 def test_lru_raises() -> None:
     """Test LRU Error Handling"""
     with raises(ValueError):
-        LRUCache(0)
+        LRUCache(-1)
 
 
 def test_lru_cache() -> None:
@@ -28,6 +28,13 @@ def test_lru_cache() -> None:
     assert c.exists('5')
     assert c.get('Fake Key', None) is None
     assert c.get('Fake Key', 1) == 1
+
+    c = LRUCache(1)
+    c.set('1', 1)
+    assert c.exists('1')
+    c.evict('1')
+    assert not c.exists('1')
+    c.evict('1')
 
 
 def test_lru_cache_mp() -> None:

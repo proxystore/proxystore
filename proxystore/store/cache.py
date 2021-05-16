@@ -3,18 +3,18 @@ from typing import Any, Optional
 
 
 class LRUCache:
-    """Simple LRU Cache
-
-    Args:
-        maxsize (int): maximum number of value to cache (default: 16).
-
-    Raises:
-        ValueError:
-            if `maxsize` is negative.
-    """
+    """Simple LRU Cache"""
 
     def __init__(self, maxsize: int = 16) -> None:
-        """Init LRUCache"""
+        """Init LRUCache
+
+        Args:
+            maxsize (int): maximum number of value to cache (default: 16).
+
+        Raises:
+            ValueError:
+                if `maxsize <= 0`.
+        """
         if maxsize <= 0:
             raise ValueError('Cache size must by > 0')
         self.maxsize = maxsize
@@ -24,6 +24,12 @@ class LRUCache:
         # Count hits/misses
         self.hits = 0
         self.misses = 0
+
+    def evict(self, key: Any) -> None:
+        """Evict key from cache"""
+        if self.exists(key):
+            self.data.pop(key, None)
+            self.lru.remove(key)
 
     def exists(self, key: Any) -> bool:
         """Check if key is in cache"""

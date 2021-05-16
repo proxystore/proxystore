@@ -3,8 +3,8 @@ import numpy as np
 
 from pytest import raises
 
-from proxystore.backend.serialize import serialize, deserialize
-from proxystore.backend.serialize import SerializationError
+from proxystore.serialize import serialize, deserialize
+from proxystore.serialize import SerializationError
 
 
 def test_serialization() -> None:
@@ -20,6 +20,10 @@ def test_serialization() -> None:
     x = np.array([1, 2, 3])
     b = serialize(x)
     assert np.array_equal(deserialize(b), x)
+
+    b = serialize(lambda: [1, 2, 3])
+    f = deserialize(b)
+    assert f() == [1, 2, 3]
 
     with raises(ValueError):
         # deserialize raises ValueError on non-string inputs

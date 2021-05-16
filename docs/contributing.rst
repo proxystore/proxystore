@@ -27,7 +27,7 @@ Each can be run individually or all at once.
 The Python code and docstring format mostly follows the `Google Python Style Guide <https://google.github.io/styleguide/pyguide.html>`_.
 
 Module-level unit-test are located in the :code:`test/` directory in the same directory the module is located in.
-E.g. the tests for :code:`proxystore/backend/cache.py` are located in :code:`proxystore/backend/test/test_cache.py`.
+E.g. the tests for :code:`proxystore/store/cache.py` are located in :code:`proxystore/store/test/test_cache.py`.
 
 If code changes require an update to the documentation (e.g., for function signature changes, new modules, etc.), the documentation can be built as follows.
 

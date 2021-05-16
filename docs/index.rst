@@ -6,9 +6,10 @@
 Welcome to ProxyStore's documentation!
 ======================================
 
-ProxyStore is a streamlined API for passing objects via remote object stores.
+ProxyStore provides a streamlined interface for passing objects through remote object stores via proxies.
+Proxies act as transparent wrappers to objects and provide just-in-time resolution of the wrapped objects.
 
-ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_
+ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_.
 
 .. toctree::
    :maxdepth: 2
@@ -19,11 +20,3 @@ ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_
    contributing
    source/api
    changelog
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

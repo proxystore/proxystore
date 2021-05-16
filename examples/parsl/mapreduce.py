@@ -51,15 +51,17 @@ if __name__ == '__main__':
 
     if args.proxy:
         if args.redis_port is None:
-            ps.init_local_backend()
+            store = ps.store.init_store('local')
         else:
-            ps.init_redis_backend(hostname='127.0.0.1', port=args.redis_port)
+            store = ps.store.init_store(
+                'redis', hostname='127.0.0.1', port=args.redis_port
+            )
 
     mapped_results = []
     for i in range(args.num_arrays):
         x = np.random.rand(args.size, args.size)
         if args.proxy:
-            x = ps.to_proxy(x)
+            x = store.proxy(x)
         mapped_results.append(app_double(x))
 
     total = app_sum(inputs=mapped_results)

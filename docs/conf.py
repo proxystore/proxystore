@@ -16,17 +16,16 @@ import sys
 sys.path.insert(0, os.path.abspath('../'))
 import proxystore
 
-# def skip(app, what, name, obj, would_skip, options):
-#     """Prevent docs skipping __init__ docstrings"""
-#     if name == "__init__":
-#         return False
-#     return would_skip
+def skip(app, what, name, obj, would_skip, options):
+    """Prevent docs skipping __init__ docstrings"""
+    if name == "__init__":
+        return False
+    return would_skip
 
 
-# def setup(app):
-#     """Setup sphinx docs"""
-#     app.connect("autodoc-skip-member", skip)
-
+def setup(app):
+    """Setup sphinx docs"""
+    app.connect("autodoc-skip-member", skip)
 
 # -- Project information -----------------------------------------------------
 
@@ -35,15 +34,16 @@ copyright = '2021, Greg Pauloski'
 author = 'Greg Pauloski'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.1.1'
 
+todo_include_todos = True
 
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.todo']
 
 # Add any paths that contain templates here, relative to this directory.
 # templates_path = ['_templates']

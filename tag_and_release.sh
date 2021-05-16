@@ -3,6 +3,8 @@
 VERSION=$1
 
 PS_VERSION=$(python -c "import proxystore; print(proxystore.__version__)")
+DOC_VERSION=($(cat docs/conf.py | grep release))
+DOC_VERSION={$DOC_VERSION[3]}
 
 if [[ $PS_VERSION == $VERSION ]]
 then
@@ -12,6 +14,13 @@ else
     exit -1
 fi
 
+if [[ $DOC_VERSION == $VERSION ]]
+then
+    echo "Documentation version requested matches package version: $VERSION"
+else
+    echo "[ERROR] Version mismatch. User request: $VERSION while documentation version is: $DOC_VERSION"
+    exit -1
+fi
 
 create_tag () {
 

@@ -66,13 +66,15 @@ if __name__ == '__main__':
     sum_uuid = fxc.register_function(app_sum)
 
     if args.proxy:
-        ps.init_redis_backend(hostname='127.0.0.1', port=args.redis_port)
+        store = ps.store.init_store(
+            'redis', hostname='127.0.0.1', port=args.redis_port
+        )
 
     batch = fxc.create_batch()
     for i in range(args.num_arrays):
         x = np.random.rand(args.size, args.size)
         if args.proxy:
-            x = ps.to_proxy(x)
+            x = store.proxy(x)
         batch.add(x, endpoint_id=args.funcx_endpoint, function_id=double_uuid)
 
     batch_res = fxc.batch_run(batch)
@@ -86,7 +88,7 @@ if __name__ == '__main__':
     ]
 
     if args.proxy:
-        mapped_results = ps.to_proxy(mapped_results)
+        mapped_results = store.proxy(mapped_results)
     total = fxc.run(
         mapped_results, endpoint_id=args.funcx_endpoint, function_id=sum_uuid
     )

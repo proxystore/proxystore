@@ -12,6 +12,9 @@ echo "Started Redis on localhost:$PORT"
 echo "Starting local default FuncX endpoint"
 funcx-endpoint start default
 
+FUNCX_ENDPOINT=($(funcx-endpoint list | grep default))
+FUNCX_ENDPOINT=${FUNCX_ENDPOINT[5]}
+
 echo "Running mapreduce.py without ProxyStore"
 time python mapreduce.py -n $ARRAY_SIZE -s $ARRAY_SIZE -f $FUNCX_ENDPOINT
 
