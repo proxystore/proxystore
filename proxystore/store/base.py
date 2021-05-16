@@ -7,6 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 import proxystore as ps
+from proxystore.factory import Factory
 from proxystore.store.cache import LRUCache
 
 
@@ -76,16 +77,26 @@ class Store(ABC):
 
     @abstractmethod
     def proxy(
-        self, obj: Optional[object] = None, key: Optional[str] = None, **kwargs
+        self,
+        obj: Optional[object] = None,
+        key: Optional[str] = None,
+        *,
+        factory: Factory = Factory,
+        **kwargs,
     ) -> 'ps.proxy.Proxy':
         """Create a proxy that will resolve to an object in the store
 
         Args:
             obj (object): object to place in store and return proxy for.
                 If an object is not provided, a key must be provided that
-                corresponds to an object already in the store.
+                corresponds to an object already in the store
+                (default: None).
             key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated.
+                If not provided, a key will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxy. The factory class should be able
+                to correctly resolve the object from this store
+                (default: :any:`Factory <proxystore.factory.Factory>`).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:

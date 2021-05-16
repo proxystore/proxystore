@@ -114,18 +114,26 @@ class LocalStore(Store):
         return key in self._store
 
     def proxy(
-        self, obj: Optional[object] = None, key: Optional[str] = None, **kwargs
+        self,
+        obj: Optional[object] = None,
+        key: Optional[str] = None,
+        *,
+        factory: Factory = LocalFactory,
+        **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
         """Create a proxy that will resolve to an object in the store
 
         Args:
             obj (object): object to place in store and return proxy for.
                 If an object is not provided, a key must be provided that
-                corresponds to an object already in the store.
+                corresponds to an object already in the store (default: None).
             key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated.
-            kwargs (dict): additional arguments to pass to the
-                :class:`LocalFactory <.LocalFactory>`.
+                If not provided, a key will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxy. The factory class should be able
+                to correctly resolve the object from this store
+                (default: :class:`LocalFactory <.LocalFactory>`).
+            kwargs (dict): additional arguments to pass to the factory.
 
         Returns:
             :any:`Proxy <proxystore.proxy.Proxy>`
@@ -146,7 +154,7 @@ class LocalStore(Store):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
-        return Proxy(LocalFactory(key=key, **kwargs))
+        return Proxy(factory(key=key, **kwargs))
 
     def set(self, key: str, obj: Any) -> None:
         """Set key-object pair in store
