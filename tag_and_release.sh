@@ -3,8 +3,15 @@
 VERSION=$1
 
 PS_VERSION=$(python -c "import proxystore; print(proxystore.__version__)")
-DOC_VERSION=($(cat docs/conf.py | grep release))
-DOC_VERSION={$DOC_VERSION[3]}
+
+# Get line from conf.py that is "release = 'x.x.x'"
+DOC_VERSION=$(cat docs/conf.py | grep release)
+# Convert to array
+DOC_VERSION=($DOC_VERSION)
+# Get third element
+DOC_VERSION=${DOC_VERSION[2]}
+# Remove quotes around version number
+DOC_VERSION="${DOC_VERSION:1:${#DOC_VERSION}-2}"
 
 if [[ $PS_VERSION == $VERSION ]]
 then
