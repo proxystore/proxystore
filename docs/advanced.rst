@@ -82,7 +82,9 @@ Redis Example
 
    import proxystore as ps
 
-   store = ps.store.init_store('redis', hostname=REDIS_HOST, port=REDIS_PORT)
+   store = ps.store.init_store(
+       ps.store.STORES.REDIS, name='redis', hostname=REDIS_HOST, port=REDIS_PORT
+   )
 
    # An already initialized store can be retrieved
    store = ps.store.get_store('redis')

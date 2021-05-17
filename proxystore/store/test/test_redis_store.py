@@ -26,18 +26,26 @@ def init() -> None:
 
 def test_redis_store_init() -> None:
     """Test RedisStore Initialization"""
-    RedisStore(REDIS_HOST, REDIS_PORT)
+    RedisStore('redis', REDIS_HOST, REDIS_PORT)
 
-    ps.store.init_store('redis', REDIS_HOST, REDIS_PORT)
+    ps.store.init_store(
+        ps.store.STORES.REDIS, 'redis', hostname=REDIS_HOST, port=REDIS_PORT
+    )
 
     with raises(ValueError):
         # Negative cache_size error
-        ps.store.init_store('redis', REDIS_HOST, REDIS_PORT, cache_size=-1)
+        ps.store.init_store(
+            ps.store.STORES.REDIS,
+            'redis',
+            hostname=REDIS_HOST,
+            port=REDIS_PORT,
+            cache_size=-1,
+        )
 
 
 def test_redis_store_base() -> None:
     """Test RedisStore Base Functionality"""
-    store = RedisStore(REDIS_HOST, REDIS_PORT)
+    store = RedisStore('redis', REDIS_HOST, REDIS_PORT)
     value = 'test_value'
 
     # RedisStore.set()
@@ -75,7 +83,7 @@ def test_redis_store_base() -> None:
 
 def test_redis_store_caching() -> None:
     """Test RedisStore Caching"""
-    store = RedisStore(REDIS_HOST, REDIS_PORT, cache_size=1)
+    store = RedisStore('redis', REDIS_HOST, REDIS_PORT, cache_size=1)
 
     # Add our test value
     value = 'test_value'
@@ -98,7 +106,7 @@ def test_redis_store_caching() -> None:
     assert store.is_cached('cache_key2')
 
     # Now test cache size 0
-    store = RedisStore(REDIS_HOST, REDIS_PORT, cache_size=0)
+    store = RedisStore('redis', REDIS_HOST, REDIS_PORT, cache_size=0)
     store.set('cache_key', value)
     assert store.get('cache_key') == value
     assert not store.is_cached('cache_key')
@@ -106,7 +114,9 @@ def test_redis_store_caching() -> None:
 
 def test_redis_store_strict() -> None:
     """Test RedisStore Strict Guarentees"""
-    store = RedisStore(hostname=REDIS_HOST, port=REDIS_PORT, cache_size=1)
+    store = RedisStore(
+        'redis', hostname=REDIS_HOST, port=REDIS_PORT, cache_size=1
+    )
 
     # Add our test value
     value = 'test_value'
@@ -132,7 +142,9 @@ def test_redis_store_strict() -> None:
 
 def test_redis_store_custom_serialization() -> None:
     """Test RedisStore Custom Serialization"""
-    store = RedisStore(hostname=REDIS_HOST, port=REDIS_PORT, cache_size=1)
+    store = RedisStore(
+        'redis', hostname=REDIS_HOST, port=REDIS_PORT, cache_size=1
+    )
 
     # Pretend serialized string
     s = 'ABC'
@@ -146,15 +158,17 @@ def test_redis_store_custom_serialization() -> None:
 
 def test_redis_factory() -> None:
     """Test RedisFactory"""
-    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT)
+    store = ps.store.init_store(
+        ps.store.STORES.REDIS, 'redis', hostname=REDIS_HOST, port=REDIS_PORT
+    )
     store.set('key', [1, 2, 3])
 
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = RedisFactory('key', REDIS_HOST, REDIS_PORT)
+    f = RedisFactory('key', 'redis', REDIS_HOST, REDIS_PORT)
     assert f() == [1, 2, 3]
 
-    f2 = RedisFactory('key', REDIS_HOST, REDIS_PORT, evict=True)
+    f2 = RedisFactory('key', 'redis', REDIS_HOST, REDIS_PORT, evict=True)
     assert store.exists('key')
     assert f2() == [1, 2, 3]
     assert not store.exists('key')
@@ -162,7 +176,7 @@ def test_redis_factory() -> None:
     store.set('key', [1, 2, 3])
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = RedisFactory('key', REDIS_HOST, REDIS_PORT)
+    f = RedisFactory('key', 'redis', REDIS_HOST, REDIS_PORT)
     f.resolve_async()
     assert f._obj_future is not None
     assert f() == [1, 2, 3]
@@ -180,7 +194,9 @@ def test_redis_factory() -> None:
 
 def test_redis_store_proxy() -> None:
     """Test RedisStore Proxying"""
-    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT)
+    store = ps.store.init_store(
+        ps.store.STORES.REDIS, 'redis', hostname=REDIS_HOST, port=REDIS_PORT
+    )
 
     p = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)
@@ -210,7 +226,9 @@ def test_redis_store_proxy() -> None:
 
 def test_proxy_recreates_store() -> None:
     """Test RedisStore Proxy with RedisFactory can Recreate the Store"""
-    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT, cache_size=0)
+    store = ps.store.init_store(
+        'redis', 'redis', hostname=REDIS_HOST, port=REDIS_PORT, cache_size=0
+    )
 
     p = store.proxy([1, 2, 3], key='recreate_key')
 
@@ -225,7 +243,9 @@ def test_proxy_recreates_store() -> None:
     assert not ps.store.get_store('redis').is_cached('recreate_key')
 
     # Repeat above but with cache_size=1
-    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT, cache_size=1)
+    store = ps.store.init_store(
+        'redis', 'redis', hostname=REDIS_HOST, port=REDIS_PORT, cache_size=1
+    )
     p = store.proxy([1, 2, 3], key='recreate_key')
     ps.store._stores = {}
     assert p == [1, 2, 3]

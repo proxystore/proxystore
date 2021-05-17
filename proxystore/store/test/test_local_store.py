@@ -10,14 +10,14 @@ from proxystore.store.local import LocalFactory
 
 def test_local_store_init() -> None:
     """Test LocalStore Initialization"""
-    LocalStore()
+    LocalStore(name='local')
 
-    ps.store.init_store('local')
+    ps.store.init_store('local', name='local')
 
 
 def test_local_store_base() -> None:
     """Test LocalStore Base Functionality"""
-    store = LocalStore()
+    store = LocalStore(name='local')
     value = 'test_value'
 
     # LocalStore.set()
@@ -55,26 +55,26 @@ def test_local_store_base() -> None:
 
 def test_local_factory() -> None:
     """Test LocalFactory"""
-    f = LocalFactory('key')
+    f = LocalFactory('key', name='local')
     # Force delete LocalStore backend if it exists so resolving factory
     # raises not initialized error
     ps.store._stores = {}
     with raises(RuntimeError):
         f()
 
-    store = ps.store.init_store('local')
+    store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
     store.set('key', [1, 2, 3])
-    f = LocalFactory('key')
+    f = LocalFactory('key', name='local')
     assert f() == [1, 2, 3]
 
-    f2 = LocalFactory('key', evict=True)
+    f2 = LocalFactory('key', name='local', evict=True)
     assert store.exists('key')
     assert f2() == [1, 2, 3]
     assert not store.exists('key')
 
     store.set('key', [1, 2, 3])
-    f = LocalFactory('key')
+    f = LocalFactory('key', name='local')
     f.resolve_async()
     assert f() == [1, 2, 3]
 
@@ -85,7 +85,7 @@ def test_local_factory() -> None:
 
 def test_local_store_proxy() -> None:
     """Test LocalStore Proxying"""
-    store = ps.store.init_store('local')
+    store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
     p = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)

@@ -14,9 +14,13 @@ from proxystore.store.cache import LRUCache
 class Store(ABC):
     """Abstraction of a key-value store"""
 
-    def __init__(self) -> None:
-        """Init Store"""
-        raise NotImplementedError
+    def __init__(self, name) -> None:
+        """Init Store
+
+        Args:
+            name (str): name of the store instance.
+        """
+        self.name = name
 
     @abstractmethod
     def evict(self, key: str) -> None:
@@ -146,10 +150,11 @@ class RemoteStore(Store, ABC):
     provided in :func:`get()` and :func:`set()`.
     """
 
-    def __init__(self, cache_size: int = 0) -> None:
+    def __init__(self, name: str, cache_size: int = 0) -> None:
         """Init RemoteStore
 
         Args:
+            name (str): name of the store instance.
             cache_size (int): size of local cache (in # of objects). If 0,
                 the cache is disabled (default: 0).
 
@@ -159,6 +164,8 @@ class RemoteStore(Store, ABC):
         """
         if cache_size < 0:
             raise ValueError('Cache size cannot be negative')
+        self.name = name
+        self.cache_size = cache_size
         self._cache = LRUCache(cache_size) if cache_size > 0 else None
 
     @abstractmethod

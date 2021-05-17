@@ -1,22 +1,27 @@
+from enum import Enum as _Enum
+from typing import Union as _Union
+
 from proxystore.store.base import Store as _Store
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
 
 __all__ = ['get_store', 'init_store']
 
-_STORE_NAME_TO_TYPE = {
-    'local': _LocalStore,
-    'redis': _RedisStore,
-}
-
 _stores = {}
+
+
+class STORES(_Enum):
+    """Store options"""
+
+    LOCAL = _LocalStore
+    REDIS = _RedisStore
 
 
 def get_store(name: str) -> _Store:
     """Get the backend store with name
 
     Args:
-        name (str): name of store to get.
+        name (str): name store to get.
 
     Returns:
         :any:`Store <proxystore.store.base.Store>` if store with `name` exists
@@ -27,7 +32,7 @@ def get_store(name: str) -> _Store:
     return None
 
 
-def init_store(name: str, *args, **kwargs) -> _Store:
+def init_store(store_type: _Union[str, STORES], name: str, **kwargs) -> _Store:
     """Initializes a backend store
 
     Note:
@@ -36,8 +41,9 @@ def init_store(name: str, *args, **kwargs) -> _Store:
         may have changed.
 
     Args:
-        name (str): name of store to initialize.
-        args (list): args to pass to store constructor.
+        store_type (str, STORES): type of store to initialize.
+        name (str): unique name of store. The name is needed to get the store
+            again with :func:`get_store() <.get_store>`.
         kwargs (dict): keyword args to pass to store constructor.
 
     Returns:
@@ -45,13 +51,22 @@ def init_store(name: str, *args, **kwargs) -> _Store:
 
     Raises:
         ValueError:
-            if a store corresponding to `name` is not found.
+            if a store corresponding to `store_type` is not found.
+        ValueError:
+            if `store_type` is not a `str` or member of
+            :class:`STORES <.STORES>`.
     """
-    if name in _STORE_NAME_TO_TYPE:
-        store_class = _STORE_NAME_TO_TYPE[name]
-    else:
-        raise ValueError(f'No store with name {name}')
+    if isinstance(store_type, str):
+        try:
+            store_type = STORES[store_type.upper()]
+        except KeyError:
+            raise ValueError(f'No store with name {store_type}.')
+    elif not isinstance(store_type, STORES):
+        raise ValueError(
+            'Arg store_type must be str or member of proxystore.store.STORES.'
+            f'Found type f{type(store_type)} instead.'
+        )
 
-    _stores[name] = store_class(*args, **kwargs)
+    _stores[name] = store_type.value(name, **kwargs)
 
     return _stores[name]

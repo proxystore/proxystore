@@ -17,11 +17,12 @@ class LocalFactory(Factory):
     the key in the :any:`LocalStore <proxystore.store.local.LocalStore>`.
     """
 
-    def __init__(self, key: str, *, evict: bool = False) -> None:
+    def __init__(self, key: str, name: str, *, evict: bool = False) -> None:
         """Init LocalFactory
 
         Args:
             key (str): key corresponding to object in store.
+            name (str): name of store that created this factory.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
 
@@ -31,11 +32,12 @@ class LocalFactory(Factory):
                 has not been initialized.
         """
         self.key = key
+        self.name = name
         self.evict = evict
 
     def resolve(self) -> Any:
         """Resolve and return object from store"""
-        store = ps.store.get_store('local')
+        store = ps.store.get_store(self.name)
         if store is None:
             raise RuntimeError(
                 'LocalStore is not initalized, cannot resolve factory'
@@ -47,15 +49,20 @@ class LocalFactory(Factory):
 
     def __getnewargs_ex__(self):
         """Helper method for pickling"""
-        return (self.key,), {'evict': self.evict}
+        return (self.key, self.name), {'evict': self.evict}
 
 
 class LocalStore(Store):
     """Local Memory Key-Object Store"""
 
-    def __init__(self) -> None:
-        """Init Store"""
+    def __init__(self, name: str) -> None:
+        """Init Store
+
+        Args:
+            name (str): name of this store instance.
+        """
         self._store = {}
+        super(LocalStore, self).__init__(name)
 
     def evict(self, key: str) -> None:
         """Evict object associated with key
@@ -154,7 +161,7 @@ class LocalStore(Store):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
-        return Proxy(factory(key=key, **kwargs))
+        return Proxy(factory(key=key, name=self.name, **kwargs))
 
     def set(self, key: str, obj: Any) -> None:
         """Set key-object pair in store

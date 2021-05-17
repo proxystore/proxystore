@@ -35,33 +35,58 @@ def test_imports() -> None:
 
     from proxystore.store.local import LocalStore
 
-    LocalStore()
-    ps.store.local.LocalStore()
+    LocalStore(name='local')
+    ps.store.local.LocalStore(name='local')
 
     assert callable(ps.store.init_store)
 
 
 def test_init_store() -> None:
-    """Test init_store"""
-    local = ps.store.init_store('local')
+    """Test init_store/get_store"""
+    from proxystore.store import STORES
+
+    # Init by str name
+    local = ps.store.init_store('local', name='local')
     assert isinstance(local, ps.store.local.LocalStore)
-    redis = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT)
+    redis = ps.store.init_store(
+        'redis', name='redis', hostname=REDIS_HOST, port=REDIS_PORT
+    )
     assert isinstance(redis, ps.store.redis.RedisStore)
 
-    # Should overwrite old store
-    local2 = ps.store.init_store('local')
-    assert local is not local2
-
-    with raises(ValueError):
-        # Raise error for unknown name
-        ps.store.init_store('unknown')
-
-
-def test_get_store() -> None:
-    """Test init_redis_backend"""
-    local = ps.store.init_store('local')
-    redis = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT)
     assert local == ps.store.get_store('local')
     assert redis == ps.store.get_store('redis')
 
+    # Init by enum
+    local = ps.store.init_store(STORES.LOCAL, name='local')
+    assert isinstance(local, ps.store.local.LocalStore)
+    redis = ps.store.init_store(
+        STORES.REDIS, name='redis', hostname=REDIS_HOST, port=REDIS_PORT
+    )
+    assert isinstance(redis, ps.store.redis.RedisStore)
+
+    assert local == ps.store.get_store('local')
+    assert redis == ps.store.get_store('redis')
+
+    # Specify name to have multiple stores of same type
+    local1 = ps.store.init_store(STORES.LOCAL, 'local1')
+    ps.store.init_store(STORES.LOCAL, 'local2')
+
+    assert ps.store.get_store('local1') is not ps.store.get_store('local2')
+
+    # Should overwrite old store
+    ps.store.init_store(STORES.LOCAL, 'local1')
+    assert local1 is not ps.store.get_store('local1')
+
+    # Return None if store with name does not exist
     assert ps.store.get_store('unknown') is None
+
+
+def test_init_store_raises() -> None:
+    """Test init_store raises"""
+    with raises(ValueError):
+        # Raise error because name cannot be found in STORES
+        ps.store.init_store('unknown', name='')
+
+    with raises(ValueError):
+        # Must pass enum type, not Store type
+        ps.store.init_store(ps.store.local.LocalStore, name='')

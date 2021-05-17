@@ -61,7 +61,9 @@ For example, proxies can be created for objects in a Redis server easily.
 
    x = np.array([1, 2, 3])
 
-   store = ps.store.init_store('redis', hostname=REDIS_HOST, port=REDIS_PORT)
+   store = ps.store.init_store(
+       'redis', name='redis', hostname=REDIS_HOST, port=REDIS_PORT
+   )
    p = store.proxy(x)
 
 A :any:`RedisStore <proxystore.store.redis.RedisStore>` interface is initialized to connect to a Redis server hosted at :code:`REDIS_HOST:REDIS_PORT`.

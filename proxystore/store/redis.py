@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 try:
     import redis
@@ -36,18 +36,20 @@ class RedisFactory(Factory):
     def __init__(
         self,
         key: str,
+        name: str,
         hostname: str,
         port: str,
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
-        **kwargs,
+        **kwargs: Dict[str, Any],
     ) -> None:
         """Init RedisFactory
 
         Args:
             key (str): key corresponding to object in store.
+            name (str): name of store to retrieve object from.
             hostname (str): hostname of Redis server.
             port (int): port Redis server.
             evict (bool): If True, evict the object from the store once
@@ -57,11 +59,11 @@ class RedisFactory(Factory):
             strict (bool): guarentee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
-            kwargs (dict): additional arguments to
-                :class:`RedisStore <.RedisStore>` needed to rebuild the instance
-                of the store.
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`RedisStore <.RedisStore>` to rebuild the instance
         """
         self.key = key
+        self.name = name
         self.hostname = hostname
         self.port = port
         self.evict = evict
@@ -72,7 +74,7 @@ class RedisFactory(Factory):
 
     def __getnewargs_ex__(self):
         """Helper method for pickling"""
-        return (self.key, self.hostname, self.port), {
+        return (self.key, self.name, self.hostname, self.port), {
             'evict': self.evict,
             'serialize': self.serialize,
             'strict': self.strict,
@@ -86,10 +88,14 @@ class RedisFactory(Factory):
             self._obj_future = None
             return obj
 
-        store = ps.store.get_store('redis')
+        store = ps.store.get_store(self.name)
         if store is None:
             store = ps.store.init_store(
-                'redis', self.hostname, self.port, **self._kwargs
+                ps.store.STORES.REDIS,
+                self.name,
+                hostname=self.hostname,
+                port=self.port,
+                **self._kwargs,
             )
         obj = store.get(
             self.key, deserialize=self.serialize, strict=self.strict
@@ -100,10 +106,14 @@ class RedisFactory(Factory):
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from Redis"""
-        store = ps.store.get_store('redis')
+        store = ps.store.get_store(self.name)
         if store is None:
             store = ps.store.init_store(
-                'redis', self.hostname, self.port, **self._kwargs
+                ps.store.STORES.REDIS,
+                self.name,
+                hostname=self.hostname,
+                port=self.port,
+                **self._kwargs,
             )
 
         # If the value is locally cached by the value server, starting up
@@ -124,6 +134,7 @@ class RedisStore(RemoteStore):
     """Redis backend class
 
     Args:
+        name (str): name of the store instance.
         hostname (str): Redis server hostname.
         port (int): Redis server port.
         cache_size (int): size of local cache (in # of objects). If 0,
@@ -135,7 +146,13 @@ class RedisStore(RemoteStore):
             is not installed.
     """
 
-    def __init__(self, hostname: str, port: int, cache_size: int = 16) -> None:
+    def __init__(
+        self,
+        name: str,
+        hostname: str,
+        port: int,
+        cache_size: int = 16,
+    ) -> None:
         """Init RedisStore"""
         if isinstance(redis, ImportError):  # pragma: no cover
             raise ImportError(
@@ -148,8 +165,7 @@ class RedisStore(RemoteStore):
         self._redis_client = redis.StrictRedis(
             host=hostname, port=port, decode_responses=True
         )
-        self._cache_size = cache_size
-        super(RedisStore, self).__init__(self._cache_size)
+        super(RedisStore, self).__init__(name, cache_size=cache_size)
 
     def evict(self, key: str) -> None:
         """Evict object associated with key from Redis
@@ -238,9 +254,10 @@ class RedisStore(RemoteStore):
         return Proxy(
             factory(
                 key,
+                self.name,
                 self.hostname,
                 self.port,
-                cache_size=self._cache_size,
+                cache_size=self.cache_size,
                 **kwargs,
             )
         )

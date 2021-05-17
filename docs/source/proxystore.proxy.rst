@@ -4,6 +4,7 @@ proxystore.proxy
 .. automodule:: proxystore.proxy
    :members:
    :inherited-members:
+   :show-inheritance:
 
 .. class:: proxystore.proxy.Proxy(factory: proxystore.factory.Factory) 
 
