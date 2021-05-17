@@ -86,6 +86,15 @@ class Store(ABC):
     ) -> 'ps.proxy.Proxy':
         """Create a proxy that will resolve to an object in the store
 
+        Warning:
+            If the factory requires reinstantiating the store to correctly
+            resolve the object, the factory should reinstantiate the store
+            with the same arguments used to instantiate the store that
+            created the proxy/factory. I.e. the :func:`proxy()` function
+            should pass any arguments given to :func:`Store.__init__()`
+            along to the factory so the factory can correctly recreate the
+            store if the factory is resolved in a different Python process.
+
         Args:
             obj (object): object to place in store and return proxy for.
                 If an object is not provided, a key must be provided that

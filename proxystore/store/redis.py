@@ -42,6 +42,7 @@ class RedisFactory(Factory):
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
+        **kwargs,
     ) -> None:
         """Init RedisFactory
 
@@ -56,6 +57,9 @@ class RedisFactory(Factory):
             strict (bool): guarentee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
+            kwargs (dict): additional arguments to
+                :class:`RedisStore <.RedisStore>` needed to rebuild the instance
+                of the store.
         """
         self.key = key
         self.hostname = hostname
@@ -63,6 +67,7 @@ class RedisFactory(Factory):
         self.evict = evict
         self.serialize = serialize
         self.strict = strict
+        self._kwargs = kwargs
         self._obj_future = None
 
     def __getnewargs_ex__(self):
@@ -71,6 +76,7 @@ class RedisFactory(Factory):
             'evict': self.evict,
             'serialize': self.serialize,
             'strict': self.strict,
+            **self._kwargs,
         }
 
     def resolve(self) -> Any:
@@ -82,7 +88,9 @@ class RedisFactory(Factory):
 
         store = ps.store.get_store('redis')
         if store is None:
-            store = ps.store.init_store('redis', self.hostname, self.port)
+            store = ps.store.init_store(
+                'redis', self.hostname, self.port, **self._kwargs
+            )
         obj = store.get(
             self.key, deserialize=self.serialize, strict=self.strict
         )
@@ -94,7 +102,9 @@ class RedisFactory(Factory):
         """Asynchronously get object associated with key from Redis"""
         store = ps.store.get_store('redis')
         if store is None:
-            store = ps.store.init_store('redis', self.hostname, self.port)
+            store = ps.store.init_store(
+                'redis', self.hostname, self.port, **self._kwargs
+            )
 
         # If the value is locally cached by the value server, starting up
         # a separate thread to retrieve a cached value will be slower than
@@ -138,7 +148,8 @@ class RedisStore(RemoteStore):
         self._redis_client = redis.StrictRedis(
             host=hostname, port=port, decode_responses=True
         )
-        super(RedisStore, self).__init__(cache_size)
+        self._cache_size = cache_size
+        super(RedisStore, self).__init__(self._cache_size)
 
     def evict(self, key: str) -> None:
         """Evict object associated with key from Redis
@@ -224,4 +235,12 @@ class RedisStore(RemoteStore):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
-        return Proxy(factory(key, self.hostname, self.port, **kwargs))
+        return Proxy(
+            factory(
+                key,
+                self.hostname,
+                self.port,
+                cache_size=self._cache_size,
+                **kwargs,
+            )
+        )

@@ -206,3 +206,27 @@ def test_redis_store_proxy() -> None:
         # Array will not be serialized and should raise error when putting
         # array into Redis
         store.proxy(np.ndarray([1, 2, 3]), serialize=False)
+
+
+def test_proxy_recreates_store() -> None:
+    """Test RedisStore Proxy with RedisFactory can Recreate the Store"""
+    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT, cache_size=0)
+
+    p = store.proxy([1, 2, 3], key='recreate_key')
+
+    # Force delete store so proxy recreates it when resolved
+    ps.store._stores = {}
+
+    # Resolve the proxy
+    assert p == [1, 2, 3]
+
+    # The store that created the proxy had cache_size=0 so the restored
+    # store should also have cache_size=0.
+    assert not ps.store.get_store('redis').is_cached('recreate_key')
+
+    # Repeat above but with cache_size=1
+    store = ps.store.init_store('redis', REDIS_HOST, REDIS_PORT, cache_size=1)
+    p = store.proxy([1, 2, 3], key='recreate_key')
+    ps.store._stores = {}
+    assert p == [1, 2, 3]
+    assert ps.store.get_store('redis').is_cached('recreate_key')
