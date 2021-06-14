@@ -6,7 +6,7 @@ object from wherever it is stored such that the proxy can act as the
 object.
 """
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable
+from typing import Any, Callable, Dict, Tuple
 
 _default_pool = ThreadPoolExecutor()
 
@@ -83,29 +83,36 @@ class SimpleFactory(Factory):
 class LambdaFactory(Factory):
     """Factory that takes any callable object"""
 
-    def __init__(self, func: Callable) -> None:
+    def __init__(self, target: Callable, *args: Tuple, **kwargs: Dict) -> None:
         """Init LambdaFactory
 
         Args:
-            func (callable): callable object (function, class, lambda) that
-                when called produces an object.
+            target (callable): callable object (function, class, lambda) to be
+                invoked when the factory is resolved.
+            args (tuple): argument tuple for target invocation (default: ()).
+            kwargs (dict): dictionary of keyword arguments for target
+                invocation (default: {}).
         """
-        self._func = func
+        self._target = target
+        self._args = args
+        self._kwargs = kwargs
         self._obj_future = None
 
     def resolve(self) -> Any:
-        """Calls `func` and returns result"""
+        """Calls `target` and returns result"""
         if self._obj_future is not None:
             obj = self._obj_future.result()
             self._obj_future = None
             return obj
 
-        return self._func()
+        return self._target(*self._args, **self._kwargs)
 
     def resolve_async(self) -> None:
-        """Calls `func` in separate thread and save future internally
+        """Calls `target` in separate thread and save future internally
 
         A subsequent call to :func:`resolve` will wait on the future and
         return the result.
         """
-        self._obj_future = _default_pool.submit(self._func)
+        self._obj_future = _default_pool.submit(
+            self._target, *self._args, **self._kwargs
+        )
