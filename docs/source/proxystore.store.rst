@@ -5,6 +5,7 @@ proxystore.store
 
    proxystore.store.base
    proxystore.store.cache
+   proxystore.store.file
    proxystore.store.local
    proxystore.store.redis
 

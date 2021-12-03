@@ -52,6 +52,9 @@ def test_local_store_base() -> None:
     assert not store.is_cached('key_str')
     store.evict('key_fake')
 
+    # Should be a no-op
+    store.cleanup()
+
 
 def test_local_factory() -> None:
     """Test LocalFactory"""

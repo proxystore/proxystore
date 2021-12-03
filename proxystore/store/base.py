@@ -22,6 +22,19 @@ class Store(ABC):
         """
         self.name = name
 
+    def cleanup(self) -> None:
+        """Cleanup any objects associated with the store
+
+        Many :class:`Store <.Store>` types do not have any objects that
+        requiring cleaning up so this method is simply a no-op.
+
+        Warning:
+            This method should only be called at the end of the program
+            when the store will no longer be used, for example once all
+            proxies have been resolved.
+        """
+        pass
+
     @abstractmethod
     def evict(self, key: str) -> None:
         """Evict object associated with key

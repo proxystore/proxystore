@@ -2,6 +2,7 @@ from enum import Enum as _Enum
 from typing import Union as _Union
 
 from proxystore.store.base import Store as _Store
+from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
 
@@ -15,6 +16,7 @@ class STORES(_Enum):
 
     LOCAL = _LocalStore
     REDIS = _RedisStore
+    FILE = _FileStore
 
 
 def get_store(name: str) -> _Store:
