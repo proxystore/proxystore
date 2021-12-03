@@ -14,9 +14,7 @@ def test_file_store_init() -> None:
     """Test FileStore Initialization"""
     FileStore('files', STORE_DIR)
 
-    ps.store.init_store(
-        ps.store.STORES.FILE, 'files', store_dir=STORE_DIR
-    )
+    ps.store.init_store(ps.store.STORES.FILE, 'files', store_dir=STORE_DIR)
 
     with raises(ValueError):
         # Negative cache_size error
