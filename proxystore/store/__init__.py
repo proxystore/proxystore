@@ -3,6 +3,7 @@ from typing import Union as _Union
 
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore
+from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
 
@@ -14,6 +15,7 @@ _stores = {}
 class STORES(_Enum):
     """Store options"""
 
+    GLOBUS = _GlobusStore
     LOCAL = _LocalStore
     REDIS = _RedisStore
     FILE = _FileStore

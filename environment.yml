@@ -21,3 +21,4 @@ dependencies:
         - black
         - funcx
         - funcx_endpoint
+        - globus-sdk
