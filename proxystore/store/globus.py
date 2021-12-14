@@ -75,6 +75,7 @@ class GlobusFactory(Factory):
         key: str,
         name: str,
         endpoints: Union[GlobusEndpoints, List[GlobusEndpoint]],
+        sync_level: Union[str, int],
         *,
         evict: bool = False,
         serialize: bool = True,
@@ -84,6 +85,7 @@ class GlobusFactory(Factory):
         self.key = key
         self.name = name
         self.endpoints = endpoints
+        self.sync_level = sync_level
         self.evict = evict
         self.serialize = serialize
         self.strict = strict
@@ -92,7 +94,7 @@ class GlobusFactory(Factory):
     
     def __getnewargs_ex__(self):
         """Helper method for pickling"""
-        return (self.key, self.name, self.endpoints), {
+        return (self.key, self.name, self.endpoints, self.sync_level), {
             'evict': self.evict,
             'serialize': self.serialize,
             'strict': self.strict,
@@ -112,6 +114,7 @@ class GlobusFactory(Factory):
                 ps.store.STORES.GLOBUS,
                 self.name,
                 endpoints=self.endpoints,
+                sync_level=self.sync_level,
                 **self._kwargs,
             )
 
@@ -130,6 +133,7 @@ class GlobusFactory(Factory):
                 ps.store.STORES.GLOBUS,
                 self.name,
                 endpoints=self.endpoints,
+                sync_level=self.sync_level,
                 **self._kwargs,
             )
 
@@ -238,7 +242,15 @@ class GlobusStore(RemoteStore):
                 destination_endpoint=dst_endpoint.uuid,
                 sync_level=self.sync_level,
                 delete_destination_extra=True,
+                #additional_fields={
+                #    'notify_on_succeeded': False,
+                #    'notify_on_failed': False,
+                #    'notify_on_inactive': False,
+                #}
             )
+            transfer_task['notify_on_succeeded'] = False
+            transfer_task['notify_on_failed'] = False
+            transfer_task['notify_on_inactive'] = False
             transfer_task.add_item(
                 source_path=src_endpoint.endpoint_path,
                 destination_path=dst_endpoint.endpoint_path,
@@ -334,6 +346,7 @@ class GlobusStore(RemoteStore):
                 key,
                 self.name,
                 self.endpoints,
+                self.sync_level,
                 cache_size=self.cache_size,
                 **kwargs,
             )
