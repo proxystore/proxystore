@@ -11,11 +11,13 @@ import globus_sdk
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
-from proxystore.store.base import RemoteStore
+from proxystore.store.base import Store
+from proxystore.store.cache import LRUCache
 
 _default_pool = ThreadPoolExecutor()
 
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = "ExternalError.MkdirFailed.Exists"
+
 
 class GlobusEndpoint():
     def __init__(
@@ -25,6 +27,17 @@ class GlobusEndpoint():
         local_path: Optional[str],
         host_regex: Union[str, Pattern[str]],
     ) -> None:
+        if not isinstance(uuid, str):
+            raise TypeError('uuid must be a str.')
+        if not isinstance(endpoint_path, str):
+            raise TypeError('endpoint_path must be a str.')
+        if not isinstance(local_path, str):
+            raise TypeError('local_path must be a str.')
+        if not (
+            isinstance(host_regex, str) or isinstance(host_regex, Pattern)
+        ):
+            raise TypeError('host_regex must be a str or re.Pattern.')
+
         self.uuid = uuid
         self.endpoint_path = endpoint_path
         self.local_path = local_path
@@ -42,12 +55,24 @@ class GlobusEndpoint():
 
 
 class GlobusEndpoints():
-    def __init__(self, endpoints: List[GlobusEndpoint]) -> None:
+    def __init__(self, *endpoints: List[GlobusEndpoint]) -> None:
+        if len(endpoints) == 1 and isinstance(endpoints[0], list):
+            endpoints = endpoints[0]
+        if len(endpoints) == 0:
+            raise ValueError(
+                'GlobusEndpoints must be passed at least one GlobusEndpoint '
+                'object'
+            )
         self._endpoints = {}
         for endpoint in endpoints:
+            if endpoint.uuid in self._endpoints:
+                raise ValueError(
+                    'Cannot pass multiple GlobusEndpoint objects with the '
+                    'same Globus endpoint UUID.'
+                )
             self._endpoints[endpoint.uuid] = endpoint
 
-    def __getitem__(self, key):
+    def __getitem__(self, uuid):
         try:
             return self._endpoints[uuid]
         except KeyError as e:
@@ -61,12 +86,14 @@ class GlobusEndpoints():
                 yield endpoint
         return _iterator()
 
+    def __len__(self):
+        return len(self._endpoints)
+
     def get_by_host(self, host):
         for endpoint in self._endpoints.values():
             if re.fullmatch(endpoint.host_regex, host) is not None:
                 return endpoint
-        # TODO(gpauloski): raise exception instead?
-        return None
+        raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
 class GlobusFactory(Factory):
@@ -151,7 +178,7 @@ class GlobusFactory(Factory):
         )
 
 
-class GlobusStore(RemoteStore):
+class GlobusStore(Store):
     """Globus backend class"""
 
     def __init__(
@@ -162,8 +189,6 @@ class GlobusStore(RemoteStore):
         cache_size: int = 16,
     ) -> None:
         """Init GlobusStore"""
-        # TODO(gpauloski): set sync level
-        # TODO(gpauloski): change to recursive sync on directory
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
         elif isinstance(endpoints, list):
@@ -173,10 +198,16 @@ class GlobusStore(RemoteStore):
                 "endpoints must be of type GlobusEndpoints or a list of "
                 f"GlobusEndpoint. Got {type(endpoints)}."
             )
+        if len(endpoints) != 2:
+            raise ValueError(
+                "ProxyStore only supports two endpoints at a time"
+            )
+        if cache_size < 0:
+            raise ValueError('Cache size cannot be negative')
+        self.name = name
         self.sync_level = sync_level
-        
-        super(GlobusStore, self).__init__(name, cache_size=cache_size)
-
+        self.cache_size = cache_size
+        self._cache = LRUCache(cache_size) if cache_size > 0 else None
 
         from parsl.data_provider.globus import get_globus
 
@@ -186,27 +217,38 @@ class GlobusStore(RemoteStore):
             authorizer=parsl_globus_auth.authorizer
         )
 
-        # Make local directories in each endpoint
-        for endpoint in self.endpoints:
-            try:
-                response = self._transfer_client.operation_mkdir(
-                    endpoint.uuid, endpoint.endpoint_path
-                )
-            except globus_sdk.TransferAPIError as e:
-                if e.code != GLOBUS_MKDIR_EXISTS_ERROR_CODE:
-                    print(
-                        f'Failed to create directory {endpoint.endpoint_path} '
-                        f'at endpoint {endpoint.uuid}: {e.message}'
-                    )
+    def _create_key(self, filename: str, task_id: str) -> str:
+        return f"{task_id}:{filename}"
+    
+    def _get_filename(self, key: str) -> str:
+        return key.split(":")[1]
+
+    def _get_filepath(self, key: str = None, filename: str = None) -> str:
+        if key is not None and filename is not None:
+            raise ValueError("Only one of key or filename may be specified")
+        local_endpoint = self._get_local_endpoint()
+        os.makedirs(local_endpoint.local_path, exist_ok=True)
+        if key is not None:
+            filename = self._get_filename(key)
+        return os.path.join(local_endpoint.local_path, filename)
 
     def _get_local_endpoint(self) -> Optional[GlobusEndpoint]:
+        return self.endpoints.get_by_host(socket.gethostname())
+
+    def _get_task_id(self, key: str) -> str:
+        return key.split(":")[0]
+
+    def _validate_key(self, key: str) -> str:
         try:
-            return self.endpoints.get_by_host(socket.gethostname())
-        except KeyError as e:
-            return None
+            self._transfer_client.get_task(self._get_task_id(key))
+        except globus_sdk.TransferAPIError as e:
+            if e.http_status == 400:
+                return False
+            raise e
+        return True
 
     def _wait_on_tasks(
-        self, *tasks: List[str], timeout: int = 10, polling_interval: int = 1
+        self, *tasks: List[str], timeout: int = 60, polling_interval: int = 1
     ) -> None:
         for task in tasks:
             done = self._transfer_client.task_wait(
@@ -220,43 +262,31 @@ class GlobusStore(RemoteStore):
                     "timeout"
                 )
 
-    def _sync_endpoints(
-        self,
-        src_endpoint: GlobusEndpoint,
-        dst_endpoints: Optional[List[GlobusEndpoint]] = None,
-    ) -> None:
-        # TODO(gpauloski): if we keep this structure, should support single
-        # dst_endpoint and a GlobusEndpoints object
-        if dst_endpoints is None:
-            dst_endpoints = [
-                endpoint for endpoint in self.endpoints
-                if endpoint != src_endpoint
-            ]
+    def _sync_endpoints(self) -> str:
+        src_endpoint = self._get_local_endpoint()
+        dst_endpoint = [ep for ep in self.endpoints if ep != src_endpoint]
+        assert len(dst_endpoint) == 1
+        dst_endpoint = dst_endpoint[0]
 
-        for dst_endpoint in dst_endpoints:
-            if dst_endpoint == src_endpoint:
-                continue
-            transfer_task = globus_sdk.TransferData(
-                self._transfer_client,
-                source_endpoint=src_endpoint.uuid,
-                destination_endpoint=dst_endpoint.uuid,
-                sync_level=self.sync_level,
-                delete_destination_extra=True,
-                #additional_fields={
-                #    'notify_on_succeeded': False,
-                #    'notify_on_failed': False,
-                #    'notify_on_inactive': False,
-                #}
-            )
-            transfer_task['notify_on_succeeded'] = False
-            transfer_task['notify_on_failed'] = False
-            transfer_task['notify_on_inactive'] = False
-            transfer_task.add_item(
-                source_path=src_endpoint.endpoint_path,
-                destination_path=dst_endpoint.endpoint_path,
-                recursive=True,
-            )
-            self._transfer_client.submit_transfer(transfer_task)
+        transfer_task = globus_sdk.TransferData(
+            self._transfer_client,
+            source_endpoint=src_endpoint.uuid,
+            destination_endpoint=dst_endpoint.uuid,
+            sync_level=self.sync_level,
+            delete_destination_extra=True,
+        )
+        transfer_task['notify_on_succeeded'] = False
+        transfer_task['notify_on_failed'] = False
+        transfer_task['notify_on_inactive'] = False
+        transfer_task.add_item(
+            source_path=src_endpoint.endpoint_path,
+            destination_path=dst_endpoint.endpoint_path,
+            recursive=True,
+        )
+
+        tdata = self._transfer_client.submit_transfer(transfer_task)
+        
+        return tdata["task_id"]
 
     def cleanup(self) -> None:
         for endpoint in self.endpoints:
@@ -264,62 +294,76 @@ class GlobusStore(RemoteStore):
                 self._transfer_client,
                 endpoint=endpoint.uuid,
                 recursive=True,
-                additional_fields={
-                    'notify_on_succeeded': False,
-                    'notify_on_failed': False,
-                    'notify_on_inactive': False,
-                }
             )
+            delete_task['notify_on_succeeded'] = False
+            delete_task['notify_on_failed'] = False
+            delete_task['notify_on_inactive'] = False
             delete_task.add_item(endpoint.endpoint_path)
-            self._transfer_client.submit_delete(delete_task)
+            tdata = self._transfer_client.submit_delete(delete_task)
+            self._wait_on_tasks(tdata["task_id"])
 
-    def create_key(self) -> None:
-        return self._transfer_client.get_submission_id()
 
     def evict(self, key: str) -> None:
-        # Delete in local endpoint
-        local_endpoint = self._get_local_endpoint()
-        if local_endpoint is not None:
-            path = os.path.join(local_endpoint.local_path, key)
-            if os.path.exists(path):
-                os.remove(path)
+        if not self.exists(key):
+            return
 
-        # Delete on remote endpoints
-        self._sync_endpoints(key, local_endpoint)
+        path = self._get_filepath(key)
+        if os.path.exists(path):
+            os.remove(path)
+        self._cache.evict(key)
+
+        self._sync_endpoints()
 
     def exists(self, key: str) -> bool:
-        raise NotImplementedError
+        if not self._validate_key(key):
+            return False
+        self._wait_on_tasks(self._get_task_id(key))
+        return os.path.exists(self._get_filepath(key))
 
-    def get_str(self, key: str) -> Optional[str]:
-        local_endpoint = self._get_local_endpoint()
-        #self._wait_on_tasks(key)
-        path = os.path.join(local_endpoint.local_path, key)
+    def get(
+        self,
+        key: str,
+        *,
+        deserialize: bool = True,
+        strict: bool = False,
+        default: Optional[object] = None,
+    ) -> Optional[object]:
+        if self.is_cached(key, strict=strict):
+            return self._cache.get(key)
 
-        # TODO(gpauloski): This is bad
-        import time
-        slept = 0
-        while not os.path.exists(path):
-            slept += 0.1
-            time.sleep(0.1)
-            if slept == 5:
-                break
+        if not self.exists(key):
+            return default
 
-        if os.path.exists(path):
-            with open(path, 'r') as f:
-                data = f.read()
-                return data
-        return None
+        path = self._get_filepath(key)
+        if not os.path.exists(path):
+            return default
+        
+        with open(path, 'r') as f:
+            value = f.read()
 
-    def set_str(self, key: str, data: str) -> None:
-        # TODO(gpauloski): we could cancel tasks instead because
-        # data will be overwritten anyways
-        local_endpoint = self._get_local_endpoint()
-        #self._wait_on_tasks(key)
-        path = os.path.join(local_endpoint.local_path, key)
+        if deserialize:
+            value = ps.serialize.deserialize(value)
+        if self._cache is not None:
+            self._cache.set(key, value)
+        return value
+
+    def is_cached(self, key: str, *, strict: bool = False) -> bool:
+        if self._cache is None:
+            return False
+
+        return self._cache.exists(key)
+
+    def set(self, obj: Any, *, serialize: bool = True) -> str:
+        if serialize: 
+            obj = ps.serialize.serialize(obj)
+
+        filename = ps.utils.create_key(obj)
+        path = self._get_filepath(filename=filename)
         with open(path, 'w') as f:
-            f.write(data)
+            f.write(obj)
 
-        self._sync_endpoints(local_endpoint)
+        tid = self._sync_endpoints()
+        return self._create_key(filename=filename, task_id=tid)
 
     def proxy(
         self,
@@ -329,18 +373,17 @@ class GlobusStore(RemoteStore):
         factory: Factory = GlobusFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        if key is None and obj is None:
-            raise ValueError('At least one of key or obj must be specified')
-        if key is None:
-            key = ps.utils.create_key(obj)
+        if (
+            (key is None and obj is None)
+            or (key is not None and obj is not None)
+        ):
+            raise ValueError('Exactly one of obj and key must be provided')
         if obj is not None:
             if 'serialize' in kwargs:
-                self.set(key, obj, serialize=kwargs['serialize'])
+                key = self.set(obj, serialize=kwargs['serialize'])
             else:
-                self.set(key, obj)
-        else:
-            # TODO(gpauloski)
-            raise NotImplementedError
+                key = self.set(obj)
+        
         return Proxy(
             factory(
                 key,
