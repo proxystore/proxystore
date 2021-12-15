@@ -10,13 +10,7 @@ from typing import List
 
 def app_double(x: np.ndarray) -> np.ndarray:
     """Doubles input array"""
-    #import proxystore as ps
-    #try:
-    #x = ps.serialize.deserialize(x)
     return 2 * x
-    #except Exception as e:
-    #    raise Exception(f'{x.__dict__}, {x.__slots__}, {e}')
-
 
 
 def app_sum(inputs: List[np.ndarray]) -> float:
@@ -128,16 +122,12 @@ if __name__ == '__main__':
         store = ps.store.init_store(
             'globus', name='globus', endpoints=[local_endpoint, remote_endpoint] 
         )
-        #store = ps.store.init_store(
-        #    'file', name='file', store_dir='~/scratch/proxystore-dump' 
-        #)
 
     batch = fxc.create_batch()
     for i in range(args.num_arrays):
         x = np.random.rand(args.size, args.size)
         if args.proxy:
             x = store.proxy(x)
-            #x = ps.serialize.serialize(x)
         batch.add(x, endpoint_id=args.remote_funcx_endpoint, function_id=double_uuid)
 
     batch_res = fxc.batch_run(batch)
@@ -148,10 +138,7 @@ if __name__ == '__main__':
     mapped_results = [
         fxc.get_result(task_id) for task_id in batch_res
     ]
-    print(mapped_results)
 
-    import sys
-    sys.exit()
     if args.proxy:
         mapped_results = store.proxy(mapped_results)
     total = fxc.run(
