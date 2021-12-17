@@ -192,9 +192,9 @@ class FileStore(RemoteStore):
             key = ps.utils.create_key(obj)
         if obj is not None:
             if 'serialize' in kwargs:
-                self.set(obj, key=key, serialize=kwargs['serialize'])
+                key = self.set(obj, key=key, serialize=kwargs['serialize'])
             else:
-                self.set(obj, key=key)
+                key = self.set(obj, key=key)
         elif not self.exists(key):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
