@@ -36,7 +36,9 @@ def get_store(name: str) -> _Store:
     return None
 
 
-def init_store(store_type: _Union[str, STORES], name: str, **kwargs) -> _Store:
+def init_store(
+    store_type: _Union[str, STORES, _Store], name: str, **kwargs
+) -> _Store:
     """Initializes a backend store
 
     Note:
@@ -45,7 +47,9 @@ def init_store(store_type: _Union[str, STORES], name: str, **kwargs) -> _Store:
         may have changed.
 
     Args:
-        store_type (str, STORES): type of store to initialize.
+        store_type (str, STORES, Store): type of store to initialize. Can be
+            either a str or enum value in `:class:`STORES <.STORES>` or
+            a subclass of :class:`Store <proxystore.store.base.Store>`.
         name (str): unique name of store. The name is needed to get the store
             again with :func:`get_store() <.get_store>`.
         kwargs (dict): keyword args to pass to store constructor.
@@ -62,15 +66,18 @@ def init_store(store_type: _Union[str, STORES], name: str, **kwargs) -> _Store:
     """
     if isinstance(store_type, str):
         try:
-            store_type = STORES[store_type.upper()]
+            store_type = STORES[store_type.upper()].value
         except KeyError:
             raise ValueError(f'No store with name {store_type}.')
-    elif not isinstance(store_type, STORES):
+    elif isinstance(store_type, STORES):
+        store_type = store_type.value
+    elif not issubclass(store_type, _Store):
         raise ValueError(
-            'Arg store_type must be str or member of proxystore.store.STORES.'
-            f'Found type f{type(store_type)} instead.'
+            'Arg store_type must be str corresponding to '
+            'proxystore.store.STORES, member of proxystore.store.STORES, or '
+            f'subclass of Store. Found type f{type(store_type)} instead.'
         )
 
-    _stores[name] = store_type.value(name, **kwargs)
+    _stores[name] = store_type(name, **kwargs)
 
     return _stores[name]

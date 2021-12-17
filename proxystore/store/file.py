@@ -2,46 +2,43 @@
 import os
 import shutil
 
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
-from proxystore.store.base import RemoteStore
-
-_default_pool = ThreadPoolExecutor()
+from proxystore.store.remote import RemoteFactory, RemoteStore
 
 
-class FileFactory(Factory):
-    """Factory for FileStore
+class FileFactory(RemoteFactory):
+    """Factory for Instances of FileStore
 
-    Adds support for asynchronously retrieving objects stored on a file system
-    via the :class:`FileStore <.FileStore>` backend.
+    Adds support for asynchronously retrieving objects from a
+    :class:`FileStore <.FileStore>` backend and optional, strict guarentees
+    on object versions.
 
-    The :class:`FileFactory <.FileFactory>` stores the path to the
-    directory on the file system where objects are written such that a new
-    instance of :class:`FileStore <.FileStore>` can be created
-    if this factory is passed to a different process or machine.
+    The factory takes the `store_type` and `store_args` parameters that are
+    used to reinitialize the backend store if the factory is sent to a remote
+    process backend has not already been initialized.
     """
 
     def __init__(
         self,
         key: str,
-        name: str,
-        store_dir: str,
+        store_name: str,
+        store_kwargs: Dict[str, Any] = {},
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
-        **kwargs: Dict[str, Any],
     ) -> None:
         """Init FileFactory
 
         Args:
             key (str): key corresponding to object in store.
-            name (str): name of store to retrieve object from.
-            store_dir (str): path to directory where objects are written.
+            store_name (str): name of store.
+            store_kwargs (dict): optional keyword arguments used to
+                reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
             serialize (bool): if True, object in store is serialized and
@@ -49,73 +46,15 @@ class FileFactory(Factory):
             strict (bool): guarentee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`FileStore <.FileStore>` to rebuild the
-                instance.
         """
-        self.key = key
-        self.name = name
-        self.store_dir = store_dir
-        self.evict = evict
-        self.serialize = serialize
-        self.strict = strict
-        self._kwargs = kwargs
-        self._obj_future = None
-
-    def __getnewargs_ex__(self):
-        """Helper method for pickling"""
-        return (self.key, self.name, self.store_dir), {
-            'evict': self.evict,
-            'serialize': self.serialize,
-            'strict': self.strict,
-            **self._kwargs,
-        }
-
-    def resolve(self) -> None:
-        """Get object associated with key from file system"""
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
-
-        store = ps.store.get_store(self.name)
-        if store is None:
-            store = ps.store.init_store(
-                ps.store.STORES.FILE,
-                self.name,
-                store_dir=self.store_dir,
-                **self._kwargs,
-            )
-
-        obj = store.get(
-            self.key, deserialize=self.serialize, strict=self.strict
-        )
-        if self.evict:
-            store.evict(self.key)
-        return obj
-
-    def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from file system"""
-        store = ps.store.get_store(self.name)
-        if store is None:
-            store = ps.store.init_store(
-                ps.store.STORES.FILE,
-                self.name,
-                store_dir=self.store_dir,
-                **self._kwargs,
-            )
-
-        # If the value is locally cached by the value server, starting up
-        # a separate thread to retrieve a cached value will be slower than
-        # just getting the value from the cache
-        if store.is_cached(self.key, strict=self.strict):
-            return
-
-        self._obj_future = _default_pool.submit(
-            store.get,
-            self.key,
-            deserialize=self.serialize,
-            strict=self.strict,
+        super(FileFactory, self).__init__(
+            key,
+            FileStore,
+            store_name,
+            store_kwargs,
+            evict=evict,
+            serialize=serialize,
+            strict=strict
         )
 
 
@@ -125,6 +64,7 @@ class FileStore(RemoteStore):
     def __init__(
         self,
         name: str,
+        *,
         store_dir: str,
         cache_size: int = 16,
     ) -> None:
@@ -255,9 +195,11 @@ class FileStore(RemoteStore):
         return Proxy(
             factory(
                 key,
-                self.name,
-                self.store_dir,
-                cache_size=self.cache_size,
+                store_name=self.name,
+                store_kwargs={
+                    'store_dir': self.store_dir,
+                    'cache_size': self.cache_size,
+                },
                 **kwargs,
             )
         )

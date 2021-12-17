@@ -1,8 +1,7 @@
 """RedisStore Implementation"""
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 try:
     import redis
@@ -15,43 +14,38 @@ except ImportError as e:  # pragma: no cover
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
-from proxystore.store.base import RemoteStore
-
-_default_pool = ThreadPoolExecutor()
+from proxystore.store.remote import RemoteFactory, RemoteStore
 
 
-class RedisFactory(Factory):
-    """Factory for RedisStore
+class RedisFactory(RemoteFactory):
+    """Factory for Instances of RedisStore
 
     Adds support for asynchronously retrieving objects from a
-    :class:`RedisStore <.RedisStore>` backend and
-    optional, strict guarentees on object versions.
+    :class:`RedisStore <.RedisStore>` backend and optional, strict guarentees
+    on object versions.
 
-    The :class:`RedisFactory <.RedisFactory>` also stores the hostname and
-    port of the Redis server so a connection to the Redis server can be
-    established if the proxy containing this factory is passed to a different
-    process or machine.
+    The factory takes the `store_type` and `store_args` parameters that are
+    used to reinitialize the backend store if the factory is sent to a remote
+    process backend has not already been initialized.
     """
 
     def __init__(
         self,
         key: str,
-        name: str,
-        hostname: str,
-        port: str,
+        store_name: str,
+        store_kwargs: Dict[str, Any] = {},
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
-        **kwargs: Dict[str, Any],
     ) -> None:
         """Init RedisFactory
 
         Args:
             key (str): key corresponding to object in store.
-            name (str): name of store to retrieve object from.
-            hostname (str): hostname of Redis server.
-            port (int): port Redis server.
+            store_name (str): name of store.
+            store_kwargs (dict): optional keyword arguments used to 
+                reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
             serialize (bool): if True, object in store is serialized and
@@ -59,74 +53,15 @@ class RedisFactory(Factory):
             strict (bool): guarentee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`RedisStore <.RedisStore>` to rebuild the instance
         """
-        self.key = key
-        self.name = name
-        self.hostname = hostname
-        self.port = port
-        self.evict = evict
-        self.serialize = serialize
-        self.strict = strict
-        self._kwargs = kwargs
-        self._obj_future = None
-
-    def __getnewargs_ex__(self):
-        """Helper method for pickling"""
-        return (self.key, self.name, self.hostname, self.port), {
-            'evict': self.evict,
-            'serialize': self.serialize,
-            'strict': self.strict,
-            **self._kwargs,
-        }
-
-    def resolve(self) -> Any:
-        """Get object associated with key from Redis"""
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
-
-        store = ps.store.get_store(self.name)
-        if store is None:
-            store = ps.store.init_store(
-                ps.store.STORES.REDIS,
-                self.name,
-                hostname=self.hostname,
-                port=self.port,
-                **self._kwargs,
-            )
-        obj = store.get(
-            self.key, deserialize=self.serialize, strict=self.strict
-        )
-        if self.evict:
-            store.evict(self.key)
-        return obj
-
-    def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from Redis"""
-        store = ps.store.get_store(self.name)
-        if store is None:
-            store = ps.store.init_store(
-                ps.store.STORES.REDIS,
-                self.name,
-                hostname=self.hostname,
-                port=self.port,
-                **self._kwargs,
-            )
-
-        # If the value is locally cached by the value server, starting up
-        # a separate thread to retrieve a cached value will be slower than
-        # just getting the value from the cache
-        if store.is_cached(self.key, strict=self.strict):
-            return
-
-        self._obj_future = _default_pool.submit(
-            store.get,
-            self.key,
-            deserialize=self.serialize,
-            strict=self.strict,
+        super(RedisFactory, self).__init__(
+            key,
+            RedisStore,
+            store_name,
+            store_kwargs,
+            evict=evict,
+            serialize=serialize,
+            strict=strict
         )
 
 
@@ -136,6 +71,7 @@ class RedisStore(RemoteStore):
     def __init__(
         self,
         name: str,
+        *,
         hostname: str,
         port: int,
         cache_size: int = 16,
@@ -254,10 +190,12 @@ class RedisStore(RemoteStore):
         return Proxy(
             factory(
                 key,
-                self.name,
-                self.hostname,
-                self.port,
-                cache_size=self.cache_size,
+                store_name=self.name,
+                store_kwargs={
+                    'hostname': self.hostname,
+                    'port': self.port,
+                    'cache_size': self.cache_size,
+                },
                 **kwargs,
             )
         )

@@ -184,6 +184,7 @@ class GlobusStore(Store):
     def __init__(
         self,
         name: str,
+        *,
         endpoints: Union[GlobusEndpoints, List[GlobusEndpoint]],
         sync_level: Union[int, str] = "mtime",
         cache_size: int = 16,

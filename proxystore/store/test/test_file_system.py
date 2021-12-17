@@ -12,7 +12,7 @@ STORE_DIR = '/tmp/proxystore'
 
 def test_file_store_init() -> None:
     """Test FileStore Initialization"""
-    FileStore('files', STORE_DIR)
+    FileStore('files', store_dir=STORE_DIR)
 
     ps.store.init_store(ps.store.STORES.FILE, 'files', store_dir=STORE_DIR)
 
@@ -28,7 +28,7 @@ def test_file_store_init() -> None:
 
 def test_file_store_base() -> None:
     """Test FileStore Base Functionality"""
-    store = FileStore('files', STORE_DIR)
+    store = FileStore('files', store_dir=STORE_DIR)
     key_fake = 'key_fake'
     value = 'test_value'
 
@@ -70,7 +70,7 @@ def test_file_store_base() -> None:
 
 def test_file_store_caching() -> None:
     """Test FileStore Caching"""
-    store = FileStore('files', STORE_DIR, cache_size=1)
+    store = FileStore('files', store_dir=STORE_DIR, cache_size=1)
 
     # Add our test value
     value = 'test_value'
@@ -95,7 +95,7 @@ def test_file_store_caching() -> None:
     assert store.is_cached(key2)
 
     # Now test cache size 0
-    store = FileStore('files', STORE_DIR, cache_size=0)
+    store = FileStore('files', store_dir=STORE_DIR, cache_size=0)
     store.set(value, key=key1)
     assert store.get(key1) == value
     assert not store.is_cached(key1)
@@ -105,7 +105,7 @@ def test_file_store_caching() -> None:
 
 def test_file_store_strict() -> None:
     """Test FileStore Strict Guarentees"""
-    store = FileStore('files', STORE_DIR, cache_size=1)
+    store = FileStore('files', store_dir=STORE_DIR, cache_size=1)
 
     # Add our test value
     value = 'test_value'
@@ -134,7 +134,7 @@ def test_file_store_strict() -> None:
 
 def test_file_store_custom_serialization() -> None:
     """Test FileStore Custom Serialization"""
-    store = FileStore('files', STORE_DIR, cache_size=1)
+    store = FileStore('files', store_dir=STORE_DIR, cache_size=1)
 
     # Pretend serialized string
     s = 'ABC'
@@ -160,10 +160,12 @@ def test_file_factory() -> None:
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
 
-    f = FileFactory(key, 'files', STORE_DIR)
+    f = FileFactory(key, 'file', store_kwargs={'store_dir': STORE_DIR})
     assert f() == [1, 2, 3]
 
-    f2 = FileFactory(key, 'files', STORE_DIR, evict=True)
+    f2 = FileFactory(
+        key, 'file', store_kwargs={'store_dir': STORE_DIR}, evict=True
+    )
     assert store.exists(key)
     assert f2() == [1, 2, 3]
     assert not store.exists(key)
@@ -171,7 +173,7 @@ def test_file_factory() -> None:
     store.set([1, 2, 3], key=key)
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = FileFactory(key, 'files', STORE_DIR)
+    f = FileFactory(key, 'file', store_kwargs={'store_dir': STORE_DIR})
     f.resolve_async()
     assert f._obj_future is not None
     assert f() == [1, 2, 3]

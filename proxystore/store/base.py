@@ -1,17 +1,14 @@
-"""Backend Store Abstract Classes"""
+"""Base Store Abstract Class"""
 from __future__ import annotations
 
-import time
-
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from typing import Any, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.store.cache import LRUCache
 
 
-class Store(ABC):
+class Store(metaclass=ABCMeta):
     """Abstraction of a key-value store"""
 
     def __init__(self, name) -> None:
@@ -157,146 +154,8 @@ class Store(ABC):
                 provided, one will be created.
 
         Returns:
-            key (str)
+            key (str). Note that some implementations of a store may return
+            a key different from the provided key.
         """
         raise NotImplementedError
 
-
-class RemoteStore(Store, ABC):
-    """Abstraction for interacting with a remote key-value store
-
-    Provides base functionality for interaction with a remote store including
-    serialization and caching.
-    Subclasses of :class:`RemoteStore` must implement
-    :func:`evict() <Store.evict()>`, :func:`exists() <Store.exists()>`,
-    :func:`get_str()`, :func:`set_str()` and :func:`proxy() <Store.proxy()>`.
-    The :class:`RemoteStore` handles the caching.
-
-    :class:`RemoteStore` stores key-string pairs, i.e., objects passed to
-    :func:`get()` or :func:`set()` will be appropriately (de)serialized.
-    Functionality for serialized, caching, and strict guarentees are already
-    provided in :func:`get()` and :func:`set()`.
-    """
-
-    def __init__(self, name: str, cache_size: int = 0) -> None:
-        """Init RemoteStore
-
-        Args:
-            name (str): name of the store instance.
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 0).
-
-        Raises:
-            ValueError:
-                if `cache_size` is negative.
-        """
-        if cache_size < 0:
-            raise ValueError('Cache size cannot be negative')
-        self.name = name
-        self.cache_size = cache_size
-        self._cache = LRUCache(cache_size) if cache_size > 0 else None
-
-    @abstractmethod
-    def get_str(self, key: str) -> Optional[str]:
-        """Get serialized object from remote store
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def set_str(self, key: str, data: str) -> None:
-        """Set serialized object in remote store with key
-
-        Args:
-            key (str): key corresponding to object.
-            data (str): serialized object.
-        """
-        raise NotImplementedError
-
-    def get(
-        self,
-        key: str,
-        *,
-        deserialize: bool = True,
-        strict: bool = False,
-        default: Optional[object] = None,
-    ) -> Optional[object]:
-        """Return object associated with key
-
-        Args:
-            key (str): key corresponding to object.
-            deserialize (bool): deserialize object if True. If objects
-                are custom serialized, set this as False (default: True).
-            strict (bool): guarentee returned object is the most recent
-                version (default: False).
-            default: optionally provide value to be returned if an object
-                associated with the key does not exist (default: None).
-
-        Returns:
-            object associated with key or `default` if key does not exist.
-        """
-        if self.is_cached(key, strict=strict):
-            return self._cache.get(key)[1]
-
-        value = self.get_str(key)
-        if value is not None:
-            timestamp = float(self.get_str(key + '_timestamp'))
-            if deserialize:
-                value = ps.serialize.deserialize(value)
-            if self._cache is not None:
-                self._cache.set(key, (timestamp, value))
-            return value
-
-        return default
-
-    def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally
-
-        Args:
-            key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version
-                (default: False).
-
-        Returns:
-            bool
-        """
-        if self._cache is None:
-            return False
-
-        if self._cache.exists(key):
-            if strict:
-                store_timestamp = float(self.get_str(key + '_timestamp'))
-                cache_timestamp = self._cache.get(key)[0]
-                return cache_timestamp >= store_timestamp
-            return True
-
-        return False
-
-    def set(
-        self, obj: Any, *, key: Optional[str] = None, serialize: bool = True
-    ) -> str:
-        """Set key-object pair in store
-
-        Args:
-            obj (object): object to be placed in the store.
-            key (str, optional): key to use with the object. If the key is not
-                provided, one will be created.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-
-        Returns:
-            key (str)
-        """
-        if serialize:
-            obj = ps.serialize.serialize(obj)
-        if key is None:
-            key = self.create_key(obj)
-
-        self.set_str(key, obj)
-        self.set_str(key + '_timestamp', str(time.time()))
-        return key

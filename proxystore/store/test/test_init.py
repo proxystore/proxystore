@@ -56,6 +56,8 @@ def test_init_store() -> None:
     assert local == ps.store.get_store('local')
     assert redis == ps.store.get_store('redis')
 
+    ps.store._stores = {}
+
     # Init by enum
     local = ps.store.init_store(STORES.LOCAL, name='local')
     assert isinstance(local, ps.store.local.LocalStore)
@@ -66,6 +68,12 @@ def test_init_store() -> None:
 
     assert local == ps.store.get_store('local')
     assert redis == ps.store.get_store('redis')
+   
+    # Init by class type
+    local = ps.store.init_store(ps.store.local.LocalStore, name='local')
+    assert isinstance(local, ps.store.local.LocalStore)
+    
+    ps.store._stores = {}
 
     # Specify name to have multiple stores of same type
     local1 = ps.store.init_store(STORES.LOCAL, 'local1')
@@ -88,5 +96,7 @@ def test_init_store_raises() -> None:
         ps.store.init_store('unknown', name='')
 
     with raises(ValueError):
-        # Must pass enum type, not Store type
-        ps.store.init_store(ps.store.local.LocalStore, name='')
+        # Raises error because type is not a subclass of Store
+        class TestStore():
+            pass
+        ps.store.init_store(TestStore, name='')
