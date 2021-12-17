@@ -1,3 +1,5 @@
+import logging
+
 from enum import Enum as _Enum
 from typing import Union as _Union
 
@@ -10,6 +12,7 @@ from proxystore.store.redis import RedisStore as _RedisStore
 __all__ = ['get_store', 'init_store']
 
 _stores = {}
+logger = logging.getLogger(__name__)
 
 
 class STORES(_Enum):
@@ -79,5 +82,6 @@ def init_store(
         )
 
     _stores[name] = store_type(name, **kwargs)
+    logger.debug(f"Added {_stores[name]} to globally accessible stores")
 
     return _stores[name]

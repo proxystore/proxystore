@@ -1,6 +1,8 @@
 """RedisStore Implementation"""
 from __future__ import annotations
 
+import logging
+
 from typing import Any, Dict, List, Optional
 
 try:
@@ -15,6 +17,8 @@ import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.remote import RemoteFactory, RemoteStore
+
+logger = logging.getLogger(__name__)
 
 
 class RedisFactory(RemoteFactory):
@@ -98,10 +102,7 @@ class RedisStore(RemoteStore):
 
         self.hostname = hostname
         self.port = port
-        self._redis_client = redis.StrictRedis(
-            host=hostname,
-            port=port,  # decode_responses=True
-        )
+        self._redis_client = redis.StrictRedis(host=hostname, port=port)
         super(RedisStore, self).__init__(name, cache_size=cache_size)
 
     def evict(self, key: str) -> None:
@@ -112,6 +113,10 @@ class RedisStore(RemoteStore):
         """
         self._redis_client.delete(key)
         self._cache.evict(key)
+        logger.debug(
+            f"EVICT key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
 
     def exists(self, key: str) -> bool:
         """Check if key exists in Redis
@@ -190,6 +195,10 @@ class RedisStore(RemoteStore):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return Proxy(
             factory(
                 key,

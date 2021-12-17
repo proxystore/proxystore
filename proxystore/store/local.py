@@ -1,12 +1,16 @@
 """LocalStore Implementation"""
 from __future__ import annotations
 
+import logging
+
 from typing import Any, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+
+logger = logging.getLogger(__name__)
 
 
 class LocalFactory(Factory):
@@ -72,6 +76,10 @@ class LocalStore(Store):
         """
         if key in self._store:
             del self._store[key]
+        logger.debug(
+            f"EVICT key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
 
     def exists(self, key: str) -> bool:
         """Check if key exists
@@ -104,7 +112,15 @@ class LocalStore(Store):
             object associated with key or `default` if key does not exist.
         """
         if key in self._store:
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}')"
+            )
             return self._store[key]
+        logger.debug(
+            f"GET key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}'): key does not exists, returned default"
+        )
         return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
@@ -161,6 +177,10 @@ class LocalStore(Store):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return Proxy(factory(key=key, name=self.name, **kwargs))
 
     def set(self, obj: Any, *, key: Optional[str] = None) -> str:
@@ -177,4 +197,8 @@ class LocalStore(Store):
         if key is None:
             key = ps.utils.create_key(obj)
         self._store[key] = obj
+        logger.debug(
+            f"SET key='{key}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return key

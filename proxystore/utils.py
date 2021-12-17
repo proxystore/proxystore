@@ -19,3 +19,11 @@ def create_key(obj: Any) -> str:
         random 128 bit string.
     """
     return str(random.getrandbits(128))
+
+
+def fullname(obj):
+    """Returns full name of object"""
+    module = obj.__module__
+    if module is None or module == str.__module__:
+        return obj.__name__
+    return f'{module}.{obj.__name__}'

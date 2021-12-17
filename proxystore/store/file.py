@@ -1,4 +1,5 @@
 """FileStore Implementation"""
+import logging
 import os
 import shutil
 
@@ -8,6 +9,8 @@ import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.remote import RemoteFactory, RemoteStore
+
+logger = logging.getLogger(__name__)
 
 
 class FileFactory(RemoteFactory):
@@ -106,6 +109,10 @@ class FileStore(RemoteStore):
         if os.path.exists(path):
             os.remove(path)
         self._cache.evict(key)
+        logger.debug(
+            f"EVICT key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
 
     def exists(self, key: str) -> bool:
         """Check if key exists in file system store
@@ -192,6 +199,10 @@ class FileStore(RemoteStore):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return Proxy(
             factory(
                 key,

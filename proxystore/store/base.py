@@ -1,11 +1,15 @@
 """Base Store Abstract Class"""
 from __future__ import annotations
 
+import logging
+
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
+
+logger = logging.getLogger(__name__)
 
 
 class Store(metaclass=ABCMeta):
@@ -18,6 +22,18 @@ class Store(metaclass=ABCMeta):
             name (str): name of the store instance.
         """
         self.name = name
+        logger.debug(f"Initialized {self}")
+    
+    def __repr__(self) -> None:
+        s = f"{ps.utils.fullname(self.__class__)}("
+        attributes = [
+            f"{key}={value}" for key, value in self.__dict__.items()
+            if not key.startswith('_') and not callable(value)
+        ]
+        attributes.sort()
+        s += ", ".join(attributes)
+        s += ")"
+        return s
 
     def cleanup(self) -> None:
         """Cleanup any objects associated with the store
@@ -158,4 +174,3 @@ class Store(metaclass=ABCMeta):
             a key different from the provided key.
         """
         raise NotImplementedError
-

@@ -1,6 +1,7 @@
 """Remote Store Abstract Class"""
 from __future__ import annotations
 
+import logging
 import time
 
 from abc import ABCMeta, abstractmethod
@@ -13,6 +14,7 @@ from proxystore.store.base import Store
 from proxystore.store.cache import LRUCache
 
 _default_pool = ThreadPoolExecutor()
+logger = logging.getLogger(__name__)
 
 
 class RemoteFactory(Factory):
@@ -150,9 +152,9 @@ class RemoteStore(Store, metaclass=ABCMeta):
         """
         if cache_size < 0:
             raise ValueError('Cache size cannot be negative')
-        self.name = name
         self.cache_size = cache_size
         self._cache = LRUCache(cache_size) if cache_size > 0 else None
+        super(RemoteStore, self).__init__(name)
 
     @abstractmethod
     def get_bytes(self, key: str) -> Optional[bytes]:
@@ -199,7 +201,12 @@ class RemoteStore(Store, metaclass=ABCMeta):
             object associated with key or `default` if key does not exist.
         """
         if self.is_cached(key, strict=strict):
-            return self._cache.get(key)[1]
+            value = self._cache.get(key)[1]
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}'): was_cached=True"
+            )
+            return value
 
         value = self.get_bytes(key)
         if value is not None:
@@ -208,8 +215,16 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 value = ps.serialize.deserialize(value)
             if self._cache is not None:
                 self._cache.set(key, (timestamp, value))
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}'): was_cached=False"
+            )
             return value
 
+        logger.debug(
+            f"GET key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}'): key did not exist, returned default"
+        )
         return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
@@ -259,4 +274,8 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         self.set_bytes(key, obj)
         self.set_bytes(key + '_timestamp', str(time.time()).encode())
+        logger.debug(
+            f"SET key='{key}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return key
