@@ -1,7 +1,8 @@
 """FileStore Unit Tests"""
+import json
 import numpy as np
 
-from pytest import raises
+from pytest import raises, warns
 
 import proxystore as ps
 from proxystore.store.globus import GlobusEndpoint
@@ -13,13 +14,13 @@ EP1 = GlobusEndpoint(
     uuid="4e55b15a-5c33-11ec-b2c1-1b99bfd4976a",
     endpoint_path="/~/Globus/proxystore-test",
     local_path="/mnt/c/Users/jgpaul/Documents/Globus/proxystore-test",
-    host_regex="Alderaan"
+    host_regex="Alderaan",
 )
 EP2 = GlobusEndpoint(
     uuid="af7bda53-6d04-11e5-ba46-22000b92c6ec",
     endpoint_path="/~/proxystore-test",
-    local_path="~/proxystore-test",
-    host_regex="midway2"
+    local_path="/home/jgpauloski/proxystore-test",
+    host_regex="midway2-login1.rcc.local",
 )
 EPS = GlobusEndpoints(EP1, EP2)
 
@@ -42,7 +43,7 @@ def test_globus_endpoint_objects() -> None:
         epa = GlobusEndpoint(
             uuid="1", endpoint_path="1", local_path="1", host_regex=1
         )
-        
+
     epa = GlobusEndpoint(
         uuid="1", endpoint_path="/path", local_path="/path", host_regex="host1"
     )
@@ -50,7 +51,7 @@ def test_globus_endpoint_objects() -> None:
         uuid="2",
         endpoint_path="/path",
         local_path="/path",
-        host_regex=r"^\w{4}2$"
+        host_regex=r"^\w{4}2$",
     )
     epc = GlobusEndpoint(
         uuid="1", endpoint_path="/path", local_path="/path", host_regex="host1"
@@ -63,7 +64,7 @@ def test_globus_endpoint_objects() -> None:
         GlobusEndpoints()
     with raises(ValueError):
         GlobusEndpoints([])
-    
+
     # Check not able to pass multiple endpoints same UUID
     with raises(ValueError):
         GlobusEndpoints([epa, epc])
@@ -88,9 +89,38 @@ def test_globus_endpoint_objects() -> None:
         eps.get_by_host("host3")
 
 
+def test_globus_endpoints_from_json() -> None:
+    """Test GlobusEndpoints from JSON file"""
+    data = {
+        'UUID1': {
+            'endpoint_path': '/~/',
+            'local_path': '/home/user1/',
+            'host_regex': 'host1',
+        },
+        'UUID2': {
+            'endpoint_path': '/~/',
+            'local_path': '/home/user2/',
+            'host_regex': 'host2',
+        },
+    }
+    filepath = '/tmp/endpoints.json'
+    with open(filepath, 'w') as f:
+        f.write(json.dumps(data))
+
+    endpoints = GlobusEndpoints.from_json(filepath)
+
+    assert len(endpoints) == 2
+    assert endpoints['UUID1'].endpoint_path == '/~/'
+    assert endpoints['UUID1'].local_path == '/home/user1/'
+    assert endpoints['UUID1'].host_regex == 'host1'
+    assert endpoints['UUID2'].endpoint_path == '/~/'
+    assert endpoints['UUID2'].local_path == '/home/user2/'
+    assert endpoints['UUID2'].host_regex == 'host2'
+
+
 def test_globus_store_init() -> None:
     """Test GlobusStore Initialization"""
-    GlobusStore('globus', [EP1, EP2])
+    GlobusStore('globus', endpoints=[EP1, EP2])
 
     ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=[EP1, EP2])
     ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=EPS)
@@ -98,19 +128,25 @@ def test_globus_store_init() -> None:
     with raises(ValueError):
         # Negative cache_size error
         ps.store.init_store(
-            ps.store.STORES.GLOBUS, 'globus', endpoints=EPS, cache_size=-1,
+            ps.store.STORES.GLOBUS,
+            'globus',
+            endpoints=EPS,
+            cache_size=-1,
         )
-    
+
     with raises(ValueError):
         # Invalid endpoint type
         ps.store.init_store(
-            ps.store.STORES.GLOBUS, 'globus', endpoints=None, cache_size=-1,
+            ps.store.STORES.GLOBUS,
+            'globus',
+            endpoints=None,
+            cache_size=-1,
         )
 
 
 def test_globus_store_base() -> None:
     """Test GlobusStore Base Functionality"""
-    store = GlobusStore('globus', endpoints=EPS)
+    store = GlobusStore('globus', endpoints=EPS, timeout=120)
     value = 'test_value'
     fakekey = "fakekey"
 
@@ -134,7 +170,7 @@ def test_globus_store_base() -> None:
     assert store.exists(key3)
     assert not store.exists(fakekey)
 
-    #GlobusStore.is_cached()
+    # GlobusStore.is_cached()
     assert store.is_cached(key1)
     assert store.is_cached(key2)
     assert store.is_cached(key3)
@@ -151,7 +187,7 @@ def test_globus_store_base() -> None:
 
 def test_globus_store_caching() -> None:
     """Test GlobusStore Caching"""
-    store = GlobusStore('globus', endpoints=EPS, cache_size=1)
+    store = GlobusStore('globus', endpoints=EPS, timeout=120, cache_size=1)
 
     # Add our test value
     value = 'test_value'
@@ -181,32 +217,16 @@ def test_globus_store_caching() -> None:
     store.cleanup()
 
 
-def __test_file_store_strict() -> None:
-    """Test FileStore Strict Guarentees"""
-    # TODO(gpauloski): disabled this test because globus store currently
-    # only supports immutable objects
-    store = FileStore('files', STORE_DIR, cache_size=1)
+def test_globus_store_strict() -> None:
+    """Test GlobusStore Strict Guarentees"""
+    store = GlobusStore('globus', endpoints=EPS, cache_size=1)
 
-    # Add our test value
-    value = 'test_value'
-    assert not store.exists('strict_key')
-    store.set('strict_key', value)
-
-    # Access key so value is cached locally
-    assert store.get('strict_key') == value
-    assert store.is_cached('strict_key')
-
-    # Change value in Redis
-    store.set('strict_key', 'new_value')
-    assert store.get('strict_key') == value
-    assert store.is_cached('strict_key')
-    assert not store.is_cached('strict_key', strict=True)
-
-    # Access with strict=True so now most recent version should be cached
-    assert store.get('strict_key', strict=True) == 'new_value'
-    assert store.get('strict_key') == 'new_value'
-    assert store.is_cached('strict_key')
-    assert store.is_cached('strict_key', strict=True)
+    key = store.set('value')
+    # GlobusStore objects are immutable so we raise a warning if the user
+    # specifies strict=True
+    store.get(key, strict=False)
+    with warns(Warning):
+        store.get(key, strict=True)
 
     store.cleanup()
 
@@ -216,12 +236,12 @@ def test_globus_store_custom_serialization() -> None:
     store = GlobusStore('globus', endpoints=EPS, cache_size=1)
 
     # Pretend serialized string
-    s = 'ABC'
+    s = b'ABC'
     key = store.set(s, serialize=False)
     assert store.get(key, deserialize=False) == s
 
     with raises(Exception):
-        # Should fail because the numpy array is not already serialized
+        # Should fail because the numpy array is not already serialized as bytes
         store.set(np.array([1, 2, 3]), serialize=False)
 
     store.cleanup()
@@ -229,17 +249,26 @@ def test_globus_store_custom_serialization() -> None:
 
 def test_globus_factory() -> None:
     """Test GlobusFactory"""
-    store = ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=EPS)
+    store = ps.store.init_store(
+        ps.store.STORES.GLOBUS, 'globus', endpoints=EPS, timeout=120
+    )
     key = store.set([1, 2, 3])
 
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
 
-    f = GlobusFactory(key, 'globus', EPS, "mtime")
+    f = GlobusFactory(
+        key, 'globus', store_kwargs={'endpoints': EPS, 'sync_level': "mtime"}
+    )
     assert f() == [1, 2, 3]
 
     # Test eviction when factory is called
-    f2 = GlobusFactory(key, 'globus', EPS, "mtime", evict=True)
+    f2 = GlobusFactory(
+        key,
+        'globus',
+        store_kwargs={'endpoints': EPS, 'sync_level': "mtime"},
+        evict=True,
+    )
     assert store.exists(key)
     assert f2() == [1, 2, 3]
     assert not store.exists(key)
@@ -247,7 +276,11 @@ def test_globus_factory() -> None:
     key = store.set([1, 2, 3])
     # Clear store to see if factory can reinitialize it async
     ps.store._stores = {}
-    f = GlobusFactory(key, 'globus', EPS, "mtime")
+    f = GlobusFactory(
+        key,
+        'globus',
+        store_kwargs={'endpoints': EPS, 'sync_level': "mtime"},
+    )
     f.resolve_async()
     assert f._obj_future is not None
     assert f() == [1, 2, 3]
@@ -267,7 +300,9 @@ def test_globus_factory() -> None:
 
 def test_globus_store_proxy() -> None:
     """Test GlobusStore Proxying"""
-    store = ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=EPS)
+    store = ps.store.init_store(
+        ps.store.STORES.GLOBUS, 'globus', endpoints=EPS, timeout=120
+    )
 
     p = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)
@@ -275,14 +310,14 @@ def test_globus_store_proxy() -> None:
     assert p == [1, 2, 3]
     assert store.get(ps.proxy.get_key(p)) == [1, 2, 3]
 
-    p2 = store.proxy(key=ps.proxy.get_key(p))
-    assert p2 == [1, 2, 3]
+    with raises(TypeError):
+        # GlobusStore.proxy() requires obj be passed
+        p2 = store.proxy(key=ps.proxy.get_key(p))
+        assert p2 == [1, 2, 3]
 
-    with raises(ValueError):
-        # Both key and obj cannot be specified
-        store.proxy([2, 3, 4], 'key')
+    store.proxy([2, 3, 4], key='key')
 
-    with raises(ValueError):
+    with raises(TypeError):
         # At least one of key or object must be passed
         store.proxy()
 
@@ -297,7 +332,11 @@ def test_globus_store_proxy() -> None:
 def test_proxy_recreates_store() -> None:
     """Test GlobusStore Proxy with FileFactory can Recreate the Store"""
     store = ps.store.init_store(
-        ps.store.STORES.GLOBUS, 'globus', endpoints=EPS, cache_size=0
+        ps.store.STORES.GLOBUS,
+        'globus',
+        endpoints=EPS,
+        timeout=300,
+        cache_size=0,
     )
 
     p = store.proxy([1, 2, 3])
