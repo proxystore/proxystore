@@ -49,52 +49,10 @@ if __name__ == '__main__':
         help='FuncX endpoint ID',
     )
     parser.add_argument(
-        '--local-globus-endpoint',
+        '--globus-config-file',
         type=str,
         required=True,
-        help='UUID of local Globus endpoint'
-    )
-    parser.add_argument(
-        '--local-globus-host',
-        type=str,
-        required=True,
-        help='Regex for hostname of local Globus endpoint'
-    )
-    parser.add_argument(
-        '--local-globus-endpoint-path',
-        type=str,
-        required=True,
-        help='Path to dir within local Globus endpoint'
-    )
-    parser.add_argument(
-        '--local-globus-local-path',
-        type=str,
-        required=True,
-        help='Path to dir within local filesystem'
-    )
-    parser.add_argument(
-        '--remote-globus-endpoint',
-        type=str,
-        required=True,
-        help='UUID of remote Globus endpoint'
-    )
-    parser.add_argument(
-        '--remote-globus-host',
-        type=str,
-        required=True,
-        help='Regex for hostname of remote Globus endpoint'
-    )
-    parser.add_argument(
-        '--remote-globus-endpoint-path',
-        type=str,
-        required=True,
-        help='Path to dir within remote Globus endpoint'
-    )
-    parser.add_argument(
-        '--remote-globus-local-path',
-        type=str,
-        required=True,
-        help='Path to dir within remote Globus endpoint'
+        help='Path to JSON file with Globus endpoints',
     )
     parser.add_argument(
         '--proxy', action='store_true', help='Use proxy store to pass inputs'
@@ -107,20 +65,11 @@ if __name__ == '__main__':
     sum_uuid = fxc.register_function(app_sum)
 
     if args.proxy:
-        local_endpoint = ps.store.globus.GlobusEndpoint(
-            args.local_globus_endpoint,
-            args.local_globus_endpoint_path,
-            args.local_globus_local_path,
-            args.local_globus_host,
-        )
-        remote_endpoint = ps.store.globus.GlobusEndpoint(
-            args.remote_globus_endpoint,
-            args.remote_globus_endpoint_path,
-            args.remote_globus_local_path,
-            args.remote_globus_host,
+        endpoints = ps.store.globus.GlobusEndpoints.from_json(
+            args.globus_config_file
         )
         store = ps.store.init_store(
-            'globus', name='globus', endpoints=[local_endpoint, remote_endpoint] 
+            'globus', name='globus', endpoints=endpoints
         )
 
     batch = fxc.create_batch()
@@ -128,21 +77,23 @@ if __name__ == '__main__':
         x = np.random.rand(args.size, args.size)
         if args.proxy:
             x = store.proxy(x)
-        batch.add(x, endpoint_id=args.remote_funcx_endpoint, function_id=double_uuid)
+        batch.add(
+            x, endpoint_id=args.remote_funcx_endpoint, function_id=double_uuid
+        )
 
     batch_res = fxc.batch_run(batch)
     for res in batch_res:
         while fxc.get_task(res)['pending']:
             time.sleep(0.5)
 
-    mapped_results = [
-        fxc.get_result(task_id) for task_id in batch_res
-    ]
+    mapped_results = [fxc.get_result(task_id) for task_id in batch_res]
 
     if args.proxy:
         mapped_results = store.proxy(mapped_results)
     total = fxc.run(
-        mapped_results, endpoint_id=args.remote_funcx_endpoint, function_id=sum_uuid
+        mapped_results,
+        endpoint_id=args.remote_funcx_endpoint,
+        function_id=sum_uuid,
     )
 
     while fxc.get_task(total)['pending']:
