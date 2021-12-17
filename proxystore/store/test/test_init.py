@@ -68,11 +68,11 @@ def test_init_store() -> None:
 
     assert local == ps.store.get_store('local')
     assert redis == ps.store.get_store('redis')
-   
+
     # Init by class type
     local = ps.store.init_store(ps.store.local.LocalStore, name='local')
     assert isinstance(local, ps.store.local.LocalStore)
-    
+
     ps.store._stores = {}
 
     # Specify name to have multiple stores of same type
@@ -97,6 +97,7 @@ def test_init_store_raises() -> None:
 
     with raises(ValueError):
         # Raises error because type is not a subclass of Store
-        class TestStore():
+        class TestStore:
             pass
+
         ps.store.init_store(TestStore, name='')

@@ -23,11 +23,13 @@ class Store(metaclass=ABCMeta):
         """
         self.name = name
         logger.debug(f"Initialized {self}")
-    
+
     def __repr__(self) -> None:
+        """String representation of Store instance"""
         s = f"{ps.utils.fullname(self.__class__)}("
         attributes = [
-            f"{key}={value}" for key, value in self.__dict__.items()
+            f"{key}={value}"
+            for key, value in self.__dict__.items()
             if not key.startswith('_') and not callable(value)
         ]
         attributes.sort()

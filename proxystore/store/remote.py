@@ -6,7 +6,7 @@ import time
 
 from abc import ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory

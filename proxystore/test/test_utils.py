@@ -11,5 +11,8 @@ def test_create_key() -> None:
 def test_fullname() -> None:
     """Test fullname()"""
     assert utils.fullname(SimpleFactory) == 'proxystore.factory.SimpleFactory'
-    assert utils.fullname(SimpleFactory('string')) == 'proxystore.factory.SimpleFactory'
+    assert (
+        utils.fullname(SimpleFactory('string'))
+        == 'proxystore.factory.SimpleFactory'
+    )
     assert utils.fullname('string') == 'str'

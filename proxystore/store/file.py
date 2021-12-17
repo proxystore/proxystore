@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
