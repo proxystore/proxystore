@@ -41,7 +41,7 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --cov=proxystore proxystore
+        pytest --cov=proxystore --ignore proxystore/store/test/test_globus.py proxystore
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
