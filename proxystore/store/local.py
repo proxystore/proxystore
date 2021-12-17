@@ -123,8 +123,8 @@ class LocalStore(Store):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = LocalFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
@@ -156,18 +156,25 @@ class LocalStore(Store):
         if key is None:
             key = ps.utils.create_key(obj)
         if obj is not None:
-            self.set(key, obj)
+            self.set(obj, key=key)
         elif not self.exists(key):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
         return Proxy(factory(key=key, name=self.name, **kwargs))
 
-    def set(self, key: str, obj: Any) -> None:
+    def set(self, obj: Any, *, key: Optional[str] = None) -> str:
         """Set key-object pair in store
 
         Args:
-            key (str): key to use with the object.
             obj (object): object to be placed in the store.
+            key (str, optional): key to use with the object. If the key is not
+                provided, one will be created.
+
+        Returns:
+            key (str)
         """
+        if key is None:
+            key = ps.utils.create_key(obj)
         self._store[key] = obj
+        return key

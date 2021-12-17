@@ -29,39 +29,41 @@ def test_file_store_init() -> None:
 def test_file_store_base() -> None:
     """Test FileStore Base Functionality"""
     store = FileStore('files', STORE_DIR)
+    key_fake = 'key_fake'
     value = 'test_value'
 
     # FileStore.set()
-    store.set('key_bytes', str.encode(value))
-    store.set('key_str', value)
-    store.set('key_callable', lambda: value)
-    store.set('key_numpy', np.array([1, 2, 3]))
+    key_bytes = store.set(str.encode(value))
+    key_str = store.set(value)
+    key_callable = store.set(lambda: value)
+    key_numpy = store.set(np.array([1, 2, 3]), key='key_numpy')
+    assert key_numpy == 'key_numpy'
 
     # FileStore.get()
-    assert store.get('key_bytes') == str.encode(value)
-    assert store.get('key_str') == value
-    assert store.get('key_callable').__call__() == value
-    assert store.get('key_fake') is None
-    assert store.get('key_fake', default='alt_value') == 'alt_value'
-    assert np.array_equal(store.get('key_numpy'), np.array([1, 2, 3]))
+    assert store.get(key_bytes) == str.encode(value)
+    assert store.get(key_str) == value
+    assert store.get(key_callable).__call__() == value
+    assert store.get(key_fake) is None
+    assert store.get(key_fake, default='alt_value') == 'alt_value'
+    assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
 
     # FileStore.exists()
-    assert store.exists('key_bytes')
-    assert store.exists('key_str')
-    assert store.exists('key_callable')
-    assert not store.exists('key_fake')
+    assert store.exists(key_bytes)
+    assert store.exists(key_str)
+    assert store.exists(key_callable)
+    assert not store.exists(key_fake)
 
     # FileStore.is_cached()
-    assert store.is_cached('key_bytes')
-    assert store.is_cached('key_str')
-    assert store.is_cached('key_callable')
-    assert not store.is_cached('key_fake')
+    assert store.is_cached(key_bytes)
+    assert store.is_cached(key_str)
+    assert store.is_cached(key_callable)
+    assert not store.is_cached(key_fake)
 
     # FileStore.evict()
-    store.evict('key_str')
-    assert not store.exists('key_str')
-    assert not store.is_cached('key_str')
-    store.evict('key_fake')
+    store.evict(key_str)
+    assert not store.exists(key_str)
+    assert not store.is_cached(key_str)
+    store.evict(key_fake)
 
     store.cleanup()
 
@@ -72,29 +74,31 @@ def test_file_store_caching() -> None:
 
     # Add our test value
     value = 'test_value'
-    assert not store.exists('cache_key')
-    store.set('cache_key', value)
+    key1 = 'cache_key'
+    assert not store.exists(key1)
+    store.set(value, key=key1)
 
     # Test caching
-    assert not store.is_cached('cache_key')
-    assert store.get('cache_key') == value
-    assert store.is_cached('cache_key')
+    assert not store.is_cached(key1)
+    assert store.get(key1) == value
+    assert store.is_cached(key1)
 
     # Add second value
-    store.set('cache_key2', value)
-    assert store.is_cached('cache_key')
-    assert not store.is_cached('cache_key2')
+    key2 = 'cache_key2'
+    store.set(value, key=key2)
+    assert store.is_cached(key1)
+    assert not store.is_cached(key2)
 
     # Check cached value flipped since cache size is 1
-    assert store.get('cache_key2') == value
-    assert not store.is_cached('cache_key')
-    assert store.is_cached('cache_key2')
+    assert store.get(key2) == value
+    assert not store.is_cached(key1)
+    assert store.is_cached(key2)
 
     # Now test cache size 0
     store = FileStore('files', STORE_DIR, cache_size=0)
-    store.set('cache_key', value)
-    assert store.get('cache_key') == value
-    assert not store.is_cached('cache_key')
+    store.set(value, key=key1)
+    assert store.get(key1) == value
+    assert not store.is_cached(key1)
 
     store.cleanup()
 
@@ -105,24 +109,25 @@ def test_file_store_strict() -> None:
 
     # Add our test value
     value = 'test_value'
-    assert not store.exists('strict_key')
-    store.set('strict_key', value)
+    key = 'strict_key'
+    assert not store.exists(key)
+    store.set(value, key=key)
 
     # Access key so value is cached locally
-    assert store.get('strict_key') == value
-    assert store.is_cached('strict_key')
+    assert store.get(key) == value
+    assert store.is_cached(key)
 
     # Change value in Redis
-    store.set('strict_key', 'new_value')
-    assert store.get('strict_key') == value
-    assert store.is_cached('strict_key')
-    assert not store.is_cached('strict_key', strict=True)
+    store.set('new_value', key=key)
+    assert store.get(key) == value
+    assert store.is_cached(key)
+    assert not store.is_cached(key, strict=True)
 
     # Access with strict=True so now most recent version should be cached
-    assert store.get('strict_key', strict=True) == 'new_value'
-    assert store.get('strict_key') == 'new_value'
-    assert store.is_cached('strict_key')
-    assert store.is_cached('strict_key', strict=True)
+    assert store.get(key, strict=True) == 'new_value'
+    assert store.get(key) == 'new_value'
+    assert store.is_cached(key)
+    assert store.is_cached(key, strict=True)
 
     store.cleanup()
 
@@ -133,12 +138,13 @@ def test_file_store_custom_serialization() -> None:
 
     # Pretend serialized string
     s = 'ABC'
-    store.set('serial_key', s, serialize=False)
-    assert store.get('serial_key', deserialize=False) == s
+    key = 'serial_key'
+    store.set(s, key=key, serialize=False)
+    assert store.get(key, deserialize=False) == s
 
     with raises(Exception):
         # Should fail because the numpy array is not already serialized
-        store.set('serial_key', np.array([1, 2, 3]), serialize=False)
+        store.set(key, np.array([1, 2, 3]), serialize=False)
 
     store.cleanup()
 
@@ -148,23 +154,24 @@ def test_file_factory() -> None:
     store = ps.store.init_store(
         ps.store.STORES.FILE, 'files', store_dir=STORE_DIR
     )
-    store.set('key', [1, 2, 3])
+    key = 'key'
+    store.set([1, 2, 3], key=key)
 
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
 
-    f = FileFactory('key', 'files', STORE_DIR)
+    f = FileFactory(key, 'files', STORE_DIR)
     assert f() == [1, 2, 3]
 
-    f2 = FileFactory('key', 'files', STORE_DIR, evict=True)
-    assert store.exists('key')
+    f2 = FileFactory(key, 'files', STORE_DIR, evict=True)
+    assert store.exists(key)
     assert f2() == [1, 2, 3]
-    assert not store.exists('key')
+    assert not store.exists(key)
 
-    store.set('key', [1, 2, 3])
+    store.set([1, 2, 3], key=key)
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = FileFactory('key', 'files', STORE_DIR)
+    f = FileFactory(key, 'files', STORE_DIR)
     f.resolve_async()
     assert f._obj_future is not None
     assert f() == [1, 2, 3]
@@ -197,7 +204,7 @@ def test_file_store_proxy() -> None:
     p2 = store.proxy(key=ps.proxy.get_key(p))
     assert p2 == [1, 2, 3]
 
-    store.proxy([2, 3, 4], 'key')
+    store.proxy([2, 3, 4], key='key')
     assert store.get(key='key') == [2, 3, 4]
 
     with raises(ValueError):

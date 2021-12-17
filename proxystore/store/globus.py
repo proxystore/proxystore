@@ -353,11 +353,16 @@ class GlobusStore(Store):
 
         return self._cache.exists(key)
 
-    def set(self, obj: Any, *, serialize: bool = True) -> str:
+    def set(
+        self, obj: Any, *, key: Optional[str] = None, serialize: bool = True
+    ) -> str:
         if serialize: 
             obj = ps.serialize.serialize(obj)
 
-        filename = ps.utils.create_key(obj)
+        if key is None:
+            filename = self.create_key(obj)
+        else:
+            filename = key
         path = self._get_filepath(filename=filename)
         with open(path, 'w') as f:
             f.write(obj)
@@ -368,8 +373,8 @@ class GlobusStore(Store):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = GlobusFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821

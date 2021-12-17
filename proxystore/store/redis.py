@@ -210,8 +210,8 @@ class RedisStore(RemoteStore):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = RedisFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
@@ -244,9 +244,9 @@ class RedisStore(RemoteStore):
             key = ps.utils.create_key(obj)
         if obj is not None:
             if 'serialize' in kwargs:
-                self.set(key, obj, serialize=kwargs['serialize'])
+                self.set(obj, key=key, serialize=kwargs['serialize'])
             else:
-                self.set(key, obj)
+                self.set(obj, key=key)
         elif not self.exists(key):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'

@@ -35,6 +35,17 @@ class Store(ABC):
         """
         pass
 
+    def create_key(self, obj: Any) -> str:
+        """Create key for the object
+
+        Args:
+            obj: object to be placed in store.
+
+        Returns:
+            key (str)
+        """
+        return ps.utils.create_key(obj)
+
     @abstractmethod
     def evict(self, key: str) -> None:
         """Evict object associated with key
@@ -96,8 +107,8 @@ class Store(ABC):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = Factory,
         **kwargs,
     ) -> 'ps.proxy.Proxy':
@@ -137,12 +148,16 @@ class Store(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def set(self, key: str, obj: Any) -> None:
+    def set(self, obj: Any, *, key: Optional[str] = None) -> str:
         """Set key-object pair in store
 
         Args:
-            key (str): key to use with the object.
             obj (object): object to be placed in the store.
+            key (str, optional): key to use with the object. If the key is not
+                provided, one will be created.
+
+        Returns:
+            key (str)
         """
         raise NotImplementedError
 
@@ -262,17 +277,26 @@ class RemoteStore(Store, ABC):
 
         return False
 
-    def set(self, key: str, obj: Any, *, serialize: bool = True) -> None:
+    def set(
+        self, obj: Any, *, key: Optional[str] = None, serialize: bool = True
+    ) -> str:
         """Set key-object pair in store
 
         Args:
-            key (str): key to use with the object.
             obj (object): object to be placed in the store.
+            key (str, optional): key to use with the object. If the key is not
+                provided, one will be created.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
+
+        Returns:
+            key (str)
         """
         if serialize:
             obj = ps.serialize.serialize(obj)
+        if key is None:
+            key = self.create_key(obj)
 
         self.set_str(key, obj)
         self.set_str(key + '_timestamp', str(time.time()))
+        return key

@@ -19,38 +19,40 @@ def test_local_store_base() -> None:
     """Test LocalStore Base Functionality"""
     store = LocalStore(name='local')
     value = 'test_value'
+    key_fake = 'key_fake'
 
     # LocalStore.set()
-    store.set('key_bytes', str.encode(value))
-    store.set('key_str', value)
-    store.set('key_callable', lambda: value)
-    store.set('key_numpy', np.array([1, 2, 3]))
+    key_bytes = store.set(str.encode(value))
+    key_str = store.set(value)
+    key_callable = store.set(lambda: value)
+    key_numpy = store.set(np.array([1, 2, 3]), key='key_numpy')
+    assert key_numpy == 'key_numpy'
 
     # LocalStore.get()
-    assert store.get('key_bytes') == str.encode(value)
-    assert store.get('key_str') == value
-    assert store.get('key_callable').__call__() == value
-    assert store.get('key_fake') is None
-    assert store.get('key_fake', default='alt_value') == 'alt_value'
-    assert np.array_equal(store.get('key_numpy'), np.array([1, 2, 3]))
+    assert store.get(key_bytes) == str.encode(value)
+    assert store.get(key_str) == value
+    assert store.get(key_callable).__call__() == value
+    assert store.get(key_fake) is None
+    assert store.get(key_fake, default='alt_value') == 'alt_value'
+    assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
 
     # LocalStore.exists()
-    assert store.exists('key_bytes')
-    assert store.exists('key_str')
-    assert store.exists('key_callable')
-    assert not store.exists('key_fake')
+    assert store.exists(key_bytes)
+    assert store.exists(key_str)
+    assert store.exists(key_callable)
+    assert not store.exists(key_fake)
 
     # LocalStore.is_cached()
-    assert store.is_cached('key_bytes')
-    assert store.is_cached('key_str')
-    assert store.is_cached('key_callable')
-    assert not store.is_cached('key_fake')
+    assert store.is_cached(key_bytes)
+    assert store.is_cached(key_str)
+    assert store.is_cached(key_callable)
+    assert not store.is_cached(key_fake)
 
     # LocalStore.evict()
-    store.evict('key_str')
-    assert not store.exists('key_str')
-    assert not store.is_cached('key_str')
-    store.evict('key_fake')
+    store.evict(key_str)
+    assert not store.exists(key_str)
+    assert not store.is_cached(key_str)
+    store.evict(key_fake)
 
     # Should be a no-op
     store.cleanup()
@@ -58,7 +60,8 @@ def test_local_store_base() -> None:
 
 def test_local_factory() -> None:
     """Test LocalFactory"""
-    f = LocalFactory('key', name='local')
+    key = 'key'
+    f = LocalFactory(key, name='local')
     # Force delete LocalStore backend if it exists so resolving factory
     # raises not initialized error
     ps.store._stores = {}
@@ -67,17 +70,17 @@ def test_local_factory() -> None:
 
     store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
-    store.set('key', [1, 2, 3])
-    f = LocalFactory('key', name='local')
+    key = store.set([1, 2, 3], key=key)
+    f = LocalFactory(key, name='local')
     assert f() == [1, 2, 3]
 
-    f2 = LocalFactory('key', name='local', evict=True)
-    assert store.exists('key')
+    f2 = LocalFactory(key, name='local', evict=True)
+    assert store.exists(key)
     assert f2() == [1, 2, 3]
-    assert not store.exists('key')
+    assert not store.exists(key)
 
-    store.set('key', [1, 2, 3])
-    f = LocalFactory('key', name='local')
+    store.set([1, 2, 3], key=key)
+    f = LocalFactory(key, name='local')
     f.resolve_async()
     assert f() == [1, 2, 3]
 
@@ -99,7 +102,7 @@ def test_local_store_proxy() -> None:
     p2 = store.proxy(key=ps.proxy.get_key(p))
     assert p2 == [1, 2, 3]
 
-    store.proxy([2, 3, 4], 'key')
+    store.proxy([2, 3, 4], key='key')
     assert store.get(key='key') == [2, 3, 4]
 
     with raises(ValueError):
