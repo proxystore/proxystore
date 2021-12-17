@@ -54,7 +54,7 @@ class FileFactory(RemoteFactory):
             store_kwargs,
             evict=evict,
             serialize=serialize,
-            strict=strict
+            strict=strict,
         )
 
 
@@ -119,7 +119,7 @@ class FileStore(RemoteStore):
         path = os.path.join(self.store_dir, key)
         return os.path.exists(path)
 
-    def get_str(self, key: str) -> Optional[str]:
+    def get_bytes(self, key: str) -> Optional[bytes]:
         """Get serialized object from file system
 
         Args:
@@ -130,23 +130,23 @@ class FileStore(RemoteStore):
         """
         path = os.path.join(self.store_dir, key)
         if os.path.exists(path):
-            # TODO(gpauloski): writing hex escape characters
-            with open(path, 'r') as f:
+            with open(path, 'rb') as f:
                 data = f.read()
-                return data  # .hex()
+                return data
         return None
 
-    def set_str(self, key: str, data: str) -> None:
+    def set_bytes(self, key: str, data: bytes) -> None:
         """Write serialized object to file system with key
 
         Args:
             key (str): key corresponding to object.
-            data (str): serialized object.
+            data (bytes): serialized object.
         """
+        if not isinstance(data, bytes):
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = os.path.join(self.store_dir, key)
-        with open(path, 'w') as f:
-            # TODO(gpauloski): writing hex escape characters
-            f.write(data)  # bytes.fromhex(data))
+        with open(path, 'wb') as f:
+            f.write(data)
 
     def proxy(
         self,

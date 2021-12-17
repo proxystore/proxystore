@@ -137,7 +137,7 @@ def test_file_store_custom_serialization() -> None:
     store = FileStore('files', store_dir=STORE_DIR, cache_size=1)
 
     # Pretend serialized string
-    s = 'ABC'
+    s = b'ABC'
     key = 'serial_key'
     store.set(s, key=key, serialize=False)
     assert store.get(key, deserialize=False) == s
@@ -218,9 +218,9 @@ def test_file_store_proxy() -> None:
         store.proxy(key='missing_key')
 
     with raises(Exception):
-        # Array will not be serialized and should raise error when putting
-        # array into Redis
-        store.proxy(np.ndarray([1, 2, 3]), serialize=False)
+        # String will not be serialized and should raise error when putting
+        # into store
+        store.proxy('mystring', serialize=False)
 
     store.cleanup()
 

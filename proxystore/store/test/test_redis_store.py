@@ -158,7 +158,7 @@ def test_redis_store_custom_serialization() -> None:
     )
 
     # Pretend serialized string
-    s = 'ABC'
+    s = b'ABC'
     key = 'serial_key'
     store.set(s, key=key, serialize=False)
     assert store.get(key, deserialize=False) == s
@@ -187,7 +187,7 @@ def test_redis_factory() -> None:
         key,
         'redis',
         store_kwargs={'hostname': REDIS_HOST, 'port': REDIS_PORT},
-        evict=True
+        evict=True,
     )
     assert store.exists(key)
     assert f2() == [1, 2, 3]
@@ -241,9 +241,9 @@ def test_redis_store_proxy() -> None:
         store.proxy(key='missing_key')
 
     with raises(Exception):
-        # Array will not be serialized and should raise error when putting
+        # String will not be serialized and should raise error when putting
         # array into Redis
-        store.proxy(np.ndarray([1, 2, 3]), serialize=False)
+        store.proxy('mystring', serialize=False)
 
 
 def test_proxy_recreates_store() -> None:

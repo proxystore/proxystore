@@ -11,71 +11,71 @@ class SerializationError(Exception):
     pass
 
 
-def serialize(obj: Any) -> str:
+def serialize(obj: Any) -> bytes:
     """Serialize object
 
     Args:
         obj: object to serialize.
 
     Returns:
-        `str` that can be passed to `deserialize()`.
+        `bytes` that can be passed to `deserialize()`.
     """
     if isinstance(obj, bytes):
-        identifier = '01\n'
-        obj = obj.hex()
+        identifier = b'01\n'
     elif isinstance(obj, str):
-        identifier = '02\n'
+        identifier = b'02\n'
+        obj = obj.encode()
     else:
         # Use cloudpickle if pickle fails
         try:
-            identifier = '03\n'
-            obj = pickle.dumps(obj).hex()
+            identifier = b'03\n'
+            obj = pickle.dumps(obj)
         except Exception:
-            identifier = '04\n'
-            obj = cloudpickle.dumps(obj).hex()
+            identifier = b'04\n'
+            obj = cloudpickle.dumps(obj)
 
-    assert isinstance(obj, str)
+    assert isinstance(identifier, bytes)
+    assert isinstance(obj, bytes)
 
     return identifier + obj
 
 
-def deserialize(string: str) -> Any:
+def deserialize(data: bytes) -> Any:
     """Deserialize object
 
     Args:
-        string (str): string produced by `serialize()`.
+        data (bytes): bytes produced by `serialize()`.
 
     Returns:
         object that was serialized.
 
     Raises:
         ValueError:
-            if `string` is not of type `str`.
+            if `data` is not of type `bytes`.
         SerializationError:
-            if the identifier of `string` is missing or invalid.
+            if the identifier of `data` is missing or invalid.
             The identifier is prepended to the string in `serialize()` to
             indicate which serialization method was used
             (e.g., no serialization, Pickle, etc.).
     """
-    if not isinstance(string, str):
+    if not isinstance(data, bytes):
         raise ValueError(
-            'deserialize only accepts str arguments, not '
-            '{}'.format(type(string))
+            'deserialize only accepts bytes arguments, not '
+            '{}'.format(type(data))
         )
-    try:
-        identifier, string = string.split('\n', 1)
-    except ValueError:
+    identifier, separator, data = data.partition(b'\n')
+    if separator == b'' or len(identifier) != len(b'00'):
         raise SerializationError(
-            'String does not have required identifier for deserialization'
+            'data does not have required identifier for deserialization'
         )
-    if identifier == '01':
-        return bytes.fromhex(string)
-    elif identifier == '02':
-        return string
-    elif identifier == '03':
-        return pickle.loads(bytes.fromhex(string))
-    elif identifier == '04':
-        return cloudpickle.loads(bytes.fromhex(string))
+    if identifier == b'01':
+        return data
+    elif identifier == b'02':
+        return data.decode()
+    elif identifier == b'03':
+        return pickle.loads(data)
+    elif identifier == b'04':
+        return cloudpickle.loads(data)
     else:
         raise SerializationError(
             'Unknown identifier {} for deserialization'.format(identifier)

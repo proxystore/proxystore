@@ -26,6 +26,7 @@ class RemoteFactory(Factory):
     used to reinitialize the backend store if the factory is sent to a remote
     process backend has not already been initialized.
     """
+
     def __init__(
         self,
         key: str,
@@ -35,7 +36,7 @@ class RemoteFactory(Factory):
         *,
         evict: bool = False,
         serialize: bool = True,
-        strict: bool = False
+        strict: bool = False,
     ) -> None:
         """Init RemoteFactory
 
@@ -63,11 +64,13 @@ class RemoteFactory(Factory):
         self.strict = strict
         self._obj_future = None
 
-
     def __getnewargs_ex__(self):
         """Helper method for pickling"""
         return (
-            self.key, self.store_type, self.store_name, self.store_kwargs
+            self.key,
+            self.store_type,
+            self.store_name,
+            self.store_kwargs,
         ), {
             'evict': self.evict,
             'serialize': self.serialize,
@@ -152,7 +155,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         self._cache = LRUCache(cache_size) if cache_size > 0 else None
 
     @abstractmethod
-    def get_str(self, key: str) -> Optional[str]:
+    def get_bytes(self, key: str) -> Optional[bytes]:
         """Get serialized object from remote store
 
         Args:
@@ -164,12 +167,12 @@ class RemoteStore(Store, metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def set_str(self, key: str, data: str) -> None:
+    def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in remote store with key
 
         Args:
             key (str): key corresponding to object.
-            data (str): serialized object.
+            data (bytes): serialized object.
         """
         raise NotImplementedError
 
@@ -198,9 +201,9 @@ class RemoteStore(Store, metaclass=ABCMeta):
         if self.is_cached(key, strict=strict):
             return self._cache.get(key)[1]
 
-        value = self.get_str(key)
+        value = self.get_bytes(key)
         if value is not None:
-            timestamp = float(self.get_str(key + '_timestamp'))
+            timestamp = float(self.get_bytes(key + '_timestamp').decode())
             if deserialize:
                 value = ps.serialize.deserialize(value)
             if self._cache is not None:
@@ -225,7 +228,9 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         if self._cache.exists(key):
             if strict:
-                store_timestamp = float(self.get_str(key + '_timestamp'))
+                store_timestamp = float(
+                    self.get_bytes(key + '_timestamp').decode()
+                )
                 cache_timestamp = self._cache.get(key)[0]
                 return cache_timestamp >= store_timestamp
             return True
@@ -252,6 +257,6 @@ class RemoteStore(Store, metaclass=ABCMeta):
         if key is None:
             key = self.create_key(obj)
 
-        self.set_str(key, obj)
-        self.set_str(key + '_timestamp', str(time.time()))
+        self.set_bytes(key, obj)
+        self.set_bytes(key + '_timestamp', str(time.time()).encode())
         return key

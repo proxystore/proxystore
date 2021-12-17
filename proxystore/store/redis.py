@@ -44,7 +44,7 @@ class RedisFactory(RemoteFactory):
         Args:
             key (str): key corresponding to object in store.
             store_name (str): name of store.
-            store_kwargs (dict): optional keyword arguments used to 
+            store_kwargs (dict): optional keyword arguments used to
                 reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
@@ -61,7 +61,7 @@ class RedisFactory(RemoteFactory):
             store_kwargs,
             evict=evict,
             serialize=serialize,
-            strict=strict
+            strict=strict,
         )
 
 
@@ -99,7 +99,8 @@ class RedisStore(RemoteStore):
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(
-            host=hostname, port=port, decode_responses=True
+            host=hostname,
+            port=port,  # decode_responses=True
         )
         super(RedisStore, self).__init__(name, cache_size=cache_size)
 
@@ -123,7 +124,7 @@ class RedisStore(RemoteStore):
         """
         return self._redis_client.exists(key)
 
-    def get_str(self, key: str) -> Optional[str]:
+    def get_bytes(self, key: str) -> Optional[bytes]:
         """Get serialized object from Redis
 
         Args:
@@ -134,13 +135,15 @@ class RedisStore(RemoteStore):
         """
         return self._redis_client.get(key)
 
-    def set_str(self, key: str, data: str) -> None:
+    def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in Redis with key
 
         Args:
             key (str): key corresponding to object.
-            data (str): serialized object.
+            data (bytes): serialized object.
         """
+        if not isinstance(data, bytes):
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         self._redis_client.set(key, data)
 
     def proxy(
