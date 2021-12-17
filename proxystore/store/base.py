@@ -19,6 +19,9 @@ class Store(metaclass=ABCMeta):
         """
         self.name = name
 
+    def __del__(self) -> None:
+        self.cleanup()
+
     def cleanup(self) -> None:
         """Cleanup any objects associated with the store
 
