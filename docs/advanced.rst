@@ -90,14 +90,14 @@ Redis Example
    store = ps.store.get_store('redis')
 
    # Stores have basic get/set functionality
-   store.set('key', my_object)
-   assert my_object == store.get('key')
+   key = store.set(my_object)
+   assert my_object == store.get(key)
 
    # Place an object in the store and return a proxy
    p = store.proxy(my_other_object)
 
    # Get a proxy reference for an object already in the store
-   p = store.proxy(key='key')
+   p = store.proxy(key=key)
 
 The provided store implementations also provide factories that know how to interact with the store and initialize the store interface if needed again.
 For example, if a :any:`RedisStore <proxystore.store.redis.RedisStore>` is initialized in one Python process and a proxy referencing an object in the Redis server is created, serialized, and sent to another Python process, the proxy will be able to initialize another :any:`RedisStore <proxystore.store.redis.RedisStore>` interface on the new process to resolve the object.
@@ -128,7 +128,7 @@ A future for the thread is store inside the factory (and therefore inside the pr
 Caching
 -------
 
-The :any:`RemoteStore <proxystore.store.base.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
+The :any:`RemoteStore <proxystore.store.remote.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
 Caches are local to the Python process but will speed up the resolution when multiple proxies refer to the same object in the Redis server.
 
 Transactional Guarentees
@@ -137,6 +137,8 @@ Transactional Guarentees
 By default, ProxyStore does not guarentee a proxy resolves with the most recent version of an object.
 If the object associated with `custom-key` in the backend store later changes before the proxy has been resolved, it is not guarenteed which version of the object will be returned (generally because the older version may be cached locally).
 :any:`Store.proxy() <proxystore.store.base.Store.proxy>` accepts a :code:`strict` flag to enforce that the proxy will always resolve to the most up to date version of the object associated with `custom-key`.
+
+Note that not all :any:`Store <proxystore.store.base.Store>` types support mutable objects so :code:`strict` may be unused.
 
 Known Issues
 ------------

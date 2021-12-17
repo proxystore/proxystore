@@ -6,8 +6,10 @@ proxystore.store
    proxystore.store.base
    proxystore.store.cache
    proxystore.store.file
+   proxystore.store.globus
    proxystore.store.local
    proxystore.store.redis
+   proxystore.store.remote
 
 .. autoclass:: proxystore.store.STORES
    :members:
