@@ -1,61 +1,9 @@
 """LocalStore Unit Tests"""
-import numpy as np
-
 from pytest import raises
 
 import proxystore as ps
 from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalFactory
-
-
-def test_local_store_init() -> None:
-    """Test LocalStore Initialization"""
-    LocalStore(name='local')
-
-    ps.store.init_store('local', name='local')
-
-
-def test_local_store_base() -> None:
-    """Test LocalStore Base Functionality"""
-    store = LocalStore(name='local')
-    value = 'test_value'
-    key_fake = 'key_fake'
-
-    # LocalStore.set()
-    key_bytes = store.set(str.encode(value))
-    key_str = store.set(value)
-    key_callable = store.set(lambda: value)
-    key_numpy = store.set(np.array([1, 2, 3]), key='key_numpy')
-    assert key_numpy == 'key_numpy'
-
-    # LocalStore.get()
-    assert store.get(key_bytes) == str.encode(value)
-    assert store.get(key_str) == value
-    assert store.get(key_callable).__call__() == value
-    assert store.get(key_fake) is None
-    assert store.get(key_fake, default='alt_value') == 'alt_value'
-    assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
-
-    # LocalStore.exists()
-    assert store.exists(key_bytes)
-    assert store.exists(key_str)
-    assert store.exists(key_callable)
-    assert not store.exists(key_fake)
-
-    # LocalStore.is_cached()
-    assert store.is_cached(key_bytes)
-    assert store.is_cached(key_str)
-    assert store.is_cached(key_callable)
-    assert not store.is_cached(key_fake)
-
-    # LocalStore.evict()
-    store.evict(key_str)
-    assert not store.exists(key_str)
-    assert not store.is_cached(key_str)
-    store.evict(key_fake)
-
-    # Should be a no-op
-    store.cleanup()
 
 
 def test_local_factory() -> None:
@@ -68,7 +16,7 @@ def test_local_factory() -> None:
     with raises(RuntimeError):
         f()
 
-    store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
+    store = ps.store.init_store(LocalStore, 'local')
 
     key = store.set([1, 2, 3], key=key)
     f = LocalFactory(key, name='local')

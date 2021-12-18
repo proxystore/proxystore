@@ -270,7 +270,7 @@ class GlobusStore(RemoteStore):
                 :class:`GlobusStore <.GlobusStore>` can currently only keep
                 two endpoints in sync.
         """
-        if import_error is not None:
+        if import_error is not None:  # pragma: no cover
             raise import_error
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
@@ -339,6 +339,8 @@ class GlobusStore(RemoteStore):
 
     def _validate_key(self, key: str) -> str:
         """Validate key contains a real Globus task id"""
+        if len(key.split(":")) != 2:
+            return False
         try:
             self._transfer_client.get_task(self._get_task_id(key))
         except globus_sdk.TransferAPIError as e:
@@ -421,8 +423,7 @@ class GlobusStore(RemoteStore):
             return
 
         path = self._get_filepath(key)
-        if os.path.exists(path):
-            os.remove(path)
+        os.remove(path)
         self._cache.evict(key)
         self._sync_endpoints()
         logger.debug(
@@ -575,7 +576,7 @@ class GlobusStore(RemoteStore):
 
     def proxy(
         self,
-        obj: Optional[object],
+        obj: Optional[object] = None,
         *,
         key: Optional[str] = None,
         factory: Factory = GlobusFactory,
@@ -597,7 +598,13 @@ class GlobusStore(RemoteStore):
 
         Returns:
             :any:`Proxy <proxystore.proxy.Proxy>`
+
+        Raise:
+            ValueError:
+                if `key` and `obj` are both `None`.
         """
+        if key is None and obj is None:
+            raise ValueError('At least one of key or obj must be specified')
         if obj is not None:
             if 'serialize' in kwargs:
                 key = self.set(obj, key=key, serialize=kwargs['serialize'])

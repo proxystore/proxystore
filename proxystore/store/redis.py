@@ -13,7 +13,6 @@ except ImportError as e:  # pragma: no cover
     # constructor of RedisStore
     redis = e
 
-import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.remote import RemoteFactory, RemoteStore
@@ -179,22 +178,14 @@ class RedisStore(RemoteStore):
         Raises:
             ValueError:
                 if `key` and `obj` are both `None`.
-            ValueError:
-                if `obj` is None and `key` does not exist in the store.
         """
         if key is None and obj is None:
             raise ValueError('At least one of key or obj must be specified')
-        if key is None:
-            key = ps.utils.create_key(obj)
         if obj is not None:
             if 'serialize' in kwargs:
                 key = self.set(obj, key=key, serialize=kwargs['serialize'])
             else:
                 key = self.set(obj, key=key)
-        elif not self.exists(key):
-            raise ValueError(
-                f'An object with key {key} does not exist in the store'
-            )
         logger.debug(
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')"

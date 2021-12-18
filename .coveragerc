@@ -10,4 +10,3 @@ exclude_lines =
 ignore_errors = True
 omit =
     */test*
-    proxystore/store/globus.py
