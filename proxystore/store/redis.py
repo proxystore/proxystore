@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 from typing import Any, Dict, Optional
 
@@ -139,6 +140,25 @@ class RedisStore(RemoteStore):
         """
         return self._redis_client.get(key)
 
+    def get_timestamp(self, key: str) -> float:
+        """Get timestamp of most recent object version in the store
+
+        Args:
+            key (str): key corresponding to object.
+
+        Returns:
+            timestamp (float) of when key was added to redis (seconds since
+            epoch).
+
+        Raises:
+            KeyError:
+                if `key` does not exist in store.
+        """
+        value = self._redis_client.get(key + "_timestamp")
+        if value is None:
+            raise KeyError(f"Key='{key}' does not exist in Redis store")
+        return float(value.decode())
+
     def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in Redis with key
 
@@ -148,6 +168,8 @@ class RedisStore(RemoteStore):
         """
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
+        # We store the creation time for the key as a separate redis key-value.
+        self._redis_client.set(key + "_timestamp", time.time())
         self._redis_client.set(key, data)
 
     def proxy(

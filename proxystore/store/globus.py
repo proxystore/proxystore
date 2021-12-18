@@ -6,6 +6,7 @@ import json
 import os
 import re
 import socket
+import time
 import warnings
 
 from typing import Any, Dict, List, Optional, Pattern, Union
@@ -467,6 +468,26 @@ class GlobusStore(RemoteStore):
         with open(path, 'rb') as f:
             return f.read()
 
+    def get_timestamp(self, key: str) -> float:
+        """Get timestamp of most recent object version in the store
+
+        Args:
+            key (str): key corresponding to object.
+
+        Returns:
+            timestamp (float) representing file modified time (seconds since
+            epoch).
+
+        Raises:
+            KeyError:
+                if `key` does not exist in store.
+        """
+        if not self.exists(key):
+            raise KeyError(
+                f"Key='{key}' does not have a corresponding file in the store"
+            )
+        return os.path.getmtime(self._get_filepath(key))
+
     def get(
         self,
         key: str,
@@ -546,8 +567,12 @@ class GlobusStore(RemoteStore):
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = self._get_filepath(filename=key)
-        with open(path, 'wb') as f:
+        with open(path, 'wb', buffering=0) as f:
             f.write(data)
+        # Manually set timestamp on file with nanosecond precision because some
+        # filesystems can have low default file modified precisions
+        timestamp = time.time_ns()
+        os.utime(path, ns=(timestamp, timestamp))
 
     def set(
         self, obj: Any, *, key: Optional[str] = None, serialize: bool = True

@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import time
 
 from abc import ABCMeta, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
@@ -201,7 +200,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
             object associated with key or `default` if key does not exist.
         """
         if self.is_cached(key, strict=strict):
-            value = self._cache.get(key)[1]
+            value = self._cache.get(key)["value"]
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=True"
@@ -210,11 +209,11 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         value = self.get_bytes(key)
         if value is not None:
-            timestamp = float(self.get_bytes(key + '_timestamp').decode())
+            timestamp = self.get_timestamp(key)
             if deserialize:
                 value = ps.serialize.deserialize(value)
             if self._cache is not None:
-                self._cache.set(key, (timestamp, value))
+                self._cache.set(key, {"timestamp": timestamp, "value": value})
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=False"
@@ -226,6 +225,10 @@ class RemoteStore(Store, metaclass=ABCMeta):
             f"(name='{self.name}'): key did not exist, returned default"
         )
         return default
+
+    def get_timestamp(self, key: str) -> float:
+        """Get timestamp of most recent object version in the store"""
+        raise NotImplementedError
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
         """Check if object is cached locally
@@ -243,10 +246,8 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         if self._cache.exists(key):
             if strict:
-                store_timestamp = float(
-                    self.get_bytes(key + '_timestamp').decode()
-                )
-                cache_timestamp = self._cache.get(key)[0]
+                store_timestamp = self.get_timestamp(key)
+                cache_timestamp = self._cache.get(key)["timestamp"]
                 return cache_timestamp >= store_timestamp
             return True
 
@@ -273,7 +274,6 @@ class RemoteStore(Store, metaclass=ABCMeta):
             key = self.create_key(obj)
 
         self.set_bytes(key, obj)
-        self.set_bytes(key + '_timestamp', str(time.time()).encode())
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
             f"(name='{self.name}')"

@@ -137,6 +137,21 @@ def test_store_caching(store_config) -> None:
     store.cleanup()
 
 
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+def test_store_timestamps(store_config) -> None:
+    """Test Store Timestamps"""
+    store = store_config["type"](
+        store_config["name"], **store_config["kwargs"], cache_size=1
+    )
+
+    missing_key = "key12398908352"
+    with raises(KeyError):
+        store.get_timestamp(missing_key)
+
+    key = store.set('timestamp_test_value')
+    assert isinstance(store.get_timestamp(key), float)
+
+
 @mark.parametrize('store_config', [FILE_STORE, REDIS_STORE])
 def test_store_strict(store_config) -> None:
     """Test Store Strict Functionality"""
@@ -156,6 +171,7 @@ def test_store_strict(store_config) -> None:
 
     # Change value in Store
     key = store.set('new_value', key=base_key)
+    # Old value of key is still cached
     assert store.get(key) == value
     assert store.is_cached(key)
     assert not store.is_cached(key, strict=True)
