@@ -231,7 +231,13 @@ class GlobusFactory(RemoteFactory):
 
 
 class GlobusStore(RemoteStore):
-    """Globus backend class"""
+    """Globus backend classi
+
+    Warning:
+        The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
+        IDs into the keys, thus the keys returned by functions such
+        as :func:`set() <set>` will be different.
+    """
 
     def __init__(
         self,
@@ -550,8 +556,9 @@ class GlobusStore(RemoteStore):
 
         Args:
             obj (object): object to be placed in the store.
-            key (str, optional): key to use with the object. If the key is not
-                provided, one will be created.
+            key (str, optional): key to used to name the file in the store.
+                If the key is not provided, one will be created. Note the
+                actual key that is returned by this function will be different.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
 
