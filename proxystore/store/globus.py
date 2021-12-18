@@ -18,7 +18,7 @@ from proxystore.store.remote import RemoteFactory, RemoteStore
 import_error = None
 try:
     import globus_sdk
-    from parsl.data_provider.globus import get_globus
+    from parsl.data_provider import globus
 except ImportError as e:  # pragma: no cover
     import_error = e
 
@@ -289,7 +289,7 @@ class GlobusStore(RemoteStore):
         self.sync_level = sync_level
         self.timeout = timeout
 
-        parsl_globus_auth = get_globus()
+        parsl_globus_auth = globus.get_globus()
 
         self._transfer_client = globus_sdk.TransferClient(
             authorizer=parsl_globus_auth.authorizer

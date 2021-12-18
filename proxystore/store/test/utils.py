@@ -103,7 +103,10 @@ class MockDeleteData:
 
 def mock_get_globus():
     """Mock get_globus()"""
-    return None
+    class MockGlobusAuth:
+        def __init__(self):
+            self.authorizer = None
+    return MockGlobusAuth()
 
 
 def mock_globus_and_parsl():
