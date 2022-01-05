@@ -1,17 +1,18 @@
-"""Backend Store Abstract Classes"""
+"""Base Store Abstract Class"""
 from __future__ import annotations
 
-import time
+import logging
 
-from abc import ABC, abstractmethod
-from typing import Any, Optional
+from abc import ABCMeta, abstractmethod
+from typing import Any, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.store.cache import LRUCache
+
+logger = logging.getLogger(__name__)
 
 
-class Store(ABC):
+class Store(metaclass=ABCMeta):
     """Abstraction of a key-value store"""
 
     def __init__(self, name) -> None:
@@ -21,6 +22,44 @@ class Store(ABC):
             name (str): name of the store instance.
         """
         self.name = name
+        logger.debug(f"Initialized {self}")
+
+    def __repr__(self) -> None:
+        """String representation of Store instance"""
+        s = f"{ps.utils.fullname(self.__class__)}("
+        attributes = [
+            f"{key}={value}"
+            for key, value in self.__dict__.items()
+            if not key.startswith('_') and not callable(value)
+        ]
+        attributes.sort()
+        s += ", ".join(attributes)
+        s += ")"
+        return s
+
+    def cleanup(self) -> None:
+        """Cleanup any objects associated with the store
+
+        Many :class:`Store <.Store>` types do not have any objects that
+        requiring cleaning up so this method is simply a no-op.
+
+        Warning:
+            This method should only be called at the end of the program
+            when the store will no longer be used, for example once all
+            proxies have been resolved.
+        """
+        pass
+
+    def create_key(self, obj: Any) -> str:
+        """Create key for the object
+
+        Args:
+            obj: object to be placed in store.
+
+        Returns:
+            key (str)
+        """
+        return ps.utils.create_key(obj)
 
     @abstractmethod
     def evict(self, key: str) -> None:
@@ -83,8 +122,8 @@ class Store(ABC):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = Factory,
         **kwargs,
     ) -> 'ps.proxy.Proxy':
@@ -124,142 +163,79 @@ class Store(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def set(self, key: str, obj: Any) -> None:
-        """Set key-object pair in store
+    def proxy_batch(
+        self,
+        objs: Optional[Iterable[Optional[object]]] = None,
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+        factory: Factory = Factory,
+        **kwargs,
+    ) -> List['ps.proxy.Proxy']:
+        """Create proxies for batch of objects in the store
+
+        See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
+        details.
 
         Args:
-            key (str): key to use with the object.
-            obj (object): object to be placed in the store.
-        """
-        raise NotImplementedError
+            objs (Iterable[object]): objects to place in store and return
+                proxies for. If an iterable of objects is not provided, an
+                iterable of keys must be provided that correspond to objects
+                already in the store (default: None).
+            keys (Iterable[str]): optional keys to associate with `objs` in the
+                store. If not provided, keys will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxies. The factory class should be able
+                to correctly resolve an object from this store
+                (default: :any:`Factory <proxystore.factory.Factory>`).
+            kwargs (dict): additional arguments to pass to the Factory.
 
-
-class RemoteStore(Store, ABC):
-    """Abstraction for interacting with a remote key-value store
-
-    Provides base functionality for interaction with a remote store including
-    serialization and caching.
-    Subclasses of :class:`RemoteStore` must implement
-    :func:`evict() <Store.evict()>`, :func:`exists() <Store.exists()>`,
-    :func:`get_str()`, :func:`set_str()` and :func:`proxy() <Store.proxy()>`.
-    The :class:`RemoteStore` handles the caching.
-
-    :class:`RemoteStore` stores key-string pairs, i.e., objects passed to
-    :func:`get()` or :func:`set()` will be appropriately (de)serialized.
-    Functionality for serialized, caching, and strict guarentees are already
-    provided in :func:`get()` and :func:`set()`.
-    """
-
-    def __init__(self, name: str, cache_size: int = 0) -> None:
-        """Init RemoteStore
-
-        Args:
-            name (str): name of the store instance.
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 0).
+        Returns:
+            List of :any:`Proxy <proxystore.proxy.Proxy>`
 
         Raises:
             ValueError:
-                if `cache_size` is negative.
-        """
-        if cache_size < 0:
-            raise ValueError('Cache size cannot be negative')
-        self.name = name
-        self.cache_size = cache_size
-        self._cache = LRUCache(cache_size) if cache_size > 0 else None
-
-    @abstractmethod
-    def get_str(self, key: str) -> Optional[str]:
-        """Get serialized object from remote store
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
+                if `keys` and `objs` are both `None`.
+            ValueError:
+                if `objs` is None and `keys` does not exist in the store.
         """
         raise NotImplementedError
 
     @abstractmethod
-    def set_str(self, key: str, data: str) -> None:
-        """Set serialized object in remote store with key
-
-        Args:
-            key (str): key corresponding to object.
-            data (str): serialized object.
-        """
-        raise NotImplementedError
-
-    def get(
-        self,
-        key: str,
-        *,
-        deserialize: bool = True,
-        strict: bool = False,
-        default: Optional[object] = None,
-    ) -> Optional[object]:
-        """Return object associated with key
-
-        Args:
-            key (str): key corresponding to object.
-            deserialize (bool): deserialize object if True. If objects
-                are custom serialized, set this as False (default: True).
-            strict (bool): guarentee returned object is the most recent
-                version (default: False).
-            default: optionally provide value to be returned if an object
-                associated with the key does not exist (default: None).
-
-        Returns:
-            object associated with key or `default` if key does not exist.
-        """
-        if self.is_cached(key, strict=strict):
-            return self._cache.get(key)[1]
-
-        value = self.get_str(key)
-        if value is not None:
-            timestamp = float(self.get_str(key + '_timestamp'))
-            if deserialize:
-                value = ps.serialize.deserialize(value)
-            if self._cache is not None:
-                self._cache.set(key, (timestamp, value))
-            return value
-
-        return default
-
-    def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally
-
-        Args:
-            key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version
-                (default: False).
-
-        Returns:
-            bool
-        """
-        if self._cache is None:
-            return False
-
-        if self._cache.exists(key):
-            if strict:
-                store_timestamp = float(self.get_str(key + '_timestamp'))
-                cache_timestamp = self._cache.get(key)[0]
-                return cache_timestamp >= store_timestamp
-            return True
-
-        return False
-
-    def set(self, key: str, obj: Any, *, serialize: bool = True) -> None:
+    def set(self, obj: Any, *, key: Optional[str] = None) -> str:
         """Set key-object pair in store
 
         Args:
-            key (str): key to use with the object.
             obj (object): object to be placed in the store.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-        """
-        if serialize:
-            obj = ps.serialize.serialize(obj)
+            key (str, optional): key to use with the object. If the key is not
+                provided, one will be created.
 
-        self.set_str(key, obj)
-        self.set_str(key + '_timestamp', str(time.time()))
+        Returns:
+            key (str). Note that some implementations of a store may return
+            a key different from the provided key.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_batch(
+        self,
+        objs: Iterable[Any],
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+    ) -> List[str]:
+        """Set objects in store
+
+        Args:
+            objs (Iterable[object]): iterable of objects to be placed in the
+                store.
+            keys (Iterable[str], optional): keys to use with the objects.
+                If the keys are not provided, keys will be created.
+
+        Returns:
+            List of keys (str). Note that some implementations of a store may
+            return keys different from the provided keys.
+
+        Raises:
+            ValueError:
+                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
+        """
+        raise NotImplementedError

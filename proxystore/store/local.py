@@ -1,12 +1,16 @@
 """LocalStore Implementation"""
 from __future__ import annotations
 
-from typing import Any, Optional
+import logging
+
+from typing import Any, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+
+logger = logging.getLogger(__name__)
 
 
 class LocalFactory(Factory):
@@ -72,6 +76,10 @@ class LocalStore(Store):
         """
         if key in self._store:
             del self._store[key]
+        logger.debug(
+            f"EVICT key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
 
     def exists(self, key: str) -> bool:
         """Check if key exists
@@ -104,7 +112,15 @@ class LocalStore(Store):
             object associated with key or `default` if key does not exist.
         """
         if key in self._store:
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}')"
+            )
             return self._store[key]
+        logger.debug(
+            f"GET key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}'): key does not exists, returned default"
+        )
         return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
@@ -123,8 +139,8 @@ class LocalStore(Store):
     def proxy(
         self,
         obj: Optional[object] = None,
-        key: Optional[str] = None,
         *,
+        key: Optional[str] = None,
         factory: Factory = LocalFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
@@ -156,18 +172,102 @@ class LocalStore(Store):
         if key is None:
             key = ps.utils.create_key(obj)
         if obj is not None:
-            self.set(key, obj)
+            self.set(obj, key=key)
         elif not self.exists(key):
             raise ValueError(
                 f'An object with key {key} does not exist in the store'
             )
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
         return Proxy(factory(key=key, name=self.name, **kwargs))
 
-    def set(self, key: str, obj: Any) -> None:
+    def proxy_batch(
+        self,
+        objs: Optional[Iterable[Optional[object]]] = None,
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+        factory: Factory = Factory,
+        **kwargs,
+    ) -> List['ps.proxy.Proxy']:
+        """Create proxies for batch of objects in the store
+
+        See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
+        details.
+
+        Args:
+            objs (Iterable[object]): objects to place in store and return
+                proxies for. If an iterable of objects is not provided, an
+                iterable of keys must be provided that correspond to objects
+                already in the store (default: None).
+            keys (Iterable[str]): optional keys to associate with `objs` in the
+                store. If not provided, keys will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxies. The factory class should be able
+                to correctly resolve an object from this store
+                (default: :any:`Factory <proxystore.factory.Factory>`).
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            List of :any:`Proxy <proxystore.proxy.Proxy>`
+
+        Raises:
+            ValueError:
+                if `keys` and `objs` are both `None`.
+            ValueError:
+                if `objs` is None and `keys` does not exist in the store.
+        """
+        keys = self.set_batch(objs, keys=keys)
+        return [self.proxy(None, key=key, **kwargs) for key in keys]
+
+    def set(self, obj: Any, *, key: Optional[str] = None) -> str:
         """Set key-object pair in store
 
         Args:
-            key (str): key to use with the object.
             obj (object): object to be placed in the store.
+            key (str, optional): key to use with the object. If the key is not
+                provided, one will be created.
+
+        Returns:
+            key (str)
         """
+        if key is None:
+            key = ps.utils.create_key(obj)
         self._store[key] = obj
+        logger.debug(
+            f"SET key='{key}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
+        return key
+
+    def set_batch(
+        self,
+        objs: Iterable[Any],
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+    ) -> List[str]:
+        """Set objects in store
+
+        Args:
+            objs (Iterable[object]): iterable of objects to be placed in the
+                store.
+            keys (Iterable[str], optional): keys to use with the objects.
+                If the keys are not provided, keys will be created.
+
+        Returns:
+            List of keys (str). Note that some implementations of a store may
+            return keys different from the provided keys.
+
+        Raises:
+            ValueError:
+                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
+        """
+        if keys is not None and len(objs) != len(keys):
+            raise ValueError(
+                f'objs has length {len(objs)} but keys has length {len(keys)}'
+            )
+        if keys is None:
+            keys = [None] * len(objs)
+
+        return [self.set(obj, key=key) for key, obj in zip(keys, objs)]

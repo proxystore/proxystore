@@ -1,18 +1,10 @@
-"""RedisStore Implementation"""
-from __future__ import annotations
-
+"""FileStore Implementation"""
 import logging
+import os
+import shutil
 import time
 
 from typing import Any, Dict, Optional
-
-try:
-    import redis
-except ImportError as e:  # pragma: no cover
-    # We do not want to raise this ImportError if the user never
-    # uses the RedisStore so we delay raising the error until the
-    # constructor of RedisStore
-    redis = e
 
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
@@ -21,11 +13,11 @@ from proxystore.store.remote import RemoteFactory, RemoteStore
 logger = logging.getLogger(__name__)
 
 
-class RedisFactory(RemoteFactory):
-    """Factory for Instances of RedisStore
+class FileFactory(RemoteFactory):
+    """Factory for Instances of FileStore
 
     Adds support for asynchronously retrieving objects from a
-    :class:`RedisStore <.RedisStore>` backend and optional, strict guarentees
+    :class:`FileStore <.FileStore>` backend and optional, strict guarentees
     on object versions.
 
     The factory takes the `store_type` and `store_args` parameters that are
@@ -43,7 +35,7 @@ class RedisFactory(RemoteFactory):
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init RedisFactory
+        """Init FileFactory
 
         Args:
             key (str): key corresponding to object in store.
@@ -58,9 +50,9 @@ class RedisFactory(RemoteFactory):
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
-        super(RedisFactory, self).__init__(
+        super(FileFactory, self).__init__(
             key,
-            RedisStore,
+            FileStore,
             store_name,
             store_kwargs,
             evict=evict,
@@ -69,49 +61,53 @@ class RedisFactory(RemoteFactory):
         )
 
 
-class RedisStore(RemoteStore):
-    """Redis backend class"""
+class FileStore(RemoteStore):
+    """File backend class"""
 
     def __init__(
         self,
         name: str,
         *,
-        hostname: str,
-        port: int,
+        store_dir: str,
         cache_size: int = 16,
     ) -> None:
-        """Init RedisStore
+        """Init FileStore
 
         Args:
             name (str): name of the store instance.
-            hostname (str): Redis server hostname.
-            port (int): Redis server port.
+            store_dir (str): path to directory
             cache_size (int): size of local cache (in # of objects). If 0,
                 the cache is disabled (default: 16).
-
-        Raise:
-            ImportError:
-                if `redis-py <https://redis-py.readthedocs.io/en/stable/>`_
-                is not installed.
         """
-        if isinstance(redis, ImportError):  # pragma: no cover
-            raise ImportError(
-                'The redis-py package must be installed to use the '
-                'RedisStore backend'
-            )
+        self.store_dir = store_dir
 
-        self.hostname = hostname
-        self.port = port
-        self._redis_client = redis.StrictRedis(host=hostname, port=port)
-        super(RedisStore, self).__init__(name, cache_size=cache_size)
+        if not os.path.exists(self.store_dir):
+            os.makedirs(self.store_dir, exist_ok=True)
+
+        super(FileStore, self).__init__(name, cache_size=cache_size)
+
+    def cleanup(self) -> None:
+        """Cleanup all files associated with the file system store
+
+        Warning:
+            Will delete the `store_dir` directory.
+
+        Warning:
+            This method should only be called at the end of the program
+            when the store will no longer be used, for example once all
+            proxies have been resolved.
+        """
+        shutil.rmtree(self.store_dir)
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from Redis
+        """Remove the object associated with key from the file system store
 
         Args:
             key (str): key corresponding to object in store to evict.
         """
-        self._redis_client.delete(key)
+        path = os.path.join(self.store_dir, key)
+        if os.path.exists(path):
+            os.remove(path)
         self._cache.evict(key)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
@@ -119,7 +115,7 @@ class RedisStore(RemoteStore):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in Redis
+        """Check if key exists in file system store
 
         Args:
             key (str): key to check.
@@ -127,10 +123,11 @@ class RedisStore(RemoteStore):
         Returns:
             `bool`
         """
-        return self._redis_client.exists(key)
+        path = os.path.join(self.store_dir, key)
+        return os.path.exists(path)
 
     def get_bytes(self, key: str) -> Optional[bytes]:
-        """Get serialized object from Redis
+        """Get serialized object from file system
 
         Args:
             key (str): key corresponding to object.
@@ -138,7 +135,12 @@ class RedisStore(RemoteStore):
         Returns:
             serialized object or `None` if it does not exist.
         """
-        return self._redis_client.get(key)
+        path = os.path.join(self.store_dir, key)
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                data = f.read()
+                return data
+        return None
 
     def get_timestamp(self, key: str) -> float:
         """Get timestamp of most recent object version in the store
@@ -147,20 +149,21 @@ class RedisStore(RemoteStore):
             key (str): key corresponding to object.
 
         Returns:
-            timestamp (float) of when key was added to redis (seconds since
+            timestamp (float) representing file modified time (seconds since
             epoch).
 
         Raises:
             KeyError:
                 if `key` does not exist in store.
         """
-        value = self._redis_client.get(key + "_timestamp")
-        if value is None:
-            raise KeyError(f"Key='{key}' does not exist in Redis store")
-        return float(value.decode())
+        if not self.exists(key):
+            raise KeyError(
+                f"Key='{key}' does not have a corresponding file in the store"
+            )
+        return os.path.getmtime(os.path.join(self.store_dir, key))
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Redis with key
+        """Write serialized object to file system with key
 
         Args:
             key (str): key corresponding to object.
@@ -168,16 +171,20 @@ class RedisStore(RemoteStore):
         """
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
-        # We store the creation time for the key as a separate redis key-value.
-        self._redis_client.set(key + "_timestamp", time.time())
-        self._redis_client.set(key, data)
+        path = os.path.join(self.store_dir, key)
+        with open(path, 'wb', buffering=0) as f:
+            f.write(data)
+        # Manually set timestamp on file with nanosecond precision because some
+        # filesystems can have low default file modified precisions
+        timestamp = time.time_ns()
+        os.utime(path, ns=(timestamp, timestamp))
 
     def proxy(
         self,
         obj: Optional[object] = None,
         *,
         key: Optional[str] = None,
-        factory: Factory = RedisFactory,
+        factory: Factory = FileFactory,
         **kwargs,
     ) -> 'proxystore.proxy.Proxy':  # noqa: F821
         """Create a proxy that will resolve to an object in the store
@@ -191,7 +198,7 @@ class RedisStore(RemoteStore):
             factory (Factory): factory class that will be instantiated
                 and passed to the proxy. The factory class should be able
                 to correctly resolve the object from this store
-                (default: :class:`RedisFactory <.RedisFactory>`).
+                (default: :class:`FileFactory <.FileFactory>`).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -217,8 +224,7 @@ class RedisStore(RemoteStore):
                 key,
                 store_name=self.name,
                 store_kwargs={
-                    'hostname': self.hostname,
-                    'port': self.port,
+                    'store_dir': self.store_dir,
                     'cache_size': self.cache_size,
                 },
                 **kwargs,

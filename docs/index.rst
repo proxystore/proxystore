@@ -17,6 +17,7 @@ ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_.
 
    quickstart
    advanced
+   guides
    contributing
    source/api
    changelog

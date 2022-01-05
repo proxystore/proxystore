@@ -26,13 +26,13 @@ def test_serialization() -> None:
     assert f() == [1, 2, 3]
 
     with raises(ValueError):
-        # deserialize raises ValueError on non-string inputs
-        deserialize(b'xxx')
-
-    with raises(SerializationError):
-        # No identifier
+        # deserialize raises ValueError on non-bytes inputs
         deserialize('xxx')
 
     with raises(SerializationError):
+        # No identifier
+        deserialize(b'xxx')
+
+    with raises(SerializationError):
         # Fake identifer 'xxx'
-        deserialize('xxx\nxxx')
+        deserialize(b'99\nxxx')
