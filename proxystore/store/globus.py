@@ -232,7 +232,17 @@ class GlobusFactory(RemoteFactory):
 
 
 class GlobusStore(RemoteStore):
-    """Globus backend classi
+    """Globus backend class
+
+    The :class:`GlobusStore <.GlobusStore>` is similar to a
+    :class:`FileStore <proxystore.store.file.FileStore>` in that objects in the
+    store are saved to disk but allows for the transfer of objects between two
+    remote file systems. The two directories on the separate file systems are
+    kept in sync via Globus transfers. The :class:`GlobusStore <.GlobusStore>`
+    is useful when moving data between hosts that have a Globus endpoint but
+    may have restrictions that prevent the use of other store backends
+    (e.g., ports cannot be opened for using a
+    :class:`RedisStore <proxystore.store.redis.RedisStore>`).
 
     Warning:
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
@@ -629,7 +639,7 @@ class GlobusStore(RemoteStore):
 
         Raises:
             ValueError:
-                if :code:`keys is not None and len(objs) != len(keys)`.
+                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(

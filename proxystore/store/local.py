@@ -193,7 +193,8 @@ class LocalStore(Store):
     ) -> List['ps.proxy.Proxy']:
         """Create proxies for batch of objects in the store
 
-        See :func:`proxy() <proxystore.store.base.proxy>` for more details.
+        See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
+        details.
 
         Args:
             objs (Iterable[object]): objects to place in store and return
@@ -260,7 +261,7 @@ class LocalStore(Store):
 
         Raises:
             ValueError:
-                if :code:`keys is not None and len(objs) != len(keys)`.
+                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
