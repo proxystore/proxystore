@@ -9,7 +9,7 @@ with open('README.md') as f:
 
 setuptools.setup(
     name="ProxyStore",
-    version="0.2.0",
+    version="0.3.0",
     author="Greg Pauloski",
     author_email="jgpauloski@uchicago.edu",
     description="Python Lazy Object Proxy Interface for Distributed Stores",

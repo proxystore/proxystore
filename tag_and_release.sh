@@ -38,6 +38,15 @@ else
     exit -1
 fi
 
+# Check if setup.py updated
+if grep -Fxq "    version=\"$1\"," setup.py
+then
+    echo "setup.py contains correct version: $VERSION"
+else
+    echo "[ERROR] setup.py has wrong version: $VERSION"
+    exit -1
+fi
+
 create_tag () {
 
     echo "Creating tag"
