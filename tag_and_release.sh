@@ -29,6 +29,15 @@ else
     exit -1
 fi
 
+# Check if changelog updated
+if grep -Fxq "Version $1" docs/changelog.rst
+then
+    echo "Changelog contains header for version: $VERSION"
+else
+    echo "[ERROR] Changelog missing header for version: $VERSION"
+    exit -1
+fi
+
 create_tag () {
 
     echo "Creating tag"
