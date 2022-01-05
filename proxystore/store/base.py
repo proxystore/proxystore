@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Optional
+from typing import Any, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -163,6 +163,43 @@ class Store(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
+    def proxy_batch(
+        self,
+        objs: Optional[Iterable[Optional[object]]] = None,
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+        factory: Factory = Factory,
+        **kwargs,
+    ) -> List['ps.proxy.Proxy']:
+        """Create proxies for batch of objects in the store
+
+        See :func:`proxy() <proxystore.store.base.proxy>` for more details.
+
+        Args:
+            objs (Iterable[object]): objects to place in store and return
+                proxies for. If an iterable of objects is not provided, an
+                iterable of keys must be provided that correspond to objects
+                already in the store (default: None).
+            keys (Iterable[str]): optional keys to associate with `objs` in the
+                store. If not provided, keys will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxies. The factory class should be able
+                to correctly resolve an object from this store
+                (default: :any:`Factory <proxystore.factory.Factory>`).
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            List of :any:`Proxy <proxystore.proxy.Proxy>`
+
+        Raises:
+            ValueError:
+                if `keys` and `objs` are both `None`.
+            ValueError:
+                if `objs` is None and `keys` does not exist in the store.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def set(self, obj: Any, *, key: Optional[str] = None) -> str:
         """Set key-object pair in store
 
@@ -174,5 +211,30 @@ class Store(metaclass=ABCMeta):
         Returns:
             key (str). Note that some implementations of a store may return
             a key different from the provided key.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def set_batch(
+        self,
+        objs: Iterable[Any],
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+    ) -> List[str]:
+        """Set objects in store
+
+        Args:
+            objs (Iterable[object]): iterable of objects to be placed in the
+                store.
+            keys (Iterable[str], optional): keys to use with the objects.
+                If the keys are not provided, keys will be created.
+
+        Returns:
+            List of keys (str). Note that some implementations of a store may
+            return keys different from the provided keys.
+
+        Raises:
+            ValueError:
+                if :code:`keys is not None and len(objs) != len(keys)`.
         """
         raise NotImplementedError

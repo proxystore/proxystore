@@ -9,7 +9,7 @@ import socket
 import time
 import warnings
 
-from typing import Any, Dict, List, Optional, Pattern, Union
+from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -605,6 +605,64 @@ class GlobusStore(RemoteStore):
             f"(name='{self.name}')"
         )
         return key
+
+    def set_batch(
+        self,
+        objs: Iterable[Any],
+        *,
+        keys: Optional[Iterable[Optional[str]]] = None,
+        serialize: bool = True,
+    ) -> List[str]:
+        """Set objects in store
+
+        Args:
+            objs (Iterable[object]): iterable of objects to be placed in the
+                store.
+            keys (Iterable[str], optional): keys to use with the objects.
+                If the keys are not provided, keys will be created.
+            serialize (bool): serialize object if True. If object is already
+                custom serialized, set this as False (default: True).
+
+        Returns:
+            List of keys (str). Note that some implementations of a store may
+            return keys different from the provided keys.
+
+        Raises:
+            ValueError:
+                if :code:`keys is not None and len(objs) != len(keys)`.
+        """
+        if keys is not None and len(objs) != len(keys):
+            raise ValueError(
+                f'objs has length {len(objs)} but keys has length {len(keys)}'
+            )
+        if keys is None:
+            keys = [None] * len(objs)
+
+        filenames = []
+        for obj, key in zip(objs, keys):
+            if serialize:
+                obj = ps.serialize.serialize(obj)
+            if key is None:
+                filename = self.create_key(obj)
+            else:
+                filename = key
+            filenames.append(filename)
+
+            self.set_bytes(filename, obj)
+
+        # Batch of objs written to disk so we can trigger Globus transfer
+        tid = self._sync_endpoints()
+
+        keys = []
+        for filename in filenames:
+            key = self._create_key(filename=filename, task_id=tid)
+            logger.debug(
+                f"SET key='{key}' IN {self.__class__.__name__}"
+                f"(name='{self.name}')"
+            )
+            keys.append(key)
+
+        return keys
 
     def proxy(
         self,

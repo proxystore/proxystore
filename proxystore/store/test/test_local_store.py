@@ -60,3 +60,11 @@ def test_local_store_proxy() -> None:
     with raises(ValueError):
         # Cannot make proxy from key that does not exist
         store.proxy(key='missing_key')
+
+    batch_values = ['test_value1', 'test_value2', 'test_value3']
+
+    proxies = store.proxy_batch(batch_values)
+    for p, v in zip(proxies, batch_values):
+        assert p == v
+
+    store.cleanup()

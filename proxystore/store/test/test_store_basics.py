@@ -197,3 +197,49 @@ def test_store_custom_serialization(store_config) -> None:
     with raises(Exception):
         # Should fail because the numpy array is not already serialized
         store.set(np.array([1, 2, 3]), key=key, serialize=False)
+
+
+@mark.parametrize(
+    'store_config', [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE]
+)
+def test_store_batch_ops(store_config) -> None:
+    """Test Batch Operations"""
+    store = store_config["type"](
+        store_config["name"], **store_config["kwargs"]
+    )
+
+    keys = ['key1', 'key2', 'key3']
+    values = ['test_value1', 'test_value2', 'test_value3']
+
+    # Test without keys
+    new_keys = store.set_batch(values)
+    for key in new_keys:
+        assert store.exists(key)
+
+    # Test with keys
+    new_keys = store.set_batch(values, keys=keys)
+    for key in new_keys:
+        assert store.exists(key)
+
+    # Test length mismatch between values and keys
+    with raises(ValueError):
+        store.set_batch(values, keys=new_keys[:1])
+
+    store.cleanup()
+
+
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+def test_store_batch_ops_remote(store_config) -> None:
+    """Test Batch Operations for Remote Stores"""
+    store = store_config["type"](
+        store_config["name"], **store_config["kwargs"]
+    )
+
+    values = ['test_value1', 'test_value2', 'test_value3']
+
+    # Subclasses of RemoteStore have an additional serialize parameter
+    new_keys = store.set_batch(values, serialize=True)
+    for key in new_keys:
+        assert store.exists(key)
+
+    store.cleanup()

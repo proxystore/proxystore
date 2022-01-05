@@ -1,4 +1,4 @@
-"""Store Factory and Proxy Tests"""
+"""Store Factory and Proxy Tests for RemoteStore Subclasses"""
 import os
 import shutil
 import subprocess
@@ -145,3 +145,27 @@ def test_proxy_recreates_store(store_config) -> None:
     ps.store._stores = {}
     assert p == [1, 2, 3]
     assert ps.store.get_store(store_config["name"]).is_cached(key)
+
+
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+def test_proxy_batch(store_config) -> None:
+    """Test Batch Creation of Proxies"""
+    store = ps.store.init_store(
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
+    )
+
+    values = [b'test_value1', b'test_value2', b'test_value3']
+
+    proxies = store.proxy_batch(values, serialize=False)
+    for p, v in zip(proxies, values):
+        assert p == v
+
+    values = ['test_value1', 'test_value2', 'test_value3']
+
+    proxies = store.proxy_batch(values)
+    for p, v in zip(proxies, values):
+        assert p == v
+
+    store.cleanup()
