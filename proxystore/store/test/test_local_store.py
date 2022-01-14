@@ -6,6 +6,12 @@ from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalFactory
 
 
+def test_kwargs() -> None:
+    """Test LocalFactory kwargs"""
+    store = LocalStore(name='local')
+    assert store.kwargs == {}
+
+
 def test_local_factory() -> None:
     """Test LocalFactory"""
     key = 'key'

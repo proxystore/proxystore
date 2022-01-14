@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 
 from abc import ABCMeta, abstractmethod
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -36,6 +36,12 @@ class Store(metaclass=ABCMeta):
         s += ", ".join(attributes)
         s += ")"
         return s
+
+    @property
+    @abstractmethod
+    def kwargs(self) -> Dict[str, Any]:
+        """Get kwargs for store instance."""
+        raise NotImplementedError
 
     def cleanup(self) -> None:
         """Cleanup any objects associated with the store
@@ -168,7 +174,7 @@ class Store(metaclass=ABCMeta):
         objs: Optional[Iterable[Optional[object]]] = None,
         *,
         keys: Optional[Iterable[Optional[str]]] = None,
-        factory: Factory = Factory,
+        factory: Optional[Factory] = None,
         **kwargs,
     ) -> List['ps.proxy.Proxy']:
         """Create proxies for batch of objects in the store
@@ -183,10 +189,10 @@ class Store(metaclass=ABCMeta):
                 already in the store (default: None).
             keys (Iterable[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
+            factory (Factory): Optional factory class that will be instantiated
                 and passed to the proxies. The factory class should be able
-                to correctly resolve an object from this store
-                (default: :any:`Factory <proxystore.factory.Factory>`).
+                to correctly resolve an object from this store. Defaults to
+                None so the default of :func:`proxy()` is used.
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:

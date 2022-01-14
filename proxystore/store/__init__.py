@@ -75,7 +75,7 @@ def init_store(
         ValueError:
             if `store_type` is not a `str` or member of
             :class:`STORES <.STORES>`.
-    """
+    """  # noqa: E501
     if isinstance(store_type, str):
         try:
             store_type = STORES[store_type.upper()].value

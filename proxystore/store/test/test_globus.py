@@ -168,6 +168,19 @@ def test_globus_store_init() -> None:
         )
 
 
+def test_kwargs() -> None:
+    """Test FileFactory kwargs"""
+    store = GlobusStore('globus', **GLOBUS_STORE["kwargs"])
+    assert store.kwargs == {
+        **GLOBUS_STORE["kwargs"],
+        'polling_interval': store.polling_interval,
+        'sync_level': store.sync_level,
+        'timeout': store.timeout,
+        'cache_size': store.cache_size,
+    }
+    store.cleanup()
+
+
 def test_globus_store_internals(monkeypatch) -> None:
     """Test GlobusStore internal mechanisms"""
     store = GlobusStore('globus', **GLOBUS_STORE["kwargs"])

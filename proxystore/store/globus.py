@@ -13,7 +13,6 @@ from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.proxy import Proxy
 from proxystore.store.remote import RemoteFactory, RemoteStore
 
 import_error = None
@@ -314,6 +313,17 @@ class GlobusStore(RemoteStore):
 
         super(GlobusStore, self).__init__(name, cache_size=cache_size)
 
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        """Get kwargs for store instance."""
+        return {
+            'endpoints': self.endpoints,
+            'polling_interval': self.polling_interval,
+            'sync_level': self.sync_level,
+            'timeout': self.timeout,
+            'cache_size': self.cache_size,
+        }
+
     def _create_key(self, filename: str, task_id: str) -> str:
         """Create key for GlobusStore
 
@@ -567,6 +577,37 @@ class GlobusStore(RemoteStore):
 
         return self._cache.exists(key)
 
+    def proxy(
+        self,
+        obj: Optional[object] = None,
+        *,
+        key: Optional[str] = None,
+        factory: Factory = GlobusFactory,
+        **kwargs,
+    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
+        """Create a proxy that will resolve to an object in the store
+
+        Args:
+            obj (object): object to place in store and return proxy for.
+                If an object is not provided, a key must be provided that
+                corresponds to an object already in the store (default: None).
+            key (str): optional key to associate with `obj` in the store.
+                If not provided, a key will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxy. The factory class should be able
+                to correctly resolve the object from this store
+                (default: :class:`GlobusFactory <.GlobusFactory>`).
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            :any:`Proxy <proxystore.proxy.Proxy>`
+
+        Raise:
+            ValueError:
+                if `key` and `obj` are both `None`.
+        """
+        return super().proxy(obj, key=key, factory=factory, **kwargs)
+
     def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in Globus synced directory with key
 
@@ -673,58 +714,3 @@ class GlobusStore(RemoteStore):
             keys.append(key)
 
         return keys
-
-    def proxy(
-        self,
-        obj: Optional[object] = None,
-        *,
-        key: Optional[str] = None,
-        factory: Factory = GlobusFactory,
-        **kwargs,
-    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        """Create a proxy that will resolve to an object in the store
-
-        Args:
-            obj (object): object to place in store and return proxy for.
-                If an object is not provided, a key must be provided that
-                corresponds to an object already in the store (default: None).
-            key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
-                and passed to the proxy. The factory class should be able
-                to correctly resolve the object from this store
-                (default: :class:`GlobusFactory <.GlobusFactory>`).
-            kwargs (dict): additional arguments to pass to the Factory.
-
-        Returns:
-            :any:`Proxy <proxystore.proxy.Proxy>`
-
-        Raise:
-            ValueError:
-                if `key` and `obj` are both `None`.
-        """
-        if key is None and obj is None:
-            raise ValueError('At least one of key or obj must be specified')
-        if obj is not None:
-            if 'serialize' in kwargs:
-                key = self.set(obj, key=key, serialize=kwargs['serialize'])
-            else:
-                key = self.set(obj, key=key)
-        logger.debug(
-            f"PROXY key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
-        )
-        return Proxy(
-            factory(
-                key,
-                store_name=self.name,
-                store_kwargs={
-                    'endpoints': self.endpoints,
-                    'polling_interval': self.polling_interval,
-                    'sync_level': self.sync_level,
-                    'timeout': self.timeout,
-                    'cache_size': self.cache_size,
-                },
-                **kwargs,
-            )
-        )

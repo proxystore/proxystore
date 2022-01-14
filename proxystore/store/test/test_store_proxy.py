@@ -168,4 +168,11 @@ def test_proxy_batch(store_config) -> None:
     for p, v in zip(proxies, values):
         assert p == v
 
+    # Test passing custom factory
+    proxies = store.proxy_batch(
+        values, factory=ps.store.remote.RemoteFactory, store_type=type(store)
+    )
+    for p, v in zip(proxies, values):
+        assert p == v
+
     store.cleanup()

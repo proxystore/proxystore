@@ -9,6 +9,7 @@ from typing import Any, Dict, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
+from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.cache import LRUCache
 
@@ -253,12 +254,57 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         return False
 
+    def proxy(
+        self,
+        obj: Optional[object] = None,
+        *,
+        key: Optional[str] = None,
+        factory: Factory = RemoteFactory,
+        **kwargs,
+    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
+        """Create a proxy that will resolve to an object in the store
+
+        Args:
+            obj (object): object to place in store and return proxy for.
+                If an object is not provided, a key must be provided that
+                corresponds to an object already in the store (default: None).
+            key (str): optional key to associate with `obj` in the store.
+                If not provided, a key will be generated (default: None).
+            factory (Factory): factory class that will be instantiated
+                and passed to the proxy. The factory class should be able
+                to correctly resolve the object from this store.
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            :any:`Proxy <proxystore.proxy.Proxy>`
+
+        Raises:
+            ValueError:
+                if `key` and `obj` are both `None`.
+        """
+        if key is None and obj is None:
+            raise ValueError('At least one of key or obj must be specified')
+        if obj is not None:
+            if 'serialize' in kwargs:
+                key = self.set(obj, key=key, serialize=kwargs['serialize'])
+            else:
+                key = self.set(obj, key=key)
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')"
+        )
+        return Proxy(
+            factory(
+                key, store_name=self.name, store_kwargs=self.kwargs, **kwargs
+            )
+        )
+
     def proxy_batch(
         self,
         objs: Optional[Iterable[Optional[object]]] = None,
         *,
         keys: Optional[Iterable[Optional[str]]] = None,
-        factory: Factory = Factory,
+        factory: Optional[Factory] = None,
         **kwargs,
     ) -> List['ps.proxy.Proxy']:
         """Create proxies for batch of objects in the store
@@ -273,10 +319,10 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 already in the store (default: None).
             keys (Iterable[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
+            factory (Factory): Optional factory class that will be instantiated
                 and passed to the proxies. The factory class should be able
-                to correctly resolve an object from this store
-                (default: :any:`Factory <proxystore.factory.Factory>`).
+                to correctly resolve an object from this store. Defaults to
+                None so the default of :func:`proxy()` is used.
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -294,6 +340,8 @@ class RemoteStore(Store, metaclass=ABCMeta):
             )
         else:
             keys = self.set_batch(objs, keys=keys)
+        if factory is not None:
+            kwargs['factory'] = factory
         return [self.proxy(None, key=key, **kwargs) for key in keys]
 
     def set(

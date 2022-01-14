@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 
-from typing import Any, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -67,6 +67,11 @@ class LocalStore(Store):
         """
         self._store = {}
         super(LocalStore, self).__init__(name)
+
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        """Get kwargs for store instance."""
+        return {}
 
     def evict(self, key: str) -> None:
         """Evict object associated with key

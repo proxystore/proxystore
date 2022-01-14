@@ -15,7 +15,6 @@ except ImportError as e:  # pragma: no cover
     redis = e
 
 from proxystore.factory import Factory
-from proxystore.proxy import Proxy
 from proxystore.store.remote import RemoteFactory, RemoteStore
 
 logger = logging.getLogger(__name__)
@@ -105,6 +104,15 @@ class RedisStore(RemoteStore):
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
         super(RedisStore, self).__init__(name, cache_size=cache_size)
 
+    @property
+    def kwargs(self):
+        """Get kwargs for store instance."""
+        return {
+            'hostname': self.hostname,
+            'port': self.port,
+            'cache_size': self.cache_size,
+        }
+
     def evict(self, key: str) -> None:
         """Evict object associated with key from Redis
 
@@ -159,19 +167,6 @@ class RedisStore(RemoteStore):
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
 
-    def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Redis with key
-
-        Args:
-            key (str): key corresponding to object.
-            data (bytes): serialized object.
-        """
-        if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
-        # We store the creation time for the key as a separate redis key-value.
-        self._redis_client.set(key + "_timestamp", time.time())
-        self._redis_client.set(key, data)
-
     def proxy(
         self,
         obj: Optional[object] = None,
@@ -201,26 +196,17 @@ class RedisStore(RemoteStore):
             ValueError:
                 if `key` and `obj` are both `None`.
         """
-        if key is None and obj is None:
-            raise ValueError('At least one of key or obj must be specified')
-        if obj is not None:
-            if 'serialize' in kwargs:
-                key = self.set(obj, key=key, serialize=kwargs['serialize'])
-            else:
-                key = self.set(obj, key=key)
-        logger.debug(
-            f"PROXY key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
-        )
-        return Proxy(
-            factory(
-                key,
-                store_name=self.name,
-                store_kwargs={
-                    'hostname': self.hostname,
-                    'port': self.port,
-                    'cache_size': self.cache_size,
-                },
-                **kwargs,
-            )
-        )
+        return super().proxy(obj, key=key, factory=factory, **kwargs)
+
+    def set_bytes(self, key: str, data: bytes) -> None:
+        """Set serialized object in Redis with key
+
+        Args:
+            key (str): key corresponding to object.
+            data (bytes): serialized object.
+        """
+        if not isinstance(data, bytes):
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
+        # We store the creation time for the key as a separate redis key-value.
+        self._redis_client.set(key + "_timestamp", time.time())
+        self._redis_client.set(key, data)
