@@ -49,10 +49,19 @@ def init_store(
         store will be replaced with a new. This is because the store parameters
         may have changed.
 
+    Usage:
+        >>> import proxystore as ps
+        >>>
+        >>> # The following are equivalent
+        >>> ps.store.init_store('redis', name='default-store', ...)
+        >>> ps.store.init_store(ps.store.STORES.REDIS, name='default-store', ...)
+        >>> ps.store.init_store(ps.store.redis.RedisStore, name='default-store', ...)
+
     Args:
         store_type (str, STORES, Store): type of store to initialize. Can be
-            either a str or enum value in `:class:`STORES <.STORES>` or
-            a subclass of :class:`Store <proxystore.store.base.Store>`.
+            either a string corresponding to an enum value or the enum value
+            itself in :class:`STORES <.STORES>` or a subclass of
+            :class:`Store <proxystore.store.base.Store>`.
         name (str): unique name of store. The name is needed to get the store
             again with :func:`get_store() <.get_store>`.
         kwargs (dict): keyword args to pass to store constructor.

@@ -60,20 +60,21 @@ Proxystore provides some useful utility functions for dealing with proxies.
    # Note: only supported by Factories the implement resolve_async()
    ps.proxy.resolve_async(p)
 
-Remote Stores
-=============
+Stores
+======
 
 Proxies are valuable in distributed computing for delaying object communication of objects.
 In this context, passing a proxy is like passing a reference that also knows how to dereference itself as soon as it is needed.
 
 ProxyStore provides a :any:`Store <proxystore.store.base.Store>` interface for passing objects via proxies that resolve themselves from object stores.
-E.g., if you have some distributed object store accesible by all devices in your world, you can create a proxy that will resolve itself to an object that lives in the store.
+E.g., if you have some distributed object store accesible by all devices in your environment, you can create a proxy that will resolve itself to an object that lives in the store.
 
-ProxyStore provides a couple base implementations:
+ProxyStore provides many :any:`Store <proxystore.store.base.Store>` implementations:
    
-  * :any:`LocalStore <proxystore.store.local.LocalStore>`: Object store that lives in local process memory.
-  * :any:`RedisStore <proxystore.store.redis.RedisStore>`: Interface to a Redis server.
-
+  * :any:`LocalStore <proxystore.store.local.LocalStore>`: Stores objects in local process memory.
+  * :any:`RedisStore <proxystore.store.redis.RedisStore>`: Uses a Redis server for storing objects.
+  * :any:`FileStore <proxystore.store.file.FileStore>`: Uses a globally accessible file system directory for storing objects.
+  * :any:`GlobusStore <proxystore.store.globus.GlobusStore>`: Used to transfer objects between two Globus endpoints.
 
 Redis Example
 -------------
