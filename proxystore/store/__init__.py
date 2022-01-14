@@ -1,7 +1,7 @@
 import logging
 
-from enum import Enum as _Enum
-from typing import Union as _Union
+from enum import Enum
+from typing import Type, Union
 
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore
@@ -15,13 +15,33 @@ _stores = {}
 logger = logging.getLogger(__name__)
 
 
-class STORES(_Enum):
+class STORES(Enum):
     """Store options"""
 
     GLOBUS = _GlobusStore
     LOCAL = _LocalStore
     REDIS = _RedisStore
     FILE = _FileStore
+
+    @classmethod
+    def get_str_by_type(cls, store: Type[_Store]) -> str:
+        """Get str corresponding to enum type of a store type
+
+        Args:
+            store: type of store to check enum for
+
+        Returns:
+            String that will index :class:`STORES` and return the same type
+            as `store`.
+
+        Raises:
+            KeyError:
+                if enum type matching `store` is not found.
+        """
+        for option in cls:
+            if option.value == store:
+                return option.name
+        raise KeyError(f"Enum type matching type {store} not found")
 
 
 def get_store(name: str) -> _Store:
@@ -40,7 +60,7 @@ def get_store(name: str) -> _Store:
 
 
 def init_store(
-    store_type: _Union[str, STORES, _Store], name: str, **kwargs
+    store_type: Union[str, STORES, _Store], name: str, **kwargs
 ) -> _Store:
     """Initializes a backend store
 

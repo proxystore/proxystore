@@ -5,6 +5,7 @@ import time
 from pytest import fixture, raises
 
 import proxystore as ps
+from proxystore.store import STORES
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
@@ -43,8 +44,6 @@ def test_imports() -> None:
 
 def test_init_store() -> None:
     """Test init_store/get_store"""
-    from proxystore.store import STORES
-
     # Init by str name
     local = ps.store.init_store('local', name='local')
     assert isinstance(local, ps.store.local.LocalStore)
@@ -87,6 +86,21 @@ def test_init_store() -> None:
 
     # Return None if store with name does not exist
     assert ps.store.get_store('unknown') is None
+
+
+def test_get_enum_by_type() -> None:
+    """Test getting enum with type"""
+    t = STORES.get_str_by_type(ps.store.local.LocalStore)
+    assert isinstance(t, str)
+    assert STORES[t].value == ps.store.local.LocalStore
+
+    class FakeStore(ps.store.base.Store):
+        """FakeStore type"""
+
+        pass
+
+    with raises(KeyError):
+        STORES.get_str_by_type(FakeStore)
 
 
 def test_init_store_raises() -> None:
