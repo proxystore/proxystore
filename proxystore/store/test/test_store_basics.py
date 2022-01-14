@@ -1,8 +1,6 @@
 """Store Base Functionality Tests"""
 import numpy as np
 import shutil
-import subprocess
-import time
 import os
 
 from pytest import fixture, mark, raises
@@ -13,23 +11,18 @@ from proxystore.store.base import Store
 from proxystore.store.remote import RemoteStore
 from proxystore.store.test.utils import LOCAL_STORE, FILE_STORE
 from proxystore.store.test.utils import REDIS_STORE, GLOBUS_STORE
-from proxystore.store.test.utils import REDIS_PORT, FILE_DIR
-from proxystore.store.test.utils import mock_globus_and_parsl
+from proxystore.store.test.utils import FILE_DIR
+from proxystore.store.test.utils import mock_third_party_libs
 
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    """Launch Redis Server and cleanup after tests"""
-    mpatch = mock_globus_and_parsl()
+    """Set up test environment"""
+    mpatch = mock_third_party_libs()
     if os.path.exists(FILE_DIR):
         shutil.rmtree(FILE_DIR)
-    redis_handle = subprocess.Popen(
-        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
-    )
-    time.sleep(1)
     yield mpatch
     mpatch.undo()
-    redis_handle.kill()
     if os.path.exists(FILE_DIR):
         shutil.rmtree(FILE_DIR)
 

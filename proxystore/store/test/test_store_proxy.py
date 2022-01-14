@@ -1,31 +1,24 @@
 """Store Factory and Proxy Tests for RemoteStore Subclasses"""
 import os
 import shutil
-import subprocess
-import time
 
 from pytest import fixture, mark, raises
 
 import proxystore as ps
 
 from proxystore.store.test.utils import FILE_STORE, REDIS_STORE, GLOBUS_STORE
-from proxystore.store.test.utils import REDIS_PORT, FILE_DIR
-from proxystore.store.test.utils import mock_globus_and_parsl
+from proxystore.store.test.utils import FILE_DIR
+from proxystore.store.test.utils import mock_third_party_libs
 
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    """Launch Redis Server and cleanup after tests"""
-    mpatch = mock_globus_and_parsl()
+    """Set up test environment"""
+    mpatch = mock_third_party_libs()
     if os.path.exists(FILE_DIR):
         shutil.rmtree(FILE_DIR)
-    redis_handle = subprocess.Popen(
-        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
-    )
-    time.sleep(1)
     yield mpatch
     mpatch.undo()
-    redis_handle.kill()
     if os.path.exists(FILE_DIR):
         shutil.rmtree(FILE_DIR)
 

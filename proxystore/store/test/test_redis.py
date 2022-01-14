@@ -1,23 +1,18 @@
 """RedisStore Unit Tests"""
-import subprocess
-import time
-
 from pytest import fixture
 
 from proxystore.store.redis import RedisStore
 
-from proxystore.store.test.utils import REDIS_STORE, REDIS_PORT
+from proxystore.store.test.utils import REDIS_STORE
+from proxystore.store.test.utils import mock_third_party_libs
 
 
 @fixture(scope='session', autouse=True)
 def init() -> None:
-    """Launch Redis Server"""
-    redis_handle = subprocess.Popen(
-        ['redis-server', '--port', str(REDIS_PORT)], stdout=subprocess.DEVNULL
-    )
-    time.sleep(1)
-    yield
-    redis_handle.kill()
+    """Set up test environment"""
+    mpatch = mock_third_party_libs()
+    yield mpatch
+    mpatch.undo()
 
 
 def test_kwargs() -> None:

@@ -13,7 +13,7 @@ from proxystore.store.globus import (
     GlobusStore,
 )
 from proxystore.store.test.utils import GLOBUS_STORE
-from proxystore.store.test.utils import mock_globus_and_parsl
+from proxystore.store.test.utils import mock_third_party_libs
 
 
 EP1 = GlobusEndpoint(
@@ -36,7 +36,7 @@ EP5 = GlobusEndpoint(
 @fixture(scope='session', autouse=True)
 def init() -> None:
     """Monkeypatch Globus and Parsl"""
-    mpatch = mock_globus_and_parsl()
+    mpatch = mock_third_party_libs()
     yield mpatch
     mpatch.undo()
 

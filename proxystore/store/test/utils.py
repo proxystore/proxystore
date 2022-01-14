@@ -2,7 +2,10 @@
 import socket
 import uuid
 
+from typing import Any, Union
+
 import globus_sdk
+import redis
 from parsl.data_provider import globus
 
 from proxystore.store.globus import GlobusEndpoint, GlobusEndpoints
@@ -101,22 +104,47 @@ class MockDeleteData:
         return
 
 
-def mock_get_globus():
-    """Mock get_globus()"""
-
-    class MockGlobusAuth:
-        def __init__(self):
-            self.authorizer = None
-
-    return MockGlobusAuth()
+class MockGlobusAuth:
+    def __init__(self):
+        self.authorizer = None
 
 
-def mock_globus_and_parsl():
-    """Helper function for mocking globus and parsl objects"""
+class MockStrictRedis:
+    def __init__(self, *args, **kwargs):
+        # Use global MOCK_REDIS_CACHE so different RedisStores access the
+        # same data
+        self.data = MOCK_REDIS_CACHE
+
+    def delete(self, key: str) -> None:
+        if key in self.data:
+            del self.data[key]
+
+    def exists(self, key: str) -> bool:
+        return key in self.data
+
+    def get(self, key: str) -> Any:
+        if key in self.data:
+            return self.data[key]
+        return None
+
+    def set(self, key: str, value: Union[str, bytes, int, float]) -> None:
+        if isinstance(value, (int, float)):
+            value = str(value)
+        if isinstance(value, str):
+            value = value.encode()
+        self.data[key] = value
+
+
+def mock_third_party_libs() -> MonkeyPatch:
+    """Get MonkeyPatch object for third party libs used by ProxyStore"""
     mpatch = MonkeyPatch()
-    mpatch.setattr(globus, "get_globus", mock_get_globus)
+    # Make new global MOCK_REDIS_CACHE
+    global MOCK_REDIS_CACHE
+    MOCK_REDIS_CACHE = {}
+    mpatch.setattr(globus, "get_globus", MockGlobusAuth)
     mpatch.setattr(globus_sdk, "TransferClient", MockTransferClient)
     mpatch.setattr(globus_sdk, "DeleteData", MockDeleteData)
     mpatch.setattr(globus_sdk, "TransferData", MockTransferData)
     mpatch.setattr(socket, "gethostname", lambda: "localhost")
+    mpatch.setattr(redis, "StrictRedis", MockStrictRedis)
     return mpatch
