@@ -8,17 +8,8 @@ dependencies:
     - python>=3.7.*
     - pip
     - redis
-    - redis-py
-    - coverage
-    - pytest
-    - pytest-cov
-    - flake8
-    - flake8-docstrings
-    - numpy
-    - parsl
     - pip:
         - -e .
-        - black
+        - -r requirements-dev.txt
         - funcx
         - funcx_endpoint
-        - globus-sdk
