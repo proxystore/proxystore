@@ -19,6 +19,8 @@ Installing with Conda for local development:
 $ git clone https://github.com/gpauloski/ProxyStore.git
 $ cd ProxyStore
 $ conda env create --file environment.yml
+$ conda activate ProxyStore
+$ pre-commit install
 ```
 
 ## Documentation
