@@ -2,8 +2,8 @@
 from pytest import raises
 
 import proxystore as ps
-from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalFactory
+from proxystore.store.local import LocalStore
 
 
 def test_kwargs() -> None:

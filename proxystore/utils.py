@@ -1,6 +1,5 @@
 """Utility functions"""
 import random
-
 from typing import Any
 
 

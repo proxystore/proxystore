@@ -1,20 +1,24 @@
 """Mocking utilities for GlobusStore tests"""
 import socket
 import uuid
-
-from typing import Any, Union
+from typing import Any
+from typing import Union
 
 import globus_sdk
 import redis
+from _pytest.monkeypatch import MonkeyPatch
 from parsl.data_provider import globus
 
-from proxystore.store.globus import GlobusEndpoint, GlobusEndpoints
-from proxystore.store.globus import GlobusStore, GlobusFactory
-from proxystore.store.file import FileStore, FileFactory
-from proxystore.store.local import LocalStore, LocalFactory
-from proxystore.store.redis import RedisStore, RedisFactory
-
-from _pytest.monkeypatch import MonkeyPatch
+from proxystore.store.file import FileFactory
+from proxystore.store.file import FileStore
+from proxystore.store.globus import GlobusEndpoint
+from proxystore.store.globus import GlobusEndpoints
+from proxystore.store.globus import GlobusFactory
+from proxystore.store.globus import GlobusStore
+from proxystore.store.local import LocalFactory
+from proxystore.store.local import LocalStore
+from proxystore.store.redis import RedisFactory
+from proxystore.store.redis import RedisStore
 
 REDIS_HOST = 'localhost'
 REDIS_PORT = 59465

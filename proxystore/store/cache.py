@@ -1,5 +1,6 @@
 """Simple Cache Implementation"""
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 
 class LRUCache:

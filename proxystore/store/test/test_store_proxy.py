@@ -2,13 +2,16 @@
 import os
 import shutil
 
-from pytest import fixture, mark, raises
+from pytest import fixture
+from pytest import mark
+from pytest import raises
 
 import proxystore as ps
-
-from proxystore.store.test.utils import FILE_STORE, REDIS_STORE, GLOBUS_STORE
 from proxystore.store.test.utils import FILE_DIR
+from proxystore.store.test.utils import FILE_STORE
+from proxystore.store.test.utils import GLOBUS_STORE
 from proxystore.store.test.utils import mock_third_party_libs
+from proxystore.store.test.utils import REDIS_STORE
 
 
 @fixture(scope='session', autouse=True)

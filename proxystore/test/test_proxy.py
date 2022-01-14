@@ -1,7 +1,7 @@
 """Proxy Unit Tests"""
-import numpy as np
 import pickle as pkl
 
+import numpy as np
 from pytest import raises
 
 import proxystore as ps

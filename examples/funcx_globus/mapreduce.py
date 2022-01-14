@@ -1,11 +1,12 @@
 """FuncX and ProxyStore+Globus example"""
 import argparse
-import numpy as np
-import proxystore as ps
 import time
-
-from funcx.sdk.client import FuncXClient
 from typing import List
+
+import numpy as np
+from funcx.sdk.client import FuncXClient
+
+import proxystore as ps
 
 
 def app_double(x: np.ndarray) -> np.ndarray:

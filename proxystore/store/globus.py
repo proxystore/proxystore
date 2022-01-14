@@ -1,19 +1,25 @@
 """Globus Endpoint Implementation"""
 from __future__ import annotations
 
-import logging
 import json
+import logging
 import os
 import re
 import socket
 import time
 import warnings
-
-from typing import Any, Dict, Iterable, List, Optional, Pattern, Union
+from typing import Any
+from typing import Dict
+from typing import Iterable
+from typing import List
+from typing import Optional
+from typing import Pattern
+from typing import Union
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.store.remote import RemoteFactory, RemoteStore
+from proxystore.store.remote import RemoteFactory
+from proxystore.store.remote import RemoteStore
 
 import_error = None
 try:

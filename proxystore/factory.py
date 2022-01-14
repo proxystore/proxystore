@@ -6,7 +6,10 @@ object from wherever it is stored such that the proxy can act as the
 object.
 """
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Callable, Dict, Tuple
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Tuple
 
 _default_pool = ThreadPoolExecutor()
 

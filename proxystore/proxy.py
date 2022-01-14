@@ -1,7 +1,8 @@
 """ProxyStore Proxy Implementation and Utilities"""
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
+from typing import Optional
 
 from lazy_object_proxy import slots
 

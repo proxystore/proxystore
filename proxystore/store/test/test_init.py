@@ -2,7 +2,8 @@
 import subprocess
 import time
 
-from pytest import fixture, raises
+from pytest import fixture
+from pytest import raises
 
 import proxystore as ps
 from proxystore.store import STORES

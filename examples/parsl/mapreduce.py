@@ -1,11 +1,12 @@
 """MapReduce with Parsl and ProxyStore example"""
 import argparse
+from typing import List
+
 import numpy as np
 import parsl
-import proxystore as ps
-
-from typing import List
 from parsl import python_app
+
+import proxystore as ps
 
 
 @python_app

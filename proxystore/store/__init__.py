@@ -1,7 +1,7 @@
 import logging
-
 from enum import Enum
-from typing import Type, Union
+from typing import Type
+from typing import Union
 
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore

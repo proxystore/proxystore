@@ -2,9 +2,8 @@
 from pytest import fixture
 
 from proxystore.store.redis import RedisStore
-
-from proxystore.store.test.utils import REDIS_STORE
 from proxystore.store.test.utils import mock_third_party_libs
+from proxystore.store.test.utils import REDIS_STORE
 
 
 @fixture(scope='session', autouse=True)

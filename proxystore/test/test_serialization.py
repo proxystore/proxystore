@@ -1,10 +1,10 @@
 """Serialization Unit Tests"""
 import numpy as np
-
 from pytest import raises
 
-from proxystore.serialize import serialize, deserialize
+from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
+from proxystore.serialize import serialize
 
 
 def test_serialization() -> None:

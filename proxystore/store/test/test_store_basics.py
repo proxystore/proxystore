@@ -1,18 +1,21 @@
 """Store Base Functionality Tests"""
-import numpy as np
-import shutil
 import os
+import shutil
 
-from pytest import fixture, mark, raises
+import numpy as np
+from pytest import fixture
+from pytest import mark
+from pytest import raises
 
 import proxystore as ps
-
 from proxystore.store.base import Store
 from proxystore.store.remote import RemoteStore
-from proxystore.store.test.utils import LOCAL_STORE, FILE_STORE
-from proxystore.store.test.utils import REDIS_STORE, GLOBUS_STORE
 from proxystore.store.test.utils import FILE_DIR
+from proxystore.store.test.utils import FILE_STORE
+from proxystore.store.test.utils import GLOBUS_STORE
+from proxystore.store.test.utils import LOCAL_STORE
 from proxystore.store.test.utils import mock_third_party_libs
+from proxystore.store.test.utils import REDIS_STORE
 
 
 @fixture(scope='session', autouse=True)

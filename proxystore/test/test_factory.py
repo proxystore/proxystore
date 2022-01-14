@@ -1,6 +1,7 @@
 """Factory Unit Tests"""
 import proxystore as ps
-from proxystore.factory import LambdaFactory, SimpleFactory
+from proxystore.factory import LambdaFactory
+from proxystore.factory import SimpleFactory
 
 
 def test_simple_factory() -> None:

@@ -2,16 +2,15 @@
 import json
 import os
 
-from pytest import fixture, raises, warns
-
 import globus_sdk
+from pytest import fixture
+from pytest import raises
+from pytest import warns
 
 import proxystore as ps
-from proxystore.store.globus import (
-    GlobusEndpoint,
-    GlobusEndpoints,
-    GlobusStore,
-)
+from proxystore.store.globus import GlobusEndpoint
+from proxystore.store.globus import GlobusEndpoints
+from proxystore.store.globus import GlobusStore
 from proxystore.store.test.utils import GLOBUS_STORE
 from proxystore.store.test.utils import mock_third_party_libs
 
