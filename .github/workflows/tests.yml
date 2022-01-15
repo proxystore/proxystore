@@ -1,13 +1,13 @@
-name: main
+name: tests
 
 on: [push, pull_request]
 
 jobs:
-  main:
+  tests:
+
     strategy:
       matrix:
         include:
-        # linux
         - os: ubuntu-latest
           python: 3.7
           toxenv: python3.7
@@ -20,17 +20,8 @@ jobs:
         - os: ubuntu-latest
           python: '3.10'
           toxenv: python3.10
-        # misc
-        - os: ubuntu-latest
-          python: 3.9
-          toxenv: flake8
-        - os: ubuntu-latest
-          python: 3.9
-          toxenv: pre-commit
-        - os: ubuntu-latest
-          python: 3.9
-          toxenv: docs
     runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v2
 
