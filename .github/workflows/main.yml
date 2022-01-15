@@ -1,9 +1,6 @@
 name: main
 
-on:
-  push:
-    branches: [main]
-  pull_request:
+on: [push, pull_request]
 
 jobs:
   main:
@@ -11,9 +8,6 @@ jobs:
       matrix:
         include:
         # linux
-        - os: ubuntu-latest
-          python: 3.6
-          toxenv: python3.6
         - os: ubuntu-latest
           python: 3.7
           toxenv: python3.7
@@ -26,10 +20,6 @@ jobs:
         - os: ubuntu-latest
           python: '3.10'
           toxenv: python3.10
-        # windows
-        - os: windows-latest
-          python: 3.9
-          toxenv: python3.9
         # misc
         - os: ubuntu-latest
           python: 3.9
@@ -54,9 +44,3 @@ jobs:
 
       - name: Run Tox
         run: tox -e ${{ matrix.toxenv }}
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
-        with:
-          fail_ci_if_error: true
-        if: matrix.python == '3.9'
