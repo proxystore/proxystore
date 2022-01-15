@@ -9,9 +9,6 @@ jobs:
         include:
         # linux
         - os: ubuntu-latest
-          python: 3.6
-          toxenv: python3.6
-        - os: ubuntu-latest
           python: 3.7
           toxenv: python3.7
         - os: ubuntu-latest
@@ -23,10 +20,6 @@ jobs:
         - os: ubuntu-latest
           python: '3.10'
           toxenv: python3.10
-        # windows
-        - os: windows-latest
-          python: 3.9
-          toxenv: python3.9
         # misc
         - os: ubuntu-latest
           python: 3.9
