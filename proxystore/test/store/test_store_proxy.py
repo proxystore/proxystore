@@ -1,4 +1,4 @@
-"""Store Factory and Proxy Tests for RemoteStore Subclasses"""
+"""Store Factory and Proxy Tests for RemoteStore Subclasses."""
 import os
 import shutil
 
@@ -7,16 +7,16 @@ from pytest import mark
 from pytest import raises
 
 import proxystore as ps
-from proxystore.store.test.utils import FILE_DIR
-from proxystore.store.test.utils import FILE_STORE
-from proxystore.store.test.utils import GLOBUS_STORE
-from proxystore.store.test.utils import mock_third_party_libs
-from proxystore.store.test.utils import REDIS_STORE
+from proxystore.test.store.utils import FILE_DIR
+from proxystore.test.store.utils import FILE_STORE
+from proxystore.test.store.utils import GLOBUS_STORE
+from proxystore.test.store.utils import mock_third_party_libs
+from proxystore.test.store.utils import REDIS_STORE
 
 
-@fixture(scope='session', autouse=True)
+@fixture(scope="session", autouse=True)
 def init() -> None:
-    """Set up test environment"""
+    """Set up test environment."""
     mpatch = mock_third_party_libs()
     if os.path.exists(FILE_DIR):
         shutil.rmtree(FILE_DIR)
@@ -26,11 +26,13 @@ def init() -> None:
         shutil.rmtree(FILE_DIR)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_factory(store_config) -> None:
-    """Test Store Factory"""
+    """Test Store Factory."""
     store = ps.store.init_store(
-        store_config["type"], store_config["name"], **store_config["kwargs"]
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
     )
 
     key = store.set([1, 2, 3])
@@ -38,7 +40,9 @@ def test_store_factory(store_config) -> None:
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
     f = store_config["factory"](
-        key, store_config["name"], store_kwargs=store_config["kwargs"]
+        key,
+        store_config["name"],
+        store_kwargs=store_config["kwargs"],
     )
     assert f() == [1, 2, 3]
 
@@ -56,7 +60,9 @@ def test_store_factory(store_config) -> None:
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
     f = store_config["factory"](
-        key, store_config["name"], store_kwargs=store_config["kwargs"]
+        key,
+        store_config["name"],
+        store_kwargs=store_config["kwargs"],
     )
     f.resolve_async()
     assert f._obj_future is not None
@@ -72,10 +78,20 @@ def test_store_factory(store_config) -> None:
     f = ps.serialize.deserialize(f_str)
     assert f() == [1, 2, 3]
 
+    # Test raise error if we pass store name for not RemoteStore to factory
+    ps.store.init_store("LOCAL", name="local")
+    f = store_config["factory"](
+        key,
+        "local",
+        store_kwargs=store_config["kwargs"],
+    )
+    with raises(ValueError):
+        f()
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+
+@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_proxy(store_config) -> None:
-    """Test Store Proxy"""
+    """Test Store Proxy."""
     store = ps.store.init_store(
         store_config["type"],
         store_config["name"],
@@ -103,12 +119,12 @@ def test_store_proxy(store_config) -> None:
     with raises(Exception):
         # String will not be serialized and should raise error when putting
         # array into Redis
-        store.proxy('mystring', serialize=False)
+        store.proxy("mystring", serialize=False)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_proxy_recreates_store(store_config) -> None:
-    """Test Proxy Recreates Store"""
+    """Test Proxy Recreates Store."""
     store = ps.store.init_store(
         store_config["type"],
         store_config["name"],
@@ -143,30 +159,39 @@ def test_proxy_recreates_store(store_config) -> None:
     assert ps.store.get_store(store_config["name"]).is_cached(key)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_proxy_batch(store_config) -> None:
-    """Test Batch Creation of Proxies"""
+    """Test Batch Creation of Proxies."""
     store = ps.store.init_store(
         store_config["type"],
         store_config["name"],
         **store_config["kwargs"],
     )
 
-    values = [b'test_value1', b'test_value2', b'test_value3']
+    with raises(ValueError):
+        store.proxy_batch(None, keys=None)
+
+    values = [b"test_value1", b"test_value2", b"test_value3"]
 
     proxies = store.proxy_batch(values, serialize=False)
     for p, v in zip(proxies, values):
         assert p == v
 
-    values = ['test_value1', 'test_value2', 'test_value3']
+    values = ["test_value1", "test_value2", "test_value3"]
 
     proxies = store.proxy_batch(values)
     for p, v in zip(proxies, values):
         assert p == v
 
+    proxies = store.proxy_batch(keys=[ps.proxy.get_key(p) for p in proxies])
+    for p, v in zip(proxies, values):
+        assert p == v
+
     # Test passing custom factory
     proxies = store.proxy_batch(
-        values, factory=ps.store.remote.RemoteFactory, store_type=type(store)
+        values,
+        factory=ps.store.remote.RemoteFactory,
+        store_type=type(store),
     )
     for p, v in zip(proxies, values):
         assert p == v

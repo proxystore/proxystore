@@ -1,28 +1,27 @@
-"""RedisStore Implementation"""
+"""RedisStore Implementation."""
 from __future__ import annotations
 
 import logging
 import time
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 try:
-    import redis
+    import redis  # type: ignore
 except ImportError as e:  # pragma: no cover
     # We do not want to raise this ImportError if the user never
     # uses the RedisStore so we delay raising the error until the
     # constructor of RedisStore
     redis = e
 
-from proxystore.factory import Factory
-from proxystore.store.remote import RemoteFactory, RemoteStore
+import proxystore as ps
+from proxystore.store.remote import RemoteFactory
+from proxystore.store.remote import RemoteStore
 
 logger = logging.getLogger(__name__)
 
 
 class RedisFactory(RemoteFactory):
-    """Factory for Instances of RedisStore
+    """Factory for Instances of RedisStore.
 
     Adds support for asynchronously retrieving objects from a
     :class:`RedisStore <.RedisStore>` backend and optional, strict guarentees
@@ -37,13 +36,13 @@ class RedisFactory(RemoteFactory):
         self,
         key: str,
         store_name: str,
-        store_kwargs: Dict[str, Any] = {},
+        store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init RedisFactory
+        """Init RedisFactory.
 
         Args:
             key (str): key corresponding to object in store.
@@ -58,7 +57,7 @@ class RedisFactory(RemoteFactory):
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
-        super(RedisFactory, self).__init__(
+        super().__init__(
             key,
             RedisStore,
             store_name,
@@ -70,7 +69,7 @@ class RedisFactory(RemoteFactory):
 
 
 class RedisStore(RemoteStore):
-    """Redis backend class"""
+    """Redis backend class."""
 
     def __init__(
         self,
@@ -80,7 +79,7 @@ class RedisStore(RemoteStore):
         port: int,
         cache_size: int = 16,
     ) -> None:
-        """Init RedisStore
+        """Init RedisStore.
 
         Args:
             name (str): name of the store instance.
@@ -96,26 +95,26 @@ class RedisStore(RemoteStore):
         """
         if isinstance(redis, ImportError):  # pragma: no cover
             raise ImportError(
-                'The redis-py package must be installed to use the '
-                'RedisStore backend'
+                "The redis-py package must be installed to use the "
+                "RedisStore backend",
             )
 
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
-        super(RedisStore, self).__init__(name, cache_size=cache_size)
+        super().__init__(name, cache_size=cache_size)
 
     @property
     def kwargs(self):
         """Get kwargs for store instance."""
         return {
-            'hostname': self.hostname,
-            'port': self.port,
-            'cache_size': self.cache_size,
+            "hostname": self.hostname,
+            "port": self.port,
+            "cache_size": self.cache_size,
         }
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from Redis
+        """Evict object associated with key from Redis.
 
         Args:
             key (str): key corresponding to object in store to evict.
@@ -124,11 +123,11 @@ class RedisStore(RemoteStore):
         self._cache.evict(key)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in Redis
+        """Check if key exists in Redis.
 
         Args:
             key (str): key to check.
@@ -138,8 +137,8 @@ class RedisStore(RemoteStore):
         """
         return self._redis_client.exists(key)
 
-    def get_bytes(self, key: str) -> Optional[bytes]:
-        """Get serialized object from Redis
+    def get_bytes(self, key: str) -> bytes | None:
+        """Get serialized object from Redis.
 
         Args:
             key (str): key corresponding to object.
@@ -150,7 +149,7 @@ class RedisStore(RemoteStore):
         return self._redis_client.get(key)
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store
+        """Get timestamp of most recent object version in the store.
 
         Args:
             key (str): key corresponding to object.
@@ -168,15 +167,15 @@ class RedisStore(RemoteStore):
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
 
-    def proxy(
+    def proxy(  # type: ignore[override]
         self,
-        obj: Optional[object] = None,
+        obj: Any | None = None,
         *,
-        key: Optional[str] = None,
-        factory: Factory = RedisFactory,
+        key: str | None = None,
+        factory: type[RemoteFactory] = RedisFactory,
         **kwargs,
-    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        """Create a proxy that will resolve to an object in the store
+    ) -> ps.proxy.Proxy:
+        """Create a proxy that will resolve to an object in the store.
 
         Args:
             obj (object): object to place in store and return proxy for.
@@ -200,14 +199,14 @@ class RedisStore(RemoteStore):
         return super().proxy(obj, key=key, factory=factory, **kwargs)
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Redis with key
+        """Set serialized object in Redis with key.
 
         Args:
             key (str): key corresponding to object.
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
+            raise TypeError(f"data must be of type bytes. Found {type(data)}")
         # We store the creation time for the key as a separate redis key-value.
         self._redis_client.set(key + "_timestamp", time.time())
         self._redis_client.set(key, data)

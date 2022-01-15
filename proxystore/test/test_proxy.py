@@ -1,4 +1,4 @@
-"""Proxy Unit Tests"""
+"""Proxy Unit Tests."""
 import pickle as pkl
 
 import numpy as np
@@ -10,10 +10,10 @@ from proxystore.proxy import Proxy
 
 
 def test_proxy() -> None:
-    """Test Proxy behavior"""
+    """Test Proxy behavior."""
     with raises(TypeError):
         # Proxy requires type BaseFactory
-        Proxy(lambda: 'fake object')
+        Proxy(lambda: "fake object")
 
     x = np.array([1, 2, 3])
     f = SimpleFactory(x)
@@ -75,7 +75,7 @@ def test_proxy() -> None:
     p = Proxy(f)
     assert isinstance(p, np.ndarray)
 
-    p = Proxy(SimpleFactory('hello'))
+    p = Proxy(SimpleFactory("hello"))
     assert not ps.proxy.is_resolved(p)
     ps.proxy.resolve(p)
     assert ps.proxy.is_resolved(p)

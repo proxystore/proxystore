@@ -1,11 +1,11 @@
-"""Factory Unit Tests"""
+"""Factory Unit Tests."""
 import proxystore as ps
 from proxystore.factory import LambdaFactory
 from proxystore.factory import SimpleFactory
 
 
 def test_simple_factory() -> None:
-    """Test SimpleFactory"""
+    """Test SimpleFactory."""
     f = SimpleFactory([1, 2, 3])
 
     # Test callable
@@ -22,7 +22,7 @@ def test_simple_factory() -> None:
 
 
 def test_lambda_factory() -> None:
-    """Test LambdaFactory"""
+    """Test LambdaFactory."""
     f = LambdaFactory(lambda: [1, 2, 3])
 
     # Test callable
@@ -39,12 +39,12 @@ def test_lambda_factory() -> None:
 
     # Test with function
     def myfunc() -> str:
-        return 'abc'
+        return "abc"
 
     f = LambdaFactory(myfunc)
     f_pkl = ps.serialize.serialize(f)
     f = ps.serialize.deserialize(f_pkl)
-    assert f() == 'abc'
+    assert f() == "abc"
 
     # Test args/kwargs
     def power(a, b):

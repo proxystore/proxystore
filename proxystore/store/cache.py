@@ -1,13 +1,15 @@
-"""Simple Cache Implementation"""
+"""Simple Cache Implementation."""
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 
 
 class LRUCache:
-    """Simple LRU Cache"""
+    """Simple LRU Cache."""
 
     def __init__(self, maxsize: int = 16) -> None:
-        """Init LRUCache
+        """Init LRUCache.
 
         Args:
             maxsize (int): maximum number of value to cache (default: 16).
@@ -16,28 +18,28 @@ class LRUCache:
             ValueError:
                 if `maxsize <= 0`.
         """
-        if maxsize <= 0:
-            raise ValueError('Cache size must by > 0')
+        if maxsize < 0:
+            raise ValueError("Cache size must by >= 0")
         self.maxsize = maxsize
-        self.data = {}
-        self.lru = []
+        self.data: Dict[Any, Any] = {}
+        self.lru: List[Any] = []
 
         # Count hits/misses
         self.hits = 0
         self.misses = 0
 
     def evict(self, key: Any) -> None:
-        """Evict key from cache"""
+        """Evict key from cache."""
         if self.exists(key):
             self.data.pop(key, None)
             self.lru.remove(key)
 
     def exists(self, key: Any) -> bool:
-        """Check if key is in cache"""
+        """Check if key is in cache."""
         return key in self.data
 
     def get(self, key: Any, default: Optional[object] = None) -> Any:
-        """Get value for key if it exists else returns default"""
+        """Get value for key if it exists else returns default."""
         if self.exists(key):
             # Move to front b/c most recently used
             self.hits += 1
@@ -49,7 +51,9 @@ class LRUCache:
             return default
 
     def set(self, key: Any, value: Any) -> None:
-        """Set key to value"""
+        """Set key to value."""
+        if self.maxsize == 0:
+            return
         if len(self.data) >= self.maxsize:
             lru_key = self.lru.pop()
             del self.data[lru_key]

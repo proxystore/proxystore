@@ -6,7 +6,7 @@ proxystore.proxy
    :inherited-members:
    :show-inheritance:
 
-.. class:: proxystore.proxy.Proxy(factory: proxystore.factory.Factory) 
+.. class:: proxystore.proxy.Proxy(factory: proxystore.factory.Factory)
 
    Lazy Object Proxy
 

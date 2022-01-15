@@ -1,4 +1,4 @@
-"""Globus Endpoint Implementation"""
+"""Globus Endpoint Implementation."""
 from __future__ import annotations
 
 import json
@@ -9,22 +9,17 @@ import socket
 import time
 import warnings
 from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
 from typing import Pattern
-from typing import Union
+from typing import Sequence
 
 import proxystore as ps
-from proxystore.factory import Factory
 from proxystore.store.remote import RemoteFactory
 from proxystore.store.remote import RemoteStore
 
 import_error = None
 try:
-    import globus_sdk
-    from parsl.data_provider import globus
+    import globus_sdk  # type: ignore
+    from parsl.data_provider import globus  # type: ignore
 except ImportError as e:  # pragma: no cover
     import_error = e
 
@@ -33,16 +28,16 @@ GLOBUS_MKDIR_EXISTS_ERROR_CODE = "ExternalError.MkdirFailed.Exists"
 
 
 class GlobusEndpoint:
-    """GlobusEndpoint Class"""
+    """GlobusEndpoint Class."""
 
     def __init__(
         self,
         uuid: str,
         endpoint_path: str,
-        local_path: Optional[str],
-        host_regex: Union[str, Pattern[str]],
+        local_path: str | None,
+        host_regex: str | Pattern[str],
     ) -> None:
-        """Init GlobusEndpoint
+        """Init GlobusEndpoint.
 
         Args:
             uuid (str): UUID of Globus endpoint.
@@ -57,15 +52,15 @@ class GlobusEndpoint:
                 resolved.
         """
         if not isinstance(uuid, str):
-            raise TypeError('uuid must be a str.')
+            raise TypeError("uuid must be a str.")
         if not isinstance(endpoint_path, str):
-            raise TypeError('endpoint_path must be a str.')
+            raise TypeError("endpoint_path must be a str.")
         if not isinstance(local_path, str):
-            raise TypeError('local_path must be a str.')
+            raise TypeError("local_path must be a str.")
         if not (
             isinstance(host_regex, str) or isinstance(host_regex, Pattern)
         ):
-            raise TypeError('host_regex must be a str or re.Pattern.')
+            raise TypeError("host_regex must be a str or re.Pattern.")
 
         self.uuid = uuid
         self.endpoint_path = endpoint_path
@@ -73,7 +68,7 @@ class GlobusEndpoint:
         self.host_regex = host_regex
 
     def __eq__(self, endpoint):
-        """Override __eq__"""
+        """Endpoints are equal if attributes match."""
         if (
             self.uuid == endpoint.uuid
             and self.endpoint_path == endpoint.endpoint_path
@@ -84,7 +79,7 @@ class GlobusEndpoint:
         return False
 
     def __repr__(self) -> str:
-        """String representation of GlobusEndpoint"""
+        """Represent GlobusEndpoint as string."""
         return (
             f"{self.__class__.__name__}(uuid='{self.uuid}', "
             f"endpoint_path='{self.endpoint_path}', "
@@ -94,84 +89,82 @@ class GlobusEndpoint:
 
 
 class GlobusEndpoints:
-    """GlobusEndpoints Class"""
+    """GlobusEndpoints Class."""
 
-    def __init__(self, *endpoints: List[GlobusEndpoint]) -> None:
-        """Init GlobusEndpoints
+    def __init__(self, endpoints: Sequence[GlobusEndpoint]) -> None:
+        """Init GlobusEndpoints.
 
         Args:
-            endpoints (list): list of :class:`GlobusEndpoint <.GlobusEndpoint>`
-                instances.
+            endpoints: list or tuple of
+                :class:`GlobusEndpoint <.GlobusEndpoint>` instances.
         """
-        if len(endpoints) == 1 and isinstance(endpoints[0], list):
-            endpoints = endpoints[0]
         if len(endpoints) == 0:
             raise ValueError(
-                'GlobusEndpoints must be passed at least one GlobusEndpoint '
-                'object'
+                "GlobusEndpoints must be passed at least one GlobusEndpoint "
+                "object",
             )
-        self._endpoints = {}
+        self._endpoints: dict[str, GlobusEndpoint] = {}
         for endpoint in endpoints:
             if endpoint.uuid in self._endpoints:
                 raise ValueError(
-                    'Cannot pass multiple GlobusEndpoint objects with the '
-                    'same Globus endpoint UUID.'
+                    "Cannot pass multiple GlobusEndpoint objects with the "
+                    "same Globus endpoint UUID.",
                 )
             self._endpoints[endpoint.uuid] = endpoint
 
     def __getitem__(self, uuid):
-        """Override __getitem__"""
+        """Index GlobusEndpoints with UUID."""
         try:
             return self._endpoints[uuid]
         except KeyError:
             raise KeyError(f"Endpoint with UUID {uuid} does not exist.")
 
     def __iter__(self):
-        """Override __iter__"""
+        """Iterate over GlobusEndpoints."""
 
         def _iterator():
-            for endpoint in self._endpoints.values():
-                yield endpoint
+            yield from self._endpoints.values()
 
         return _iterator()
 
     def __len__(self):
-        """Override __len__"""
+        """Length of GlobusEndpoints."""
         return len(self._endpoints)
 
     def __repr__(self):
-        """String representation of GlobusEndpoints"""
+        """Represent GlobusEndpoints as string."""
         s = f"{self.__class__.__name__}(["
         s += ", ".join(str(ep) for ep in self._endpoints.values())
         s += "])"
         return s
 
     @classmethod
-    def from_dict(cls, json_object: Dict[str, Any]) -> GlobusEndpoints:
-        """Constructs a GlobusEndpoints object from a dictionary"""
+    def from_dict(cls, json_object: dict[str, Any]) -> GlobusEndpoints:
+        """Construct a GlobusEndpoints object from a dictionary."""
         endpoints = []
         for uuid, params in json_object.items():
             endpoints.append(
                 GlobusEndpoint(
                     uuid=uuid,
-                    endpoint_path=params['endpoint_path'],
-                    local_path=params['local_path'],
-                    host_regex=params['host_regex'],
-                )
+                    endpoint_path=params["endpoint_path"],
+                    local_path=params["local_path"],
+                    host_regex=params["host_regex"],
+                ),
             )
         return GlobusEndpoints(endpoints)
 
     @classmethod
     def from_json(cls, json_file: str) -> GlobusEndpoints:
-        """Constructs a GlobusEndpoints object from a json file"""
-        with open(json_file, 'r') as f:
+        """Construct a GlobusEndpoints object from a json file."""
+        with open(json_file) as f:
             data = f.read()
         return cls.from_dict(json.loads(data))
 
     def get_by_host(self, host: str) -> GlobusEndpoint:
-        """Get endpoint by host
+        """Get endpoint by host.
 
-        Searches the endpoints for a endpoint who's `host_regex` matches `host`.
+        Searches the endpoints for a endpoint who's `host_regex` matches
+        `host`.
 
         Args:
             host (str): host to match/
@@ -186,11 +179,11 @@ class GlobusEndpoints:
         for endpoint in self._endpoints.values():
             if re.fullmatch(endpoint.host_regex, host) is not None:
                 return endpoint
-        raise ValueError(f'Cannot find endpoint matching host {host}')
+        raise ValueError(f"Cannot find endpoint matching host {host}")
 
 
 class GlobusFactory(RemoteFactory):
-    """Factory for Instances of GlobusStore
+    """Factory for Instances of GlobusStore.
 
     Adds support for asynchronously retrieving objects from a
     :class:`GlobusStore <.GlobusStore>` backend..
@@ -204,13 +197,13 @@ class GlobusFactory(RemoteFactory):
         self,
         key: str,
         store_name: str,
-        store_kwargs: Dict[str, Any] = {},
+        store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init GlobusFactory
+        """Init GlobusFactory.
 
         Args:
             key (str): key corresponding to object in store.
@@ -225,7 +218,7 @@ class GlobusFactory(RemoteFactory):
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
-        super(GlobusFactory, self).__init__(
+        super().__init__(
             key,
             GlobusStore,
             store_name,
@@ -237,7 +230,7 @@ class GlobusFactory(RemoteFactory):
 
 
 class GlobusStore(RemoteStore):
-    """Globus backend class
+    """Globus backend class.
 
     The :class:`GlobusStore <.GlobusStore>` is similar to a
     :class:`FileStore <proxystore.store.file.FileStore>` in that objects in the
@@ -259,13 +252,13 @@ class GlobusStore(RemoteStore):
         self,
         name: str,
         *,
-        endpoints: Union[GlobusEndpoints, List[GlobusEndpoint]],
+        endpoints: GlobusEndpoints | list[GlobusEndpoint],
         polling_interval: int = 1,
-        sync_level: Union[int, str] = "mtime",
+        sync_level: int | str = "mtime",
         timeout: int = 60,
         cache_size: int = 16,
     ) -> None:
-        """Init GlobusStore
+        """Init GlobusStore.
 
         Args:
             name (str): name of the store instance.
@@ -301,11 +294,11 @@ class GlobusStore(RemoteStore):
         else:
             raise ValueError(
                 "endpoints must be of type GlobusEndpoints or a list of "
-                f"GlobusEndpoint. Got {type(endpoints)}."
+                f"GlobusEndpoint. Got {type(endpoints)}.",
             )
         if len(endpoints) != 2:
             raise ValueError(
-                "ProxyStore only supports two endpoints at a time"
+                "ProxyStore only supports two endpoints at a time",
             )
         self.polling_interval = polling_interval
         self.sync_level = sync_level
@@ -314,24 +307,24 @@ class GlobusStore(RemoteStore):
         parsl_globus_auth = globus.get_globus()
 
         self._transfer_client = globus_sdk.TransferClient(
-            authorizer=parsl_globus_auth.authorizer
+            authorizer=parsl_globus_auth.authorizer,
         )
 
-        super(GlobusStore, self).__init__(name, cache_size=cache_size)
+        super().__init__(name, cache_size=cache_size)
 
     @property
-    def kwargs(self) -> Dict[str, Any]:
+    def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
         return {
-            'endpoints': self.endpoints,
-            'polling_interval': self.polling_interval,
-            'sync_level': self.sync_level,
-            'timeout': self.timeout,
-            'cache_size': self.cache_size,
+            "endpoints": self.endpoints,
+            "polling_interval": self.polling_interval,
+            "sync_level": self.sync_level,
+            "timeout": self.timeout,
+            "cache_size": self.cache_size,
         }
 
     def _create_key(self, filename: str, task_id: str) -> str:
-        """Create key for GlobusStore
+        """Create key for GlobusStore.
 
         Args:
             filename (str): name of file in Globus.
@@ -344,34 +337,25 @@ class GlobusStore(RemoteStore):
         return f"{task_id}:{filename}"
 
     def _get_filename(self, key: str) -> str:
-        """Extract filename from key"""
+        """Extract filename from key."""
         return key.split(":")[1]
 
-    def _get_filepath(self, key: str = None, filename: str = None) -> str:
-        """Get filepath from key or filename
-
-        Extracts the filename from the key or uses the provided filename
-        along with the local path of the local Globus endpoint to create
-        the full filepath that can be used to access the file.
-        """
-        if key is not None and filename is not None:
-            raise ValueError("Only one of key or filename may be specified")
+    def _get_filepath(self, filename: str) -> str:
+        """Get filepath from filename."""
         local_endpoint = self._get_local_endpoint()
         os.makedirs(local_endpoint.local_path, exist_ok=True)
-        if key is not None:
-            filename = self._get_filename(key)
         return os.path.join(local_endpoint.local_path, filename)
 
-    def _get_local_endpoint(self) -> Optional[GlobusEndpoint]:
-        """Get endpoint local to current host"""
+    def _get_local_endpoint(self) -> GlobusEndpoint:
+        """Get endpoint local to current host."""
         return self.endpoints.get_by_host(socket.gethostname())
 
     def _get_task_id(self, key: str) -> str:
-        """Extract task id from key"""
+        """Extract task id from key."""
         return key.split(":")[0]
 
-    def _validate_key(self, key: str) -> str:
-        """Validate key contains a real Globus task id"""
+    def _validate_key(self, key: str) -> bool:
+        """Validate key contains a real Globus task id."""
         if len(key.split(":")) != 2:
             return False
         try:
@@ -382,8 +366,8 @@ class GlobusStore(RemoteStore):
             raise e
         return True
 
-    def _wait_on_tasks(self, *tasks: List[str]) -> None:
-        """Wait on list of Globus tasks"""
+    def _wait_on_tasks(self, *tasks: str | list[str]) -> None:
+        """Wait on list of Globus tasks."""
         for task in tasks:
             done = self._transfer_client.task_wait(
                 task,
@@ -392,15 +376,15 @@ class GlobusStore(RemoteStore):
             )
             if not done:
                 raise RuntimeError(
-                    f"Task {task} did not complete within the " "timeout"
+                    f"Task {task} did not complete within the " "timeout",
                 )
 
     def _sync_endpoints(self) -> str:
-        """Launch Globus Transfer to sync endpoints"""
+        """Launch Globus Transfer to sync endpoints."""
         src_endpoint = self._get_local_endpoint()
-        dst_endpoint = [ep for ep in self.endpoints if ep != src_endpoint]
-        assert len(dst_endpoint) == 1
-        dst_endpoint = dst_endpoint[0]
+        dst_endpoints = [ep for ep in self.endpoints if ep != src_endpoint]
+        assert len(dst_endpoints) == 1
+        dst_endpoint = dst_endpoints[0]
 
         transfer_task = globus_sdk.TransferData(
             self._transfer_client,
@@ -409,9 +393,9 @@ class GlobusStore(RemoteStore):
             sync_level=self.sync_level,
             delete_destination_extra=True,
         )
-        transfer_task['notify_on_succeeded'] = False
-        transfer_task['notify_on_failed'] = False
-        transfer_task['notify_on_inactive'] = False
+        transfer_task["notify_on_succeeded"] = False
+        transfer_task["notify_on_failed"] = False
+        transfer_task["notify_on_inactive"] = False
         transfer_task.add_item(
             source_path=src_endpoint.endpoint_path,
             destination_path=dst_endpoint.endpoint_path,
@@ -423,7 +407,7 @@ class GlobusStore(RemoteStore):
         return tdata["task_id"]
 
     def cleanup(self) -> None:
-        """Cleanup directories used by ProxyStore in the Globus endpoints
+        """Cleanup directories used by ProxyStore in the Globus endpoints.
 
         Warning:
             Will delete the directory at `local_path` on each endpoint.
@@ -439,15 +423,15 @@ class GlobusStore(RemoteStore):
                 endpoint=endpoint.uuid,
                 recursive=True,
             )
-            delete_task['notify_on_succeeded'] = False
-            delete_task['notify_on_failed'] = False
-            delete_task['notify_on_inactive'] = False
+            delete_task["notify_on_succeeded"] = False
+            delete_task["notify_on_failed"] = False
+            delete_task["notify_on_inactive"] = False
             delete_task.add_item(endpoint.endpoint_path)
             tdata = self._transfer_client.submit_delete(delete_task)
             self._wait_on_tasks(tdata["task_id"])
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from the Globus synced directory
+        """Evict object associated with key from the Globus synced directory.
 
         Args:
             key (str): key corresponding to object in store to evict.
@@ -455,17 +439,17 @@ class GlobusStore(RemoteStore):
         if not self.exists(key):
             return
 
-        path = self._get_filepath(key)
+        path = self._get_filepath(self._get_filename(key))
         os.remove(path)
         self._cache.evict(key)
         self._sync_endpoints()
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists
+        """Check if key exists.
 
         Args:
             key (str): key to check.
@@ -476,10 +460,10 @@ class GlobusStore(RemoteStore):
         if not self._validate_key(key):
             return False
         self._wait_on_tasks(self._get_task_id(key))
-        return os.path.exists(self._get_filepath(key))
+        return os.path.exists(self._get_filepath(self._get_filename(key)))
 
-    def get_bytes(self, key: str) -> Optional[bytes]:
-        """Get serialized object from Globus
+    def get_bytes(self, key: str) -> bytes | None:
+        """Get serialized object from Globus.
 
         Args:
             key (str): key corresponding to object.
@@ -490,12 +474,12 @@ class GlobusStore(RemoteStore):
         if not self.exists(key):
             return None
 
-        path = self._get_filepath(key)
-        with open(path, 'rb') as f:
+        path = self._get_filepath(self._get_filename(key))
+        with open(path, "rb") as f:
             return f.read()
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store
+        """Get timestamp of most recent object version in the store.
 
         Args:
             key (str): key corresponding to object.
@@ -510,9 +494,9 @@ class GlobusStore(RemoteStore):
         """
         if not self.exists(key):
             raise KeyError(
-                f"Key='{key}' does not have a corresponding file in the store"
+                f"Key='{key}' does not have a corresponding file in the store",
             )
-        return os.path.getmtime(self._get_filepath(key))
+        return os.path.getmtime(self._get_filepath(self._get_filename(key)))
 
     def get(
         self,
@@ -520,9 +504,9 @@ class GlobusStore(RemoteStore):
         *,
         deserialize: bool = True,
         strict: bool = False,
-        default: Optional[object] = None,
-    ) -> Optional[object]:
-        """Return object associated with key
+        default: Any | None = None,
+    ) -> Any | None:
+        """Return object associated with key.
 
         Args:
             key (str): key corresponding to object.
@@ -539,13 +523,13 @@ class GlobusStore(RemoteStore):
         if strict:
             warnings.warn(
                 "GlobusStore objects are immutable so setting strict=True "
-                "has no effect."
+                "has no effect.",
             )
         if self.is_cached(key, strict=strict):
             value = self._cache.get(key)
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=True"
+                f"(name='{self.name}'): was_cached=True",
             )
             return value
 
@@ -553,45 +537,41 @@ class GlobusStore(RemoteStore):
         if value is not None:
             if deserialize:
                 value = ps.serialize.deserialize(value)
-            if self._cache is not None:
-                self._cache.set(key, value)
+            self._cache.set(key, value)
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=False"
+                f"(name='{self.name}'): was_cached=False",
             )
             return value
 
         logger.debug(
             f"GET key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}'): key did not exist, returned default"
+            f"(name='{self.name}'): key did not exist, returned default",
         )
         return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally
+        """Check if object is cached locally.
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version
-                (default: False).
+            strict (bool): guarentee object in cache is most recent version.
+                Not supported in :class:`GlobusStore` (default: False).
 
         Returns:
             bool
         """
-        if self._cache is None:
-            return False
-
         return self._cache.exists(key)
 
-    def proxy(
+    def proxy(  # type: ignore[override]
         self,
-        obj: Optional[object] = None,
+        obj: Any | None = None,
         *,
-        key: Optional[str] = None,
-        factory: Factory = GlobusFactory,
+        key: str | None = None,
+        factory: type[RemoteFactory] = GlobusFactory,
         **kwargs,
-    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        """Create a proxy that will resolve to an object in the store
+    ) -> ps.proxy.Proxy:
+        """Create a proxy that will resolve to an object in the store.
 
         Args:
             obj (object): object to place in store and return proxy for.
@@ -615,16 +595,16 @@ class GlobusStore(RemoteStore):
         return super().proxy(obj, key=key, factory=factory, **kwargs)
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Globus synced directory with key
+        """Set serialized object in Globus synced directory with key.
 
         Args:
             key (str): key corresponding to object.
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
-        path = self._get_filepath(filename=key)
-        with open(path, 'wb', buffering=0) as f:
+            raise TypeError(f"data must be of type bytes. Found {type(data)}")
+        path = self._get_filepath(key)
+        with open(path, "wb", buffering=0) as f:
             f.write(data)
         # Manually set timestamp on file with nanosecond precision because some
         # filesystems can have low default file modified precisions
@@ -632,9 +612,13 @@ class GlobusStore(RemoteStore):
         os.utime(path, ns=(timestamp, timestamp))
 
     def set(
-        self, obj: Any, *, key: Optional[str] = None, serialize: bool = True
+        self,
+        obj: Any,
+        *,
+        key: str | None = None,
+        serialize: bool = True,
     ) -> str:
-        """Set key-object pair in store
+        """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
@@ -659,23 +643,23 @@ class GlobusStore(RemoteStore):
         key = self._create_key(filename=filename, task_id=tid)
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
         return key
 
     def set_batch(
         self,
-        objs: Iterable[Any],
+        objs: Sequence[Any],
         *,
-        keys: Optional[Iterable[Optional[str]]] = None,
+        keys: Sequence[str | None] | None = None,
         serialize: bool = True,
-    ) -> List[str]:
-        """Set objects in store
+    ) -> list[str]:
+        """Set objects in store.
 
         Args:
-            objs (Iterable[object]): iterable of objects to be placed in the
+            objs (Sequence[Any]): iterable of objects to be placed in the
                 store.
-            keys (Iterable[str], optional): keys to use with the objects.
+            keys (Sequence[str], optional): keys to use with the objects.
                 If the keys are not provided, keys will be created.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
@@ -690,7 +674,7 @@ class GlobusStore(RemoteStore):
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
-                f'objs has length {len(objs)} but keys has length {len(keys)}'
+                f"objs has length {len(objs)} but keys has length {len(keys)}",
             )
         if keys is None:
             keys = [None] * len(objs)
@@ -710,13 +694,13 @@ class GlobusStore(RemoteStore):
         # Batch of objs written to disk so we can trigger Globus transfer
         tid = self._sync_endpoints()
 
-        keys = []
+        final_keys = []
         for filename in filenames:
             key = self._create_key(filename=filename, task_id=tid)
             logger.debug(
                 f"SET key='{key}' IN {self.__class__.__name__}"
-                f"(name='{self.name}')"
+                f"(name='{self.name}')",
             )
-            keys.append(key)
+            final_keys.append(key)
 
-        return keys
+        return final_keys

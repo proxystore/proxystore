@@ -1,4 +1,4 @@
-"""FileStore Implementation"""
+"""FileStore Implementation."""
 import logging
 import os
 import shutil
@@ -6,8 +6,9 @@ import time
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Type
 
-from proxystore.factory import Factory
+import proxystore as ps
 from proxystore.store.remote import RemoteFactory
 from proxystore.store.remote import RemoteStore
 
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class FileFactory(RemoteFactory):
-    """Factory for Instances of FileStore
+    """Factory for Instances of FileStore.
 
     Adds support for asynchronously retrieving objects from a
     :class:`FileStore <.FileStore>` backend and optional, strict guarentees
@@ -30,13 +31,13 @@ class FileFactory(RemoteFactory):
         self,
         key: str,
         store_name: str,
-        store_kwargs: Dict[str, Any] = {},
+        store_kwargs: Optional[Dict[str, Any]] = None,
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init FileFactory
+        """Init FileFactory.
 
         Args:
             key (str): key corresponding to object in store.
@@ -51,7 +52,7 @@ class FileFactory(RemoteFactory):
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
-        super(FileFactory, self).__init__(
+        super().__init__(
             key,
             FileStore,
             store_name,
@@ -63,7 +64,7 @@ class FileFactory(RemoteFactory):
 
 
 class FileStore(RemoteStore):
-    """File backend class"""
+    """File backend class."""
 
     def __init__(
         self,
@@ -72,7 +73,7 @@ class FileStore(RemoteStore):
         store_dir: str,
         cache_size: int = 16,
     ) -> None:
-        """Init FileStore
+        """Init FileStore.
 
         Args:
             name (str): name of the store instance.
@@ -85,15 +86,15 @@ class FileStore(RemoteStore):
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
 
-        super(FileStore, self).__init__(name, cache_size=cache_size)
+        super().__init__(name, cache_size=cache_size)
 
     @property
     def kwargs(self) -> Dict[str, Any]:
         """Get kwargs for store instance."""
-        return {'store_dir': self.store_dir, 'cache_size': self.cache_size}
+        return {"store_dir": self.store_dir, "cache_size": self.cache_size}
 
     def cleanup(self) -> None:
-        """Cleanup all files associated with the file system store
+        """Cleanup all files associated with the file system store.
 
         Warning:
             Will delete the `store_dir` directory.
@@ -106,7 +107,7 @@ class FileStore(RemoteStore):
         shutil.rmtree(self.store_dir)
 
     def evict(self, key: str) -> None:
-        """Remove the object associated with key from the file system store
+        """Remove the object associated with key from the file system store.
 
         Args:
             key (str): key corresponding to object in store to evict.
@@ -117,11 +118,11 @@ class FileStore(RemoteStore):
         self._cache.evict(key)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in file system store
+        """Check if key exists in file system store.
 
         Args:
             key (str): key to check.
@@ -133,7 +134,7 @@ class FileStore(RemoteStore):
         return os.path.exists(path)
 
     def get_bytes(self, key: str) -> Optional[bytes]:
-        """Get serialized object from file system
+        """Get serialized object from file system.
 
         Args:
             key (str): key corresponding to object.
@@ -143,13 +144,13 @@ class FileStore(RemoteStore):
         """
         path = os.path.join(self.store_dir, key)
         if os.path.exists(path):
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 data = f.read()
                 return data
         return None
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store
+        """Get timestamp of most recent object version in the store.
 
         Args:
             key (str): key corresponding to object.
@@ -164,19 +165,19 @@ class FileStore(RemoteStore):
         """
         if not self.exists(key):
             raise KeyError(
-                f"Key='{key}' does not have a corresponding file in the store"
+                f"Key='{key}' does not have a corresponding file in the store",
             )
         return os.path.getmtime(os.path.join(self.store_dir, key))
 
-    def proxy(
+    def proxy(  # type: ignore[override]
         self,
-        obj: Optional[object] = None,
+        obj: Optional[Any] = None,
         *,
         key: Optional[str] = None,
-        factory: Factory = FileFactory,
+        factory: Type[RemoteFactory] = FileFactory,
         **kwargs,
-    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        """Create a proxy that will resolve to an object in the store
+    ) -> "ps.proxy.Proxy":
+        """Create a proxy that will resolve to an object in the store.
 
         Args:
             obj (object): object to place in store and return proxy for.
@@ -200,16 +201,16 @@ class FileStore(RemoteStore):
         return super().proxy(obj, key=key, factory=factory, **kwargs)
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Write serialized object to file system with key
+        """Write serialized object to file system with key.
 
         Args:
             key (str): key corresponding to object.
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
+            raise TypeError(f"data must be of type bytes. Found {type(data)}")
         path = os.path.join(self.store_dir, key)
-        with open(path, 'wb', buffering=0) as f:
+        with open(path, "wb", buffering=0) as f:
             f.write(data)
         # Manually set timestamp on file with nanosecond precision because some
         # filesystems can have low default file modified precisions

@@ -1,4 +1,4 @@
-"""MapReduce with FuncX and ProxyStore example"""
+"""MapReduce with FuncX and ProxyStore example."""
 import argparse
 import time
 from typing import List
@@ -10,12 +10,12 @@ import proxystore as ps
 
 
 def app_double(x: np.ndarray) -> np.ndarray:
-    """Doubles input array"""
+    """Doubles input array."""
     return 2 * x
 
 
 def app_sum(inputs: List[np.ndarray]) -> float:
-    """Sums all elements in list of arrays"""
+    """Sum all elements in list of arrays."""
     import numpy as np
 
     if len(inputs) == 0:
@@ -27,37 +27,39 @@ def app_sum(inputs: List[np.ndarray]) -> float:
     return np.sum(out)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='MapReduce with FuncX')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="MapReduce with FuncX")
     parser.add_argument(
-        '-n',
-        '--num-arrays',
+        "-n",
+        "--num-arrays",
         type=int,
         required=True,
-        help='Number of arrays to be mapreduced',
+        help="Number of arrays to be mapreduced",
     )
     parser.add_argument(
-        '-s',
-        '--size',
+        "-s",
+        "--size",
         type=int,
         required=True,
-        help='Length of array where each array is s x s',
+        help="Length of array where each array is s x s",
     )
     parser.add_argument(
-        '-f',
-        '--funcx-endpoint',
+        "-f",
+        "--funcx-endpoint",
         type=str,
         required=True,
-        help='FuncX endpoint ID',
+        help="FuncX endpoint ID",
     )
     parser.add_argument(
-        '--proxy', action='store_true', help='Use proxy store to pass inputs'
+        "--proxy",
+        action="store_true",
+        help="Use proxy store to pass inputs",
     )
     parser.add_argument(
-        '--redis-port',
+        "--redis-port",
         type=int,
         default=59465,
-        help='If not None, use Redis backend',
+        help="If not None, use Redis backend",
     )
     args = parser.parse_args()
 
@@ -68,11 +70,13 @@ if __name__ == '__main__':
 
     if args.proxy:
         store = ps.store.init_store(
-            'redis', hostname='127.0.0.1', port=args.redis_port
+            "redis",
+            hostname="127.0.0.1",
+            port=args.redis_port,
         )
 
     batch = fxc.create_batch()
-    for i in range(args.num_arrays):
+    for _ in range(args.num_arrays):
         x = np.random.rand(args.size, args.size)
         if args.proxy:
             x = store.proxy(x)
@@ -80,8 +84,8 @@ if __name__ == '__main__':
 
     batch_res = fxc.batch_run(batch)
     mapped_results = fxc.get_batch_result(batch_res)
-    for i, res in mapped_results.items():
-        while res['pending']:
+    for res in mapped_results.values():
+        while res["pending"]:
             time.sleep(0.1)
 
     mapped_results = [
@@ -91,10 +95,12 @@ if __name__ == '__main__':
     if args.proxy:
         mapped_results = store.proxy(mapped_results)
     total = fxc.run(
-        mapped_results, endpoint_id=args.funcx_endpoint, function_id=sum_uuid
+        mapped_results,
+        endpoint_id=args.funcx_endpoint,
+        function_id=sum_uuid,
     )
 
-    while fxc.get_task(total)['pending']:
+    while fxc.get_task(total)["pending"]:
         time.sleep(0.1)
 
-    print('Sum:', fxc.get_result(total))
+    print("Sum:", fxc.get_result(total))

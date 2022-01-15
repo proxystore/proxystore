@@ -3,6 +3,7 @@ coverage
 flake8
 flake8-docstrings
 globus-sdk
+mypy
 numpy
 parsl
 pre-commit
@@ -10,3 +11,4 @@ pytest
 pytest-cov
 redis
 tox
+virtualenv

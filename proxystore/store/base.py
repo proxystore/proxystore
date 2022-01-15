@@ -1,14 +1,11 @@
-"""Base Store Abstract Class"""
+"""Base Store Abstract Class."""
 from __future__ import annotations
 
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
 from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
+from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -17,10 +14,10 @@ logger = logging.getLogger(__name__)
 
 
 class Store(metaclass=ABCMeta):
-    """Abstraction of a key-value store"""
+    """Abstraction of a key-value store."""
 
     def __init__(self, name) -> None:
-        """Init Store
+        """Init Store.
 
         Args:
             name (str): name of the store instance.
@@ -28,13 +25,13 @@ class Store(metaclass=ABCMeta):
         self.name = name
         logger.debug(f"Initialized {self}")
 
-    def __repr__(self) -> None:
-        """String representation of Store instance"""
+    def __repr__(self) -> str:
+        """Represent Store instance as string."""
         s = f"{ps.utils.fullname(self.__class__)}("
         attributes = [
             f"{key}={value}"
             for key, value in self.__dict__.items()
-            if not key.startswith('_') and not callable(value)
+            if not key.startswith("_") and not callable(value)
         ]
         attributes.sort()
         s += ", ".join(attributes)
@@ -43,12 +40,12 @@ class Store(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def kwargs(self) -> Dict[str, Any]:
+    def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
         raise NotImplementedError
 
     def cleanup(self) -> None:
-        """Cleanup any objects associated with the store
+        """Cleanup any objects associated with the store.
 
         Many :class:`Store <.Store>` types do not have any objects that
         requiring cleaning up so this method is simply a no-op.
@@ -61,7 +58,7 @@ class Store(metaclass=ABCMeta):
         pass
 
     def create_key(self, obj: Any) -> str:
-        """Create key for the object
+        """Create key for the object.
 
         Args:
             obj: object to be placed in store.
@@ -73,7 +70,7 @@ class Store(metaclass=ABCMeta):
 
     @abstractmethod
     def evict(self, key: str) -> None:
-        """Evict object associated with key
+        """Evict object associated with key.
 
         Args:
             key (str): key corresponding to object in store to evict.
@@ -82,7 +79,7 @@ class Store(metaclass=ABCMeta):
 
     @abstractmethod
     def exists(self, key: str) -> bool:
-        """Check if key exists
+        """Check if key exists.
 
         Args:
             key (str): key to check.
@@ -99,8 +96,8 @@ class Store(metaclass=ABCMeta):
         *,
         strict: bool = False,
         default: Any = None,
-    ) -> Optional[object]:
-        """Return object associated with key
+    ) -> object | None:
+        """Return object associated with key.
 
         Args:
             key (str): key corresponding to object.
@@ -116,7 +113,7 @@ class Store(metaclass=ABCMeta):
 
     @abstractmethod
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally
+        """Check if object is cached locally.
 
         Args:
             key (str): key corresponding to object.
@@ -131,13 +128,13 @@ class Store(metaclass=ABCMeta):
     @abstractmethod
     def proxy(
         self,
-        obj: Optional[object] = None,
+        obj: Any | None = None,
         *,
-        key: Optional[str] = None,
-        factory: Factory = Factory,
+        key: str | None = None,
+        factory: type[Factory] = Factory,
         **kwargs,
-    ) -> 'ps.proxy.Proxy':
-        """Create a proxy that will resolve to an object in the store
+    ) -> ps.proxy.Proxy:
+        """Create a proxy that will resolve to an object in the store.
 
         Warning:
             If the factory requires reinstantiating the store to correctly
@@ -175,23 +172,23 @@ class Store(metaclass=ABCMeta):
     @abstractmethod
     def proxy_batch(
         self,
-        objs: Optional[Iterable[Optional[object]]] = None,
+        objs: Sequence[Any] | None = None,
         *,
-        keys: Optional[Iterable[Optional[str]]] = None,
-        factory: Optional[Factory] = None,
+        keys: Sequence[str] | None = None,
+        factory: Factory | None = None,
         **kwargs,
-    ) -> List['ps.proxy.Proxy']:
-        """Create proxies for batch of objects in the store
+    ) -> list[ps.proxy.Proxy]:
+        """Create proxies for batch of objects in the store.
 
         See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
         details.
 
         Args:
-            objs (Iterable[object]): objects to place in store and return
+            objs (Sequence[object]): objects to place in store and return
                 proxies for. If an iterable of objects is not provided, an
                 iterable of keys must be provided that correspond to objects
                 already in the store (default: None).
-            keys (Iterable[str]): optional keys to associate with `objs` in the
+            keys (Sequence[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
             factory (Factory): Optional factory class that will be instantiated
                 and passed to the proxies. The factory class should be able
@@ -211,8 +208,8 @@ class Store(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def set(self, obj: Any, *, key: Optional[str] = None) -> str:
-        """Set key-object pair in store
+    def set(self, obj: Any, *, key: str | None = None) -> str:
+        """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
@@ -228,16 +225,16 @@ class Store(metaclass=ABCMeta):
     @abstractmethod
     def set_batch(
         self,
-        objs: Iterable[Any],
+        objs: Sequence[Any],
         *,
-        keys: Optional[Iterable[Optional[str]]] = None,
-    ) -> List[str]:
-        """Set objects in store
+        keys: Sequence[str | None] | None = None,
+    ) -> list[str]:
+        """Set objects in store.
 
         Args:
-            objs (Iterable[object]): iterable of objects to be placed in the
+            objs (Sequence[object]): iterable of objects to be placed in the
                 store.
-            keys (Iterable[str], optional): keys to use with the objects.
+            keys (Sequence[str], optional): keys to use with the objects.
                 If the keys are not provided, keys will be created.
 
         Returns:

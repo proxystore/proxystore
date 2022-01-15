@@ -1,8 +1,4 @@
 [flake8]
-ignore = D415 W605 W503
-max-line-length = 80
+max-line-length = 79
 docstring-convention = google
-per-file-ignores =
-    *__init__.py:D104,F401,
-    proxystore/store/test/utils.py:D101,D102,D105,D107
 exclude = docs,.git,.github,__pycache__,build,dist,.*egg-info

@@ -1,16 +1,16 @@
-"""ProxyStore Proxy Implementation and Utilities"""
+"""ProxyStore Proxy Implementation and Utilities."""
 from __future__ import annotations
 
 from typing import Any
-from typing import Optional
 
-from lazy_object_proxy import slots
+from lazy_object_proxy import slots  # type: ignore
 
+import proxystore
 from proxystore.factory import Factory
 
 
 def _proxy_trampoline(factory: Factory):
-    """Trampoline for helping Proxy pickling
+    """Trampoline for helping Proxy pickling.
 
     `slots.Proxy` defines a property for ``__modules__`` which confuses
     pickle when trying to locate the class in the module. The trampoline is
@@ -26,7 +26,7 @@ def _proxy_trampoline(factory: Factory):
 
 
 class Proxy(slots.Proxy):
-    """Lazy Object Proxy
+    """Lazy Object Proxy.
 
     An extension of the Proxy from
     https://github.com/ionelmc/python-lazy-object-proxy with modified pickling
@@ -68,7 +68,7 @@ class Proxy(slots.Proxy):
     """
 
     def __init__(self, factory: Factory) -> None:
-        """Init Proxy
+        """Init Proxy.
 
         Args:
             factory (Factory): callable object that returns the
@@ -80,26 +80,26 @@ class Proxy(slots.Proxy):
                 <proxystore.factory.Factory>`.
         """
         if not isinstance(factory, Factory):
-            raise TypeError('factory must be of type ps.factory.Factory')
-        super(Proxy, self).__init__(factory)
+            raise TypeError("factory must be of type ps.factory.Factory")
+        super().__init__(factory)
 
     def __reduce__(self):
-        """Helper method for pickling
+        """Use trampoline function for pickling.
 
         Override `Proxy.__reduce__` so that we only pickle the Factory
         and not the object itself to reduce size of the pickle.
         """
         return _proxy_trampoline, (
-            object.__getattribute__(self, '__factory__'),
+            object.__getattribute__(self, "__factory__"),
         )
 
     def __reduce_ex__(self, protocol):
-        """See `__reduce__`"""
+        """See `__reduce__`."""
         return self.__reduce__()
 
 
-def extract(proxy: 'proxystore.proxy.Proxy') -> Any:  # noqa: F821
-    """Returns object wrapped by proxy
+def extract(proxy: proxystore.proxy.Proxy) -> Any:  # noqa: F821
+    """Return object wrapped by proxy.
 
     If the proxy has not been resolved yet, this will force
     the proxy to be resolved prior.
@@ -113,8 +113,8 @@ def extract(proxy: 'proxystore.proxy.Proxy') -> Any:  # noqa: F821
     return proxy.__wrapped__
 
 
-def get_key(proxy: 'proxystore.proxy.Proxy') -> Optional[str]:  # noqa: F821
-    """Returns key associated object wrapped by proxy
+def get_key(proxy: proxystore.proxy.Proxy) -> str | None:  # noqa: F821
+    """Return key associated object wrapped by proxy.
 
     Keys are stored in the `factory` passed to the
     :class:`Proxy <proxystore.proxy.Proxy>` constructor; however, not all
@@ -126,13 +126,13 @@ def get_key(proxy: 'proxystore.proxy.Proxy') -> Optional[str]:  # noqa: F821
     Returns:
         key (`str`) if it exists otherwise `None`.
     """
-    if hasattr(proxy.__factory__, 'key'):
+    if hasattr(proxy.__factory__, "key"):
         return proxy.__factory__.key
     return None
 
 
-def is_resolved(proxy: 'proxystore.proxy.Proxy') -> bool:  # noqa: F821
-    """Check if a proxy is resolved
+def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:  # noqa: F821
+    """Check if a proxy is resolved.
 
     Args:
         proxy (Proxy): proxy instance to check.
@@ -144,8 +144,8 @@ def is_resolved(proxy: 'proxystore.proxy.Proxy') -> bool:  # noqa: F821
     return proxy.__resolved__
 
 
-def resolve(proxy: 'proxystore.proxy.Proxy') -> None:  # noqa: F821
-    """Force a proxy to resolve itself
+def resolve(proxy: proxystore.proxy.Proxy) -> None:  # noqa: F821
+    """Force a proxy to resolve itself.
 
     Args:
         proxy (Proxy): proxy instance to force resolve.
@@ -153,8 +153,8 @@ def resolve(proxy: 'proxystore.proxy.Proxy') -> None:  # noqa: F821
     proxy.__wrapped__
 
 
-def resolve_async(proxy: 'proxystore.proxy.Proxy') -> None:  # noqa: F821
-    """Begin resolving proxy asynchronously
+def resolve_async(proxy: proxystore.proxy.Proxy) -> None:  # noqa: F821
+    """Begin resolving proxy asynchronously.
 
     Useful if the user knows a proxy will be needed soon and wants to
     resolve the proxy concurrently with other computation.

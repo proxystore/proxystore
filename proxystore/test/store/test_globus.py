@@ -1,4 +1,4 @@
-"""Globus Store Functionality Tests"""
+"""Globus Store Functionality Tests."""
 import json
 import os
 
@@ -11,52 +11,79 @@ import proxystore as ps
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
-from proxystore.store.test.utils import GLOBUS_STORE
-from proxystore.store.test.utils import mock_third_party_libs
+from proxystore.test.store.utils import GLOBUS_STORE
+from proxystore.test.store.utils import mock_third_party_libs
 
 
 EP1 = GlobusEndpoint(
-    uuid="1", endpoint_path="/path", local_path="/path", host_regex="localhost"
+    uuid="1",
+    endpoint_path="/path",
+    local_path="/path",
+    host_regex="localhost",
 )
 EP2 = GlobusEndpoint(
-    uuid="2", endpoint_path="/path", local_path="/path", host_regex="localhost"
+    uuid="2",
+    endpoint_path="/path",
+    local_path="/path",
+    host_regex="localhost",
 )
 EP3 = GlobusEndpoint(
-    uuid="3", endpoint_path="/path", local_path="/path", host_regex="localhost"
+    uuid="3",
+    endpoint_path="/path",
+    local_path="/path",
+    host_regex="localhost",
 )
 EP4 = GlobusEndpoint(
-    uuid="4", endpoint_path="/path", local_path="/path", host_regex=r"^\w{4}4$"
+    uuid="4",
+    endpoint_path="/path",
+    local_path="/path",
+    host_regex=r"^\w{4}4$",
 )
 EP5 = GlobusEndpoint(
-    uuid="1", endpoint_path="/path", local_path="/path", host_regex="localhost"
+    uuid="1",
+    endpoint_path="/path",
+    local_path="/path",
+    host_regex="localhost",
 )
 
 
-@fixture(scope='session', autouse=True)
+@fixture(scope="session", autouse=True)
 def init() -> None:
-    """Monkeypatch Globus and Parsl"""
+    """Monkeypatch Globus and Parsl."""
     mpatch = mock_third_party_libs()
     yield mpatch
     mpatch.undo()
 
 
 def test_globus_endpoint_objects() -> None:
-    """Test GlobusEndpoint(s) Objects"""
+    """Test GlobusEndpoint(s) Objects."""
     with raises(TypeError):
         GlobusEndpoint(
-            uuid=1, endpoint_path="1", local_path="1", host_regex="1"
+            uuid=1,
+            endpoint_path="1",
+            local_path="1",
+            host_regex="1",
         )
     with raises(TypeError):
         GlobusEndpoint(
-            uuid="1", endpoint_path=1, local_path="1", host_regex="1"
+            uuid="1",
+            endpoint_path=1,
+            local_path="1",
+            host_regex="1",
         )
     with raises(TypeError):
         GlobusEndpoint(
-            uuid="1", endpoint_path="1", local_path=1, host_regex="1"
+            uuid="1",
+            endpoint_path="1",
+            local_path=1,
+            host_regex="1",
         )
     with raises(TypeError):
         GlobusEndpoint(
-            uuid="1", endpoint_path="1", local_path="1", host_regex=1
+            uuid="1",
+            endpoint_path="1",
+            local_path="1",
+            host_regex=1,
         )
 
     # GlobusEndpoint equality done by UUID
@@ -65,17 +92,13 @@ def test_globus_endpoint_objects() -> None:
 
     # Check must pass at least one endpoint
     with raises(ValueError):
-        GlobusEndpoints()
-    with raises(ValueError):
         GlobusEndpoints([])
 
     # Check not able to pass multiple endpoints same UUID
     with raises(ValueError):
         GlobusEndpoints([EP1, EP5])
 
-    eps = GlobusEndpoints([EP1, EP2])
-    assert len(eps) == 2
-    eps = GlobusEndpoints(EP1, EP2, EP3, EP4)
+    eps = GlobusEndpoints([EP1, EP2, EP3, EP4])
     assert len(eps) == 4
 
     assert eps[EP1.uuid] == EP1
@@ -94,21 +117,21 @@ def test_globus_endpoint_objects() -> None:
 
 
 def test_globus_endpoints_from_json() -> None:
-    """Test GlobusEndpoints from JSON file"""
+    """Test GlobusEndpoints from JSON file."""
     data = {
-        'UUID1': {
-            'endpoint_path': '/~/',
-            'local_path': '/home/user1/',
-            'host_regex': 'host1',
+        "UUID1": {
+            "endpoint_path": "/~/",
+            "local_path": "/home/user1/",
+            "host_regex": "host1",
         },
-        'UUID2': {
-            'endpoint_path': '/~/',
-            'local_path': '/home/user2/',
-            'host_regex': 'host2',
+        "UUID2": {
+            "endpoint_path": "/~/",
+            "local_path": "/home/user2/",
+            "host_regex": "host2",
         },
     }
-    filepath = '/tmp/endpoints-2458984621396.json'
-    with open(filepath, 'w') as f:
+    filepath = "/tmp/endpoints-2458984621396.json"
+    with open(filepath, "w") as f:
         f.write(json.dumps(data))
 
     endpoints = GlobusEndpoints.from_json(filepath)
@@ -116,28 +139,28 @@ def test_globus_endpoints_from_json() -> None:
     os.remove(filepath)
 
     assert len(endpoints) == 2
-    assert endpoints['UUID1'].endpoint_path == '/~/'
-    assert endpoints['UUID1'].local_path == '/home/user1/'
-    assert endpoints['UUID1'].host_regex == 'host1'
-    assert endpoints['UUID2'].endpoint_path == '/~/'
-    assert endpoints['UUID2'].local_path == '/home/user2/'
-    assert endpoints['UUID2'].host_regex == 'host2'
+    assert endpoints["UUID1"].endpoint_path == "/~/"
+    assert endpoints["UUID1"].local_path == "/home/user1/"
+    assert endpoints["UUID1"].host_regex == "host1"
+    assert endpoints["UUID2"].endpoint_path == "/~/"
+    assert endpoints["UUID2"].local_path == "/home/user2/"
+    assert endpoints["UUID2"].host_regex == "host2"
 
 
 def test_globus_store_init() -> None:
-    """Test GlobusStore Initialization"""
+    """Test GlobusStore Initialization."""
     eps = GlobusEndpoints([EP1, EP2])
 
-    GlobusStore('globus', endpoints=[EP1, EP2])
+    GlobusStore("globus", endpoints=[EP1, EP2])
 
-    ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=[EP1, EP2])
-    ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=eps)
+    ps.store.init_store(ps.store.STORES.GLOBUS, "globus", endpoints=[EP1, EP2])
+    ps.store.init_store(ps.store.STORES.GLOBUS, "globus", endpoints=eps)
 
     with raises(ValueError):
         # Negative cache_size error
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
-            'globus',
+            "globus",
             endpoints=eps,
             cache_size=-1,
         )
@@ -146,7 +169,7 @@ def test_globus_store_init() -> None:
         # Invalid endpoint type
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
-            'globus',
+            "globus",
             endpoints=None,
         )
 
@@ -154,7 +177,7 @@ def test_globus_store_init() -> None:
         # Too many endpoints
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
-            'globus',
+            "globus",
             endpoints=[EP1, EP2, EP3],
         )
 
@@ -162,37 +185,33 @@ def test_globus_store_init() -> None:
         # Not enough endpoints
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
-            'globus',
+            "globus",
             endpoints=[EP1],
         )
 
 
 def test_kwargs() -> None:
-    """Test FileFactory kwargs"""
-    store = GlobusStore('globus', **GLOBUS_STORE["kwargs"])
+    """Test FileFactory kwargs."""
+    store = GlobusStore("globus", **GLOBUS_STORE["kwargs"])
     assert store.kwargs == {
         **GLOBUS_STORE["kwargs"],
-        'polling_interval': store.polling_interval,
-        'sync_level': store.sync_level,
-        'timeout': store.timeout,
-        'cache_size': store.cache_size,
+        "polling_interval": store.polling_interval,
+        "sync_level": store.sync_level,
+        "timeout": store.timeout,
+        "cache_size": store.cache_size,
     }
     store.cleanup()
 
 
 def test_globus_store_internals(monkeypatch) -> None:
-    """Test GlobusStore internal mechanisms"""
-    store = GlobusStore('globus', **GLOBUS_STORE["kwargs"])
+    """Test GlobusStore internal mechanisms."""
+    store = GlobusStore("globus", **GLOBUS_STORE["kwargs"])
 
     with warns(Warning):
         # Check that warning for not supporting strict is raised
         store.get("key", strict=True)
 
-    with raises(ValueError):
-        # Only one of key or filename may be specified
-        store._get_filepath(key='test', filename='test')
-
-    class PatchedTransferClient:
+    class PatchedTransferClient400:
         def get_task(self, *args, **kwargs):
             class PatchedError(globus_sdk.TransferAPIError):
                 def __init__(self):
@@ -200,10 +219,10 @@ def test_globus_store_internals(monkeypatch) -> None:
 
             raise PatchedError()
 
-    store._transfer_client = PatchedTransferClient()
+    store._transfer_client = PatchedTransferClient400()
     assert not store._validate_key("uuid:filename")
 
-    class PatchedTransferClient:
+    class PatchedTransferClient401:
         def get_task(self, *args, **kwargs):
             class PatchedError(globus_sdk.TransferAPIError):
                 def __init__(self):
@@ -211,14 +230,14 @@ def test_globus_store_internals(monkeypatch) -> None:
 
             raise PatchedError()
 
-    store._transfer_client = PatchedTransferClient()
+    store._transfer_client = PatchedTransferClient401()
     with raises(globus_sdk.TransferAPIError):
         store._validate_key("uuid:filename")
 
-    class PatchedTransferClient:
+    class PatchedTransferClientTimeout:
         def task_wait(self, *args, **kwargs):
             return False
 
-    store._transfer_client = PatchedTransferClient()
+    store._transfer_client = PatchedTransferClientTimeout()
     with raises(RuntimeError):
-        store._wait_on_tasks(1234)
+        store._wait_on_tasks(["1234"])

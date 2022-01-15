@@ -11,14 +11,8 @@ proxystore.store
    proxystore.store.redis
    proxystore.store.remote
 
-.. autoclass:: proxystore.store.STORES
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: proxystore.store
    :members:
    :inherited-members:
    :member-order: bysource
    :show-inheritance:
-

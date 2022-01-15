@@ -1,21 +1,23 @@
-"""ProxyStore Factory Implementations
+"""ProxyStore Factory Implementations.
 
 Factories are callable classes that wrap up the functionality needed
 to resolve a proxy, where resolving is the process of retrieving the
 object from wherever it is stored such that the proxy can act as the
 object.
 """
+from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 
 _default_pool = ThreadPoolExecutor()
 
 
 class Factory:
-    """Abstract Factory Class
+    """Abstract Factory Class.
 
     A factory is a callable object that when called, returns an object.
     The :any:`Proxy <proxystore.proxy.Proxy>` constructor takes an instance of
@@ -36,19 +38,19 @@ class Factory:
     """
 
     def __init__(self) -> None:
-        """Init Factory"""
+        """Init Factory."""
         raise NotImplementedError
 
     def __call__(self) -> Any:
-        """Aliases :func:`resolve()`"""
+        """Aliases :func:`resolve()`."""
         return self.resolve()
 
     def resolve(self) -> Any:
-        """Resolve and return object"""
+        """Resolve and return object."""
         raise NotImplementedError
 
     def resolve_async(self) -> None:
-        """Asynchronously resolve object
+        """Asynchronously resolve object.
 
         Note:
             The API has no requirements about the implementation
@@ -60,10 +62,10 @@ class Factory:
 
 
 class SimpleFactory(Factory):
-    """Simple Factory that stores object as class attribute"""
+    """Simple Factory that stores object as class attribute."""
 
     def __init__(self, obj: Any) -> None:
-        """Init Factory
+        """Init Factory.
 
         Args:
             obj (object): object to produce when factory is called.
@@ -71,23 +73,23 @@ class SimpleFactory(Factory):
         self._obj = obj
 
     def __call__(self) -> Any:
-        """Resolve object"""
+        """Resolve object."""
         return self.resolve()
 
     def resolve(self) -> Any:
-        """Return object"""
+        """Return object."""
         return self._obj
 
     def resolve_async(self) -> None:
-        """No-op"""
+        """No-op."""
         pass
 
 
 class LambdaFactory(Factory):
-    """Factory that takes any callable object"""
+    """Factory that takes any callable object."""
 
     def __init__(self, target: Callable, *args: Tuple, **kwargs: Dict) -> None:
-        """Init LambdaFactory
+        """Init LambdaFactory.
 
         Args:
             target (callable): callable object (function, class, lambda) to be
@@ -99,10 +101,10 @@ class LambdaFactory(Factory):
         self._target = target
         self._args = args
         self._kwargs = kwargs
-        self._obj_future = None
+        self._obj_future: Optional[Future[Any]] = None
 
     def resolve(self) -> Any:
-        """Calls `target` and returns result"""
+        """Return target object."""
         if self._obj_future is not None:
             obj = self._obj_future.result()
             self._obj_future = None
@@ -111,11 +113,13 @@ class LambdaFactory(Factory):
         return self._target(*self._args, **self._kwargs)
 
     def resolve_async(self) -> None:
-        """Calls `target` in separate thread and save future internally
+        """Asynchronously retrieve target object.
 
         A subsequent call to :func:`resolve` will wait on the future and
         return the result.
         """
         self._obj_future = _default_pool.submit(
-            self._target, *self._args, **self._kwargs
+            self._target,
+            *self._args,
+            **self._kwargs,
         )

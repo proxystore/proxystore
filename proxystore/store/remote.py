@@ -1,15 +1,13 @@
-"""Remote Store Abstract Class"""
+"""Remote Store Abstract Class."""
 from __future__ import annotations
 
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
+from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
-from typing import Dict
-from typing import Iterable
-from typing import List
-from typing import Optional
+from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -22,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class RemoteFactory(Factory):
-    """Base Factory for Instances of RemoteStore
+    """Base Factory for Instances of RemoteStore.
 
     Adds support for asynchronously retrieving objects from a
     :class:`RemoteStore <.RemoteStore>` backend and optional, strict guarentees
@@ -36,15 +34,15 @@ class RemoteFactory(Factory):
     def __init__(
         self,
         key: str,
-        store_type: Store,
+        store_type: type[RemoteStore],
         store_name: str,
-        store_kwargs: Dict[str, Any] = {},
+        store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init RemoteFactory
+        """Init RemoteFactory.
 
         Args:
             key (str): key corresponding to object in store.
@@ -64,36 +62,43 @@ class RemoteFactory(Factory):
         self.key = key
         self.store_type = store_type
         self.store_name = store_name
-        self.store_kwargs = store_kwargs
+        self.store_kwargs = {} if store_kwargs is None else store_kwargs
         self.evict = evict
         self.serialize = serialize
         self.strict = strict
-        self._obj_future = None
+        self._obj_future: Future[Any] | None = None
 
     def __getnewargs_ex__(self):
-        """Helper method for pickling"""
+        """Pickle without possible futures."""
         return (
             self.key,
             self.store_type,
             self.store_name,
             self.store_kwargs,
         ), {
-            'evict': self.evict,
-            'serialize': self.serialize,
-            'strict': self.strict,
+            "evict": self.evict,
+            "serialize": self.serialize,
+            "strict": self.strict,
         }
 
-    def _get_store(self) -> Store:
-        """Helper method for reinitializing the store"""
+    def _get_store(self) -> RemoteStore:
+        """Get store and reinitialize if necessary."""
         store = ps.store.get_store(self.store_name)
         if store is None:
             store = ps.store.init_store(
-                self.store_type, self.store_name, **self.store_kwargs
+                self.store_type,
+                self.store_name,
+                **self.store_kwargs,
             )
-        return store
+        if isinstance(store, RemoteStore):
+            return store
+        raise ValueError(
+            f"store_name={self.store_name} passed to RemoteFactory does not "
+            "correspond to store of type RemoteStore",
+        )
 
     def resolve(self) -> Any:
-        """Get object associated with key from store"""
+        """Get object associated with key from store."""
         if self._obj_future is not None:
             obj = self._obj_future.result()
             self._obj_future = None
@@ -102,14 +107,16 @@ class RemoteFactory(Factory):
         store = self._get_store()
 
         obj = store.get(
-            self.key, deserialize=self.serialize, strict=self.strict
+            self.key,
+            deserialize=self.serialize,
+            strict=self.strict,
         )
         if self.evict:
             store.evict(self.key)
         return obj
 
     def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from store"""
+        """Asynchronously get object associated with key from store."""
         store = self._get_store()
 
         # If the value is locally cached by the value server, starting up
@@ -127,7 +134,7 @@ class RemoteFactory(Factory):
 
 
 class RemoteStore(Store, metaclass=ABCMeta):
-    """Abstraction for interacting with a remote key-value store
+    """Abstraction for interacting with a remote key-value store.
 
     Provides base functionality for interaction with a remote store including
     serialization and caching.
@@ -143,7 +150,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
     """
 
     def __init__(self, name: str, *, cache_size: int = 0) -> None:
-        """Init RemoteStore
+        """Init RemoteStore.
 
         Args:
             name (str): name of the store instance.
@@ -155,14 +162,14 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 if `cache_size` is negative.
         """
         if cache_size < 0:
-            raise ValueError('Cache size cannot be negative')
+            raise ValueError("Cache size cannot be negative")
         self.cache_size = cache_size
-        self._cache = LRUCache(cache_size) if cache_size > 0 else None
-        super(RemoteStore, self).__init__(name)
+        self._cache = LRUCache(cache_size)
+        super().__init__(name)
 
     @abstractmethod
-    def get_bytes(self, key: str) -> Optional[bytes]:
-        """Get serialized object from remote store
+    def get_bytes(self, key: str) -> bytes | None:
+        """Get serialized object from remote store.
 
         Args:
             key (str): key corresponding to object.
@@ -174,7 +181,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
     @abstractmethod
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in remote store with key
+        """Set serialized object in remote store with key.
 
         Args:
             key (str): key corresponding to object.
@@ -188,9 +195,9 @@ class RemoteStore(Store, metaclass=ABCMeta):
         *,
         deserialize: bool = True,
         strict: bool = False,
-        default: Optional[object] = None,
-    ) -> Optional[object]:
-        """Return object associated with key
+        default: Any | None = None,
+    ) -> Any | None:
+        """Return object associated with key.
 
         Args:
             key (str): key corresponding to object.
@@ -208,7 +215,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
             value = self._cache.get(key)["value"]
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=True"
+                f"(name='{self.name}'): was_cached=True",
             )
             return value
 
@@ -217,26 +224,25 @@ class RemoteStore(Store, metaclass=ABCMeta):
             timestamp = self.get_timestamp(key)
             if deserialize:
                 value = ps.serialize.deserialize(value)
-            if self._cache is not None:
-                self._cache.set(key, {"timestamp": timestamp, "value": value})
+            self._cache.set(key, {"timestamp": timestamp, "value": value})
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=False"
+                f"(name='{self.name}'): was_cached=False",
             )
             return value
 
         logger.debug(
             f"GET key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}'): key did not exist, returned default"
+            f"(name='{self.name}'): key did not exist, returned default",
         )
         return default
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store"""
+        """Get timestamp of most recent object version in the store."""
         raise NotImplementedError
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally
+        """Check if object is cached locally.
 
         Args:
             key (str): key corresponding to object.
@@ -246,9 +252,6 @@ class RemoteStore(Store, metaclass=ABCMeta):
         Returns:
             bool
         """
-        if self._cache is None:
-            return False
-
         if self._cache.exists(key):
             if strict:
                 store_timestamp = self.get_timestamp(key)
@@ -258,15 +261,15 @@ class RemoteStore(Store, metaclass=ABCMeta):
 
         return False
 
-    def proxy(
+    def proxy(  # type: ignore[override]
         self,
-        obj: Optional[object] = None,
+        obj: Any | None = None,
         *,
-        key: Optional[str] = None,
-        factory: Factory = RemoteFactory,
+        key: str | None = None,
+        factory: type[RemoteFactory] = RemoteFactory,
         **kwargs,
-    ) -> 'proxystore.proxy.Proxy':  # noqa: F821
-        """Create a proxy that will resolve to an object in the store
+    ) -> ps.proxy.Proxy:
+        """Create a proxy that will resolve to an object in the store.
 
         Args:
             obj (object): object to place in store and return proxy for.
@@ -286,42 +289,51 @@ class RemoteStore(Store, metaclass=ABCMeta):
             ValueError:
                 if `key` and `obj` are both `None`.
         """
-        if key is None and obj is None:
-            raise ValueError('At least one of key or obj must be specified')
         if obj is not None:
-            if 'serialize' in kwargs:
-                key = self.set(obj, key=key, serialize=kwargs['serialize'])
+            if "serialize" in kwargs:
+                final_key = self.set(
+                    obj,
+                    key=key,
+                    serialize=kwargs["serialize"],
+                )
             else:
-                key = self.set(obj, key=key)
+                final_key = self.set(obj, key=key)
+        elif key is not None:
+            final_key = key
+        else:
+            raise ValueError("At least one of key or obj must be specified")
         logger.debug(
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
         return Proxy(
             factory(
-                key, store_name=self.name, store_kwargs=self.kwargs, **kwargs
-            )
+                final_key,
+                store_name=self.name,
+                store_kwargs=self.kwargs,
+                **kwargs,
+            ),
         )
 
-    def proxy_batch(
+    def proxy_batch(  # type: ignore[override]
         self,
-        objs: Optional[Iterable[Optional[object]]] = None,
+        objs: Sequence[Any] | None = None,
         *,
-        keys: Optional[Iterable[Optional[str]]] = None,
-        factory: Optional[Factory] = None,
+        keys: Sequence[str] | None = None,
+        factory: type[RemoteFactory] | None = None,
         **kwargs,
-    ) -> List['ps.proxy.Proxy']:
-        """Create proxies for batch of objects in the store
+    ) -> list[ps.proxy.Proxy]:
+        """Create proxies for batch of objects in the store.
 
         See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
         details.
 
         Args:
-            objs (Iterable[object]): objects to place in store and return
+            objs (Sequence[Any]): objects to place in store and return
                 proxies for. If an iterable of objects is not provided, an
                 iterable of keys must be provided that correspond to objects
                 already in the store (default: None).
-            keys (Iterable[str]): optional keys to associate with `objs` in the
+            keys (Sequence[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
             factory (Factory): Optional factory class that will be instantiated
                 and passed to the proxies. The factory class should be able
@@ -338,20 +350,31 @@ class RemoteStore(Store, metaclass=ABCMeta):
             ValueError:
                 if `objs` is None and `keys` does not exist in the store.
         """
-        if 'serialize' in kwargs:
-            keys = self.set_batch(
-                objs, keys=keys, serialize=kwargs['serialize']
-            )
+        if objs is not None:
+            if "serialize" in kwargs:
+                final_keys = self.set_batch(
+                    objs,
+                    keys=keys,
+                    serialize=kwargs["serialize"],
+                )
+            else:
+                final_keys = self.set_batch(objs, keys=keys)
+        elif keys is not None:
+            final_keys = list(keys)
         else:
-            keys = self.set_batch(objs, keys=keys)
+            raise ValueError("At least one of keys or objs must be specified")
         if factory is not None:
-            kwargs['factory'] = factory
-        return [self.proxy(None, key=key, **kwargs) for key in keys]
+            kwargs["factory"] = factory
+        return [self.proxy(None, key=key, **kwargs) for key in final_keys]
 
     def set(
-        self, obj: Any, *, key: Optional[str] = None, serialize: bool = True
+        self,
+        obj: Any,
+        *,
+        key: str | None = None,
+        serialize: bool = True,
     ) -> str:
-        """Set key-object pair in store
+        """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
@@ -371,23 +394,23 @@ class RemoteStore(Store, metaclass=ABCMeta):
         self.set_bytes(key, obj)
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
-            f"(name='{self.name}')"
+            f"(name='{self.name}')",
         )
         return key
 
     def set_batch(
         self,
-        objs: Iterable[Any],
+        objs: Sequence[Any],
         *,
-        keys: Optional[Iterable[Optional[str]]] = None,
+        keys: Sequence[str | None] | None = None,
         serialize: bool = True,
-    ) -> List[str]:
-        """Set objects in store
+    ) -> list[str]:
+        """Set objects in store.
 
         Args:
-            objs (Iterable[object]): iterable of objects to be placed in the
+            objs (Sequence[Any]): iterable of objects to be placed in the
                 store.
-            keys (Iterable[str], optional): keys to use with the objects.
+            keys (Sequence[str], optional): keys to use with the objects.
                 If the keys are not provided, keys will be created.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
@@ -402,7 +425,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
-                f'objs has length {len(objs)} but keys has length {len(keys)}'
+                f"objs has length {len(objs)} but keys has length {len(keys)}",
             )
         if keys is None:
             keys = [None] * len(objs)

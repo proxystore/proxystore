@@ -1,18 +1,18 @@
-"""Serialization Utilities"""
+"""Serialization Utilities."""
 import pickle
 from typing import Any
 
-import cloudpickle
+import cloudpickle  # type: ignore
 
 
 class SerializationError(Exception):
-    """Base Serialization Exception"""
+    """Base Serialization Exception."""
 
     pass
 
 
 def serialize(obj: Any) -> bytes:
-    """Serialize object
+    """Serialize object.
 
     Args:
         obj: object to serialize.
@@ -21,17 +21,17 @@ def serialize(obj: Any) -> bytes:
         `bytes` that can be passed to `deserialize()`.
     """
     if isinstance(obj, bytes):
-        identifier = b'01\n'
+        identifier = b"01\n"
     elif isinstance(obj, str):
-        identifier = b'02\n'
+        identifier = b"02\n"
         obj = obj.encode()
     else:
         # Use cloudpickle if pickle fails
         try:
-            identifier = b'03\n'
+            identifier = b"03\n"
             obj = pickle.dumps(obj)
         except Exception:
-            identifier = b'04\n'
+            identifier = b"04\n"
             obj = cloudpickle.dumps(obj)
 
     assert isinstance(identifier, bytes)
@@ -41,7 +41,7 @@ def serialize(obj: Any) -> bytes:
 
 
 def deserialize(data: bytes) -> Any:
-    """Deserialize object
+    """Deserialize object.
 
     Args:
         data (bytes): bytes produced by `serialize()`.
@@ -60,23 +60,23 @@ def deserialize(data: bytes) -> Any:
     """
     if not isinstance(data, bytes):
         raise ValueError(
-            'deserialize only accepts bytes arguments, not '
-            '{}'.format(type(data))
+            "deserialize only accepts bytes arguments, not "
+            "{}".format(type(data)),
         )
-    identifier, separator, data = data.partition(b'\n')
-    if separator == b'' or len(identifier) != len(b'00'):
+    identifier, separator, data = data.partition(b"\n")
+    if separator == b"" or len(identifier) != len(b"00"):
         raise SerializationError(
-            'data does not have required identifier for deserialization'
+            "data does not have required identifier for deserialization",
         )
-    if identifier == b'01':
+    if identifier == b"01":
         return data
-    elif identifier == b'02':
+    elif identifier == b"02":
         return data.decode()
-    elif identifier == b'03':
+    elif identifier == b"03":
         return pickle.loads(data)
-    elif identifier == b'04':
+    elif identifier == b"04":
         return cloudpickle.loads(data)
     else:
         raise SerializationError(
-            'Unknown identifier {} for deserialization'.format(identifier)
+            f"Unknown identifier {identifier!r} for deserialization",
         )

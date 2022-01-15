@@ -1,10 +1,7 @@
-"""Build ProxyStore package"""
+"""Build ProxyStore package."""
 import setuptools
 
-with open('requirements.txt') as f:
-    install_requires = f.readlines()
-
-with open('README.md') as f:
+with open("README.md") as f:
     long_desc = f.read()
 
 setuptools.setup(
@@ -21,6 +18,9 @@ setuptools.setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
-    install_requires=install_requires,
+    python_requires=">=3.6",
+    install_requires=[
+        "lazy-object-proxy>=1.6.*",
+        "cloudpickle>=1.6.0",
+    ],
 )

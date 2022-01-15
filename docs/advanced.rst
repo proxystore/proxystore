@@ -70,7 +70,7 @@ ProxyStore provides a :any:`Store <proxystore.store.base.Store>` interface for p
 E.g., if you have some distributed object store accesible by all devices in your environment, you can create a proxy that will resolve itself to an object that lives in the store.
 
 ProxyStore provides many :any:`Store <proxystore.store.base.Store>` implementations:
-   
+
   * :any:`LocalStore <proxystore.store.local.LocalStore>`: Stores objects in local process memory.
   * :any:`RedisStore <proxystore.store.redis.RedisStore>`: Uses a Redis server for storing objects.
   * :any:`FileStore <proxystore.store.file.FileStore>`: Uses a globally accessible file system directory for storing objects.
@@ -115,7 +115,7 @@ Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStor
 
    def complex_function(large_proxied_input):
        ps.proxy.resolve_async(large_proxied_input)
-       
+
        # More computation...
 
        # First access to the proxy will not be as expensive because
