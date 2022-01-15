@@ -1,12 +1,10 @@
 """Store Imports and Initialization Unit Tests."""
-import subprocess
-import time
-
 from pytest import fixture
 from pytest import raises
 
 import proxystore as ps
 from proxystore.store import STORES
+from proxystore.test.store.utils import mock_third_party_libs
 
 REDIS_HOST = "localhost"
 REDIS_PORT = 59465
@@ -14,14 +12,10 @@ REDIS_PORT = 59465
 
 @fixture(scope="session", autouse=True)
 def init() -> None:
-    """Launch Redis Server for Tests."""
-    redis_handle = subprocess.Popen(
-        ["redis-server", "--port", str(REDIS_PORT)],
-        stdout=subprocess.DEVNULL,
-    )
-    time.sleep(1)
-    yield
-    redis_handle.kill()
+    """Set up test environment."""
+    mpatch = mock_third_party_libs()
+    yield mpatch
+    mpatch.undo()
 
 
 def test_imports() -> None:
