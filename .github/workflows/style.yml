@@ -1,9 +1,9 @@
-name: lint
+name: style
 
 on: [push, pull_request]
 
 jobs:
-  lint:
+  style:
 
     strategy:
       matrix:
