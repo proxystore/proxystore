@@ -1,7 +1,7 @@
 # ProxyStore
 
-[![Tests](https://github.com/gpauloski/ProxyStore/actions/workflows/tests.yml/tests.svg)](https://github.com/gpauloski/ProxyStore/actions)
-[![Style](https://github.com/gpauloski/ProxyStore/actions/workflows/lint.yml/lint.svg)](https://github.com/gpauloski/ProxyStore/actions)
+[![Tests](https://github.com/gpauloski/ProxyStore/actions/workflows/tests.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
+[![Style](https://github.com/gpauloski/ProxyStore/actions/workflows/lint.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
 [![Coverage](https://codecov.io/gh/gpauloski/ProxyStore/branch/main/graph/badge.svg?token=16KFBPKF0Y)](https://codecov.io/gh/gpauloski/ProxyStore)
 [![Docs](https://readthedocs.org/projects/proxystore/badge/?version=latest)](https://proxystore.readthedocs.io/en/latest/?badge=latest)
 
