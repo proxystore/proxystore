@@ -29,7 +29,7 @@ copyright = "2021, Greg Pauloski"
 author = "Greg Pauloski"
 
 # The full version, including alpha/beta/rc tags
-release = "0.3.0"
+release = "0.3.1"
 
 todo_include_todos = True
 

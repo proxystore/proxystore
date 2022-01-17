@@ -1,6 +1,18 @@
 Changelog
 #########
 
+Version 0.3.1
+-------------
+
+`Released 17 January 2022`
+
+**Summary of Changes**
+
+#. Cleaned up tests (uniform file names and more mocking of third party libraries).
+#. Add :code:`STORES.get_str_by_type()`. (`#bf24158 <https://github.com/gpauloski/ProxyStore/commit/bf2415885a8da47d58af20f1ae0751397a3058e9>`_)
+#. Mass changes to CI workflows. See `Issue #16 <https://github.com/gpauloski/ProxyStore/issues/17>`_. (`#1995e90 <https://github.com/gpauloski/ProxyStore/commit/1995e90acf7dc8a5c3ee97dc3db6b4f44112b749>`_)
+
+
 Version 0.3.0
 -------------
 
