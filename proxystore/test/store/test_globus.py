@@ -1,6 +1,7 @@
 """Globus Store Functionality Tests."""
 import json
 import os
+import re
 
 import globus_sdk
 from pytest import fixture
@@ -147,14 +148,47 @@ def test_globus_endpoints_from_json() -> None:
     assert endpoints["UUID2"].host_regex == "host2"
 
 
+def test_globus_endpoints_from_dict() -> None:
+    """Test GlobusEndpoints from JSON file."""
+    data = {
+        "UUID1": {
+            "endpoint_path": "/~/",
+            "local_path": "/home/user1/",
+            "host_regex": "host1",
+        },
+        "UUID2": {
+            "endpoint_path": "/~/",
+            "local_path": "/home/user2/",
+            "host_regex": "host2",
+        },
+    }
+    endpoints = GlobusEndpoints.from_dict(data)
+    assert endpoints.dict() == data
+
+    # Ensure Patterns are converted to strings in .dict()
+    data["UUID1"]["host_regex"] = re.compile("host1")
+    endpoints = GlobusEndpoints.from_dict(data)
+    assert isinstance(endpoints.dict()["UUID1"]["host_regex"], str)
+
+
 def test_globus_store_init() -> None:
     """Test GlobusStore Initialization."""
     eps = GlobusEndpoints([EP1, EP2])
 
     GlobusStore("globus", endpoints=[EP1, EP2])
 
-    ps.store.init_store(ps.store.STORES.GLOBUS, "globus", endpoints=[EP1, EP2])
-    ps.store.init_store(ps.store.STORES.GLOBUS, "globus", endpoints=eps)
+    s1 = ps.store.init_store(
+        ps.store.STORES.GLOBUS,
+        "globus",
+        endpoints=[EP1, EP2],
+    )
+    s2 = ps.store.init_store(ps.store.STORES.GLOBUS, "globus", endpoints=eps)
+    s3 = ps.store.init_store(
+        ps.store.STORES.GLOBUS,
+        "globus",
+        endpoints=eps.dict(),
+    )
+    assert s1.kwargs == s2.kwargs == s3.kwargs
 
     with raises(ValueError):
         # Negative cache_size error
@@ -193,13 +227,16 @@ def test_globus_store_init() -> None:
 def test_kwargs() -> None:
     """Test FileFactory kwargs."""
     store = GlobusStore("globus", **GLOBUS_STORE["kwargs"])
-    assert store.kwargs == {
+    full_kwargs = {
         **GLOBUS_STORE["kwargs"],
         "polling_interval": store.polling_interval,
         "sync_level": store.sync_level,
         "timeout": store.timeout,
         "cache_size": store.cache_size,
     }
+    # store.kwargs returns endpoints as a dict rather than GlobusEndpoints
+    full_kwargs["endpoints"] = full_kwargs["endpoints"].dict()
+    assert store.kwargs == full_kwargs
     store.cleanup()
 
 

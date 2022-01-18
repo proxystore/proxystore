@@ -9,6 +9,7 @@ import socket
 import time
 import warnings
 from typing import Any
+from typing import Collection
 from typing import Pattern
 from typing import Sequence
 
@@ -91,12 +92,17 @@ class GlobusEndpoint:
 class GlobusEndpoints:
     """GlobusEndpoints Class."""
 
-    def __init__(self, endpoints: Sequence[GlobusEndpoint]) -> None:
+    def __init__(self, endpoints: Collection[GlobusEndpoint]) -> None:
         """Init GlobusEndpoints.
 
         Args:
-            endpoints: list or tuple of
+            endpoints: iterable of
                 :class:`GlobusEndpoint <.GlobusEndpoint>` instances.
+
+        Raises:
+            ValueError:
+                if `endpoints` has length 0 or if multiple endpoints with the
+                same UUID are provided.
         """
         if len(endpoints) == 0:
             raise ValueError(
@@ -139,8 +145,29 @@ class GlobusEndpoints:
         return s
 
     @classmethod
-    def from_dict(cls, json_object: dict[str, Any]) -> GlobusEndpoints:
-        """Construct a GlobusEndpoints object from a dictionary."""
+    def from_dict(
+        cls,
+        json_object: dict[str, dict[str, str]],
+    ) -> GlobusEndpoints:
+        """Construct a GlobusEndpoints object from a dictionary.
+
+        Example:
+
+        .. code-block:: text
+
+           {
+             "endpoint-uuid-1": {
+               "host_regex": "host1-regex",
+               "endpoint_path": "/path/to/endpoint/dir",
+               "local_path": "/path/to/local/dir"
+             },
+             "endpoint-uuid-2": {
+               "host_regex": "host2-regex",
+               "endpoint_path": "/path/to/endpoint/dir",
+               "local_path": "/path/to/local/dir"
+             }
+           }
+        """  # noqa: D412
         endpoints = []
         for uuid, params in json_object.items():
             endpoints.append(
@@ -155,10 +182,32 @@ class GlobusEndpoints:
 
     @classmethod
     def from_json(cls, json_file: str) -> GlobusEndpoints:
-        """Construct a GlobusEndpoints object from a json file."""
+        """Construct a GlobusEndpoints object from a json file.
+
+        The `dict` read from the JSON file will be passed to
+        :func:`from_dict()` and should match the format expected by
+        :func:`from_dict()`.
+        """
         with open(json_file) as f:
             data = f.read()
         return cls.from_dict(json.loads(data))
+
+    def dict(self) -> dict[str, dict[str, str]]:
+        """Convert the GlobusEndpoints to a dict.
+
+        Note that the :class:`.GlobusEndpoints` object can be reconstructed by
+        passing the `dict` to :from:`from_dict()`.
+        """
+        data = {}
+        for endpoint in self:
+            data[endpoint.uuid] = {
+                "endpoint_path": endpoint.endpoint_path,
+                "local_path": endpoint.local_path,
+                "host_regex": endpoint.host_regex.pattern
+                if isinstance(endpoint.host_regex, Pattern)
+                else endpoint.host_regex,
+            }
+        return data
 
     def get_by_host(self, host: str) -> GlobusEndpoint:
         """Get endpoint by host.
@@ -252,7 +301,9 @@ class GlobusStore(RemoteStore):
         self,
         name: str,
         *,
-        endpoints: GlobusEndpoints | list[GlobusEndpoint],
+        endpoints: GlobusEndpoints
+        | list[GlobusEndpoint]
+        | dict[str, dict[str, str]],
         polling_interval: int = 1,
         sync_level: int | str = "mtime",
         timeout: int = 60,
@@ -262,8 +313,9 @@ class GlobusStore(RemoteStore):
 
         Args:
             name (str): name of the store instance.
-            endpoints (list, GlobusEndpoints): Globus endpoints to keep
-                in sync.
+            endpoints (GlobusEndpoints): Globus endpoints to keep
+                in sync. If passed as a `dict`, the dictionary must match the
+                format expected by :func:`GlobusEndpoints.from_dict()`.
             polling_interval (int): interval in seconds to check if Globus
                 tasks have finished.
             sync_level (str, int): Globus transfer sync level.
@@ -273,24 +325,26 @@ class GlobusStore(RemoteStore):
 
         Raise:
             ImportError:
-                if `globus_sdk <https://globus-sdk-python.readthedocs.io/en/stable/>`_  # noqa
+                if `globus_sdk <https://globus-sdk-python.readthedocs.io/en/stable/>`_
                 or `parsl <https://parsl.readthedocs.io/en/stable/>`_
                 is not installed.
             ValueError:
                 if `endpoints` is not a list of
-                :class:`GlobusEndpoint <.GlobusEndpoint>` or instance of
-                :class:`GlobusEndpoints <.GlobusEndpoints>`.
+                :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
+                :class:`GlobusEndpoints <.GlobusEndpoints>`, or dict.
             ValueError:
                 if the :code:`len(endpoints) != 2` because
                 :class:`GlobusStore <.GlobusStore>` can currently only keep
                 two endpoints in sync.
-        """
+        """  # noqa: E501
         if import_error is not None:  # pragma: no cover
             raise import_error
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
         elif isinstance(endpoints, list):
             self.endpoints = GlobusEndpoints(endpoints)
+        elif isinstance(endpoints, dict):
+            self.endpoints = GlobusEndpoints.from_dict(endpoints)
         else:
             raise ValueError(
                 "endpoints must be of type GlobusEndpoints or a list of "
@@ -316,7 +370,8 @@ class GlobusStore(RemoteStore):
     def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
         return {
-            "endpoints": self.endpoints,
+            # Pass endpoints as a dict to make kwargs JSON serializable
+            "endpoints": self.endpoints.dict(),
             "polling_interval": self.polling_interval,
             "sync_level": self.sync_level,
             "timeout": self.timeout,
