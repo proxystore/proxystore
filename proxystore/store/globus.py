@@ -434,28 +434,64 @@ class GlobusStore(RemoteStore):
                     f"Task {task} did not complete within the " "timeout",
                 )
 
-    def _sync_endpoints(self) -> str:
-        """Launch Globus Transfer to sync endpoints."""
+    def _transfer_files(
+        self,
+        filenames: str | list[str],
+        delete: bool = False,
+    ) -> str:
+        """Launch Globus Transfer to sync endpoints.
+
+        Args:
+            filenames (str, list): filename or list of filenames to transfer.
+                Note must be filenames, not filepaths.
+            delete (bool): if `True`, delete the filenames rather than syncing
+                them.
+
+        Returns:
+            Globus Task UUID that can be used to check the status of the
+            transfer.
+        """
         src_endpoint = self._get_local_endpoint()
         dst_endpoints = [ep for ep in self.endpoints if ep != src_endpoint]
         assert len(dst_endpoints) == 1
         dst_endpoint = dst_endpoints[0]
 
-        transfer_task = globus_sdk.TransferData(
-            self._transfer_client,
-            source_endpoint=src_endpoint.uuid,
-            destination_endpoint=dst_endpoint.uuid,
-            sync_level=self.sync_level,
-            delete_destination_extra=True,
-        )
+        if delete:
+            transfer_task = globus_sdk.DeleteData(
+                self._transfer_client,
+                endpoint=dst_endpoint.uuid,
+            )
+        else:
+            transfer_task = globus_sdk.TransferData(
+                self._transfer_client,
+                source_endpoint=src_endpoint.uuid,
+                destination_endpoint=dst_endpoint.uuid,
+                sync_level=self.sync_level,
+            )
+
         transfer_task["notify_on_succeeded"] = False
         transfer_task["notify_on_failed"] = False
         transfer_task["notify_on_inactive"] = False
-        transfer_task.add_item(
-            source_path=src_endpoint.endpoint_path,
-            destination_path=dst_endpoint.endpoint_path,
-            recursive=True,
-        )
+
+        if isinstance(filenames, str):
+            filenames = [filenames]
+
+        for filename in filenames:
+            if delete:
+                transfer_task.add_item(
+                    path=os.path.join(dst_endpoint.endpoint_path, filename),
+                )
+            else:
+                transfer_task.add_item(
+                    source_path=os.path.join(
+                        src_endpoint.endpoint_path,
+                        filename,
+                    ),
+                    destination_path=os.path.join(
+                        dst_endpoint.endpoint_path,
+                        filename,
+                    ),
+                )
 
         tdata = self._transfer_client.submit_transfer(transfer_task)
 
@@ -494,10 +530,11 @@ class GlobusStore(RemoteStore):
         if not self.exists(key):
             return
 
-        path = self._get_filepath(self._get_filename(key))
+        filename = self._get_filename(key)
+        path = self._get_filepath(filename)
         os.remove(path)
         self._cache.evict(key)
-        self._sync_endpoints()
+        self._transfer_files(filename, delete=True)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -694,7 +731,7 @@ class GlobusStore(RemoteStore):
             filename = key
 
         self.set_bytes(filename, obj)
-        tid = self._sync_endpoints()
+        tid = self._transfer_files(filename)
         key = self._create_key(filename=filename, task_id=tid)
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
@@ -747,7 +784,7 @@ class GlobusStore(RemoteStore):
             self.set_bytes(filename, obj)
 
         # Batch of objs written to disk so we can trigger Globus transfer
-        tid = self._sync_endpoints()
+        tid = self._transfer_files(filenames)
 
         final_keys = []
         for filename in filenames:
