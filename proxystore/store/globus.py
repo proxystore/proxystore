@@ -493,7 +493,10 @@ class GlobusStore(RemoteStore):
                     ),
                 )
 
-        tdata = self._transfer_client.submit_transfer(transfer_task)
+        if delete:
+            tdata = self._transfer_client.submit_delete(transfer_task)
+        else:
+            tdata = self._transfer_client.submit_transfer(transfer_task)
 
         return tdata["task_id"]
 
