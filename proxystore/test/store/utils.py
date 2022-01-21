@@ -65,30 +65,6 @@ GLOBUS_STORE = {
 }
 
 
-class MockTransferClient:
-    """Mock the Globus TransferClient."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockTransferClient."""
-        pass
-
-    def get_task(self, *args, **kwargs):
-        """Get task."""
-        return None
-
-    def submit_delete(self, *args, **kwargs):
-        """Submit DeleteData."""
-        return {"task_id": str(uuid.uuid4())}
-
-    def submit_transfer(self, *args, **kwargs):
-        """Submit TransferData."""
-        return {"task_id": str(uuid.uuid4())}
-
-    def task_wait(self, *args, **kwargs):
-        """Wait on tasks."""
-        return True
-
-
 class MockTransferData:
     """Mock the Globus TransferData."""
 
@@ -104,8 +80,10 @@ class MockTransferData:
         """Index MockTransferData."""
         return self.__dict__[key]
 
-    def add_item(self, *args, **kwargs):
+    def add_item(self, source_path: str, destination_path: str, **kwargs):
         """Add item."""
+        assert isinstance(source_path, str)
+        assert isinstance(destination_path, str)
         return
 
 
@@ -124,9 +102,38 @@ class MockDeleteData:
         """Index MockDeleteData."""
         return self.__dict__[key]
 
-    def add_item(self, *args, **kwargs):
+    def add_item(self, path: str, **kwargs):
         """Add item."""
+        assert isinstance(path, str)
         return
+
+
+class MockTransferClient:
+    """Mock the Globus TransferClient."""
+
+    def __init__(self, *args, **kwargs):
+        """Init MockTransferClient."""
+        pass
+
+    def get_task(self, task_id: str):
+        """Get task."""
+        assert isinstance(task_id, str)
+        return None
+
+    def submit_delete(self, delete_data: MockDeleteData):
+        """Submit DeleteData."""
+        assert isinstance(delete_data, MockDeleteData)
+        return {"task_id": str(uuid.uuid4())}
+
+    def submit_transfer(self, transfer_data: MockTransferData):
+        """Submit TransferData."""
+        assert isinstance(transfer_data, MockTransferData)
+        return {"task_id": str(uuid.uuid4())}
+
+    def task_wait(self, task_id: str, **kwargs):
+        """Wait on tasks."""
+        assert isinstance(task_id, str)
+        return True
 
 
 class MockGlobusAuth:
