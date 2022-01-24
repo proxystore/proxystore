@@ -196,7 +196,7 @@ class GlobusEndpoints:
         """Convert the GlobusEndpoints to a dict.
 
         Note that the :class:`.GlobusEndpoints` object can be reconstructed by
-        passing the `dict` to :from:`from_dict()`.
+        passing the `dict` to :func:`from_dict()`.
         """
         data = {}
         for endpoint in self:
