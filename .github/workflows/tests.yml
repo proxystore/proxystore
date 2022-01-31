@@ -10,16 +10,16 @@ jobs:
         include:
         - os: ubuntu-latest
           python: 3.7
-          toxenv: python3.7
+          toxenv: py37
         - os: ubuntu-latest
           python: 3.8
-          toxenv: python3.8
+          toxenv: py38
         - os: ubuntu-latest
           python: 3.9
-          toxenv: python3.9
+          toxenv: py39
         - os: ubuntu-latest
           python: '3.10'
-          toxenv: python3.10
+          toxenv: py310
     runs-on: ${{ matrix.os }}
 
     steps:
