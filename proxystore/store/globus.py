@@ -303,6 +303,12 @@ class GlobusStore(RemoteStore):
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
         IDs into the keys, thus the keys returned by functions such
         as :func:`set() <set>` will be different.
+
+    Warning:
+        :class:`GlobusStore <.GlobusStore>` enforces strict guarentees on
+        object versions. I.e., the parameter :code:`strict` will be ignored
+        and objects returned by the store will always be the most up to date
+        version.
     """
 
     def __init__(
