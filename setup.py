@@ -22,5 +22,7 @@ setuptools.setup(
     install_requires=[
         "lazy-object-proxy>=1.6.*",
         "cloudpickle>=1.6.0",
+        "redis>=3.4",
+        "parsl>=1.0.0",
     ],
 )

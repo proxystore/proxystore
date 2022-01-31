@@ -15,14 +15,7 @@ Install via pip:
 $ pip install ProxyStore
 ```
 
-Installing with Conda for local development:
-```
-$ git clone https://github.com/gpauloski/ProxyStore.git
-$ cd ProxyStore
-$ conda env create --file environment.yml
-$ conda activate ProxyStore
-$ pre-commit install
-```
+See the [Contributing Guide](https://proxystore.readthedocs.io/en/latest/contributing.html) for getting started for local development.
 
 ## Documentation
 

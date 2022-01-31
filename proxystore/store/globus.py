@@ -291,10 +291,24 @@ class GlobusStore(RemoteStore):
     (e.g., ports cannot be opened for using a
     :class:`RedisStore <proxystore.store.redis.RedisStore>`).
 
+    Note:
+        To use Globus for data transfer, Globus authentication needs to be
+        performed. The user will be prompted to authenticate when the
+        :class:`GlobusStore <.GlobusStore>` is initialized. Alternatively,
+        authentication can be performed on the command line with
+        :code:`$ parsl_globus_auth`. Note authentication only needs to be
+        performed once.
+
     Warning:
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
         IDs into the keys, thus the keys returned by functions such
         as :func:`set() <set>` will be different.
+
+    Warning:
+        :class:`GlobusStore <.GlobusStore>` enforces strict guarentees on
+        object versions. I.e., the parameter :code:`strict` will be ignored
+        and objects returned by the store will always be the most up to date
+        version.
     """
 
     def __init__(
