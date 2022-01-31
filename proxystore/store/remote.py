@@ -303,7 +303,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         else:
             raise ValueError("At least one of key or obj must be specified")
         logger.debug(
-            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"PROXY key='{final_key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
         return Proxy(

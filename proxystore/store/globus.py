@@ -396,7 +396,9 @@ class GlobusStore(RemoteStore):
         return key.split(":")[1]
 
     def _get_filepath(
-        self, filename: str, endpoint: GlobusEndpoint | None = None
+        self,
+        filename: str,
+        endpoint: GlobusEndpoint | None = None,
     ) -> str:
         """Get filepath from filename.
 

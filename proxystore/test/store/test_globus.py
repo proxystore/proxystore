@@ -296,11 +296,11 @@ def test_get_filepath(monkeypatch) -> None:
                 local_path="/tmp/proxystore-test-2",
                 host_regex="localhost",
             ),
-        ]
+        ],
     )
 
     store = GlobusStore("globus", endpoints=endpoints)
-   
+
     filename = "test_file"
     for endpoint in endpoints:
         expected_path = os.path.join(endpoint.local_path, filename)
@@ -310,8 +310,8 @@ def test_get_filepath(monkeypatch) -> None:
 def test_expand_user_path(monkeypatch) -> None:
     """Test GlobusStore expands user path."""
     store_dir = ".cache/proxystore_cache"
-    short_path = os.path.join('~', store_dir)
-    full_path = os.path.join(os.path.expanduser('~'), store_dir)
+    short_path = os.path.join("~", store_dir)
+    full_path = os.path.join(os.path.expanduser("~"), store_dir)
 
     ep1 = GlobusEndpoint(
         uuid="EP1UUID",
@@ -327,7 +327,10 @@ def test_expand_user_path(monkeypatch) -> None:
     )
 
     store = GlobusStore("globus", endpoints=[ep1, ep2])
-    
+
     filename = "test_file"
-    assert '~' not in store._get_filepath(filename, ep1)
-    assert store._get_filepath(filename, ep1) == store._get_filepath(filename, ep2)
+    assert "~" not in store._get_filepath(filename, ep1)
+    assert store._get_filepath(filename, ep1) == store._get_filepath(
+        filename,
+        ep2,
+    )
