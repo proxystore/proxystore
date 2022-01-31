@@ -278,3 +278,59 @@ def test_globus_store_internals(monkeypatch) -> None:
     store._transfer_client = PatchedTransferClientTimeout()
     with raises(RuntimeError):
         store._wait_on_tasks(["1234"])
+
+
+def test_get_filepath(monkeypatch) -> None:
+    """Test GlobusStore filepath building."""
+    endpoints = GlobusEndpoints(
+        [
+            GlobusEndpoint(
+                uuid="EP1UUID",
+                endpoint_path="/~/",
+                local_path="/tmp/proxystore-test-1",
+                host_regex="localhost",
+            ),
+            GlobusEndpoint(
+                uuid="EP2UUID",
+                endpoint_path="/~/",
+                local_path="/tmp/proxystore-test-2",
+                host_regex="localhost",
+            ),
+        ],
+    )
+
+    store = GlobusStore("globus", endpoints=endpoints)
+
+    filename = "test_file"
+    for endpoint in endpoints:
+        expected_path = os.path.join(endpoint.local_path, filename)
+        assert store._get_filepath(filename, endpoint) == expected_path
+
+
+def test_expand_user_path(monkeypatch) -> None:
+    """Test GlobusStore expands user path."""
+    store_dir = ".cache/proxystore_cache"
+    short_path = os.path.join("~", store_dir)
+    full_path = os.path.join(os.path.expanduser("~"), store_dir)
+
+    ep1 = GlobusEndpoint(
+        uuid="EP1UUID",
+        endpoint_path="/~/",
+        local_path=short_path,
+        host_regex="localhost",
+    )
+    ep2 = GlobusEndpoint(
+        uuid="EP2UUID",
+        endpoint_path="/~/",
+        local_path=full_path,
+        host_regex="localhost",
+    )
+
+    store = GlobusStore("globus", endpoints=[ep1, ep2])
+
+    filename = "test_file"
+    assert "~" not in store._get_filepath(filename, ep1)
+    assert store._get_filepath(filename, ep1) == store._get_filepath(
+        filename,
+        ep2,
+    )

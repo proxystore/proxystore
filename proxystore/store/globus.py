@@ -395,11 +395,26 @@ class GlobusStore(RemoteStore):
         """Extract filename from key."""
         return key.split(":")[1]
 
-    def _get_filepath(self, filename: str) -> str:
-        """Get filepath from filename."""
-        local_endpoint = self._get_local_endpoint()
-        os.makedirs(local_endpoint.local_path, exist_ok=True)
-        return os.path.join(local_endpoint.local_path, filename)
+    def _get_filepath(
+        self,
+        filename: str,
+        endpoint: GlobusEndpoint | None = None,
+    ) -> str:
+        """Get filepath from filename.
+
+        Args:
+            filename (str): name of file in Globus
+            endpoint (GlobusEndpoint): optionally specify a GlobusEndpoint
+                to get the filepath relative to. If not specified, the endpoint
+                associated with the local host will be used.
+
+        Returns:
+            full local path to file.
+        """
+        if endpoint is None:
+            endpoint = self._get_local_endpoint()
+        local_path = os.path.expanduser(endpoint.local_path)
+        return os.path.join(local_path, filename)
 
     def _get_local_endpoint(self) -> GlobusEndpoint:
         """Get endpoint local to current host."""
@@ -699,6 +714,8 @@ class GlobusStore(RemoteStore):
         if not isinstance(data, bytes):
             raise TypeError(f"data must be of type bytes. Found {type(data)}")
         path = self._get_filepath(key)
+        if not os.path.isdir(os.path.dirname(path)):
+            os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, "wb", buffering=0) as f:
             f.write(data)
         # Manually set timestamp on file with nanosecond precision because some

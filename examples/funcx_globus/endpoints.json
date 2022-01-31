@@ -7,6 +7,6 @@
     "af7bda53-6d04-11e5-ba46-22000b92c6ec": {
         "host_regex": "midway2(.*?)",
         "endpoint_path": "/~/proxystore-dump",
-        "local_path": "/home/jgpauloski/proxystore-dump"
+        "local_path": "~/proxystore-dump"
     }
 }
