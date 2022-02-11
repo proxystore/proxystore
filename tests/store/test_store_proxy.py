@@ -7,24 +7,24 @@ from pytest import mark
 from pytest import raises
 
 import proxystore as ps
+from .utils import FILE_DIR
+from .utils import FILE_STORE
+from .utils import GLOBUS_STORE
+from .utils import mock_third_party_libs
+from .utils import REDIS_STORE
 from proxystore.store.exceptions import ProxyResolveMissingKey
-from proxystore.test.store.utils import FILE_DIR
-from proxystore.test.store.utils import FILE_STORE
-from proxystore.test.store.utils import GLOBUS_STORE
-from proxystore.test.store.utils import mock_third_party_libs
-from proxystore.test.store.utils import REDIS_STORE
 
 
 @fixture(scope="session", autouse=True)
-def init() -> None:
+def init():
     """Set up test environment."""
     mpatch = mock_third_party_libs()
     if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)
+        shutil.rmtree(FILE_DIR)  # pragma: no cover
     yield mpatch
     mpatch.undo()
     if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)
+        shutil.rmtree(FILE_DIR)  # pragma: no cover
 
 
 @mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])

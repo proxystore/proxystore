@@ -13,7 +13,7 @@ def test_proxy() -> None:
     """Test Proxy behavior."""
     with raises(TypeError):
         # Proxy requires type BaseFactory
-        Proxy(lambda: "fake object")
+        Proxy("not a factory")
 
     x = np.array([1, 2, 3])
     f = SimpleFactory(x)

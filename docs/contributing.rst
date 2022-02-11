@@ -41,10 +41,16 @@ The Python code and docstring format mostly follows the `Google Python Style Gui
 
 The entire CI workflow can be run with :code:`$ tox`.
 This will test against multiple versions of Python and can be slow.
-To run against a single version, use :code:`$ tox -e py38`.
 
-Module-level unit-test are located in the :code:`proxystore/test/` directory and its structure is intended to match that of :code:`proxystore/`.
-E.g. the tests for :code:`proxystore/store/cache.py` are located in :code:`proxystore/test/store/test_cache.py`.
+Module-level unit-test are located in the :code:`tests/` directory and its structure is intended to match that of :code:`proxystore/`.
+E.g. the tests for :code:`proxystore/store/cache.py` are located in :code:`tests/store/test_cache.py`.
+
+.. code-block:: bash
+
+   # Run all tests in tests/
+   $ tox -e py38
+   # Run a specific test
+   $ tox -e py38 -- tests/test_factory.py::test_lambda_factory
 
 If code changes require an update to the documentation (e.g., for function signature changes, new modules, etc.), the documentation can be built with :code:`$ tox -e docs`.
 

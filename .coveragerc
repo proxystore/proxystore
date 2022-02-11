@@ -1,12 +1,22 @@
 [run]
 branch = True
-source = proxystore
+source =
+    proxystore
+    tests
 
 [report]
+show_missing = True
 exclude_lines =
-    pragma: no cover
-    raise NotImplementedError
-    if __name__ == .__main__.:
-ignore_errors = True
-omit =
-    */test*
+    # Have to re-enable the standard pragma
+    \#\s*pragma: no cover
+
+    # Don't complain if tests don't hit defensive assertion code:
+    ^\s*raise AssertionError\b
+    ^\s*raise NotImplementedError\b
+    ^\s*return NotImplemented\b
+    ^\s*raise$
+
+    # Don't complain if non-runnable code isn't run:
+    ^if __name__ == ['"]__main__['"]:$
+    ^\s*if False:
+    ^\s*if TYPE_CHECKING:

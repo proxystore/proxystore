@@ -1,13 +1,13 @@
 """RedisStore Unit Tests."""
 from pytest import fixture
 
+from .utils import mock_third_party_libs
+from .utils import REDIS_STORE
 from proxystore.store.redis import RedisStore
-from proxystore.test.store.utils import mock_third_party_libs
-from proxystore.test.store.utils import REDIS_STORE
 
 
 @fixture(scope="session", autouse=True)
-def init() -> None:
+def init():
     """Set up test environment."""
     mpatch = mock_third_party_libs()
     yield mpatch

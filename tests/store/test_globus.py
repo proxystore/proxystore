@@ -9,11 +9,11 @@ from pytest import raises
 from pytest import warns
 
 import proxystore as ps
+from .utils import GLOBUS_STORE
+from .utils import mock_third_party_libs
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
-from proxystore.test.store.utils import GLOBUS_STORE
-from proxystore.test.store.utils import mock_third_party_libs
 
 
 EP1 = GlobusEndpoint(
@@ -49,7 +49,7 @@ EP5 = GlobusEndpoint(
 
 
 @fixture(scope="session", autouse=True)
-def init() -> None:
+def init():
     """Monkeypatch Globus and Parsl."""
     mpatch = mock_third_party_libs()
     yield mpatch
@@ -248,7 +248,7 @@ def test_globus_store_internals(monkeypatch) -> None:
         # Check that warning for not supporting strict is raised
         store.get("key", strict=True)
 
-    class PatchedTransferClient400:
+    class PatchedTransferClient400(globus_sdk.TransferClient):
         def get_task(self, *args, **kwargs):
             class PatchedError(globus_sdk.TransferAPIError):
                 def __init__(self):
@@ -259,7 +259,7 @@ def test_globus_store_internals(monkeypatch) -> None:
     store._transfer_client = PatchedTransferClient400()
     assert not store._validate_key("uuid:filename")
 
-    class PatchedTransferClient401:
+    class PatchedTransferClient401(globus_sdk.TransferClient):
         def get_task(self, *args, **kwargs):
             class PatchedError(globus_sdk.TransferAPIError):
                 def __init__(self):
@@ -271,7 +271,7 @@ def test_globus_store_internals(monkeypatch) -> None:
     with raises(globus_sdk.TransferAPIError):
         store._validate_key("uuid:filename")
 
-    class PatchedTransferClientTimeout:
+    class PatchedTransferClientTimeout(globus_sdk.TransferClient):
         def task_wait(self, *args, **kwargs):
             return False
 

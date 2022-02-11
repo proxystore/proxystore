@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,9 +26,9 @@ jobs:
         conda env update --file environment.yml --name base
     - name: Test with pytest
       run: |
-        pytest --cov=proxystore proxystore
+        coverage run -m pytest
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v1
       with:
         fail_ci_if_error: true
-      if: matrix.python-version == '3.9'
+      if: matrix.python-version == '3.8'

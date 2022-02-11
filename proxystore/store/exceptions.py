@@ -1,3 +1,4 @@
+"""Exceptions for Stores."""
 from __future__ import annotations
 
 from proxystore.store.base import Store
@@ -12,7 +13,7 @@ class ProxyResolveMissingKey(Exception):
         store_type: type[Store],
         store_name: str,
     ) -> None:
-        """Init ProxyResolveMissingKey
+        """Init ProxyResolveMissingKey.
 
         Args:
             key (str): key associated with target object that could not be

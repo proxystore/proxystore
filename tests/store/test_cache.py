@@ -1,6 +1,4 @@
 """Cache Unit Tests."""
-import multiprocessing as mp
-
 from pytest import raises
 
 from proxystore.store.cache import LRUCache
@@ -35,24 +33,3 @@ def test_lru_cache() -> None:
     c.evict("1")
     assert not c.exists("1")
     c.evict("1")
-
-
-def test_lru_cache_mp() -> None:
-    """Test LRU Cache with Multiprocessing."""
-    return
-    c = LRUCache(1)
-    c.set("test_key", "test_value")
-
-    def f(x):
-        _c = LRUCache(1)
-        assert _c.hits == 0
-        assert _c.misses == 0
-        assert _c.get("test_key") == "test_value"
-        assert _c.hits == 1
-        assert _c.misses == 0
-        assert _c.get(x) is None
-        assert _c.hits == 1
-        assert _c.misses == 1
-
-    with mp.Pool(2) as p:
-        p.map(f, ["1", "2", "3"])
