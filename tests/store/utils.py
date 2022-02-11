@@ -76,10 +76,6 @@ class MockTransferData:
         """Set item."""
         self.__dict__[key] = item
 
-    def __getitem__(self, key):
-        """Index MockTransferData."""
-        return self.__dict__[key]
-
     def add_item(self, source_path: str, destination_path: str, **kwargs):
         """Add item."""
         assert isinstance(source_path, str)
@@ -97,10 +93,6 @@ class MockDeleteData:
     def __setitem__(self, key, item):
         """Set item."""
         self.__dict__[key] = item
-
-    def __getitem__(self, key):
-        """Index MockDeleteData."""
-        return self.__dict__[key]
 
     def add_item(self, path: str, **kwargs):
         """Add item."""

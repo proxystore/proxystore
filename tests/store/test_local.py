@@ -2,6 +2,7 @@
 from pytest import raises
 
 import proxystore as ps
+from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.local import LocalFactory
 from proxystore.store.local import LocalStore
 
@@ -65,10 +66,6 @@ def test_local_store_proxy() -> None:
     with raises(ValueError):
         store.proxy_batch()
 
-    with raises(ValueError):
-        # Cannot make proxy from key that does not exist
-        store.proxy(key="missing_key")
-
     batch_values = ["test_value1", "test_value2", "test_value3"]
 
     proxies = store.proxy_batch(batch_values)
@@ -80,3 +77,20 @@ def test_local_store_proxy() -> None:
         assert p == v
 
     store.cleanup()
+
+
+def test_raises_missing_key() -> None:
+    """Test Proxy/Factory raise missing key error."""
+    store = ps.store.init_store(ps.store.STORES.LOCAL, "local")
+
+    key = "test_key"
+    assert not store.exists(key)
+
+    factory = LocalFactory(key, "local")
+
+    with raises(ProxyResolveMissingKey):
+        factory.resolve()
+
+    proxy = store.proxy(key=key)
+    with raises(ProxyResolveMissingKey):
+        proxy()
