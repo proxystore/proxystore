@@ -7,6 +7,7 @@ from pytest import mark
 from pytest import raises
 
 import proxystore as ps
+from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.test.store.utils import FILE_DIR
 from proxystore.test.store.utils import FILE_STORE
 from proxystore.test.store.utils import GLOBUS_STORE
@@ -197,3 +198,28 @@ def test_proxy_batch(store_config) -> None:
         assert p == v
 
     store.cleanup()
+
+
+@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+def test_raises_missing_key(store_config) -> None:
+    """Test Proxy/Factory raise missing key error."""
+    store = ps.store.init_store(
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
+    )
+
+    key = "test_key"
+    assert not store.exists(key)
+
+    factory = store_config["factory"](
+        key,
+        store_config["name"],
+        store_config["kwargs"],
+    )
+    with raises(ProxyResolveMissingKey):
+        factory.resolve()
+
+    proxy = store.proxy(key=key)
+    with raises(ProxyResolveMissingKey):
+        proxy()

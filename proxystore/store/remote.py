@@ -14,6 +14,7 @@ from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.cache import LRUCache
+from proxystore.store.exceptions import ProxyResolveMissingKey
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
@@ -98,7 +99,13 @@ class RemoteFactory(Factory):
         )
 
     def resolve(self) -> Any:
-        """Get object associated with key from store."""
+        """Get object associated with key from store.
+
+        Raises:
+            ProxyResolveMissingKey:
+                if the key associated with this factory does not exist
+                in the store.
+        """
         if self._obj_future is not None:
             obj = self._obj_future.result()
             self._obj_future = None
@@ -111,6 +118,12 @@ class RemoteFactory(Factory):
             deserialize=self.serialize,
             strict=self.strict,
         )
+        if obj is None:
+            raise ProxyResolveMissingKey(
+                self.key,
+                self.store_type,
+                self.store_name,
+            )
         if self.evict:
             store.evict(self.key)
         return obj

@@ -9,6 +9,7 @@ import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.exceptions import ProxyResolveMissingKey
 
 logger = logging.getLogger(__name__)
 
@@ -40,13 +41,23 @@ class LocalFactory(Factory):
         self.evict = evict
 
     def resolve(self) -> Any:
-        """Resolve and return object from store."""
+        """Resolve and return object from store.
+
+        Raises:
+            RuntimeError:
+                if a LocalStore with name has not been initialized.
+            ProxyResolveMissingKey:
+                if the key associated with this factory does not exist
+                in the store.
+        """
         store = ps.store.get_store(self.name)
         if store is None:
             raise RuntimeError(
                 "LocalStore is not initalized, cannot resolve factory",
             )
         obj = store.get(self.key)
+        if obj is None:
+            raise ProxyResolveMissingKey(self.key, LocalStore, self.name)
         if self.evict:
             store.evict(self.key)
         return obj
@@ -169,8 +180,6 @@ class LocalStore(Store):
         Raises:
             ValueError:
                 if `key` and `obj` are both `None`.
-            ValueError:
-                if `obj` is None and `key` does not exist in the store.
         """
         if key is None and obj is None:
             raise ValueError("At least one of key or obj must be specified")
@@ -178,10 +187,6 @@ class LocalStore(Store):
             key = ps.utils.create_key(obj)
         if obj is not None:
             self.set(obj, key=key)
-        elif not self.exists(key):
-            raise ValueError(
-                f"An object with key {key} does not exist in the store",
-            )
         logger.debug(
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
