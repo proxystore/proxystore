@@ -10,6 +10,7 @@ proxystore.store
    proxystore.store.local
    proxystore.store.redis
    proxystore.store.remote
+   proxystore.store.stats
 
 .. automodule:: proxystore.store
    :members:

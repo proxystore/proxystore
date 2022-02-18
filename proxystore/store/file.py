@@ -71,22 +71,22 @@ class FileStore(RemoteStore):
         name: str,
         *,
         store_dir: str,
-        cache_size: int = 16,
+        **kwargs: Any,
     ) -> None:
         """Init FileStore.
 
         Args:
             name (str): name of the store instance.
             store_dir (str): path to directory
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
         """
         self.store_dir = store_dir
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
 
-        super().__init__(name, cache_size=cache_size)
+        super().__init__(name, **kwargs)
 
     @property
     def kwargs(self) -> Dict[str, Any]:

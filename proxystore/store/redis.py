@@ -77,7 +77,7 @@ class RedisStore(RemoteStore):
         *,
         hostname: str,
         port: int,
-        cache_size: int = 16,
+        **kwargs: Any,
     ) -> None:
         """Init RedisStore.
 
@@ -85,8 +85,8 @@ class RedisStore(RemoteStore):
             name (str): name of the store instance.
             hostname (str): Redis server hostname.
             port (int): Redis server port.
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
 
         Raise:
             ImportError:
@@ -102,7 +102,7 @@ class RedisStore(RemoteStore):
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
-        super().__init__(name, cache_size=cache_size)
+        super().__init__(name, **kwargs)
 
     @property
     def kwargs(self):

@@ -321,7 +321,7 @@ class GlobusStore(RemoteStore):
         polling_interval: int = 1,
         sync_level: int | str = "mtime",
         timeout: int = 60,
-        cache_size: int = 16,
+        **kwargs: Any,
     ) -> None:
         """Init GlobusStore.
 
@@ -334,8 +334,8 @@ class GlobusStore(RemoteStore):
                 tasks have finished.
             sync_level (str, int): Globus transfer sync level.
             timeout (int): timeout in seconds for waiting on Globus tasks.
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
 
         Raise:
             ImportError:
@@ -378,7 +378,7 @@ class GlobusStore(RemoteStore):
             authorizer=parsl_globus_auth.authorizer,
         )
 
-        super().__init__(name, cache_size=cache_size)
+        super().__init__(name, **kwargs)
 
     @property
     def kwargs(self) -> dict[str, Any]:

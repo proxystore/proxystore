@@ -9,6 +9,7 @@ from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
+from proxystore.store.stats import FunctionStats
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +17,23 @@ logger = logging.getLogger(__name__)
 class Store(metaclass=ABCMeta):
     """Abstraction of a key-value store."""
 
-    def __init__(self, name) -> None:
+    def __init__(self, name: str, *, stats: bool = False) -> None:
         """Init Store.
 
         Args:
             name (str): name of the store instance.
+            stats (bool): collect stats on store operations (default: False)
         """
         self.name = name
+
+        self._stats: FunctionStats | None = None
+        if stats:
+            self._stats = FunctionStats()
+            for attr in dir(self):
+                # Monkeypatch methods with wrappers to track their stats
+                if callable(getattr(self, attr)) and not attr.startswith("_"):
+                    setattr(self, attr, self._stats.wrap(getattr(self, attr)))
+
         logger.debug(f"Initialized {self}")
 
     def __repr__(self) -> str:
@@ -246,3 +257,38 @@ class Store(metaclass=ABCMeta):
                 if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
         """
         raise NotImplementedError
+
+    def stats(self) -> dict[str, dict[str, int | float]]:
+        """Get stats on the store.
+
+        Returns:
+            dict with keys corresponding to method names and values which are
+            a dict of stats for the correspoinding method.
+
+            Example:
+
+            .. code-block:: python
+
+               {
+                   "get": {
+                       "calls": 32,
+                       "average_time": 0.00134,
+                       "min_time": 0.00031,
+                       "max_time": 0.00234,
+                   },
+                   "set": {
+                       ...
+                   },
+                   ...
+               }
+
+        Raises:
+            ValueError:
+                if `self` was initialized with :code:`stats=False`.
+        """
+        if self._stats is None:
+            raise ValueError(
+                "Stats are not being tracked because this store was "
+                "initialized with stats=False.",
+            )
+        return self._stats.as_dict()

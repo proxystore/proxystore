@@ -162,13 +162,21 @@ class RemoteStore(Store, metaclass=ABCMeta):
     provided in :func:`get()` and :func:`set()`.
     """
 
-    def __init__(self, name: str, *, cache_size: int = 0) -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        cache_size: int = 16,
+        **kwargs: Any,
+    ) -> None:
         """Init RemoteStore.
 
         Args:
             name (str): name of the store instance.
             cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 0).
+                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`BaseStore <proxystore.store.base.Store>`.
 
         Raises:
             ValueError:
@@ -178,7 +186,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
             raise ValueError("Cache size cannot be negative")
         self.cache_size = cache_size
         self._cache = LRUCache(cache_size)
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     @abstractmethod
     def get_bytes(self, key: str) -> bytes | None:

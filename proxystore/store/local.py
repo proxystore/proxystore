@@ -70,14 +70,16 @@ class LocalFactory(Factory):
 class LocalStore(Store):
     """Local Memory Key-Object Store."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, **kwargs: Any) -> None:
         """Init LocalStore.
 
         Args:
             name (str): name of this store instance.
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`Store <proxystore.store.base.Store>`.
         """
         self._store: dict[str, Any] = {}
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
     @property
     def kwargs(self) -> dict[str, Any]:
