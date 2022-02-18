@@ -1,24 +1,25 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-# -- Path setup --------------------------------------------------------------
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
+"""Configuration file for the Sphinx documentation builder.
+
+This file only contains a selection of the most common options. For a full
+list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+-- Path setup --------------------------------------------------------------
+If extensions (or modules to document with autodoc) are in another directory,
+add these directories to sys.path here. If the directory is relative to the
+documentation root, use os.path.abspath to make it absolute, like shown here.
+"""
 import proxystore  # noqa: F401
 
 
 def skip(app, what, name, obj, would_skip, options):
-    """Prevent docs skipping __init__ docstrings"""
+    """Prevent docs skipping __init__ docstrings."""
     if name == "__init__":
         return False
     return would_skip
 
 
 def setup(app):
-    """Setup sphinx docs"""
+    """Setup sphinx docs."""
     app.connect("autodoc-skip-member", skip)
 
 
