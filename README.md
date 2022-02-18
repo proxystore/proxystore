@@ -3,7 +3,6 @@
 [![Tests](https://github.com/gpauloski/ProxyStore/actions/workflows/tests.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
 [![Style](https://github.com/gpauloski/ProxyStore/actions/workflows/style.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
 [![Docs](https://readthedocs.org/projects/proxystore/badge/?version=latest)](https://proxystore.readthedocs.io/en/latest/?badge=latest)
-[![Coverage](https://codecov.io/gh/gpauloski/ProxyStore/branch/main/graph/badge.svg?token=16KFBPKF0Y)](https://codecov.io/gh/gpauloski/ProxyStore)
 
 
 Python Lazy Object Proxy Interface for Distributed Stores
