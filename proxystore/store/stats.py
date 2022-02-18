@@ -1,3 +1,4 @@
+"""Utilities for Tracking Stats on Store Operations."""
 from __future__ import annotations
 
 import math
@@ -54,51 +55,65 @@ class _FunctionStats:
         }
 
 
-class FunctionStats:
-    """Class for tracking stats of calls of functions."""
+class KeyedFunctionStats:
+    """Class for tracking stats of calls of methods that take a key."""
 
     def __init__(self) -> None:
         """Init MethodStats."""
-        self._stats: defaultdict[str, _FunctionStats] = defaultdict(
-            _FunctionStats,
+        # Nested dict that is keyed on key first then function name
+        self._stats: defaultdict[str, dict[str, _FunctionStats]] = defaultdict(
+            lambda: defaultdict(_FunctionStats),
         )
 
-    def __add__(self, other_stats: FunctionStats) -> FunctionStats:
+    def __add__(self, other_stats: KeyedFunctionStats) -> KeyedFunctionStats:
         """Add two instances together."""
-        new_stats = FunctionStats()
-        for name, stats in self._stats.items():
-            new_stats._stats[name] += stats
-        for name, stats in other_stats._stats.items():
-            new_stats._stats[name] += stats
+        new_stats = KeyedFunctionStats()
+        for key, functions in self._stats.items():
+            for function, stats in functions.items():
+                new_stats._stats[key][function] += stats
+        for key, functions in other_stats._stats.items():
+            for function, stats in functions.items():
+                new_stats._stats[key][function] += stats
         return new_stats
 
-    def __iadd__(self, other_stats: FunctionStats) -> FunctionStats:
+    def __iadd__(self, other_stats: KeyedFunctionStats) -> KeyedFunctionStats:
         """Add instance to self."""
-        for name, stats in other_stats._stats.items():
-            self._stats[name] += stats
+        for key, functions in other_stats._stats.items():
+            for function, stats in functions.items():
+                self._stats[key][function] += stats
         return self
 
-    def as_dict(self) -> dict[str, dict[str, int | float]]:
+    def as_dict(self) -> dict[str, dict[str, dict[str, int | float]]]:
         """Return dict with stats."""
-        return {name: stats.as_dict() for name, stats in self._stats.items()}
+        return {
+            key: {
+                function: stats.as_dict()
+                for function, stats in functions.items()
+            }
+            for key, functions in self._stats.items()
+        }
 
-    def get_stats(self, function_name: str) -> dict[str, int | float]:
-        """Get stats of a function.
+    def get_stats(self, key: str) -> dict[str, dict[str, int | float]]:
+        """Get stats for operations on a key.
 
         Args:
-            function_name (str)
+            key (str)
 
         Returns:
-            dict containing keys "calls", "average_time", "min_time", and
-            "max_time".
+            dict where keys are function names that have been executed on `key`
+            and values are a dict containing stats on the function calls.
         """
-        return self._stats[function_name].as_dict()
+        stats = self._stats[key].copy()
+        return {f: s.as_dict() for f, s in stats.items()}
 
-    def wrap(self, function: FuncType) -> FuncType:
+    def wrap(self, function: FuncType, key_is_kwarg: bool = False) -> FuncType:
         """Decorator that record function execution time.
 
         Args:
             function (callable): function to time.
+            key_is_kwarg (bool): the key passed to `function` is assumed to be
+                the first positional arg. If the key is passed as a kwarg, set
+                this to `True` (default: False).
 
         Returns:
             callable with same interface as function.
@@ -108,7 +123,8 @@ class FunctionStats:
             start = perf_counter()
             result = function(*args, **kwargs)
             time = perf_counter() - start
-            self._stats[function.__name__].add_time(time)
+            key = cast(str, kwargs["key"] if key_is_kwarg else args[0])
+            self._stats[key][function.__name__].add_time(time)
             return result
 
         return cast(FuncType, _function)

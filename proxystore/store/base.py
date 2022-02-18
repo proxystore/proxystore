@@ -9,9 +9,11 @@ from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.store.stats import FunctionStats
+from proxystore.store.stats import KeyedFunctionStats
 
 logger = logging.getLogger(__name__)
+
+_KEY_IS_KWARG_METHODS = ["set", "proxy"]
 
 
 class Store(metaclass=ABCMeta):
@@ -26,13 +28,19 @@ class Store(metaclass=ABCMeta):
         """
         self.name = name
 
-        self._stats: FunctionStats | None = None
+        self._stats: KeyedFunctionStats | None = None
         if stats:
-            self._stats = FunctionStats()
+            self._stats = KeyedFunctionStats()
+            # Monkeypatch methods with wrappers to track their stats
             for attr in dir(self):
-                # Monkeypatch methods with wrappers to track their stats
                 if callable(getattr(self, attr)) and not attr.startswith("_"):
-                    setattr(self, attr, self._stats.wrap(getattr(self, attr)))
+                    method = getattr(self, attr)
+                    # For most method, the key is the first arg which wrap()
+                    # expects by default, but there are a couple where the
+                    # key is passed as a kwarg
+                    key_is_kwarg = attr in _KEY_IS_KWARG_METHODS
+                    wrapped = self._stats.wrap(method, key_is_kwarg)
+                    setattr(self, attr, wrapped)
 
         logger.debug(f"Initialized {self}")
 
@@ -258,8 +266,11 @@ class Store(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def stats(self) -> dict[str, dict[str, int | float]]:
+    def stats(self, key: str) -> dict[str, dict[str, int | float]]:
         """Get stats on the store.
+
+        Args:
+            key (str): key to get stats for.
 
         Returns:
             dict with keys corresponding to method names and values which are
@@ -291,4 +302,4 @@ class Store(metaclass=ABCMeta):
                 "Stats are not being tracked because this store was "
                 "initialized with stats=False.",
             )
-        return self._stats.as_dict()
+        return self._stats.get_stats(key)

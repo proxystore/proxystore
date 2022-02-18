@@ -40,7 +40,7 @@ def test_init_stats(store_config) -> None:
 
     with raises(ValueError):
         # Check raises an error because stats are not tracked by default
-        store.stats()
+        store.stats("key")
 
     store = store_config["type"](
         store_config["name"],
@@ -48,17 +48,17 @@ def test_init_stats(store_config) -> None:
         stats=True,
     )
 
-    assert isinstance(store.stats(), dict)
+    assert isinstance(store.stats("key"), dict)
 
 
 def test_stat_tracking() -> None:
     """Test stat tracking of store."""
     store = ps.store.init_store("local", "local", stats=True)
 
-    p = store.proxy([1, 2, 3])
+    p = store.proxy([1, 2, 3], key="key")
     ps.proxy.resolve(p)
 
-    stats = store.stats()
+    stats = store.stats("key")
 
     assert "get" in stats
     assert "set" in stats
