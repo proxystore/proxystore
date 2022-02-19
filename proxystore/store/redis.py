@@ -104,14 +104,20 @@ class RedisStore(RemoteStore):
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
         super().__init__(name, **kwargs)
 
-    @property
-    def kwargs(self):
-        """Get kwargs for store instance."""
-        return {
-            "hostname": self.hostname,
-            "port": self.port,
-            "cache_size": self.cache_size,
-        }
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}
+        kwargs.update({"hostname": self.hostname, "port": self.port})
+        return super()._kwargs(kwargs)
 
     def evict(self, key: str) -> None:
         """Evict object associated with key from Redis.

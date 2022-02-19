@@ -119,12 +119,18 @@ class KeyedFunctionStats:
             callable with same interface as function.
         """
 
-        def _function(*args: tuple, **kwargs: dict) -> Any:
+        def _function(*args: Any, **kwargs: Any) -> Any:
             start = perf_counter()
             result = function(*args, **kwargs)
             time = perf_counter() - start
-            key = cast(str, kwargs["key"] if key_is_kwarg else args[0])
-            self._stats[key][function.__name__].add_time(time)
+            if key_is_kwarg and "key" in kwargs:
+                key = kwargs["key"]
+            elif not key_is_kwarg and len(args) > 0:
+                key = args[0]
+            else:
+                key = None
+            if key is not None:
+                self._stats[key][function.__name__].add_time(time)
             return result
 
         return cast(FuncType, _function)

@@ -10,7 +10,9 @@ from proxystore.store.local import LocalStore
 def test_kwargs() -> None:
     """Test LocalFactory kwargs."""
     store = LocalStore(name="local")
-    assert store.kwargs == {}
+    assert store.kwargs == {
+        "stats": False,
+    }
 
 
 def test_local_factory() -> None:

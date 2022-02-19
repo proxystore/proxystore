@@ -227,16 +227,15 @@ def test_globus_store_init() -> None:
 def test_kwargs() -> None:
     """Test FileFactory kwargs."""
     store = GlobusStore("globus", **GLOBUS_STORE["kwargs"])
-    full_kwargs = {
-        **GLOBUS_STORE["kwargs"],
-        "polling_interval": store.polling_interval,
-        "sync_level": store.sync_level,
-        "timeout": store.timeout,
-        "cache_size": store.cache_size,
-    }
+    passed_kwargs = GLOBUS_STORE["kwargs"].copy()
     # store.kwargs returns endpoints as a dict rather than GlobusEndpoints
-    full_kwargs["endpoints"] = full_kwargs["endpoints"].dict()
-    assert store.kwargs == full_kwargs
+    passed_kwargs["endpoints"] = passed_kwargs["endpoints"].dict()
+
+    true_kwargs = store.kwargs
+    for key, value in passed_kwargs.items():
+        assert true_kwargs[key] == value
+
+    assert store._kwargs({"test": 1})["test"] == 1
     store.cleanup()
 
 

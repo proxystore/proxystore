@@ -380,17 +380,28 @@ class GlobusStore(RemoteStore):
 
         super().__init__(name, **kwargs)
 
-    @property
-    def kwargs(self) -> dict[str, Any]:
-        """Get kwargs for store instance."""
-        return {
-            # Pass endpoints as a dict to make kwargs JSON serializable
-            "endpoints": self.endpoints.dict(),
-            "polling_interval": self.polling_interval,
-            "sync_level": self.sync_level,
-            "timeout": self.timeout,
-            "cache_size": self.cache_size,
-        }
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}
+        kwargs.update(
+            {
+                # Pass endpoints as a dict to make kwargs JSON serializable
+                "endpoints": self.endpoints.dict(),
+                "polling_interval": self.polling_interval,
+                "sync_level": self.sync_level,
+                "timeout": self.timeout,
+            },
+        )
+        return super()._kwargs(kwargs)
 
     def _create_key(self, filename: str, task_id: str) -> str:
         """Create key for GlobusStore.

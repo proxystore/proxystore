@@ -60,8 +60,37 @@ def test_stat_tracking() -> None:
 
     stats = store.stats("key")
 
+    store.get("key")
+
     assert "get" in stats
     assert "set" in stats
 
     assert stats["get"]["calls"] == 1
     assert stats["set"]["calls"] == 1
+
+
+@mark.parametrize(
+    "store_config",
+    [FILE_STORE, REDIS_STORE, GLOBUS_STORE],
+)
+def test_factory_preserves_tracking(store_config) -> None:
+    """Test Factories Preserve the Stat Tracking Flag."""
+    store = ps.store.init_store(
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
+        stats=True,
+    )
+
+    p = store.proxy([1, 2, 3])
+    key = ps.proxy.get_key(p)
+
+    # Force delete store so proxy recreates it when resolved
+    ps.store._stores = {}
+
+    # Resolve the proxy
+    assert p == [1, 2, 3]
+    store = ps.store.get_store(store_config["name"])
+
+    assert isinstance(store.stats(key), dict)
+    assert store.stats(key)["get"]["calls"] == 1

@@ -58,10 +58,24 @@ class Store(metaclass=ABCMeta):
         return s
 
     @property
-    @abstractmethod
     def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
-        raise NotImplementedError
+        return self._kwargs()
+
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}
+        kwargs.update({"stats": self._stats is not None})
+        return kwargs
 
     def cleanup(self) -> None:
         """Cleanup any objects associated with the store.

@@ -188,6 +188,21 @@ class RemoteStore(Store, metaclass=ABCMeta):
         self._cache = LRUCache(cache_size)
         super().__init__(name, **kwargs)
 
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}  # pragma: no cover
+        kwargs.update({"cache_size": self.cache_size})
+        return super()._kwargs(kwargs)
+
     @abstractmethod
     def get_bytes(self, key: str) -> bytes | None:
         """Get serialized object from remote store.
