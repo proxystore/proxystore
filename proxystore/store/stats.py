@@ -2,135 +2,165 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
+from collections.abc import MutableMapping
+from dataclasses import dataclass
 from time import perf_counter
 from typing import Any
 from typing import Callable
 from typing import cast
+from typing import Iterable
+from typing import Iterator
+from typing import KeysView
+from typing import NamedTuple
 from typing import TypeVar
 
 
 FuncType = TypeVar("FuncType", bound=Callable[..., Any])
 
 
-class _FunctionStats:
-    """Helper class for tracking stats of an individual function."""
+class Event(NamedTuple):
+    """Event corresponding to a function called with a specific key."""
 
-    def __init__(self) -> None:
-        """Init _FunctionStats."""
-        self._calls: int = 0
-        self._total_time: float = 0
-        self._min_time: float = math.inf
-        self._max_time: float = 0
+    function: str
+    key: str
 
-    def __add__(self, other_stats: _FunctionStats) -> _FunctionStats:
+
+@dataclass
+class TimeStats:
+    """Helper class for tracking time stats of an operation."""
+
+    calls: int = 0
+    avg_time_ms: float = 0
+    min_time_ms: float = math.inf
+    max_time_ms: float = 0
+
+    def __add__(self, other: TimeStats) -> TimeStats:
         """Add two instances together."""
-        new_stats = _FunctionStats()
-        new_stats._calls = self._calls + other_stats._calls
-        new_stats._total_time = self._total_time + other_stats._total_time
-        new_stats._min_time = min(self._min_time, other_stats._min_time)
-        new_stats._max_time = max(self._max_time, other_stats._max_time)
-        return new_stats
+        return TimeStats(
+            calls=self.calls + other.calls,
+            avg_time_ms=self._weighted_avg(
+                self.avg_time_ms,
+                self.calls,
+                other.avg_time_ms,
+                other.calls,
+            ),
+            min_time_ms=min(self.min_time_ms, other.min_time_ms),
+            max_time_ms=max(self.max_time_ms, other.max_time_ms),
+        )
 
-    def add_time(self, time: float) -> None:
+    def add_time(self, time_ms: float) -> None:
         """Add a new time to the stats.
 
         Args:
-            time (float): time of a method execution.
+            time_ms (float): time (milliseconds) of a method execution.
         """
-        self._calls += 1
-        self._total_time += time
-        self._min_time = min(time, self._min_time)
-        self._max_time = max(time, self._max_time)
+        self.avg_time_ms = self._weighted_avg(
+            self.avg_time_ms,
+            self.calls,
+            time_ms,
+            1,
+        )
+        self.min_time_ms = min(time_ms, self.min_time_ms)
+        self.max_time_ms = max(time_ms, self.max_time_ms)
+        self.calls += 1
 
-    def as_dict(self) -> dict[str, int | float]:
-        """Return dict with stats."""
-        return {
-            "calls": self._calls,
-            "average_time": self._total_time / self._calls
-            if self._calls > 0
-            else 0,
-            "min_time": self._min_time,
-            "max_time": self._max_time,
-        }
+    def _weighted_avg(self, a1: float, n1: int, a2: float, n2: float) -> float:
+        """Compute weighted average between two separate averages.
+
+        Args:
+            a1 (float): first average.
+            n1 (float): number of samples in `a1`.
+            a2 (float): second average.
+            n2 (float): number of samples in `a2`.
+
+        Returns:
+            weighted average between `a1` and `a2`.
+        """
+        return ((a1 * n1) + (a2 * n2)) / (n1 + n2)
 
 
-class KeyedFunctionStats:
-    """Class for tracking stats of calls of methods that take a key."""
+class FunctionEventStats(MutableMapping):
+    """Class for tracking stats of calls of functions that take a key."""
 
     def __init__(self) -> None:
-        """Init MethodStats."""
-        # Nested dict that is keyed on key first then function name
-        self._stats: defaultdict[str, dict[str, _FunctionStats]] = defaultdict(
-            lambda: defaultdict(_FunctionStats),
-        )
+        """Init FunctionEventStats."""
+        self._events: dict[Event, TimeStats] = {}
 
-    def __add__(self, other_stats: KeyedFunctionStats) -> KeyedFunctionStats:
-        """Add two instances together."""
-        new_stats = KeyedFunctionStats()
-        for key, functions in self._stats.items():
-            for function, stats in functions.items():
-                new_stats._stats[key][function] += stats
-        for key, functions in other_stats._stats.items():
-            for function, stats in functions.items():
-                new_stats._stats[key][function] += stats
-        return new_stats
+    def __delitem__(self, event: Event) -> None:
+        """Remove event from self."""
+        del self._events[event]
 
-    def __iadd__(self, other_stats: KeyedFunctionStats) -> KeyedFunctionStats:
-        """Add instance to self."""
-        for key, functions in other_stats._stats.items():
-            for function, stats in functions.items():
-                self._stats[key][function] += stats
-        return self
+    def __getitem__(self, event: Event) -> TimeStats:
+        """Get item corresponding to event."""
+        if not isinstance(event, Event):
+            raise TypeError(
+                f"key (event) must be of type {Event.__name__}. "
+                f"Got type {type(event)}.",
+            )
+        if event not in self._events:
+            self._events[event] = TimeStats()
+        return self._events[event]
 
-    def as_dict(self) -> dict[str, dict[str, dict[str, int | float]]]:
-        """Return dict with stats."""
-        return {
-            key: {
-                function: stats.as_dict()
-                for function, stats in functions.items()
-            }
-            for key, functions in self._stats.items()
-        }
+    def __iter__(self) -> Iterator[Any]:
+        """Get an iterator of events."""
+        return iter(self._events)
 
-    def get_stats(self, key: str) -> dict[str, dict[str, int | float]]:
-        """Get stats for operations on a key.
+    def __len__(self) -> int:
+        """Get number of tracked events."""
+        return len(self._events)
 
-        Args:
-            key (str)
+    def __setitem__(self, event: Event, stats: TimeStats) -> None:
+        """Set stats for event."""
+        if not isinstance(event, Event):
+            raise TypeError(
+                f"key (event) must be of type {Event.__name__}. "
+                f"Got type {type(event)}.",
+            )
+        if not isinstance(stats, TimeStats):
+            raise TypeError(
+                f"value (stats) must be of type {TimeStats.__name__}. "
+                f"Got type {type(stats)}.",
+            )
+        self._events[event] = stats
 
-        Returns:
-            dict where keys are function names that have been executed on `key`
-            and values are a dict containing stats on the function calls.
-        """
-        stats = self._stats[key].copy()
-        return {f: s.as_dict() for f, s in stats.items()}
+    def keys(self) -> KeysView[Any]:
+        """Returns list of events being tracked."""
+        return self._events.keys()
+
+    def update(self, iterable: Iterable[Any]) -> None:  # type: ignore
+        """Update self from a dict or iterable of items."""
+        if isinstance(iterable, dict):
+            iterable = iterable.items()
+        for event, stats in iterable:
+            self[event] += stats
 
     def wrap(self, function: FuncType, key_is_kwarg: bool = False) -> FuncType:
-        """Decorator that record function execution time.
+        """Wraps a method to log stats on calls to the function.
 
         Args:
-            function (callable): function to time.
+            function (callable): function to wrap.
             key_is_kwarg (bool): the key passed to `function` is assumed to be
-                the first positional arg. If the key is passed as a kwarg, set
-                this to `True` (default: False).
+                the first positional arg. If the key is passed
+                as a kwarg, set this to `True` (default: False).
 
         Returns:
-            callable with same interface as function.
+            callable with same interface as method.
         """
 
         def _function(*args: Any, **kwargs: Any) -> Any:
-            start = perf_counter()
-            result = function(*args, **kwargs)
-            time = perf_counter() - start
             if key_is_kwarg and "key" in kwargs:
                 key = kwargs["key"]
             elif not key_is_kwarg and len(args) > 0:
                 key = args[0]
             else:
                 key = None
-            if key is not None:
-                self._stats[key][function.__name__].add_time(time)
+            event = Event(function=function.__name__, key=key)
+
+            start = perf_counter()
+            result = function(*args, **kwargs)
+            time = perf_counter() - start
+
+            self[event].add_time(time * 1000)
             return result
 
         return cast(FuncType, _function)

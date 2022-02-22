@@ -1,6 +1,7 @@
 """Base Store Abstract Class."""
 from __future__ import annotations
 
+import copy
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
@@ -9,7 +10,8 @@ from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
-from proxystore.store.stats import KeyedFunctionStats
+from proxystore.store.stats import FunctionEventStats
+from proxystore.store.stats import TimeStats
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +30,9 @@ class Store(metaclass=ABCMeta):
         """
         self.name = name
 
-        self._stats: KeyedFunctionStats | None = None
+        self._stats: FunctionEventStats | None = None
         if stats:
-            self._stats = KeyedFunctionStats()
+            self._stats = FunctionEventStats()
             # Monkeypatch methods with wrappers to track their stats
             for attr in dir(self):
                 if callable(getattr(self, attr)) and not attr.startswith("_"):
@@ -280,7 +282,7 @@ class Store(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def stats(self, key: str) -> dict[str, dict[str, int | float]]:
+    def stats(self, key: str) -> dict[str, TimeStats]:
         """Get stats on the store.
 
         Args:
@@ -288,22 +290,23 @@ class Store(metaclass=ABCMeta):
 
         Returns:
             dict with keys corresponding to method names and values which are
-            a dict of stats for the correspoinding method.
+            :class:`TimeStats <proxystore.store.stats.TimeStats>` instances
+            with the statistics for calls to the corresponding method with the
+            specified key.
 
             Example:
 
             .. code-block:: python
 
                {
-                   "get": {
-                       "calls": 32,
-                       "average_time": 0.00134,
-                       "min_time": 0.00031,
-                       "max_time": 0.00234,
-                   },
-                   "set": {
-                       ...
-                   },
+                   "get": TimeStats(
+                       calls=32,
+                       avg_time_ms=0.0123,
+                       min_time_ms=0.0012,
+                       max_time_ms=0.1234,
+                   ),
+                   "set": TimeStats(...),
+                   "evict": TimeStats(...),
                    ...
                }
 
@@ -316,4 +319,8 @@ class Store(metaclass=ABCMeta):
                 "Stats are not being tracked because this store was "
                 "initialized with stats=False.",
             )
-        return self._stats.get_stats(key)
+        stats = {}
+        for event in self._stats:
+            if event.key == key:
+                stats[event.function] = copy.copy(self._stats[event])
+        return stats

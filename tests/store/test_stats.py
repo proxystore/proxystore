@@ -3,22 +3,27 @@ from __future__ import annotations
 
 import time
 
-from proxystore.store.stats import KeyedFunctionStats
+from pytest import raises
+
+from proxystore.store.stats import Event
+from proxystore.store.stats import FunctionEventStats
+from proxystore.store.stats import TimeStats
 
 
-def list_add(key: str, a: int, b: list[int]) -> list[int]:
-    """Add a to each element in b."""
-    return list(map(lambda x: x + a, b))
+class TestClass:
+    """Test Class."""
 
+    def get_value(self, key: str, value: int = 0) -> None:
+        """Returns value."""
+        return value
 
-def key_arg(key: str) -> None:
-    """Function where key in arg."""
-    pass
+    def key_arg(self, key: str) -> None:
+        """Function where key in arg."""
+        pass
 
-
-def key_kwarg(*, key: str) -> None:
-    """Function where key is kwarg."""
-    pass
+    def key_kwarg(self, *, key: str) -> None:
+        """Function where key is kwarg."""
+        pass
 
 
 def sleep(key: str, seconds: float) -> None:
@@ -26,104 +31,133 @@ def sleep(key: str, seconds: float) -> None:
     time.sleep(seconds)
 
 
+def test_time_stats() -> None:
+    """Test TimeStats dataclass."""
+    stats1 = TimeStats(calls=1, avg_time_ms=1, min_time_ms=1, max_time_ms=1)
+    stats2 = TimeStats(calls=1, avg_time_ms=3, min_time_ms=3, max_time_ms=3)
+    stats3 = stats1 + stats2
+
+    assert stats3.calls == 2
+    assert stats3.avg_time_ms == 2
+    assert stats3.min_time_ms == 1
+    assert stats3.max_time_ms == 3
+
+    stats1.add_time(3)
+    assert stats1 == stats3
+
+
+def test_event_hashes() -> None:
+    """Test Event hashes."""
+    d = {Event(function="f", key="k"): 1}
+    assert d[Event(function="f", key="k")] == 1
+
+
 def test_wrapper_emulates_function() -> None:
     """Test wrapper emulates function."""
-    stats = KeyedFunctionStats()
-
-    wrapped = stats.wrap(list_add)
-
-    a = 5
-    lst = [5, 8, 2, 4, 8]
-    assert list_add("key", a, lst) == wrapped("key", a, lst)
+    stats = FunctionEventStats()
+    obj = TestClass()
+    wrapped = stats.wrap(obj.get_value)
+    assert obj.get_value("key", 5) == wrapped("key", 5)
 
 
 def test_key_args_vs_kwargs() -> None:
     """Test handling of different key argument positions."""
-    stats = KeyedFunctionStats()
+    stats = FunctionEventStats()
+    obj = TestClass()
 
-    wrapped_arg = stats.wrap(key_arg, key_is_kwarg=False)
+    wrapped_arg = stats.wrap(obj.key_arg, key_is_kwarg=False)
     wrapped_arg("key")
+    assert stats[Event(function="key_arg", key="key")].calls == 1
 
-    assert stats.get_stats("key")["key_arg"]["calls"] == 1
+    wrapped_kwarg = stats.wrap(obj.key_kwarg, key_is_kwarg=True)
+    wrapped_kwarg(key="key")
+    assert stats[Event(function="key_kwarg", key="key")].calls == 1
 
-    wrapped_kwarg = stats.wrap(key_kwarg, key_is_kwarg=True)
-    wrapped_kwarg(key="key2")
-
-    assert stats.get_stats("key2")["key_kwarg"]["calls"] == 1
+    # Set key_is_kwarg to True even though it is not to test default key
+    # of None.
+    wrapped_arg = stats.wrap(obj.key_arg, key_is_kwarg=True)
+    wrapped_arg("missing_key")
+    assert stats[Event(function="key_arg", key="missing_key")].calls == 0
+    assert stats[Event(function="key_arg", key=None)].calls == 1
 
 
 def test_function_timing() -> None:
     """Test function timing."""
-    stats = KeyedFunctionStats()
+    stats = FunctionEventStats()
 
     wrapped = stats.wrap(sleep)
 
+    event = Event(function="sleep", key="key")
     wrapped("key", 0.01)
-    s = stats.as_dict()
-    assert "key" in s
-    assert "sleep" in s["key"]
-    s = stats.get_stats("key")["sleep"]
-    assert s["calls"] == 1
-    assert s["average_time"] >= 0.01
-    assert s["min_time"] > 0
-    assert s["min_time"] == s["max_time"]
 
-    old_max = s["max_time"]
+    assert event in stats
+    assert stats[event].calls == 1
+    assert stats[event].avg_time_ms >= 0.001
+    assert stats[event].min_time_ms > 0
+    assert stats[event].min_time_ms == stats[event].max_time_ms
+
+    old_max = stats[event].max_time_ms
     wrapped("key", 1)
-    assert stats.get_stats("key")["sleep"]["calls"] == 2
-    assert stats.get_stats("key")["sleep"]["max_time"] > old_max
+    assert stats[event].calls == 2
+    assert stats[event].max_time_ms > old_max
 
-    old_min = s["min_time"]
+    old_min = stats[event].min_time_ms
     wrapped("key", 0)
-    assert stats.get_stats("key")["sleep"]["calls"] == 3
-    assert stats.get_stats("key")["sleep"]["min_time"] < old_min
-    assert 0 < stats.get_stats("key")["sleep"]["average_time"] < 1
+    assert stats[event].calls == 3
+    assert stats[event].min_time_ms < old_min
 
 
 def test_default_times() -> None:
     """Test default times."""
-    stats = KeyedFunctionStats()
+    stats = FunctionEventStats()
+    assert len(stats) == 0
 
-    s = stats.get_stats("random_key")
-    assert isinstance(s, dict)
-    assert len(s) == 0
-
-
-def test_merge() -> None:
-    """Test merge KeyedFunctionStats."""
-    stats1 = KeyedFunctionStats()
-    stats2 = KeyedFunctionStats()
-
-    assert stats1.as_dict() == stats2.as_dict() == (stats1 + stats2).as_dict()
-
-    wrapped = stats1.wrap(sleep)
-    wrapped("key", 0)
-
-    merged = stats1 + stats2
-    assert stats1.as_dict() == merged.as_dict()
-
-    # Should only appear in stats1, not in merged
-    wrapped("key", 0)
-    assert stats1.get_stats("key")["sleep"]["calls"] == 2
-    assert merged.get_stats("key")["sleep"]["calls"] == 1
-
-    wrapped = stats2.wrap(sleep)
-    wrapped("key", 0)
-
-    merged = stats1 + stats2
-    assert merged.get_stats("key")["sleep"]["calls"] == 3
+    event = Event(function="fake", key="fake")
+    assert stats[event].calls == 0
 
 
-def test_in_place_add() -> None:
-    """Test in place add."""
-    stats1 = KeyedFunctionStats()
-    stats2 = KeyedFunctionStats()
+def test_enforces_types() -> None:
+    """Test FunctionEventStats enforces types of keys and values."""
+    stats = FunctionEventStats()
 
-    wrapped1 = stats1.wrap(sleep)
-    wrapped1("key", 0)
+    with raises(TypeError):
+        stats["key"]
 
-    wrapped2 = stats2.wrap(sleep)
-    wrapped2("key", 0)
+    with raises(TypeError):
+        stats[Event(function="function", key="key")] = "value"
 
-    stats1 += stats2
-    assert stats1.get_stats("key")["sleep"]["calls"] == 2
+    with raises(TypeError):
+        stats["key"] = TimeStats()
+
+    with raises(TypeError):
+        stats.update([("key", "value")])
+
+
+def test_behaves_like_mapping() -> None:
+    """Test FunctionEventStats behaves like a mapping."""
+    stats = FunctionEventStats()
+    event = Event(function="f", key="k")
+
+    # __setitem__
+    stats[event] = TimeStats(calls=0)
+    # __len__
+    assert len(stats) == 1
+    # __iter__
+    for event in stats:
+        # __getitem__
+        assert stats[event].calls == 0
+    # __delitem__
+    del stats[event]
+    # keys
+    assert event not in stats.keys()
+
+
+def test_update() -> None:
+    """Test FunctionEventStats.update()."""
+    stats = FunctionEventStats()
+
+    stats.update({Event(function="f", key="k"): TimeStats(calls=1)})
+    assert stats[Event(function="f", key="k")].calls == 1
+
+    stats.update([(Event(function="f", key="k"), TimeStats(calls=2))])
+    assert stats[Event(function="f", key="k")].calls == 3

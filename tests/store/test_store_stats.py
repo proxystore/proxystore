@@ -60,13 +60,21 @@ def test_stat_tracking() -> None:
 
     stats = store.stats("key")
 
-    store.get("key")
-
     assert "get" in stats
     assert "set" in stats
 
-    assert stats["get"]["calls"] == 1
-    assert stats["set"]["calls"] == 1
+    assert stats["get"].calls == 1
+    assert stats["set"].calls == 1
+
+    # stats should return a copy of the stats, not the internal data
+    # structures so calling get again should not effect anything.
+    store.get("key")
+
+    assert stats["get"].calls == 1
+
+    stats = store.stats("missing_key")
+
+    assert len(stats) == 0
 
 
 @mark.parametrize(
@@ -93,4 +101,4 @@ def test_factory_preserves_tracking(store_config) -> None:
     store = ps.store.get_store(store_config["name"])
 
     assert isinstance(store.stats(key), dict)
-    assert store.stats(key)["get"]["calls"] == 1
+    assert store.stats(key)["get"].calls == 1
