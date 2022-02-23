@@ -4,7 +4,7 @@ from __future__ import annotations
 import math
 from collections.abc import MutableMapping
 from dataclasses import dataclass
-from time import perf_counter
+from time import perf_counter_ns
 from typing import Any
 from typing import Callable
 from typing import cast
@@ -168,9 +168,9 @@ class FunctionEventStats(MutableMapping):
         """
 
         def _function(*args: Any, **kwargs: Any) -> Any:
-            start = perf_counter()
+            start_ns = perf_counter_ns()
             result = function(*args, **kwargs)
-            time = perf_counter() - start
+            time_ns = perf_counter_ns() - start_ns
 
             if key_is_result:
                 if isinstance(result, ps.proxy.Proxy):
@@ -184,7 +184,7 @@ class FunctionEventStats(MutableMapping):
             else:
                 key = None
             event = Event(function=function.__name__, key=key)
-            self[event].add_time(time * 1000)
+            self[event].add_time(time_ns / 1e6)
 
             return result
 

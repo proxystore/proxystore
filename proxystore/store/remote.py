@@ -76,12 +76,12 @@ class RemoteFactory(Factory):
         if "stats" in self.store_kwargs and self.store_kwargs["stats"] is True:
             self.stats = FunctionEventStats()
             # Monkeypatch methods with wrappers to track their stats
-            setattr(
+            setattr(  # noqa: B010
                 self,
                 "resolve",
                 self.stats.wrap(self.resolve, preset_key=self.key),
             )
-            setattr(
+            setattr(  # noqa: B010
                 self,
                 "resolve_async",
                 self.stats.wrap(self.resolve_async, preset_key=self.key),
