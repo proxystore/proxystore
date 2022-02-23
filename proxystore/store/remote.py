@@ -15,6 +15,7 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
+from proxystore.store.stats import FunctionEventStats
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
@@ -67,7 +68,24 @@ class RemoteFactory(Factory):
         self.evict = evict
         self.serialize = serialize
         self.strict = strict
+
+        # The following are not included when a factory is serialized
+        # because they are specific to that instance of the factory
         self._obj_future: Future[Any] | None = None
+        self.stats: FunctionEventStats | None = None
+        if "stats" in self.store_kwargs and self.store_kwargs["stats"] is True:
+            self.stats = FunctionEventStats()
+            # Monkeypatch methods with wrappers to track their stats
+            setattr(
+                self,
+                "resolve",
+                self.stats.wrap(self.resolve, preset_key=self.key),
+            )
+            setattr(
+                self,
+                "resolve_async",
+                self.stats.wrap(self.resolve_async, preset_key=self.key),
+            )
 
     def __getnewargs_ex__(self):
         """Pickle without possible futures."""

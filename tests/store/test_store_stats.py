@@ -50,15 +50,27 @@ def test_init_stats(store_config) -> None:
 
     assert isinstance(store.stats("key"), dict)
 
+    store.cleanup()
 
-def test_stat_tracking() -> None:
+
+@mark.parametrize(
+    "store_config",
+    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
+)
+def test_stat_tracking(store_config) -> None:
     """Test stat tracking of store."""
-    store = ps.store.init_store("local", "local", stats=True)
+    store = ps.store.init_store(
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
+        stats=True,
+    )
 
-    p = store.proxy([1, 2, 3], key="key")
+    p = store.proxy([1, 2, 3])
+    key = ps.proxy.get_key(p)
     ps.proxy.resolve(p)
 
-    stats = store.stats("key")
+    stats = store.stats(key)
 
     assert "get" in stats
     assert "set" in stats
@@ -68,13 +80,76 @@ def test_stat_tracking() -> None:
 
     # stats should return a copy of the stats, not the internal data
     # structures so calling get again should not effect anything.
-    store.get("key")
+    store.get(key)
 
     assert stats["get"].calls == 1
 
     stats = store.stats("missing_key")
 
     assert len(stats) == 0
+
+    store.cleanup()
+
+
+@mark.parametrize(
+    "store_config",
+    [FILE_STORE, REDIS_STORE, GLOBUS_STORE],
+)
+def test_get_stats_with_proxy(store_config) -> None:
+    """Test Get Stats with Proxy."""
+    store = ps.store.init_store(
+        store_config["type"],
+        store_config["name"],
+        **store_config["kwargs"],
+        stats=True,
+    )
+
+    p = store.proxy([1, 2, 3])
+
+    # Proxy has not been resolved yet so get/resolve should not exist
+    stats = store.stats(p)
+    assert "get" not in stats
+    assert "set" in stats
+    assert "resolve" not in stats
+
+    # Resolve proxy and verify get/resolve exist
+    ps.proxy.resolve(p)
+    stats = store.stats(p)
+    assert "get" in stats
+    assert "resolve" in stats
+
+    # Check that resolve stats are unique to that proxy and not merged into
+    # the store's stats
+    stats = store.stats(ps.proxy.get_key(p))
+    assert "resolve" not in stats
+
+    # Since we monkeypatch the stats into the factory, we need to handle
+    # special cases of Factories without the _stats attr or the _stats attr
+    # is None.
+    class FactoryMissingStats(ps.factory.Factory):
+        def __init__(self, key: str):
+            self.key = key
+
+        def resolve(self):
+            pass
+
+    p = ps.proxy.Proxy(FactoryMissingStats(ps.proxy.get_key(p)))
+    ps.proxy.resolve(p)
+    stats = store.stats(p)
+    assert "resolve" not in stats
+
+    class FactoryNoneStats(ps.factory.Factory):
+        def __init__(self, key: str):
+            self.key = key
+            self.stats = None
+
+        def resolve(self):
+            pass
+
+    p = ps.proxy.Proxy(FactoryNoneStats(ps.proxy.get_key(p)))
+    ps.proxy.resolve(p)
+    stats = store.stats(p)
+    assert "resolve" not in stats
 
 
 @mark.parametrize(
@@ -102,3 +177,5 @@ def test_factory_preserves_tracking(store_config) -> None:
 
     assert isinstance(store.stats(key), dict)
     assert store.stats(key)["get"].calls == 1
+
+    store.cleanup()

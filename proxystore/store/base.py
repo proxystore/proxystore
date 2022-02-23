@@ -11,11 +11,10 @@ from typing import Sequence
 import proxystore as ps
 from proxystore.factory import Factory
 from proxystore.store.stats import FunctionEventStats
+from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
 
 logger = logging.getLogger(__name__)
-
-_KEY_IS_KWARG_METHODS = ["set", "proxy"]
 
 
 class Store(metaclass=ABCMeta):
@@ -35,13 +34,19 @@ class Store(metaclass=ABCMeta):
             self._stats = FunctionEventStats()
             # Monkeypatch methods with wrappers to track their stats
             for attr in dir(self):
-                if callable(getattr(self, attr)) and not attr.startswith("_"):
+                if (
+                    callable(getattr(self, attr))
+                    and not attr.startswith("_")
+                    and attr in STORE_METHOD_KEY_IS_RESULT
+                ):
                     method = getattr(self, attr)
                     # For most method, the key is the first arg which wrap()
                     # expects by default, but there are a couple where the
                     # key is passed as a kwarg
-                    key_is_kwarg = attr in _KEY_IS_KWARG_METHODS
-                    wrapped = self._stats.wrap(method, key_is_kwarg)
+                    wrapped = self._stats.wrap(
+                        method,
+                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                    )
                     setattr(self, attr, wrapped)
 
         logger.debug(f"Initialized {self}")
@@ -282,11 +287,15 @@ class Store(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def stats(self, key: str) -> dict[str, TimeStats]:
+    def stats(
+        self,
+        key_or_proxy: str | ps.proxy.Proxy,
+    ) -> dict[str, TimeStats]:
         """Get stats on the store.
 
         Args:
-            key (str): key to get stats for.
+            key_or_proxy (str, Proxy): key to get stats for or a proxy to
+                extract the key from.
 
         Returns:
             dict with keys corresponding to method names and values which are
@@ -320,6 +329,17 @@ class Store(metaclass=ABCMeta):
                 "initialized with stats=False.",
             )
         stats = {}
+        if isinstance(key_or_proxy, ps.proxy.Proxy):
+            key = ps.proxy.get_key(key_or_proxy)
+            # Merge stats from the proxy into self
+            if hasattr(key_or_proxy.__factory__, "stats"):
+                proxy_stats = key_or_proxy.__factory__.stats
+                if proxy_stats is not None:
+                    for event in proxy_stats:
+                        stats[event.function] = copy.copy(proxy_stats[event])
+        else:
+            key = key_or_proxy
+
         for event in self._stats:
             if event.key == key:
                 stats[event.function] = copy.copy(self._stats[event])

@@ -21,9 +21,9 @@ class TestClass:
         """Function where key in arg."""
         pass
 
-    def key_kwarg(self, *, key: str) -> None:
+    def key_return(self, *, key: str) -> None:
         """Function where key is kwarg."""
-        pass
+        return key
 
 
 def sleep(key: str, seconds: float) -> None:
@@ -60,25 +60,32 @@ def test_wrapper_emulates_function() -> None:
     assert obj.get_value("key", 5) == wrapped("key", 5)
 
 
-def test_key_args_vs_kwargs() -> None:
+def test_key_args_vs_return() -> None:
     """Test handling of different key argument positions."""
     stats = FunctionEventStats()
     obj = TestClass()
 
-    wrapped_arg = stats.wrap(obj.key_arg, key_is_kwarg=False)
+    wrapped_arg = stats.wrap(obj.key_arg)
     wrapped_arg("key")
     assert stats[Event(function="key_arg", key="key")].calls == 1
 
-    wrapped_kwarg = stats.wrap(obj.key_kwarg, key_is_kwarg=True)
-    wrapped_kwarg(key="key")
-    assert stats[Event(function="key_kwarg", key="key")].calls == 1
+    wrapped_return = stats.wrap(obj.key_return, key_is_result=True)
+    wrapped_return(key="key")
+    assert stats[Event(function="key_return", key="key")].calls == 1
 
-    # Set key_is_kwarg to True even though it is not to test default key
+    # Set key_is_result to True even though it is not to test default key
     # of None.
-    wrapped_arg = stats.wrap(obj.key_arg, key_is_kwarg=True)
+    wrapped_arg = stats.wrap(obj.key_arg, key_is_result=True)
     wrapped_arg("missing_key")
     assert stats[Event(function="key_arg", key="missing_key")].calls == 0
     assert stats[Event(function="key_arg", key=None)].calls == 1
+
+    # Set key_is_result to False even though it is not to test default key
+    # of None
+    wrapped_return = stats.wrap(obj.key_return, key_is_result=False)
+    wrapped_return(key="missing_key")
+    assert stats[Event(function="key_return", key="missing_keykey")].calls == 0
+    assert stats[Event(function="key_return", key=None)].calls == 1
 
 
 def test_function_timing() -> None:

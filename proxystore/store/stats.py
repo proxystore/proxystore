@@ -14,15 +14,28 @@ from typing import KeysView
 from typing import NamedTuple
 from typing import TypeVar
 
+import proxystore as ps
 
 FuncType = TypeVar("FuncType", bound=Callable[..., Any])
+
+
+STORE_METHOD_KEY_IS_RESULT = {
+    "evict": False,
+    "exists": False,
+    "get": False,
+    "get_bytes": False,
+    "is_cached": False,
+    "proxy": True,
+    "set": True,
+    "set_bytes": False,
+}
 
 
 class Event(NamedTuple):
     """Event corresponding to a function called with a specific key."""
 
     function: str
-    key: str
+    key: str | None
 
 
 @dataclass
@@ -134,33 +147,45 @@ class FunctionEventStats(MutableMapping):
         for event, stats in iterable:
             self[event] += stats
 
-    def wrap(self, function: FuncType, key_is_kwarg: bool = False) -> FuncType:
+    def wrap(
+        self,
+        function: FuncType,
+        *,
+        key_is_result: bool = False,
+        preset_key: str | None = None,
+    ) -> FuncType:
         """Wraps a method to log stats on calls to the function.
 
         Args:
             function (callable): function to wrap.
-            key_is_kwarg (bool): the key passed to `function` is assumed to be
-                the first positional arg. If the key is passed
-                as a kwarg, set this to `True` (default: False).
+            key_is_result (bool): if `True`, the key is the return value of
+                `function` rather than the first argument. (default: False).
+            preset_key (str): optionally preset the key associated with
+                any calls to `function`. This overrides `key_is_returned`.
 
         Returns:
-            callable with same interface as method.
+            callable with same interface as `function`.
         """
 
         def _function(*args: Any, **kwargs: Any) -> Any:
-            if key_is_kwarg and "key" in kwargs:
-                key = kwargs["key"]
-            elif not key_is_kwarg and len(args) > 0:
-                key = args[0]
-            else:
-                key = None
-            event = Event(function=function.__name__, key=key)
-
             start = perf_counter()
             result = function(*args, **kwargs)
             time = perf_counter() - start
 
+            if key_is_result:
+                if isinstance(result, ps.proxy.Proxy):
+                    key = ps.proxy.get_key(result)
+                else:
+                    key = result
+            elif preset_key is not None:
+                key = preset_key
+            elif len(args) > 0:
+                key = args[0]
+            else:
+                key = None
+            event = Event(function=function.__name__, key=key)
             self[event].add_time(time * 1000)
+
             return result
 
         return cast(FuncType, _function)
