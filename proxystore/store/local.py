@@ -70,19 +70,28 @@ class LocalFactory(Factory):
 class LocalStore(Store):
     """Local Memory Key-Object Store."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, **kwargs: Any) -> None:
         """Init LocalStore.
 
         Args:
             name (str): name of this store instance.
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`Store <proxystore.store.base.Store>`.
         """
         self._store: dict[str, Any] = {}
-        super().__init__(name)
+        super().__init__(name, **kwargs)
 
-    @property
-    def kwargs(self) -> dict[str, Any]:
-        """Get kwargs for store instance."""
-        return {}
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        return super()._kwargs(kwargs)
 
     def evict(self, key: str) -> None:
         """Evict object associated with key.

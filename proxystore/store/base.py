@@ -1,6 +1,7 @@
 """Base Store Abstract Class."""
 from __future__ import annotations
 
+import copy
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
@@ -9,6 +10,9 @@ from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
+from proxystore.store.stats import FunctionEventStats
+from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
+from proxystore.store.stats import TimeStats
 
 logger = logging.getLogger(__name__)
 
@@ -16,13 +20,35 @@ logger = logging.getLogger(__name__)
 class Store(metaclass=ABCMeta):
     """Abstraction of a key-value store."""
 
-    def __init__(self, name) -> None:
+    def __init__(self, name: str, *, stats: bool = False) -> None:
         """Init Store.
 
         Args:
             name (str): name of the store instance.
+            stats (bool): collect stats on store operations (default: False)
         """
         self.name = name
+
+        self._stats: FunctionEventStats | None = None
+        if stats:
+            self._stats = FunctionEventStats()
+            # Monkeypatch methods with wrappers to track their stats
+            for attr in dir(self):
+                if (
+                    callable(getattr(self, attr))
+                    and not attr.startswith("_")
+                    and attr in STORE_METHOD_KEY_IS_RESULT
+                ):
+                    method = getattr(self, attr)
+                    # For most method, the key is the first arg which wrap()
+                    # expects by default, but there are a couple where the
+                    # key is passed as a kwarg
+                    wrapped = self._stats.wrap(
+                        method,
+                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                    )
+                    setattr(self, attr, wrapped)
+
         logger.debug(f"Initialized {self}")
 
     def __repr__(self) -> str:
@@ -39,10 +65,24 @@ class Store(metaclass=ABCMeta):
         return s
 
     @property
-    @abstractmethod
     def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
-        raise NotImplementedError
+        return self._kwargs()
+
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}
+        kwargs.update({"stats": self._stats is not None})
+        return kwargs
 
     def cleanup(self) -> None:
         """Cleanup any objects associated with the store.
@@ -246,3 +286,61 @@ class Store(metaclass=ABCMeta):
                 if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
         """
         raise NotImplementedError
+
+    def stats(
+        self,
+        key_or_proxy: str | ps.proxy.Proxy,
+    ) -> dict[str, TimeStats]:
+        """Get stats on the store.
+
+        Args:
+            key_or_proxy (str, Proxy): key to get stats for or a proxy to
+                extract the key from.
+
+        Returns:
+            dict with keys corresponding to method names and values which are
+            :class:`TimeStats <proxystore.store.stats.TimeStats>` instances
+            with the statistics for calls to the corresponding method with the
+            specified key.
+
+            Example:
+
+            .. code-block:: python
+
+               {
+                   "get": TimeStats(
+                       calls=32,
+                       avg_time_ms=0.0123,
+                       min_time_ms=0.0012,
+                       max_time_ms=0.1234,
+                   ),
+                   "set": TimeStats(...),
+                   "evict": TimeStats(...),
+                   ...
+               }
+
+        Raises:
+            ValueError:
+                if `self` was initialized with :code:`stats=False`.
+        """
+        if self._stats is None:
+            raise ValueError(
+                "Stats are not being tracked because this store was "
+                "initialized with stats=False.",
+            )
+        stats = {}
+        if isinstance(key_or_proxy, ps.proxy.Proxy):
+            key = ps.proxy.get_key(key_or_proxy)
+            # Merge stats from the proxy into self
+            if hasattr(key_or_proxy.__factory__, "stats"):
+                proxy_stats = key_or_proxy.__factory__.stats
+                if proxy_stats is not None:
+                    for event in proxy_stats:
+                        stats[event.function] = copy.copy(proxy_stats[event])
+        else:
+            key = key_or_proxy
+
+        for event in self._stats:
+            if event.key == key:
+                stats[event.function] = copy.copy(self._stats[event])
+        return stats

@@ -15,6 +15,7 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
+from proxystore.store.stats import FunctionEventStats
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
@@ -67,7 +68,24 @@ class RemoteFactory(Factory):
         self.evict = evict
         self.serialize = serialize
         self.strict = strict
+
+        # The following are not included when a factory is serialized
+        # because they are specific to that instance of the factory
         self._obj_future: Future[Any] | None = None
+        self.stats: FunctionEventStats | None = None
+        if "stats" in self.store_kwargs and self.store_kwargs["stats"] is True:
+            self.stats = FunctionEventStats()
+            # Monkeypatch methods with wrappers to track their stats
+            setattr(  # noqa: B010
+                self,
+                "resolve",
+                self.stats.wrap(self.resolve, preset_key=self.key),
+            )
+            setattr(  # noqa: B010
+                self,
+                "resolve_async",
+                self.stats.wrap(self.resolve_async, preset_key=self.key),
+            )
 
     def __getnewargs_ex__(self):
         """Pickle without possible futures."""
@@ -162,13 +180,21 @@ class RemoteStore(Store, metaclass=ABCMeta):
     provided in :func:`get()` and :func:`set()`.
     """
 
-    def __init__(self, name: str, *, cache_size: int = 0) -> None:
+    def __init__(
+        self,
+        name: str,
+        *,
+        cache_size: int = 16,
+        **kwargs: Any,
+    ) -> None:
         """Init RemoteStore.
 
         Args:
             name (str): name of the store instance.
             cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 0).
+                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`BaseStore <proxystore.store.base.Store>`.
 
         Raises:
             ValueError:
@@ -178,7 +204,22 @@ class RemoteStore(Store, metaclass=ABCMeta):
             raise ValueError("Cache size cannot be negative")
         self.cache_size = cache_size
         self._cache = LRUCache(cache_size)
-        super().__init__(name)
+        super().__init__(name, **kwargs)
+
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}  # pragma: no cover
+        kwargs.update({"cache_size": self.cache_size})
+        return super()._kwargs(kwargs)
 
     @abstractmethod
     def get_bytes(self, key: str) -> bytes | None:

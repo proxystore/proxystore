@@ -1,12 +1,11 @@
 """FileStore Implementation."""
+from __future__ import annotations
+
 import logging
 import os
 import shutil
 import time
 from typing import Any
-from typing import Dict
-from typing import Optional
-from typing import Type
 
 import proxystore as ps
 from proxystore.store.remote import RemoteFactory
@@ -31,7 +30,7 @@ class FileFactory(RemoteFactory):
         self,
         key: str,
         store_name: str,
-        store_kwargs: Optional[Dict[str, Any]] = None,
+        store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
         serialize: bool = True,
@@ -71,27 +70,37 @@ class FileStore(RemoteStore):
         name: str,
         *,
         store_dir: str,
-        cache_size: int = 16,
+        **kwargs: Any,
     ) -> None:
         """Init FileStore.
 
         Args:
             name (str): name of the store instance.
             store_dir (str): path to directory
-            cache_size (int): size of local cache (in # of objects). If 0,
-                the cache is disabled (default: 16).
+            kwargs (dict): additional keyword arguments to pass to
+                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
         """
         self.store_dir = store_dir
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
 
-        super().__init__(name, cache_size=cache_size)
+        super().__init__(name, **kwargs)
 
-    @property
-    def kwargs(self) -> Dict[str, Any]:
-        """Get kwargs for store instance."""
-        return {"store_dir": self.store_dir, "cache_size": self.cache_size}
+    def _kwargs(
+        self,
+        kwargs: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Helper for handling inheritance with kwargs property.
+
+        Args:
+            kwargs (optional, dict): dict to use as return object. If None,
+                a new dict will be created.
+        """
+        if kwargs is None:
+            kwargs = {}
+        kwargs.update({"store_dir": self.store_dir})
+        return super()._kwargs(kwargs)
 
     def cleanup(self) -> None:
         """Cleanup all files associated with the file system store.
@@ -133,7 +142,7 @@ class FileStore(RemoteStore):
         path = os.path.join(self.store_dir, key)
         return os.path.exists(path)
 
-    def get_bytes(self, key: str) -> Optional[bytes]:
+    def get_bytes(self, key: str) -> bytes | None:
         """Get serialized object from file system.
 
         Args:
@@ -171,12 +180,12 @@ class FileStore(RemoteStore):
 
     def proxy(  # type: ignore[override]
         self,
-        obj: Optional[Any] = None,
+        obj: Any | None = None,
         *,
-        key: Optional[str] = None,
-        factory: Type[RemoteFactory] = FileFactory,
+        key: str | None = None,
+        factory: type[RemoteFactory] = FileFactory,
         **kwargs,
-    ) -> "ps.proxy.Proxy":
+    ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
         Args:
