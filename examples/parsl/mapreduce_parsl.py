@@ -1,7 +1,7 @@
 """MapReduce with Parsl and ProxyStore example."""
+from __future__ import annotations
+
 import argparse
-from typing import List
-from typing import Optional
 
 import numpy as np
 import parsl
@@ -17,39 +17,39 @@ def app_double(x: np.ndarray) -> np.ndarray:
 
 
 @python_app
-def app_sum(inputs: Optional[List[np.ndarray]] = None) -> float:
+def app_sum(inputs: list[np.ndarray] | None = None) -> float:
     """Sum all elements in list of arrays."""
     if inputs is not None:
         return np.sum(np.sum(inputs))
     return 0
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="MapReduce with Parsl")
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='MapReduce with Parsl')
     parser.add_argument(
-        "-n",
-        "--num-arrays",
+        '-n',
+        '--num-arrays',
         type=int,
         required=True,
-        help="Number of arrays to be mapreduced",
+        help='Number of arrays to be mapreduced',
     )
     parser.add_argument(
-        "-s",
-        "--size",
+        '-s',
+        '--size',
         type=int,
         required=True,
-        help="Length of array where each array is s x s",
+        help='Length of array where each array is s x s',
     )
     parser.add_argument(
-        "--proxy",
-        action="store_true",
-        help="Use proxy store to pass inputs",
+        '--proxy',
+        action='store_true',
+        help='Use proxy store to pass inputs',
     )
     parser.add_argument(
-        "--redis-port",
+        '--redis-port',
         type=int,
         default=None,
-        help="If not None, use Redis backend",
+        help='If not None, use Redis backend',
     )
     args = parser.parse_args()
 
@@ -57,11 +57,12 @@ if __name__ == "__main__":
 
     if args.proxy:
         if args.redis_port is None:
-            store = ps.store.init_store("local")
+            store = ps.store.init_store('local', name='local')
         else:
             store = ps.store.init_store(
-                "redis",
-                hostname="127.0.0.1",
+                'redis',
+                name='redis',
+                hostname='127.0.0.1',
                 port=args.redis_port,
             )
 
@@ -74,4 +75,4 @@ if __name__ == "__main__":
 
     total = app_sum(inputs=mapped_results)
 
-    print("Sum:", total.result())
+    print('Sum:', total.result())

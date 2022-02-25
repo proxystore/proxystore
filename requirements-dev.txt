@@ -1,14 +1,14 @@
 black
+covdefaults>=2.2
 coverage
 flake8
+flake8-bugbear
 flake8-docstrings
-globus-sdk
 mypy
 numpy
-parsl
+pep8-naming
 pre-commit
 pytest
 pytest-cov
-redis
 tox
 virtualenv

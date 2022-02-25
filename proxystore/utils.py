@@ -1,4 +1,6 @@
 """Utility functions."""
+from __future__ import annotations
+
 import random
 from typing import Any
 
@@ -20,16 +22,16 @@ def create_key(obj: Any) -> str:
     return str(random.getrandbits(128))
 
 
-def fullname(obj):
+def fullname(obj: Any) -> str:
     """Return full name of object."""
-    if hasattr(obj, "__module__"):
+    if hasattr(obj, '__module__'):
         module = obj.__module__
     else:
         module = obj.__class__.__module__
-    if hasattr(obj, "__name__"):
+    if hasattr(obj, '__name__'):
         name = obj.__name__
     else:
         name = obj.__class__.__name__
     if module is None or module == str.__module__:
         return name
-    return f"{module}.{name}"
+    return f'{module}.{name}'

@@ -1,4 +1,6 @@
 """Proxy Unit Tests."""
+from __future__ import annotations
+
 import pickle as pkl
 
 import numpy as np
@@ -13,7 +15,7 @@ def test_proxy() -> None:
     """Test Proxy behavior."""
     with raises(TypeError):
         # Proxy requires type BaseFactory
-        Proxy("not a factory")
+        Proxy('not a factory')
 
     x = np.array([1, 2, 3])
     f = SimpleFactory(x)
@@ -75,7 +77,7 @@ def test_proxy() -> None:
     p = Proxy(f)
     assert isinstance(p, np.ndarray)
 
-    p = Proxy(SimpleFactory("hello"))
+    p = Proxy(SimpleFactory('hello'))
     assert not ps.proxy.is_resolved(p)
     ps.proxy.resolve(p)
     assert ps.proxy.is_resolved(p)

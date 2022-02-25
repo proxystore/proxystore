@@ -48,8 +48,8 @@ def test_time_stats() -> None:
 
 def test_event_hashes() -> None:
     """Test Event hashes."""
-    d = {Event(function="f", key="k"): 1}
-    assert d[Event(function="f", key="k")] == 1
+    d = {Event(function='f', key='k'): 1}
+    assert d[Event(function='f', key='k')] == 1
 
 
 def test_wrapper_emulates_function() -> None:
@@ -57,7 +57,7 @@ def test_wrapper_emulates_function() -> None:
     stats = FunctionEventStats()
     obj = TestClass()
     wrapped = stats.wrap(obj.get_value)
-    assert obj.get_value("key", 5) == wrapped("key", 5)
+    assert obj.get_value('key', 5) == wrapped('key', 5)
 
 
 def test_key_args_vs_return() -> None:
@@ -66,26 +66,26 @@ def test_key_args_vs_return() -> None:
     obj = TestClass()
 
     wrapped_arg = stats.wrap(obj.key_arg)
-    wrapped_arg("key")
-    assert stats[Event(function="key_arg", key="key")].calls == 1
+    wrapped_arg('key')
+    assert stats[Event(function='key_arg', key='key')].calls == 1
 
     wrapped_return = stats.wrap(obj.key_return, key_is_result=True)
-    wrapped_return(key="key")
-    assert stats[Event(function="key_return", key="key")].calls == 1
+    wrapped_return(key='key')
+    assert stats[Event(function='key_return', key='key')].calls == 1
 
     # Set key_is_result to True even though it is not to test default key
     # of None.
     wrapped_arg = stats.wrap(obj.key_arg, key_is_result=True)
-    wrapped_arg("missing_key")
-    assert stats[Event(function="key_arg", key="missing_key")].calls == 0
-    assert stats[Event(function="key_arg", key=None)].calls == 1
+    wrapped_arg('missing_key')
+    assert stats[Event(function='key_arg', key='missing_key')].calls == 0
+    assert stats[Event(function='key_arg', key=None)].calls == 1
 
     # Set key_is_result to False even though it is not to test default key
     # of None
     wrapped_return = stats.wrap(obj.key_return, key_is_result=False)
-    wrapped_return(key="missing_key")
-    assert stats[Event(function="key_return", key="missing_keykey")].calls == 0
-    assert stats[Event(function="key_return", key=None)].calls == 1
+    wrapped_return(key='missing_key')
+    assert stats[Event(function='key_return', key='missing_keykey')].calls == 0
+    assert stats[Event(function='key_return', key=None)].calls == 1
 
 
 def test_function_timing() -> None:
@@ -94,8 +94,8 @@ def test_function_timing() -> None:
 
     wrapped = stats.wrap(sleep)
 
-    event = Event(function="sleep", key="key")
-    wrapped("key", 0.01)
+    event = Event(function='sleep', key='key')
+    wrapped('key', 0.01)
 
     assert event in stats
     assert stats[event].calls == 1
@@ -104,12 +104,12 @@ def test_function_timing() -> None:
     assert stats[event].min_time_ms == stats[event].max_time_ms
 
     old_max = stats[event].max_time_ms
-    wrapped("key", 1)
+    wrapped('key', 1)
     assert stats[event].calls == 2
     assert stats[event].max_time_ms > old_max
 
     old_min = stats[event].min_time_ms
-    wrapped("key", 0)
+    wrapped('key', 0)
     assert stats[event].calls == 3
     assert stats[event].min_time_ms < old_min
 
@@ -119,7 +119,7 @@ def test_default_times() -> None:
     stats = FunctionEventStats()
     assert len(stats) == 0
 
-    event = Event(function="fake", key="fake")
+    event = Event(function='fake', key='fake')
     assert stats[event].calls == 0
 
 
@@ -128,22 +128,22 @@ def test_enforces_types() -> None:
     stats = FunctionEventStats()
 
     with raises(TypeError):
-        stats["key"]
+        stats['key']
 
     with raises(TypeError):
-        stats[Event(function="function", key="key")] = "value"
+        stats[Event(function='function', key='key')] = 'value'
 
     with raises(TypeError):
-        stats["key"] = TimeStats()
+        stats['key'] = TimeStats()
 
     with raises(TypeError):
-        stats.update([("key", "value")])
+        stats.update([('key', 'value')])
 
 
 def test_behaves_like_mapping() -> None:
     """Test FunctionEventStats behaves like a mapping."""
     stats = FunctionEventStats()
-    event = Event(function="f", key="k")
+    event = Event(function='f', key='k')
 
     # __setitem__
     stats[event] = TimeStats(calls=0)
@@ -163,8 +163,8 @@ def test_update() -> None:
     """Test FunctionEventStats.update()."""
     stats = FunctionEventStats()
 
-    stats.update({Event(function="f", key="k"): TimeStats(calls=1)})
-    assert stats[Event(function="f", key="k")].calls == 1
+    stats.update({Event(function='f', key='k'): TimeStats(calls=1)})
+    assert stats[Event(function='f', key='k')].calls == 1
 
-    stats.update([(Event(function="f", key="k"), TimeStats(calls=2))])
-    assert stats[Event(function="f", key="k")].calls == 3
+    stats.update([(Event(function='f', key='k'), TimeStats(calls=2))])
+    assert stats[Event(function='f', key='k')].calls == 3

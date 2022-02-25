@@ -11,7 +11,7 @@ Python Lazy Object Proxy Interface for Distributed Stores
 
 Install via pip:
 ```
-$ pip install ProxyStore
+$ pip install proxystore
 ```
 
 See the [Contributing Guide](https://proxystore.readthedocs.io/en/latest/contributing.html) for getting started for local development.

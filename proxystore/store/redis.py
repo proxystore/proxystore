@@ -5,13 +5,7 @@ import logging
 import time
 from typing import Any
 
-try:
-    import redis  # type: ignore
-except ImportError as e:  # pragma: no cover
-    # We do not want to raise this ImportError if the user never
-    # uses the RedisStore so we delay raising the error until the
-    # constructor of RedisStore
-    redis = e
+import redis  # type: ignore
 
 import proxystore as ps
 from proxystore.store.remote import RemoteFactory
@@ -87,18 +81,7 @@ class RedisStore(RemoteStore):
             port (int): Redis server port.
             kwargs (dict): additional keyword arguments to pass to
                 :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
-
-        Raise:
-            ImportError:
-                if `redis-py <https://redis-py.readthedocs.io/en/stable/>`_
-                is not installed.
         """
-        if isinstance(redis, ImportError):  # pragma: no cover
-            raise ImportError(
-                "The redis-py package must be installed to use the "
-                "RedisStore backend",
-            )
-
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
@@ -116,7 +99,7 @@ class RedisStore(RemoteStore):
         """
         if kwargs is None:
             kwargs = {}
-        kwargs.update({"hostname": self.hostname, "port": self.port})
+        kwargs.update({'hostname': self.hostname, 'port': self.port})
         return super()._kwargs(kwargs)
 
     def evict(self, key: str) -> None:
@@ -168,7 +151,7 @@ class RedisStore(RemoteStore):
             KeyError:
                 if `key` does not exist in store.
         """
-        value = self._redis_client.get(key + "_timestamp")
+        value = self._redis_client.get(key + '_timestamp')
         if value is None:
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
@@ -179,7 +162,7 @@ class RedisStore(RemoteStore):
         *,
         key: str | None = None,
         factory: type[RemoteFactory] = RedisFactory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -212,7 +195,7 @@ class RedisStore(RemoteStore):
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f"data must be of type bytes. Found {type(data)}")
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         # We store the creation time for the key as a separate redis key-value.
-        self._redis_client.set(key + "_timestamp", time.time())
+        self._redis_client.set(key + '_timestamp', time.time())
         self._redis_client.set(key, data)

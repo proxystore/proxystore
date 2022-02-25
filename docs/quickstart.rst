@@ -26,7 +26,7 @@ Installation
 
 .. code-block:: bash
 
-   $ pip install ProxyStore
+   $ pip install proxystore
 
 ProxyStore only installs the bare-minimum dependencies.
 Additional packages may need to be installed depending on which object store interfaces are used (e.g., `redis-py <https://redis-py.readthedocs.io/en/stable/>`_ is required for interacting with Redis servers).

@@ -16,18 +16,18 @@ from typing import TypeVar
 
 import proxystore as ps
 
-FuncType = TypeVar("FuncType", bound=Callable[..., Any])
+FuncType = TypeVar('FuncType', bound=Callable[..., Any])
 
 
 STORE_METHOD_KEY_IS_RESULT = {
-    "evict": False,
-    "exists": False,
-    "get": False,
-    "get_bytes": False,
-    "is_cached": False,
-    "proxy": True,
-    "set": True,
-    "set_bytes": False,
+    'evict': False,
+    'exists': False,
+    'get': False,
+    'get_bytes': False,
+    'is_cached': False,
+    'proxy': True,
+    'set': True,
+    'set_bytes': False,
 }
 
 
@@ -92,7 +92,7 @@ class TimeStats:
         return ((a1 * n1) + (a2 * n2)) / (n1 + n2)
 
 
-class FunctionEventStats(MutableMapping):
+class FunctionEventStats(MutableMapping):  # type: ignore
     """Class for tracking stats of calls of functions that take a key."""
 
     def __init__(self) -> None:
@@ -107,8 +107,8 @@ class FunctionEventStats(MutableMapping):
         """Get item corresponding to event."""
         if not isinstance(event, Event):
             raise TypeError(
-                f"key (event) must be of type {Event.__name__}. "
-                f"Got type {type(event)}.",
+                f'key (event) must be of type {Event.__name__}. '
+                f'Got type {type(event)}.',
             )
         if event not in self._events:
             self._events[event] = TimeStats()
@@ -126,13 +126,13 @@ class FunctionEventStats(MutableMapping):
         """Set stats for event."""
         if not isinstance(event, Event):
             raise TypeError(
-                f"key (event) must be of type {Event.__name__}. "
-                f"Got type {type(event)}.",
+                f'key (event) must be of type {Event.__name__}. '
+                f'Got type {type(event)}.',
             )
         if not isinstance(stats, TimeStats):
             raise TypeError(
-                f"value (stats) must be of type {TimeStats.__name__}. "
-                f"Got type {type(stats)}.",
+                f'value (stats) must be of type {TimeStats.__name__}. '
+                f'Got type {type(stats)}.',
             )
         self._events[event] = stats
 

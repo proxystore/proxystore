@@ -1,4 +1,0 @@
-[flake8]
-max-line-length = 79
-docstring-convention = google
-exclude = .git,.github,__pycache__,build,dist,.*egg-info

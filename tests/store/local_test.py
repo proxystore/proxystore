@@ -1,4 +1,6 @@
 """LocalStore Unit Tests."""
+from __future__ import annotations
+
 from pytest import raises
 
 import proxystore as ps
@@ -9,35 +11,35 @@ from proxystore.store.local import LocalStore
 
 def test_kwargs() -> None:
     """Test LocalFactory kwargs."""
-    store = LocalStore(name="local")
+    store = LocalStore(name='local')
     assert store.kwargs == {
-        "stats": False,
+        'stats': False,
     }
 
 
 def test_local_factory() -> None:
     """Test LocalFactory."""
-    key = "key"
-    f = LocalFactory(key, name="local")
+    key = 'key'
+    f = LocalFactory(key, name='local')
     # Force delete LocalStore backend if it exists so resolving factory
     # raises not initialized error
     ps.store._stores = {}
     with raises(RuntimeError):
         f()
 
-    store = ps.store.init_store(LocalStore, "local")
+    store = ps.store.init_store(LocalStore, 'local')
 
     key = store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, name="local")
+    f = LocalFactory(key, name='local')
     assert f() == [1, 2, 3]
 
-    f2 = LocalFactory(key, name="local", evict=True)
+    f2 = LocalFactory(key, name='local', evict=True)
     assert store.exists(key)
     assert f2() == [1, 2, 3]
     assert not store.exists(key)
 
     store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, name="local")
+    f = LocalFactory(key, name='local')
     f.resolve_async()
     assert f() == [1, 2, 3]
 
@@ -48,7 +50,7 @@ def test_local_factory() -> None:
 
 def test_local_store_proxy() -> None:
     """Test LocalStore Proxying."""
-    store = ps.store.init_store(ps.store.STORES.LOCAL, "local")
+    store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
     p = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)
@@ -59,8 +61,8 @@ def test_local_store_proxy() -> None:
     p2 = store.proxy(key=ps.proxy.get_key(p))
     assert p2 == [1, 2, 3]
 
-    store.proxy([2, 3, 4], key="key")
-    assert store.get(key="key") == [2, 3, 4]
+    store.proxy([2, 3, 4], key='key')
+    assert store.get(key='key') == [2, 3, 4]
 
     # At least one of key or object must be passed
     with raises(ValueError):
@@ -68,7 +70,7 @@ def test_local_store_proxy() -> None:
     with raises(ValueError):
         store.proxy_batch()
 
-    batch_values = ["test_value1", "test_value2", "test_value3"]
+    batch_values = ['test_value1', 'test_value2', 'test_value3']
 
     proxies = store.proxy_batch(batch_values)
     for p, v in zip(proxies, batch_values):
@@ -83,12 +85,12 @@ def test_local_store_proxy() -> None:
 
 def test_raises_missing_key() -> None:
     """Test Proxy/Factory raise missing key error."""
-    store = ps.store.init_store(ps.store.STORES.LOCAL, "local")
+    store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
-    key = "test_key"
+    key = 'test_key'
     assert not store.exists(key)
 
-    factory = LocalFactory(key, "local")
+    factory = LocalFactory(key, 'local')
 
     with raises(ProxyResolveMissingKey):
         factory.resolve()
