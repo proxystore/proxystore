@@ -108,7 +108,7 @@ class Proxy(slots.Proxy):
         return self.__reduce__()
 
 
-def extract(proxy: proxystore.proxy.Proxy) -> Any:  # noqa: F821
+def extract(proxy: proxystore.proxy.Proxy) -> Any:
     """Return object wrapped by proxy.
 
     If the proxy has not been resolved yet, this will force
@@ -123,7 +123,7 @@ def extract(proxy: proxystore.proxy.Proxy) -> Any:  # noqa: F821
     return proxy.__wrapped__
 
 
-def get_key(proxy: proxystore.proxy.Proxy) -> str | None:  # noqa: F821
+def get_key(proxy: proxystore.proxy.Proxy) -> str | None:
     """Return key associated object wrapped by proxy.
 
     Keys are stored in the `factory` passed to the
@@ -141,7 +141,7 @@ def get_key(proxy: proxystore.proxy.Proxy) -> str | None:  # noqa: F821
     return None
 
 
-def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:  # noqa: F821
+def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:
     """Check if a proxy is resolved.
 
     Args:
@@ -154,7 +154,7 @@ def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:  # noqa: F821
     return proxy.__resolved__
 
 
-def resolve(proxy: proxystore.proxy.Proxy) -> None:  # noqa: F821
+def resolve(proxy: proxystore.proxy.Proxy) -> None:
     """Force a proxy to resolve itself.
 
     Args:
@@ -163,7 +163,7 @@ def resolve(proxy: proxystore.proxy.Proxy) -> None:  # noqa: F821
     proxy.__wrapped__
 
 
-def resolve_async(proxy: proxystore.proxy.Proxy) -> None:  # noqa: F821
+def resolve_async(proxy: proxystore.proxy.Proxy) -> None:
     """Begin resolving proxy asynchronously.
 
     Useful if the user knows a proxy will be needed soon and wants to
