@@ -10,9 +10,50 @@ documentation root, use os.path.abspath to make it absolute, like shown here.
 """
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import proxystore  # noqa: F401
+
+PROXY_PROPERTY_RE = r'<property object at 0x.*>.Proxy'
+
+
+def linkcode_resolve(domain: str, info: dict[str, Any]) -> str | None:
+    """Add GitHub source links."""
+    if domain != 'py':
+        return None
+    if not info['module']:
+        return None
+    if info['module'] == 'proxystore.store':
+        filename = 'proxystore/store/__init__'
+    else:
+        filename = info['module'].replace('.', '/')
+    return f'https://github.com/gpauloski/ProxyStore/blob/main/{filename}.py'
+
+
+def process_signature(
+    app: Any,
+    what: Any,
+    name: str,
+    obj: Any,
+    options: Any,
+    signature: str | None,
+    return_annotations: str | None,
+) -> tuple[str | None, str | None]:
+    """Replace strange Proxy type with correct."""
+    if signature is not None:
+        signature = re.sub(
+            PROXY_PROPERTY_RE,
+            'proxystore.proxy.Proxy',
+            signature,
+        )
+    if return_annotations is not None:
+        return_annotations = re.sub(
+            PROXY_PROPERTY_RE,
+            'proxystore.proxy.Proxy',
+            return_annotations,
+        )
+    return (signature, return_annotations)
 
 
 def skip(
@@ -32,6 +73,7 @@ def skip(
 def setup(app: Any) -> None:
     """Setup sphinx docs."""
     app.connect('autodoc-skip-member', skip)
+    app.connect('autodoc-process-signature', process_signature)
 
 
 # -- Project information -----------------------------------------------------
@@ -54,7 +96,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
-    # "sphinx.ext.viewcode",
+    'sphinx.ext.linkcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
