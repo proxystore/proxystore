@@ -36,7 +36,7 @@ class Store(metaclass=ABCMeta):
             for attr in dir(self):
                 if (
                     callable(getattr(self, attr))
-                    and not attr.startswith("_")
+                    and not attr.startswith('_')
                     and attr in STORE_METHOD_KEY_IS_RESULT
                 ):
                     method = getattr(self, attr)
@@ -49,19 +49,19 @@ class Store(metaclass=ABCMeta):
                     )
                     setattr(self, attr, wrapped)
 
-        logger.debug(f"Initialized {self}")
+        logger.debug(f'Initialized {self}')
 
     def __repr__(self) -> str:
         """Represent Store instance as string."""
-        s = f"{ps.utils.fullname(self.__class__)}("
+        s = f'{ps.utils.fullname(self.__class__)}('
         attributes = [
-            f"{key}={value}"
+            f'{key}={value}'
             for key, value in self.__dict__.items()
-            if not key.startswith("_") and not callable(value)
+            if not key.startswith('_') and not callable(value)
         ]
         attributes.sort()
-        s += ", ".join(attributes)
-        s += ")"
+        s += ', '.join(attributes)
+        s += ')'
         return s
 
     @property
@@ -81,7 +81,7 @@ class Store(metaclass=ABCMeta):
         """
         if kwargs is None:
             kwargs = {}
-        kwargs.update({"stats": self._stats is not None})
+        kwargs.update({'stats': self._stats is not None})
         return kwargs
 
     def cleanup(self) -> None:
@@ -172,7 +172,7 @@ class Store(metaclass=ABCMeta):
         *,
         key: str | None = None,
         factory: type[Factory] = Factory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -216,7 +216,7 @@ class Store(metaclass=ABCMeta):
         *,
         keys: Sequence[str] | None = None,
         factory: Factory | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[ps.proxy.Proxy]:
         """Create proxies for batch of objects in the store.
 
@@ -325,14 +325,14 @@ class Store(metaclass=ABCMeta):
         """
         if self._stats is None:
             raise ValueError(
-                "Stats are not being tracked because this store was "
-                "initialized with stats=False.",
+                'Stats are not being tracked because this store was '
+                'initialized with stats=False.',
             )
         stats = {}
         if isinstance(key_or_proxy, ps.proxy.Proxy):
             key = ps.proxy.get_key(key_or_proxy)
             # Merge stats from the proxy into self
-            if hasattr(key_or_proxy.__factory__, "stats"):
+            if hasattr(key_or_proxy.__factory__, 'stats'):
                 proxy_stats = key_or_proxy.__factory__.stats
                 if proxy_stats is not None:
                     for event in proxy_stats:

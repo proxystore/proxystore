@@ -1,4 +1,4 @@
-name: ProxyStore
+name: proxystore
 
 channels:
     - defaults
@@ -7,8 +7,6 @@ channels:
 dependencies:
     - python>=3.7.*
     - pip
-    - virtualenv
-    - redis
     - pip:
         - -e .
         - -r requirements-dev.txt

@@ -1,8 +1,7 @@
 """Simple Cache Implementation."""
+from __future__ import annotations
+
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
 
 
 class LRUCache:
@@ -19,10 +18,10 @@ class LRUCache:
                 if `maxsize <= 0`.
         """
         if maxsize < 0:
-            raise ValueError("Cache size must by >= 0")
+            raise ValueError('Cache size must by >= 0')
         self.maxsize = maxsize
-        self.data: Dict[Any, Any] = {}
-        self.lru: List[Any] = []
+        self.data: dict[Any, Any] = {}
+        self.lru: list[Any] = []
 
         # Count hits/misses
         self.hits = 0
@@ -38,7 +37,7 @@ class LRUCache:
         """Check if key is in cache."""
         return key in self.data
 
-    def get(self, key: Any, default: Optional[object] = None) -> Any:
+    def get(self, key: Any, default: object | None = None) -> Any:
         """Get value for key if it exists else returns default."""
         if self.exists(key):
             # Move to front b/c most recently used

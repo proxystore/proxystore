@@ -5,13 +5,12 @@ to resolve a proxy, where resolving is the process of retrieving the
 object from wherever it is stored such that the proxy can act as the
 object.
 """
+from __future__ import annotations
+
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Optional
-from typing import Tuple
 
 _default_pool = ThreadPoolExecutor()
 
@@ -88,7 +87,12 @@ class SimpleFactory(Factory):
 class LambdaFactory(Factory):
     """Factory that takes any callable object."""
 
-    def __init__(self, target: Callable, *args: Tuple, **kwargs: Dict) -> None:
+    def __init__(
+        self,
+        target: Callable[[], Any],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """Init LambdaFactory.
 
         Args:
@@ -101,7 +105,7 @@ class LambdaFactory(Factory):
         self._target = target
         self._args = args
         self._kwargs = kwargs
-        self._obj_future: Optional[Future[Any]] = None
+        self._obj_future: Future[Any] | None = None
 
     def resolve(self) -> Any:
         """Return target object."""

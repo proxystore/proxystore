@@ -1,15 +1,22 @@
 """ProxyStore Proxy Implementation and Utilities."""
 from __future__ import annotations
 
+import sys
 from typing import Any
+from typing import Callable
 
-from lazy_object_proxy import slots  # type: ignore
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
+    from typing import SupportsIndex
+else:  # pragma: <3.8 cover
+    SupportsIndex = int
+
+from lazy_object_proxy import slots
 
 import proxystore
 from proxystore.factory import Factory
 
 
-def _proxy_trampoline(factory: Factory):
+def _proxy_trampoline(factory: Factory) -> Proxy:
     """Trampoline for helping Proxy pickling.
 
     `slots.Proxy` defines a property for ``__modules__`` which confuses
@@ -80,20 +87,23 @@ class Proxy(slots.Proxy):
                 <proxystore.factory.Factory>`.
         """
         if not isinstance(factory, Factory):
-            raise TypeError("factory must be of type ps.factory.Factory")
+            raise TypeError('factory must be of type ps.factory.Factory')
         super().__init__(factory)
 
-    def __reduce__(self):
+    def __reduce__(self) -> tuple[Callable[[Factory], Proxy], tuple[Factory]]:
         """Use trampoline function for pickling.
 
         Override `Proxy.__reduce__` so that we only pickle the Factory
         and not the object itself to reduce size of the pickle.
         """
         return _proxy_trampoline, (
-            object.__getattribute__(self, "__factory__"),
+            object.__getattribute__(self, '__factory__'),
         )
 
-    def __reduce_ex__(self, protocol):
+    def __reduce_ex__(
+        self,
+        protocol: SupportsIndex,
+    ) -> tuple[Callable[[Factory], Proxy], tuple[Factory]]:
         """See `__reduce__`."""
         return self.__reduce__()
 
@@ -126,7 +136,7 @@ def get_key(proxy: proxystore.proxy.Proxy) -> str | None:  # noqa: F821
     Returns:
         key (`str`) if it exists otherwise `None`.
     """
-    if hasattr(proxy.__factory__, "key"):
+    if hasattr(proxy.__factory__, 'key'):
         return proxy.__factory__.key
     return None
 

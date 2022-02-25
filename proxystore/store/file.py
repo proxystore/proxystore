@@ -99,7 +99,7 @@ class FileStore(RemoteStore):
         """
         if kwargs is None:
             kwargs = {}
-        kwargs.update({"store_dir": self.store_dir})
+        kwargs.update({'store_dir': self.store_dir})
         return super()._kwargs(kwargs)
 
     def cleanup(self) -> None:
@@ -153,7 +153,7 @@ class FileStore(RemoteStore):
         """
         path = os.path.join(self.store_dir, key)
         if os.path.exists(path):
-            with open(path, "rb") as f:
+            with open(path, 'rb') as f:
                 data = f.read()
                 return data
         return None
@@ -184,7 +184,7 @@ class FileStore(RemoteStore):
         *,
         key: str | None = None,
         factory: type[RemoteFactory] = FileFactory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -217,9 +217,9 @@ class FileStore(RemoteStore):
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f"data must be of type bytes. Found {type(data)}")
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = os.path.join(self.store_dir, key)
-        with open(path, "wb", buffering=0) as f:
+        with open(path, 'wb', buffering=0) as f:
             f.write(data)
         # Manually set timestamp on file with nanosecond precision because some
         # filesystems can have low default file modified precisions

@@ -1,4 +1,6 @@
 """Factory Unit Tests."""
+from __future__ import annotations
+
 import proxystore as ps
 from proxystore.factory import LambdaFactory
 from proxystore.factory import SimpleFactory
@@ -39,16 +41,16 @@ def test_lambda_factory() -> None:
 
     # Test with function
     def myfunc() -> str:
-        return "abc"
+        return 'abc'
 
     f = LambdaFactory(myfunc)
     f_pkl = ps.serialize.serialize(f)
     f = ps.serialize.deserialize(f_pkl)
-    assert f() == "abc"
+    assert f() == 'abc'
 
     # Test args/kwargs
     def power(a, b):
-        return a ** b
+        return a**b
 
     f = LambdaFactory(power, 2, 3)
     assert f() == 8

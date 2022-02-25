@@ -1,4 +1,6 @@
 """Utils Unit Tests."""
+from __future__ import annotations
+
 from proxystore import utils
 from proxystore.factory import SimpleFactory
 
@@ -10,9 +12,9 @@ def test_create_key() -> None:
 
 def test_fullname() -> None:
     """Test fullname()."""
-    assert utils.fullname(SimpleFactory) == "proxystore.factory.SimpleFactory"
+    assert utils.fullname(SimpleFactory) == 'proxystore.factory.SimpleFactory'
     assert (
-        utils.fullname(SimpleFactory("string"))
-        == "proxystore.factory.SimpleFactory"
+        utils.fullname(SimpleFactory('string'))
+        == 'proxystore.factory.SimpleFactory'
     )
-    assert utils.fullname("string") == "str"
+    assert utils.fullname('string') == 'str'

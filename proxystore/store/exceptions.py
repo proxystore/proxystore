@@ -28,5 +28,5 @@ class ProxyResolveMissingKey(Exception):
         super().__init__(
             f"Proxy cannot resolve target object with key='{self.key}' "
             f"from {self.store_type.__name__}(name='{self.key}'): "
-            "store returned NoneType with key.",
+            'store returned NoneType with key.',
         )

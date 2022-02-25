@@ -1,16 +1,18 @@
 """Store Imports and Initialization Unit Tests."""
+from __future__ import annotations
+
 from pytest import fixture
 from pytest import raises
 
 import proxystore as ps
-from .utils import mock_third_party_libs
 from proxystore.store import STORES
+from testing.store_utils import mock_third_party_libs
 
-REDIS_HOST = "localhost"
+REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
 
 
-@fixture(scope="session", autouse=True)
+@fixture(scope='session', autouse=True)
 def init():
     """Set up test environment."""
     mpatch = mock_third_party_libs()
@@ -32,8 +34,8 @@ def test_imports() -> None:
 
     from proxystore.store.local import LocalStore
 
-    LocalStore(name="local")
-    ps.store.local.LocalStore(name="local")
+    LocalStore(name='local')
+    ps.store.local.LocalStore(name='local')
 
     assert callable(ps.store.init_store)
 
@@ -41,53 +43,53 @@ def test_imports() -> None:
 def test_init_store() -> None:
     """Test init_store/get_store."""
     # Init by str name
-    local = ps.store.init_store("local", name="local")
+    local = ps.store.init_store('local', name='local')
     assert isinstance(local, ps.store.local.LocalStore)
     redis = ps.store.init_store(
-        "redis",
-        name="redis",
+        'redis',
+        name='redis',
         hostname=REDIS_HOST,
         port=REDIS_PORT,
     )
     assert isinstance(redis, ps.store.redis.RedisStore)
 
-    assert local == ps.store.get_store("local")
-    assert redis == ps.store.get_store("redis")
+    assert local == ps.store.get_store('local')
+    assert redis == ps.store.get_store('redis')
 
     ps.store._stores = {}
 
     # Init by enum
-    local = ps.store.init_store(STORES.LOCAL, name="local")
+    local = ps.store.init_store(STORES.LOCAL, name='local')
     assert isinstance(local, ps.store.local.LocalStore)
     redis = ps.store.init_store(
         STORES.REDIS,
-        name="redis",
+        name='redis',
         hostname=REDIS_HOST,
         port=REDIS_PORT,
     )
     assert isinstance(redis, ps.store.redis.RedisStore)
 
-    assert local == ps.store.get_store("local")
-    assert redis == ps.store.get_store("redis")
+    assert local == ps.store.get_store('local')
+    assert redis == ps.store.get_store('redis')
 
     # Init by class type
-    local = ps.store.init_store(ps.store.local.LocalStore, name="local")
+    local = ps.store.init_store(ps.store.local.LocalStore, name='local')
     assert isinstance(local, ps.store.local.LocalStore)
 
     ps.store._stores = {}
 
     # Specify name to have multiple stores of same type
-    local1 = ps.store.init_store(STORES.LOCAL, "local1")
-    ps.store.init_store(STORES.LOCAL, "local2")
+    local1 = ps.store.init_store(STORES.LOCAL, 'local1')
+    ps.store.init_store(STORES.LOCAL, 'local2')
 
-    assert ps.store.get_store("local1") is not ps.store.get_store("local2")
+    assert ps.store.get_store('local1') is not ps.store.get_store('local2')
 
     # Should overwrite old store
-    ps.store.init_store(STORES.LOCAL, "local1")
-    assert local1 is not ps.store.get_store("local1")
+    ps.store.init_store(STORES.LOCAL, 'local1')
+    assert local1 is not ps.store.get_store('local1')
 
     # Return None if store with name does not exist
-    assert ps.store.get_store("unknown") is None
+    assert ps.store.get_store('unknown') is None
 
 
 def test_get_enum_by_type() -> None:
@@ -109,11 +111,11 @@ def test_init_store_raises() -> None:
     """Test init_store raises."""
     with raises(ValueError):
         # Raise error because name cannot be found in STORES
-        ps.store.init_store("unknown", name="")
+        ps.store.init_store('unknown', name='')
 
     with raises(ValueError):
         # Raises error because type is not a subclass of Store
         class TestStore:
             pass
 
-        ps.store.init_store(TestStore, name="")
+        ps.store.init_store(TestStore, name='')

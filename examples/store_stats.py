@@ -1,10 +1,12 @@
 """Store Operation Statistics Examples."""
+from __future__ import annotations
+
 import proxystore as ps
 
 store = ps.store.init_store(
-    "file",
-    name="default",
-    store_dir="/tmp/proxystore-dump",
+    'file',
+    name='default',
+    store_dir='/tmp/proxystore-dump',
     stats=True,
 )
 
@@ -35,7 +37,7 @@ store2 = store.stats(key2)
 """,
 )
 
-print("Call store.get(key1)")
+print('Call store.get(key1)')
 store.get(key1)
 stats = store.stats(key1)
 print(
@@ -49,7 +51,7 @@ store = store.stats(key1)
 """,
 )
 
-print("Call store.get(key1) again")
+print('Call store.get(key1) again')
 store.get(key1)
 stats = store.stats(key1)
 print(

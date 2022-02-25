@@ -10,22 +10,20 @@ import time
 import warnings
 from typing import Any
 from typing import Collection
+from typing import Generator
+from typing import Iterator
 from typing import Pattern
 from typing import Sequence
+
+import globus_sdk
+from parsl.data_provider import globus
 
 import proxystore as ps
 from proxystore.store.remote import RemoteFactory
 from proxystore.store.remote import RemoteStore
 
-import_error = None
-try:
-    import globus_sdk  # type: ignore
-    from parsl.data_provider import globus  # type: ignore
-except ImportError as e:  # pragma: no cover
-    import_error = e
-
 logger = logging.getLogger(__name__)
-GLOBUS_MKDIR_EXISTS_ERROR_CODE = "ExternalError.MkdirFailed.Exists"
+GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
 
 
 class GlobusEndpoint:
@@ -53,23 +51,25 @@ class GlobusEndpoint:
                 resolved.
         """
         if not isinstance(uuid, str):
-            raise TypeError("uuid must be a str.")
+            raise TypeError('uuid must be a str.')
         if not isinstance(endpoint_path, str):
-            raise TypeError("endpoint_path must be a str.")
+            raise TypeError('endpoint_path must be a str.')
         if not isinstance(local_path, str):
-            raise TypeError("local_path must be a str.")
+            raise TypeError('local_path must be a str.')
         if not (
             isinstance(host_regex, str) or isinstance(host_regex, Pattern)
         ):
-            raise TypeError("host_regex must be a str or re.Pattern.")
+            raise TypeError('host_regex must be a str or re.Pattern.')
 
         self.uuid = uuid
         self.endpoint_path = endpoint_path
         self.local_path = local_path
         self.host_regex = host_regex
 
-    def __eq__(self, endpoint):
+    def __eq__(self, endpoint: object) -> bool:
         """Endpoints are equal if attributes match."""
+        if not isinstance(endpoint, GlobusEndpoint):
+            raise NotImplementedError
         if (
             self.uuid == endpoint.uuid
             and self.endpoint_path == endpoint.endpoint_path
@@ -106,47 +106,47 @@ class GlobusEndpoints:
         """
         if len(endpoints) == 0:
             raise ValueError(
-                "GlobusEndpoints must be passed at least one GlobusEndpoint "
-                "object",
+                'GlobusEndpoints must be passed at least one GlobusEndpoint '
+                'object',
             )
         self._endpoints: dict[str, GlobusEndpoint] = {}
         for endpoint in endpoints:
             if endpoint.uuid in self._endpoints:
                 raise ValueError(
-                    "Cannot pass multiple GlobusEndpoint objects with the "
-                    "same Globus endpoint UUID.",
+                    'Cannot pass multiple GlobusEndpoint objects with the '
+                    'same Globus endpoint UUID.',
                 )
             self._endpoints[endpoint.uuid] = endpoint
 
-    def __getitem__(self, uuid):
+    def __getitem__(self, uuid: str) -> GlobusEndpoint:
         """Index GlobusEndpoints with UUID."""
         try:
             return self._endpoints[uuid]
         except KeyError:
-            raise KeyError(f"Endpoint with UUID {uuid} does not exist.")
+            raise KeyError(f'Endpoint with UUID {uuid} does not exist.')
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[GlobusEndpoint]:
         """Iterate over GlobusEndpoints."""
 
-        def _iterator():
+        def _iterator() -> Generator[GlobusEndpoint, None, None]:
             yield from self._endpoints.values()
 
         return _iterator()
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Length of GlobusEndpoints."""
         return len(self._endpoints)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """Represent GlobusEndpoints as string."""
-        s = f"{self.__class__.__name__}(["
-        s += ", ".join(str(ep) for ep in self._endpoints.values())
-        s += "])"
+        s = f'{self.__class__.__name__}(['
+        s += ', '.join(str(ep) for ep in self._endpoints.values())
+        s += '])'
         return s
 
     @classmethod
     def from_dict(
-        cls,
+        cls: type[GlobusEndpoints],
         json_object: dict[str, dict[str, str]],
     ) -> GlobusEndpoints:
         """Construct a GlobusEndpoints object from a dictionary.
@@ -173,9 +173,9 @@ class GlobusEndpoints:
             endpoints.append(
                 GlobusEndpoint(
                     uuid=uuid,
-                    endpoint_path=params["endpoint_path"],
-                    local_path=params["local_path"],
-                    host_regex=params["host_regex"],
+                    endpoint_path=params['endpoint_path'],
+                    local_path=params['local_path'],
+                    host_regex=params['host_regex'],
                 ),
             )
         return GlobusEndpoints(endpoints)
@@ -201,9 +201,9 @@ class GlobusEndpoints:
         data = {}
         for endpoint in self:
             data[endpoint.uuid] = {
-                "endpoint_path": endpoint.endpoint_path,
-                "local_path": endpoint.local_path,
-                "host_regex": endpoint.host_regex.pattern
+                'endpoint_path': endpoint.endpoint_path,
+                'local_path': endpoint.local_path,
+                'host_regex': endpoint.host_regex.pattern
                 if isinstance(endpoint.host_regex, Pattern)
                 else endpoint.host_regex,
             }
@@ -228,7 +228,7 @@ class GlobusEndpoints:
         for endpoint in self._endpoints.values():
             if re.fullmatch(endpoint.host_regex, host) is not None:
                 return endpoint
-        raise ValueError(f"Cannot find endpoint matching host {host}")
+        raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
 class GlobusFactory(RemoteFactory):
@@ -319,7 +319,7 @@ class GlobusStore(RemoteStore):
         | list[GlobusEndpoint]
         | dict[str, dict[str, str]],
         polling_interval: int = 1,
-        sync_level: int | str = "mtime",
+        sync_level: int | str = 'mtime',
         timeout: int = 60,
         **kwargs: Any,
     ) -> None:
@@ -338,10 +338,6 @@ class GlobusStore(RemoteStore):
                 :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
 
         Raise:
-            ImportError:
-                if `globus_sdk <https://globus-sdk-python.readthedocs.io/en/stable/>`_
-                or `parsl <https://parsl.readthedocs.io/en/stable/>`_
-                is not installed.
             ValueError:
                 if `endpoints` is not a list of
                 :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
@@ -350,9 +346,7 @@ class GlobusStore(RemoteStore):
                 if the :code:`len(endpoints) != 2` because
                 :class:`GlobusStore <.GlobusStore>` can currently only keep
                 two endpoints in sync.
-        """  # noqa: E501
-        if import_error is not None:  # pragma: no cover
-            raise import_error
+        """
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
         elif isinstance(endpoints, list):
@@ -361,12 +355,12 @@ class GlobusStore(RemoteStore):
             self.endpoints = GlobusEndpoints.from_dict(endpoints)
         else:
             raise ValueError(
-                "endpoints must be of type GlobusEndpoints or a list of "
-                f"GlobusEndpoint. Got {type(endpoints)}.",
+                'endpoints must be of type GlobusEndpoints or a list of '
+                f'GlobusEndpoint. Got {type(endpoints)}.',
             )
         if len(endpoints) != 2:
             raise ValueError(
-                "ProxyStore only supports two endpoints at a time",
+                'ProxyStore only supports two endpoints at a time',
             )
         self.polling_interval = polling_interval
         self.sync_level = sync_level
@@ -395,10 +389,10 @@ class GlobusStore(RemoteStore):
         kwargs.update(
             {
                 # Pass endpoints as a dict to make kwargs JSON serializable
-                "endpoints": self.endpoints.dict(),
-                "polling_interval": self.polling_interval,
-                "sync_level": self.sync_level,
-                "timeout": self.timeout,
+                'endpoints': self.endpoints.dict(),
+                'polling_interval': self.polling_interval,
+                'sync_level': self.sync_level,
+                'timeout': self.timeout,
             },
         )
         return super()._kwargs(kwargs)
@@ -414,11 +408,11 @@ class GlobusStore(RemoteStore):
         Returns:
             key that encodes the `filename` and `task_id`.
         """
-        return f"{task_id}:{filename}"
+        return f'{task_id}:{filename}'
 
     def _get_filename(self, key: str) -> str:
         """Extract filename from key."""
-        return key.split(":")[1]
+        return key.split(':')[1]
 
     def _get_filepath(
         self,
@@ -447,11 +441,11 @@ class GlobusStore(RemoteStore):
 
     def _get_task_id(self, key: str) -> str:
         """Extract task id from key."""
-        return key.split(":")[0]
+        return key.split(':')[0]
 
     def _validate_key(self, key: str) -> bool:
         """Validate key contains a real Globus task id."""
-        if len(key.split(":")) != 2:
+        if len(key.split(':')) != 2:
             return False
         try:
             self._transfer_client.get_task(self._get_task_id(key))
@@ -471,7 +465,7 @@ class GlobusStore(RemoteStore):
             )
             if not done:
                 raise RuntimeError(
-                    f"Task {task} did not complete within the " "timeout",
+                    f'Task {task} did not complete within the ' 'timeout',
                 )
 
     def _transfer_files(
@@ -509,9 +503,9 @@ class GlobusStore(RemoteStore):
                 sync_level=self.sync_level,
             )
 
-        transfer_task["notify_on_succeeded"] = False
-        transfer_task["notify_on_failed"] = False
-        transfer_task["notify_on_inactive"] = False
+        transfer_task['notify_on_succeeded'] = False
+        transfer_task['notify_on_failed'] = False
+        transfer_task['notify_on_inactive'] = False
 
         if isinstance(filenames, str):
             filenames = [filenames]
@@ -538,7 +532,7 @@ class GlobusStore(RemoteStore):
         else:
             tdata = self._transfer_client.submit_transfer(transfer_task)
 
-        return tdata["task_id"]
+        return tdata['task_id']
 
     def cleanup(self) -> None:
         """Cleanup directories used by ProxyStore in the Globus endpoints.
@@ -557,12 +551,12 @@ class GlobusStore(RemoteStore):
                 endpoint=endpoint.uuid,
                 recursive=True,
             )
-            delete_task["notify_on_succeeded"] = False
-            delete_task["notify_on_failed"] = False
-            delete_task["notify_on_inactive"] = False
+            delete_task['notify_on_succeeded'] = False
+            delete_task['notify_on_failed'] = False
+            delete_task['notify_on_inactive'] = False
             delete_task.add_item(endpoint.endpoint_path)
             tdata = self._transfer_client.submit_delete(delete_task)
-            self._wait_on_tasks(tdata["task_id"])
+            self._wait_on_tasks(tdata['task_id'])
 
     def evict(self, key: str) -> None:
         """Evict object associated with key from the Globus synced directory.
@@ -610,7 +604,7 @@ class GlobusStore(RemoteStore):
             return None
 
         path = self._get_filepath(self._get_filename(key))
-        with open(path, "rb") as f:
+        with open(path, 'rb') as f:
             return f.read()
 
     def get_timestamp(self, key: str) -> float:
@@ -657,8 +651,8 @@ class GlobusStore(RemoteStore):
         """
         if strict:
             warnings.warn(
-                "GlobusStore objects are immutable so setting strict=True "
-                "has no effect.",
+                'GlobusStore objects are immutable so setting strict=True '
+                'has no effect.',
             )
         if self.is_cached(key, strict=strict):
             value = self._cache.get(key)
@@ -704,7 +698,7 @@ class GlobusStore(RemoteStore):
         *,
         key: str | None = None,
         factory: type[RemoteFactory] = GlobusFactory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -737,11 +731,11 @@ class GlobusStore(RemoteStore):
             data (bytes): serialized object.
         """
         if not isinstance(data, bytes):
-            raise TypeError(f"data must be of type bytes. Found {type(data)}")
+            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = self._get_filepath(key)
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "wb", buffering=0) as f:
+        with open(path, 'wb', buffering=0) as f:
             f.write(data)
         # Manually set timestamp on file with nanosecond precision because some
         # filesystems can have low default file modified precisions
@@ -811,7 +805,7 @@ class GlobusStore(RemoteStore):
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
-                f"objs has length {len(objs)} but keys has length {len(keys)}",
+                f'objs has length {len(objs)} but keys has length {len(keys)}',
             )
         if keys is None:
             keys = [None] * len(objs)

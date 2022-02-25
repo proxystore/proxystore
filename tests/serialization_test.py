@@ -1,4 +1,6 @@
 """Serialization Unit Tests."""
+from __future__ import annotations
+
 import numpy as np
 from pytest import raises
 
@@ -9,17 +11,17 @@ from proxystore.serialize import serialize
 
 def test_serialization() -> None:
     """Test serialization."""
-    x = b"test string"
-    b = serialize(x)
-    assert deserialize(b) == x
+    xb = b'test string'
+    b = serialize(xb)
+    assert deserialize(b) == xb
 
-    x = "test string"
-    b = serialize(x)
-    assert deserialize(b) == x
+    xs = 'test string'
+    b = serialize(xs)
+    assert deserialize(b) == xs
 
-    x = np.array([1, 2, 3])
-    b = serialize(x)
-    assert np.array_equal(deserialize(b), x)
+    xa = np.array([1, 2, 3])
+    b = serialize(xa)
+    assert np.array_equal(deserialize(b), xa)
 
     b = serialize(lambda: [1, 2, 3])
     f = deserialize(b)
@@ -27,12 +29,12 @@ def test_serialization() -> None:
 
     with raises(ValueError):
         # deserialize raises ValueError on non-bytes inputs
-        deserialize("xxx")
+        deserialize('xxx')
 
     with raises(SerializationError):
         # No identifier
-        deserialize(b"xxx")
+        deserialize(b'xxx')
 
     with raises(SerializationError):
         # Fake identifer 'xxx'
-        deserialize(b"99\nxxx")
+        deserialize(b'99\nxxx')

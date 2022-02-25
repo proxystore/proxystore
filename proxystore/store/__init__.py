@@ -1,10 +1,9 @@
 """Module containing all Store implementations."""
+from __future__ import annotations
+
 import logging
 from enum import Enum
-from typing import Dict
-from typing import Optional
-from typing import Type
-from typing import Union
+from typing import Any
 
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore
@@ -12,7 +11,7 @@ from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
 
-_stores: Dict[str, _Store] = {}
+_stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +24,7 @@ class STORES(Enum):
     FILE = _FileStore
 
     @classmethod
-    def get_str_by_type(cls, store: Type[_Store]) -> str:
+    def get_str_by_type(cls, store: type[_Store]) -> str:
         """Get str corresponding to enum type of a store type.
 
         Args:
@@ -42,10 +41,10 @@ class STORES(Enum):
         for option in cls:
             if option.value == store:
                 return option.name
-        raise KeyError(f"Enum type matching type {store} not found")
+        raise KeyError(f'Enum type matching type {store} not found')
 
 
-def get_store(name: str) -> Optional[_Store]:
+def get_store(name: str) -> _Store | None:
     """Get the backend store with name.
 
     Args:
@@ -61,9 +60,9 @@ def get_store(name: str) -> Optional[_Store]:
 
 
 def init_store(
-    store_type: Union[str, STORES, Type[_Store]],
+    store_type: str | STORES | type[_Store],
     name: str,
-    **kwargs,
+    **kwargs: Any,
 ) -> _Store:
     """Initialize a backend store and register globally.
 
@@ -103,18 +102,18 @@ def init_store(
         try:
             _stores[name] = STORES[store_type.upper()].value(name, **kwargs)
         except KeyError:
-            raise ValueError(f"No store with name {store_type}.")
+            raise ValueError(f'No store with name {store_type}.')
     elif isinstance(store_type, STORES):
         _stores[name] = store_type.value(name, **kwargs)
     elif issubclass(store_type, _Store):
         _stores[name] = store_type(name, **kwargs)
     else:
         raise ValueError(
-            "Arg store_type must be str corresponding to "
-            "proxystore.store.STORES, member of proxystore.store.STORES, or "
-            f"subclass of Store. Found type f{type(store_type)} instead.",
+            'Arg store_type must be str corresponding to '
+            'proxystore.store.STORES, member of proxystore.store.STORES, or '
+            f'subclass of Store. Found type f{type(store_type)} instead.',
         )
 
-    logger.debug(f"Added {_stores[name]} to globally accessible stores")
+    logger.debug(f'Added {_stores[name]} to globally accessible stores')
 
     return _stores[name]

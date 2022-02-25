@@ -53,7 +53,7 @@ class LocalFactory(Factory):
         store = ps.store.get_store(self.name)
         if store is None:
             raise RuntimeError(
-                "LocalStore is not initalized, cannot resolve factory",
+                'LocalStore is not initalized, cannot resolve factory',
             )
         obj = store.get(self.key)
         if obj is None:
@@ -62,9 +62,9 @@ class LocalFactory(Factory):
             store.evict(self.key)
         return obj
 
-    def __getnewargs_ex__(self):
+    def __getnewargs_ex__(self) -> tuple[tuple[str, str], dict[str, Any]]:
         """Correct pickling."""
-        return (self.key, self.name), {"evict": self.evict}
+        return (self.key, self.name), {'evict': self.evict}
 
 
 class LocalStore(Store):
@@ -167,7 +167,7 @@ class LocalStore(Store):
         *,
         key: str | None = None,
         factory: type[LocalFactory] = LocalFactory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -191,7 +191,7 @@ class LocalStore(Store):
                 if `key` and `obj` are both `None`.
         """
         if key is None and obj is None:
-            raise ValueError("At least one of key or obj must be specified")
+            raise ValueError('At least one of key or obj must be specified')
         if key is None:
             key = ps.utils.create_key(obj)
         if obj is not None:
@@ -208,7 +208,7 @@ class LocalStore(Store):
         *,
         keys: Sequence[str] | None = None,
         factory: type[LocalFactory] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[ps.proxy.Proxy]:
         """Create proxies for batch of objects in the store.
 
@@ -243,7 +243,7 @@ class LocalStore(Store):
         elif keys is not None:
             final_keys = list(keys)
         else:
-            raise ValueError("At least one of key or obj must be specified")
+            raise ValueError('At least one of key or obj must be specified')
         return [self.proxy(None, key=key, **kwargs) for key in final_keys]
 
     def set(self, obj: Any, *, key: str | None = None) -> str:
@@ -290,7 +290,7 @@ class LocalStore(Store):
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
-                f"objs has length {len(objs)} but keys has length {len(keys)}",
+                f'objs has length {len(objs)} but keys has length {len(keys)}',
             )
         if keys is None:
             keys = [None] * len(objs)

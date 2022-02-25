@@ -73,21 +73,26 @@ class RemoteFactory(Factory):
         # because they are specific to that instance of the factory
         self._obj_future: Future[Any] | None = None
         self.stats: FunctionEventStats | None = None
-        if "stats" in self.store_kwargs and self.store_kwargs["stats"] is True:
+        if 'stats' in self.store_kwargs and self.store_kwargs['stats'] is True:
             self.stats = FunctionEventStats()
             # Monkeypatch methods with wrappers to track their stats
             setattr(  # noqa: B010
                 self,
-                "resolve",
+                'resolve',
                 self.stats.wrap(self.resolve, preset_key=self.key),
             )
             setattr(  # noqa: B010
                 self,
-                "resolve_async",
+                'resolve_async',
                 self.stats.wrap(self.resolve_async, preset_key=self.key),
             )
 
-    def __getnewargs_ex__(self):
+    def __getnewargs_ex__(
+        self,
+    ) -> tuple[
+        tuple[str, type[RemoteStore], str, dict[str, Any]],
+        dict[str, Any],
+    ]:
         """Pickle without possible futures."""
         return (
             self.key,
@@ -95,9 +100,9 @@ class RemoteFactory(Factory):
             self.store_name,
             self.store_kwargs,
         ), {
-            "evict": self.evict,
-            "serialize": self.serialize,
-            "strict": self.strict,
+            'evict': self.evict,
+            'serialize': self.serialize,
+            'strict': self.strict,
         }
 
     def _get_store(self) -> RemoteStore:
@@ -112,8 +117,8 @@ class RemoteFactory(Factory):
         if isinstance(store, RemoteStore):
             return store
         raise ValueError(
-            f"store_name={self.store_name} passed to RemoteFactory does not "
-            "correspond to store of type RemoteStore",
+            f'store_name={self.store_name} passed to RemoteFactory does not '
+            'correspond to store of type RemoteStore',
         )
 
     def resolve(self) -> Any:
@@ -201,7 +206,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 if `cache_size` is negative.
         """
         if cache_size < 0:
-            raise ValueError("Cache size cannot be negative")
+            raise ValueError('Cache size cannot be negative')
         self.cache_size = cache_size
         self._cache = LRUCache(cache_size)
         super().__init__(name, **kwargs)
@@ -218,7 +223,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         """
         if kwargs is None:
             kwargs = {}  # pragma: no cover
-        kwargs.update({"cache_size": self.cache_size})
+        kwargs.update({'cache_size': self.cache_size})
         return super()._kwargs(kwargs)
 
     @abstractmethod
@@ -266,7 +271,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
             object associated with key or `default` if key does not exist.
         """
         if self.is_cached(key, strict=strict):
-            value = self._cache.get(key)["value"]
+            value = self._cache.get(key)['value']
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=True",
@@ -278,7 +283,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
             timestamp = self.get_timestamp(key)
             if deserialize:
                 value = ps.serialize.deserialize(value)
-            self._cache.set(key, {"timestamp": timestamp, "value": value})
+            self._cache.set(key, {'timestamp': timestamp, 'value': value})
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=False",
@@ -309,7 +314,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         if self._cache.exists(key):
             if strict:
                 store_timestamp = self.get_timestamp(key)
-                cache_timestamp = self._cache.get(key)["timestamp"]
+                cache_timestamp = self._cache.get(key)['timestamp']
                 return cache_timestamp >= store_timestamp
             return True
 
@@ -321,7 +326,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         *,
         key: str | None = None,
         factory: type[RemoteFactory] = RemoteFactory,
-        **kwargs,
+        **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
 
@@ -344,18 +349,18 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 if `key` and `obj` are both `None`.
         """
         if obj is not None:
-            if "serialize" in kwargs:
+            if 'serialize' in kwargs:
                 final_key = self.set(
                     obj,
                     key=key,
-                    serialize=kwargs["serialize"],
+                    serialize=kwargs['serialize'],
                 )
             else:
                 final_key = self.set(obj, key=key)
         elif key is not None:
             final_key = key
         else:
-            raise ValueError("At least one of key or obj must be specified")
+            raise ValueError('At least one of key or obj must be specified')
         logger.debug(
             f"PROXY key='{final_key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -375,7 +380,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         *,
         keys: Sequence[str] | None = None,
         factory: type[RemoteFactory] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> list[ps.proxy.Proxy]:
         """Create proxies for batch of objects in the store.
 
@@ -405,20 +410,20 @@ class RemoteStore(Store, metaclass=ABCMeta):
                 if `objs` is None and `keys` does not exist in the store.
         """
         if objs is not None:
-            if "serialize" in kwargs:
+            if 'serialize' in kwargs:
                 final_keys = self.set_batch(
                     objs,
                     keys=keys,
-                    serialize=kwargs["serialize"],
+                    serialize=kwargs['serialize'],
                 )
             else:
                 final_keys = self.set_batch(objs, keys=keys)
         elif keys is not None:
             final_keys = list(keys)
         else:
-            raise ValueError("At least one of keys or objs must be specified")
+            raise ValueError('At least one of keys or objs must be specified')
         if factory is not None:
-            kwargs["factory"] = factory
+            kwargs['factory'] = factory
         return [self.proxy(None, key=key, **kwargs) for key in final_keys]
 
     def set(
@@ -479,7 +484,7 @@ class RemoteStore(Store, metaclass=ABCMeta):
         """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
-                f"objs has length {len(objs)} but keys has length {len(keys)}",
+                f'objs has length {len(objs)} but keys has length {len(keys)}',
             )
         if keys is None:
             keys = [None] * len(objs)

@@ -1,11 +1,12 @@
-"""Mocking utilities for GlobusStore tests."""
+"""Mocking utilities for Store tests."""
+from __future__ import annotations
+
 import socket
 import uuid
 from typing import Any
-from typing import Union
 
 import globus_sdk
-import redis
+import redis  # type: ignore
 from _pytest.monkeypatch import MonkeyPatch
 from parsl.data_provider import globus
 
@@ -20,48 +21,49 @@ from proxystore.store.local import LocalStore
 from proxystore.store.redis import RedisFactory
 from proxystore.store.redis import RedisStore
 
-REDIS_HOST = "localhost"
+REDIS_HOST = 'localhost'
 REDIS_PORT = 59465
-FILE_DIR = "/tmp/proxystore-test-298711396448"
+FILE_DIR = '/tmp/proxystore-test-298711396448'
 MOCK_GLOBUS_ENDPOINTS = GlobusEndpoints(
     [
         GlobusEndpoint(
-            uuid="EP1UUID",
-            endpoint_path="/~/",
+            uuid='EP1UUID',
+            endpoint_path='/~/',
             local_path=FILE_DIR,
-            host_regex="localhost",
+            host_regex='localhost',
         ),
         GlobusEndpoint(
-            uuid="EP2UUID",
-            endpoint_path="/~/",
+            uuid='EP2UUID',
+            endpoint_path='/~/',
             local_path=FILE_DIR,
-            host_regex="localhost",
+            host_regex='localhost',
         ),
     ],
 )
+MOCK_REDIS_CACHE: dict[str, Any] = {}
 LOCAL_STORE = {
-    "type": LocalStore,
-    "name": "local",
-    "kwargs": {},
-    "factory": LocalFactory,
+    'type': LocalStore,
+    'name': 'local',
+    'kwargs': {},
+    'factory': LocalFactory,
 }
 FILE_STORE = {
-    "type": FileStore,
-    "name": "file",
-    "kwargs": {"store_dir": FILE_DIR},
-    "factory": FileFactory,
+    'type': FileStore,
+    'name': 'file',
+    'kwargs': {'store_dir': FILE_DIR},
+    'factory': FileFactory,
 }
 REDIS_STORE = {
-    "type": RedisStore,
-    "name": "redis",
-    "kwargs": {"hostname": REDIS_HOST, "port": REDIS_PORT},
-    "factory": RedisFactory,
+    'type': RedisStore,
+    'name': 'redis',
+    'kwargs': {'hostname': REDIS_HOST, 'port': REDIS_PORT},
+    'factory': RedisFactory,
 }
 GLOBUS_STORE = {
-    "type": GlobusStore,
-    "name": "globus",
-    "kwargs": {"endpoints": MOCK_GLOBUS_ENDPOINTS},
-    "factory": GlobusFactory,
+    'type': GlobusStore,
+    'name': 'globus',
+    'kwargs': {'endpoints': MOCK_GLOBUS_ENDPOINTS},
+    'factory': GlobusFactory,
 }
 
 
@@ -76,11 +78,15 @@ class MockTransferData:
         """Set item."""
         self.__dict__[key] = item
 
-    def add_item(self, source_path: str, destination_path: str, **kwargs):
+    def add_item(
+        self,
+        source_path: str,
+        destination_path: str,
+        **kwargs: Any,
+    ) -> None:
         """Add item."""
         assert isinstance(source_path, str)
         assert isinstance(destination_path, str)
-        return
 
 
 class MockDeleteData:
@@ -94,10 +100,9 @@ class MockDeleteData:
         """Set item."""
         self.__dict__[key] = item
 
-    def add_item(self, path: str, **kwargs):
+    def add_item(self, path: str, **kwargs: Any) -> None:
         """Add item."""
         assert isinstance(path, str)
-        return
 
 
 class MockTransferClient:
@@ -107,22 +112,25 @@ class MockTransferClient:
         """Init MockTransferClient."""
         pass
 
-    def get_task(self, task_id: str):
+    def get_task(self, task_id: str) -> Any:
         """Get task."""
         assert isinstance(task_id, str)
         return None
 
-    def submit_delete(self, delete_data: MockDeleteData):
+    def submit_delete(self, delete_data: MockDeleteData) -> dict[str, str]:
         """Submit DeleteData."""
         assert isinstance(delete_data, MockDeleteData)
-        return {"task_id": str(uuid.uuid4())}
+        return {'task_id': str(uuid.uuid4())}
 
-    def submit_transfer(self, transfer_data: MockTransferData):
+    def submit_transfer(
+        self,
+        transfer_data: MockTransferData,
+    ) -> dict[str, str]:
         """Submit TransferData."""
         assert isinstance(transfer_data, MockTransferData)
-        return {"task_id": str(uuid.uuid4())}
+        return {'task_id': str(uuid.uuid4())}
 
-    def task_wait(self, task_id: str, **kwargs):
+    def task_wait(self, task_id: str, **kwargs: Any) -> bool:
         """Wait on tasks."""
         assert isinstance(task_id, str)
         return True
@@ -160,7 +168,7 @@ class MockStrictRedis:
             return self.data[key]
         return None
 
-    def set(self, key: str, value: Union[str, bytes, int, float]) -> None:
+    def set(self, key: str, value: str | bytes | int | float) -> None:
         """Set value in MockStrictRedis."""
         if isinstance(value, (int, float)):
             value = str(value)
@@ -175,10 +183,10 @@ def mock_third_party_libs() -> MonkeyPatch:
     # Make new global MOCK_REDIS_CACHE
     global MOCK_REDIS_CACHE
     MOCK_REDIS_CACHE = {}
-    mpatch.setattr(globus, "get_globus", MockGlobusAuth)
-    mpatch.setattr(globus_sdk, "TransferClient", MockTransferClient)
-    mpatch.setattr(globus_sdk, "DeleteData", MockDeleteData)
-    mpatch.setattr(globus_sdk, "TransferData", MockTransferData)
-    mpatch.setattr(socket, "gethostname", lambda: "localhost")
-    mpatch.setattr(redis, "StrictRedis", MockStrictRedis)
+    mpatch.setattr(globus, 'get_globus', MockGlobusAuth)
+    mpatch.setattr(globus_sdk, 'TransferClient', MockTransferClient)
+    mpatch.setattr(globus_sdk, 'DeleteData', MockDeleteData)
+    mpatch.setattr(globus_sdk, 'TransferData', MockTransferData)
+    mpatch.setattr(socket, 'gethostname', lambda: 'localhost')
+    mpatch.setattr(redis, 'StrictRedis', MockStrictRedis)
     return mpatch

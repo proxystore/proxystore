@@ -1,4 +1,6 @@
 """Store Base Functionality Tests."""
+from __future__ import annotations
+
 import os
 import shutil
 
@@ -8,17 +10,17 @@ from pytest import mark
 from pytest import raises
 
 import proxystore as ps
-from .utils import FILE_DIR
-from .utils import FILE_STORE
-from .utils import GLOBUS_STORE
-from .utils import LOCAL_STORE
-from .utils import mock_third_party_libs
-from .utils import REDIS_STORE
 from proxystore.store.base import Store
 from proxystore.store.remote import RemoteStore
+from testing.store_utils import FILE_DIR
+from testing.store_utils import FILE_STORE
+from testing.store_utils import GLOBUS_STORE
+from testing.store_utils import LOCAL_STORE
+from testing.store_utils import mock_third_party_libs
+from testing.store_utils import REDIS_STORE
 
 
-@fixture(scope="session", autouse=True)
+@fixture(scope='session', autouse=True)
 def init():
     """Set up test environment."""
     mpatch = mock_third_party_libs()
@@ -31,57 +33,57 @@ def init():
 
 
 @mark.parametrize(
-    "store_config",
+    'store_config',
     [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
 )
 def test_store_init(store_config) -> None:
     """Test Store Base Functionality."""
-    store_config["type"](store_config["name"], **store_config["kwargs"])
+    store_config['type'](store_config['name'], **store_config['kwargs'])
 
     store = ps.store.init_store(
-        store_config["type"],
-        store_config["name"],
-        **store_config["kwargs"],
+        store_config['type'],
+        store_config['name'],
+        **store_config['kwargs'],
     )
     assert isinstance(store, Store)
 
-    if issubclass(store_config["type"], RemoteStore):
+    if issubclass(store_config['type'], RemoteStore):
         with raises(ValueError):
             # Negative Cache Size Error
             ps.store.init_store(
-                store_config["type"],
-                store_config["name"],
-                **store_config["kwargs"],
+                store_config['type'],
+                store_config['name'],
+                **store_config['kwargs'],
                 cache_size=-1,
             )
 
 
 @mark.parametrize(
-    "store_config",
+    'store_config',
     [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
 )
 def test_store_base(store_config) -> None:
     """Test Store Base Functionality."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
     )
 
-    key_fake = "key_fake"
-    value = "test_value"
+    key_fake = 'key_fake'
+    value = 'test_value'
 
     # Store.set()
     key_bytes = store.set(str.encode(value))
     key_str = store.set(value)
     key_callable = store.set(lambda: value)
-    key_numpy = store.set(np.array([1, 2, 3]), key="key_numpy")
+    key_numpy = store.set(np.array([1, 2, 3]), key='key_numpy')
 
     # Store.get()
     assert store.get(key_bytes) == str.encode(value)
     assert store.get(key_str) == value
     assert store.get(key_callable).__call__() == value
     assert store.get(key_fake) is None
-    assert store.get(key_fake, default="alt_value") == "alt_value"
+    assert store.get(key_fake, default='alt_value') == 'alt_value'
     assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
 
     # Store.exists()
@@ -99,18 +101,18 @@ def test_store_base(store_config) -> None:
     store.cleanup()
 
 
-@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_caching(store_config) -> None:
     """Test Store Caching Functionality."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
         cache_size=1,
     )
 
     # Add our test value
-    value = "test_value"
-    base_key = "base_key"
+    value = 'test_value'
+    base_key = 'base_key'
     assert not store.exists(base_key)
     key1 = store.set(value, key=base_key)
 
@@ -130,9 +132,9 @@ def test_store_caching(store_config) -> None:
     assert store.is_cached(key2)
 
     # Now test cache size 0
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
         cache_size=0,
     )
     key1 = store.set(value)
@@ -142,35 +144,35 @@ def test_store_caching(store_config) -> None:
     store.cleanup()
 
 
-@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_timestamps(store_config) -> None:
     """Test Store Timestamps."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
         cache_size=1,
     )
 
-    missing_key = "key12398908352"
+    missing_key = 'key12398908352'
     with raises(KeyError):
         store.get_timestamp(missing_key)
 
-    key = store.set("timestamp_test_value")
+    key = store.set('timestamp_test_value')
     assert isinstance(store.get_timestamp(key), float)
 
 
-@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE])
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE])
 def test_store_strict(store_config) -> None:
     """Test Store Strict Functionality."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
         cache_size=1,
     )
 
     # Add our test value
-    value = "test_value"
-    base_key = "strict_key"
+    value = 'test_value'
+    base_key = 'strict_key'
     assert not store.exists(base_key)
     key = store.set(value, key=base_key)
 
@@ -179,28 +181,28 @@ def test_store_strict(store_config) -> None:
     assert store.is_cached(key)
 
     # Change value in Store
-    key = store.set("new_value", key=base_key)
+    key = store.set('new_value', key=base_key)
     # Old value of key is still cached
     assert store.get(key) == value
     assert store.is_cached(key)
     assert not store.is_cached(key, strict=True)
 
     # Access with strict=True so now most recent version should be cached
-    assert store.get(key, strict=True) == "new_value"
-    assert store.get(key) == "new_value"
+    assert store.get(key, strict=True) == 'new_value'
+    assert store.get(key) == 'new_value'
     assert store.is_cached(key)
     assert store.is_cached(key, strict=True)
 
 
-@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_custom_serialization(store_config) -> None:
     """Test Store Custom Serialization."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
     )
     # Pretend serialized string
-    s = b"ABC"
+    s = b'ABC'
     key = store.set(s, serialize=False)
     assert store.get(key, deserialize=False) == s
 
@@ -210,18 +212,18 @@ def test_store_custom_serialization(store_config) -> None:
 
 
 @mark.parametrize(
-    "store_config",
+    'store_config',
     [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
 )
 def test_store_batch_ops(store_config) -> None:
     """Test Batch Operations."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
     )
 
-    keys = ["key1", "key2", "key3"]
-    values = ["test_value1", "test_value2", "test_value3"]
+    keys = ['key1', 'key2', 'key3']
+    values = ['test_value1', 'test_value2', 'test_value3']
 
     # Test without keys
     new_keys = store.set_batch(values)
@@ -240,15 +242,15 @@ def test_store_batch_ops(store_config) -> None:
     store.cleanup()
 
 
-@mark.parametrize("store_config", [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
+@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
 def test_store_batch_ops_remote(store_config) -> None:
     """Test Batch Operations for Remote Stores."""
-    store = store_config["type"](
-        store_config["name"],
-        **store_config["kwargs"],
+    store = store_config['type'](
+        store_config['name'],
+        **store_config['kwargs'],
     )
 
-    values = ["test_value1", "test_value2", "test_value3"]
+    values = ['test_value1', 'test_value2', 'test_value3']
 
     # Subclasses of RemoteStore have an additional serialize parameter
     new_keys = store.set_batch(values, serialize=True)
