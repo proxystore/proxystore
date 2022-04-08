@@ -18,7 +18,7 @@ class RedisFactory(RemoteFactory):
     """Factory for Instances of RedisStore.
 
     Adds support for asynchronously retrieving objects from a
-    :class:`RedisStore <.RedisStore>` backend and optional, strict guarentees
+    :class:`RedisStore <.RedisStore>` backend and optional, strict guarantees
     on object versions.
 
     The factory takes the `store_type` and `store_args` parameters that are
@@ -46,8 +46,8 @@ class RedisFactory(RemoteFactory):
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
             serialize (bool): if True, object in store is serialized and
-                should be deserialized upon retrival (default: True).
-            strict (bool): guarentee object produce when this object is called
+                should be deserialized upon retrieval (default: True).
+            strict (bool): guarantee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """

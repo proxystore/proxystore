@@ -141,7 +141,7 @@ class Store(metaclass=ABCMeta):
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee returned object is the most recent
+            strict (bool): guarantee returned object is the most recent
                 version (default: False).
             default: optionally provide value to be returned if an object
                 associated with the key does not exist (default: None).
@@ -157,7 +157,7 @@ class Store(metaclass=ABCMeta):
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version
+            strict (bool): guarantee object in cache is most recent version
                 (default: False).
 
         Returns:

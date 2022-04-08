@@ -53,7 +53,7 @@ class LocalFactory(Factory):
         store = ps.store.get_store(self.name)
         if store is None:
             raise RuntimeError(
-                'LocalStore is not initalized, cannot resolve factory',
+                'LocalStore is not initialized, cannot resolve factory',
             )
         obj = store.get(self.key)
         if obj is None:
@@ -128,7 +128,7 @@ class LocalStore(Store):
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee returned object is the most recent
+            strict (bool): guarantee returned object is the most recent
                 version (default: False).
             default: optionally provide value to be returned if an object
                 associated with the key does not exist (default: None).
@@ -153,7 +153,7 @@ class LocalStore(Store):
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version
+            strict (bool): guarantee object in cache is most recent version
                 (default: False).
 
         Returns:

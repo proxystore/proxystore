@@ -36,5 +36,5 @@ def test_serialization() -> None:
         deserialize(b'xxx')
 
     with raises(SerializationError):
-        # Fake identifer 'xxx'
+        # Fake identifier 'xxx'
         deserialize(b'99\nxxx')

@@ -67,7 +67,7 @@ Proxies are valuable in distributed computing for delaying object communication 
 In this context, passing a proxy is like passing a reference that also knows how to dereference itself as soon as it is needed.
 
 ProxyStore provides a :any:`Store <proxystore.store.base.Store>` interface for passing objects via proxies that resolve themselves from object stores.
-E.g., if you have some distributed object store accesible by all devices in your environment, you can create a proxy that will resolve itself to an object that lives in the store.
+E.g., if you have some distributed object store accessible by all devices in your environment, you can create a proxy that will resolve itself to an object that lives in the store.
 
 ProxyStore provides many :any:`Store <proxystore.store.base.Store>` implementations:
 
@@ -132,11 +132,11 @@ Caching
 The :any:`RemoteStore <proxystore.store.remote.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
 Caches are local to the Python process but will speed up the resolution when multiple proxies refer to the same object in the Redis server.
 
-Transactional Guarentees
+Transactional Guarantees
 ------------------------
 
-By default, ProxyStore does not guarentee a proxy resolves with the most recent version of an object.
-If the object associated with `custom-key` in the backend store later changes before the proxy has been resolved, it is not guarenteed which version of the object will be returned (generally because the older version may be cached locally).
+By default, ProxyStore does not guarantee a proxy resolves with the most recent version of an object.
+If the object associated with `custom-key` in the backend store later changes before the proxy has been resolved, it is not guaranteed which version of the object will be returned (generally because the older version may be cached locally).
 :any:`Store.proxy() <proxystore.store.base.Store.proxy>` accepts a :code:`strict` flag to enforce that the proxy will always resolve to the most up to date version of the object associated with `custom-key`.
 
 Note that not all :any:`Store <proxystore.store.base.Store>` types support mutable objects so :code:`strict` may be unused.

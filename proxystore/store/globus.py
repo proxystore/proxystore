@@ -43,7 +43,7 @@ class GlobusEndpoint:
             endpoint_path (str): path within endpoint to directory to use
                 for storing objects.
             local_path (str): local path (as seen by the host filesystem) that
-                corresponds to the directory specifed by `endpoint_path`.
+                corresponds to the directory specified by `endpoint_path`.
             host_regex (str, Pattern): `str` that matches the host where
                 the Globus endpoint exists or regex pattern than can be used
                 to match the host. The host pattern is needed so that proxies
@@ -262,8 +262,8 @@ class GlobusFactory(RemoteFactory):
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
             serialize (bool): if True, object in store is serialized and
-                should be deserialized upon retrival (default: True).
-            strict (bool): guarentee object produce when this object is called
+                should be deserialized upon retrieval (default: True).
+            strict (bool): guarantee object produce when this object is called
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
@@ -305,7 +305,7 @@ class GlobusStore(RemoteStore):
         as :func:`set() <set>` will be different.
 
     Warning:
-        :class:`GlobusStore <.GlobusStore>` enforces strict guarentees on
+        :class:`GlobusStore <.GlobusStore>` enforces strict guarantees on
         object versions. I.e., the parameter :code:`strict` will be ignored
         and objects returned by the store will always be the most up to date
         version.
@@ -641,7 +641,7 @@ class GlobusStore(RemoteStore):
             key (str): key corresponding to object.
             deserialize (bool): deserialize object if True. If objects
                 are custom serialized, set this as False (default: True).
-            strict (bool): guarentee returned object is the most recent
+            strict (bool): guarantee returned object is the most recent
                 version (default: False).
             default: optionally provide value to be returned if an object
                 associated with the key does not exist (default: None).
@@ -684,7 +684,7 @@ class GlobusStore(RemoteStore):
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarentee object in cache is most recent version.
+            strict (bool): guarantee object in cache is most recent version.
                 Not supported in :class:`GlobusStore` (default: False).
 
         Returns:

@@ -25,7 +25,7 @@ Performance statistics are aggregated on a per-`key` level and can be accessed v
 
 .. warning::
 
-   Attemping to query :any:`Store.stats() <proxystore.store.base.Store.stats>` without initializing the store to track stats will raise a :code:`ValueError`.
+   Attempting to query :any:`Store.stats() <proxystore.store.base.Store.stats>` without initializing the store to track stats will raise a :code:`ValueError`.
 
 Continuing with the above :code:`store` object, an instance of :any:`FileStore <proxystore.store.file.FileStore>` configured to track performance statistics, we can perform operations on :code:`store` and inspect the statistics.
 In the following block, we add an object to the store and see that there are now performance statistics on the :any:`FileStore.set() <proxystore.store.file.FileStore.set>` and :any:`FileStore.set_bytes() <proxystore.store.file.FileStore.set_bytes>` operations.
