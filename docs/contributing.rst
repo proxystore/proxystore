@@ -26,7 +26,6 @@ However, the Conda environment does provide non-pip packages such as Redis that 
    $ conda env create --file environment.yml
    $ conda activate ProxyStore
 
-
 Pre-commit and Tox are used for continuous integration (locally and on GitHub).
 
 To use pre-commit, install the hook and then run against files.
@@ -43,14 +42,17 @@ The entire CI workflow can be run with :code:`$ tox`.
 This will test against multiple versions of Python and can be slow.
 
 Module-level unit-test are located in the :code:`tests/` directory and its structure is intended to match that of :code:`proxystore/`.
-E.g. the tests for :code:`proxystore/store/cache.py` are located in :code:`tests/store/test_cache.py`.
+E.g. the tests for :code:`proxystore/store/cache.py` are located in :code:`tests/store/cache_test.py`; however, additional test files can be added as needed.
+Tests should be narrowly focused and target a single aspect of the code's functionality, tests should not test internal implementation details of the code, and tests should not be dependent on the order in which they are run.
+
+Code that is useful for building tests but is not a test itself belongs in the :code:`testing/` directory.
 
 .. code-block:: bash
 
    # Run all tests in tests/
    $ tox -e py38
    # Run a specific test
-   $ tox -e py38 -- tests/test_factory.py::test_lambda_factory
+   $ tox -e py38 -- tests/factory_test.py::test_lambda_factory
 
 If code changes require an update to the documentation (e.g., for function signature changes, new modules, etc.), the documentation can be built with :code:`$ tox -e docs`.
 
