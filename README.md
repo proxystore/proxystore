@@ -1,9 +1,8 @@
 # ProxyStore
 
+[![Documentation Status](https://readthedocs.org/projects/proxystore/badge/?version=latest)](https://proxystore.readthedocs.io/en/latest/?badge=latest)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/gpauloski/ProxyStore/main.svg)](https://results.pre-commit.ci/latest/github/gpauloski/ProxyStore/main)
 [![Tests](https://github.com/gpauloski/ProxyStore/actions/workflows/tests.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
-[![Style](https://github.com/gpauloski/ProxyStore/actions/workflows/style.yml/badge.svg)](https://github.com/gpauloski/ProxyStore/actions)
-[![Docs](https://readthedocs.org/projects/proxystore/badge/?version=latest)](https://proxystore.readthedocs.io/en/latest/?badge=latest)
-
 
 Python Lazy Object Proxy Interface for Distributed Stores
 
