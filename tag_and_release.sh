@@ -39,9 +39,9 @@ else
 fi
 
 # Check if setup.py updated
-if grep -Fxq "    version=\"$1\"," setup.py
+if grep -Fxq "version = $1" setup.cfg
 then
-    echo "setup.py contains correct version: $VERSION"
+    echo "setup.cfg contains correct version: $VERSION"
 else
     echo "[ERROR] setup.py has wrong version: $VERSION"
     exit -1
@@ -53,7 +53,7 @@ create_tag () {
     git tag -a "v$VERSION" -m "ProxyStore $VERSION"
 
     echo "Pushing tag"
-    git push origin --tags
+    git push origin v$VERSION
 
 }
 
