@@ -1,3 +1,4 @@
+asyncmock
 black
 covdefaults>=2.2
 coverage
@@ -9,6 +10,8 @@ numpy
 pep8-naming
 pre-commit
 pytest
+pytest-asyncio
 pytest-cov
+pytest-timeout
 tox
 virtualenv
