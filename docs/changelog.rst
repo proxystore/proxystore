@@ -1,6 +1,39 @@
 Changelog
 #########
 
+Version 0.3.2
+-------------
+
+`Released 25 April 2022`
+
+**Summary of Changes**
+
+#. :any:`GlobusStore <proxystore.store.globus.GlobusStore>` improvements:
+
+   * Endpoints parameter supports dict for better serialization (`#e71e96f <https://github.com/gpauloski/proxystore/commit/e71e96ffe2af8ace2da1249744fee71a71d4e221>`_).
+   * Files for Globus transfer are now specified rather than recursively discovered (`#c3e69f0 <https://github.com/gpauloski/proxystore/commit/c3e69f05f4a69609ddd9cdefc58beca41dc2434e>`_).
+   * Added note on Globus Auth (`Issue #20 <https://github.com/gpauloski/proxystore/issues/20>`_).
+   * Added warning on use of `strict` with :any:`GlobusStore <proxystore.store.globus.GlobusStore>` (`Issue #21 <https://github.com/gpauloski/proxystore/issues/21>`_).
+   * User home :code:`~/` is now expanded in paths (`Issue #22 <https://github.com/gpauloski/proxystore/issues/22>`_).
+
+#. Fix :code:`RemoteStore.proxy()` logging the incorrect key (`Issue #26 <https://github.com/gpauloski/proxystore/issues/26>`_).
+#. Failures to resolve a proxy from a :any:`RemoteStore <proxystore.store.remote.RemoteStore>` now raise an :code:`ProxyResolveMissingKey` exception (`Issue #29 <https://github.com/gpauloski/proxystore/issues/29>`_).
+#. Added prototype stat tracking for stores (`PR #33 <https://github.com/gpauloski/proxystore/pull/33>`_).
+#. CI/Development changes:
+
+   * Updated development instructions (`Issue #19 <https://github.com/gpauloski/proxystore/issues/19>`_).
+   * Added Issue Templates (`Issue #23 <https://github.com/gpauloski/proxystore/issues/23>`_).
+   * Added PR Templates (`#deb5e1e <https://github.com/gpauloski/proxystore/commit/deb5e1e34904aec59eec5a9ea31b7acac89142f5>`_).
+   * Cleaned up tests (now top-level directory, coverage includes test coverage, etc.) (`#f5f4b57 <https://github.com/gpauloski/proxystore/commit/f5f4b57f6095a7d5f10c328a2e48cfdcf698c002>`_).
+   * GitHub actions cleaned up (removed and replaced some) (`PR #31 <https://github.com/gpauloski/proxystore/pull/31>`_).
+   * Switch to :code:`setup.cfg` for all configurations (`PR #34 <https://github.com/gpauloski/proxystore/pull/34>`_).
+   * Renamed test files for better tab-complete and moved testing infrastructure to :code:`testing/` (`PR #34 <https://github.com/gpauloski/proxystore/pull/34>`_ and `PR #37 <https://github.com/gpauloski/proxystore/pull/37>`_).
+   * Use :code:`pre-commit.ci` GitHub action (`PR #37 <https://github.com/gpauloski/proxystore/pull/37>`_).
+
+#. Package name is lowercase proxystore (`PR #34 <https://github.com/gpauloski/proxystore/pull/34>`_).
+#. Switched to MIT License (`PR #34 <https://github.com/gpauloski/proxystore/pull/34>`_).
+
+
 Version 0.3.1
 -------------
 
