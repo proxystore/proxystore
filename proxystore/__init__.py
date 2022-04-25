@@ -7,4 +7,4 @@ import proxystore.serialize as serialize  # noqa: F401
 import proxystore.utils as utils  # noqa: F401
 from proxystore import store  # noqa: F401
 
-__version__ = '0.3.1'
+__version__ = '0.3.2'
