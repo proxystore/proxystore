@@ -1,7 +1,7 @@
-proxystore.blobspace.endpoint
+proxystore.endpoint.endpoint
 #############################
 
-.. automodule:: proxystore.blobspace.endpoint
+.. automodule:: proxystore.endpoint.endpoint
    :members:
    :inherited-members:
    :show-inheritance:

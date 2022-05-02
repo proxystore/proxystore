@@ -3,8 +3,9 @@ API
 
 .. toctree::
 
-   proxystore.blobspace
+   proxystore.endpoint
    proxystore.factory
+   proxystore.p2p
    proxystore.proxy
    proxystore.serialize
    proxystore.store

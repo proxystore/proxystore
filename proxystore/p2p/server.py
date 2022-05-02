@@ -5,21 +5,21 @@ import argparse
 import asyncio
 import logging
 import signal
+import uuid
 from dataclasses import dataclass
+from socket import gethostname
 from typing import Sequence
 
 import websockets
 from websockets import WebSocketServerProtocol
 
-from proxystore.blobspace.exceptions import EndpointNotRegisteredError
-from proxystore.blobspace.exceptions import EndpointRegistrationError
-from proxystore.blobspace.exceptions import ServerException
-from proxystore.blobspace.exceptions import UnknownMessageType
-from proxystore.blobspace.messages import BaseMessage
-from proxystore.blobspace.messages import EndpointRegistrationRequest
-from proxystore.blobspace.messages import EndpointRegistrationSuccess
-from proxystore.blobspace.messages import P2PConnectionBaseMessage
-from proxystore.blobspace.messages import P2PConnectionError
+from proxystore.p2p.exceptions import PeerRegistrationError
+from proxystore.p2p.exceptions import PeerUnknownError
+from proxystore.p2p.messages import BaseMessage
+from proxystore.p2p.messages import PeerConnectionMessage
+from proxystore.p2p.messages import PeerRegistrationRequest
+from proxystore.p2p.messages import PeerRegistrationResponse
+from proxystore.p2p.messages import ServerError
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Client:
     """Client connection."""
 
-    name: str
+    hostname: str
     uuid: str
     websocket: WebSocketServerProtocol
 
@@ -51,14 +51,13 @@ class SignalingServer:
     async def send(
         self,
         websocket: WebSocketServerProtocol,
-        message: BaseMessage | ServerException,
+        message: BaseMessage,
     ) -> None:
         """Send message on the socket.
 
         Args:
             websocket (WebSocketServerProtocol): websocket to send message on.
-            message (BaseMesssage, ServerException): message to serialize and
-                send.
+            message (BaseMesssage): message to serialize and send.
         """
         message_bytes = serialize(message)
         await websocket.send(message_bytes)
@@ -66,22 +65,25 @@ class SignalingServer:
     async def register(
         self,
         websocket: WebSocketServerProtocol,
-        request: EndpointRegistrationRequest,
+        request: PeerRegistrationRequest,
     ) -> None:
-        """Register endpoint with Signaling Server.
+        """Register peer with Signaling Server.
 
         Args:
             websocket (WebSocketServerProtocol): websocket connection with
                 client wanting to register.
-            request (EndpointRegistrationRequest): request message from the
-                client.
+            request (PeerRegistrationRequest): registration request message.
         """
         if websocket not in self._websocket_to_client:
-            client = Client(request.name, request.uuid, websocket)
+            client = Client(
+                hostname=request.hostname,
+                uuid=str(uuid.uuid4()),
+                websocket=websocket,
+            )
             self._websocket_to_client[websocket] = client
             self._uuid_to_client[client.uuid] = client
             logger.info(
-                f'registered {client.uuid} ({client.name} at '
+                f'registered {client.uuid} ({client.hostname} at '
                 f'{websocket.remote_address})',
             )
         else:
@@ -89,7 +91,7 @@ class SignalingServer:
 
         await self.send(
             websocket,
-            EndpointRegistrationSuccess(name=client.name, uuid=client.uuid),
+            PeerRegistrationResponse(uuid=client.uuid),
         )
 
     def unregister(
@@ -111,40 +113,45 @@ class SignalingServer:
             return
         self._uuid_to_client.pop(client.uuid, None)
         if expected:
-            logger.info(f'connection closed by {client.uuid} ({client.name})')
+            logger.info(
+                f'connection closed by {client.uuid} ({client.hostname})',
+            )
         else:
-            logger.info(f'connection lost from {client.uuid} ({client.name})')
+            logger.info(
+                f'connection lost from {client.uuid} ({client.hostname})',
+            )
 
     async def connect(
         self,
         websocket: WebSocketServerProtocol,
-        message: P2PConnectionBaseMessage,
+        message: PeerConnectionMessage,
     ) -> None:
-        """Pass P2P connection messages between clients.
+        """Pass peer connection messages between clients.
 
         Args:
             websocket (WebSocketServerProtocol): websocket connection with
-                client that sent the P2P connection message.
-            message (P2PConnectionMessage): message to forward to target
-                client.
+                client that sent the peer connection message.
+            message (PeerConnectionMessage): message to forward to peer client.
         """
-        if message.target_uuid not in self._uuid_to_client:
+        if message.peer_uuid not in self._uuid_to_client:
             await self.send(
                 websocket,
-                P2PConnectionError(
-                    source_uuid=message.source_uuid,
-                    target_uuid=message.target_uuid,
-                    error=f'target {message.target_uuid} is unknown',
+                PeerConnectionMessage(
+                    source_uuid=self._websocket_to_client[websocket].uuid,
+                    peer_uuid=message.peer_uuid,
+                    error=PeerUnknownError(
+                        'peer {message.peer_uuid} is unknown',
+                    ),
                 ),
             )
             return
 
-        target_client = self._uuid_to_client[message.target_uuid]
+        peer_client = self._uuid_to_client[message.peer_uuid]
         logger.info(
             f'transmitting {type(message)} message from {message.source_uuid} '
-            f'to {message.target_uuid}',
+            f'to {message.peer_uuid}',
         )
-        await self.send(target_client.websocket, message)
+        await self.send(peer_client.websocket, message)
 
     async def handler(
         self,
@@ -178,75 +185,76 @@ class SignalingServer:
                     f'{websocket.remote_address}',
                 )
 
-                if isinstance(message, EndpointRegistrationRequest):
+                if isinstance(message, PeerRegistrationRequest):
                     await self.register(websocket, message)
                 elif websocket not in self._websocket_to_client:
                     # If message is not a registration request but this client
                     # has not yet registered, let them know
-                    await self.send(websocket, EndpointNotRegisteredError())
-                elif isinstance(message, P2PConnectionBaseMessage):
+                    await self.send(
+                        websocket,
+                        ServerError('client has not registered yet'),
+                    )
+                elif isinstance(message, PeerConnectionMessage):
                     await self.connect(websocket, message)
                 else:
-                    await self.send(websocket, UnknownMessageType())
+                    await self.send(
+                        websocket,
+                        ServerError('unknown request type'),
+                    )
 
 
 async def connect(
-    uuid: str,
-    name: str,
     address: str,
     timeout: int = 10,
-) -> WebSocketServerProtocol:
+) -> tuple[str, WebSocketServerProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
-        uuid (str): unique uuid of the client.
-        name (str): readable name of client.
         address (str): address of the Signaling Server.
         timeout (int): time to wait in seconds on server connections.
 
     Returns:
-        websocket connection to the signaling server.
+        tuple of the UUID of this client returned by the signaling server and
+        the websocket connection to the signaling server.
 
     Raises:
         EndpointRegistrationError:
             if the connection to the signaling server is closed, does not reply
-            to the registration request within the timeout, replies with
-            mismatched endpoint UUID or name, or does not reply with an
-            EndpointRegistrationSuccess message.
+            to the registration request within the timeout, or replies with an
+            error.
     """
     websocket = await websockets.connect(
         f'ws://{address}',
         open_timeout=timeout,
     )
     await websocket.send(
-        serialize(EndpointRegistrationRequest(name=name, uuid=uuid)),
+        serialize(PeerRegistrationRequest(hostname=gethostname())),
     )
     try:
         message = deserialize(
             await asyncio.wait_for(websocket.recv(), timeout),
         )
     except websockets.exceptions.ConnectionClosed:
-        raise EndpointRegistrationError(
-            'connection to signaling server closed before '
-            'registration completed',
+        raise PeerRegistrationError(
+            'Connection to signaling server closed before peer '
+            'registration completed.',
         )
     except asyncio.TimeoutError:
-        raise EndpointRegistrationError(
-            'signaling server did not reply to registration within timeout',
+        raise PeerRegistrationError(
+            'Signaling server did not reply to registration within timeout.',
         )
 
-    if isinstance(message, EndpointRegistrationSuccess):
-        if uuid != message.uuid or name != message.name:
-            raise EndpointRegistrationError(
-                f'received {type(EndpointRegistrationSuccess)} with '
-                f'mismatched data. Expected uuid={uuid} and name={name} but '
-                f'got uuid={message.uuid} and name={message.name}',
+    if isinstance(message, PeerRegistrationResponse):
+        if message.error is not None:
+            raise PeerRegistrationError(
+                'Failed to register as peer with signaling server. '
+                f'Got exception: {message.error}',
             )
-        return websocket
+        return message.uuid, websocket
     else:
-        raise EndpointRegistrationError(
-            f'did not receive {type(EndpointRegistrationSuccess)} '
-            f'confirmation from signaling server at {address}',
+        raise PeerRegistrationError(
+            'Signaling server replied with unknown message type: '
+            f'{type(message)}.',
         )
 
 

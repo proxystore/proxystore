@@ -1,4 +1,4 @@
-asyncmock
+asynctest
 black
 covdefaults>=2.2
 coverage

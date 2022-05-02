@@ -7,19 +7,14 @@ import subprocess
 import pytest
 import websockets
 
-from proxystore.blobspace.server import connect
-from proxystore.blobspace.server import main
+from proxystore.p2p.server import connect
+from proxystore.p2p.server import main
 
 
 SERVER_HOST = 'localhost'
 SERVER_PORT = 8765
 SERVER_ADDRESS = f'{SERVER_HOST}:{SERVER_PORT}'
-SERVER_ARGS = (
-    '--host',
-    SERVER_HOST,
-    '--port',
-    str(SERVER_PORT),
-)
+SERVER_ARGS = ('--host', SERVER_HOST, '--port', str(SERVER_PORT))
 
 
 @pytest.mark.timeout(5)
@@ -30,13 +25,8 @@ async def test_server() -> None:
 
     while True:
         try:
-            # print('here')
-            websocket = await connect(
-                uuid='fake-uuid',
-                name='test-client',
-                address=SERVER_ADDRESS,
-            )
-        except ConnectionRefusedError:
+            _, websocket = await connect(SERVER_ADDRESS)
+        except OSError:
             await asyncio.sleep(0.1)
         else:
             # Coverage doesn't detect the singular break but it does
@@ -67,14 +57,11 @@ async def test_start_server_cli() -> None:
         if 'listening on' in line:
             break
 
-    websocket = await connect(
-        uuid='fake-uuid',
-        name='test-client',
-        address=SERVER_ADDRESS,
-    )
+    _, websocket = await connect(SERVER_ADDRESS)
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)
 
+    server_handle.stdout.close()
     server_handle.terminate()
 
     with pytest.raises(websockets.exceptions.ConnectionClosedOK):
