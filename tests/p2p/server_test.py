@@ -158,7 +158,15 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
 async def test_endpoint_not_registered_error(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
     websocket = await websockets.connect(f'ws://{signaling_server.address}')
-    await websocket.send(serialize('message'))
+    await websocket.send(
+        serialize(
+            PeerConnectionMessage(
+                source_uuid='',
+                source_name='',
+                peer_uuid='',
+            ),
+        ),
+    )
     message = deserialize(await asyncio.wait_for(websocket.recv(), 1))
     assert isinstance(message, ServerError)
     assert 'not registered' in str(message)

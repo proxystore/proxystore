@@ -127,7 +127,7 @@ async def test_serialization_error(signaling_server, caplog) -> None:
 
     assert any(
         [
-            'deserialization error' in record.message
+            'error deserializing' in record.message
             and record.levelname == 'ERROR'
             for record in caplog.records
         ],

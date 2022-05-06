@@ -84,6 +84,10 @@ class SignalingServer:
             # Check if previous client reconnected on new socket so unregister
             # old socket. Warning: could be a client impersontating another
             if uuid_ in self._uuid_to_client:
+                logger.info(
+                    f'previously registered client {uuid_} attempting to '
+                    'reregister so old registration will be removed',
+                )
                 await self.unregister(
                     self._uuid_to_client[uuid_].websocket,
                     False,
@@ -101,6 +105,10 @@ class SignalingServer:
             )
         else:
             client = self._websocket_to_client[websocket]
+            logger.info(
+                f'previously registered client {client.uuid} attempting to '
+                'reregister so previous registration will be returned',
+            )
 
         await self.send(
             websocket,
@@ -124,16 +132,13 @@ class SignalingServer:
         if client is None:
             # Most likely websocket closed before registration was performed
             return
+        reason = 'ok' if expected else 'unexpected'
+        logger.info(
+            f'unregistering client {client.uuid} ({client.name}) '
+            f'for {reason} reason',
+        )
         self._uuid_to_client.pop(client.uuid, None)
         await client.websocket.close(code=1000 if expected else 1001)
-        if expected:
-            logger.info(
-                f'connection closed by {client.uuid} ({client.name})',
-            )
-        else:
-            logger.info(
-                f'connection lost from {client.uuid} ({client.name})',
-            )
 
     async def connect(
         self,
@@ -147,7 +152,12 @@ class SignalingServer:
                 client that sent the peer connection message.
             message (PeerConnectionMessage): message to forward to peer client.
         """
+        client = self._websocket_to_client[websocket]
         if message.peer_uuid not in self._uuid_to_client:
+            logger.warning(
+                f'client {client.uuid} ({client.name}) attempting to send '
+                f'message to unknown peer {message.peer_uuid}',
+            )
             await self.send(
                 websocket,
                 PeerConnectionMessage(
@@ -163,7 +173,7 @@ class SignalingServer:
 
         peer_client = self._uuid_to_client[message.peer_uuid]
         logger.info(
-            f'transmitting {type(message)} message from {message.source_uuid} '
+            f'transmitting message from {client.uuid} ({client.name}) '
             f'to {message.peer_uuid}',
         )
         await self.send(peer_client.websocket, message)
@@ -180,6 +190,7 @@ class SignalingServer:
                 received on.
             uri (str): uri message was sent to.
         """
+        logger.info('signaling server listening for incoming connections')
         while True:
             try:
                 message = deserialize(await websocket.recv())
@@ -194,28 +205,35 @@ class SignalingServer:
                     'caught deserialization error on message received from '
                     f'{websocket.remote_address}... skipping message',
                 )
-            else:
-                logger.info(
-                    f'received {type(message)} from '
-                    f'{websocket.remote_address}',
-                )
+                continue
 
-                if isinstance(message, PeerRegistrationRequest):
-                    await self.register(websocket, message)
-                elif websocket not in self._websocket_to_client:
+            if isinstance(message, PeerRegistrationRequest):
+                await self.register(websocket, message)
+            elif isinstance(message, PeerConnectionMessage):
+                if websocket in self._websocket_to_client:
+                    await self.connect(websocket, message)
+                else:
                     # If message is not a registration request but this client
                     # has not yet registered, let them know
+                    logger.info(
+                        'returning server error to message received from '
+                        f'unregistered client {message.source_uuid} '
+                        f'({message.source_name})',
+                    )
                     await self.send(
                         websocket,
                         ServerError('client has not registered yet'),
                     )
-                elif isinstance(message, PeerConnectionMessage):
-                    await self.connect(websocket, message)
-                else:
-                    await self.send(
-                        websocket,
-                        ServerError('unknown request type'),
-                    )
+            else:
+                logger.error(
+                    'returning server error to client at '
+                    f'{websocket.remote_address} that sent unknown request '
+                    f'type {type(message).__name__}',
+                )
+                await self.send(
+                    websocket,
+                    ServerError('unknown request type'),
+                )
 
 
 async def connect(
@@ -276,6 +294,10 @@ async def connect(
                 'Failed to register as peer with signaling server. '
                 f'Got exception: {message.error}',
             )
+        logger.info(
+            f'established client connection to signaling server at {address} '
+            f'with uuid={message.uuid} and name={name}',
+        )
         return message.uuid, name, websocket
     else:
         raise PeerRegistrationError(
@@ -302,6 +324,7 @@ async def serve(host: str, port: int) -> None:
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
     async with websockets.serve(server.handler, host, port):
+        logger.info('serving signaling server on {host}:{port}')
         await stop
 
 

@@ -12,6 +12,7 @@ from uuid import UUID
 import websockets
 from websockets import WebSocketServerProtocol
 
+from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.messages import PeerConnectionMessage
@@ -61,9 +62,9 @@ class PeerManager:
         self._tasks: list[asyncio.Task[None]] = []
         self._websocket_or_none: WebSocketServerProtocol | None = None
 
-        logger.info(
-            f'peer manager for {uuid} initialized',
-        )
+    @property
+    def _log_prefix(self) -> str:
+        return f'{self.__class__.__name__}[{log_name(self._uuid, self._name)}]'
 
     @property
     def _websocket(self) -> WebSocketServerProtocol:
@@ -100,6 +101,10 @@ class PeerManager:
                     f'{self._uuid}.',
                 )
             self._websocket_or_none = socket
+            logger.info(
+                f'{self._log_prefix}: registered as peer with signaling '
+                f'server at {self._signaling_server}',
+            )
         if len(self._tasks) == 0:
             self._tasks = [
                 spawn_guarded_background_task(self._handle_server_messages),
@@ -128,15 +133,30 @@ class PeerManager:
         peer_uuid: str,
         connection: PeerConnection,
     ) -> None:
+        await connection.wait()
+        assert connection._peer_name is not None
+        peer_name = log_name(peer_uuid, connection._peer_name)
+        logger.info(
+            f'{self._log_prefix}: listening for messages from peer '
+            f'{peer_name}',
+        )
         while True:
             message = deserialize(await connection.recv())
             await self._message_queue.put((peer_uuid, message))
+            logger.debug(
+                f'{self._log_prefix}: placed message from {peer_name} on '
+                'queue',
+            )
 
     async def _handle_server_messages(self) -> None:
         """Handle messages from the signaling server.
 
         Forwards the message to the correct P2PConnection instance.
         """
+        logger.info(
+            f'{self._log_prefix}: listening for messages from signaling '
+            'server',
+        )
         while True:
             try:
                 message = deserialize(await self._websocket.recv())
@@ -146,14 +166,17 @@ class PeerManager:
                 break
             except SerializationError:
                 logger.error(
-                    'caught deserialization error on message received from '
+                    f'{self._log_prefix}: error deserializing message from '
                     'signaling server... skipping message',
                 )
                 continue
 
-            logger.info(f'received {type(message)} from signaling server')
-
             if isinstance(message, PeerConnectionMessage):
+                logger.debug(
+                    f'{self._log_prefix}: signaling server forwarded peer '
+                    'connection message from '
+                    f'{log_name(message.source_uuid, message.source_name)}',
+                )
                 peers = frozenset({message.source_uuid, message.peer_uuid})
                 if peers not in self._peers:
                     connection = PeerConnection(
@@ -172,8 +195,8 @@ class PeerManager:
                 await self._peers[peers].handle_server_message(message)
             else:
                 logger.error(
-                    'received unknown message type from signaling server: '
-                    f'{message}',
+                    f'{self._log_prefix}: received unknown message type '
+                    f'from {type(message).__name__} from signaling server',
                 )
 
     async def close(self) -> None:
@@ -188,7 +211,7 @@ class PeerManager:
             task.cancel()
         if self._websocket_or_none is not None:
             await self._websocket_or_none.close()
-        logger.info(f'peer manager for {self._uuid} closed')
+        logger.info(f'{self._log_prefix}: peer manager closed')
 
     async def recv(self) -> tuple[str, Any]:
         """Receive next message from a peer.
@@ -223,6 +246,9 @@ class PeerManager:
         if peers in self._peers:
             return self._peers[peers]
 
+        logger.info(
+            f'{self._log_prefix}: opening peer connection with {peer_uuid}',
+        )
         connection = PeerConnection(self._uuid, self._name, self._websocket)
         await connection.send_offer(peer_uuid)
         self._peers[peers] = connection

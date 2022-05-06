@@ -57,15 +57,13 @@ class PeerConnection:
 
     @property
     def _log_prefix(self) -> str:
-        local = f'{self._name}({self._uuid[:min(8,len(self._uuid))]})'
-        if self._peer_uuid is None:
-            remote = 'pending'
-        else:
-            remote = (
-                f'{self._peer_name}'
-                f'({self._peer_uuid[:min(8,len(self._peer_uuid))]})'
-            )
-        return f'{self.__class__.__name__}[{local} > {remote}]:'
+        local = log_name(self._uuid, self._name)
+        remote = (
+            'pending'
+            if self._peer_uuid is None or self._peer_name is None
+            else log_name(self._peer_uuid, self._peer_name)
+        )
+        return f'{self.__class__.__name__}[{local} > {remote}]'
 
     @property
     def state(self) -> str:
@@ -78,7 +76,7 @@ class PeerConnection:
 
     async def close(self) -> None:
         """Terminate the peer connection."""
-        logger.debug(f'{self._log_prefix}: closing connection')
+        logger.info(f'{self._log_prefix}: closing connection')
         await self._pc.close()
 
     async def send(self, data: bytes) -> None:
@@ -226,3 +224,8 @@ class PeerConnection:
     async def wait(self) -> None:
         """Wait on P2P connection to be established."""
         await self._handshake_complete.wait()
+
+
+def log_name(uuid: str, name: str) -> str:
+    """Return str formatted as `name(uuid-prefix)`."""
+    return f'{name}({uuid[:min(8,len(uuid))]})'

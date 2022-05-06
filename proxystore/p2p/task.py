@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 def exit_on_error(task: asyncio.Task[Any]) -> None:
     """Task callback that raises SystemExit on task exception."""
     if not task.cancelled() and task.exception() is not None:
-        logger.critical(task.exception(), exc_info=True)
+        logger.error(task.exception(), exc_info=True)
         raise SystemExit(1)
 
 
