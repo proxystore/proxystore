@@ -11,6 +11,8 @@ from quart import Response
 
 from proxystore.endpoint.endpoint import Endpoint
 
+logger = logging.getLogger(__name__)
+
 
 def create_app(endpoint: Endpoint) -> quart.Quart:
     """Creates quart app for endpoint and registers routes.
@@ -71,6 +73,11 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
         )
         return ('', 200)
 
+    logger.info(
+        'quart routes registered to endpoint '
+        f'{endpoint.uuid} ({endpoint.name})',
+    )
+
     return app
 
 
@@ -88,6 +95,9 @@ def serve(host: str, port: int, signaling_server: str) -> None:
     app = create_app(endpoint)
 
     # TODO(gpauloski): handle sigterm/sigkill
+    logger.info(
+        f'serving endpoint {endpoint.uuid} ({endpoint.name}) on {host}:{port}',
+    )
     app.run(host=host, port=port)
 
 

@@ -127,7 +127,7 @@ async def test_peer_message_missing_id(signaling_server, caplog) -> None:
 
     assert any(
         [
-            'no ID' in record.message and record.levelname == 'ERROR'
+            'no request ID' in record.message and record.levelname == 'ERROR'
             for record in caplog.records
         ],
     )

@@ -302,7 +302,7 @@ async def connect(
     else:
         raise PeerRegistrationError(
             'Signaling server replied with unknown message type: '
-            f'{type(message)}.',
+            f'{type(message).__name__}.',
         )
 
 
