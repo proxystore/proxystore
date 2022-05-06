@@ -10,11 +10,11 @@ from proxystore.serialize import deserialize
 
 @pytest.mark.asyncio
 async def test_p2p_connection(signaling_server) -> None:
-    uuid1, websocket1 = await connect(signaling_server.address)
-    connection1 = PeerConnection(uuid1, websocket1)
+    uuid1, name1, websocket1 = await connect(signaling_server.address)
+    connection1 = PeerConnection(uuid1, name1, websocket1)
 
-    uuid2, websocket2 = await connect(signaling_server.address)
-    connection2 = PeerConnection(uuid2, websocket2)
+    uuid2, name2, websocket2 = await connect(signaling_server.address)
+    connection2 = PeerConnection(uuid2, name2, websocket2)
 
     await connection1.send_offer(uuid2)
     offer = deserialize(await websocket2.recv())
@@ -41,8 +41,8 @@ async def test_p2p_connection(signaling_server) -> None:
 
 @pytest.mark.asyncio
 async def test_p2p_connection_error(signaling_server) -> None:
-    uuid, websocket = await connect(signaling_server.address)
-    connection = PeerConnection(uuid, websocket)
+    uuid, name, websocket = await connect(signaling_server.address)
+    connection = PeerConnection(uuid, name, websocket)
 
     class MyException(Exception):
         pass
@@ -51,6 +51,7 @@ async def test_p2p_connection_error(signaling_server) -> None:
         await connection.handle_server_message(
             PeerConnectionMessage(
                 source_uuid=uuid,
+                source_name=name,
                 peer_uuid='',
                 error=MyException(),
             ),

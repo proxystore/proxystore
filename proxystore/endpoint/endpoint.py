@@ -4,17 +4,15 @@ from __future__ import annotations
 import asyncio
 import enum
 import logging
-import uuid
+import socket
 from types import TracebackType
 from typing import Any
 from typing import Generator
-
-from websockets import WebSocketServerProtocol
+from uuid import uuid4
 
 import proxystore.endpoint.messages as messages
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.server import connect
 from proxystore.p2p.task import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -49,6 +47,7 @@ class Endpoint:
     def __init__(
         self,
         uuid: str | None = None,
+        name: str | None = None,
         signaling_server: str | None = None,
         peer_timeout: int = 30,
     ) -> None:
@@ -56,7 +55,9 @@ class Endpoint:
 
         Args:
             uuid (str, optional): uuid of the endpoint. If not provided,
-                a UUID will be request from the signaling server.
+                a UUID will be generated.
+            name (str, optional): readable name of endpoint. If not provided,
+                the hostname will be used.
             signaling_server (str, optional): address of signaling
                 server used for peer-to-peer connections between endpoints. If
                 None, endpoint will not be able to communicate with other
@@ -64,11 +65,11 @@ class Endpoint:
             peer_timeout (int): timeout for establishing p2p connection with
                 another endpoint (default: 30).
         """
-        # TODO(gpauloski): endpoint needs to have a UUID immediately
         # TODO(gpauloski): need to consider semantics of operations
         #   - can all ops be triggered on remote?
         #   - or just get? do we move data permanently on get? etc...
-        self._uuid = uuid
+        self._uuid = uuid if uuid is not None else str(uuid4())
+        self._name = name if name is not None else socket.gethostname()
         self._signaling_server = signaling_server
         self._peer_timeout = peer_timeout
 
@@ -79,7 +80,6 @@ class Endpoint:
         )
 
         self._peer_manager: PeerManager | None = None
-        self._signaling_server_socket: WebSocketServerProtocol | None = None
 
         self._data: dict[str, bytes] = {}
         self._pending_requests: dict[
@@ -89,12 +89,15 @@ class Endpoint:
 
         self._peer_handler_task: asyncio.Task[None] | None = None
 
-        # TODO(gpauloski): logging
-
     @property
-    def uuid(self) -> str | None:
+    def uuid(self) -> str:
         """Get UUID of this endpoint."""
         return self._uuid
+
+    @property
+    def name(self) -> str:
+        """Get name of this endpoint."""
+        return self._name
 
     async def __aenter__(self) -> Endpoint:
         """Enter async context manager."""
@@ -126,12 +129,11 @@ class Endpoint:
             >>>     ...
         """
         if self._signaling_server is not None:
-            self._uuid, self._signaling_server_socket = await connect(
-                self._signaling_server,
-            )
-            self._peer_manager = PeerManager(
-                self._uuid,
-                self._signaling_server_socket,
+            # TODO(gpauloski): ensure only called once?
+            self._peer_manager = await PeerManager(
+                uuid=self.uuid,
+                signaling_server=self._signaling_server,
+                name=self.name,
             )
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,
@@ -213,7 +215,7 @@ class Endpoint:
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
         assert self._peer_manager is not None
-        request._id = str(uuid.uuid4())
+        request._id = str(uuid4())
         self._pending_requests[request._id] = asyncio.Future()
         await self._peer_manager.send(endpoint, request)
         return self._pending_requests[request._id]
@@ -222,7 +224,7 @@ class Endpoint:
         """Check if this request should be forwarded to peer endpoint."""
         if self._mode == EndpointMode.SOLO:
             return False
-        elif endpoint is None or endpoint == self._uuid:
+        elif endpoint is None or endpoint == self.uuid:
             return False
         elif self._peer_manager is None:
             raise PeeringNotAvailableError(
@@ -329,5 +331,3 @@ class Endpoint:
             self._peer_handler_task.cancel()
         if self._peer_manager is not None:
             await self._peer_manager.close()
-        if self._signaling_server_socket is not None:
-            await self._signaling_server_socket.close()

@@ -2,21 +2,18 @@
 from __future__ import annotations
 
 import asyncio
-import traceback
+import logging
 from typing import Any
 from typing import Callable
 from typing import Coroutine
+
+logger = logging.getLogger(__name__)
 
 
 def exit_on_error(task: asyncio.Task[Any]) -> None:
     """Task callback that raises SystemExit on task exception."""
     if not task.cancelled() and task.exception() is not None:
-        e = task.exception()
-        traceback.print_exception(
-            None,
-            e,
-            e.__traceback__ if e is not None else None,
-        )
+        logger.critical(task.exception(), exc_info=True)
         raise SystemExit(1)
 
 

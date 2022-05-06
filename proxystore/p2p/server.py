@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class Client:
     """Client connection."""
 
-    hostname: str
+    name: str
     uuid: str
     websocket: WebSocketServerProtocol
 
@@ -74,16 +74,29 @@ class SignalingServer:
                 client wanting to register.
             request (PeerRegistrationRequest): registration request message.
         """
+        if request.uuid is None:
+            # New client so generate uuid for them
+            uuid_ = str(uuid.uuid4())
+        else:
+            uuid_ = request.uuid
+
         if websocket not in self._websocket_to_client:
+            # Check if previous client reconnected on new socket so unregister
+            # old socket. Warning: could be a client impersontating another
+            if uuid_ in self._uuid_to_client:
+                await self.unregister(
+                    self._uuid_to_client[uuid_].websocket,
+                    False,
+                )
             client = Client(
-                hostname=request.hostname,
-                uuid=str(uuid.uuid4()),
+                name=request.name,
+                uuid=uuid_,
                 websocket=websocket,
             )
             self._websocket_to_client[websocket] = client
             self._uuid_to_client[client.uuid] = client
             logger.info(
-                f'registered {client.uuid} ({client.hostname} at '
+                f'registered {client.uuid} ({client.name} at '
                 f'{websocket.remote_address})',
             )
         else:
@@ -94,7 +107,7 @@ class SignalingServer:
             PeerRegistrationResponse(uuid=client.uuid),
         )
 
-    def unregister(
+    async def unregister(
         self,
         websocket: WebSocketServerProtocol,
         expected: bool,
@@ -112,13 +125,14 @@ class SignalingServer:
             # Most likely websocket closed before registration was performed
             return
         self._uuid_to_client.pop(client.uuid, None)
+        await client.websocket.close(code=1000 if expected else 1001)
         if expected:
             logger.info(
-                f'connection closed by {client.uuid} ({client.hostname})',
+                f'connection closed by {client.uuid} ({client.name})',
             )
         else:
             logger.info(
-                f'connection lost from {client.uuid} ({client.hostname})',
+                f'connection lost from {client.uuid} ({client.name})',
             )
 
     async def connect(
@@ -138,6 +152,7 @@ class SignalingServer:
                 websocket,
                 PeerConnectionMessage(
                     source_uuid=self._websocket_to_client[websocket].uuid,
+                    source_name=self._websocket_to_client[websocket].name,
                     peer_uuid=message.peer_uuid,
                     error=PeerUnknownError(
                         'peer {message.peer_uuid} is unknown',
@@ -169,10 +184,10 @@ class SignalingServer:
             try:
                 message = deserialize(await websocket.recv())
             except websockets.exceptions.ConnectionClosedOK:
-                self.unregister(websocket, expected=True)
+                await self.unregister(websocket, expected=True)
                 break
             except websockets.exceptions.ConnectionClosedError:
-                self.unregister(websocket, expected=False)
+                await self.unregister(websocket, expected=False)
                 break
             except SerializationError:
                 logger.error(
@@ -205,17 +220,26 @@ class SignalingServer:
 
 async def connect(
     address: str,
+    uuid: str | None = None,
+    name: str | None = None,
     timeout: int = 10,
-) -> tuple[str, WebSocketServerProtocol]:
+) -> tuple[str, str, WebSocketServerProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
         address (str): address of the Signaling Server.
-        timeout (int): time to wait in seconds on server connections.
+        uuid (str, optional): optional uuid of client to use when registering
+            with signaling server (default: None).
+        name (str, optional): readable name of the client to use when
+            registering with the signaling server. By default the
+            hostname will be used (default: None).
+        timeout (int): time to wait in seconds on server connections
+            (default: 10).
 
     Returns:
-        tuple of the UUID of this client returned by the signaling server and
-        the websocket connection to the signaling server.
+        tuple of the UUID of this client returned by the signaling server,
+        the name used to register the client, and the websocket connection to
+        the signaling server.
 
     Raises:
         EndpointRegistrationError:
@@ -223,12 +247,14 @@ async def connect(
             to the registration request within the timeout, or replies with an
             error.
     """
+    if name is None:
+        name = gethostname()
     websocket = await websockets.connect(
         f'ws://{address}',
         open_timeout=timeout,
     )
     await websocket.send(
-        serialize(PeerRegistrationRequest(hostname=gethostname())),
+        serialize(PeerRegistrationRequest(uuid=uuid, name=name)),
     )
     try:
         message = deserialize(
@@ -250,7 +276,7 @@ async def connect(
                 'Failed to register as peer with signaling server. '
                 f'Got exception: {message.error}',
             )
-        return message.uuid, websocket
+        return message.uuid, name, websocket
     else:
         raise PeerRegistrationError(
             'Signaling server replied with unknown message type: '

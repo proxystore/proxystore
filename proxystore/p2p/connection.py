@@ -30,19 +30,42 @@ class PeerConnection:
     signaling server.
     """
 
-    def __init__(self, uuid: str, websocket: WebSocketServerProtocol) -> None:
+    def __init__(
+        self,
+        uuid: str,
+        name: str,
+        websocket: WebSocketServerProtocol,
+    ) -> None:
         """Init P2PConnection.
 
         Args:
-            uuid (str): uuid of this endpoint.
+            uuid (str): uuid of this client.
+            name (str): readable name of this client for logging.
             websocket (WebSocketServerProtocol): websocket connection to the
                 signaling server.
         """
         self._uuid = uuid
+        self._name = name
         self._websocket = websocket
+
         self._handshake_complete = asyncio.Event()
         self._pc = RTCPeerConnection()
         self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
+
+        self._peer_uuid: str | None = None
+        self._peer_name: str | None = None
+
+    @property
+    def _log_prefix(self) -> str:
+        local = f'{self._name}({self._uuid[:min(8,len(self._uuid))]})'
+        if self._peer_uuid is None:
+            remote = 'pending'
+        else:
+            remote = (
+                f'{self._peer_name}'
+                f'({self._peer_uuid[:min(8,len(self._peer_uuid))]})'
+            )
+        return f'{self.__class__.__name__}[{local} > {remote}]:'
 
     @property
     def state(self) -> str:
@@ -55,6 +78,7 @@ class PeerConnection:
 
     async def close(self) -> None:
         """Terminate the peer connection."""
+        logger.debug(f'{self._log_prefix}: closing connection')
         await self._pc.close()
 
     async def send(self, data: bytes) -> None:
@@ -68,7 +92,7 @@ class PeerConnection:
         # https://github.com/aiortc/aiortc/issues/547
         await self._channel._RTCDataChannel__transport._data_channel_flush()
         await self._channel._RTCDataChannel__transport._transmit()
-        logger.info(f'sent message from {self._uuid}')
+        logger.debug(f'{self._log_prefix}: sending message to peer')
 
     async def recv(self) -> bytes:
         """Receive next message from peer.
@@ -88,18 +112,19 @@ class PeerConnection:
 
         @self._channel.on('open')
         def on_open() -> None:
-            logger.info(f'opened datachannel with remote {peer_uuid}')
+            logger.info(f'{self._log_prefix}: peer channel established')
             self._handshake_complete.set()
 
         @self._channel.on('message')
         def on_message(message: bytes) -> None:
-            logger.info(f'{self._uuid} got message')
+            logger.debug(f'{self._log_prefix}: received message from peer')
             self._message_queue.put_nowait(message)
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
         message = serialize(
             PeerConnectionMessage(
                 source_uuid=self._uuid,
+                source_name=self._name,
                 peer_uuid=peer_uuid,
                 message=json.dumps(
                     {
@@ -108,6 +133,7 @@ class PeerConnection:
                 ),
             ),
         )
+        logger.info(f'{self._log_prefix}: sending offer to {peer_uuid}')
         await self._websocket.send(message)
 
     async def send_answer(self, peer_uuid: str) -> None:
@@ -119,19 +145,20 @@ class PeerConnection:
 
         @self._pc.on('datachannel')
         def on_datachannel(channel: RTCDataChannel) -> None:
-            logger.info(f'datachannel created by remote {peer_uuid}')
+            logger.info(f'{self._log_prefix}: peer channel established')
             self._channel = channel
             self._handshake_complete.set()
 
             @channel.on('message')
             def on_message(message: bytes) -> None:
-                logger.info(f'{self._uuid} got message')
+                logger.debug(f'{self._log_prefix}: received message from peer')
                 self._message_queue.put_nowait(message)
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
         message = serialize(
             PeerConnectionMessage(
                 source_uuid=self._uuid,
+                source_name=self._name,
                 peer_uuid=peer_uuid,
                 message=json.dumps(
                     {
@@ -140,6 +167,7 @@ class PeerConnection:
                 ),
             ),
         )
+        logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
         await self._websocket.send(message)
 
     async def handle_server_message(
@@ -162,8 +190,16 @@ class PeerConnection:
             )
         message_data = json.loads(message.message)
         if 'offer' in message_data:
+            logger.info(
+                f'{self._log_prefix}: received offer from '
+                f'{message.source_uuid} ({message.source_name})',
+            )
             obj = object_from_string(message_data['offer'])
         elif 'answer' in message_data:  # pragma: no cover
+            logger.info(
+                f'{self._log_prefix}: received answer from '
+                f'{message.source_uuid} ({message.source_name})',
+            )
             obj = object_from_string(message_data['answer'])
         else:
             raise AssertionError(
@@ -173,6 +209,8 @@ class PeerConnection:
 
         if isinstance(obj, RTCSessionDescription):
             await self._pc.setRemoteDescription(obj)
+            self._peer_uuid = message.source_uuid
+            self._peer_name = message.source_name
             if obj.type == 'offer':
                 await self.send_answer(message.source_uuid)
         elif isinstance(obj, RTCIceCandidate):  # pragma: no cover

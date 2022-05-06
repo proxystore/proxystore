@@ -2,91 +2,127 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
+import uuid
+from unittest import mock
 
 import pytest
 
+from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.server import connect
 from proxystore.serialize import serialize
 from testing.mocking import async_mock_once
 
 
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
+    from unittest.mock import AsyncMock
+else:  # pragma: <3.8 cover
+    from asynctest import CoroutineMock as AsyncMock
+
+
 @pytest.mark.asyncio
-async def test_p2p_manager_awaitable(signaling_server) -> None:
-    uuid, websocket = await connect(signaling_server.address)
-    manager = await PeerManager(uuid, websocket)
+async def test_awaitable(signaling_server) -> None:
+    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
+    # Calling async_init again should do nothing
+    await manager.async_init()
     await manager.close()
 
 
 @pytest.mark.asyncio
-async def test_p2p_connection(signaling_server) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
-    peer2, websocket2 = await connect(signaling_server.address)
+async def test_not_awaited(signaling_server) -> None:
+    manager = PeerManager(uuid.uuid4(), signaling_server.address)
+    with pytest.raises(RuntimeError, match='await'):
+        await manager.get_connection(uuid.uuid4())
+    await manager.close()
 
-    async with PeerManager(peer1, websocket1) as manager1, PeerManager(
-        peer2,
-        websocket2,
+
+@pytest.mark.asyncio
+async def test_uuid_name_properties(signaling_server) -> None:
+    uuid_ = str(uuid.uuid4())
+    name = 'pm'
+    async with PeerManager(
+        uuid_,
+        signaling_server.address,
+        name=name,
+    ) as manager:
+        assert manager.uuid == uuid_
+        assert manager.name == name
+
+
+@pytest.mark.asyncio
+async def test_uuid_mismatch(signaling_server) -> None:
+    amock = AsyncMock(return_value=('wrong-uuid', None, None))
+    with mock.patch('proxystore.p2p.manager.connect', side_effect=amock):
+        with pytest.raises(PeerRegistrationError, match='non-matching UUID'):
+            await PeerManager(uuid.uuid4(), signaling_server.address)
+
+
+@pytest.mark.asyncio
+async def test_p2p_connection(signaling_server) -> None:
+    async with PeerManager(
+        uuid.uuid4(),
+        signaling_server.address,
+    ) as manager1, PeerManager(
+        uuid.uuid4(),
+        signaling_server.address,
     ) as manager2:
-        connection1 = await manager1.get_connection(peer2)
-        assert connection1 == await manager1.get_connection(peer2)
+        connection1 = await manager1.get_connection(manager2.uuid)
+        assert connection1 == await manager1.get_connection(manager2.uuid)
         await connection1.wait()
         assert connection1.state == 'connected'
 
-        connection2 = await manager2.get_connection(peer1)
+        connection2 = await manager2.get_connection(manager1.uuid)
         await connection2.wait()
         assert connection2.state == 'connected'
-
-    await websocket1.close()
-    await websocket2.close()
 
 
 @pytest.mark.asyncio
 async def test_p2p_messaging(signaling_server) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
-    peer2, websocket2 = await connect(signaling_server.address)
-
-    async with PeerManager(peer1, websocket1) as manager1, PeerManager(
-        peer2,
-        websocket2,
+    async with PeerManager(
+        uuid.uuid4(),
+        signaling_server.address,
+    ) as manager1, PeerManager(
+        uuid.uuid4(),
+        signaling_server.address,
     ) as manager2:
-        await manager1.send(peer2, 'hello hello')
+        await manager1.send(manager2.uuid, 'hello hello')
         source_uuid, message = await manager2.recv()
-        assert source_uuid == peer1
+        assert source_uuid == manager1.uuid
         assert message == 'hello hello'
-
-    await websocket1.close()
-    await websocket2.close()
 
 
 @pytest.mark.asyncio
 async def test_expected_server_disconnect(signaling_server) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
-    manager = await PeerManager(peer1, websocket1)
+    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
-    await websocket1.close()
+    await signaling_server.signaling_server._uuid_to_client[
+        manager.uuid
+    ].websocket.close()
     await manager.close()
 
 
 @pytest.mark.asyncio
 async def test_unexpected_server_disconnect(signaling_server) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
-    manager = await PeerManager(peer1, websocket1)
+    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
     await signaling_server.signaling_server._uuid_to_client[
-        peer1
+        manager.uuid
     ].websocket.close(code=1002)
     await manager.close()
 
 
 @pytest.mark.asyncio
 async def test_serialization_error(signaling_server, caplog) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
     # PeerManager should log an error and skip the message but
     # not raise an exception.
-    websocket1.recv = async_mock_once(websocket1.recv, b'nonsense_string')
     caplog.set_level(logging.ERROR)
-    async with PeerManager(peer1, websocket1):
-        while not websocket1.recv.await_count > 1:
+    async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+        mock_recv = async_mock_once(
+            manager._websocket_or_none.recv,
+            b'nonsense_string',
+        )
+        manager._websocket_or_none.recv = mock_recv
+        while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
     assert any(
@@ -100,16 +136,16 @@ async def test_serialization_error(signaling_server, caplog) -> None:
 
 @pytest.mark.asyncio
 async def test_unknown_message_type(signaling_server, caplog) -> None:
-    peer1, websocket1 = await connect(signaling_server.address)
     # PeerManager should log an error and skip the message but
     # not raise an exception.
-    websocket1.recv = async_mock_once(
-        websocket1.recv,
-        serialize('random message'),
-    )
     caplog.set_level(logging.ERROR)
-    async with PeerManager(peer1, websocket1):
-        while not websocket1.recv.await_count > 1:
+    async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+        mock_recv = async_mock_once(
+            manager._websocket_or_none.recv,
+            serialize('random message'),
+        )
+        manager._websocket_or_none.recv = mock_recv
+        while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
     assert any(

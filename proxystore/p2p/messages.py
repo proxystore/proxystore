@@ -23,7 +23,8 @@ class ServerError(BaseMessage):
 class PeerRegistrationRequest(BaseMessage):
     """Register with signaling server as peer."""
 
-    hostname: str
+    name: str
+    uuid: str | None = None
 
 
 @dataclass
@@ -39,6 +40,7 @@ class PeerConnectionMessage(BaseMessage):
     """Message used in establishing a peer-to-peer connection."""
 
     source_uuid: str
+    source_name: str
     peer_uuid: str
     message: str | None = None
     error: Exception | None = None

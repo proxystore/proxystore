@@ -25,7 +25,7 @@ async def test_server() -> None:
 
     while True:
         try:
-            _, websocket = await connect(SERVER_ADDRESS)
+            _, _, websocket = await connect(SERVER_ADDRESS)
         except OSError:
             await asyncio.sleep(0.1)
         else:
@@ -57,7 +57,7 @@ async def test_start_server_cli() -> None:
         if 'listening on' in line:
             break
 
-    _, websocket = await connect(SERVER_ADDRESS)
+    _, _, websocket = await connect(SERVER_ADDRESS)
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)
 
