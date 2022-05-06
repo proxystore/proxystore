@@ -43,6 +43,7 @@ class PeerManager:
         uuid: str | UUID,
         signaling_server: str,
         name: str | None = None,
+        timeout: int = 30,
     ) -> None:
         """Init PeerManager.
 
@@ -52,10 +53,13 @@ class PeerManager:
                 establishing peer-to-peer connections.
             name (str, optional): readable name of the client to use in
                 logging. If unspecified, the hostname will be used.
+            timeout (int): timeout in seconds when waiting for a peer
+                or signaling server connection to be established (default: 30).
         """
         self._uuid = uuid if isinstance(uuid, str) else str(uuid)
         self._signaling_server = signaling_server
         self._name = name if name is not None else socket.gethostname()
+        self._timeout = timeout
 
         self._peers: dict[frozenset[str], PeerConnection] = {}
         self._message_queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()
@@ -93,6 +97,7 @@ class PeerManager:
                 address=self._signaling_server,
                 uuid=self._uuid,
                 name=self._name,
+                timeout=self._timeout,
             )
             if uuid != self._uuid:
                 raise PeerRegistrationError(
@@ -133,7 +138,7 @@ class PeerManager:
         peer_uuid: str,
         connection: PeerConnection,
     ) -> None:
-        await connection.wait()
+        await connection.wait(timeout=self._timeout)
         assert connection._peer_name is not None
         peer_name = log_name(peer_uuid, connection._peer_name)
         logger.info(

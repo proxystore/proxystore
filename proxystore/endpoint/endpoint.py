@@ -144,6 +144,7 @@ class Endpoint:
                 uuid=self.uuid,
                 signaling_server=self._signaling_server,
                 name=self.name,
+                timeout=self._peer_timeout,
             )
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,

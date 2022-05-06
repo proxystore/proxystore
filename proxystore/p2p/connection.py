@@ -14,6 +14,7 @@ from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
 from websockets import WebSocketServerProtocol
 
+from proxystore.p2p.exceptions import PeerConnectionTimeout
 from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.serialize import serialize
 
@@ -221,9 +222,21 @@ class PeerConnection:
         else:
             raise AssertionError('received unknown message')
 
-    async def wait(self) -> None:
-        """Wait on P2P connection to be established."""
-        await self._handshake_complete.wait()
+    async def wait(self, timeout: int | None = None) -> None:
+        """Wait on P2P connection to be established.
+
+        Args:
+            timeout (int, optional): maximum time in seconds to wait for
+                the peer connection to establish. If None, block until
+                the connection is established (default: None).
+        """
+        try:
+            await asyncio.wait_for(self._handshake_complete.wait(), timeout)
+        except asyncio.TimeoutError:
+            raise PeerConnectionTimeout(
+                'Timeout waiting for peer to peer connection to establish '
+                f'in {self._log_prefix}.',
+            )
 
 
 def log_name(uuid: str, name: str) -> str:
