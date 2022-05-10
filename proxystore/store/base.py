@@ -53,7 +53,7 @@ class Store(metaclass=ABCMeta):
 
     @property
     def has_stats(self) -> bool:
-        """Whether the store keeps track of performance stats"""
+        """Whether the store keeps track of performance stats."""
         return self._stats is not None
 
     def __repr__(self) -> str:

@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from typing import Any
-from typing import Union
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
@@ -57,7 +56,6 @@ def get_store(val: str | Proxy) -> _Store | None:
         :any:`Store <proxystore.store.base.Store>` if store with `name` exists
         else `None`.
     """
-
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
         factory = val.__factory__
@@ -66,7 +64,9 @@ def get_store(val: str | Proxy) -> _Store | None:
         elif isinstance(factory, LocalFactory):
             name = factory.name
         else:
-            raise ValueError(f'Proxy with a {type(factory)} is not yet supported')
+            raise ValueError(
+                f'Proxies with {type(factory)} are not yet supported'
+            )
     else:
         name = val
 
