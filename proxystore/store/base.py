@@ -51,6 +51,11 @@ class Store(metaclass=ABCMeta):
 
         logger.debug(f'Initialized {self}')
 
+    @property
+    def has_stats(self) -> bool:
+        """Whether the store keeps track of performance stats"""
+        return self._stats is not None
+
     def __repr__(self) -> str:
         """Represent Store instance as string."""
         s = f'{ps.utils.fullname(self.__class__)}('
