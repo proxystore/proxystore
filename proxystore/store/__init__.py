@@ -9,7 +9,8 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
-from proxystore.store.local import LocalStore as _LocalStore, LocalFactory
+from proxystore.store.local import LocalFactory
+from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
 from proxystore.store.remote import RemoteFactory
 
@@ -65,7 +66,7 @@ def get_store(val: str | Proxy) -> _Store | None:
             name = factory.name
         else:
             raise ValueError(
-                f'Proxies with {type(factory)} are not yet supported'
+                f'Proxies with {type(factory)} are not yet supported',
             )
     else:
         name = val

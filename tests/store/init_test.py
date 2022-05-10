@@ -124,8 +124,7 @@ def test_init_store_raises() -> None:
 
 
 def test_lookup_by_proxy() -> None:
-    """Make sure get_store works with a proxy"""
-
+    """Make sure get_store works with a proxy."""
     # Init by enum
     local = ps.store.init_store(STORES.LOCAL, name='local')
     redis = ps.store.init_store(
