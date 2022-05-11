@@ -56,6 +56,11 @@ def get_store(val: str | Proxy) -> _Store | None:
     Returns:
         :any:`Store <proxystore.store.base.Store>` if store with `name` exists
         else `None`.
+
+    Raises:
+        ValueError: if the value is a proxy but does not contain a factory
+            of type :any:`LocalFactory <proxystore.store.local.LocalFactory>`
+            or :any:`RemoteFactory <proxystore.store.local.RemoteFactory>`.
     """
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
