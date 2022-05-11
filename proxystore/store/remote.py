@@ -105,7 +105,7 @@ class RemoteFactory(Factory):
             'strict': self.strict,
         }
 
-    def _get_store(self) -> RemoteStore:
+    def get_store(self) -> RemoteStore:
         """Get store and reinitialize if necessary."""
         store = ps.store.get_store(self.store_name)
         if store is None:
@@ -134,7 +134,7 @@ class RemoteFactory(Factory):
             self._obj_future = None
             return obj
 
-        store = self._get_store()
+        store = self.get_store()
 
         obj = store.get(
             self.key,
@@ -153,7 +153,7 @@ class RemoteFactory(Factory):
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
-        store = self._get_store()
+        store = self.get_store()
 
         # If the value is locally cached by the value server, starting up
         # a separate thread to retrieve a cached value will be slower than

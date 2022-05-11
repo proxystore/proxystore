@@ -4,6 +4,7 @@ from __future__ import annotations
 import math
 from collections.abc import MutableMapping
 from dataclasses import dataclass
+from functools import partial
 from time import perf_counter_ns
 from typing import Any
 from typing import Callable
@@ -147,6 +148,49 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         for event, stats in iterable:
             self[event] += stats
 
+    def _function(
+        self,
+        function: FuncType,
+        key_is_result: bool,
+        preset_key: str | None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute a wrapped function and store execution stats.
+
+        Args:
+            function (callable): function to wrap.
+            key_is_result (bool): if `True`, the key is the return value of
+                `function` rather than the first argument. (default: False).
+            preset_key (str): optionally preset the key associated with
+                any calls to `function`. This overrides `key_is_returned`.
+            args: Arguments passed to `function`
+            kwargs: Keywords arguments passed to `function`.
+
+        Returns:
+            Output of the function
+        """
+        start_ns = perf_counter_ns()
+        result = function(*args, **kwargs)
+        time_ns = perf_counter_ns() - start_ns
+
+        if key_is_result:
+            if isinstance(result, ps.proxy.Proxy):
+                key = ps.proxy.get_key(result)
+            else:
+                key = result
+        elif preset_key is not None:
+            key = preset_key
+        elif len(args) > 0:
+            key = args[0]
+        else:
+            key = None
+
+        event = Event(function=function.__name__, key=key)
+        self[event].add_time(time_ns / 1e6)
+
+        return result
+
     def wrap(
         self,
         function: FuncType,
@@ -166,26 +210,6 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         Returns:
             callable with same interface as `function`.
         """
+        out_fun = partial(self._function, function, key_is_result, preset_key)
 
-        def _function(*args: Any, **kwargs: Any) -> Any:
-            start_ns = perf_counter_ns()
-            result = function(*args, **kwargs)
-            time_ns = perf_counter_ns() - start_ns
-
-            if key_is_result:
-                if isinstance(result, ps.proxy.Proxy):
-                    key = ps.proxy.get_key(result)
-                else:
-                    key = result
-            elif preset_key is not None:
-                key = preset_key
-            elif len(args) > 0:
-                key = args[0]
-            else:
-                key = None
-            event = Event(function=function.__name__, key=key)
-            self[event].add_time(time_ns / 1e6)
-
-            return result
-
-        return cast(FuncType, _function)
+        return cast(FuncType, out_fun)

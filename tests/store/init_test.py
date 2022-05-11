@@ -5,6 +5,8 @@ from pytest import fixture
 from pytest import raises
 
 import proxystore as ps
+from proxystore.factory import SimpleFactory
+from proxystore.proxy import Proxy
 from proxystore.store import STORES
 from testing.store_utils import mock_third_party_libs
 
@@ -119,3 +121,29 @@ def test_init_store_raises() -> None:
             pass
 
         ps.store.init_store(TestStore, name='')
+
+
+def test_lookup_by_proxy() -> None:
+    """Make sure get_store works with a proxy."""
+    # Init by enum
+    local = ps.store.init_store(STORES.LOCAL, name='local')
+    redis = ps.store.init_store(
+        STORES.REDIS,
+        name='redis',
+        hostname=REDIS_HOST,
+        port=REDIS_PORT,
+    )
+
+    # Make a proxy with both
+    local_proxy = local.proxy([1, 2, 3])
+    redis_proxy = redis.proxy([1, 2, 3])
+
+    # Make sure both look up correctly
+    assert ps.store.get_store(redis_proxy).name == redis.name
+    assert ps.store.get_store(local_proxy).name == local.name
+
+    # Make a proxy without an associated store
+    f = SimpleFactory([1, 2, 3])
+    p = Proxy(f)
+    with raises(ValueError):
+        ps.store.get_store(p)

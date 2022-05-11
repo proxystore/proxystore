@@ -15,6 +15,7 @@ def test_kwargs() -> None:
     assert store.kwargs == {
         'stats': False,
     }
+    assert not store.has_stats
 
 
 def test_local_factory() -> None:
