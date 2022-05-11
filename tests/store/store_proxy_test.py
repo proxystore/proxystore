@@ -105,6 +105,9 @@ def test_store_proxy(store_config) -> None:
     p = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)
 
+    # Check that we can get the associated store back
+    assert ps.store.get_store(p).name == store.name
+
     assert p == [1, 2, 3]
     assert store.get(ps.proxy.get_key(p)) == [1, 2, 3]
 

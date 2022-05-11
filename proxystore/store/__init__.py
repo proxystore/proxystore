@@ -5,11 +5,14 @@ import logging
 from enum import Enum
 from typing import Any
 
+from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
+from proxystore.store.local import LocalFactory
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
+from proxystore.store.remote import RemoteFactory
 
 _stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
@@ -44,16 +47,35 @@ class STORES(Enum):
         raise KeyError(f'Enum type matching type {store} not found')
 
 
-def get_store(name: str) -> _Store | None:
+def get_store(val: str | Proxy) -> _Store | None:
     """Get the backend store with name.
 
     Args:
-        name (str): name store to get.
+        val: name of the store to get or a proxy
 
     Returns:
         :any:`Store <proxystore.store.base.Store>` if store with `name` exists
         else `None`.
+
+    Raises:
+        ValueError: if the value is a proxy but does not contain a factory
+            of type :any:`LocalFactory <proxystore.store.local.LocalFactory>`
+            or :any:`RemoteFactory <proxystore.store.local.RemoteFactory>`.
     """
+    if isinstance(val, Proxy):
+        # If the object is a proxy, get the factory that will access the store
+        factory = val.__factory__
+        if isinstance(factory, RemoteFactory):
+            return factory.get_store()
+        elif isinstance(factory, LocalFactory):
+            name = factory.name
+        else:
+            raise ValueError(
+                f'Proxies with {type(factory)} are not yet supported',
+            )
+    else:
+        name = val
+
     if name in _stores:
         return _stores[name]
     return None
