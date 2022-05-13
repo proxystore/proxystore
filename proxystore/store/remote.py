@@ -4,39 +4,27 @@ from __future__ import annotations
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
-from concurrent.futures import Future
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from typing import cast
 from typing import Sequence
 
 import proxystore as ps
-from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.base import StoreFactory
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
-from proxystore.store.stats import FunctionEventStats
 
-_default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 
-class RemoteFactory(Factory):
-    """Base Factory for Instances of RemoteStore.
-
-    Adds support for asynchronously retrieving objects from a
-    :class:`RemoteStore <.RemoteStore>` backend and optional, strict guarantees
-    on object versions.
-
-    The factory takes the `store_type` and `store_args` parameters that are
-    used to reinitialize the backend store if the factory is sent to a remote
-    process backend has not already been initialized.
-    """
+class RemoteFactory(StoreFactory):
+    """Factory for RemoteStore."""
 
     def __init__(
         self,
         key: str,
-        store_type: type[RemoteStore],
+        store_type: type[Store],
         store_name: str,
         store_kwargs: dict[str, Any] | None = None,
         *,
@@ -44,12 +32,12 @@ class RemoteFactory(Factory):
         serialize: bool = True,
         strict: bool = False,
     ) -> None:
-        """Init RemoteFactory.
+        """Init LocalFactory.
 
         Args:
             key (str): key corresponding to object in store.
-            store_type (Store): type of store this factory will resolve an
-                object from.
+            store_type (Store): type of store this factory will resolve
+                an object from.
             store_name (str): name of store
             store_kwargs (dict): optional keyword arguments used to
                 reinitialize store.
@@ -61,110 +49,46 @@ class RemoteFactory(Factory):
                 is the most recent version of the object associated with the
                 key in the store (default: False).
         """
-        self.key = key
-        self.store_type = store_type
-        self.store_name = store_name
-        self.store_kwargs = {} if store_kwargs is None else store_kwargs
-        self.evict = evict
-        self.serialize = serialize
-        self.strict = strict
-
-        # The following are not included when a factory is serialized
-        # because they are specific to that instance of the factory
-        self._obj_future: Future[Any] | None = None
-        self.stats: FunctionEventStats | None = None
-        if 'stats' in self.store_kwargs and self.store_kwargs['stats'] is True:
-            self.stats = FunctionEventStats()
-            # Monkeypatch methods with wrappers to track their stats
-            setattr(  # noqa: B010
-                self,
-                'resolve',
-                self.stats.wrap(self.resolve, preset_key=self.key),
-            )
-            setattr(  # noqa: B010
-                self,
-                'resolve_async',
-                self.stats.wrap(self.resolve_async, preset_key=self.key),
-            )
-
-    def __getnewargs_ex__(
-        self,
-    ) -> tuple[
-        tuple[str, type[RemoteStore], str, dict[str, Any]],
-        dict[str, Any],
-    ]:
-        """Pickle without possible futures."""
-        return (
-            self.key,
-            self.store_type,
-            self.store_name,
-            self.store_kwargs,
-        ), {
-            'evict': self.evict,
-            'serialize': self.serialize,
-            'strict': self.strict,
-        }
-
-    def get_store(self) -> RemoteStore:
-        """Get store and reinitialize if necessary."""
-        store = ps.store.get_store(self.store_name)
-        if store is None:
-            store = ps.store.init_store(
-                self.store_type,
-                self.store_name,
-                **self.store_kwargs,
-            )
-        if isinstance(store, RemoteStore):
-            return store
-        raise ValueError(
-            f'store_name={self.store_name} passed to RemoteFactory does not '
-            'correspond to store of type RemoteStore',
+        super().__init__(
+            key,
+            store_type=store_type,
+            store_name=store_name,
+            store_kwargs=store_kwargs,
+            evict=evict,
+            serialize=serialize,
+            strict=strict,
         )
 
-    def resolve(self) -> Any:
-        """Get object associated with key from store.
+        # super() will have already initialized these dynamically but add
+        # types so mypy know what they are/that they exist
+        self.serialize: bool
+        self.strict: bool
 
-        Raises:
-            ProxyResolveMissingKey:
-                if the key associated with this factory does not exist
-                in the store.
-        """
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
-
-        store = self.get_store()
-
+    def _get_value(self) -> Any:
+        """Get the value associated with the key from the store."""
+        store = cast(RemoteStore, self.get_store())
         obj = store.get(
             self.key,
             deserialize=self.serialize,
             strict=self.strict,
         )
+
         if obj is None:
             raise ProxyResolveMissingKey(
                 self.key,
                 self.store_type,
                 self.store_name,
             )
+
         if self.evict:
             store.evict(self.key)
+
         return obj
 
-    def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from store."""
-        store = self.get_store()
-
-        # If the value is locally cached by the value server, starting up
-        # a separate thread to retrieve a cached value will be slower than
-        # just getting the value from the cache
-        if store.is_cached(self.key, strict=self.strict):
-            return
-
-        self._obj_future = _default_pool.submit(
-            store.get,
+    def _should_resolve_async(self) -> bool:
+        """Check if it makes sense to do asynchronous resolution."""
+        return not cast(RemoteStore, self.get_store()).is_cached(
             self.key,
-            deserialize=self.serialize,
             strict=self.strict,
         )
 

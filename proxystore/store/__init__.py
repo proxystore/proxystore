@@ -7,12 +7,11 @@ from typing import Any
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
+from proxystore.store.base import StoreFactory
 from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
-from proxystore.store.local import LocalFactory
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
-from proxystore.store.remote import RemoteFactory
 
 _stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
@@ -51,27 +50,28 @@ def get_store(val: str | Proxy) -> _Store | None:
     """Get the backend store with name.
 
     Args:
-        val: name of the store to get or a proxy
+        val: name (str) of the store to get or a
+            :any:`Proxy <proxystore.proxy.Proxy>` instance.
 
     Returns:
-        :any:`Store <proxystore.store.base.Store>` if store with `name` exists
-        else `None`.
+        :any:`Store <proxystore.store.base.Store>` if a store matching the
+        name or belonging to the proxy exists. If the store does not exist,
+        returns `None`.
 
     Raises:
         ValueError: if the value is a proxy but does not contain a factory
-            of type :any:`LocalFactory <proxystore.store.local.LocalFactory>`
-            or :any:`RemoteFactory <proxystore.store.local.RemoteFactory>`.
+            of type :any:`StoreFactory <proxystore.store.base.StoreFactory>`.
     """
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
         factory = val.__factory__
-        if isinstance(factory, RemoteFactory):
+        if isinstance(factory, StoreFactory):
             return factory.get_store()
-        elif isinstance(factory, LocalFactory):
-            name = factory.name
         else:
             raise ValueError(
-                f'Proxies with {type(factory)} are not yet supported',
+                'The proxy must contain a factory with type '
+                f'{type(StoreFactory).__name__}. {type(factory)} '
+                'is not supported.',
             )
     else:
         name = val

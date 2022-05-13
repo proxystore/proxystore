@@ -1,11 +1,6 @@
 proxystore.proxy
 ################
 
-.. automodule:: proxystore.proxy
-   :members:
-   :inherited-members:
-   :show-inheritance:
-
 .. class:: proxystore.proxy.Proxy(factory: proxystore.factory.Factory)
 
    Lazy Object Proxy
@@ -39,3 +34,8 @@ proxystore.proxy
    :type factory: :class:`Factory <proxystore.factory.Factory>`
 
    :raises TypeError: if `factory` is not an instance of :class:`Factory <proxystore.factory.Factory>`.
+
+.. automodule:: proxystore.proxy
+   :members:
+   :inherited-members:
+   :show-inheritance:
