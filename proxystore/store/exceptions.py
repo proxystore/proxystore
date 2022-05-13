@@ -1,7 +1,7 @@
 """Exceptions for Stores."""
 from __future__ import annotations
 
-from proxystore.store.base import Store
+from proxystore import store
 
 
 class ProxyResolveMissingKey(Exception):
@@ -10,7 +10,7 @@ class ProxyResolveMissingKey(Exception):
     def __init__(
         self,
         key: str,
-        store_type: type[Store],
+        store_type: type[store.base.Store],
         store_name: str,
     ) -> None:
         """Init ProxyResolveMissingKey.
@@ -27,6 +27,6 @@ class ProxyResolveMissingKey(Exception):
         self.store_name = store_name
         super().__init__(
             f"Proxy cannot resolve target object with key='{self.key}' "
-            f"from {self.store_type.__name__}(name='{self.key}'): "
+            f"from {self.store_type.__name__}(name='{self.store_name}'): "
             'store returned NoneType with key.',
         )
