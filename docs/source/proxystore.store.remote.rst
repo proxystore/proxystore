@@ -1,12 +1,7 @@
 proxystore.store.remote
 #######################
 
-.. autoclass:: proxystore.store.remote.RemoteFactory
-   :members:
-   :inherited-members:
-   :show-inheritance:
-
-.. autoclass:: proxystore.store.remote.RemoteStore
+.. automodule:: proxystore.store.remote
    :members:
    :inherited-members:
    :show-inheritance:

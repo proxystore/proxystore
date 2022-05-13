@@ -1,7 +1,7 @@
 proxystore.store.base
 #####################
 
-.. autoclass:: proxystore.store.base.Store
+.. automodule:: proxystore.store.base
    :members:
    :inherited-members:
    :show-inheritance:
