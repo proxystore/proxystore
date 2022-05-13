@@ -1,6 +1,17 @@
 Changelog
 #########
 
+Version 0.3.3
+-------------
+
+`Released 13 May 2022`
+
+**Summary of Changes**
+
+#. Allow :func:`get_store() <proxystore.store.get_store>` to take a proxy as input to make it easier to get stats from a :any:`Store <proxystore.store.base.Store>` given a proxy (`PR #43 <https://github.com/gpauloski/proxystore/pull/43>`_).
+#. Add base :any:`StoreFactory <proxystore.store.base.StoreFactory>` (`Issue #44 <https://github.com/gpauloski/proxystore/issues/44>`_).
+
+
 Version 0.3.2
 -------------
 
