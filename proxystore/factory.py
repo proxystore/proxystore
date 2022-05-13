@@ -79,10 +79,6 @@ class SimpleFactory(Factory):
         """Return object."""
         return self._obj
 
-    def resolve_async(self) -> None:
-        """No-op."""
-        pass
-
 
 class LambdaFactory(Factory):
     """Factory that takes any callable object."""

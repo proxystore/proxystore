@@ -21,7 +21,7 @@ def test_kwargs() -> None:
 def test_local_factory() -> None:
     """Test LocalFactory."""
     key = 'key'
-    f = LocalFactory(key, name='local')
+    f = LocalFactory(key, store_name='local')
     # Force delete LocalStore backend if it exists so resolving factory
     # raises not initialized error
     ps.store._stores = {}
@@ -31,16 +31,16 @@ def test_local_factory() -> None:
     store = ps.store.init_store(LocalStore, 'local')
 
     key = store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, name='local')
+    f = LocalFactory(key, store_name='local')
     assert f() == [1, 2, 3]
 
-    f2 = LocalFactory(key, name='local', evict=True)
+    f2 = LocalFactory(key, store_name='local', evict=True)
     assert store.exists(key)
     assert f2() == [1, 2, 3]
     assert not store.exists(key)
 
     store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, name='local')
+    f = LocalFactory(key, store_name='local')
     f.resolve_async()
     assert f() == [1, 2, 3]
 

@@ -5,16 +5,170 @@ import copy
 import logging
 from abc import ABCMeta
 from abc import abstractmethod
+from concurrent.futures import Future
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
+from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
 
+_default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
+
+
+class StoreFactory(Factory):
+    """Base Factory for Stores.
+
+    Adds support for asynchronously retrieving objects from a
+    :class:`Store <.Store>`.
+
+    The factory takes the `store_type` and `store_kwargs` parameters that are
+    used to reinitialize the store if the factory is sent to a remote
+    process where the store has not already been initialized.
+    """
+
+    def __init__(
+        self,
+        key: str,
+        store_type: type[Store],
+        store_name: str,
+        store_kwargs: dict[str, Any] | None = None,
+        *,
+        evict: bool = False,
+        **kwargs: Any,
+    ) -> None:
+        """Init StoreFactory.
+
+        Args:
+            key (str): key corresponding to object in store.
+            store_type (Store): type of store this factory will resolve an
+                object from.
+            store_name (str): name of store
+            store_kwargs (dict): optional keyword arguments used to
+                reinitialize store.
+            evict (bool): If True, evict the object from the store once
+                :func:`resolve()` is called (default: False).
+            kwargs (dict): additional keyword arguments to set as attributes
+                of the factory.
+        """
+        self.key = key
+        self.store_type = store_type
+        self.store_name = store_name
+        self.store_kwargs = {} if store_kwargs is None else store_kwargs
+        self.evict = evict
+        self.kwargs = kwargs
+
+        self.__dict__.update(kwargs)
+
+        # The following are not included when a factory is serialized
+        # because they are specific to that instance of the factory
+        self._obj_future: Future[Any] | None = None
+        self.stats: FunctionEventStats | None = None
+        if 'stats' in self.store_kwargs and self.store_kwargs['stats'] is True:
+            self.stats = FunctionEventStats()
+            # Monkeypatch methods with wrappers to track their stats
+            setattr(  # noqa: B010
+                self,
+                'resolve',
+                self.stats.wrap(self.resolve, preset_key=self.key),
+            )
+            setattr(  # noqa: B010
+                self,
+                'resolve_async',
+                self.stats.wrap(self.resolve_async, preset_key=self.key),
+            )
+
+    def __getnewargs_ex__(
+        self,
+    ) -> tuple[tuple[str, type[Store], str, dict[str, Any]], dict[str, Any]]:
+        """Pickle without possible futures."""
+        return (
+            self.key,
+            self.store_type,
+            self.store_name,
+            self.store_kwargs,
+        ), {'evict': self.evict, **self.kwargs}
+
+    def _get_value(self) -> Any:
+        """Get the value associated with the key from the store.
+
+        This method is intended to be overridden by child classes that
+        have special keyword arguments to pass to their corresponding
+        Store types.
+        """
+        store = self.get_store()
+        obj = store.get(self.key)
+
+        if obj is None:
+            raise ProxyResolveMissingKey(
+                self.key,
+                self.store_type,
+                self.store_name,
+            )
+
+        if self.evict:
+            store.evict(self.key)
+
+        return obj
+
+    def _should_resolve_async(self) -> bool:
+        """Check if it makes sense to do asynchronous resolution.
+
+        This method is intended to be overridden by child classes that may
+        have different conditions on which asynchronous resolution makes
+        sense.
+        """
+        return not self.get_store().is_cached(self.key)
+
+    def get_store(self) -> Store:
+        """Get store and reinitialize if necessary.
+
+        Raises:
+            ValueError:
+                if the type of the returned store does not match the expected
+                store type passed to the factory constructor.
+        """
+        store = ps.store.get_store(self.store_name)
+        if store is None:
+            store = ps.store.init_store(
+                self.store_type,
+                self.store_name,
+                **self.store_kwargs,
+            )
+
+        if not isinstance(store, self.store_type):
+            raise ValueError(
+                f'store_name={self.store_name} passed to '
+                f'{type(self).__name__} does not correspond to store of '
+                f'type {self.store_type.__name__}',
+            )
+
+        return store
+
+    def resolve(self) -> Any:
+        """Get object associated with key from store.
+
+        Raises:
+            ProxyResolveMissingKey:
+                if the key associated with this factory does not exist
+                in the store.
+        """
+        if self._obj_future is not None:
+            obj = self._obj_future.result()
+            self._obj_future = None
+            return obj
+
+        return self._get_value()
+
+    def resolve_async(self) -> None:
+        """Asynchronously get object associated with key from store."""
+        if self._should_resolve_async():
+            self._obj_future = _default_pool.submit(self._get_value)
 
 
 class Store(metaclass=ABCMeta):
@@ -176,7 +330,7 @@ class Store(metaclass=ABCMeta):
         obj: Any | None = None,
         *,
         key: str | None = None,
-        factory: type[Factory] = Factory,
+        factory: type[StoreFactory] = StoreFactory,
         **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
@@ -197,10 +351,10 @@ class Store(metaclass=ABCMeta):
                 (default: None).
             key (str): optional key to associate with `obj` in the store.
                 If not provided, a key will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
+            factory (StoreFactory): factory class that will be instantiated
                 and passed to the proxy. The factory class should be able
-                to correctly resolve the object from this store
-                (default: :any:`Factory <proxystore.factory.Factory>`).
+                to correctly resolve the object from this store (default:
+                :any:`StoreFactory <proxystore.store.base.StoreFactory>`).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -220,7 +374,7 @@ class Store(metaclass=ABCMeta):
         objs: Sequence[Any] | None = None,
         *,
         keys: Sequence[str] | None = None,
-        factory: Factory | None = None,
+        factory: StoreFactory | None = None,
         **kwargs: Any,
     ) -> list[ps.proxy.Proxy]:
         """Create proxies for batch of objects in the store.
@@ -235,10 +389,10 @@ class Store(metaclass=ABCMeta):
                 already in the store (default: None).
             keys (Sequence[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
-            factory (Factory): Optional factory class that will be instantiated
-                and passed to the proxies. The factory class should be able
-                to correctly resolve an object from this store. Defaults to
-                None so the default of :func:`proxy()` is used.
+            factory (StoreFactory): Optional factory class that will be
+                instantiated and passed to the proxies. The factory class
+                should be able to correctly resolve an object from this store.
+                Defaults to None so the default of :func:`proxy()` is used.
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:

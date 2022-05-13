@@ -6,65 +6,60 @@ from typing import Any
 from typing import Sequence
 
 import proxystore as ps
-from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
-from proxystore.store.exceptions import ProxyResolveMissingKey
+from proxystore.store.base import StoreFactory
 
 logger = logging.getLogger(__name__)
 
 
-class LocalFactory(Factory):
-    """Factory for LocalStore.
+class LocalFactory(StoreFactory):
+    """Factory for LocalStore."""
 
-    The :class:`LocalFactory <.LocalFactory>` stores a key, and when called,
-    the :class:`LocalFactory <.LocalFactory>` returns the object associated
-    with the key in the :any:`LocalStore <proxystore.store.local.LocalStore>`.
-    """
-
-    def __init__(self, key: str, name: str, *, evict: bool = False) -> None:
+    def __init__(
+        self,
+        key: str,
+        store_name: str,
+        store_kwargs: dict[str, Any] | None = None,
+        *,
+        evict: bool = False,
+    ) -> None:
         """Init LocalFactory.
 
         Args:
             key (str): key corresponding to object in store.
-            name (str): name of store that created this factory.
+            store_name (str): name of store
+            store_kwargs (dict): optional keyword arguments used to
+                reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
+        """
+        super().__init__(
+            key,
+            store_type=LocalStore,
+            store_name=store_name,
+            store_kwargs=store_kwargs,
+            evict=evict,
+        )
+
+    def get_store(self) -> Store:
+        """Get store and raise RuntimeError if it is missing.
 
         Raises:
             RuntimeError:
                 if :func:`resolve` is called but a LocalStore
                 has not been initialized.
+            ValueError:
+                if the type of the returned store does not match the expected
+                store type passed to the factory constructor.
         """
-        self.key = key
-        self.name = name
-        self.evict = evict
-
-    def resolve(self) -> Any:
-        """Resolve and return object from store.
-
-        Raises:
-            RuntimeError:
-                if a LocalStore with name has not been initialized.
-            ProxyResolveMissingKey:
-                if the key associated with this factory does not exist
-                in the store.
-        """
-        store = ps.store.get_store(self.name)
+        store = ps.store.get_store(self.store_name)
         if store is None:
             raise RuntimeError(
-                'LocalStore is not initialized, cannot resolve factory',
+                f'LocalStore with name {self.store_name} does not exist.',
             )
-        obj = store.get(self.key)
-        if obj is None:
-            raise ProxyResolveMissingKey(self.key, LocalStore, self.name)
-        if self.evict:
-            store.evict(self.key)
-        return obj
 
-    def __getnewargs_ex__(self) -> tuple[tuple[str, str], dict[str, Any]]:
-        """Correct pickling."""
-        return (self.key, self.name), {'evict': self.evict}
+        return super().get_store()
 
 
 class LocalStore(Store):
@@ -200,7 +195,14 @@ class LocalStore(Store):
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
-        return Proxy(factory(key=key, name=self.name, **kwargs))
+        return Proxy(
+            factory(
+                key=key,
+                store_name=self.name,
+                store_kwargs=self.kwargs,
+                **kwargs,
+            ),
+        )
 
     def proxy_batch(  # type: ignore[override]
         self,
