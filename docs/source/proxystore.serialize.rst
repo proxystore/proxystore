@@ -3,5 +3,5 @@ proxystore.serialize
 
 .. automodule:: proxystore.serialize
    :members:
-   :member-order: bysource
+   :inherited-members:
    :show-inheritance:
