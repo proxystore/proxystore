@@ -41,23 +41,12 @@ class RedisStore(Store):
         self,
         kwargs: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
         if kwargs is None:
             kwargs = {}
         kwargs.update({'hostname': self.hostname, 'port': self.port})
         return super()._kwargs(kwargs)
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from Redis.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
-        """
         self._redis_client.delete(key)
         self._cache.evict(key)
         logger.debug(
@@ -66,53 +55,18 @@ class RedisStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in Redis.
-
-        Args:
-            key (str): key to check.
-
-        Returns:
-            `bool`
-        """
         return self._redis_client.exists(key)
 
     def get_bytes(self, key: str) -> bytes | None:
-        """Get serialized object from Redis.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
-        """
         return self._redis_client.get(key)
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            timestamp (float) of when key was added to redis (seconds since
-            epoch).
-
-        Raises:
-            KeyError:
-                if `key` does not exist in store.
-        """
         value = self._redis_client.get(key + '_timestamp')
         if value is None:
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Redis with key.
-
-        Args:
-            key (str): key corresponding to object.
-            data (bytes): serialized object.
-        """
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
         # We store the creation time for the key as a separate redis key-value.

@@ -25,24 +25,7 @@ class LocalStore(Store):
         kwargs['cache_size'] = 0
         super().__init__(name, **kwargs)
 
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
-        return super()._kwargs(kwargs)
-
     def evict(self, key: str) -> None:
-        """Evict object associated with key.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
-        """
         if key in self._store:
             del self._store[key]
         logger.debug(
@@ -51,21 +34,12 @@ class LocalStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists.
-
-        Args:
-            key (str): key to check.
-
-        Returns:
-            `bool`
-        """
         return key in self._store
 
     def get_bytes(self, key: str) -> bytes | None:
         return self._store.get(key, None)
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store."""
         return 0
 
     def set_bytes(self, key: str, data: bytes) -> None:

@@ -330,12 +330,6 @@ class GlobusStore(Store):
         self,
         kwargs: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
         if kwargs is None:
             kwargs = {}
         kwargs.update(
@@ -511,11 +505,6 @@ class GlobusStore(Store):
             self._wait_on_tasks(tdata['task_id'])
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from the Globus synced directory.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
-        """
         if not self.exists(key):
             return
 
@@ -530,28 +519,12 @@ class GlobusStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists.
-
-        Args:
-            key (str): key to check.
-
-        Returns:
-            `bool`
-        """
         if not self._validate_key(key):
             return False
         self._wait_on_tasks(self._get_task_id(key))
         return os.path.exists(self._get_filepath(self._get_filename(key)))
 
     def get_bytes(self, key: str) -> bytes | None:
-        """Get serialized object from Globus.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
-        """
         if not self.exists(key):
             return None
 
@@ -560,19 +533,6 @@ class GlobusStore(Store):
             return f.read()
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            timestamp (float) representing file modified time (seconds since
-            epoch).
-
-        Raises:
-            KeyError:
-                if `key` does not exist in store.
-        """
         if not self.exists(key):
             raise KeyError(
                 f"Key='{key}' does not have a corresponding file in the store",
@@ -587,20 +547,6 @@ class GlobusStore(Store):
         strict: bool = False,
         default: Any | None = None,
     ) -> Any | None:
-        """Return object associated with key.
-
-        Args:
-            key (str): key corresponding to object.
-            deserialize (bool): deserialize object if True. If objects
-                are custom serialized, set this as False (default: True).
-            strict (bool): guarantee returned object is the most recent
-                version (default: False).
-            default: optionally provide value to be returned if an object
-                associated with the key does not exist (default: None).
-
-        Returns:
-            object associated with key or `default` if key does not exist.
-        """
         if strict:
             warnings.warn(
                 'GlobusStore objects are immutable so setting strict=True '
@@ -632,25 +578,9 @@ class GlobusStore(Store):
         return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally.
-
-        Args:
-            key (str): key corresponding to object.
-            strict (bool): guarantee object in cache is most recent version.
-                Not supported in :class:`GlobusStore` (default: False).
-
-        Returns:
-            bool
-        """
         return self._cache.exists(key)
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Globus synced directory with key.
-
-        Args:
-            key (str): key corresponding to object.
-            data (bytes): serialized object.
-        """
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = self._get_filepath(key)
@@ -670,19 +600,6 @@ class GlobusStore(Store):
         key: str | None = None,
         serialize: bool = True,
     ) -> str:
-        """Set key-object pair in store.
-
-        Args:
-            obj (object): object to be placed in the store.
-            key (str, optional): key to used to name the file in the store.
-                If the key is not provided, one will be created. Note the
-                actual key that is returned by this function will be different.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-
-        Returns:
-            key (str)
-        """
         if serialize:
             obj = ps.serialize.serialize(obj)
         if key is None:
@@ -706,24 +623,6 @@ class GlobusStore(Store):
         keys: Sequence[str | None] | None = None,
         serialize: bool = True,
     ) -> list[str]:
-        """Set objects in store.
-
-        Args:
-            objs (Sequence[Any]): iterable of objects to be placed in the
-                store.
-            keys (Sequence[str], optional): keys to use with the objects.
-                If the keys are not provided, keys will be created.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-
-        Returns:
-            List of keys (str). Note that some implementations of a store may
-            return keys different from the provided keys.
-
-        Raises:
-            ValueError:
-                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
-        """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
                 f'objs has length {len(objs)} but keys has length {len(keys)}',

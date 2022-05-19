@@ -26,7 +26,8 @@ class FileStore(Store):
 
         Args:
             name (str): name of the store instance.
-            store_dir (str): path to directory
+            store_dir (str): path to directory to store data in. Note this
+                directory will be deleted upon closing the store.
             kwargs (dict): additional keyword arguments to pass to
                 :class:`Store <proxystore.store.base.Store>`.
         """
@@ -41,12 +42,6 @@ class FileStore(Store):
         self,
         kwargs: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
         if kwargs is None:
             kwargs = {}
         kwargs.update({'store_dir': self.store_dir})
@@ -66,11 +61,6 @@ class FileStore(Store):
         shutil.rmtree(self.store_dir)
 
     def evict(self, key: str) -> None:
-        """Remove the object associated with key from the file system store.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
-        """
         path = os.path.join(self.store_dir, key)
         if os.path.exists(path):
             os.remove(path)
@@ -81,26 +71,10 @@ class FileStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists in file system store.
-
-        Args:
-            key (str): key to check.
-
-        Returns:
-            `bool`
-        """
         path = os.path.join(self.store_dir, key)
         return os.path.exists(path)
 
     def get_bytes(self, key: str) -> bytes | None:
-        """Get serialized object from file system.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
-        """
         path = os.path.join(self.store_dir, key)
         if os.path.exists(path):
             with open(path, 'rb') as f:
@@ -109,19 +83,6 @@ class FileStore(Store):
         return None
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            timestamp (float) representing file modified time (seconds since
-            epoch).
-
-        Raises:
-            KeyError:
-                if `key` does not exist in store.
-        """
         if not self.exists(key):
             raise KeyError(
                 f"Key='{key}' does not have a corresponding file in the store",

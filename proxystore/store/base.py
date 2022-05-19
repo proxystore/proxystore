@@ -104,12 +104,7 @@ class StoreFactory(Factory):
         }
 
     def _get_value(self) -> Any:
-        """Get the value associated with the key from the store.
-
-        This method is intended to be overridden by child classes that
-        have special keyword arguments to pass to their corresponding
-        Store types.
-        """
+        """Get the value associated with the key from the store."""
         store = self.get_store()
         obj = store.get(
             self.key,
@@ -130,12 +125,7 @@ class StoreFactory(Factory):
         return obj
 
     def _should_resolve_async(self) -> bool:
-        """Check if it makes sense to do asynchronous resolution.
-
-        This method is intended to be overridden by child classes that may
-        have different conditions on which asynchronous resolution makes
-        sense.
-        """
+        """Check if it makes sense to do asynchronous resolution."""
         return not self.get_store().is_cached(
             self.key,
             strict=self.strict,
@@ -200,7 +190,8 @@ class Store(metaclass=ABCMeta):
 
     The :class:`Store` handles caching and stores all objects as key-bytestring
     pairs, i.e., objects passed to :func:`get()` or :func:`set()` will be
-    appropriately (de)serialized.
+    appropriately (de)serialized before being passed to :func:`get_bytes()`
+    and :func:`set_bytes()`, respectively.
     """
 
     def __init__(
@@ -298,7 +289,8 @@ class Store(metaclass=ABCMeta):
         """Cleanup any objects associated with the store.
 
         Many :class:`Store <.Store>` types do not have any objects that
-        requiring cleaning up so this method is simply a no-op.
+        requiring cleaning up so this method a no-op by default unless
+        overridden.
 
         Warning:
             This method should only be called at the end of the program
@@ -335,7 +327,7 @@ class Store(metaclass=ABCMeta):
             key (str): key to check.
 
         Returns:
-            `bool`
+            if the key exists in the store.
         """
         raise NotImplementedError
 
@@ -400,7 +392,19 @@ class Store(metaclass=ABCMeta):
         raise NotImplementedError
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store."""
+        """Get timestamp of most recent object version in the store.
+
+        Args:
+            key (str): key corresponding to object.
+
+        Returns:
+            timestamp (float) representing file modified time (seconds since
+            epoch).
+
+        Raises:
+            KeyError:
+                if `key` does not exist in store.
+        """
         raise NotImplementedError
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
