@@ -9,7 +9,7 @@ STORE_DIR = '/tmp/proxystore-test-8456213966545'
 
 
 def test_kwargs() -> None:
-    """Test FileFactory kwargs."""
+    """Test FileStore kwargs."""
     store = FileStore('files', store_dir=STORE_DIR)
     assert store.kwargs['store_dir'] == STORE_DIR
 

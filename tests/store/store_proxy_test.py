@@ -9,6 +9,7 @@ from pytest import mark
 from pytest import raises
 
 import proxystore as ps
+from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from testing.store_utils import FILE_DIR
 from testing.store_utils import FILE_STORE
@@ -42,15 +43,17 @@ def test_store_factory(store_config) -> None:
 
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = store_config['factory'](
+    f = StoreFactory(
         key,
+        store_config['type'],
         store_config['name'],
         store_kwargs=store_config['kwargs'],
     )
     assert f() == [1, 2, 3]
 
-    f2 = store_config['factory'](
+    f2 = StoreFactory(
         key,
+        store_config['type'],
         store_config['name'],
         store_kwargs=store_config['kwargs'],
         evict=True,
@@ -62,8 +65,9 @@ def test_store_factory(store_config) -> None:
     key = store.set([1, 2, 3])
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = store_config['factory'](
+    f = StoreFactory(
         key,
+        store_config['type'],
         store_config['name'],
         store_kwargs=store_config['kwargs'],
     )
@@ -83,8 +87,9 @@ def test_store_factory(store_config) -> None:
 
     # Test raise error if we pass different store type to factory
     ps.store.init_store('LOCAL', name='local')
-    f = store_config['factory'](
+    f = StoreFactory(
         key,
+        store_config['type'],
         'local',
         store_kwargs=store_config['kwargs'],
     )
@@ -193,18 +198,6 @@ def test_proxy_batch(store_config) -> None:
     for p, v in zip(proxies, values):
         assert p == v
 
-    class MyFactory(ps.store.base.StoreFactory):
-        pass
-
-    # Test passing custom factory
-    proxies = store.proxy_batch(
-        values,
-        factory=MyFactory,
-        store_type=type(store),
-    )
-    for p, v in zip(proxies, values):
-        assert p == v
-
     store.close()
 
 
@@ -220,8 +213,9 @@ def test_raises_missing_key(store_config) -> None:
     key = 'test_key'
     assert not store.exists(key)
 
-    factory = store_config['factory'](
+    factory = StoreFactory(
         key,
+        store_config['type'],
         store_config['name'],
         store_config['kwargs'],
     )

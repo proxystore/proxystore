@@ -5,45 +5,6 @@ from pytest import raises
 
 import proxystore as ps
 from proxystore.store.exceptions import ProxyResolveMissingKey
-from proxystore.store.local import LocalFactory
-from proxystore.store.local import LocalStore
-
-
-def test_kwargs() -> None:
-    """Test LocalFactory kwargs."""
-    store = LocalStore(name='local')
-    assert not store.has_stats
-
-
-def test_local_factory() -> None:
-    """Test LocalFactory."""
-    key = 'key'
-    f = LocalFactory(key, store_name='local')
-    # Force delete LocalStore backend if it exists so resolving factory
-    # is no longer possible
-    ps.store._stores = {}
-    with raises(ProxyResolveMissingKey):
-        f()
-
-    store = ps.store.init_store(LocalStore, 'local')
-
-    key = store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, store_name='local')
-    assert f() == [1, 2, 3]
-
-    f2 = LocalFactory(key, store_name='local', evict=True)
-    assert store.exists(key)
-    assert f2() == [1, 2, 3]
-    assert not store.exists(key)
-
-    store.set([1, 2, 3], key=key)
-    f = LocalFactory(key, store_name='local')
-    f.resolve_async()
-    assert f() == [1, 2, 3]
-
-    f_str = ps.serialize.serialize(f)
-    f = ps.serialize.deserialize(f_str)
-    assert f() == [1, 2, 3]
 
 
 def test_local_store_proxy() -> None:
@@ -82,16 +43,11 @@ def test_local_store_proxy() -> None:
 
 
 def test_raises_missing_key() -> None:
-    """Test Proxy/Factory raise missing key error."""
+    """Test Proxy raises missing key error."""
     store = ps.store.init_store(ps.store.STORES.LOCAL, 'local')
 
     key = 'test_key'
     assert not store.exists(key)
-
-    factory = LocalFactory(key, 'local')
-
-    with raises(ProxyResolveMissingKey):
-        factory.resolve()
 
     proxy = store.proxy(key=key)
     with raises(ProxyResolveMissingKey):

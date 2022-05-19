@@ -428,7 +428,6 @@ class Store(metaclass=ABCMeta):
         obj: Any | None = None,
         *,
         key: str | None = None,
-        factory: type[StoreFactory] = StoreFactory,
         **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.
@@ -449,10 +448,6 @@ class Store(metaclass=ABCMeta):
                 (default: None).
             key (str): optional key to associate with `obj` in the store.
                 If not provided, a key will be generated (default: None).
-            factory (StoreFactory): factory class that will be instantiated
-                and passed to the proxy. The factory class should be able
-                to correctly resolve the object from this store (default:
-                :any:`StoreFactory <proxystore.store.base.StoreFactory>`).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -480,8 +475,9 @@ class Store(metaclass=ABCMeta):
             f"(name='{self.name}')",
         )
         return Proxy(
-            factory(
+            StoreFactory(
                 final_key,
+                store_type=type(self),
                 store_name=self.name,
                 store_kwargs=self.kwargs,
                 **kwargs,
@@ -493,7 +489,6 @@ class Store(metaclass=ABCMeta):
         objs: Sequence[Any] | None = None,
         *,
         keys: Sequence[str] | None = None,
-        factory: StoreFactory | None = None,
         **kwargs: Any,
     ) -> list[ps.proxy.Proxy]:
         """Create proxies for batch of objects in the store.
@@ -508,10 +503,6 @@ class Store(metaclass=ABCMeta):
                 already in the store (default: None).
             keys (Sequence[str]): optional keys to associate with `objs` in the
                 store. If not provided, keys will be generated (default: None).
-            factory (StoreFactory): Optional factory class that will be
-                instantiated and passed to the proxies. The factory class
-                should be able to correctly resolve an object from this store.
-                Defaults to None so the default of :func:`proxy()` is used.
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -536,8 +527,6 @@ class Store(metaclass=ABCMeta):
             final_keys = list(keys)
         else:
             raise ValueError('At least one of keys or objs must be specified')
-        if factory is not None:
-            kwargs['factory'] = factory
         return [self.proxy(None, key=key, **kwargs) for key in final_keys]
 
     def set(

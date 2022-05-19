@@ -17,7 +17,7 @@ def init():
 
 
 def test_kwargs() -> None:
-    """Test RedisFactory kwargs."""
+    """Test RedisStore kwargs."""
     store = RedisStore(REDIS_STORE['name'], **REDIS_STORE['kwargs'])
     for key, value in REDIS_STORE['kwargs'].items():
         assert store.kwargs[key] == value

@@ -7,59 +7,9 @@ from typing import Any
 
 import redis  # type: ignore
 
-import proxystore as ps
 from proxystore.store.base import Store
-from proxystore.store.base import StoreFactory
 
 logger = logging.getLogger(__name__)
-
-
-class RedisFactory(StoreFactory):
-    """Factory for Instances of RedisStore.
-
-    Adds support for asynchronously retrieving objects from a
-    :class:`RedisStore <.RedisStore>` backend and optional, strict guarantees
-    on object versions.
-
-    The factory takes the `store_type` and `store_args` parameters that are
-    used to reinitialize the backend store if the factory is sent to a remote
-    process backend has not already been initialized.
-    """
-
-    def __init__(
-        self,
-        key: str,
-        store_name: str,
-        store_kwargs: dict[str, Any] | None = None,
-        *,
-        evict: bool = False,
-        serialize: bool = True,
-        strict: bool = False,
-    ) -> None:
-        """Init RedisFactory.
-
-        Args:
-            key (str): key corresponding to object in store.
-            store_name (str): name of store.
-            store_kwargs (dict): optional keyword arguments used to
-                reinitialize store.
-            evict (bool): If True, evict the object from the store once
-                :func:`resolve()` is called (default: False).
-            serialize (bool): if True, object in store is serialized and
-                should be deserialized upon retrieval (default: True).
-            strict (bool): guarantee object produce when this object is called
-                is the most recent version of the object associated with the
-                key in the store (default: False).
-        """
-        super().__init__(
-            key,
-            RedisStore,
-            store_name,
-            store_kwargs,
-            evict=evict,
-            serialize=serialize,
-            strict=strict,
-        )
 
 
 class RedisStore(Store):
@@ -155,37 +105,6 @@ class RedisStore(Store):
         if value is None:
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
-
-    def proxy(
-        self,
-        obj: Any | None = None,
-        *,
-        key: str | None = None,
-        factory: type[StoreFactory] = RedisFactory,
-        **kwargs: Any,
-    ) -> ps.proxy.Proxy:
-        """Create a proxy that will resolve to an object in the store.
-
-        Args:
-            obj (object): object to place in store and return proxy for.
-                If an object is not provided, a key must be provided that
-                corresponds to an object already in the store (default: None).
-            key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
-                and passed to the proxy. The factory class should be able
-                to correctly resolve the object from this store
-                (default: :class:`RedisFactory <.RedisFactory>`).
-            kwargs (dict): additional arguments to pass to the Factory.
-
-        Returns:
-            :any:`Proxy <proxystore.proxy.Proxy>`
-
-        Raises:
-            ValueError:
-                if `key` and `obj` are both `None`.
-        """
-        return super().proxy(obj, key=key, factory=factory, **kwargs)
 
     def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in Redis with key.

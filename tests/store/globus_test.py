@@ -227,7 +227,7 @@ def test_globus_store_init() -> None:
 
 
 def test_kwargs() -> None:
-    """Test FileFactory kwargs."""
+    """Test GlobusStore kwargs."""
     store = GlobusStore('globus', **GLOBUS_STORE['kwargs'])
     passed_kwargs = GLOBUS_STORE['kwargs'].copy()
     # store.kwargs returns endpoints as a dict rather than GlobusEndpoints

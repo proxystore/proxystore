@@ -10,15 +10,11 @@ import redis  # type: ignore
 from _pytest.monkeypatch import MonkeyPatch
 from parsl.data_provider import globus
 
-from proxystore.store.file import FileFactory
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
-from proxystore.store.globus import GlobusFactory
 from proxystore.store.globus import GlobusStore
-from proxystore.store.local import LocalFactory
 from proxystore.store.local import LocalStore
-from proxystore.store.redis import RedisFactory
 from proxystore.store.redis import RedisStore
 
 REDIS_HOST = 'localhost'
@@ -45,25 +41,21 @@ LOCAL_STORE = {
     'type': LocalStore,
     'name': 'local',
     'kwargs': {},
-    'factory': LocalFactory,
 }
 FILE_STORE = {
     'type': FileStore,
     'name': 'file',
     'kwargs': {'store_dir': FILE_DIR},
-    'factory': FileFactory,
 }
 REDIS_STORE = {
     'type': RedisStore,
     'name': 'redis',
     'kwargs': {'hostname': REDIS_HOST, 'port': REDIS_PORT},
-    'factory': RedisFactory,
 }
 GLOBUS_STORE = {
     'type': GlobusStore,
     'name': 'globus',
     'kwargs': {'endpoints': MOCK_GLOBUS_ENDPOINTS},
-    'factory': GlobusFactory,
 }
 
 
