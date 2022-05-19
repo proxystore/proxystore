@@ -9,7 +9,6 @@ from time import perf_counter_ns
 from typing import Any
 from typing import Callable
 from typing import cast
-from typing import Iterable
 from typing import Iterator
 from typing import KeysView
 from typing import NamedTuple
@@ -17,7 +16,7 @@ from typing import TypeVar
 
 import proxystore as ps
 
-FuncType = TypeVar('FuncType', bound=Callable[..., Any])
+GenericCallable = TypeVar('GenericCallable', bound=Callable[..., Any])
 
 
 STORE_METHOD_KEY_IS_RESULT = {
@@ -115,7 +114,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             self._events[event] = TimeStats()
         return self._events[event]
 
-    def __iter__(self) -> Iterator[Any]:
+    def __iter__(self) -> Iterator[Event]:
         """Get an iterator of events."""
         return iter(self._events)
 
@@ -135,22 +134,19 @@ class FunctionEventStats(MutableMapping):  # type: ignore
                 f'value (stats) must be of type {TimeStats.__name__}. '
                 f'Got type {type(stats)}.',
             )
-        self._events[event] = stats
 
-    def keys(self) -> KeysView[Any]:
+        if event in self._events:
+            self._events[event] += stats
+        else:
+            self._events[event] = stats
+
+    def keys(self) -> KeysView[Event]:
         """Returns list of events being tracked."""
         return self._events.keys()
 
-    def update(self, iterable: Iterable[Any]) -> None:  # type: ignore
-        """Update self from a dict or iterable of items."""
-        if isinstance(iterable, dict):
-            iterable = iterable.items()
-        for event, stats in iterable:
-            self[event] += stats
-
     def _function(
         self,
-        function: FuncType,
+        function: GenericCallable,
         key_is_result: bool,
         preset_key: str | None,
         *args: Any,
@@ -193,11 +189,11 @@ class FunctionEventStats(MutableMapping):  # type: ignore
 
     def wrap(
         self,
-        function: FuncType,
+        function: GenericCallable,
         *,
         key_is_result: bool = False,
         preset_key: str | None = None,
-    ) -> FuncType:
+    ) -> GenericCallable:
         """Wraps a method to log stats on calls to the function.
 
         Args:
@@ -212,4 +208,4 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         """
         out_fun = partial(self._function, function, key_is_result, preset_key)
 
-        return cast(FuncType, out_fun)
+        return cast(GenericCallable, out_fun)
