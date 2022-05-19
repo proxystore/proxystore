@@ -552,30 +552,12 @@ class GlobusStore(Store):
                 'GlobusStore objects are immutable so setting strict=True '
                 'has no effect.',
             )
-        if self.is_cached(key, strict=strict):
-            value = self._cache.get(key)
-            logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=True",
-            )
-            return value
-
-        value = self.get_bytes(key)
-        if value is not None:
-            if deserialize:
-                value = ps.serialize.deserialize(value)
-            self._cache.set(key, value)
-            logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=False",
-            )
-            return value
-
-        logger.debug(
-            f"GET key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}'): key did not exist, returned default",
+        return super().get(
+            key,
+            deserialize=deserialize,
+            strict=False,
+            default=default,
         )
-        return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
         return self._cache.exists(key)
