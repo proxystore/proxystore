@@ -1,4 +1,4 @@
-"""Store Factory and Proxy Tests for RemoteStore Subclasses."""
+"""Store Factory and Proxy Tests for Store Subclasses."""
 from __future__ import annotations
 
 import os
@@ -81,7 +81,7 @@ def test_store_factory(store_config) -> None:
     f = ps.serialize.deserialize(f_str)
     assert f() == [1, 2, 3]
 
-    # Test raise error if we pass store name for not RemoteStore to factory
+    # Test raise error if we pass different store type to factory
     ps.store.init_store('LOCAL', name='local')
     f = store_config['factory'](
         key,
@@ -193,16 +193,19 @@ def test_proxy_batch(store_config) -> None:
     for p, v in zip(proxies, values):
         assert p == v
 
+    class MyFactory(ps.store.base.StoreFactory):
+        pass
+
     # Test passing custom factory
     proxies = store.proxy_batch(
         values,
-        factory=ps.store.remote.RemoteFactory,
+        factory=MyFactory,
         store_type=type(store),
     )
     for p, v in zip(proxies, values):
         assert p == v
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])

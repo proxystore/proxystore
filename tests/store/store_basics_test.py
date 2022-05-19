@@ -11,7 +11,7 @@ from pytest import raises
 
 import proxystore as ps
 from proxystore.store.base import Store
-from proxystore.store.remote import RemoteStore
+from proxystore.store.local import LocalStore
 from testing.store_utils import FILE_DIR
 from testing.store_utils import FILE_STORE
 from testing.store_utils import GLOBUS_STORE
@@ -47,7 +47,15 @@ def test_store_init(store_config) -> None:
     )
     assert isinstance(store, Store)
 
-    if issubclass(store_config['type'], RemoteStore):
+    if isinstance(store, LocalStore):
+        # LocalStore overrides cache size to 0
+        ps.store.init_store(
+            store_config['type'],
+            store_config['name'],
+            **store_config['kwargs'],
+            cache_size=-1,
+        )
+    else:
         with raises(ValueError):
             # Negative Cache Size Error
             ps.store.init_store(
@@ -98,7 +106,7 @@ def test_store_base(store_config) -> None:
     assert not store.is_cached(key_str)
     store.evict(key_fake)
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
@@ -141,7 +149,7 @@ def test_store_caching(store_config) -> None:
     assert store.get(key1) == value
     assert not store.is_cached(key1)
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
@@ -239,7 +247,7 @@ def test_store_batch_ops(store_config) -> None:
     with raises(ValueError):
         store.set_batch(values, keys=new_keys[:1])
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
@@ -252,9 +260,8 @@ def test_store_batch_ops_remote(store_config) -> None:
 
     values = ['test_value1', 'test_value2', 'test_value3']
 
-    # Subclasses of RemoteStore have an additional serialize parameter
     new_keys = store.set_batch(values, serialize=True)
     for key in new_keys:
         assert store.exists(key)
 
-    store.cleanup()
+    store.close()

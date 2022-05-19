@@ -19,8 +19,8 @@ import globus_sdk
 from parsl.data_provider import globus
 
 import proxystore as ps
-from proxystore.store.remote import RemoteFactory
-from proxystore.store.remote import RemoteStore
+from proxystore.store.base import Store
+from proxystore.store.base import StoreFactory
 
 logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
@@ -231,7 +231,7 @@ class GlobusEndpoints:
         raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
-class GlobusFactory(RemoteFactory):
+class GlobusFactory(StoreFactory):
     """Factory for Instances of GlobusStore.
 
     Adds support for asynchronously retrieving objects from a
@@ -278,7 +278,7 @@ class GlobusFactory(RemoteFactory):
         )
 
 
-class GlobusStore(RemoteStore):
+class GlobusStore(Store):
     """Globus backend class.
 
     The :class:`GlobusStore <.GlobusStore>` is similar to a
@@ -335,7 +335,7 @@ class GlobusStore(RemoteStore):
             sync_level (str, int): Globus transfer sync level.
             timeout (int): timeout in seconds for waiting on Globus tasks.
             kwargs (dict): additional keyword arguments to pass to
-                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
+                :class:`Store <proxystore.store.base.Store>`.
 
         Raise:
             ValueError:
@@ -534,7 +534,7 @@ class GlobusStore(RemoteStore):
 
         return tdata['task_id']
 
-    def cleanup(self) -> None:
+    def close(self) -> None:
         """Cleanup directories used by ProxyStore in the Globus endpoints.
 
         Warning:
@@ -692,12 +692,12 @@ class GlobusStore(RemoteStore):
         """
         return self._cache.exists(key)
 
-    def proxy(  # type: ignore[override]
+    def proxy(
         self,
         obj: Any | None = None,
         *,
         key: str | None = None,
-        factory: type[RemoteFactory] = GlobusFactory,
+        factory: type[StoreFactory] = GlobusFactory,
         **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.

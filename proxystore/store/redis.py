@@ -8,13 +8,13 @@ from typing import Any
 import redis  # type: ignore
 
 import proxystore as ps
-from proxystore.store.remote import RemoteFactory
-from proxystore.store.remote import RemoteStore
+from proxystore.store.base import Store
+from proxystore.store.base import StoreFactory
 
 logger = logging.getLogger(__name__)
 
 
-class RedisFactory(RemoteFactory):
+class RedisFactory(StoreFactory):
     """Factory for Instances of RedisStore.
 
     Adds support for asynchronously retrieving objects from a
@@ -62,7 +62,7 @@ class RedisFactory(RemoteFactory):
         )
 
 
-class RedisStore(RemoteStore):
+class RedisStore(Store):
     """Redis backend class."""
 
     def __init__(
@@ -80,7 +80,7 @@ class RedisStore(RemoteStore):
             hostname (str): Redis server hostname.
             port (int): Redis server port.
             kwargs (dict): additional keyword arguments to pass to
-                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
+                :class:`Store <proxystore.store.base.Store>`.
         """
         self.hostname = hostname
         self.port = port
@@ -156,12 +156,12 @@ class RedisStore(RemoteStore):
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
 
-    def proxy(  # type: ignore[override]
+    def proxy(
         self,
         obj: Any | None = None,
         *,
         key: str | None = None,
-        factory: type[RemoteFactory] = RedisFactory,
+        factory: type[StoreFactory] = RedisFactory,
         **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.

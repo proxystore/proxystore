@@ -12,6 +12,8 @@ from typing import Sequence
 
 import proxystore as ps
 from proxystore.factory import Factory
+from proxystore.proxy import Proxy
+from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
@@ -40,7 +42,8 @@ class StoreFactory(Factory):
         store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
-        **kwargs: Any,
+        serialize: bool = True,
+        strict: bool = False,
     ) -> None:
         """Init StoreFactory.
 
@@ -53,17 +56,19 @@ class StoreFactory(Factory):
                 reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
-            kwargs (dict): additional keyword arguments to set as attributes
-                of the factory.
+            serialize (bool): if True, object in store is serialized and
+                should be deserialized upon retrieval (default: True).
+            strict (bool): guarantee object produce when this object is called
+                is the most recent version of the object associated with the
+                key in the store (default: False).
         """
         self.key = key
         self.store_type = store_type
         self.store_name = store_name
         self.store_kwargs = {} if store_kwargs is None else store_kwargs
         self.evict = evict
-        self.kwargs = kwargs
-
-        self.__dict__.update(kwargs)
+        self.serialize = serialize
+        self.strict = strict
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
@@ -92,7 +97,11 @@ class StoreFactory(Factory):
             self.store_type,
             self.store_name,
             self.store_kwargs,
-        ), {'evict': self.evict, **self.kwargs}
+        ), {
+            'evict': self.evict,
+            'serialize': self.serialize,
+            'strict': self.strict,
+        }
 
     def _get_value(self) -> Any:
         """Get the value associated with the key from the store.
@@ -102,7 +111,11 @@ class StoreFactory(Factory):
         Store types.
         """
         store = self.get_store()
-        obj = store.get(self.key)
+        obj = store.get(
+            self.key,
+            deserialize=self.serialize,
+            strict=self.strict,
+        )
 
         if obj is None:
             raise ProxyResolveMissingKey(
@@ -123,7 +136,10 @@ class StoreFactory(Factory):
         have different conditions on which asynchronous resolution makes
         sense.
         """
-        return not self.get_store().is_cached(self.key)
+        return not self.get_store().is_cached(
+            self.key,
+            strict=self.strict,
+        )
 
     def get_store(self) -> Store:
         """Get store and reinitialize if necessary.
@@ -172,16 +188,49 @@ class StoreFactory(Factory):
 
 
 class Store(metaclass=ABCMeta):
-    """Abstraction of a key-value store."""
+    """Key-value store interface.
 
-    def __init__(self, name: str, *, stats: bool = False) -> None:
+    Provides base functionality for interaction with an object store including
+    serialization and caching.
+
+    Subclasses of :class:`Store` must implement
+    :func:`evict() <Store.evict()>`, :func:`exists() <Store.exists()>`,
+    :func:`get_bytes()`, and :func:`set_bytes()`. Subclasses may implement
+    :func:`close() <Store.close()>` if needed.
+
+    The :class:`Store` handles caching and stores all objects as key-bytestring
+    pairs, i.e., objects passed to :func:`get()` or :func:`set()` will be
+    appropriately (de)serialized.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        cache_size: int = 16,
+        stats: bool = False,
+    ) -> None:
         """Init Store.
 
         Args:
             name (str): name of the store instance.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
             stats (bool): collect stats on store operations (default: False)
+
+        Raises:
+            ValueError:
+                if `cache_size` is less than zero.
         """
+        if cache_size < 0:
+            raise ValueError(
+                f'Cache size cannot be negative. Got {cache_size}.',
+            )
+
         self.name = name
+        self.cache_size = cache_size
+        self._cache = LRUCache(self.cache_size)
 
         self._stats: FunctionEventStats | None = None
         if stats:
@@ -203,7 +252,7 @@ class Store(metaclass=ABCMeta):
                     )
                     setattr(self, attr, wrapped)
 
-        logger.debug(f'Initialized {self}')
+        logger.debug(f'initialized {self}')
 
     @property
     def has_stats(self) -> bool:
@@ -240,10 +289,12 @@ class Store(metaclass=ABCMeta):
         """
         if kwargs is None:
             kwargs = {}
-        kwargs.update({'stats': self._stats is not None})
+        kwargs.update(
+            {'stats': self._stats is not None, 'cache_size': self.cache_size},
+        )
         return kwargs
 
-    def cleanup(self) -> None:
+    def close(self) -> None:
         """Cleanup any objects associated with the store.
 
         Many :class:`Store <.Store>` types do not have any objects that
@@ -288,18 +339,20 @@ class Store(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    @abstractmethod
     def get(
         self,
         key: str,
         *,
+        deserialize: bool = True,
         strict: bool = False,
-        default: Any = None,
+        default: object | None = None,
     ) -> object | None:
         """Return object associated with key.
 
         Args:
             key (str): key corresponding to object.
+            deserialize (bool): deserialize object if True. If objects
+                are custom serialized, set this as False (default: True).
             strict (bool): guarantee returned object is the most recent
                 version (default: False).
             default: optionally provide value to be returned if an object
@@ -308,9 +361,48 @@ class Store(metaclass=ABCMeta):
         Returns:
             object associated with key or `default` if key does not exist.
         """
-        raise NotImplementedError
+        if self.is_cached(key, strict=strict):
+            value = self._cache.get(key)['value']
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}'): was_cached=True",
+            )
+            return value
+
+        value = self.get_bytes(key)
+        if value is not None:
+            timestamp = self.get_timestamp(key)
+            if deserialize:
+                value = ps.serialize.deserialize(value)
+            self._cache.set(key, {'timestamp': timestamp, 'value': value})
+            logger.debug(
+                f"GET key='{key}' FROM {self.__class__.__name__}"
+                f"(name='{self.name}'): was_cached=False",
+            )
+            return value
+
+        logger.debug(
+            f"GET key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}'): key did not exist, returned default",
+        )
+        return default
 
     @abstractmethod
+    def get_bytes(self, key: str) -> bytes | None:
+        """Get serialized object from remote store.
+
+        Args:
+            key (str): key corresponding to object.
+
+        Returns:
+            serialized object or `None` if it does not exist.
+        """
+        raise NotImplementedError
+
+    def get_timestamp(self, key: str) -> float:
+        """Get timestamp of most recent object version in the store."""
+        raise NotImplementedError
+
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
         """Check if object is cached locally.
 
@@ -320,11 +412,17 @@ class Store(metaclass=ABCMeta):
                 (default: False).
 
         Returns:
-            `bool`
+            if the object associated with the key is cached.
         """
-        raise NotImplementedError
+        if self._cache.exists(key):
+            if strict:
+                store_timestamp = self.get_timestamp(key)
+                cache_timestamp = self._cache.get(key)['timestamp']
+                return cache_timestamp >= store_timestamp
+            return True
 
-    @abstractmethod
+        return False
+
     def proxy(
         self,
         obj: Any | None = None,
@@ -363,12 +461,33 @@ class Store(metaclass=ABCMeta):
         Raises:
             ValueError:
                 if `key` and `obj` are both `None`.
-            ValueError:
-                if `obj` is None and `key` does not exist in the store.
         """
-        raise NotImplementedError
+        if obj is not None:
+            if 'serialize' in kwargs:
+                final_key = self.set(
+                    obj,
+                    key=key,
+                    serialize=kwargs['serialize'],
+                )
+            else:
+                final_key = self.set(obj, key=key)
+        elif key is not None:
+            final_key = key
+        else:
+            raise ValueError('At least one of key or obj must be specified')
+        logger.debug(
+            f"PROXY key='{final_key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')",
+        )
+        return Proxy(
+            factory(
+                final_key,
+                store_name=self.name,
+                store_kwargs=self.kwargs,
+                **kwargs,
+            ),
+        )
 
-    @abstractmethod
     def proxy_batch(
         self,
         objs: Sequence[Any] | None = None,
@@ -404,29 +523,61 @@ class Store(metaclass=ABCMeta):
             ValueError:
                 if `objs` is None and `keys` does not exist in the store.
         """
-        raise NotImplementedError
+        if objs is not None:
+            if 'serialize' in kwargs:
+                final_keys = self.set_batch(
+                    objs,
+                    keys=keys,
+                    serialize=kwargs['serialize'],
+                )
+            else:
+                final_keys = self.set_batch(objs, keys=keys)
+        elif keys is not None:
+            final_keys = list(keys)
+        else:
+            raise ValueError('At least one of keys or objs must be specified')
+        if factory is not None:
+            kwargs['factory'] = factory
+        return [self.proxy(None, key=key, **kwargs) for key in final_keys]
 
-    @abstractmethod
-    def set(self, obj: Any, *, key: str | None = None) -> str:
+    def set(
+        self,
+        obj: Any,
+        *,
+        key: str | None = None,
+        serialize: bool = True,
+    ) -> str:
         """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
             key (str, optional): key to use with the object. If the key is not
                 provided, one will be created.
+            serialize (bool): serialize object if True. If object is already
+                custom serialized, set this as False (default: True).
 
         Returns:
             key (str). Note that some implementations of a store may return
             a key different from the provided key.
         """
-        raise NotImplementedError
+        if serialize:
+            obj = ps.serialize.serialize(obj)
+        if key is None:
+            key = self.create_key(obj)
 
-    @abstractmethod
+        self.set_bytes(key, obj)
+        logger.debug(
+            f"SET key='{key}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')",
+        )
+        return key
+
     def set_batch(
         self,
         objs: Sequence[Any],
         *,
         keys: Sequence[str | None] | None = None,
+        serialize: bool = True,
     ) -> list[str]:
         """Set objects in store.
 
@@ -435,6 +586,8 @@ class Store(metaclass=ABCMeta):
                 store.
             keys (Sequence[str], optional): keys to use with the objects.
                 If the keys are not provided, keys will be created.
+            serialize (bool): serialize object if True. If object is already
+                custom serialized, set this as False (default: True).
 
         Returns:
             List of keys (str). Note that some implementations of a store may
@@ -443,6 +596,26 @@ class Store(metaclass=ABCMeta):
         Raises:
             ValueError:
                 if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
+        """
+        if keys is not None and len(objs) != len(keys):
+            raise ValueError(
+                f'objs has length {len(objs)} but keys has length {len(keys)}',
+            )
+        if keys is None:
+            keys = [None] * len(objs)
+
+        return [
+            self.set(obj, key=key, serialize=serialize)
+            for key, obj in zip(keys, objs)
+        ]
+
+    @abstractmethod
+    def set_bytes(self, key: str, data: bytes) -> None:
+        """Set serialized object in remote store with key.
+
+        Args:
+            key (str): key corresponding to object.
+            data (bytes): serialized object.
         """
         raise NotImplementedError
 

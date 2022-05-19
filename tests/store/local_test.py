@@ -12,9 +12,6 @@ from proxystore.store.local import LocalStore
 def test_kwargs() -> None:
     """Test LocalFactory kwargs."""
     store = LocalStore(name='local')
-    assert store.kwargs == {
-        'stats': False,
-    }
     assert not store.has_stats
 
 
@@ -23,9 +20,9 @@ def test_local_factory() -> None:
     key = 'key'
     f = LocalFactory(key, store_name='local')
     # Force delete LocalStore backend if it exists so resolving factory
-    # raises not initialized error
+    # is no longer possible
     ps.store._stores = {}
-    with raises(RuntimeError):
+    with raises(ProxyResolveMissingKey):
         f()
 
     store = ps.store.init_store(LocalStore, 'local')
@@ -81,7 +78,7 @@ def test_local_store_proxy() -> None:
     for p, v in zip(proxies, batch_values):
         assert p == v
 
-    store.cleanup()
+    store.close()
 
 
 def test_raises_missing_key() -> None:

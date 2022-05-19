@@ -14,15 +14,15 @@ def test_kwargs() -> None:
     assert store.kwargs['store_dir'] == STORE_DIR
 
     assert store._kwargs({'test': 1})['test'] == 1
-    store.cleanup()
+    store.close()
 
 
-def test_file_store_cleanup() -> None:
+def test_file_store_close() -> None:
     """Test FileStore Cleanup."""
     store = FileStore('files', store_dir=STORE_DIR)
 
     assert os.path.exists(STORE_DIR)
 
-    store.cleanup()
+    store.close()
 
     assert not os.path.exists(STORE_DIR)

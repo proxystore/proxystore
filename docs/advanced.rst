@@ -129,7 +129,7 @@ A future for the thread is store inside the factory (and therefore inside the pr
 Caching
 -------
 
-The :any:`RemoteStore <proxystore.store.remote.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
+The :any:`Store <proxystore.store.base.Store>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
 Caches are local to the Python process but will speed up the resolution when multiple proxies refer to the same object in the Redis server.
 
 Transactional Guarantees

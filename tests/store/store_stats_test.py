@@ -1,4 +1,4 @@
-"""RemoteStore Stat Tracking Tests."""
+"""Store Stat Tracking Tests."""
 from __future__ import annotations
 
 import os
@@ -52,7 +52,7 @@ def test_init_stats(store_config) -> None:
 
     assert isinstance(store.stats('key'), dict)
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize(
@@ -90,7 +90,7 @@ def test_stat_tracking(store_config) -> None:
 
     assert len(stats) == 0
 
-    store.cleanup()
+    store.close()
 
 
 @mark.parametrize(
@@ -180,4 +180,4 @@ def test_factory_preserves_tracking(store_config) -> None:
     assert isinstance(store.stats(key), dict)
     assert store.stats(key)['get'].calls == 1
 
-    store.cleanup()
+    store.close()

@@ -8,13 +8,13 @@ import time
 from typing import Any
 
 import proxystore as ps
-from proxystore.store.remote import RemoteFactory
-from proxystore.store.remote import RemoteStore
+from proxystore.store.base import Store
+from proxystore.store.base import StoreFactory
 
 logger = logging.getLogger(__name__)
 
 
-class FileFactory(RemoteFactory):
+class FileFactory(StoreFactory):
     """Factory for Instances of FileStore.
 
     Adds support for asynchronously retrieving objects from a
@@ -62,7 +62,7 @@ class FileFactory(RemoteFactory):
         )
 
 
-class FileStore(RemoteStore):
+class FileStore(Store):
     """File backend class."""
 
     def __init__(
@@ -78,7 +78,7 @@ class FileStore(RemoteStore):
             name (str): name of the store instance.
             store_dir (str): path to directory
             kwargs (dict): additional keyword arguments to pass to
-                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
+                :class:`Store <proxystore.store.base.Store>`.
         """
         self.store_dir = store_dir
 
@@ -102,7 +102,7 @@ class FileStore(RemoteStore):
         kwargs.update({'store_dir': self.store_dir})
         return super()._kwargs(kwargs)
 
-    def cleanup(self) -> None:
+    def close(self) -> None:
         """Cleanup all files associated with the file system store.
 
         Warning:
@@ -178,12 +178,12 @@ class FileStore(RemoteStore):
             )
         return os.path.getmtime(os.path.join(self.store_dir, key))
 
-    def proxy(  # type: ignore[override]
+    def proxy(
         self,
         obj: Any | None = None,
         *,
         key: str | None = None,
-        factory: type[RemoteFactory] = FileFactory,
+        factory: type[StoreFactory] = FileFactory,
         **kwargs: Any,
     ) -> ps.proxy.Proxy:
         """Create a proxy that will resolve to an object in the store.

@@ -23,4 +23,4 @@ def test_kwargs() -> None:
         assert store.kwargs[key] == value
 
     assert store._kwargs({'test': 1})['test'] == 1
-    store.cleanup()
+    store.close()

@@ -238,7 +238,7 @@ def test_kwargs() -> None:
         assert true_kwargs[key] == value
 
     assert store._kwargs({'test': 1})['test'] == 1
-    store.cleanup()
+    store.close()
 
 
 def test_globus_store_internals(monkeypatch) -> None:
