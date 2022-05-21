@@ -38,22 +38,7 @@ class LocalStore(Store):
         if store_dict is not None:
             self._store = store_dict
 
-        super().__init__(name, **kwargs)
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
-        if kwargs is None:
-            kwargs = {}
-        kwargs.update({'store_dict': self._store})
-        return super()._kwargs(kwargs)
+        super().__init__(name, kwargs={'store_dict': self._store}, **kwargs)
 
     def evict(self, key: str) -> None:
         if key in self._store:

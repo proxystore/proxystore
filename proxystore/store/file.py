@@ -36,16 +36,7 @@ class FileStore(Store):
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
 
-        super().__init__(name, **kwargs)
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        if kwargs is None:
-            kwargs = {}
-        kwargs.update({'store_dir': self.store_dir})
-        return super()._kwargs(kwargs)
+        super().__init__(name, kwargs={'store_dir': store_dir}, **kwargs)
 
     def close(self) -> None:
         """Cleanup all files associated with the file system store.

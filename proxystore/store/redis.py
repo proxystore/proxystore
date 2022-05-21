@@ -35,16 +35,11 @@ class RedisStore(Store):
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
-        super().__init__(name, **kwargs)
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        if kwargs is None:
-            kwargs = {}
-        kwargs.update({'hostname': self.hostname, 'port': self.port})
-        return super()._kwargs(kwargs)
+        super().__init__(
+            name,
+            kwargs={'hostname': self.hostname, 'port': self.port},
+            **kwargs,
+        )
 
     def evict(self, key: str) -> None:
         self._redis_client.delete(key)

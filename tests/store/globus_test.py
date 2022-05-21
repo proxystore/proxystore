@@ -206,21 +206,6 @@ def test_globus_store_init(globus_store) -> None:
         )
 
 
-def test_kwargs(globus_store) -> None:
-    """Test GlobusStore kwargs."""
-    store = GlobusStore('globus', **globus_store.kwargs)
-    passed_kwargs = globus_store.kwargs.copy()
-    # store.kwargs returns endpoints as a dict rather than GlobusEndpoints
-    passed_kwargs['endpoints'] = passed_kwargs['endpoints'].dict()
-
-    true_kwargs = store.kwargs
-    for key, value in passed_kwargs.items():
-        assert true_kwargs[key] == value
-
-    assert store._kwargs({'test': 1})['test'] == 1
-    store.close()
-
-
 def test_globus_store_internals(globus_store) -> None:
     """Test GlobusStore internal mechanisms."""
     store = GlobusStore('globus', **globus_store.kwargs)

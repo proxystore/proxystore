@@ -200,6 +200,7 @@ class Store(metaclass=ABCMeta):
         *,
         cache_size: int = 16,
         stats: bool = False,
+        kwargs: dict[str, Any] | None,
     ) -> None:
         """Init Store.
 
@@ -208,7 +209,10 @@ class Store(metaclass=ABCMeta):
             cache_size (int): size of LRU cache (in # of objects). If 0,
                 the cache is disabled. The cache is local to the Python
                 process (default: 16).
-            stats (bool): collect stats on store operations (default: False)
+            stats (bool): collect stats on store operations (default: False).
+            kwargs (dict): additional keyword arguments to return from
+                :func:`kwargs <.Store.kwargs>`. I.e., the additional keyword
+                arguments needed to reinitialize this store (default: None).
 
         Raises:
             ValueError:
@@ -220,8 +224,11 @@ class Store(metaclass=ABCMeta):
             )
 
         self.name = name
-        self.cache_size = cache_size
-        self._cache = LRUCache(self.cache_size)
+
+        self._cache = LRUCache(cache_size)
+        self._kwargs = {'stats': stats, 'cache_size': cache_size}
+        if kwargs is not None:  # pragma: no branch
+            self._kwargs.update(kwargs)
 
         self._stats: FunctionEventStats | None = None
         if stats:
@@ -266,24 +273,7 @@ class Store(metaclass=ABCMeta):
     @property
     def kwargs(self) -> dict[str, Any]:
         """Get kwargs for store instance."""
-        return self._kwargs()
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
-        if kwargs is None:  # pragma: no cover
-            kwargs = {}
-        kwargs.update(
-            {'stats': self._stats is not None, 'cache_size': self.cache_size},
-        )
-        return kwargs
+        return self._kwargs.copy()
 
     def close(self) -> None:
         """Cleanup any objects associated with the store.

@@ -324,24 +324,17 @@ class GlobusStore(Store):
             authorizer=parsl_globus_auth.authorizer,
         )
 
-        super().__init__(name, **kwargs)
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        if kwargs is None:
-            kwargs = {}
-        kwargs.update(
-            {
+        super().__init__(
+            name,
+            kwargs={
                 # Pass endpoints as a dict to make kwargs JSON serializable
                 'endpoints': self.endpoints.dict(),
                 'polling_interval': self.polling_interval,
                 'sync_level': self.sync_level,
                 'timeout': self.timeout,
             },
+            **kwargs,
         )
-        return super()._kwargs(kwargs)
 
     def _create_key(self, filename: str, task_id: str) -> str:
         """Create key for GlobusStore.

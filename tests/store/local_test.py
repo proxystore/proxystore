@@ -4,10 +4,14 @@ from __future__ import annotations
 from proxystore.store.local import LocalStore
 
 
-def test_kwargs(local_store) -> None:
-    """Test LocalStore kwargs."""
-    store = LocalStore('local', **local_store.kwargs)
-    assert store.kwargs['store_dict'] == local_store.kwargs['store_dict']
+def test_store_dict() -> None:
+    """Test LocalStore reusable dict."""
+    d = {}
+    store1 = LocalStore('local1', store_dict=d)
+    key = store1.set(123)
 
-    assert store._kwargs({'test': 1})['test'] == 1
-    store.close()
+    store2 = LocalStore('local2', store_dict=d)
+    assert store2.get(key) == 123
+
+    store3 = LocalStore('local3')
+    assert store3.get(key) is None
