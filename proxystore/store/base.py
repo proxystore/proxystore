@@ -278,7 +278,7 @@ class Store(metaclass=ABCMeta):
             kwargs (optional, dict): dict to use as return object. If None,
                 a new dict will be created.
         """
-        if kwargs is None:
+        if kwargs is None:  # pragma: no cover
             kwargs = {}
         kwargs.update(
             {'stats': self._stats is not None, 'cache_size': self.cache_size},
@@ -552,9 +552,15 @@ class Store(metaclass=ABCMeta):
         Returns:
             key (str). Note that some implementations of a store may return
             a key different from the provided key.
+
+        Raises:
+            TypeError:
+                if `serialize=False` and `obj` is not an instance of `bytes`.
         """
         if serialize:
             obj = ps.serialize.serialize(obj)
+        if not isinstance(obj, bytes):
+            raise TypeError('obj must be of type bytes if serialize=False.')
         if key is None:
             key = self.create_key(obj)
 

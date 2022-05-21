@@ -1,15 +1,19 @@
 """Mocking utilities for Store tests."""
 from __future__ import annotations
 
+import os
+import random
+import shutil
 import socket
 import uuid
 from typing import Any
+from typing import Generator
+from typing import NamedTuple
+from unittest import mock
 
-import globus_sdk
-import redis  # type: ignore
-from _pytest.monkeypatch import MonkeyPatch
-from parsl.data_provider import globus
+import pytest
 
+from proxystore.store.base import Store
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
@@ -17,46 +21,9 @@ from proxystore.store.globus import GlobusStore
 from proxystore.store.local import LocalStore
 from proxystore.store.redis import RedisStore
 
-REDIS_HOST = 'localhost'
-REDIS_PORT = 59465
-FILE_DIR = '/tmp/proxystore-test-298711396448'
-MOCK_GLOBUS_ENDPOINTS = GlobusEndpoints(
-    [
-        GlobusEndpoint(
-            uuid='EP1UUID',
-            endpoint_path='/~/',
-            local_path=FILE_DIR,
-            host_regex='localhost',
-        ),
-        GlobusEndpoint(
-            uuid='EP2UUID',
-            endpoint_path='/~/',
-            local_path=FILE_DIR,
-            host_regex='localhost',
-        ),
-    ],
-)
+
+FIXTURE_LIST = ['local_store', 'file_store', 'redis_store', 'globus_store']
 MOCK_REDIS_CACHE: dict[str, Any] = {}
-LOCAL_STORE = {
-    'type': LocalStore,
-    'name': 'local',
-    'kwargs': {},
-}
-FILE_STORE = {
-    'type': FileStore,
-    'name': 'file',
-    'kwargs': {'store_dir': FILE_DIR},
-}
-REDIS_STORE = {
-    'type': RedisStore,
-    'name': 'redis',
-    'kwargs': {'hostname': REDIS_HOST, 'port': REDIS_PORT},
-}
-GLOBUS_STORE = {
-    'type': GlobusStore,
-    'name': 'globus',
-    'kwargs': {'endpoints': MOCK_GLOBUS_ENDPOINTS},
-}
 
 
 class MockTransferData:
@@ -169,16 +136,83 @@ class MockStrictRedis:
         self.data[key] = value
 
 
-def mock_third_party_libs() -> MonkeyPatch:
-    """Get MonkeyPatch object for third party libs used by ProxyStore."""
-    mpatch = MonkeyPatch()
+class StoreInfo(NamedTuple):
+    """Info needed to initialize an arbitrary Store."""
+
+    type: type[Store]
+    name: str
+    kwargs: dict[str, Any]
+
+
+@pytest.fixture
+def local_store() -> Generator[StoreInfo, None, None]:
+    """Local Store fixture."""
+    store_dict: dict[str, bytes] = {}
+    yield StoreInfo(LocalStore, 'local', {'store_dict': store_dict})
+
+
+@pytest.fixture
+def file_store() -> Generator[StoreInfo, None, None]:
+    """File Store fixture."""
+    file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
+    yield StoreInfo(FileStore, 'file', {'store_dir': file_dir})
+    if os.path.exists(file_dir):  # pragma: no branch
+        shutil.rmtree(file_dir)
+
+
+@pytest.fixture
+def redis_store() -> Generator[StoreInfo, None, None]:
+    """Redis Store fixture."""
+    redis_host = 'localhost'
+    redis_port = random.randint(5500, 5999)
+
     # Make new global MOCK_REDIS_CACHE
     global MOCK_REDIS_CACHE
     MOCK_REDIS_CACHE = {}
-    mpatch.setattr(globus, 'get_globus', MockGlobusAuth)
-    mpatch.setattr(globus_sdk, 'TransferClient', MockTransferClient)
-    mpatch.setattr(globus_sdk, 'DeleteData', MockDeleteData)
-    mpatch.setattr(globus_sdk, 'TransferData', MockTransferData)
-    mpatch.setattr(socket, 'gethostname', lambda: 'localhost')
-    mpatch.setattr(redis, 'StrictRedis', MockStrictRedis)
-    return mpatch
+
+    with mock.patch('redis.StrictRedis', side_effect=MockStrictRedis):
+        yield StoreInfo(
+            RedisStore,
+            'redis',
+            {'hostname': redis_host, 'port': redis_port},
+        )
+
+
+@pytest.fixture
+def globus_store() -> Generator[StoreInfo, None, None]:
+    """Globus Store fixture."""
+    file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
+    endpoints = GlobusEndpoints(
+        [
+            GlobusEndpoint(
+                uuid='EP1UUID',
+                endpoint_path='/~/',
+                local_path=file_dir,
+                host_regex=socket.gethostname(),
+            ),
+            GlobusEndpoint(
+                uuid='EP2UUID',
+                endpoint_path='/~/',
+                local_path=file_dir,
+                host_regex=socket.gethostname(),
+            ),
+        ],
+    )
+
+    with mock.patch(
+        'parsl.data_provider.globus.get_globus',
+        return_value=MockGlobusAuth(),
+    ), mock.patch(
+        'globus_sdk.TransferClient',
+        side_effect=MockTransferClient,
+    ), mock.patch(
+        'globus_sdk.DeleteData',
+        side_effect=MockDeleteData,
+    ), mock.patch(
+        'globus_sdk.TransferData',
+        side_effect=MockTransferData,
+    ):
+        yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
+
+    if os.path.exists(file_dir):  # pragma: no branch
+        shutil.rmtree(file_dir)

@@ -1,42 +1,24 @@
 """Store Factory and Proxy Tests for Store Subclasses."""
 from __future__ import annotations
 
-import os
-import shutil
-
-from pytest import fixture
-from pytest import mark
-from pytest import raises
+import pytest
 
 import proxystore as ps
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKey
-from testing.store_utils import FILE_DIR
-from testing.store_utils import FILE_STORE
-from testing.store_utils import GLOBUS_STORE
-from testing.store_utils import mock_third_party_libs
-from testing.store_utils import REDIS_STORE
+from proxystore.store.local import LocalStore
+from testing.store_utils import FIXTURE_LIST
 
 
-@fixture(scope='session', autouse=True)
-def init():
-    """Set up test environment."""
-    mpatch = mock_third_party_libs()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-    yield mpatch
-    mpatch.undo()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-
-
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_factory(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_factory(store_fixture, request) -> None:
     """Test Store Factory."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
     )
 
     key = store.set([1, 2, 3])
@@ -45,17 +27,17 @@ def test_store_factory(store_config) -> None:
     ps.store._stores = {}
     f = StoreFactory(
         key,
-        store_config['type'],
-        store_config['name'],
-        store_kwargs=store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        store_kwargs=store_config.kwargs,
     )
     assert f() == [1, 2, 3]
 
     f2 = StoreFactory(
         key,
-        store_config['type'],
-        store_config['name'],
-        store_kwargs=store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        store_kwargs=store_config.kwargs,
         evict=True,
     )
     assert store.exists(key)
@@ -67,9 +49,9 @@ def test_store_factory(store_config) -> None:
     ps.store._stores = {}
     f = StoreFactory(
         key,
-        store_config['type'],
-        store_config['name'],
-        store_kwargs=store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        store_kwargs=store_config.kwargs,
     )
     f.resolve_async()
     assert f._obj_future is not None
@@ -85,25 +67,30 @@ def test_store_factory(store_config) -> None:
     f = ps.serialize.deserialize(f_str)
     assert f() == [1, 2, 3]
 
-    # Test raise error if we pass different store type to factory
-    ps.store.init_store('LOCAL', name='local')
+    class _MyStore(LocalStore):
+        pass
+
+    # Test raise error if store_name corresponds to store that does not
+    # match the type specified in the StoreFactory
     f = StoreFactory(
         key,
-        store_config['type'],
-        'local',
-        store_kwargs=store_config['kwargs'],
+        _MyStore,
+        store_config.name,
+        store_kwargs=store_config.kwargs,
     )
-    with raises(ValueError):
+    with pytest.raises(ValueError, match='store of type'):
         f()
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_proxy(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_proxy(store_fixture, request) -> None:
     """Test Store Proxy."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         cache_size=0,
     )
 
@@ -123,23 +110,25 @@ def test_store_proxy(store_config) -> None:
     key = ps.proxy.get_key(p)
     assert store.get(key=key) == [2, 3, 4]
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # At least one of key or object must be passed
         store.proxy()
 
-    with raises(Exception):
+    with pytest.raises(Exception):
         # String will not be serialized and should raise error when putting
         # array into Redis
         store.proxy('mystring', serialize=False)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_proxy_recreates_store(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_proxy_recreates_store(store_fixture, request) -> None:
     """Test Proxy Recreates Store."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         cache_size=0,
     )
 
@@ -154,32 +143,34 @@ def test_proxy_recreates_store(store_config) -> None:
 
     # The store that created the proxy had cache_size=0 so the restored
     # store should also have cache_size=0.
-    assert not ps.store.get_store(store_config['name']).is_cached(key)
+    assert not ps.store.get_store(store_config.name).is_cached(key)
 
     # Repeat above but with cache_size=1
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         cache_size=1,
     )
     p = store.proxy([1, 2, 3])
     key = ps.proxy.get_key(p)
     ps.store._stores = {}
     assert p == [1, 2, 3]
-    assert ps.store.get_store(store_config['name']).is_cached(key)
+    assert ps.store.get_store(store_config.name).is_cached(key)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_proxy_batch(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_proxy_batch(store_fixture, request) -> None:
     """Test Batch Creation of Proxies."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
     )
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         store.proxy_batch(None, keys=None)
 
     values = [b'test_value1', b'test_value2', b'test_value3']
@@ -201,13 +192,15 @@ def test_proxy_batch(store_config) -> None:
     store.close()
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_raises_missing_key(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_raises_missing_key(store_fixture, request) -> None:
     """Test Proxy/Factory raise missing key error."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
     )
 
     key = 'test_key'
@@ -215,13 +208,13 @@ def test_raises_missing_key(store_config) -> None:
 
     factory = StoreFactory(
         key,
-        store_config['type'],
-        store_config['name'],
-        store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        store_config.kwargs,
     )
-    with raises(ProxyResolveMissingKey):
+    with pytest.raises(ProxyResolveMissingKey):
         factory.resolve()
 
     proxy = store.proxy(key=key)
-    with raises(ProxyResolveMissingKey):
+    with pytest.raises(ProxyResolveMissingKey):
         proxy()

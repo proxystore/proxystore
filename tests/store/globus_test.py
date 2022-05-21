@@ -4,18 +4,15 @@ from __future__ import annotations
 import json
 import os
 import re
+import uuid
 
 import globus_sdk
-from pytest import fixture
-from pytest import raises
-from pytest import warns
+import pytest
 
 import proxystore as ps
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
-from testing.store_utils import GLOBUS_STORE
-from testing.store_utils import mock_third_party_libs
 
 
 EP1 = GlobusEndpoint(
@@ -50,38 +47,30 @@ EP5 = GlobusEndpoint(
 )
 
 
-@fixture(scope='session', autouse=True)
-def init():
-    """Monkeypatch Globus and Parsl."""
-    mpatch = mock_third_party_libs()
-    yield mpatch
-    mpatch.undo()
-
-
 def test_globus_endpoint_objects() -> None:
     """Test GlobusEndpoint(s) Objects."""
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid=1,
             endpoint_path='1',
             local_path='1',
             host_regex='1',
         )
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid='1',
             endpoint_path=1,
             local_path='1',
             host_regex='1',
         )
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid='1',
             endpoint_path='1',
             local_path=1,
             host_regex='1',
         )
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid='1',
             endpoint_path='1',
@@ -94,18 +83,18 @@ def test_globus_endpoint_objects() -> None:
     assert EP1 == EP5
 
     # Check must pass at least one endpoint
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         GlobusEndpoints([])
 
     # Check not able to pass multiple endpoints same UUID
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         GlobusEndpoints([EP1, EP5])
 
     eps = GlobusEndpoints([EP1, EP2, EP3, EP4])
     assert len(eps) == 4
 
     assert eps[EP1.uuid] == EP1
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         assert eps['-1']
 
     for x, y in zip([EP1, EP2], eps):
@@ -113,9 +102,9 @@ def test_globus_endpoint_objects() -> None:
 
     assert eps.get_by_host('localhost') == EP1
     assert eps.get_by_host('host4') == EP4
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         eps.get_by_host('host2_')
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         eps.get_by_host('host3')
 
 
@@ -133,7 +122,7 @@ def test_globus_endpoints_from_json() -> None:
             'host_regex': 'host2',
         },
     }
-    filepath = '/tmp/endpoints-2458984621396.json'
+    filepath = f'/tmp/endpoints-{uuid.uuid4()}.json'
     with open(filepath, 'w') as f:
         f.write(json.dumps(data))
 
@@ -173,7 +162,7 @@ def test_globus_endpoints_from_dict() -> None:
     assert isinstance(endpoints.dict()['UUID1']['host_regex'], str)
 
 
-def test_globus_store_init() -> None:
+def test_globus_store_init(globus_store) -> None:
     """Test GlobusStore Initialization."""
     eps = GlobusEndpoints([EP1, EP2])
 
@@ -192,16 +181,7 @@ def test_globus_store_init() -> None:
     )
     assert s1.kwargs == s2.kwargs == s3.kwargs
 
-    with raises(ValueError):
-        # Negative cache_size error
-        ps.store.init_store(
-            ps.store.STORES.GLOBUS,
-            'globus',
-            endpoints=eps,
-            cache_size=-1,
-        )
-
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Invalid endpoint type
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
@@ -209,7 +189,7 @@ def test_globus_store_init() -> None:
             endpoints=None,
         )
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Too many endpoints
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
@@ -217,7 +197,7 @@ def test_globus_store_init() -> None:
             endpoints=[EP1, EP2, EP3],
         )
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Not enough endpoints
         ps.store.init_store(
             ps.store.STORES.GLOBUS,
@@ -226,10 +206,10 @@ def test_globus_store_init() -> None:
         )
 
 
-def test_kwargs() -> None:
+def test_kwargs(globus_store) -> None:
     """Test GlobusStore kwargs."""
-    store = GlobusStore('globus', **GLOBUS_STORE['kwargs'])
-    passed_kwargs = GLOBUS_STORE['kwargs'].copy()
+    store = GlobusStore('globus', **globus_store.kwargs)
+    passed_kwargs = globus_store.kwargs.copy()
     # store.kwargs returns endpoints as a dict rather than GlobusEndpoints
     passed_kwargs['endpoints'] = passed_kwargs['endpoints'].dict()
 
@@ -241,47 +221,40 @@ def test_kwargs() -> None:
     store.close()
 
 
-def test_globus_store_internals(monkeypatch) -> None:
+def test_globus_store_internals(globus_store) -> None:
     """Test GlobusStore internal mechanisms."""
-    store = GlobusStore('globus', **GLOBUS_STORE['kwargs'])
+    store = GlobusStore('globus', **globus_store.kwargs)
 
-    with warns(Warning):
+    with pytest.warns(Warning):
         # Check that warning for not supporting strict is raised
         store.get('key', strict=True)
 
-    class PatchedTransferClient400(globus_sdk.TransferClient):
-        def get_task(self, *args, **kwargs):
-            class PatchedError(globus_sdk.TransferAPIError):
-                def __init__(self):
-                    self.http_status = 400
+    class PatchedError(globus_sdk.TransferAPIError):
+        def __init__(self, status: int):
+            self.http_status = status
 
-            raise PatchedError()
+    def _http_error(status: int) -> None:
+        def _error(*args, **kwargs) -> None:
+            raise PatchedError(status)
 
-    store._transfer_client = PatchedTransferClient400()
+        return _error
+
+    store._transfer_client.get_task = _http_error(400)
     assert not store._validate_key('uuid:filename')
 
-    class PatchedTransferClient401(globus_sdk.TransferClient):
-        def get_task(self, *args, **kwargs):
-            class PatchedError(globus_sdk.TransferAPIError):
-                def __init__(self):
-                    self.http_status = 401
-
-            raise PatchedError()
-
-    store._transfer_client = PatchedTransferClient401()
-    with raises(globus_sdk.TransferAPIError):
+    store._transfer_client.get_task = _http_error(401)
+    with pytest.raises(globus_sdk.TransferAPIError):
         store._validate_key('uuid:filename')
 
-    class PatchedTransferClientTimeout(globus_sdk.TransferClient):
-        def task_wait(self, *args, **kwargs):
-            return False
+    def _fail_wait(*args, **kwargs) -> None:
+        return False
 
-    store._transfer_client = PatchedTransferClientTimeout()
-    with raises(RuntimeError):
-        store._wait_on_tasks(['1234'])
+    store._transfer_client.task_wait = _fail_wait
+    with pytest.raises(RuntimeError):
+        store._wait_on_tasks('1234')
 
 
-def test_get_filepath(monkeypatch) -> None:
+def test_get_filepath(globus_store) -> None:
     """Test GlobusStore filepath building."""
     endpoints = GlobusEndpoints(
         [
@@ -300,7 +273,7 @@ def test_get_filepath(monkeypatch) -> None:
         ],
     )
 
-    store = GlobusStore('globus', endpoints=endpoints)
+    store = GlobusStore(globus_store.name, endpoints=endpoints)
 
     filename = 'test_file'
     for endpoint in endpoints:
@@ -308,7 +281,7 @@ def test_get_filepath(monkeypatch) -> None:
         assert store._get_filepath(filename, endpoint) == expected_path
 
 
-def test_expand_user_path(monkeypatch) -> None:
+def test_expand_user_path(globus_store) -> None:
     """Test GlobusStore expands user path."""
     store_dir = '.cache/proxystore_cache'
     short_path = os.path.join('~', store_dir)

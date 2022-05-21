@@ -67,8 +67,6 @@ class RedisStore(Store):
         return float(value.decode())
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         # We store the creation time for the key as a separate redis key-value.
         self._redis_client.set(key + '_timestamp', time.time())
         self._redis_client.set(key, data)

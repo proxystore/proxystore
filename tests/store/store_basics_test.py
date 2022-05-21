@@ -1,80 +1,46 @@
 """Store Base Functionality Tests."""
 from __future__ import annotations
 
-import os
-import shutil
-
 import numpy as np
-from pytest import fixture
-from pytest import mark
-from pytest import raises
+import pytest
 
 import proxystore as ps
 from proxystore.store.base import Store
-from proxystore.store.local import LocalStore
-from testing.store_utils import FILE_DIR
-from testing.store_utils import FILE_STORE
-from testing.store_utils import GLOBUS_STORE
-from testing.store_utils import LOCAL_STORE
-from testing.store_utils import mock_third_party_libs
-from testing.store_utils import REDIS_STORE
+from testing.store_utils import FIXTURE_LIST
 
 
-@fixture(scope='session', autouse=True)
-def init():
-    """Set up test environment."""
-    mpatch = mock_third_party_libs()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-    yield mpatch
-    mpatch.undo()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-
-
-@mark.parametrize(
-    'store_config',
-    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_store_init(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_init(store_fixture, request) -> None:
     """Test Store Base Functionality."""
-    store_config['type'](store_config['name'], **store_config['kwargs'])
+    store_config = request.getfixturevalue(store_fixture)
+
+    store_config.type(store_config.name, **store_config.kwargs)
 
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
     )
     assert isinstance(store, Store)
 
-    if isinstance(store, LocalStore):
-        # LocalStore overrides cache size to 0
+    with pytest.raises(ValueError):
+        # Negative Cache Size Error
         ps.store.init_store(
-            store_config['type'],
-            store_config['name'],
-            **store_config['kwargs'],
+            store_config.type,
+            store_config.name,
+            **store_config.kwargs,
             cache_size=-1,
         )
-    else:
-        with raises(ValueError):
-            # Negative Cache Size Error
-            ps.store.init_store(
-                store_config['type'],
-                store_config['name'],
-                **store_config['kwargs'],
-                cache_size=-1,
-            )
 
 
-@mark.parametrize(
-    'store_config',
-    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_store_base(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_base(store_fixture, request) -> None:
     """Test Store Base Functionality."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
     )
 
     key_fake = 'key_fake'
@@ -109,12 +75,14 @@ def test_store_base(store_config) -> None:
     store.close()
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_caching(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_caching(store_fixture, request) -> None:
     """Test Store Caching Functionality."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
         cache_size=1,
     )
 
@@ -140,9 +108,9 @@ def test_store_caching(store_config) -> None:
     assert store.is_cached(key2)
 
     # Now test cache size 0
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
         cache_size=0,
     )
     key1 = store.set(value)
@@ -152,29 +120,37 @@ def test_store_caching(store_config) -> None:
     store.close()
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_timestamps(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_timestamps(store_fixture, request) -> None:
     """Test Store Timestamps."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
         cache_size=1,
     )
 
     missing_key = 'key12398908352'
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         store.get_timestamp(missing_key)
 
     key = store.set('timestamp_test_value')
     assert isinstance(store.get_timestamp(key), float)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE])
-def test_store_strict(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_strict(store_fixture, request) -> None:
     """Test Store Strict Functionality."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    if store_config.type.__name__ == 'GlobusStore':
+        # GlobusStore does not support strict guarantees
+        return
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
         cache_size=1,
     )
 
@@ -202,32 +178,33 @@ def test_store_strict(store_config) -> None:
     assert store.is_cached(key, strict=True)
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_custom_serialization(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_custom_serialization(store_fixture, request) -> None:
     """Test Store Custom Serialization."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
     )
     # Pretend serialized string
     s = b'ABC'
     key = store.set(s, serialize=False)
     assert store.get(key, deserialize=False) == s
 
-    with raises(Exception):
+    with pytest.raises(TypeError, match='bytes'):
         # Should fail because the numpy array is not already serialized
         store.set(np.array([1, 2, 3]), key=key, serialize=False)
 
 
-@mark.parametrize(
-    'store_config',
-    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_store_batch_ops(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_batch_ops(store_fixture, request) -> None:
+    store_config = request.getfixturevalue(store_fixture)
+
     """Test Batch Operations."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
     )
 
     keys = ['key1', 'key2', 'key3']
@@ -244,18 +221,20 @@ def test_store_batch_ops(store_config) -> None:
         assert store.exists(key)
 
     # Test length mismatch between values and keys
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         store.set_batch(values, keys=new_keys[:1])
 
     store.close()
 
 
-@mark.parametrize('store_config', [FILE_STORE, REDIS_STORE, GLOBUS_STORE])
-def test_store_batch_ops_remote(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_store_batch_ops_remote(store_fixture, request) -> None:
     """Test Batch Operations for Remote Stores."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
     )
 
     values = ['test_value1', 'test_value2', 'test_value3']

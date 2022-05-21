@@ -96,8 +96,6 @@ class FileStore(Store):
             key (str): key corresponding to object.
             data (bytes): serialized object.
         """
-        if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = os.path.join(self.store_dir, key)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)

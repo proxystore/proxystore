@@ -1,25 +1,12 @@
 """Store Imports and Initialization Unit Tests."""
 from __future__ import annotations
 
-from pytest import fixture
-from pytest import raises
+import pytest
 
 import proxystore as ps
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
 from proxystore.store import STORES
-from testing.store_utils import mock_third_party_libs
-
-REDIS_HOST = 'localhost'
-REDIS_PORT = 59465
-
-
-@fixture(scope='session', autouse=True)
-def init():
-    """Set up test environment."""
-    mpatch = mock_third_party_libs()
-    yield mpatch
-    mpatch.undo()
 
 
 def test_imports() -> None:
@@ -42,16 +29,19 @@ def test_imports() -> None:
     assert callable(ps.store.init_store)
 
 
-def test_init_store() -> None:
+def test_init_store(local_store, redis_store) -> None:
     """Test init_store/get_store."""
     # Init by str name
-    local = ps.store.init_store('local', name='local')
+    local = ps.store.init_store(
+        local_store.type,
+        name='local',
+        **local_store.kwargs,
+    )
     assert isinstance(local, ps.store.local.LocalStore)
     redis = ps.store.init_store(
         'redis',
         name='redis',
-        hostname=REDIS_HOST,
-        port=REDIS_PORT,
+        **redis_store.kwargs,
     )
     assert isinstance(redis, ps.store.redis.RedisStore)
 
@@ -61,13 +51,16 @@ def test_init_store() -> None:
     ps.store._stores = {}
 
     # Init by enum
-    local = ps.store.init_store(STORES.LOCAL, name='local')
+    local = ps.store.init_store(
+        STORES.LOCAL,
+        name='local',
+        **local_store.kwargs,
+    )
     assert isinstance(local, ps.store.local.LocalStore)
     redis = ps.store.init_store(
         STORES.REDIS,
         name='redis',
-        hostname=REDIS_HOST,
-        port=REDIS_PORT,
+        **redis_store.kwargs,
     )
     assert isinstance(redis, ps.store.redis.RedisStore)
 
@@ -75,19 +68,23 @@ def test_init_store() -> None:
     assert redis == ps.store.get_store('redis')
 
     # Init by class type
-    local = ps.store.init_store(ps.store.local.LocalStore, name='local')
+    local = ps.store.init_store(
+        ps.store.local.LocalStore,
+        name='local',
+        **local_store.kwargs,
+    )
     assert isinstance(local, ps.store.local.LocalStore)
 
     ps.store._stores = {}
 
     # Specify name to have multiple stores of same type
-    local1 = ps.store.init_store(STORES.LOCAL, 'local1')
-    ps.store.init_store(STORES.LOCAL, 'local2')
+    local1 = ps.store.init_store(STORES.LOCAL, 'local1', **local_store.kwargs)
+    ps.store.init_store(STORES.LOCAL, 'local2', **local_store.kwargs)
 
     assert ps.store.get_store('local1') is not ps.store.get_store('local2')
 
     # Should overwrite old store
-    ps.store.init_store(STORES.LOCAL, 'local1')
+    ps.store.init_store(STORES.LOCAL, 'local1', **local_store.kwargs)
     assert local1 is not ps.store.get_store('local1')
 
     # Return None if store with name does not exist
@@ -105,17 +102,17 @@ def test_get_enum_by_type() -> None:
 
         pass
 
-    with raises(KeyError):
+    with pytest.raises(KeyError):
         STORES.get_str_by_type(FakeStore)
 
 
 def test_init_store_raises() -> None:
     """Test init_store raises."""
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Raise error because name cannot be found in STORES
         ps.store.init_store('unknown', name='')
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Raises error because type is not a subclass of Store
         class TestStore:
             pass
@@ -123,15 +120,18 @@ def test_init_store_raises() -> None:
         ps.store.init_store(TestStore, name='')
 
 
-def test_lookup_by_proxy() -> None:
+def test_lookup_by_proxy(local_store, redis_store) -> None:
     """Make sure get_store works with a proxy."""
     # Init by enum
-    local = ps.store.init_store(STORES.LOCAL, name='local')
+    local = ps.store.init_store(
+        STORES.LOCAL,
+        name='local',
+        **local_store.kwargs,
+    )
     redis = ps.store.init_store(
         STORES.REDIS,
         name='redis',
-        hostname=REDIS_HOST,
-        port=REDIS_PORT,
+        **redis_store.kwargs,
     )
 
     # Make a proxy with both
@@ -145,5 +145,5 @@ def test_lookup_by_proxy() -> None:
     # Make a proxy without an associated store
     f = SimpleFactory([1, 2, 3])
     p = Proxy(f)
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         ps.store.get_store(p)
