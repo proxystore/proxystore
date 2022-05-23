@@ -5,7 +5,7 @@ import logging
 import time
 from typing import Any
 
-import redis  # type: ignore
+import redis
 
 from proxystore.store.base import Store
 
@@ -50,7 +50,7 @@ class RedisStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        return self._redis_client.exists(key)
+        return bool(self._redis_client.exists(key))
 
     def get_bytes(self, key: str) -> bytes | None:
         return self._redis_client.get(key)

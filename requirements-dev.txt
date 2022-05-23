@@ -14,4 +14,6 @@ pytest-asyncio
 pytest-cov
 pytest-timeout
 tox
+types-redis
+types-requests
 virtualenv
