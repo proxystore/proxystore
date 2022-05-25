@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
 
 import redis
 
@@ -21,7 +20,8 @@ class RedisStore(Store):
         *,
         hostname: str,
         port: int,
-        **kwargs: Any,
+        cache_size: int = 16,
+        stats: bool = False,
     ) -> None:
         """Init RedisStore.
 
@@ -29,16 +29,19 @@ class RedisStore(Store):
             name (str): name of the store instance.
             hostname (str): Redis server hostname.
             port (int): Redis server port.
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`Store <proxystore.store.base.Store>`.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
+            stats (bool): collect stats on store operations (default: False).
         """
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
         super().__init__(
             name,
+            cache_size=cache_size,
+            stats=stats,
             kwargs={'hostname': self.hostname, 'port': self.port},
-            **kwargs,
         )
 
     def evict(self, key: str) -> None:

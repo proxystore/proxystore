@@ -273,7 +273,8 @@ class GlobusStore(Store):
         polling_interval: int = 1,
         sync_level: int | str = 'mtime',
         timeout: int = 60,
-        **kwargs: Any,
+        cache_size: int = 16,
+        stats: bool = False,
     ) -> None:
         """Init GlobusStore.
 
@@ -286,8 +287,10 @@ class GlobusStore(Store):
                 tasks have finished.
             sync_level (str, int): Globus transfer sync level.
             timeout (int): timeout in seconds for waiting on Globus tasks.
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`Store <proxystore.store.base.Store>`.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
+            stats (bool): collect stats on store operations (default: False).
 
         Raise:
             ValueError:
@@ -326,6 +329,8 @@ class GlobusStore(Store):
 
         super().__init__(
             name,
+            cache_size=cache_size,
+            stats=stats,
             kwargs={
                 # Pass endpoints as a dict to make kwargs JSON serializable
                 'endpoints': self.endpoints.dict(),
@@ -333,7 +338,6 @@ class GlobusStore(Store):
                 'sync_level': self.sync_level,
                 'timeout': self.timeout,
             },
-            **kwargs,
         )
 
     def _create_key(self, filename: str, task_id: str) -> str:

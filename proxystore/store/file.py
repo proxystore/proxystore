@@ -5,7 +5,6 @@ import logging
 import os
 import shutil
 import time
-from typing import Any
 
 from proxystore.store.base import Store
 
@@ -20,7 +19,8 @@ class FileStore(Store):
         name: str,
         *,
         store_dir: str,
-        **kwargs: Any,
+        cache_size: int = 16,
+        stats: bool = False,
     ) -> None:
         """Init FileStore.
 
@@ -28,15 +28,22 @@ class FileStore(Store):
             name (str): name of the store instance.
             store_dir (str): path to directory to store data in. Note this
                 directory will be deleted upon closing the store.
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`Store <proxystore.store.base.Store>`.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
+            stats (bool): collect stats on store operations (default: False).
         """
         self.store_dir = store_dir
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
 
-        super().__init__(name, kwargs={'store_dir': store_dir}, **kwargs)
+        super().__init__(
+            name,
+            cache_size=cache_size,
+            stats=stats,
+            kwargs={'store_dir': store_dir},
+        )
 
     def close(self) -> None:
         """Cleanup all files associated with the file system store.

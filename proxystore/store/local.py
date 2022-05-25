@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
 
 from proxystore.store.base import Store
 
@@ -18,7 +17,8 @@ class LocalStore(Store):
         name: str,
         *,
         store_dict: dict[str, bytes] | None = None,
-        **kwargs: Any,
+        cache_size: int = 16,
+        stats: bool = False,
     ) -> None:
         """Init LocalStore.
 
@@ -31,14 +31,21 @@ class LocalStore(Store):
             name (str): name of this store instance.
             store_dict (dict): dictionary to store data in. If not specified,
                 a new empty dict will be generated (default: None).
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`Store <proxystore.store.base.Store>`.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
+            stats (bool): collect stats on store operations (default: False).
         """
         self._store: dict[str, bytes] = {}
         if store_dict is not None:
             self._store = store_dict
 
-        super().__init__(name, kwargs={'store_dict': self._store}, **kwargs)
+        super().__init__(
+            name,
+            cache_size=cache_size,
+            stats=stats,
+            kwargs={'store_dict': self._store},
+        )
 
     def evict(self, key: str) -> None:
         if key in self._store:
