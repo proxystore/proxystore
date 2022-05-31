@@ -26,6 +26,9 @@ async def test_running(quart_app) -> None:
     response = await client.get('/')
     assert response.status_code == 200
 
+    response = await client.get('/endpoint')
+    assert len((await response.get_json())['uuid']) > 0
+
 
 @pytest.mark.asyncio
 async def test_set_request(quart_app) -> None:
@@ -65,6 +68,12 @@ async def test_get_request(quart_app) -> None:
     get_response = await client.get('/get', query_string={'key': 'my-key'})
     assert get_response.status_code == 200
     assert (await get_response.get_data()) == data
+
+    get_response = await client.get(
+        '/get',
+        query_string={'key': 'missing-key'},
+    )
+    assert get_response.status_code == 400
 
 
 @pytest.mark.asyncio

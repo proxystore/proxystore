@@ -37,6 +37,10 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
     async def home() -> tuple[str, int]:
         return ('', 200)
 
+    @app.route('/endpoint', methods=['GET'])
+    async def endpoint_() -> tuple[dict[str, str], int]:
+        return ({'uuid': endpoint.uuid}, 200)
+
     @app.route('/evict', methods=['POST'])
     async def evict() -> tuple[str, int]:
         await endpoint.evict(
@@ -59,10 +63,13 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
             key=request.args.get('key'),
             endpoint=request.args.get('endpoint', None),
         )
-        return Response(
-            response=data,
-            content_type='application/octet-stream',
-        )
+        if data is not None:
+            return Response(
+                response=data,
+                content_type='application/octet-stream',
+            )
+        else:
+            return ('', 400)
 
     @app.route('/set', methods=['POST'])
     async def set() -> tuple[str, int]:
@@ -81,7 +88,7 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
     return app
 
 
-def serve(host: str, port: int, signaling_server: str) -> None:
+def serve(host: str, port: int, signaling_server: str | None) -> None:
     """Initialize endpoint and serve Quart app.
 
     Args:
