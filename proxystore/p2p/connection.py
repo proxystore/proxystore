@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import warnings
 
 from aiortc import RTCDataChannel
 from aiortc import RTCIceCandidate
@@ -12,6 +13,7 @@ from aiortc import RTCSessionDescription
 from aiortc.contrib.signaling import BYE
 from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
+from cryptography.utils import CryptographyDeprecationWarning
 from websockets import WebSocketServerProtocol
 
 from proxystore.p2p.exceptions import PeerConnectionTimeout
@@ -19,6 +21,7 @@ from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
+warnings.simplefilter('ignore', CryptographyDeprecationWarning)
 
 
 class PeerConnection:
