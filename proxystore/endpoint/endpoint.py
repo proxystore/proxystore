@@ -88,6 +88,7 @@ class Endpoint:
             asyncio.Future[messages.Response],
         ] = {}
 
+        self._async_init_done = False
         self._peer_handler_task: asyncio.Task[None] | None = None
 
         logger.info(
@@ -138,8 +139,7 @@ class Endpoint:
             >>> async with Endpoint(...) as endpoint:
             >>>     ...
         """
-        if self._signaling_server is not None:
-            # TODO(gpauloski): ensure only called once?
+        if self._signaling_server is not None and not self._async_init_done:
             self._peer_manager = await PeerManager(
                 uuid=self.uuid,
                 signaling_server=self._signaling_server,
@@ -150,6 +150,7 @@ class Endpoint:
                 self._handle_peer_requests,
             )
             logger.info(f'{self._log_prefix}: initialized peer manager')
+            self._async_init_done = True
 
     async def _handle_peer_requests(self) -> None:
         """Coroutine to listen for request from peer endpoints."""

@@ -13,6 +13,9 @@ from testing.compat import randbytes
 @pytest.mark.asyncio
 async def test_init(signaling_server) -> None:
     endpoint = await Endpoint(signaling_server=signaling_server.address)
+    # Calling async_init multiple times should be no-op
+    await endpoint.async_init()
+    await endpoint.async_init()
     await endpoint.close()
 
 
