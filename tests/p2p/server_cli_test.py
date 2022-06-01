@@ -53,7 +53,7 @@ async def test_start_server_cli() -> None:
     )
 
     # Wait for server to log that it is listening
-    for line in server_handle.stdout:  # pragma: no branch
+    for line in server_handle.stdout:  # pragma: no cover
         if 'listening on' in line:
             break
 
