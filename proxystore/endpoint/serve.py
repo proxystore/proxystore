@@ -9,6 +9,7 @@ import quart
 from quart import request
 from quart import Response
 
+from proxystore.endpoint.config import update_config
 from proxystore.endpoint.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
@@ -89,18 +90,33 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
     return app
 
 
-def serve(host: str, port: int, signaling_server: str | None) -> None:
+def serve(
+    host: str,
+    port: int,
+    *,
+    proxystore_dir: str | None,
+    signaling_server: str | None,
+) -> None:
     """Initialize endpoint and serve Quart app.
 
     Args:
         host (str): host address to server Quart app on.
         port (int): port to serve Quart app on.
+        proxystore_dir (str): location to store proxystore endpoint data in.
+            If not specified, defaults to :code:`$HOME/.proxystore`.
         signaling_server (str): address of signaling server that endpoint
             will register with and use for establishing peer to peer
             connections.
     """
-    endpoint = Endpoint(signaling_server=signaling_server)
+    endpoint = Endpoint(
+        endpoint_dir=proxystore_dir,
+        signaling_server=signaling_server,
+    )
     app = create_app(endpoint)
+
+    # Update config so other processes can inspect filesystem to figure
+    # out how to connect to this endpoint
+    update_config(endpoint.endpoint_dir, host=host, port=port)
 
     # TODO(gpauloski): handle sigterm/sigkill
     logger.info(
@@ -132,6 +148,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='port to listen on',
     )
     parser.add_argument(
+        '--proxystore-dir',
+        default=None,
+        help='ProxyStore dir (defaults to $HOME/.proxystore.',
+    )
+    parser.add_argument(
         '--log-level',
         choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
         default='INFO',
@@ -144,6 +165,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     serve(
         host=args.host,
         port=args.port,
+        proxystore_dir=args.proxystore_dir,
         signaling_server=args.signaling_server,
     )
 

@@ -10,7 +10,8 @@ from typing import Any
 from typing import Generator
 from uuid import uuid4
 
-import proxystore.endpoint.messages as messages
+from proxystore.endpoint import config
+from proxystore.endpoint import messages
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
@@ -50,6 +51,7 @@ class Endpoint:
         uuid: str | None = None,
         name: str | None = None,
         signaling_server: str | None = None,
+        endpoint_dir: str | None = None,
         peer_timeout: int = 30,
     ) -> None:
         """Init Endpoint.
@@ -63,6 +65,9 @@ class Endpoint:
                 server used for peer-to-peer connections between endpoints. If
                 None, endpoint will not be able to communicate with other
                 endpoints (default: None).
+            endpoint_dir (str, optional): directory to store information
+                about this endpoint in. If None, defaults to
+                :code:`$HOME/.proxystore` (default: None).
             peer_timeout (int): timeout for establishing p2p connection with
                 another endpoint (default: 30).
         """
@@ -73,6 +78,16 @@ class Endpoint:
         self._name = name if name is not None else socket.gethostname()
         self._signaling_server = signaling_server
         self._peer_timeout = peer_timeout
+
+        if endpoint_dir is not None:
+            self.endpoint_dir = endpoint_dir
+        else:
+            self.endpoint_dir = config.default_dir()
+        config.update_config(
+            self.endpoint_dir,
+            uuid=self._uuid,
+            name=self._name,
+        )
 
         self._mode = (
             EndpointMode.SOLO

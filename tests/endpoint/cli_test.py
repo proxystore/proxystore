@@ -3,12 +3,16 @@ from __future__ import annotations
 import contextlib
 import logging
 import multiprocessing
+import os
+import shutil
 import subprocess
 import time
+import uuid
 
 import pytest
 import requests
 
+from proxystore.endpoint.config import get_config
 from proxystore.endpoint.serve import main
 
 
@@ -22,9 +26,19 @@ def test_endpoint() -> None:
             main(args)
 
     host, port = 'localhost', 5823
+    endpoint_dir = f'/tmp/{uuid.uuid4()}'
     process = multiprocessing.Process(
         target=run_without_stdout,
-        args=(('--host', host, '--port', str(port)),),
+        args=(
+            (
+                '--host',
+                host,
+                '--port',
+                str(port),
+                '--proxystore-dir',
+                endpoint_dir,
+            ),
+        ),
     )
     process.start()
 
@@ -38,7 +52,13 @@ def test_endpoint() -> None:
             if r.status_code == 200:  # pragma: no branch
                 break
     finally:
+        cfg = get_config(endpoint_dir)
+        assert cfg.host == host
+        assert cfg.port == port
         process.terminate()
+
+    if os.path.exists(endpoint_dir):  # pragma: no branch
+        shutil.rmtree(endpoint_dir)
 
 
 @pytest.mark.timeout(5)
