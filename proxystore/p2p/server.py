@@ -324,7 +324,7 @@ async def serve(host: str, port: int) -> None:
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
     async with websockets.serve(server.handler, host, port):
-        logger.info('serving signaling server on {host}:{port}')
+        logger.info(f'serving signaling server on {host}:{port}')
         await stop
 
 
