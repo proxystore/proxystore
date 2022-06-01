@@ -28,10 +28,11 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
     @app.before_serving
     async def startup() -> None:
         await endpoint.async_init()
+        app.endpoint = endpoint
 
     @app.after_serving
     async def shutdown() -> None:
-        await endpoint.close()
+        await app.endpoint.close()
 
     @app.route('/')
     async def home() -> tuple[str, int]:
@@ -39,11 +40,11 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/endpoint', methods=['GET'])
     async def endpoint_() -> tuple[dict[str, str], int]:
-        return ({'uuid': endpoint.uuid}, 200)
+        return ({'uuid': app.endpoint.uuid}, 200)
 
     @app.route('/evict', methods=['POST'])
     async def evict() -> tuple[str, int]:
-        await endpoint.evict(
+        await app.endpoint.evict(
             key=request.args.get('key'),
             endpoint=request.args.get('endpoint', None),
         )
@@ -51,7 +52,7 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/exists', methods=['GET'])
     async def exists() -> tuple[dict[str, bool], int]:
-        exists = await endpoint.exists(
+        exists = await app.endpoint.exists(
             key=request.args.get('key'),
             endpoint=request.args.get('endpoint', None),
         )
@@ -59,7 +60,7 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/get', methods=['GET'])
     async def get() -> Response:
-        data = await endpoint.get(
+        data = await app.endpoint.get(
             key=request.args.get('key'),
             endpoint=request.args.get('endpoint', None),
         )
@@ -73,7 +74,7 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/set', methods=['POST'])
     async def set() -> tuple[str, int]:
-        await endpoint.set(
+        await app.endpoint.set(
             key=request.args.get('key'),
             data=await request.get_data(),
             endpoint=request.args.get('endpoint', None),
