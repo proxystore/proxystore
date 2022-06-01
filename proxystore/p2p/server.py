@@ -165,7 +165,7 @@ class SignalingServer:
                     source_name=self._websocket_to_client[websocket].name,
                     peer_uuid=message.peer_uuid,
                     error=PeerUnknownError(
-                        'peer {message.peer_uuid} is unknown',
+                        f'peer {message.peer_uuid} is unknown',
                     ),
                 ),
             )
