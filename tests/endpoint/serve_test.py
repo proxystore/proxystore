@@ -1,20 +1,30 @@
 from __future__ import annotations
 
+import contextlib
+import logging
+import multiprocessing
+import time
+import uuid
 from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 import quart
+import requests
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import create_app
+from proxystore.endpoint.serve import serve
 from testing.compat import randbytes
 
 
 @pytest_asyncio.fixture
 @pytest.mark.asyncio
 async def quart_app() -> AsyncGenerator[quart.Quart, None]:
-    async with Endpoint() as endpoint:
+    async with Endpoint(
+        name='my-endpoint',
+        uuid=str(uuid.uuid4()),
+    ) as endpoint:
         app = create_app(endpoint)
         async with app.test_app() as test_app:
             yield test_app
@@ -135,3 +145,33 @@ async def test_evict_request(quart_app) -> None:
     )
     assert exists_response.status_code == 200
     assert not (await exists_response.get_json())['exists']
+
+
+@pytest.mark.timeout(5)
+def test_serve() -> None:
+    name = 'my-endpoint'
+    uuid_ = str(uuid.uuid4())
+    host = 'localhost'
+    port = 5823
+
+    def serve_without_stdout() -> None:
+        with contextlib.redirect_stdout(None), contextlib.redirect_stderr(
+            None,
+        ):
+            logging.disable(10000)
+            serve(name=name, uuid=uuid_, host=host, port=port)
+
+    process = multiprocessing.Process(target=serve_without_stdout)
+    process.start()
+
+    try:
+        while True:
+            try:
+                r = requests.get(f'http://{host}:{port}/')
+            except requests.exceptions.ConnectionError:
+                time.sleep(0.1)
+                continue
+            if r.status_code == 200:  # pragma: no branch
+                break
+    finally:
+        process.terminate()

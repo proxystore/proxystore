@@ -7,7 +7,9 @@ from typing import Any
 import requests
 
 import proxystore as ps
-from proxystore.endpoint import config
+from proxystore.endpoint.config import default_dir
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import get_configs
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
@@ -26,87 +28,92 @@ class EndpointStore(Store):
         self,
         name: str,
         *,
-        endpoint_dir: str | None = None,
-        hostname: str | None = None,
-        port: int | None = None,
+        endpoints: list[str],
+        proxystore_dir: str | None = None,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
         """Init EndpointStore.
 
         Warning:
-            Specifying a custom `endpoint_dir` can cause problems if the
-            `endpoint_dir` is not the same on all systems that a proxy created
-            by this store could end up on. It is recommended to leave the
-            `endpoint_dir` unspecified so ProxyStore can determine the correct
-            endpoint to use.
+            Specifying a custom `proxystore_dir` can cause problems if the
+            `proxystore_dir` is not the same on all systems that a proxy
+            created by this store could end up on. It is recommended to leave
+            the `proxystore_dir` unspecified so the correct default directory
+            will be used.
 
         Args:
             name (str): name of the store instance (default: None).
-            endpoint_dir (str): directory containing configuration of
-                endpoint to connect to. hostname and port will be taken
-                from the config file. If None, defaults to
-                :code:`$HOME/.proxystore` (default: None).
-            hostname (str): name of the host the endpoint is on. Overrides
-                the value found in the endpoint directory (default: None).
-            port (int): port the endpoint is listening on. Overrides the
-                value found in the endpoint directory (default: None).
+            endpoints (list): list of valid and running endpoint UUIDs to use.
+                At least one of these endpoints must be accessible by this
+                process.
+            proxystore_dir (str): directory containing endpoint configurations.
+                If None, defaults to :code:`$HOME/.proxystore` (default: None).
             cache_size (int): size of LRU cache (in # of objects). If 0,
                 the cache is disabled. The cache is local to the Python
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
+
+        Raises:
+            ValueError:
+                if endpoints is an empty list.
+            EndpointStoreError:
+                if unable to connect to one of the endpoints provided.
         """
-        if (hostname is not None and port is None) or (
-            hostname is None and port is not None
-        ):
-            raise ValueError(
-                'Either both or neither of hostname and port must be '
-                'specified.',
-            )
+        if len(endpoints) == 0:
+            raise ValueError('At least one endpoint must be specified.')
+        self.endpoints = endpoints
+        self.proxystore_dir = (
+            default_dir() if proxystore_dir is None else proxystore_dir
+        )
 
-        if hostname is not None and port is not None:
-            self.hostname = hostname
-            self.port = port
-        else:
-            if endpoint_dir is None:
-                endpoint_dir_ = config.default_dir()
-            else:
-                endpoint_dir_ = endpoint_dir
-            cfg = config.get_config(endpoint_dir_)
-            if cfg.host is None or cfg.port is None:
-                raise ValueError(
-                    f'Endpoint ({cfg.uuid}) config ({endpoint_dir_}) must '
-                    f'have host and port specified. Got host={cfg.host} '
-                    f'and port={cfg.port}.',
+        # Find the first locally accessible endpoint to use as our
+        # home endpoint
+        available_endpoints = get_configs(self.proxystore_dir)
+        found_endpoint: EndpointConfig | None = None
+        for endpoint in available_endpoints:
+            if endpoint.uuid in self.endpoints:
+                logger.debug(f'attempting connection to {endpoint.uuid}')
+                response = requests.get(
+                    f'http://{endpoint.host}:{endpoint.port}/endpoint',
                 )
-            self.hostname = cfg.host
-            self.port = cfg.port
+                if response.status_code == 200:
+                    uuid = response.json()['uuid']
+                    if endpoint.uuid == uuid:
+                        logger.debug(
+                            f'connection to {endpoint.uuid} successful, using '
+                            'as home endpoint',
+                        )
+                        found_endpoint = endpoint
+                        break
+                    else:
+                        logger.debug(f'{endpoint.uuid} has different UUID')
+                else:
+                    logger.debug(f'connection to {endpoint.uuid} unsuccessful')
 
-        self.address = f'http://{self.hostname}:{self.port}'
-        self.endpoint_uuid: str
+        if found_endpoint is None:
+            raise EndpointStoreError(
+                'Failed to find endpoint configuration matching one of the '
+                'provided endpoint UUIDs.',
+            )
+        self.endpoint_uuid = found_endpoint.uuid
+        self.endpoint_host = found_endpoint.host
+        self.endpoint_port = found_endpoint.port
+
+        self.address = f'http://{self.endpoint_host}:{self.endpoint_port}'
 
         super().__init__(
             name,
             cache_size=cache_size,
             stats=stats,
             kwargs={
-                # Note: don't pass self.hostname, self.port, etc. here because
-                # those values may be local to this process or machine and
-                # these kwargs may be used by a proxy on a remote machine
-                # to reinitialize a store elsewhere using a different endpoint
-                'endpoint_dir': endpoint_dir,
-                'hostname': hostname,
-                'port': port,
+                'endpoints': self.endpoints,
+                # Note: don't pass self.proxystore_dir here because it may
+                # change depending on the system we are on (as a proxy could
+                # reinitialize this store on a different system).
+                'proxystore_dir': proxystore_dir,
             },
         )
-
-        response = requests.get(f'{self.address}/endpoint')
-        if response.status_code == 200:
-            self.endpoint_uuid = response.json()['uuid']
-        else:
-            raise EndpointStoreError(
-                f'Request for endpoint UUID returned: {response}',
-            )
 
     @staticmethod
     def _create_key(object_key: str, endpoint_uuid: str) -> str:

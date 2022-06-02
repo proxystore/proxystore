@@ -13,6 +13,8 @@ from unittest import mock
 
 import pytest
 
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
@@ -226,19 +228,28 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 
 
 @pytest.fixture
-def endpoint_store() -> Generator[StoreInfo, None, None]:
+def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
-    host = 'localhost'
-    port = random.randint(5000, 5500)
-    endpoint_dir = f'/tmp/{uuid.uuid4()}'
+    cfg = EndpointConfig(
+        name='test-endpoint',
+        uuid=str(uuid.uuid4()),
+        host='localhost',
+        port=random.randint(5000, 5500),
+    )
+    endpoint_dir = os.path.join(tmp_dir, cfg.name)
+    write_config(cfg, endpoint_dir)
 
-    server_handle = launch_endpoint(host, port, endpoint_dir, None)
+    server_handle = launch_endpoint(
+        cfg.name,
+        cfg.uuid,
+        cfg.host,
+        cfg.port,
+        None,
+    )
     yield StoreInfo(
         EndpointStore,
         'endpoint',
-        {'hostname': host, 'port': port, 'endpoint_dir': endpoint_dir},
+        {'endpoints': [cfg.uuid], 'proxystore_dir': tmp_dir},
     )
 
     server_handle.terminate()
-    if os.path.exists(endpoint_dir):  # pragma: no cover
-        shutil.rmtree(endpoint_dir)

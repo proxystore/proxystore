@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 
 import pytest
 
@@ -9,10 +10,19 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from testing.compat import randbytes
 
+_NAME1 = 'test-endpoint-1'
+_NAME2 = 'test-endpoint-2'
+_UUID1 = str(uuid.uuid4())
+_UUID2 = str(uuid.uuid4())
+
 
 @pytest.mark.asyncio
 async def test_init(signaling_server) -> None:
-    endpoint = await Endpoint(signaling_server=signaling_server.address)
+    endpoint = await Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
+        signaling_server=signaling_server.address,
+    )
     # Calling async_init multiple times should be no-op
     await endpoint.async_init()
     await endpoint.async_init()
@@ -22,8 +32,12 @@ async def test_init(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_set(signaling_server) -> None:
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         data = randbytes(100)
@@ -34,8 +48,12 @@ async def test_set(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_get(signaling_server) -> None:
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         data1 = randbytes(100)
@@ -52,8 +70,12 @@ async def test_get(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_evict(signaling_server) -> None:
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         data = randbytes(100)
@@ -69,8 +91,12 @@ async def test_evict(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_exists(signaling_server) -> None:
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         data = randbytes(100)
@@ -82,7 +108,8 @@ async def test_exists(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_peering_not_available(signaling_server) -> None:
     endpoint = Endpoint(
-        uuid='my-endpoint',
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     )
     # __await__ has not been called on endpoint so connection to server
@@ -95,8 +122,12 @@ async def test_peering_not_available(signaling_server) -> None:
 async def test_unsupported_peer_message(signaling_server, caplog) -> None:
     caplog.set_level(logging.ERROR)
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         endpoint2._peer_manager._message_queue.put_nowait(
@@ -118,8 +149,12 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
 async def test_peer_message_missing_id(signaling_server, caplog) -> None:
     caplog.set_level(logging.ERROR)
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         endpoint2._peer_manager._message_queue.put_nowait(
@@ -140,8 +175,12 @@ async def test_peer_message_missing_id(signaling_server, caplog) -> None:
 async def test_unexpected_response(signaling_server, caplog) -> None:
     caplog.set_level(logging.ERROR)
     async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
         signaling_server=signaling_server.address,
     ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
         # Force connection to establish

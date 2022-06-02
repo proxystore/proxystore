@@ -1,15 +1,12 @@
 """CLI for serving an endpoint as a REST server."""
 from __future__ import annotations
 
-import argparse
 import logging
-from typing import Sequence
 
 import quart
 from quart import request
 from quart import Response
 
-from proxystore.endpoint.config import update_config
 from proxystore.endpoint.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
@@ -91,86 +88,28 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
 
 def serve(
+    name: str,
+    uuid: str,
     host: str,
     port: int,
-    *,
-    proxystore_dir: str | None = None,
-    signaling_server: str | None = None,
+    server: str | None = None,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
     Args:
+        name (str): name of endpoint.
+        uuid (str): uuid of endpoint.
         host (str): host address to server Quart app on.
         port (int): port to serve Quart app on.
-        proxystore_dir (str): location to store proxystore endpoint data in.
-            If not specified, defaults to :code:`$HOME/.proxystore`.
-        signaling_server (str): address of signaling server that endpoint
+        server (str): address of signaling server that endpoint
             will register with and use for establishing peer to peer
-            connections.
+            connections. If None, endpoint will operate in solo mode (no
+            peering) (default: None).
     """
-    endpoint = Endpoint(
-        endpoint_dir=proxystore_dir,
-        signaling_server=signaling_server,
-    )
+    endpoint = Endpoint(name=name, uuid=uuid, signaling_server=server)
     app = create_app(endpoint)
 
-    # Update config so other processes can inspect filesystem to figure
-    # out how to connect to this endpoint
-    update_config(endpoint.endpoint_dir, host=host, port=port)
-
-    # TODO(gpauloski): handle sigterm/sigkill
     logger.info(
         f'serving endpoint {endpoint.uuid} ({endpoint.name}) on {host}:{port}',
     )
     app.run(host=host, port=port)
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting an endpoint."""
-    parser = argparse.ArgumentParser('ProxyStore Blobspace Endpoint')
-    parser.add_argument(
-        '--signaling-server',
-        default=None,
-        type=str,
-        help=(
-            'optional signaling server for p2p communication between endpoints'
-        ),
-    )
-    parser.add_argument(
-        '--host',
-        default='0.0.0.0',
-        help='host to listen on (defaults to 0.0.0.0 for all addresses)',
-    )
-    parser.add_argument(
-        '--port',
-        default=5000,
-        type=int,
-        help='port to listen on',
-    )
-    parser.add_argument(
-        '--proxystore-dir',
-        default=None,
-        help='ProxyStore dir (defaults to $HOME/.proxystore.',
-    )
-    parser.add_argument(
-        '--log-level',
-        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
-        default='INFO',
-        help='logging level',
-    )
-    args = parser.parse_args(argv)
-
-    logging.basicConfig(level=args.log_level)
-
-    serve(
-        host=args.host,
-        port=args.port,
-        proxystore_dir=args.proxystore_dir,
-        signaling_server=args.signaling_server,
-    )
-
-    return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())

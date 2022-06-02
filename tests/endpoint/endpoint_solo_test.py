@@ -1,25 +1,30 @@
 from __future__ import annotations
 
+import uuid
+
 import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
 from testing.compat import randbytes
 
+_NAME = 'test-endpoint'
+_UUID = str(uuid.uuid4())
+
 
 @pytest.mark.asyncio
 async def test_init() -> None:
-    endpoint = Endpoint()
+    endpoint = Endpoint(name=_NAME, uuid=_UUID)
     # Should not do anything
     await endpoint.close()
 
     # Try again with awaitable initialization
-    endpoint = await Endpoint()
+    endpoint = await Endpoint(name=_NAME, uuid=_UUID)
     await endpoint.close()
 
 
 @pytest.mark.asyncio
 async def test_set() -> None:
-    async with Endpoint() as endpoint:
+    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
@@ -32,7 +37,7 @@ async def test_set() -> None:
 
 @pytest.mark.asyncio
 async def test_get() -> None:
-    async with Endpoint() as endpoint:
+    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
@@ -41,7 +46,7 @@ async def test_get() -> None:
 
 @pytest.mark.asyncio
 async def test_evict() -> None:
-    async with Endpoint() as endpoint:
+    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
@@ -53,7 +58,7 @@ async def test_evict() -> None:
 
 @pytest.mark.asyncio
 async def test_exists() -> None:
-    async with Endpoint() as endpoint:
+    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
         assert not (await endpoint.exists('key'))
         await endpoint.set('key', data)

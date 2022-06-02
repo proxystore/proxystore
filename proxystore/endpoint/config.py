@@ -5,7 +5,6 @@ import dataclasses
 import json
 import os
 import pathlib
-from typing import Any
 
 _DEFAULT_HOME_DIR = '.proxystore'
 _ENDPOINT_CONFIG_FILE = 'endpoint.json'
@@ -15,10 +14,11 @@ _ENDPOINT_CONFIG_FILE = 'endpoint.json'
 class EndpointConfig:
     """Endpoint configuration."""
 
-    name: str | None = None
-    uuid: str | None = None
-    host: str | None = None
-    port: int | None = None
+    name: str
+    uuid: str
+    host: str
+    port: int
+    server: str | None = None
 
 
 def default_dir() -> str:
@@ -26,8 +26,47 @@ def default_dir() -> str:
     return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)
 
 
-def get_config(endpoint_dir: str) -> EndpointConfig:
-    """Get existing config from path or create new one."""
+def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
+    """Get all endpoint configurations in parent directory.
+
+    Args:
+        proxystore_dir (str): parent directory containing possible endpoint
+            configurations.
+
+    Returns:
+        list of :class:`<.EndpointConfig>`s
+    """
+    endpoints: list[EndpointConfig] = []
+
+    if not os.path.isdir(proxystore_dir):
+        return endpoints
+
+    for dirpath, _, _ in os.walk(proxystore_dir):
+        if os.path.samefile(proxystore_dir, dirpath):
+            continue
+        try:
+            cfg = read_config(dirpath)
+        except FileNotFoundError:
+            continue
+        else:
+            endpoints.append(cfg)
+
+    return endpoints
+
+
+def read_config(endpoint_dir: str) -> EndpointConfig:
+    """Read endpoint config file.
+
+    Args:
+        endpoint_dir (str): directory containing endpoint configuration file.
+
+    Returns:
+        :class:`<.EndpointConfig>`
+
+    Raises:
+        FileNotFoundError:
+            if a config files does not exist in the directory.
+    """
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
 
     if os.path.exists(path):
@@ -35,25 +74,20 @@ def get_config(endpoint_dir: str) -> EndpointConfig:
             cfg = json.load(f)
         return EndpointConfig(**cfg)
     else:
-        return EndpointConfig()
+        raise FileNotFoundError(
+            f'Endpoint directory {endpoint_dir} does not contain a valid '
+            'configuration.',
+        )
 
 
-def save_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
-    """Write config to path."""
+def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
+    """Write config to endpoint directory.
+
+    Args:
+        cfg (EndpointConfig): configuration to write.
+        endpoint_dir (str): directory to write config to.
+    """
     os.makedirs(endpoint_dir, exist_ok=True)
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
     with open(path, 'w') as f:
         json.dump(dataclasses.asdict(cfg), f)
-
-
-def update_config(endpoint_dir: str, **kwargs: Any) -> None:
-    """Update config."""
-    cfg = get_config(endpoint_dir)
-    for key, value in kwargs.items():
-        if hasattr(cfg, key):
-            setattr(cfg, key, value)
-        else:
-            raise AttributeError(
-                f'{EndpointConfig.__name__} has no attribute {key}.',
-            )
-    save_config(cfg, endpoint_dir)

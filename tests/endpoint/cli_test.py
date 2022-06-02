@@ -1,83 +1,123 @@
 from __future__ import annotations
 
-import contextlib
 import logging
-import multiprocessing
 import os
-import shutil
 import subprocess
-import time
 import uuid
+from typing import Generator
+from unittest import mock
 
 import pytest
-import requests
 
-from proxystore.endpoint.config import get_config
-from proxystore.endpoint.serve import main
-
-
-@pytest.mark.timeout(5)
-def test_endpoint() -> None:
-    def run_without_stdout(args: tuple[str]) -> None:
-        with contextlib.redirect_stdout(None), contextlib.redirect_stderr(
-            None,
-        ):
-            logging.disable(10000)
-            main(args)
-
-    host, port = 'localhost', 5823
-    endpoint_dir = f'/tmp/{uuid.uuid4()}'
-    process = multiprocessing.Process(
-        target=run_without_stdout,
-        args=(
-            (
-                '--host',
-                host,
-                '--port',
-                str(port),
-                '--proxystore-dir',
-                endpoint_dir,
-            ),
-        ),
-    )
-    process.start()
-
-    try:
-        while True:
-            try:
-                r = requests.get(f'http://{host}:{port}/')
-            except requests.exceptions.ConnectionError:
-                time.sleep(0.1)
-                continue
-            if r.status_code == 200:  # pragma: no branch
-                break
-    finally:
-        cfg = get_config(endpoint_dir)
-        assert cfg.host == host
-        assert cfg.port == port
-        process.terminate()
-
-    if os.path.exists(endpoint_dir):  # pragma: no branch
-        shutil.rmtree(endpoint_dir)
+import proxystore
+from proxystore.endpoint.cli import main
+from proxystore.endpoint.config import read_config
 
 
-@pytest.mark.timeout(5)
-def test_start_server_cli() -> None:
-    host, port = 'localhost', 5824
-    server_handle = subprocess.Popen(
-        ['endpoint-start', '--host', host, '--port', str(port)],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+@pytest.fixture()
+def default_dir(tmp_dir) -> Generator[str, None, None]:
+    with mock.patch(
+        'proxystore.endpoint.commands.default_dir',
+        return_value=tmp_dir,
+    ):
+        yield tmp_dir
+
+
+def test_no_args_prints_help(capsys) -> None:
+    with pytest.raises(SystemExit):
+        main([])
+    captured = capsys.readouterr()
+    assert captured.out.startswith('usage: proxystore-endpoint [-h]')
+
+
+def test_help_with_no_command(capsys) -> None:
+    with pytest.raises(SystemExit):
+        main(['help'])
+    captured = capsys.readouterr()
+    assert captured.out.startswith('usage: proxystore-endpoint [-h]')
+
+
+def test_help_with_command(capsys) -> None:
+    with pytest.raises(SystemExit):
+        main(['help', 'list'])
+    captured = capsys.readouterr()
+    assert captured.out.startswith('usage: proxystore-endpoint list [-h]')
+
+
+def test_configure(default_dir) -> None:
+    name = 'my-endpoint'
+    host = '127.0.0.1'
+    port = 4321
+    server = 'server:1234'
+    main(
+        [
+            'configure',
+            name,
+            '--host',
+            host,
+            '--port',
+            str(port),
+            '--server',
+            server,
+        ],
     )
 
-    try:
-        while True:
-            try:
-                r = requests.get(f'http://{host}:{port}/')
-            except requests.exceptions.ConnectionError:
-                time.sleep(0.1)
-                continue
-            if r.status_code == 200:  # pragma: no branch
-                break
-    finally:
-        server_handle.terminate()
+    endpoint_dir = os.path.join(default_dir, name)
+    assert os.path.isdir(endpoint_dir)
+    cfg = read_config(endpoint_dir)
+    assert cfg.name == name
+    assert cfg.host == host
+    assert cfg.port == port
+    assert cfg.server == server
+
+
+def test_list(default_dir, caplog) -> None:
+    # Note: because default_dir is mocked, there's nothing to list so we
+    # are really testing that the correct command in
+    # proxystore.endpoint.commands is called and leaving the testing of that
+    # command to tests/endpoint/commands_test.py.
+    caplog.set_level(logging.INFO)
+    main(['list'])
+    assert len(caplog.records) == 1
+    assert 'No valid endpoint configurations' in caplog.records[0].message
+
+
+def test_remove(default_dir, caplog) -> None:
+    # Note: similar to test_list()
+    caplog.set_level(logging.ERROR)
+    main(['remove', 'my-endpoint'])
+    assert len(caplog.records) == 1
+    assert any(
+        ['does not exist' in record.message for record in caplog.records],
+    )
+
+
+def test_serve(default_dir, caplog) -> None:
+    # Note: similar to test_list()
+    caplog.set_level(logging.ERROR)
+    main(['start', 'my-endpoint'])
+    assert len(caplog.records) == 1
+    assert any(
+        ['does not correspond' in record.message for record in caplog.records],
+    )
+
+
+def test_entry_point() -> None:
+    result = subprocess.run(
+        ['proxystore-endpoint', '--version'],
+        capture_output=True,
+    )
+    assert result.returncode == 0
+    assert proxystore.__version__ in str(result.stdout)
+
+    result = subprocess.run(
+        ['proxystore-endpoint', 'list'],
+        capture_output=True,
+    )
+    assert result.returncode == 0
+
+    result = subprocess.run(
+        ['proxystore-endpoint', 'remove', str(uuid.uuid4())],
+        capture_output=True,
+    )
+    assert result.returncode == 1
