@@ -5,6 +5,7 @@ on:
     branches: [main]
     tags:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -39,3 +40,12 @@ jobs:
 
       - name: Run Tox
         run: tox -e ${{ matrix.toxenv }}
+
+      - name: Check if ~/.proxystore created
+        uses: andstor/file-existence-action@v1
+        with:
+          files: "~/.proxystore"
+
+      - name: Fail if ~/.proxystore created
+        if: steps.check_files.outputs.file_exists == 'true'
+        run: echo "Test suite created ~/.proxystore when it shouldn't!" && false
