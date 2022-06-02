@@ -144,8 +144,8 @@ def test_store_strict(store_fixture, request) -> None:
     """Test Store Strict Functionality."""
     store_config = request.getfixturevalue(store_fixture)
 
-    if store_config.type.__name__ == 'GlobusStore':
-        # GlobusStore does not support strict guarantees
+    if store_config.type.__name__ in ('GlobusStore', 'EndpointStore'):
+        # GlobusStore/EndpointStore do not support strict guarantees
         return
 
     store = store_config.type(

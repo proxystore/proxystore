@@ -8,6 +8,7 @@ from typing import Any
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.base import StoreFactory
+from proxystore.store.endpoint import EndpointStore as _EndpointStore
 from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
@@ -20,10 +21,11 @@ logger = logging.getLogger(__name__)
 class STORES(Enum):
     """Available Store implementations."""
 
+    ENDPOINT = _EndpointStore
+    FILE = _FileStore
     GLOBUS = _GlobusStore
     LOCAL = _LocalStore
     REDIS = _RedisStore
-    FILE = _FileStore
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store]) -> str:

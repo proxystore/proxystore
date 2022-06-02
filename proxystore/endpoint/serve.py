@@ -94,8 +94,8 @@ def serve(
     host: str,
     port: int,
     *,
-    proxystore_dir: str | None,
-    signaling_server: str | None,
+    proxystore_dir: str | None = None,
+    signaling_server: str | None = None,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 

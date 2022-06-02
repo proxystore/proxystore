@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import os
-import shutil
 import uuid
-from typing import Generator
 
 import pytest
 
@@ -12,14 +10,6 @@ from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import get_config
 from proxystore.endpoint.config import save_config
 from proxystore.endpoint.config import update_config
-
-
-@pytest.fixture()
-def tmp_dir() -> Generator[str, None]:
-    path = f'/tmp/{uuid.uuid4()}'
-    yield path
-    if os.path.exists(path):
-        shutil.rmtree(path)
 
 
 def test_default_dir() -> None:

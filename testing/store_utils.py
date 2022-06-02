@@ -14,15 +14,22 @@ from unittest import mock
 import pytest
 
 from proxystore.store.base import Store
+from proxystore.store.endpoint import EndpointStore
 from proxystore.store.file import FileStore
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
 from proxystore.store.local import LocalStore
 from proxystore.store.redis import RedisStore
+from testing.endpoint import launch_endpoint
 
-
-FIXTURE_LIST = ['local_store', 'file_store', 'redis_store', 'globus_store']
+FIXTURE_LIST = [
+    'local_store',
+    'file_store',
+    'redis_store',
+    'globus_store',
+    'endpoint_store',
+]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
 
@@ -216,3 +223,22 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 
     if os.path.exists(file_dir):  # pragma: no branch
         shutil.rmtree(file_dir)
+
+
+@pytest.fixture
+def endpoint_store() -> Generator[StoreInfo, None, None]:
+    """Endpoint Store fixture."""
+    host = 'localhost'
+    port = random.randint(5000, 5500)
+    endpoint_dir = f'/tmp/{uuid.uuid4()}'
+
+    server_handle = launch_endpoint(host, port, endpoint_dir, None)
+    yield StoreInfo(
+        EndpointStore,
+        'endpoint',
+        {'hostname': host, 'port': port, 'endpoint_dir': endpoint_dir},
+    )
+
+    server_handle.terminate()
+    if os.path.exists(endpoint_dir):  # pragma: no cover
+        shutil.rmtree(endpoint_dir)
