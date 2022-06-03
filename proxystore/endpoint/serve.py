@@ -10,6 +10,7 @@ from quart import request
 from quart import Response
 
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import PeerRequestError
 
 logger = logging.getLogger(__name__)
 
@@ -60,11 +61,14 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
                 endpoint = uuid.UUID(endpoint, version=4)
             except ValueError:
                 return (f'{endpoint} is not a valid UUID4', 400)
-        await app.endpoint.evict(
-            key=request.args.get('key'),
-            endpoint=endpoint,
-        )
-        return ('', 200)
+        try:
+            await app.endpoint.evict(
+                key=request.args.get('key'),
+                endpoint=endpoint,
+            )
+            return ('', 200)
+        except PeerRequestError as e:
+            return (str(e), 400)
 
     @app.route('/exists', methods=['GET'])
     async def exists() -> tuple[dict[str, bool] | str, int]:
@@ -74,11 +78,14 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
                 endpoint = uuid.UUID(endpoint, version=4)
             except ValueError:
                 return (f'{endpoint} is not a valid UUID4', 400)
-        exists = await app.endpoint.exists(
-            key=request.args.get('key'),
-            endpoint=endpoint,
-        )
-        return ({'exists': exists}, 200)
+        try:
+            exists = await app.endpoint.exists(
+                key=request.args.get('key'),
+                endpoint=endpoint,
+            )
+            return ({'exists': exists}, 200)
+        except PeerRequestError as e:
+            return (str(e), 400)
 
     @app.route('/get', methods=['GET'])
     async def get() -> Response:
@@ -88,10 +95,13 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
                 endpoint = uuid.UUID(endpoint, version=4)
             except ValueError:
                 return (f'{endpoint} is not a valid UUID4', 400)
-        data = await app.endpoint.get(
-            key=request.args.get('key'),
-            endpoint=endpoint,
-        )
+        try:
+            data = await app.endpoint.get(
+                key=request.args.get('key'),
+                endpoint=endpoint,
+            )
+        except PeerRequestError as e:
+            return (str(e), 400)
         if data is not None:
             return Response(
                 response=data,
@@ -108,12 +118,15 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
                 endpoint = uuid.UUID(endpoint, version=4)
             except ValueError:
                 return (f'{endpoint} is not a valid UUID4', 400)
-        await app.endpoint.set(
-            key=request.args.get('key'),
-            data=await request.get_data(),
-            endpoint=endpoint,
-        )
-        return ('', 200)
+        try:
+            await app.endpoint.set(
+                key=request.args.get('key'),
+                data=await request.get_data(),
+                endpoint=endpoint,
+            )
+            return ('', 200)
+        except PeerRequestError as e:
+            return (str(e), 400)
 
     logger.info(
         'quart routes registered to endpoint '

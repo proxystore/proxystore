@@ -4,6 +4,7 @@ import contextlib
 import logging
 import multiprocessing
 import os
+import sys
 import time
 import uuid
 from typing import AsyncGenerator
@@ -19,6 +20,11 @@ from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import serve
 from testing.compat import randbytes
 
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
+    from unittest.mock import AsyncMock
+else:  # pragma: <3.8 cover
+    from asynctest import CoroutineMock as AsyncMock
+
 
 @pytest_asyncio.fixture
 @pytest.mark.asyncio
@@ -29,6 +35,7 @@ async def quart_app() -> AsyncGenerator[quart.Quart, None]:
     ) as endpoint:
         app = create_app(endpoint)
         async with app.test_app() as test_app:
+            test_app.endpoint = endpoint
             yield test_app
 
 
@@ -180,6 +187,48 @@ async def test_bad_endpoint_uuid(quart_app) -> None:
         data=data,
     )
     assert set_response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_unknown_endpoint_uuid(quart_app) -> None:
+    client = quart_app.test_client()
+    unknown_uuid = uuid.uuid4()
+
+    with mock.patch(
+        'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
+        return_value=True,
+    ):
+        quart_app.endpoint._peer_manager = AsyncMock()
+        quart_app.endpoint._peer_manager.send = AsyncMock(
+            side_effect=Exception(),
+        )
+
+        evict_response = await client.post(
+            'evict',
+            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
+        )
+        assert evict_response.status_code == 400
+
+        exists_response = await client.get(
+            'exists',
+            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
+        )
+        assert exists_response.status_code == 400
+
+        get_response = await client.get(
+            'get',
+            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
+        )
+        assert get_response.status_code == 400
+
+        data = randbytes(100)
+        set_response = await client.post(
+            'set',
+            headers={'Content-Type': 'application/octet-stream'},
+            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
+            data=data,
+        )
+        assert set_response.status_code == 400
 
 
 @pytest.mark.timeout(5)

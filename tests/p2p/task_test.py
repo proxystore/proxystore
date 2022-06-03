@@ -5,24 +5,28 @@ import contextlib
 
 import pytest
 
+from proxystore.p2p.task import SafeTaskExit
 from proxystore.p2p.task import spawn_guarded_background_task
 
 
 def test_background_task_exits_on_error() -> None:
-    async def run() -> None:
-        # Prevent pytest logs from being clobbered
-        async def okay_task() -> None:
-            return
+    async def okay_task() -> None:
+        return
 
-        async def bad_task() -> None:
-            raise RuntimeError()
+    async def safe_task() -> None:
+        raise SafeTaskExit()
 
-        t = spawn_guarded_background_task(okay_task)
-        await t
-        t = spawn_guarded_background_task(bad_task)
-        await t
+    async def bad_task() -> None:
+        raise RuntimeError()
 
-    with pytest.raises(SystemExit), contextlib.redirect_stdout(
+    async def run(task) -> None:
+        await spawn_guarded_background_task(task)
+
+    with contextlib.redirect_stdout(
         None,
     ), contextlib.redirect_stderr(None):
-        asyncio.run(run())
+        asyncio.run(run(okay_task))
+        with pytest.raises(SafeTaskExit):
+            asyncio.run(run(safe_task))
+        with pytest.raises(SystemExit):
+            asyncio.run(run(bad_task))

@@ -8,6 +8,7 @@ import pytest
 import proxystore.endpoint.messages as messages
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
+from proxystore.endpoint.exceptions import PeerRequestError
 from testing.compat import randbytes
 
 _NAME1 = 'test-endpoint-1'
@@ -119,6 +120,17 @@ async def test_peering_not_available(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
+async def test_unknown_peer(signaling_server) -> None:
+    async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
+        signaling_server=signaling_server.address,
+    ) as endpoint:
+        with pytest.raises(PeerRequestError, match='unknown'):
+            await endpoint.get('key', endpoint=uuid.uuid4())
+
+
+@pytest.mark.asyncio
 async def test_unsupported_peer_message(signaling_server, caplog) -> None:
     caplog.set_level(logging.ERROR)
     async with Endpoint(
@@ -187,7 +199,7 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
         connection = await endpoint1._peer_manager.get_connection(
             endpoint2.uuid,
         )
-        await connection.wait()
+        await connection.ready()
 
         # Add bad message to queue
         endpoint2._peer_manager._message_queue.put_nowait(

@@ -5,6 +5,7 @@ from uuid import uuid4
 import pytest
 
 from proxystore.p2p.connection import PeerConnection
+from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
 from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.p2p.server import connect
@@ -25,8 +26,8 @@ async def test_p2p_connection(signaling_server) -> None:
     answer = deserialize(await websocket1.recv())
     await connection1.handle_server_message(answer)
 
-    await connection1.wait()
-    await connection2.wait()
+    await connection1.ready()
+    await connection2.ready()
 
     assert connection1.state == 'connected'
     assert connection2.state == 'connected'
@@ -54,7 +55,7 @@ async def test_p2p_connection_timeout(signaling_server) -> None:
     # Don't finish offer/answer sending so wait() times out
 
     with pytest.raises(PeerConnectionTimeout):
-        await connection1.wait(timeout=0.5)
+        await connection1.ready(timeout=0.5)
 
     await websocket1.close()
     await websocket2.close()
@@ -70,14 +71,16 @@ async def test_p2p_connection_error(signaling_server) -> None:
     class MyException(Exception):
         pass
 
-    with pytest.raises(MyException):
-        await connection.handle_server_message(
-            PeerConnectionMessage(
-                source_uuid=uuid,
-                source_name=name,
-                peer_uuid=uuid4(),
-                error=MyException(),
-            ),
-        )
+    await connection.handle_server_message(
+        PeerConnectionMessage(
+            source_uuid=uuid,
+            source_name=name,
+            peer_uuid=uuid4(),
+            error=MyException(),
+        ),
+    )
+
+    with pytest.raises(PeerConnectionError):
+        await connection.ready()
 
     await websocket.close()

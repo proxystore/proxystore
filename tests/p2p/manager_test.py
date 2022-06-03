@@ -8,6 +8,7 @@ from unittest import mock
 
 import pytest
 
+from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.manager import PeerManager
 from proxystore.serialize import serialize
@@ -68,12 +69,22 @@ async def test_p2p_connection(signaling_server) -> None:
     ) as manager2:
         connection1 = await manager1.get_connection(manager2.uuid)
         assert connection1 == await manager1.get_connection(manager2.uuid)
-        await connection1.wait()
+        await connection1.ready()
         assert connection1.state == 'connected'
 
         connection2 = await manager2.get_connection(manager1.uuid)
-        await connection2.wait()
+        await connection2.ready()
         assert connection2.state == 'connected'
+
+
+@pytest.mark.asyncio
+async def test_p2p_connection_error(signaling_server) -> None:
+    async with PeerManager(
+        uuid.uuid4(),
+        signaling_server.address,
+    ) as manager1:
+        with pytest.raises(PeerConnectionError, match='unknown'):
+            await manager1.send(uuid.uuid4(), 'message')
 
 
 @pytest.mark.asyncio

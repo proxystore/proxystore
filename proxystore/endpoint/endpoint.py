@@ -12,6 +12,7 @@ from uuid import uuid4
 
 from proxystore.endpoint import messages
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
+from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.task import spawn_guarded_background_task
@@ -238,7 +239,10 @@ class Endpoint:
         endpoint: UUID,
         request: messages.Request,
     ) -> asyncio.Future[messages.Response]:
-        """Send request to peer endpoint."""
+        """Send request to peer endpoint.
+
+        Any exceptions will be set on the returned future.
+        """
         # TODO(gpauloski):
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
@@ -249,7 +253,14 @@ class Endpoint:
             f'{self._log_prefix}: sending {type(request).__name__}('
             f'id={request._id}, key={request.key}) to {endpoint}',
         )
-        await self._peer_manager.send(endpoint, request)
+        try:
+            await self._peer_manager.send(endpoint, request)
+        except Exception as e:
+            self._pending_requests[request._id].set_exception(
+                PeerRequestError(
+                    f'Request to peer {endpoint} failed: {str(e)}',
+                ),
+            )
         return self._pending_requests[request._id]
 
     def _is_peer_request(self, endpoint: UUID | None) -> bool:
@@ -275,6 +286,10 @@ class Endpoint:
             endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EVICT key={key} on endpoint={endpoint}',
@@ -284,7 +299,6 @@ class Endpoint:
             request = messages.EvictRequest(key=key)
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
-            # TODO(gpauloski): check future for failure?
         else:
             if key in self._data:
                 del self._data[key]
@@ -300,6 +314,10 @@ class Endpoint:
 
         Returns:
             True if key exists.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EXISTS key={key} on endpoint={endpoint}',
@@ -330,6 +348,10 @@ class Endpoint:
 
         Returns:
             value (bytes) associated with key.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: GET key={key} on endpoint={endpoint}',
@@ -361,6 +383,10 @@ class Endpoint:
             endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: SET key={key} on endpoint={endpoint}',

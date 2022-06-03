@@ -10,9 +10,19 @@ from typing import Coroutine
 logger = logging.getLogger(__name__)
 
 
+class SafeTaskExit(Exception):
+    """Exception that can be raised inside a task to safely exit it."""
+
+    pass
+
+
 def exit_on_error(task: asyncio.Task[Any]) -> None:
     """Task callback that raises SystemExit on task exception."""
-    if not task.cancelled() and task.exception() is not None:
+    if (
+        not task.cancelled()
+        and task.exception() is not None
+        and not isinstance(task.exception(), SafeTaskExit)
+    ):
         logger.error(task.exception(), exc_info=True)
         raise SystemExit(1)
 
@@ -30,6 +40,9 @@ def spawn_guarded_background_task(
     the program to exit. Otherwise, background tasks that are not awaited
     may not have their exceptions raised such that programs hang with no
     notice of the exception that caused the hang.
+
+    Tasks can raise :class:`<.SafeTaskExit>` to signal the task is finished
+    but should not cause a system exit.
 
     Source: `<https://stackoverflow.com/questions/62588076>`_
 

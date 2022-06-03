@@ -17,6 +17,7 @@ from aiortc.contrib.signaling import object_to_string
 from cryptography.utils import CryptographyDeprecationWarning
 from websockets import WebSocketServerProtocol
 
+from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
 from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.serialize import serialize
@@ -53,7 +54,7 @@ class PeerConnection:
         self._name = name
         self._websocket = websocket
 
-        self._handshake_complete = asyncio.Event()
+        self._handshake_success: asyncio.Future[bool] = asyncio.Future()
         self._pc = RTCPeerConnection()
         self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
@@ -90,7 +91,7 @@ class PeerConnection:
         Args:
             data (bytes): data to send to peer.
         """
-        await self._handshake_complete.wait()
+        await self.ready()
         self._channel.send(data)
         # https://github.com/aiortc/aiortc/issues/547
         await self._channel._RTCDataChannel__transport._data_channel_flush()
@@ -116,7 +117,7 @@ class PeerConnection:
         @self._channel.on('open')
         def on_open() -> None:
             logger.info(f'{self._log_prefix}: peer channel established')
-            self._handshake_complete.set()
+            self._handshake_success.set_result(True)
 
         @self._channel.on('message')
         def on_message(message: bytes) -> None:
@@ -150,7 +151,7 @@ class PeerConnection:
         def on_datachannel(channel: RTCDataChannel) -> None:
             logger.info(f'{self._log_prefix}: peer channel established')
             self._channel = channel
-            self._handshake_complete.set()
+            self._handshake_success.set_result(True)
 
             @channel.on('message')
             def on_message(message: bytes) -> None:
@@ -184,7 +185,13 @@ class PeerConnection:
                 signaling server.
         """
         if message.error is not None:
-            raise message.error
+            self._handshake_success.set_exception(
+                PeerConnectionError(
+                    'Received error message from signaling server: '
+                    f'{str(message.error)}',
+                ),
+            )
+            return
 
         if message.message is None:
             raise AssertionError(
@@ -226,16 +233,22 @@ class PeerConnection:
         else:
             raise AssertionError('received unknown message')
 
-    async def wait(self, timeout: int | None = None) -> None:
-        """Wait on P2P connection to be established.
+    async def ready(self, timeout: int | None = None) -> None:
+        """Wait for connection to be ready.
 
         Args:
             timeout (int, optional): maximum time in seconds to wait for
                 the peer connection to establish. If None, block until
                 the connection is established (default: None).
+
+        Raises:
+            PeerConnectionTimeout:
+                if the connection is not ready within the timeout.
+            PeerConnectionError:
+                if there is an error establishing the peer connection.
         """
         try:
-            await asyncio.wait_for(self._handshake_complete.wait(), timeout)
+            await asyncio.wait_for(self._handshake_success, timeout)
         except asyncio.TimeoutError:
             raise PeerConnectionTimeout(
                 'Timeout waiting for peer to peer connection to establish '
