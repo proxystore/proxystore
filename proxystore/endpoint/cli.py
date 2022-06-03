@@ -39,7 +39,14 @@ class _CLIFormatter(logging.Formatter):
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting an endpoint."""
+    """CLI for starting an endpoint.
+
+    Usage:
+
+    .. code-block:: console
+
+       $ proxystore-endpoint [command] {options}
+    """
     argv = argv if argv is not None else sys.argv[1:]
     parser = argparse.ArgumentParser(prog='proxystore-endpoint')
 

@@ -135,6 +135,9 @@ def serve(
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
+    Warning:
+        This function does not return until the Quart app is terminated.
+
     Args:
         name (str): name of endpoint.
         uuid (str): uuid of endpoint.
