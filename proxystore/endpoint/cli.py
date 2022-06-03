@@ -33,7 +33,7 @@ class _CLIFormatter(logging.Formatter):
         logging.CRITICAL: f'{bold_red}CRITICAL:{reset} %(message)s',
     }
 
-    def format(self, record: logging.LogRecord) -> str:
+    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
         formatter = logging.Formatter(self.FORMATS[record.levelno])
         return formatter.format(record)
 

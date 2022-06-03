@@ -146,7 +146,7 @@ def test_list_endpoints(tmp_dir, caplog) -> None:
     rv = list_endpoints(proxystore_dir=tmp_dir)
     assert rv == 0
 
-    assert len(caplog.records) == len(names)
+    assert len(caplog.records) == len(names) + 2
     for name in names:
         assert any([name in record.message for record in caplog.records])
 
@@ -224,7 +224,7 @@ def test_start_endpoint_does_not_exist(tmp_dir, caplog) -> None:
     assert rv == 1
 
     assert any(
-        ['does not correspond' in record.message for record in caplog.records],
+        ['does not exist' in record.message for record in caplog.records],
     )
 
 
@@ -237,7 +237,7 @@ def test_start_endpoint_missing_config(tmp_dir, caplog) -> None:
 
     assert any(
         [
-            'missing a config file' in record.message
+            'does not have a config file' in record.message
             for record in caplog.records
         ],
     )

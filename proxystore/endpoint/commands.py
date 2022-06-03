@@ -184,10 +184,6 @@ def start_endpoint(
         logger.error('Try removing the endpoint and configuring it again.')
         return 1
 
-    # Update logger for serve() in case caller already had configured logger.
-    # TODO: create new logger object to pass to serve.
-    logging.basicConfig(level=log_level)
-
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     serve(
         name=cfg.name,
@@ -195,6 +191,8 @@ def start_endpoint(
         host=cfg.host,
         port=cfg.port,
         server=cfg.server,
+        log_level=log_level,
+        log_file=os.path.join(endpoint_dir, 'endpoint.log'),
     )
 
     return 0

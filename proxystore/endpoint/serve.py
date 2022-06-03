@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 
 import quart
 from quart import request
@@ -10,6 +12,10 @@ from quart import Response
 from proxystore.endpoint.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
+
+# Override Quart standard handlers
+quart.logging.default_handler = logging.NullHandler()
+quart.logging.serving_handler = logging.NullHandler()
 
 
 def create_app(endpoint: Endpoint) -> quart.Quart:
@@ -22,6 +28,12 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
         Quart app.
     """
     app = quart.Quart(__name__)
+
+    # Propagate custom handlers to Quart App and Serving loggers
+    app_logger = quart.logging.create_logger(app)
+    serving_logger = quart.logging.create_serving_logger()
+    app_logger.handlers = logger.handlers
+    serving_logger.handlers = logger.handlers
 
     @app.before_serving
     async def startup() -> None:
@@ -93,6 +105,8 @@ def serve(
     host: str,
     port: int,
     server: str | None = None,
+    log_level: int | str = logging.INFO,
+    log_file: str | None = None,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -105,7 +119,28 @@ def serve(
             will register with and use for establishing peer to peer
             connections. If None, endpoint will operate in solo mode (no
             peering) (default: None).
+        log_level (int): logging level of endpoint (default: INFO).
+        log_file (str): optional file path to append log to.
     """
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    if log_file is not None:
+        parent_dir = os.path.dirname(log_file)
+        if not os.path.isdir(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+        handlers.append(logging.FileHandler(log_file))
+
+    # Remove existing handlers before we add our own
+    logging.getLogger().handlers.clear()
+    logging.basicConfig(
+        level=log_level,
+        format=(
+            '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+            '%(message)s'
+        ),
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=handlers,
+    )
+
     endpoint = Endpoint(name=name, uuid=uuid, signaling_server=server)
     app = create_app(endpoint)
 

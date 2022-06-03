@@ -90,12 +90,12 @@ class Endpoint:
 
         logger.info(
             f'{self._log_prefix}: initialized endpoint operating '
-            f'in {str(self._mode)} mode',
+            f'in {self._mode.name} mode',
         )
 
     @property
     def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}'
+        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}]'
 
     @property
     def uuid(self) -> str:

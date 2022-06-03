@@ -3,9 +3,11 @@ from __future__ import annotations
 import contextlib
 import logging
 import multiprocessing
+import os
 import time
 import uuid
 from typing import AsyncGenerator
+from unittest import mock
 
 import pytest
 import pytest_asyncio
@@ -175,3 +177,22 @@ def test_serve() -> None:
                 break
     finally:
         process.terminate()
+
+
+@mock.patch('quart.Quart.run')
+def test_serve_logging(mock_run, tmp_dir) -> None:
+    with contextlib.redirect_stdout(None), contextlib.redirect_stderr(
+        None,
+    ):
+        # Make directory if necessary
+        log_file = os.path.join(tmp_dir, 'log.txt')
+        serve('name', 'uuid', '0.0.0.0', 1234, None, 'INFO', log_file)
+        print(os.listdir(tmp_dir))
+        assert os.path.isdir(tmp_dir)
+        assert os.path.exists(log_file)
+
+        # Write log to existing log directory
+        log_file2 = os.path.join(tmp_dir, 'log2.txt')
+        serve('name', 'uuid', '0.0.0.0', 1234, None, 'INFO', log_file2)
+        assert os.path.isdir(tmp_dir)
+        assert os.path.exists(log_file2)
