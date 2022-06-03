@@ -53,8 +53,8 @@ def configure_endpoint(
     """
     if not _validate_name(name):
         logger.error(
-            'Endpoint name can only contain alphanumeric and dash/underscore '
-            f'characters. Got name {name}.',
+            'Names must only contain alphanumeric characters, dashes, and '
+            ' underscores.',
         )
         return 1
 
@@ -63,10 +63,8 @@ def configure_endpoint(
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if os.path.exists(endpoint_dir):
-        logger.error(
-            f'Endpoint with name {name} already exists. '
-            'To reconfigure the endpoint, remove and try again.',
-        )
+        logger.error(f'An endpoint named {name} already exists. ')
+        logger.error('To reconfigure the endpoint, remove and try again.')
         return 1
 
     cfg = EndpointConfig(
@@ -78,7 +76,9 @@ def configure_endpoint(
     )
     write_config(cfg, endpoint_dir)
 
-    logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>. Start with:')
+    logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
+    logger.info('')
+    logger.info('To start the endpoint:')
     logger.info(f'  $ proxystore-endpoint start {cfg.name}.')
 
     return 0
@@ -106,8 +106,12 @@ def list_endpoints(
     if len(endpoints) == 0:
         logger.info(f'No valid endpoint configurations in {proxystore_dir}.')
     else:
-        for endpoint in endpoints:
-            logger.info(f'{endpoint.name:<12} {endpoint.uuid}')
+        eps = [(e.name, e.uuid) for e in endpoints]
+        eps = sorted(eps, key=lambda x: x[0])
+        logger.info(f'{"NAME":<18} UUID')
+        logger.info('=' * (18 + 1 + len(eps[0][1])))
+        for name, uuid_ in eps:
+            logger.info(f'{name:<18} {uuid_}')
 
     return 0
 
@@ -133,12 +137,12 @@ def remove_endpoint(
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if not os.path.exists(endpoint_dir):
-        logger.error(f'Endpoint with name {name} does not exist.')
+        logger.error(f'An endpoint named {name} does not exist.')
         return 1
 
     shutil.rmtree(endpoint_dir)
 
-    logger.info(f'Removed endpoint with name {name}.')
+    logger.info(f'Removed endpoint named {name}.')
 
     return 0
 
@@ -166,19 +170,18 @@ def start_endpoint(
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     if not os.path.exists(endpoint_dir):
-        logger.error(
-            f'{name} does not correspond to a configured endpoint.'
-            'Use `list` to see available endpoints.',
-        )
+        logger.error(f'An endpoint named {name} does not exist.')
+        logger.error('Use `list` to see available endpoints.')
         return 1
 
     try:
         cfg = read_config(endpoint_dir)
     except FileNotFoundError:
         logger.error(
-            f'{name} is missing a config file. Try removing the endpoint '
-            'and configuring it again.',
+            f'{os.path.join(proxystore_dir, name)} does not have a '
+            'config file.',
         )
+        logger.error('Try removing the endpoint and configuring it again.')
         return 1
 
     # Update logger for serve() in case caller already had configured logger.
