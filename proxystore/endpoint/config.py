@@ -90,4 +90,6 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
     os.makedirs(endpoint_dir, exist_ok=True)
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
     with open(path, 'w') as f:
-        json.dump(dataclasses.asdict(cfg), f)
+        json.dump(dataclasses.asdict(cfg), f, indent=4)
+        # Add newline so cat on the file looks better
+        f.write('\n')
