@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import os
-import sys
 import uuid
 
 import quart
@@ -150,22 +149,21 @@ def serve(
         log_level (int): logging level of endpoint (default: INFO).
         log_file (str): optional file path to append log to.
     """
-    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
         if not os.path.isdir(parent_dir):
             os.makedirs(parent_dir, exist_ok=True)
-        handlers.append(logging.FileHandler(log_file))
+        logging.getLogger().handlers.append(logging.FileHandler(log_file))
 
-    logging.basicConfig(
-        level=log_level,
-        format=(
-            '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
-            '%(message)s'
-        ),
-        datefmt='%Y-%m-%d %H:%M:%S',
-        handlers=handlers,
-    )
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(
+            logging.Formatter(
+                '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+                '%(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S',
+            ),
+        )
+    logging.getLogger().setLevel(log_level)
 
     endpoint = Endpoint(name=name, uuid=uuid, signaling_server=server)
     app = create_app(endpoint)
