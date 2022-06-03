@@ -19,8 +19,7 @@ import globus_sdk
 from parsl.data_provider import globus
 
 import proxystore as ps
-from proxystore.store.remote import RemoteFactory
-from proxystore.store.remote import RemoteStore
+from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
@@ -231,54 +230,7 @@ class GlobusEndpoints:
         raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
-class GlobusFactory(RemoteFactory):
-    """Factory for Instances of GlobusStore.
-
-    Adds support for asynchronously retrieving objects from a
-    :class:`GlobusStore <.GlobusStore>` backend..
-
-    The factory takes the `store_type` and `store_args` parameters that are
-    used to reinitialize the backend store if the factory is sent to a remote
-    process backend has not already been initialized.
-    """
-
-    def __init__(
-        self,
-        key: str,
-        store_name: str,
-        store_kwargs: dict[str, Any] | None = None,
-        *,
-        evict: bool = False,
-        serialize: bool = True,
-        strict: bool = False,
-    ) -> None:
-        """Init GlobusFactory.
-
-        Args:
-            key (str): key corresponding to object in store.
-            store_name (str): name of store.
-            store_kwargs (dict): optional keyword arguments used to
-                reinitialize store.
-            evict (bool): If True, evict the object from the store once
-                :func:`resolve()` is called (default: False).
-            serialize (bool): if True, object in store is serialized and
-                should be deserialized upon retrieval (default: True).
-            strict (bool): guarantee object produce when this object is called
-                is the most recent version of the object associated with the
-                key in the store (default: False).
-        """
-        super().__init__(
-            key,
-            GlobusStore,
-            store_name,
-            store_kwargs,
-            evict=evict,
-            serialize=serialize,
-            strict=strict,
-        )
-
-
-class GlobusStore(RemoteStore):
+class GlobusStore(Store):
     """Globus backend class.
 
     The :class:`GlobusStore <.GlobusStore>` is similar to a
@@ -321,7 +273,8 @@ class GlobusStore(RemoteStore):
         polling_interval: int = 1,
         sync_level: int | str = 'mtime',
         timeout: int = 60,
-        **kwargs: Any,
+        cache_size: int = 16,
+        stats: bool = False,
     ) -> None:
         """Init GlobusStore.
 
@@ -334,8 +287,10 @@ class GlobusStore(RemoteStore):
                 tasks have finished.
             sync_level (str, int): Globus transfer sync level.
             timeout (int): timeout in seconds for waiting on Globus tasks.
-            kwargs (dict): additional keyword arguments to pass to
-                :class:`RemoteStore <proxystore.store.remote.RemoteStore>`.
+            cache_size (int): size of LRU cache (in # of objects). If 0,
+                the cache is disabled. The cache is local to the Python
+                process (default: 16).
+            stats (bool): collect stats on store operations (default: False).
 
         Raise:
             ValueError:
@@ -372,22 +327,11 @@ class GlobusStore(RemoteStore):
             authorizer=parsl_globus_auth.authorizer,
         )
 
-        super().__init__(name, **kwargs)
-
-    def _kwargs(
-        self,
-        kwargs: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Helper for handling inheritance with kwargs property.
-
-        Args:
-            kwargs (optional, dict): dict to use as return object. If None,
-                a new dict will be created.
-        """
-        if kwargs is None:
-            kwargs = {}
-        kwargs.update(
-            {
+        super().__init__(
+            name,
+            cache_size=cache_size,
+            stats=stats,
+            kwargs={
                 # Pass endpoints as a dict to make kwargs JSON serializable
                 'endpoints': self.endpoints.dict(),
                 'polling_interval': self.polling_interval,
@@ -395,7 +339,6 @@ class GlobusStore(RemoteStore):
                 'timeout': self.timeout,
             },
         )
-        return super()._kwargs(kwargs)
 
     def _create_key(self, filename: str, task_id: str) -> str:
         """Create key for GlobusStore.
@@ -534,7 +477,7 @@ class GlobusStore(RemoteStore):
 
         return tdata['task_id']
 
-    def cleanup(self) -> None:
+    def close(self) -> None:
         """Cleanup directories used by ProxyStore in the Globus endpoints.
 
         Warning:
@@ -559,11 +502,6 @@ class GlobusStore(RemoteStore):
             self._wait_on_tasks(tdata['task_id'])
 
     def evict(self, key: str) -> None:
-        """Evict object associated with key from the Globus synced directory.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
-        """
         if not self.exists(key):
             return
 
@@ -578,28 +516,12 @@ class GlobusStore(RemoteStore):
         )
 
     def exists(self, key: str) -> bool:
-        """Check if key exists.
-
-        Args:
-            key (str): key to check.
-
-        Returns:
-            `bool`
-        """
         if not self._validate_key(key):
             return False
         self._wait_on_tasks(self._get_task_id(key))
         return os.path.exists(self._get_filepath(self._get_filename(key)))
 
     def get_bytes(self, key: str) -> bytes | None:
-        """Get serialized object from Globus.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            serialized object or `None` if it does not exist.
-        """
         if not self.exists(key):
             return None
 
@@ -608,19 +530,6 @@ class GlobusStore(RemoteStore):
             return f.read()
 
     def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            timestamp (float) representing file modified time (seconds since
-            epoch).
-
-        Raises:
-            KeyError:
-                if `key` does not exist in store.
-        """
         if not self.exists(key):
             raise KeyError(
                 f"Key='{key}' does not have a corresponding file in the store",
@@ -635,101 +544,22 @@ class GlobusStore(RemoteStore):
         strict: bool = False,
         default: Any | None = None,
     ) -> Any | None:
-        """Return object associated with key.
-
-        Args:
-            key (str): key corresponding to object.
-            deserialize (bool): deserialize object if True. If objects
-                are custom serialized, set this as False (default: True).
-            strict (bool): guarantee returned object is the most recent
-                version (default: False).
-            default: optionally provide value to be returned if an object
-                associated with the key does not exist (default: None).
-
-        Returns:
-            object associated with key or `default` if key does not exist.
-        """
         if strict:
             warnings.warn(
                 'GlobusStore objects are immutable so setting strict=True '
                 'has no effect.',
             )
-        if self.is_cached(key, strict=strict):
-            value = self._cache.get(key)
-            logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=True",
-            )
-            return value
-
-        value = self.get_bytes(key)
-        if value is not None:
-            if deserialize:
-                value = ps.serialize.deserialize(value)
-            self._cache.set(key, value)
-            logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=False",
-            )
-            return value
-
-        logger.debug(
-            f"GET key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}'): key did not exist, returned default",
+        return super().get(
+            key,
+            deserialize=deserialize,
+            strict=False,
+            default=default,
         )
-        return default
 
     def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        """Check if object is cached locally.
-
-        Args:
-            key (str): key corresponding to object.
-            strict (bool): guarantee object in cache is most recent version.
-                Not supported in :class:`GlobusStore` (default: False).
-
-        Returns:
-            bool
-        """
         return self._cache.exists(key)
 
-    def proxy(  # type: ignore[override]
-        self,
-        obj: Any | None = None,
-        *,
-        key: str | None = None,
-        factory: type[RemoteFactory] = GlobusFactory,
-        **kwargs: Any,
-    ) -> ps.proxy.Proxy:
-        """Create a proxy that will resolve to an object in the store.
-
-        Args:
-            obj (object): object to place in store and return proxy for.
-                If an object is not provided, a key must be provided that
-                corresponds to an object already in the store (default: None).
-            key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated (default: None).
-            factory (Factory): factory class that will be instantiated
-                and passed to the proxy. The factory class should be able
-                to correctly resolve the object from this store
-                (default: :class:`GlobusFactory <.GlobusFactory>`).
-            kwargs (dict): additional arguments to pass to the Factory.
-
-        Returns:
-            :any:`Proxy <proxystore.proxy.Proxy>`
-
-        Raise:
-            ValueError:
-                if `key` and `obj` are both `None`.
-        """
-        return super().proxy(obj, key=key, factory=factory, **kwargs)
-
     def set_bytes(self, key: str, data: bytes) -> None:
-        """Set serialized object in Globus synced directory with key.
-
-        Args:
-            key (str): key corresponding to object.
-            data (bytes): serialized object.
-        """
         if not isinstance(data, bytes):
             raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = self._get_filepath(key)
@@ -749,19 +579,6 @@ class GlobusStore(RemoteStore):
         key: str | None = None,
         serialize: bool = True,
     ) -> str:
-        """Set key-object pair in store.
-
-        Args:
-            obj (object): object to be placed in the store.
-            key (str, optional): key to used to name the file in the store.
-                If the key is not provided, one will be created. Note the
-                actual key that is returned by this function will be different.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-
-        Returns:
-            key (str)
-        """
         if serialize:
             obj = ps.serialize.serialize(obj)
         if key is None:
@@ -785,24 +602,6 @@ class GlobusStore(RemoteStore):
         keys: Sequence[str | None] | None = None,
         serialize: bool = True,
     ) -> list[str]:
-        """Set objects in store.
-
-        Args:
-            objs (Sequence[Any]): iterable of objects to be placed in the
-                store.
-            keys (Sequence[str], optional): keys to use with the objects.
-                If the keys are not provided, keys will be created.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
-
-        Returns:
-            List of keys (str). Note that some implementations of a store may
-            return keys different from the provided keys.
-
-        Raises:
-            ValueError:
-                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
-        """
         if keys is not None and len(objs) != len(keys):
             raise ValueError(
                 f'objs has length {len(objs)} but keys has length {len(keys)}',

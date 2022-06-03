@@ -110,4 +110,4 @@ if __name__ == '__main__':
     print('Sum:', fxc.get_result(total))
 
     if args.proxy:
-        store.cleanup()
+        store.close()

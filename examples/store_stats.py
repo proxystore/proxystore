@@ -90,4 +90,4 @@ store = store.stats(target_proxy)
 """,
 )
 
-store.cleanup()
+store.close()

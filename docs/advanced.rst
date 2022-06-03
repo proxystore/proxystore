@@ -122,14 +122,10 @@ Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStor
        # of the asynchronous resolution
        compute_input(large_proxied_input)
 
-The method by which factories asynchronously resolve objects is unique to the factory.
-For example, :any:`RedisFactory <proxystore.store.redis.RedisFactory>` will spawn a new thread to communicate with the remote Redis server to retrieve the object.
-A future for the thread is store inside the factory (and therefore inside the proxy).
-
 Caching
 -------
 
-The :any:`RemoteStore <proxystore.store.remote.RemoteStore>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
+The :any:`Store <proxystore.store.base.Store>` provides built in caching functionality for custom Store implementations such as :any:`RedisStore <proxystore.store.redis.RedisStore>`.
 Caches are local to the Python process but will speed up the resolution when multiple proxies refer to the same object in the Redis server.
 
 Transactional Guarantees

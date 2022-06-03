@@ -1,70 +1,46 @@
-"""RemoteStore Stat Tracking Tests."""
+"""Store Stat Tracking Tests."""
 from __future__ import annotations
 
-import os
-import shutil
-
-from pytest import fixture
-from pytest import mark
-from pytest import raises
+import pytest
 
 import proxystore as ps
-from testing.store_utils import FILE_DIR
-from testing.store_utils import FILE_STORE
-from testing.store_utils import GLOBUS_STORE
-from testing.store_utils import LOCAL_STORE
-from testing.store_utils import mock_third_party_libs
-from testing.store_utils import REDIS_STORE
+from testing.store_utils import FIXTURE_LIST
 
 
-@fixture(scope='session', autouse=True)
-def init():
-    """Set up test environment."""
-    mpatch = mock_third_party_libs()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-    yield mpatch
-    mpatch.undo()
-    if os.path.exists(FILE_DIR):
-        shutil.rmtree(FILE_DIR)  # pragma: no cover
-
-
-@mark.parametrize(
-    'store_config',
-    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_init_stats(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_init_stats(store_fixture, request) -> None:
     """Test Initializing Stat tracking."""
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store_config = request.getfixturevalue(store_fixture)
+
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
     )
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # Check raises an error because stats are not tracked by default
         store.stats('key')
 
-    store = store_config['type'](
-        store_config['name'],
-        **store_config['kwargs'],
+    store = store_config.type(
+        store_config.name,
+        **store_config.kwargs,
         stats=True,
     )
 
     assert isinstance(store.stats('key'), dict)
 
-    store.cleanup()
+    store.close()
 
 
-@mark.parametrize(
-    'store_config',
-    [LOCAL_STORE, FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_stat_tracking(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_stat_tracking(store_fixture, request) -> None:
     """Test stat tracking of store."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         stats=True,
     )
 
@@ -90,19 +66,18 @@ def test_stat_tracking(store_config) -> None:
 
     assert len(stats) == 0
 
-    store.cleanup()
+    store.close()
 
 
-@mark.parametrize(
-    'store_config',
-    [FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_get_stats_with_proxy(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_get_stats_with_proxy(store_fixture, request) -> None:
     """Test Get Stats with Proxy."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         stats=True,
     )
 
@@ -154,16 +129,15 @@ def test_get_stats_with_proxy(store_config) -> None:
     assert 'resolve' not in stats
 
 
-@mark.parametrize(
-    'store_config',
-    [FILE_STORE, REDIS_STORE, GLOBUS_STORE],
-)
-def test_factory_preserves_tracking(store_config) -> None:
+@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
+def test_factory_preserves_tracking(store_fixture, request) -> None:
     """Test Factories Preserve the Stat Tracking Flag."""
+    store_config = request.getfixturevalue(store_fixture)
+
     store = ps.store.init_store(
-        store_config['type'],
-        store_config['name'],
-        **store_config['kwargs'],
+        store_config.type,
+        store_config.name,
+        **store_config.kwargs,
         stats=True,
     )
 
@@ -175,9 +149,9 @@ def test_factory_preserves_tracking(store_config) -> None:
 
     # Resolve the proxy
     assert p == [1, 2, 3]
-    store = ps.store.get_store(store_config['name'])
+    store = ps.store.get_store(store_config.name)
 
     assert isinstance(store.stats(key), dict)
     assert store.stats(key)['get'].calls == 1
 
-    store.cleanup()
+    store.close()
