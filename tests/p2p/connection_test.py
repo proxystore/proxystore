@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 import pytest
 
 from proxystore.p2p.connection import PeerConnection
@@ -73,7 +75,7 @@ async def test_p2p_connection_error(signaling_server) -> None:
             PeerConnectionMessage(
                 source_uuid=uuid,
                 source_name=name,
-                peer_uuid='',
+                peer_uuid=uuid4(),
                 error=MyException(),
             ),
         )

@@ -52,7 +52,7 @@ def endpoints(tmp_dir) -> Generator[tuple[list[str], list[str]], None, None]:
     for port in (open_port(), open_port()):
         cfg = EndpointConfig(
             name=f'test-endpoint-{port}',
-            uuid=str(uuid.uuid4()),
+            uuid=uuid.uuid4(),
             host='localhost',
             port=port,
             server=f'{ss_host}:{ss_port}',

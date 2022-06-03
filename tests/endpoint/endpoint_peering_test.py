@@ -12,8 +12,8 @@ from testing.compat import randbytes
 
 _NAME1 = 'test-endpoint-1'
 _NAME2 = 'test-endpoint-2'
-_UUID1 = str(uuid.uuid4())
-_UUID2 = str(uuid.uuid4())
+_UUID1 = uuid.uuid4()
+_UUID2 = uuid.uuid4()
 
 
 @pytest.mark.asyncio
@@ -115,7 +115,7 @@ async def test_peering_not_available(signaling_server) -> None:
     # __await__ has not been called on endpoint so connection to server
     # has not been enabled
     with pytest.raises(PeeringNotAvailableError, match='await'):
-        await endpoint.get('key', endpoint='fake-endpoint')
+        await endpoint.get('key', endpoint=uuid.uuid4())
 
 
 @pytest.mark.asyncio

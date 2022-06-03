@@ -5,6 +5,7 @@ import asyncio
 import contextlib
 import logging
 import time
+import uuid
 from multiprocessing import Process
 
 import requests
@@ -14,7 +15,7 @@ from proxystore.endpoint.serve import serve
 
 def serve_endpoint_silent(
     name: str,
-    uuid: str,
+    uuid: uuid.UUID,
     host: str,
     port: int,
     server: str | None,
@@ -32,7 +33,7 @@ def serve_endpoint_silent(
 
 def launch_endpoint(
     name: str,
-    uuid: str,
+    uuid: uuid.UUID,
     host: str,
     port: int,
     server: str | None,

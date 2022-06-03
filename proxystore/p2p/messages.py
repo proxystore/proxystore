@@ -1,6 +1,7 @@
 """Message types for peer-to-peer communication."""
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -24,14 +25,14 @@ class PeerRegistrationRequest(BaseMessage):
     """Register with signaling server as peer."""
 
     name: str
-    uuid: str | None = None
+    uuid: uuid.UUID | None = None
 
 
 @dataclass
 class PeerRegistrationResponse(BaseMessage):
     """Peer registration response from signaling server."""
 
-    uuid: str
+    uuid: uuid.UUID
     error: Exception | None = None
 
 
@@ -39,9 +40,9 @@ class PeerRegistrationResponse(BaseMessage):
 class PeerConnectionMessage(BaseMessage):
     """Message used in establishing a peer-to-peer connection."""
 
-    source_uuid: str
+    source_uuid: uuid.UUID
     source_name: str
-    peer_uuid: str
+    peer_uuid: uuid.UUID
     message: str | None = None
     error: Exception | None = None
 
@@ -51,8 +52,8 @@ class PeerMessage:
     """Message sent between peers."""
 
     message_id: str
-    source_uuid: str
-    peer_uuid: str
+    source_uuid: uuid.UUID
+    peer_uuid: uuid.UUID
     message: Any
 
 
@@ -61,7 +62,7 @@ class PeerResponse:
     """Response message from peer."""
 
     message_id: str
-    source_uuid: str
-    peer_uuid: str
+    source_uuid: uuid.UUID
+    peer_uuid: uuid.UUID
     message: Any = None
     error: Exception | None = None

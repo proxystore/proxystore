@@ -38,7 +38,7 @@ async def test_not_awaited(signaling_server) -> None:
 
 @pytest.mark.asyncio
 async def test_uuid_name_properties(signaling_server) -> None:
-    uuid_ = str(uuid.uuid4())
+    uuid_ = uuid.uuid4()
     name = 'pm'
     async with PeerManager(
         uuid_,

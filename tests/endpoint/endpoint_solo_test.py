@@ -8,7 +8,7 @@ from proxystore.endpoint.endpoint import Endpoint
 from testing.compat import randbytes
 
 _NAME = 'test-endpoint'
-_UUID = str(uuid.uuid4())
+_UUID = uuid.uuid4()
 
 
 @pytest.mark.asyncio
@@ -41,7 +41,7 @@ async def test_get() -> None:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
-        assert (await endpoint.get('key', endpoint='random-endpoint')) == data
+        assert (await endpoint.get('key', endpoint=uuid.uuid4())) == data
 
 
 @pytest.mark.asyncio

@@ -5,6 +5,8 @@ import dataclasses
 import json
 import os
 import pathlib
+import re
+import uuid
 
 _DEFAULT_HOME_DIR = '.proxystore'
 _ENDPOINT_CONFIG_FILE = 'endpoint.json'
@@ -15,10 +17,36 @@ class EndpointConfig:
     """Endpoint configuration."""
 
     name: str
-    uuid: str
+    uuid: uuid.UUID
     host: str
     port: int
     server: str | None = None
+
+    def __post_init__(self) -> None:
+        """Validate config contains reasonable values.
+
+        Raises:
+            ValueError:
+                if the name does not contain only alphanumeric, dash, or
+                underscore characters, if the UUID cannot be parsed, or if the
+                port is not in the range [1, 65535].
+        """
+        if not validate_name(self.name):
+            raise ValueError(
+                'Name must only contain alphanumeric characters, dashes, and '
+                f' underscores. Got {self.name}.',
+            )
+        if isinstance(self.uuid, str):
+            try:
+                self.uuid = uuid.UUID(self.uuid, version=4)
+            except ValueError:
+                raise ValueError(f'{self.uuid} is not a valid UUID4 string.')
+        if self.port < 1 or self.port > 65535:
+            raise ValueError('Port must be in range [1, 65535].')
+        if self.server == '':
+            raise ValueError(
+                'EndpointConfig.server cannot be an empty string.',
+            )
 
 
 def default_dir() -> str:
@@ -27,7 +55,7 @@ def default_dir() -> str:
 
 
 def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
-    """Get all endpoint configurations in parent directory.
+    """Get all valid endpoint configurations in parent directory.
 
     Args:
         proxystore_dir (str): parent directory containing possible endpoint
@@ -48,6 +76,8 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
             cfg = read_config(dirpath)
         except FileNotFoundError:
             continue
+        except ValueError:
+            continue
         else:
             endpoints.append(cfg)
 
@@ -66,18 +96,34 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
     Raises:
         FileNotFoundError:
             if a config files does not exist in the directory.
+        ValueError:
+            if config contains an invalid value or cannot be parsed.
     """
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
 
     if os.path.exists(path):
         with open(path) as f:
-            cfg = json.load(f)
-        return EndpointConfig(**cfg)
+            try:
+                cfg_json = json.load(f)
+            except json.decoder.JSONDecodeError as e:
+                raise ValueError(f'Unable to parse ({path}): {str(e)}.')
+        try:
+            cfg = EndpointConfig(**cfg_json)
+        except TypeError as e:
+            raise ValueError(
+                f'Keys in config ({path}) do not match expected: {str(e)}.',
+            )
+        return cfg
     else:
         raise FileNotFoundError(
             f'Endpoint directory {endpoint_dir} does not contain a valid '
             'configuration.',
         )
+
+
+def validate_name(name: str) -> bool:
+    """Validate name only contains alphanumeric or dash/underscore chars."""
+    return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
 
 
 def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
@@ -90,6 +136,8 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
     os.makedirs(endpoint_dir, exist_ok=True)
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
     with open(path, 'w') as f:
-        json.dump(dataclasses.asdict(cfg), f, indent=4)
+        data = dataclasses.asdict(cfg)
+        data['uuid'] = str(data['uuid'])
+        json.dump(data, f, indent=4)
         # Add newline so cat on the file looks better
         f.write('\n')

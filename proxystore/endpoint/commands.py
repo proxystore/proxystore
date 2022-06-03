@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import shutil
 import uuid
 
@@ -21,11 +20,6 @@ from proxystore.endpoint.config import write_config
 from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_name(name: str) -> bool:
-    """Validate name only contains alphanumeric or dash/underscore chars."""
-    return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
 
 
 def configure_endpoint(
@@ -51,11 +45,16 @@ def configure_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages
         are logged to the default logger.
     """
-    if not _validate_name(name):
-        logger.error(
-            'Names must only contain alphanumeric characters, dashes, and '
-            ' underscores.',
+    try:
+        cfg = EndpointConfig(
+            name=name,
+            uuid=uuid.uuid4(),
+            host=host,
+            port=port,
+            server=server,
         )
+    except ValueError as e:
+        logger.error(str(e))
         return 1
 
     if proxystore_dir is None:
@@ -67,13 +66,6 @@ def configure_endpoint(
         logger.error('To reconfigure the endpoint, remove and try again.')
         return 1
 
-    cfg = EndpointConfig(
-        name=name,
-        uuid=str(uuid.uuid4()),
-        host=host,
-        port=port,
-        server=server,
-    )
     write_config(cfg, endpoint_dir)
 
     logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
@@ -106,7 +98,7 @@ def list_endpoints(
     if len(endpoints) == 0:
         logger.info(f'No valid endpoint configurations in {proxystore_dir}.')
     else:
-        eps = [(e.name, e.uuid) for e in endpoints]
+        eps = [(e.name, str(e.uuid)) for e in endpoints]
         eps = sorted(eps, key=lambda x: x[0])
         logger.info(f'{"NAME":<18} UUID')
         logger.info('=' * (18 + 1 + len(eps[0][1])))
@@ -182,6 +174,10 @@ def start_endpoint(
             'config file.',
         )
         logger.error('Try removing the endpoint and configuring it again.')
+        return 1
+    except ValueError as e:
+        logger.error(str(e))
+        logger.error('Correct the endpoint config and try again.')
         return 1
 
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.

@@ -5,6 +5,7 @@ import asyncio
 import json
 import logging
 import warnings
+from uuid import UUID
 
 from aiortc import RTCDataChannel
 from aiortc import RTCIceCandidate
@@ -36,7 +37,7 @@ class PeerConnection:
 
     def __init__(
         self,
-        uuid: str,
+        uuid: UUID,
         name: str,
         websocket: WebSocketServerProtocol,
     ) -> None:
@@ -56,7 +57,7 @@ class PeerConnection:
         self._pc = RTCPeerConnection()
         self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
-        self._peer_uuid: str | None = None
+        self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
 
     @property
@@ -104,7 +105,7 @@ class PeerConnection:
         """
         return await self._message_queue.get()
 
-    async def send_offer(self, peer_uuid: str) -> None:
+    async def send_offer(self, peer_uuid: UUID) -> None:
         """Send offer for peering via signaling server.
 
         Args:
@@ -138,7 +139,7 @@ class PeerConnection:
         logger.info(f'{self._log_prefix}: sending offer to {peer_uuid}')
         await self._websocket.send(message)
 
-    async def send_answer(self, peer_uuid: str) -> None:
+    async def send_answer(self, peer_uuid: UUID) -> None:
         """Send answer to peering request via signaling server.
 
         Args:
@@ -242,6 +243,7 @@ class PeerConnection:
             )
 
 
-def log_name(uuid: str, name: str) -> str:
+def log_name(uuid: UUID, name: str) -> str:
     """Return str formatted as `name(uuid-prefix)`."""
-    return f'{name}({uuid[:min(8,len(uuid))]})'
+    uuid_ = str(uuid)
+    return f'{name}({uuid_[:min(8,len(uuid_))]})'

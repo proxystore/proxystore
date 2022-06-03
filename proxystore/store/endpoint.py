@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from typing import Any
 
 import requests
@@ -79,7 +80,7 @@ class EndpointStore(Store):
                 )
                 if response.status_code == 200:
                     uuid = response.json()['uuid']
-                    if endpoint.uuid == uuid:
+                    if str(endpoint.uuid) == uuid:
                         logger.debug(
                             f'connection to {endpoint.uuid} successful, using '
                             'as home endpoint',
@@ -116,17 +117,17 @@ class EndpointStore(Store):
         )
 
     @staticmethod
-    def _create_key(object_key: str, endpoint_uuid: str) -> str:
-        return f'{object_key}:{endpoint_uuid}'
+    def _create_key(object_key: str, endpoint_uuid: uuid.UUID) -> str:
+        return f'{object_key}:{str(endpoint_uuid)}'
 
     @staticmethod
-    def _parse_key(key: str) -> tuple[str, str | None]:
+    def _parse_key(key: str) -> tuple[str, uuid.UUID | None]:
         # TODO: validate format?
         values = key.split(':')
         if len(values) == 1:
             return values[0], None
         elif len(values) == 2:
-            return (values[0], values[1])
+            return (values[0], uuid.UUID(values[1], version=4))
         else:
             raise ValueError(f'Failed to parse key {key}.')
 
@@ -145,7 +146,9 @@ class EndpointStore(Store):
             f'{self.address}/evict',
             params={
                 'key': object_key,
-                'endpoint': endpoint_uuid,
+                'endpoint': str(endpoint_uuid)
+                if endpoint_uuid is not None
+                else None,
             },
         )
         if response.status_code != 200:
@@ -172,7 +175,9 @@ class EndpointStore(Store):
             f'{self.address}/exists',
             params={
                 'key': object_key,
-                'endpoint': endpoint_uuid,
+                'endpoint': str(endpoint_uuid)
+                if endpoint_uuid is not None
+                else None,
             },
         )
         if response.status_code == 200:
@@ -199,7 +204,9 @@ class EndpointStore(Store):
             f'{self.address}/get',
             params={
                 'key': object_key,
-                'endpoint': endpoint_uuid,
+                'endpoint': str(endpoint_uuid)
+                if endpoint_uuid is not None
+                else None,
             },
             stream=True,
         )
@@ -254,7 +261,9 @@ class EndpointStore(Store):
             headers={'Content-Type': 'application/octet-stream'},
             params={
                 'key': object_key,
-                'endpoint': endpoint_uuid,
+                'endpoint': str(endpoint_uuid)
+                if endpoint_uuid is not None
+                else None,
             },
             data=data,
         )

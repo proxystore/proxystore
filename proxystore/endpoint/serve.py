@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
+import uuid
 
 import quart
 from quart import request
@@ -54,25 +55,43 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/evict', methods=['POST'])
     async def evict() -> tuple[str, int]:
+        endpoint = request.args.get('endpoint', None)
+        if endpoint is not None:
+            try:
+                endpoint = uuid.UUID(endpoint, version=4)
+            except ValueError:
+                return (f'{endpoint} is not a valid UUID4', 400)
         await app.endpoint.evict(
             key=request.args.get('key'),
-            endpoint=request.args.get('endpoint', None),
+            endpoint=endpoint,
         )
         return ('', 200)
 
     @app.route('/exists', methods=['GET'])
-    async def exists() -> tuple[dict[str, bool], int]:
+    async def exists() -> tuple[dict[str, bool] | str, int]:
+        endpoint = request.args.get('endpoint', None)
+        if endpoint is not None:
+            try:
+                endpoint = uuid.UUID(endpoint, version=4)
+            except ValueError:
+                return (f'{endpoint} is not a valid UUID4', 400)
         exists = await app.endpoint.exists(
             key=request.args.get('key'),
-            endpoint=request.args.get('endpoint', None),
+            endpoint=endpoint,
         )
         return ({'exists': exists}, 200)
 
     @app.route('/get', methods=['GET'])
     async def get() -> Response:
+        endpoint = request.args.get('endpoint', None)
+        if endpoint is not None:
+            try:
+                endpoint = uuid.UUID(endpoint, version=4)
+            except ValueError:
+                return (f'{endpoint} is not a valid UUID4', 400)
         data = await app.endpoint.get(
             key=request.args.get('key'),
-            endpoint=request.args.get('endpoint', None),
+            endpoint=endpoint,
         )
         if data is not None:
             return Response(
@@ -84,10 +103,16 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
     @app.route('/set', methods=['POST'])
     async def set() -> tuple[str, int]:
+        endpoint = request.args.get('endpoint', None)
+        if endpoint is not None:
+            try:
+                endpoint = uuid.UUID(endpoint, version=4)
+            except ValueError:
+                return (f'{endpoint} is not a valid UUID4', 400)
         await app.endpoint.set(
             key=request.args.get('key'),
             data=await request.get_data(),
-            endpoint=request.args.get('endpoint', None),
+            endpoint=endpoint,
         )
         return ('', 200)
 
@@ -101,7 +126,7 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
 
 def serve(
     name: str,
-    uuid: str,
+    uuid: uuid.UUID,
     host: str,
     port: int,
     server: str | None = None,
@@ -129,8 +154,6 @@ def serve(
             os.makedirs(parent_dir, exist_ok=True)
         handlers.append(logging.FileHandler(log_file))
 
-    # Remove existing handlers before we add our own
-    logging.getLogger().handlers.clear()
     logging.basicConfig(
         level=log_level,
         format=(

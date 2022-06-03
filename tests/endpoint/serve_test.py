@@ -25,7 +25,7 @@ from testing.compat import randbytes
 async def quart_app() -> AsyncGenerator[quart.Quart, None]:
     async with Endpoint(
         name='my-endpoint',
-        uuid=str(uuid.uuid4()),
+        uuid=uuid.uuid4(),
     ) as endpoint:
         app = create_app(endpoint)
         async with app.test_app() as test_app:
@@ -149,10 +149,43 @@ async def test_evict_request(quart_app) -> None:
     assert not (await exists_response.get_json())['exists']
 
 
+@pytest.mark.asyncio
+async def test_bad_endpoint_uuid(quart_app) -> None:
+    client = quart_app.test_client()
+    bad_uuid = 'not a uuid'
+
+    evict_response = await client.post(
+        'evict',
+        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+    )
+    assert evict_response.status_code == 400
+
+    exists_response = await client.get(
+        'exists',
+        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+    )
+    assert exists_response.status_code == 400
+
+    get_response = await client.get(
+        'get',
+        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+    )
+    assert get_response.status_code == 400
+
+    data = randbytes(100)
+    set_response = await client.post(
+        'set',
+        headers={'Content-Type': 'application/octet-stream'},
+        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+        data=data,
+    )
+    assert set_response.status_code == 400
+
+
 @pytest.mark.timeout(5)
 def test_serve() -> None:
     name = 'my-endpoint'
-    uuid_ = str(uuid.uuid4())
+    uuid_ = uuid.uuid4()
     host = 'localhost'
     port = 5823
 
@@ -186,13 +219,13 @@ def test_serve_logging(mock_run, tmp_dir) -> None:
     ):
         # Make directory if necessary
         log_file = os.path.join(tmp_dir, 'log.txt')
-        serve('name', 'uuid', '0.0.0.0', 1234, None, 'INFO', log_file)
+        serve('name', uuid.uuid4(), '0.0.0.0', 1234, None, 'INFO', log_file)
         print(os.listdir(tmp_dir))
         assert os.path.isdir(tmp_dir)
         assert os.path.exists(log_file)
 
         # Write log to existing log directory
         log_file2 = os.path.join(tmp_dir, 'log2.txt')
-        serve('name', 'uuid', '0.0.0.0', 1234, None, 'INFO', log_file2)
+        serve('name', uuid.uuid4(), '0.0.0.0', 1234, None, 'INFO', log_file2)
         assert os.path.isdir(tmp_dir)
         assert os.path.exists(log_file2)

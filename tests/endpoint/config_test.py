@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import os
+import uuid
+from typing import Any
 
 import pytest
 
@@ -9,6 +11,7 @@ from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
+from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.config import write_config
 
 
@@ -22,7 +25,7 @@ def test_write_read_config(tmp_dir) -> None:
 
     cfg = EndpointConfig(
         name='name',
-        uuid='uuid',
+        uuid=uuid.uuid4(),
         host='host',
         port=1234,
         server=None,
@@ -58,7 +61,7 @@ def test_get_configs(tmp_dir) -> None:
         write_config(
             EndpointConfig(
                 name=name,
-                uuid='uuid',
+                uuid=uuid.uuid4(),
                 host='host',
                 port=1234,
             ),
@@ -67,8 +70,65 @@ def test_get_configs(tmp_dir) -> None:
 
     # Make invalid directory to make sure get_configs skips it
     os.makedirs(os.path.join(tmp_dir, 'ep4'))
+    # Make a bad config to make sure its skipped
+    ep5 = os.path.join(tmp_dir, 'ep5')
+    os.makedirs(ep5)
+    with open(os.path.join(ep5, 'endpoint.json'), 'w') as f:
+        f.write('this is not json')
+    # Make another bad config to make sure its skipped
+    ep6 = os.path.join(tmp_dir, 'ep6')
+    os.makedirs(ep6)
+    with open(os.path.join(ep6, 'endpoint.json'), 'w') as f:
+        f.write('{"name": "this is missing keys"}')
 
     configs = get_configs(tmp_dir)
     assert len(configs) == len(names)
     found_names = {cfg.name for cfg in configs}
     assert set(names) == found_names
+
+
+@pytest.mark.parametrize(
+    'name,valid',
+    (
+        ('abc', True),
+        ('ABC', True),
+        ('aBc_', True),
+        ('aBc-', True),
+        ('aBc_-123', True),
+        ('', False),
+        ('abc.', False),
+        ('abc?', False),
+        ('abc/', False),
+        ('abc~', False),
+    ),
+)
+def test_validate_name(name: str, valid: bool) -> None:
+    assert validate_name(name) == valid
+
+
+@pytest.mark.parametrize(
+    'bad_cfg,valid',
+    (
+        ({}, True),
+        ({'name': 'bad name'}, False),
+        ({'uuid': 'abc-abc-abc'}, False),
+        ({'port': 0}, False),
+        ({'port': 1000000}, False),
+        ({'server': ''}, False),
+    ),
+)
+def test_validate_config(bad_cfg: Any, valid: bool) -> None:
+    options = dict(
+        name='name',
+        uuid=uuid.uuid4(),
+        host='host',
+        port=1234,
+        server='myserver.com',
+    )
+    options.update(bad_cfg)
+
+    if valid:
+        EndpointConfig(**options)
+    else:
+        with pytest.raises(ValueError):
+            EndpointConfig(**options)

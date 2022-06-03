@@ -40,7 +40,7 @@ class PeerManager:
 
     def __init__(
         self,
-        uuid: str | UUID,
+        uuid: UUID,
         signaling_server: str,
         name: str | None = None,
         timeout: int = 30,
@@ -56,13 +56,13 @@ class PeerManager:
             timeout (int): timeout in seconds when waiting for a peer
                 or signaling server connection to be established (default: 30).
         """
-        self._uuid = uuid if isinstance(uuid, str) else str(uuid)
+        self._uuid = uuid
         self._signaling_server = signaling_server
         self._name = name if name is not None else socket.gethostname()
         self._timeout = timeout
 
-        self._peers: dict[frozenset[str], PeerConnection] = {}
-        self._message_queue: asyncio.Queue[tuple[str, Any]] = asyncio.Queue()
+        self._peers: dict[frozenset[UUID], PeerConnection] = {}
+        self._message_queue: asyncio.Queue[tuple[UUID, Any]] = asyncio.Queue()
         self._tasks: list[asyncio.Task[None]] = []
         self._websocket_or_none: WebSocketServerProtocol | None = None
 
@@ -81,7 +81,7 @@ class PeerManager:
         )
 
     @property
-    def uuid(self) -> str:
+    def uuid(self) -> UUID:
         """Get UUID of the peer manager."""
         return self._uuid
 
@@ -135,7 +135,7 @@ class PeerManager:
 
     async def _handle_peer_messages(
         self,
-        peer_uuid: str,
+        peer_uuid: UUID,
         connection: PeerConnection,
     ) -> None:
         await connection.wait(timeout=self._timeout)
@@ -218,7 +218,7 @@ class PeerManager:
             await self._websocket_or_none.close()
         logger.info(f'{self._log_prefix}: peer manager closed')
 
-    async def recv(self) -> tuple[str, Any]:
+    async def recv(self) -> tuple[UUID, Any]:
         """Receive next message from a peer.
 
         Returns:
@@ -226,7 +226,7 @@ class PeerManager:
         """
         return await self._message_queue.get()
 
-    async def send(self, peer_uuid: str, message: Any) -> None:
+    async def send(self, peer_uuid: UUID, message: Any) -> None:
         """Send message to peer.
 
         Args:
@@ -236,7 +236,7 @@ class PeerManager:
         connection = await self.get_connection(peer_uuid)
         await connection.send(serialize(message))
 
-    async def get_connection(self, peer_uuid: str | UUID) -> PeerConnection:
+    async def get_connection(self, peer_uuid: UUID) -> PeerConnection:
         """Get connection to the peer.
 
         Args:
@@ -245,7 +245,6 @@ class PeerManager:
         Returns:
             :any:`PeerConnection <PeerConnection>`
         """
-        peer_uuid = peer_uuid if isinstance(peer_uuid, str) else str(peer_uuid)
         peers = frozenset({self._uuid, peer_uuid})
 
         if peers in self._peers:
