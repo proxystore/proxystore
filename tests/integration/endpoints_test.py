@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 from multiprocessing import Process
@@ -11,30 +12,44 @@ import pytest
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
+from proxystore.p2p.server import connect
 from proxystore.p2p.server import serve
 from proxystore.store import get_store
 from proxystore.store.endpoint import EndpointStore
 from testing.endpoint import launch_endpoint
+from testing.utils import open_port
+
+
+async def wait_for_server(host: str, port: int) -> None:
+    """Wait for websocket server to be available for connections."""
+    while True:
+        try:
+            _, _, connection = await connect(f'{host}:{port}')
+        except OSError:  # pragma: no cover
+            await asyncio.sleep(0.01)
+        else:
+            await connection.close()
+            break
 
 
 @pytest.fixture
 def endpoints(tmp_dir) -> Generator[tuple[list[str], list[str]], None, None]:
     """Launch the signaling server and two endpoints."""
     ss_host = 'localhost'
-    ss_port = 5123
+    ss_port = open_port()
 
     def serve_signaling_server() -> None:
-        import asyncio
-
         asyncio.run(serve(ss_host, ss_port))
 
     ss = Process(target=serve_signaling_server)
     ss.start()
 
+    asyncio.run(wait_for_server(ss_host, ss_port))
+
     handles = []
     uuids = []
     dirs = []
-    for port in (5100, 5101):
+    for port in (open_port(), open_port()):
         cfg = EndpointConfig(
             name=f'test-endpoint-{port}',
             uuid=str(uuid.uuid4()),
@@ -58,6 +73,9 @@ def endpoints(tmp_dir) -> Generator[tuple[list[str], list[str]], None, None]:
                 cfg.server,
             ),
         )
+
+    if not ss.is_alive():  # pragma: no cover
+        raise RuntimeError('Signaling server died.')
 
     yield uuids, dirs
 
@@ -136,8 +154,8 @@ def test_proxy_detects_endpoint(endpoints) -> None:
             return_value=proxystore_dirs[0],
         ):
             store = EndpointStore('store', endpoints=endpoints)
-            obj = [1, 2, 3]
-            proxy = store.proxy(obj)
+            # Send port to other process to compare
+            proxy = store.proxy(store.endpoint_port)
             queue.put(proxy)
 
     def consume(queue: Queue) -> None:
@@ -145,14 +163,13 @@ def test_proxy_detects_endpoint(endpoints) -> None:
             'proxystore.store.endpoint.default_dir',
             return_value=proxystore_dirs[1],
         ):
-            obj = queue.get()
-            # Access proxy to force it to resolve which will in turn create
-            # a new store instance
-            assert obj == [1, 2, 3]
+            port = queue.get()
+            # Just to force the proxy to resolve
+            assert isinstance(port, int)
 
-            # Make sure consumer is using second endpoint on port 5101
+            # Make sure consumer is using different port
             store = get_store('store')
-            assert store.endpoint_port == 5101
+            assert store.endpoint_port != port
 
     queue = Queue()
 

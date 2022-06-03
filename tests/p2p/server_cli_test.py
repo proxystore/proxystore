@@ -27,7 +27,7 @@ async def test_server() -> None:
         try:
             _, _, websocket = await connect(SERVER_ADDRESS)
         except OSError:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.01)
         else:
             # Coverage doesn't detect the singular break but it does
             # get executed to break from the loop

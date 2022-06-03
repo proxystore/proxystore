@@ -48,7 +48,7 @@ def launch_endpoint(
         try:
             r = requests.get(f'http://{host}:{port}/')
         except requests.exceptions.ConnectionError:
-            time.sleep(0.05)
+            time.sleep(0.01)
             continue
         if r.status_code == 200:  # pragma: no branch
             break

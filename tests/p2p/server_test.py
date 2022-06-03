@@ -21,6 +21,9 @@ if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
 else:  # pragma: <3.8 cover
     from asynctest import CoroutineMock as AsyncMock
 
+# Use 200ms as wait_for/timeout to keep test short
+_WAIT_FOR = 0.2
+
 
 @pytest.mark.asyncio
 async def test_connect_and_ping_server(signaling_server) -> None:
@@ -28,7 +31,7 @@ async def test_connect_and_ping_server(signaling_server) -> None:
     assert isinstance(uuid, str)
     assert isinstance(name, str)
     pong_waiter = await websocket.ping()
-    await asyncio.wait_for(pong_waiter, 1)
+    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
 @pytest.mark.asyncio
@@ -39,7 +42,7 @@ async def test_connect_exceptions(signaling_server) -> None:
     # Check timeout on receiving EndpointRegistationSuccess
     with mock.patch('websockets.WebSocketClientProtocol.recv', sleep):
         with pytest.raises(PeerRegistrationError, match='timeout'):
-            await connect(signaling_server.address, timeout=0.5)
+            await connect(signaling_server.address, timeout=_WAIT_FOR)
 
     # Check error if server returns error
     with mock.patch(
@@ -74,11 +77,11 @@ async def test_connect_exceptions(signaling_server) -> None:
 async def test_connect_twice(signaling_server) -> None:
     uuid, _, websocket = await connect(signaling_server.address)
     pong_waiter = await websocket.ping()
-    await asyncio.wait_for(pong_waiter, 1)
+    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
     await websocket.send(
         serialize(PeerRegistrationRequest(uuid=uuid, name='different-host')),
     )
-    message = deserialize(await asyncio.wait_for(websocket.recv(), 1))
+    message = deserialize(await asyncio.wait_for(websocket.recv(), _WAIT_FOR))
     assert isinstance(message, PeerRegistrationResponse)
     assert message.error is None
     assert message.uuid == uuid
@@ -88,7 +91,7 @@ async def test_connect_twice(signaling_server) -> None:
 async def test_connect_reconnect_new_socket(signaling_server) -> None:
     uuid1, name, websocket1 = await connect(signaling_server.address)
     pong_waiter = await websocket1.ping()
-    await asyncio.wait_for(pong_waiter, 1)
+    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
     uuid2, _, websocket2 = await connect(
         signaling_server.address,
@@ -99,7 +102,7 @@ async def test_connect_reconnect_new_socket(signaling_server) -> None:
     await websocket1.wait_closed()
     assert websocket1.close_code != 1000
     pong_waiter = await websocket2.ping()
-    await asyncio.wait_for(pong_waiter, 1)
+    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
 @pytest.mark.asyncio
@@ -114,7 +117,7 @@ async def test_expected_client_disconnect(signaling_server) -> None:
     await websocket.close()
     # TODO(gpauloski): remove sleep. It is here to give time for the
     # server's unregister coroutine to finish
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.05)
 
     assert uuid not in signaling_server.signaling_server._uuid_to_client
     assert (
@@ -135,7 +138,7 @@ async def test_unexpected_client_disconnect(signaling_server) -> None:
     await websocket.close(code=1002)
     # TODO(gpauloski): remove sleep. It is here to give time for the
     # server's unregister coroutine to finish
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0.05)
 
     assert uuid not in signaling_server.signaling_server._uuid_to_client
     assert (
@@ -151,7 +154,7 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
     # server should catch and wait for next message
     await websocket.send(b'invalid message')
     pong_waiter = await websocket.ping()
-    await asyncio.wait_for(pong_waiter, 1)
+    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
 @pytest.mark.asyncio
@@ -176,7 +179,7 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
 async def test_unknown_message_type(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
     await websocket.send(serialize('message'))
-    message = deserialize(await asyncio.wait_for(websocket.recv(), 1))
+    message = deserialize(await asyncio.wait_for(websocket.recv(), _WAIT_FOR))
     assert isinstance(message, ServerError)
     assert 'unknown' in str(message)
 
@@ -197,7 +200,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer2.recv(), 1))
+    message = deserialize(await asyncio.wait_for(peer2.recv(), _WAIT_FOR))
     assert isinstance(message, PeerConnectionMessage)
 
     # Peer2 -> Peer1
@@ -211,7 +214,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), 1))
+    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
     assert isinstance(message, PeerConnectionMessage)
 
     # Peer1 -> Peer1
@@ -225,7 +228,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), 1))
+    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
     assert isinstance(message, PeerConnectionMessage)
 
 
@@ -244,6 +247,6 @@ async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), 1))
+    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
     assert isinstance(message, PeerConnectionMessage)
     assert peer2_uuid in str(message) and 'unknown' in str(message)
