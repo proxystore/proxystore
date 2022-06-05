@@ -268,9 +268,15 @@ async def connect(
     """
     if name is None:
         name = gethostname()
+
+    websockets_version = int(websockets.__version__.split('.')[0])
+    kwargs = {}
+    if websockets_version >= 10:  # pragma: no cover
+        kwargs['open_timeout'] = timeout
+
     websocket = await websockets.connect(
         f'ws://{address}',
-        open_timeout=timeout,
+        **kwargs,
     )
     await websocket.send(
         serialize(PeerRegistrationRequest(uuid=uuid, name=name)),
