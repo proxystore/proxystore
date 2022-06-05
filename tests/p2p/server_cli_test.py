@@ -46,7 +46,7 @@ async def test_server() -> None:
 @pytest.mark.asyncio
 async def test_start_server_cli() -> None:
     server_handle = subprocess.Popen(
-        ['signaling-server-start', *SERVER_ARGS],
+        ['signaling-server', *SERVER_ARGS],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
