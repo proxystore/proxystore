@@ -276,16 +276,23 @@ class PeerManager:
         """
         peers = frozenset({self._uuid, peer_uuid})
 
-        if peers in self._peers:
-            return self._peers[peers]
+        async with self._peers_lock:
+            if peers in self._peers:
+                return self._peers[peers]
+
+            connection = PeerConnection(
+                self._uuid,
+                self._name,
+                self._websocket,
+            )
+            self._peers[peers] = connection
 
         logger.info(
-            f'{self._log_prefix}: opening peer connection with {peer_uuid}',
+            f'{self._log_prefix}: opening peer connection with '
+            f'{peer_uuid}',
         )
-        connection = PeerConnection(self._uuid, self._name, self._websocket)
         await connection.send_offer(peer_uuid)
-        async with self._peers_lock:
-            self._peers[peers] = connection
+
         self._tasks[peers] = spawn_guarded_background_task(
             self._handle_peer_messages,
             peer_uuid,
