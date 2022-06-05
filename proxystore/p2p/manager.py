@@ -152,7 +152,7 @@ class PeerManager:
         """
         try:
             await connection.ready(timeout=self._timeout)
-        except PeerConnectionError as e:
+        except PeerConnectionError as e:  # pragma: >=3.8 cover
             logger.error(str(e))
             await connection.close()
             peers = frozenset({self._uuid, peer_uuid})

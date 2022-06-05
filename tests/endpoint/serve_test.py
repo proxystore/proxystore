@@ -221,6 +221,7 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
         quart_app.endpoint._peer_manager.send = AsyncMock(
             side_effect=Exception(),
         )
+        quart_app.endpoint._peer_manager.close = AsyncMock()
 
         evict_response = await client.post(
             'evict',
