@@ -2,8 +2,8 @@
 from __future__ import annotations
 
 import logging
-import uuid
 from typing import Any
+from uuid import UUID
 
 import requests
 
@@ -29,7 +29,7 @@ class EndpointStore(Store):
         self,
         name: str,
         *,
-        endpoints: list[str],
+        endpoints: list[str | UUID],
         proxystore_dir: str | None = None,
         cache_size: int = 16,
         stats: bool = False,
@@ -63,7 +63,9 @@ class EndpointStore(Store):
         """
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
-        self.endpoints = endpoints
+        self.endpoints: list[UUID] = [
+            e if isinstance(e, UUID) else UUID(e, version=4) for e in endpoints
+        ]
         self.proxystore_dir = (
             default_dir() if proxystore_dir is None else proxystore_dir
         )
@@ -117,17 +119,17 @@ class EndpointStore(Store):
         )
 
     @staticmethod
-    def _create_key(object_key: str, endpoint_uuid: uuid.UUID) -> str:
+    def _create_key(object_key: str, endpoint_uuid: UUID) -> str:
         return f'{object_key}:{str(endpoint_uuid)}'
 
     @staticmethod
-    def _parse_key(key: str) -> tuple[str, uuid.UUID | None]:
+    def _parse_key(key: str) -> tuple[str, UUID | None]:
         # TODO: validate format?
         values = key.split(':')
         if len(values) == 1:
             return values[0], None
         elif len(values) == 2:
-            return (values[0], uuid.UUID(values[1], version=4))
+            return (values[0], UUID(values[1], version=4))
         else:
             raise ValueError(f'Failed to parse key {key}.')
 
