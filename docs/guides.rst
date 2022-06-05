@@ -2,6 +2,7 @@ Guides
 ######
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
+   guides/endpoints.rst
    guides/performance.rst
