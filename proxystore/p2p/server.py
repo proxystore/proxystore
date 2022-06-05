@@ -5,10 +5,11 @@ import argparse
 import asyncio
 import logging
 import signal
-import uuid
 from dataclasses import dataclass
 from socket import gethostname
 from typing import Sequence
+from uuid import UUID
+from uuid import uuid4
 
 import websockets
 from websockets import WebSocketServerProtocol
@@ -32,7 +33,7 @@ class Client:
     """Client connection."""
 
     name: str
-    uuid: str
+    uuid: UUID
     websocket: WebSocketServerProtocol
 
 
@@ -46,7 +47,7 @@ class SignalingServer:
     def __init__(self) -> None:
         """Init SignalingServer."""
         self._websocket_to_client: dict[WebSocketServerProtocol, Client] = {}
-        self._uuid_to_client: dict[str, Client] = {}
+        self._uuid_to_client: dict[UUID, Client] = {}
 
     async def send(
         self,
@@ -76,7 +77,7 @@ class SignalingServer:
         """
         if request.uuid is None:
             # New client so generate uuid for them
-            uuid_ = str(uuid.uuid4())
+            uuid_ = uuid4()
         else:
             uuid_ = request.uuid
 
@@ -238,10 +239,10 @@ class SignalingServer:
 
 async def connect(
     address: str,
-    uuid: str | None = None,
+    uuid: UUID | None = None,
     name: str | None = None,
     timeout: int = 10,
-) -> tuple[str, str, WebSocketServerProtocol]:
+) -> tuple[UUID, str, WebSocketServerProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
@@ -267,9 +268,15 @@ async def connect(
     """
     if name is None:
         name = gethostname()
+
+    websockets_version = int(websockets.__version__.split('.')[0])
+    kwargs = {}
+    if websockets_version >= 10:  # pragma: no cover
+        kwargs['open_timeout'] = timeout
+
     websocket = await websockets.connect(
         f'ws://{address}',
-        open_timeout=timeout,
+        **kwargs,
     )
     await websocket.send(
         serialize(PeerRegistrationRequest(uuid=uuid, name=name)),

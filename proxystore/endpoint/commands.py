@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import logging
 import os
-import re
 import shutil
 import uuid
 
@@ -21,11 +20,6 @@ from proxystore.endpoint.config import write_config
 from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_name(name: str) -> bool:
-    """Validate name only contains alphanumeric or dash/underscore chars."""
-    return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
 
 
 def configure_endpoint(
@@ -51,11 +45,16 @@ def configure_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages
         are logged to the default logger.
     """
-    if not _validate_name(name):
-        logger.error(
-            'Endpoint name can only contain alphanumeric and dash/underscore '
-            f'characters. Got name {name}.',
+    try:
+        cfg = EndpointConfig(
+            name=name,
+            uuid=uuid.uuid4(),
+            host=host,
+            port=port,
+            server=server,
         )
+    except ValueError as e:
+        logger.error(str(e))
         return 1
 
     if proxystore_dir is None:
@@ -63,22 +62,15 @@ def configure_endpoint(
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if os.path.exists(endpoint_dir):
-        logger.error(
-            f'Endpoint with name {name} already exists. '
-            'To reconfigure the endpoint, remove and try again.',
-        )
+        logger.error(f'An endpoint named {name} already exists. ')
+        logger.error('To reconfigure the endpoint, remove and try again.')
         return 1
 
-    cfg = EndpointConfig(
-        name=name,
-        uuid=str(uuid.uuid4()),
-        host=host,
-        port=port,
-        server=server,
-    )
     write_config(cfg, endpoint_dir)
 
-    logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>. Start with:')
+    logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
+    logger.info('')
+    logger.info('To start the endpoint:')
     logger.info(f'  $ proxystore-endpoint start {cfg.name}.')
 
     return 0
@@ -106,8 +98,12 @@ def list_endpoints(
     if len(endpoints) == 0:
         logger.info(f'No valid endpoint configurations in {proxystore_dir}.')
     else:
-        for endpoint in endpoints:
-            logger.info(f'{endpoint.name:<12} {endpoint.uuid}')
+        eps = [(e.name, str(e.uuid)) for e in endpoints]
+        eps = sorted(eps, key=lambda x: x[0])
+        logger.info(f'{"NAME":<18} UUID')
+        logger.info('=' * (18 + 1 + len(eps[0][1])))
+        for name, uuid_ in eps:
+            logger.info(f'{name:<18} {uuid_}')
 
     return 0
 
@@ -133,12 +129,12 @@ def remove_endpoint(
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if not os.path.exists(endpoint_dir):
-        logger.error(f'Endpoint with name {name} does not exist.')
+        logger.error(f'An endpoint named {name} does not exist.')
         return 1
 
     shutil.rmtree(endpoint_dir)
 
-    logger.info(f'Removed endpoint with name {name}.')
+    logger.info(f'Removed endpoint named {name}.')
 
     return 0
 
@@ -166,24 +162,23 @@ def start_endpoint(
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     if not os.path.exists(endpoint_dir):
-        logger.error(
-            f'{name} does not correspond to a configured endpoint.'
-            'Use `list` to see available endpoints.',
-        )
+        logger.error(f'An endpoint named {name} does not exist.')
+        logger.error('Use `list` to see available endpoints.')
         return 1
 
     try:
         cfg = read_config(endpoint_dir)
     except FileNotFoundError:
         logger.error(
-            f'{name} is missing a config file. Try removing the endpoint '
-            'and configuring it again.',
+            f'{os.path.join(proxystore_dir, name)} does not have a '
+            'config file.',
         )
+        logger.error('Try removing the endpoint and configuring it again.')
         return 1
-
-    # Update logger for serve() in case caller already had configured logger.
-    # TODO: create new logger object to pass to serve.
-    logging.basicConfig(level=log_level)
+    except ValueError as e:
+        logger.error(str(e))
+        logger.error('Correct the endpoint config and try again.')
+        return 1
 
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     serve(
@@ -192,6 +187,8 @@ def start_endpoint(
         host=cfg.host,
         port=cfg.port,
         server=cfg.server,
+        log_level=log_level,
+        log_file=os.path.join(endpoint_dir, 'endpoint.log'),
     )
 
     return 0

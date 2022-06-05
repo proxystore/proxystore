@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import socket
 import sys
 from typing import Sequence
@@ -13,8 +14,39 @@ from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 
 
+class _CLIFormatter(logging.Formatter):
+    """Custom format for CLI printing.
+
+    Source: https://stackoverflow.com/questions/1343227
+    """
+
+    yellow = '\x1b[0;33m'
+    red = '\x1b[0;31m'
+    bold_red = '\x1b[1;31m'
+    reset = '\x1b[0m'
+
+    FORMATS = {
+        logging.DEBUG: 'DEBUG: %(message)s',
+        logging.INFO: '%(message)s',
+        logging.WARNING: f'{yellow}WARNING:{reset} %(message)s',
+        logging.ERROR: f'{red}ERROR:{reset} %(message)s',
+        logging.CRITICAL: f'{bold_red}CRITICAL:{reset} %(message)s',
+    }
+
+    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
+        formatter = logging.Formatter(self.FORMATS[record.levelno])
+        return formatter.format(record)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting an endpoint."""
+    """CLI for starting an endpoint.
+
+    Usage:
+
+    .. code-block:: console
+
+       $ proxystore-endpoint [command] {options}
+    """
     argv = argv if argv is not None else sys.argv[1:]
     parser = argparse.ArgumentParser(prog='proxystore-endpoint')
 
@@ -89,6 +121,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.parse_args([args.help_command, '--help'])
     elif args.command == 'help':
         parser.parse_args(['--help'])
+
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(_CLIFormatter())
+    logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     if args.command == 'configure':
         host = (

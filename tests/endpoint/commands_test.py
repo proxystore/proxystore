@@ -5,9 +5,6 @@ import logging
 import os
 from unittest import mock
 
-import pytest
-
-from proxystore.endpoint.commands import _validate_name
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
@@ -20,25 +17,6 @@ _UUID = 'a128eee9-bcf8-44eb-b4ec-ce725b1e5167'
 _HOST = '0.0.0.0'
 _PORT = 1234
 _SERVER = None
-
-
-@pytest.mark.parametrize(
-    'name,valid',
-    (
-        ('abc', True),
-        ('ABC', True),
-        ('aBc_', True),
-        ('aBc-', True),
-        ('aBc_-123', True),
-        ('', False),
-        ('abc.', False),
-        ('abc?', False),
-        ('abc/', False),
-        ('abc~', False),
-    ),
-)
-def test_validate_name(name: str, valid: bool) -> None:
-    assert _validate_name(name) == valid
 
 
 def test_configure_endpoint_basic(tmp_dir, caplog) -> None:
@@ -64,7 +42,7 @@ def test_configure_endpoint_basic(tmp_dir, caplog) -> None:
 
     assert any(
         [
-            cfg.uuid in record.message and record.levelname == 'INFO'
+            str(cfg.uuid) in record.message and record.levelname == 'INFO'
             for record in caplog.records
         ],
     )
@@ -146,7 +124,7 @@ def test_list_endpoints(tmp_dir, caplog) -> None:
     rv = list_endpoints(proxystore_dir=tmp_dir)
     assert rv == 0
 
-    assert len(caplog.records) == len(names)
+    assert len(caplog.records) == len(names) + 2
     for name in names:
         assert any([name in record.message for record in caplog.records])
 
@@ -224,7 +202,7 @@ def test_start_endpoint_does_not_exist(tmp_dir, caplog) -> None:
     assert rv == 1
 
     assert any(
-        ['does not correspond' in record.message for record in caplog.records],
+        ['does not exist' in record.message for record in caplog.records],
     )
 
 
@@ -237,7 +215,23 @@ def test_start_endpoint_missing_config(tmp_dir, caplog) -> None:
 
     assert any(
         [
-            'missing a config file' in record.message
+            'does not have a config file' in record.message
             for record in caplog.records
         ],
+    )
+
+
+def test_start_endpoint_bad_config(tmp_dir, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+
+    endpoint_dir = os.path.join(tmp_dir, _NAME)
+    os.makedirs(endpoint_dir)
+    with open(os.path.join(endpoint_dir, 'endpoint.json'), 'w') as f:
+        f.write('not valid json')
+
+    rv = start_endpoint(_NAME, proxystore_dir=tmp_dir)
+    assert rv == 1
+
+    assert any(
+        ['Unable to parse' in record.message for record in caplog.records],
     )

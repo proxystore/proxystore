@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import sys
 from unittest import mock
+from uuid import UUID
+from uuid import uuid4
 
 import pytest
 import websockets
@@ -28,7 +30,7 @@ _WAIT_FOR = 0.2
 @pytest.mark.asyncio
 async def test_connect_and_ping_server(signaling_server) -> None:
     uuid, name, websocket = await connect(signaling_server.address)
-    assert isinstance(uuid, str)
+    assert isinstance(uuid, UUID)
     assert isinstance(name, str)
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
@@ -49,7 +51,10 @@ async def test_connect_exceptions(signaling_server) -> None:
         'websockets.WebSocketClientProtocol.recv',
         AsyncMock(
             return_value=serialize(
-                PeerRegistrationResponse(uuid=None, error=Exception('abcd')),
+                PeerRegistrationResponse(
+                    uuid=uuid4(),
+                    error=Exception('abcd'),
+                ),
             ),
         ),
     ):
@@ -164,9 +169,9 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
     await websocket.send(
         serialize(
             PeerConnectionMessage(
-                source_uuid='',
+                source_uuid=uuid4(),
                 source_name='',
-                peer_uuid='',
+                peer_uuid=uuid4(),
             ),
         ),
     )
@@ -222,7 +227,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
         serialize(
             PeerConnectionMessage(
                 source_uuid=peer1_uuid,
-                source_name=peer1_uuid,
+                source_name=peer1_name,
                 peer_uuid=peer1_uuid,
                 message='',
             ),
@@ -235,7 +240,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
     peer1_uuid, peer1_name, peer1 = await connect(signaling_server.address)
-    peer2_uuid = 'peer-2-uuid'
+    peer2_uuid = uuid4()
 
     await peer1.send(
         serialize(
@@ -249,4 +254,4 @@ async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
     )
     message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
     assert isinstance(message, PeerConnectionMessage)
-    assert peer2_uuid in str(message) and 'unknown' in str(message)
+    assert str(peer2_uuid) in str(message) and 'unknown' in str(message)

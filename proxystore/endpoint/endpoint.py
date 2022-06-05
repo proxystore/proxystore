@@ -7,10 +7,12 @@ import logging
 from types import TracebackType
 from typing import Any
 from typing import Generator
+from uuid import UUID
 from uuid import uuid4
 
 from proxystore.endpoint import messages
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
+from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.task import spawn_guarded_background_task
@@ -47,7 +49,7 @@ class Endpoint:
     def __init__(
         self,
         name: str,
-        uuid: str,
+        uuid: UUID,
         signaling_server: str | None = None,
         peer_timeout: int = 30,
     ) -> None:
@@ -90,15 +92,15 @@ class Endpoint:
 
         logger.info(
             f'{self._log_prefix}: initialized endpoint operating '
-            f'in {str(self._mode)} mode',
+            f'in {self._mode.name} mode',
         )
 
     @property
     def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}'
+        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}]'
 
     @property
-    def uuid(self) -> str:
+    def uuid(self) -> UUID:
         """Get UUID of this endpoint."""
         return self._uuid
 
@@ -234,10 +236,13 @@ class Endpoint:
 
     async def _request_from_peer(
         self,
-        endpoint: str,
+        endpoint: UUID,
         request: messages.Request,
     ) -> asyncio.Future[messages.Response]:
-        """Send request to peer endpoint."""
+        """Send request to peer endpoint.
+
+        Any exceptions will be set on the returned future.
+        """
         # TODO(gpauloski):
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
@@ -248,10 +253,17 @@ class Endpoint:
             f'{self._log_prefix}: sending {type(request).__name__}('
             f'id={request._id}, key={request.key}) to {endpoint}',
         )
-        await self._peer_manager.send(endpoint, request)
+        try:
+            await self._peer_manager.send(endpoint, request)
+        except Exception as e:
+            self._pending_requests[request._id].set_exception(
+                PeerRequestError(
+                    f'Request to peer {endpoint} failed: {str(e)}',
+                ),
+            )
         return self._pending_requests[request._id]
 
-    def _is_peer_request(self, endpoint: str | None) -> bool:
+    def _is_peer_request(self, endpoint: UUID | None) -> bool:
         """Check if this request should be forwarded to peer endpoint."""
         if self._mode == EndpointMode.SOLO:
             return False
@@ -266,14 +278,18 @@ class Endpoint:
         else:
             return True
 
-    async def evict(self, key: str, endpoint: str | None = None) -> None:
+    async def evict(self, key: str, endpoint: UUID | None = None) -> None:
         """Evict key from endpoint.
 
         Args:
             key (str): key to evict.
-            endpoint (optional, str): endpoint to perform operation on. If
+            endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EVICT key={key} on endpoint={endpoint}',
@@ -283,22 +299,25 @@ class Endpoint:
             request = messages.EvictRequest(key=key)
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
-            # TODO(gpauloski): check future for failure?
         else:
             if key in self._data:
                 del self._data[key]
 
-    async def exists(self, key: str, endpoint: str | None = None) -> bool:
+    async def exists(self, key: str, endpoint: UUID | None = None) -> bool:
         """Check if key exists on endpoint.
 
         Args:
             key (str): key to check.
-            endpoint (optional, str): endpoint to perform operation on. If
+            endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Returns:
             True if key exists.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EXISTS key={key} on endpoint={endpoint}',
@@ -314,17 +333,25 @@ class Endpoint:
         else:
             return key in self._data
 
-    async def get(self, key: str, endpoint: str | None = None) -> bytes | None:
+    async def get(
+        self,
+        key: str,
+        endpoint: UUID | None = None,
+    ) -> bytes | None:
         """Get value associated with key on endpoint.
 
         Args:
             key (str): key to get value for.
-            endpoint (optional, str): endpoint to perform operation on. If
+            endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Returns:
             value (bytes) associated with key.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: GET key={key} on endpoint={endpoint}',
@@ -346,16 +373,20 @@ class Endpoint:
         self,
         key: str,
         data: bytes,
-        endpoint: str | None = None,
+        endpoint: UUID | None = None,
     ) -> None:
         """Set key with data on endpoint.
 
         Args:
             key (str): key to associate with value.
             data (bytes): value to associate with key.
-            endpoint (optional, str): endpoint to perform operation on. If
+            endpoint (optional, UUID): endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
+
+        Raises:
+            PeerRequestError:
+                if request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: SET key={key} on endpoint={endpoint}',

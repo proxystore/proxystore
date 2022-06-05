@@ -96,9 +96,9 @@ def test_serve(default_dir, caplog) -> None:
     # Note: similar to test_list()
     caplog.set_level(logging.ERROR)
     main(['start', 'my-endpoint'])
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
     assert any(
-        ['does not correspond' in record.message for record in caplog.records],
+        ['does not exist' in record.message for record in caplog.records],
     )
 
 

@@ -232,7 +232,7 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
     cfg = EndpointConfig(
         name='test-endpoint',
-        uuid=str(uuid.uuid4()),
+        uuid=uuid.uuid4(),
         host='localhost',
         port=random.randint(5000, 5500),
     )
