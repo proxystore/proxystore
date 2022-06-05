@@ -157,6 +157,25 @@ async def test_evict_request(quart_app) -> None:
 
 
 @pytest.mark.asyncio
+async def test_payload_too_big() -> None:
+    async with Endpoint(
+        name='my-endpoint',
+        uuid=uuid.uuid4(),
+    ) as endpoint:
+        app = create_app(endpoint, max_content_length=10)
+        async with app.test_app() as quart_app:
+            client = quart_app.test_client()
+            data = randbytes(100)
+            set_response = await client.post(
+                '/set',
+                headers={'Content-Type': 'application/octet-stream'},
+                query_string={'key': 'my-key'},
+                data=data,
+            )
+            assert set_response.status_code == 413
+
+
+@pytest.mark.asyncio
 async def test_bad_endpoint_uuid(quart_app) -> None:
     client = quart_app.test_client()
     bad_uuid = 'not a uuid'

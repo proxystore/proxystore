@@ -19,11 +19,19 @@ quart.logging.default_handler = logging.NullHandler()
 quart.logging.serving_handler = logging.NullHandler()
 
 
-def create_app(endpoint: Endpoint) -> quart.Quart:
+def create_app(
+    endpoint: Endpoint,
+    max_content_length: int = 1000 * 1000 * 1000,
+    body_timeout: int = 300,
+) -> quart.Quart:
     """Creates quart app for endpoint and registers routes.
 
     Args:
         endpoint (Endpoint): initialized endpoint to forward quart routes to.
+        max_content_length (int): max request body size in bytes
+            (default: 1 GB).
+        body_timeout (int): number of seconds to wait for the body to be
+            completely received (default: 300)
 
     Returns:
         Quart app.
@@ -132,6 +140,9 @@ def create_app(endpoint: Endpoint) -> quart.Quart:
         'quart routes registered to endpoint '
         f'{endpoint.uuid} ({endpoint.name})',
     )
+
+    app.config['MAX_CONTENT_LENGTH'] = max_content_length
+    app.config['BODY_TIMEOUT'] = body_timeout
 
     return app
 
