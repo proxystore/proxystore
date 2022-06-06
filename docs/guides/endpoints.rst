@@ -74,20 +74,22 @@ command.
    Configured endpoint my-endpoint <12b8f3b6-6c0e-4141-b851-870895e3eb3c>.
 
    To start the endpoint:
-       $ proxystore-endpoint start my-endpoint.
+       $ proxystore-endpoint start my-endpoint
 
 Endpoint configurations are stored to ``~/.proxystore/{endpoint-name}`` and
 contain the name, UUID, host address, port, and singaling server address.
 
 #. **Name:** readable name of the endpoint. Used for management in the CLI and
    to improve log readability.
-#. **UUID:** the primary identifier of the endpoint. The signaling server will
+#. **UUID:** primary identifier of the endpoint. The signaling server will
    use this UUID to keep track of endpoints.
-#. **Host address:** the address of the host that this endpoint will be running
-   on. If unspecified when configuring the endpoint, the IP address of the
-   current host will be used.
-#. **Port:** port the endpoint REST server will be listening on (defaults to
-   9753).
+#. **Host address:** host address of the Quart app for the endpoint.
+   Defaults to the IP address of host the endpoint is configured on.
+   Note: this address is only used by clients within the local network and
+   can be set to *localhost* if the client and endpoints are on the same
+   host.
+#. **Port:** port the Quart app for the endpoint will listening on. Defaults to
+   9753.
 #. **Signaling server address**: address of signaling server to use for peer
    connections. All endpoints that may peer with each other must use the same
    signaling server. Signaling servers are optional, and if unspecified, the
@@ -146,30 +148,38 @@ travels to a different machine.
 Proxy Lifecycle
 ---------------
 
+.. figure:: ../static/dataflow.png
+   :align: center
+   :figwidth: 100 %
+   :alt: Dataflow with Proxies and Endpoints
+
+   **Figure 2:** Flow of data when transferring objects via proxies and
+   endpoints.
+
 In distributed systems, proxies created from an
 :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` can be used
 to facilitate simple and fast data communication.
+The flow of data and their associated proxies are shown in **Fig. 2**.
 
 #. Host A creates a proxy of the *target* object. The serialized *target*
-   is placed in Host A's home endpoint. The proxy contains the key referencing
-   the *target*, the endpoint UUID with the *target* data, and the list of
+   is placed in Host A's home/local endpoint (Endpoint 1).
+   The proxy contains the key referencing the *target*, the endpoint UUID with
+   the *target* data (Endpoint 1's UUID), and the list of
    all endpoint UUIDs configured with the
-   :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>`.
-#. Host A ships the proxy off.
+   :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` (the UUIDs
+   of Endpoints 1 and 2).
+#. Host A communicates the proxy object to Host B. This communication is
+   cheap because the proxy is just a thin reference to the object.
 #. Host B receives the proxy and attempts to use the proxy initiating the
-   proxy *resolve* process.
-#. The proxy looks for an initialized
-   :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` and
-   initializes one if necessary. This process will find Host B's home endpoint.
-#. The proxy requests the *target* from the local
-   :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` using
-   the key and endpoint UUID the data is stored on.
-#. Host B's home endpoint receives the request for the data, sees it is on
-   a remote endpoint, and initiates a peer connection to Host A's endpoint.
-#. After the peer connection is establish, Host A's home endpoint sends the
-   data to Host B's home endpoint.
-#. Host B's home endpoint returns the data to Host B and the proxy is
-   resolved.
+   proxy *resolve* process. The proxy requests the data from Host B's
+   home endpoint (Endpoint 2).
+#. Endpoint 2 sees that the proxy is requesting data from a different endpoint
+   (Endpoint 1) so Endpoint 2 initiates a peer connection to Endpoint 1 and
+   requests the data.
+#. Endpoint 1 sends the data to Endpoint 2.
+#. Endpoint 2 replies to Host B's request for the data with the data received
+   from Endpoint 2. Host B deserializes the target object and the proxy
+   is resolved.
 
 Hosting a Signaling Server
 --------------------------
