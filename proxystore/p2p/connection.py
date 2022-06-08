@@ -34,6 +34,42 @@ class PeerConnection:
     sending/receiving messages between the two peers. The peer-to-peer
     connection is established using a central and publicly accessible
     signaling server.
+
+    Warning:
+        Applications should prefer using the
+        :any:`PeerManager <proxystore.p2p.manager.PeerManager>` rather than
+        using the :class:`PeerConnection <PeerConnection>` class.
+
+    .. code-block:: python
+
+       from proxystore.p2p.connection import PeerConnection
+       from proxystore.p2p.server import connect
+       from proxystore.serialize import deserialize
+
+       uuid1, name1, websocket1 = await connect(signaling_server.address)
+       connection1 = PeerConnection(uuid1, name1, websocket1)
+
+       uuid2, name2, websocket2 = await connect(signaling_server.address)
+       connection2 = PeerConnection(uuid2, name2, websocket2)
+
+       await connection1.send_offer(uuid2)
+       offer = deserialize(await websocket2.recv())
+       await connection2.handle_server_message(offer)
+       answer = deserialize(await websocket1.recv())
+       await connection1.handle_server_message(answer)
+
+       await connection1.ready()
+       await connection2.ready()
+
+       await connection1.send(b'hello')
+       assert await connection2.recv() == b'hello'
+       await connection2.send(b'hello hello')
+       assert await connection1.recv() == b'hello hello'
+
+       await websocket1.close()
+       await websocket2.close()
+       await connection1.close()
+       await connection2.close()
     """
 
     def __init__(

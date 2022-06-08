@@ -1,9 +1,9 @@
 """ProxyStore endpoint commands.
 
 These are the implementations of the commands available via the
-:code:`proxystore-endpoint` command. Subsequently, all commands log errors
-and results (rather than raising errors and returning results) and return
-status codes.
+:any:`proxystore-endpoint <proxystore.endpoint.cli.main>` command.
+Subsequently, all commands log errors and results and return status codes
+(rather than raising errors and returning results).
 """
 from __future__ import annotations
 
@@ -36,7 +36,7 @@ def configure_endpoint(
         name (str): name of endpoint.
         host (str): IP address of host the endpoint will be run on.
         port (int): port for endpoint to listen on.
-        server (str): optional address of singaling server for P2P endpoint
+        server (str): optional address of signaling server for P2P endpoint
             connections.
         proxystore_dir (str): optionally specify the directory where endpoint
             configurations are saved. Defaults to :code:`$HOME/.proxystore`.

@@ -32,18 +32,51 @@ class EndpointMode(enum.Enum):
 class Endpoint:
     """ProxyStore Endpoint.
 
-    Endpoints act as distributed blob stores. Endpoints support peer-to-peer
-    communication for retrieving data not located on the local endpoint.
+    An endpoint is an object store with
+    :func:`get() <Endpoint.get()>`/:func:`set() <Endpoint.set()>`
+    functionality.
 
-    Endpoints have two modes: :py:attr:`SOLO <.EndpointMode.SOLO>` and
-    :py:attr:`PEERING <.EndpointMode.PEERING>` indicating if the endpoint is
-    initialized with a signaling server address to establish peer to peer
-    connections with other endpoints.
+    By default, an endpoint operates in :py:attr:`SOLO <.EndpointMode.SOLO>`
+    mode where the endpoint acts just as an isolated object store. Endpoints
+    can also be configured in :py:attr:`PEERING <.EndpointMode.PEERING>` mode
+    by initializing the endpoint with a signaling server address.
+    The signaling server is used to establish peer-to-peer connections with
+    other endpoints after which endpoints can forward operations between each
+    other. Peering is available even when endpoints are being separate
+    NATs. See the :py:mod:`proxystore.p2p <proxystore.p2p>` module to learn
+    more about peering.
 
     Warning:
         Requests made to remote endpoints will only invoke the request on
         the remote and return the result. I.e., invoking GET on a remote
         will return the value but will not store it on the local endpoint.
+
+    **Solo Mode Usage**
+
+        >>> async with Endpoint('ep1', uuid.uuid4()) as endpoint:
+        >>>     serialized_data = b'data string'
+        >>>     endpoint.set('key', serialized_data)
+        >>>     assert endpoint.get('key') == serialized_data
+        >>>     endpoint.evict('key')
+        >>>     assert not endpoint.exists('key')
+
+    **Peering Mode Usage**
+
+        >>> ep1 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
+        >>> ep2 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
+        >>>
+        >>> serialized_data = b'data string'
+        >>> ep1.set('key', serialized_data)
+        >>> assert ep2.get('key', endpoint=ep1.uuid) == serialized_data
+        >>> assert ep1.exists('key')
+        >>> assert not ep1.exists('key', endpoint=ep2.uuid)
+        >>>
+        >>> ep1.close()
+        >>> ep2.close()
+
+    Note:
+        Endpoints can be configured and started via the
+        :code:`proxystore-endpoint` command-line interface.
     """
 
     def __init__(
@@ -54,6 +87,19 @@ class Endpoint:
         peer_timeout: int = 30,
     ) -> None:
         """Init Endpoint.
+
+        Note:
+            If the endpoint is being used in peering mode, the endpoint should
+            be used as a context manager or initialized with await. This will
+            ensure :func:`async_init <Endpoint.async_init>` is executed which
+            connects to the signaling server and established a listener for
+            incoming messages.
+
+            >>> endpoint = await Endpoint(...)
+            >>> endpoint.close()
+            >>>
+            >>> async with Endpoint(...) as endpoint:
+            >>>     ...
 
         Args:
             name (str): readable name of endpoint.
@@ -128,16 +174,7 @@ class Endpoint:
         return self.__aenter__().__await__()
 
     async def async_init(self) -> None:
-        """Initialize endpoint awaitables.
-
-        Note:
-            Typically, the endpoint should be used as a context manager
-            or initialized with await.
-
-            >>> endpoint = await Endpoint(...)
-            >>> async with Endpoint(...) as endpoint:
-            >>>     ...
-        """
+        """Initialize connections and tasks necessary for peering."""
         if self._signaling_server is not None and not self._async_init_done:
             self._peer_manager = await PeerManager(
                 uuid=self.uuid,

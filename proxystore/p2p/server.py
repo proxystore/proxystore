@@ -1,4 +1,4 @@
-"""Signaling server for P2P connections."""
+"""Signaling server implementation for WebRTC peer connections."""
 from __future__ import annotations
 
 import argparse
@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Client:
-    """Client connection."""
+    """Representation of client connection."""
 
     name: str
     uuid: UUID
@@ -41,7 +41,29 @@ class SignalingServer:
     """Signaling Server implementation.
 
     The Signaling Server acts as a public third-party that helps two peers
-    (endpoints) establish a peer-to-peer connection.
+    (endpoints) establish a peer-to-peer connection during the WebRTC
+    peer connection initiation process. The signaling server's responsibility
+    is just to forward session descriptions between two peers, so the
+    server can be relatively lightweight and typically only needs to transfer
+    two messages to establish a peer connection, after which the peers no
+    longer need the signaling server.
+
+    To learn more about the WebRTC peer connection process, check out
+    `<https://webrtc.org/getting-started/peer-connections>`_.
+
+    The signaling server is built on websockets and designed to be
+    served using :code:`websockets.serve`.
+
+    .. code-block:: python
+
+       import websockets
+       from proxystore.p2p.server import SignalingServer
+
+       signaling_server = SignalingServer()
+       async with websockets.serve(
+            signaling_server.handler, host='localhost', port=1234
+       ) as websocket_server:
+           ...
     """
 
     def __init__(self) -> None:
@@ -336,7 +358,15 @@ async def serve(host: str, port: int) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting the signaling server."""
+    """CLI for starting the signaling server.
+
+    Usage:
+
+    .. code-block:: console
+
+       $ signaling-server {options}
+       $ signaling-server --help
+    """
     parser = argparse.ArgumentParser('Websocket-based Signaling Server')
     parser.add_argument(
         '--host',

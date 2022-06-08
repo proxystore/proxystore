@@ -1,3 +1,5 @@
+.. _endpoints-guide:
+
 Peer-to-Peer Endpoints
 ######################
 

@@ -30,11 +30,29 @@ logger = logging.getLogger(__name__)
 class PeerManager:
     """Peer Connections Manager.
 
-    Manages individual connections to multiple peers.
+    Handles establishing peer connections via
+    `aiortc <https://aiortc.readthedocs.io/>`_, responding to requests for
+    new peer connections from the signaling server, and sending and
+    receiving data to/from existing peer connections.
+
+    .. code-block:: python
+
+       from proxystore.p2p.manager import PeerManager
+
+       pm1 = await PeerManager(uuid.uuid4(), signaling_server.address)
+       pm2 = await PeerManager(uuid.uuid4(), signaling_server.address)
+
+       await pm1.send(pm2.uuid, 'hello hello')
+       source_uuid, message = await pm2.recv()
+       assert source_uuid == pm1.uuid
+       assert message == 'hello hello'
+
+       pm1.close()
+       pm2.close()
 
     Note:
-        The :class:`PeerManager <.PeerManager>` can be
-        used as a context manager.
+        The :class:`PeerManager <.PeerManager>` can also be used as a context
+        manager.
 
         >>> async with PeerManager(..) as manager:
         >>>     ...
@@ -48,6 +66,17 @@ class PeerManager:
         timeout: int = 30,
     ) -> None:
         """Init PeerManager.
+
+        Warning:
+            The :class:`PeerManager <.PeerManager>` must be initialized
+            with await or inside an async with statement to correctly
+            configure all async tasks and connections.
+
+            >>> manager = await PeerManager(...)
+            >>> manager.close()
+            >>>
+            >>> async with PeerManager(...) as manager:
+            >>>     ...
 
         Args:
             uuid (str, UUID): uuid of the client.
@@ -231,11 +260,7 @@ class PeerManager:
                 )
 
     async def close(self) -> None:
-        """Close the connection manager.
-
-        Warning:
-            Does not close the websocket to the signaling server.
-        """
+        """Close the connection manager."""
         if self._server_task is not None:
             self._server_task.cancel()
         for task in self._tasks.values():
