@@ -170,13 +170,13 @@ def test_globus_store_init(globus_store) -> None:
 
     s1 = ps.store.init_store(
         ps.store.STORES.GLOBUS,
-        'globus',
+        'globus1',
         endpoints=[EP1, EP2],
     )
-    s2 = ps.store.init_store(ps.store.STORES.GLOBUS, 'globus', endpoints=eps)
+    s2 = ps.store.init_store(ps.store.STORES.GLOBUS, 'globus2', endpoints=eps)
     s3 = ps.store.init_store(
         ps.store.STORES.GLOBUS,
-        'globus',
+        'globus3',
         endpoints=eps.dict(),
     )
     assert s1.kwargs == s2.kwargs == s3.kwargs

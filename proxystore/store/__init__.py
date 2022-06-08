@@ -18,6 +18,30 @@ _stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
 
 
+class StoreError(Exception):
+    """Base exception class for store errors."""
+
+    pass
+
+
+class StoreExistsError(StoreError):
+    """Exception raised when a store with the same name already exists."""
+
+    pass
+
+
+class UnknownStoreError(StoreError):
+    """Exception raised when the type of store to initialize is unknown."""
+
+    pass
+
+
+class ProxyStoreFactoryError(StoreError):
+    """Exception raised when a proxy was not created by a Store."""
+
+    pass
+
+
 class STORES(Enum):
     """Available Store implementations."""
 
@@ -61,7 +85,8 @@ def get_store(val: str | Proxy) -> _Store | None:
         returns `None`.
 
     Raises:
-        ValueError: if the value is a proxy but does not contain a factory
+        ProxyStoreFactoryError:
+            if the value is a proxy but does not contain a factory
             of type :any:`StoreFactory <proxystore.store.base.StoreFactory>`.
     """
     if isinstance(val, Proxy):
@@ -70,9 +95,9 @@ def get_store(val: str | Proxy) -> _Store | None:
         if isinstance(factory, StoreFactory):
             return factory.get_store()
         else:
-            raise ValueError(
+            raise ProxyStoreFactoryError(
                 'The proxy must contain a factory with type '
-                f'{type(StoreFactory).__name__}. {type(factory)} '
+                f'{type(StoreFactory).__name__}. {type(factory).__name__} '
                 'is not supported.',
             )
     else:
@@ -90,18 +115,15 @@ def init_store(
 ) -> _Store:
     """Initialize a backend store and register globally.
 
-    Note:
-        If a store of the same name has already been initialized, the current
-        store will be replaced with a new. This is because the store parameters
-        may have changed.
-
     Usage:
-        >>> import proxystore as ps
+        >>> from proxystore.store import init_store
+        >>> from proxystore.store import STORES
+        >>> from proxystore.store.redis import RedisStore
         >>>
         >>> # The following are equivalent
-        >>> ps.store.init_store('redis', name='default-store', ...)
-        >>> ps.store.init_store(ps.store.STORES.REDIS, name='default-store', ...)
-        >>> ps.store.init_store(ps.store.redis.RedisStore, name='default-store', ...)
+        >>> init_store('redis', name='default-store', ...)
+        >>> init_store(STORES.REDIS, name='default-store', ...)
+        >>> init_store(RedisStore, name='default-store', ...)
 
     Args:
         store_type (str, STORES, Store): type of store to initialize. Can be
@@ -116,28 +138,71 @@ def init_store(
         :any:`Store <proxystore.store.base.Store>`
 
     Raises:
-        ValueError:
-            if a store corresponding to `store_type` is not found.
-        ValueError:
-            if `store_type` is not a `str` or member of
-            :class:`STORES <.STORES>`.
-    """  # noqa: E501
+        UnknownStoreError:
+            if `store_type` is a string but does not match a value
+            in :class:`STORES <.STORES>`.
+        UnknownStoreError:
+            if `store_type` is not a `str`, member of
+            :class:`STORES <.STORES>`, or a type that is a subtype of
+            :class:`Store <proxystore.store.base.Store>`.
+    """
     if isinstance(store_type, str):
         try:
-            _stores[name] = STORES[store_type.upper()].value(name, **kwargs)
+            store = STORES[store_type.upper()].value(name, **kwargs)
         except KeyError:
-            raise ValueError(f'No store with name {store_type}.')
+            raise UnknownStoreError(
+                f'No store with name {store_type}. Valid types include: '
+                f'{",".join(s.name for s in STORES)}.',
+            )
     elif isinstance(store_type, STORES):
-        _stores[name] = store_type.value(name, **kwargs)
+        store = store_type.value(name, **kwargs)
     elif issubclass(store_type, _Store):
-        _stores[name] = store_type(name, **kwargs)
+        store = store_type(name, **kwargs)
     else:
-        raise ValueError(
-            'Arg store_type must be str corresponding to '
+        raise UnknownStoreError(
+            'The store_type argument must be a string corresponding to '
             'proxystore.store.STORES, member of proxystore.store.STORES, or '
-            f'subclass of Store. Found type f{type(store_type)} instead.',
+            'a type that extends Store. '
+            f'Found type f{type(store_type).__name__} instead.',
         )
 
-    logger.debug(f'Added {_stores[name]} to globally accessible stores')
+    register_store(store, exist_ok=True)
 
-    return _stores[name]
+    return store
+
+
+def register_store(store: _Store, exist_ok: bool = False) -> None:
+    """Register the store instance to the global registry.
+
+    Note:
+        Global means globally accessible within the Python process.
+
+    Args:
+        store (Store): store instance to register.
+        exist_ok (bool): if a store with the same name exists, overwrite it.
+
+    Raises:
+        StoreExistsError:
+            if a store with the same name is already registered and
+            exist_ok is false.
+    """
+    if store.name in _stores and not exist_ok:
+        raise StoreExistsError(f'A store named {store.name} already exists.')
+
+    _stores[store.name] = store
+    logger.debug(f'added {store.name} to global registry of stores')
+
+
+def unregister_store(name: str) -> None:
+    """Unregisters the store instance from the global registry.
+
+    Note:
+        This function is a no-op if no store matching the name
+        exists (i.e., no exception will be raised).
+
+    Args:
+        name (str): name of the store to unregister.
+    """
+    if name in _stores:
+        del _stores[name]
+        logger.debug(f'removed {name} from global registry of stores')

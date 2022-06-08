@@ -11,6 +11,7 @@ from typing import Generator
 from typing import NamedTuple
 from unittest import mock
 
+import globus_sdk
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
@@ -35,7 +36,7 @@ FIXTURE_LIST = [
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
 
-class MockTransferData:
+class MockTransferData(globus_sdk.TransferData):
     """Mock the Globus TransferData."""
 
     def __init__(self, *args, **kwargs):
@@ -57,7 +58,7 @@ class MockTransferData:
         assert isinstance(destination_path, str)
 
 
-class MockDeleteData:
+class MockDeleteData(globus_sdk.DeleteData):
     """Mock the Globus DeleteData."""
 
     def __init__(self, *args, **kwargs):
@@ -213,13 +214,13 @@ def globus_store() -> Generator[StoreInfo, None, None]:
         return_value=MockGlobusAuth(),
     ), mock.patch(
         'globus_sdk.TransferClient',
-        side_effect=MockTransferClient,
+        MockTransferClient,
     ), mock.patch(
         'globus_sdk.DeleteData',
-        side_effect=MockDeleteData,
+        MockDeleteData,
     ), mock.patch(
         'globus_sdk.TransferData',
-        side_effect=MockTransferData,
+        MockTransferData,
     ):
         yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
 
