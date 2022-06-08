@@ -115,7 +115,7 @@ The primary interface to endpoints is the
 
    This section assumes familiarity with proxies and the
    :any:`Store <proxystore.store.base.Store>` interface. See the
-   :ref:`quick-start` guide before getting started with endpoints.
+   :ref:`get-started` guide before getting started with endpoints.
 
 .. code-block:: python
 

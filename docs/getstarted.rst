@@ -1,14 +1,27 @@
-.. _quick-start:
+.. _get-started:
 
-Quick Start
+Get Started
 ###########
+
+.. figure:: static/overview.png
+   :align: center
+   :figwidth: 100 %
+   :alt: ProxyStore Overview
+
+   ProxyStore allows developers to communicate objects via *proxies*. Proxies
+   act as lightweight references that resolve to a *target* object upon use.
+   Communication via proxies gives applications the illusion that objects
+   are moving through a specified path (e.g., through a network
+   socket, cloud server, workflow engine, etc.) while the true path the data
+   takes is different. Transporting the lightweight proxies through the
+   application or systems can be far more efficient and reduce overheads.
+
+Overview
+--------
 
 ProxyStore provides a unique interface to object stores through transparent
 object proxies that is designed to simplify the use of object stores for
 transferring large objects in distributed applications.
-
-Overview
---------
 
 `Proxies` are used to intercept and redefine operations on a `target` object.
 A `transparent` proxy behaves identically to its target object
