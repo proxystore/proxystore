@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PORT=59465
-redis-server --port $PORT &> redis.out &
+redis-server --save "" --appendonly no --port $PORT &> /dev/null &
 REDIS=$!
 
 ARRAY_COUNT=100

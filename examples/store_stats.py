@@ -1,4 +1,8 @@
-"""Store Operation Statistics Examples."""
+"""Store Operation Statistics Examples.
+
+Source code for:
+    https://proxystore.readthedocs.io/en/latest/guides/performance.html
+"""
 from __future__ import annotations
 
 import proxystore as ps
