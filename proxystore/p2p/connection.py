@@ -15,7 +15,7 @@ from aiortc.contrib.signaling import BYE
 from aiortc.contrib.signaling import object_from_string
 from aiortc.contrib.signaling import object_to_string
 from cryptography.utils import CryptographyDeprecationWarning
-from websockets import WebSocketServerProtocol
+from websockets.client import WebSocketClientProtocol
 
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
@@ -76,14 +76,14 @@ class PeerConnection:
         self,
         uuid: UUID,
         name: str,
-        websocket: WebSocketServerProtocol,
+        websocket: WebSocketClientProtocol,
     ) -> None:
         """Init P2PConnection.
 
         Args:
             uuid (str): uuid of this client.
             name (str): readable name of this client for logging.
-            websocket (WebSocketServerProtocol): websocket connection to the
+            websocket (WebSocketClientProtocol): websocket connection to the
                 signaling server.
         """
         self._uuid = uuid

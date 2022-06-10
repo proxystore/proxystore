@@ -11,8 +11,10 @@ from typing import Sequence
 from uuid import UUID
 from uuid import uuid4
 
-import websockets
-from websockets import WebSocketServerProtocol
+import websockets.client
+import websockets.exceptions
+from websockets.client import WebSocketClientProtocol
+from websockets.server import WebSocketServerProtocol
 
 from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.exceptions import PeerUnknownError
@@ -216,7 +218,13 @@ class SignalingServer:
         logger.info('signaling server listening for incoming connections')
         while True:
             try:
-                message = deserialize(await websocket.recv())
+                message = await websocket.recv()
+                if isinstance(message, bytes):
+                    message = deserialize(message)
+                else:
+                    raise AssertionError(
+                        'Received non-bytes type on websocket.',
+                    )
             except websockets.exceptions.ConnectionClosedOK:
                 await self.unregister(websocket, expected=True)
                 break
@@ -264,7 +272,7 @@ async def connect(
     uuid: UUID | None = None,
     name: str | None = None,
     timeout: int = 10,
-) -> tuple[UUID, str, WebSocketServerProtocol]:
+) -> tuple[UUID, str, WebSocketClientProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
@@ -292,21 +300,24 @@ async def connect(
         name = gethostname()
 
     websockets_version = int(websockets.__version__.split('.')[0])
-    kwargs = {}
-    if websockets_version >= 10:  # pragma: no cover
-        kwargs['open_timeout'] = timeout
 
-    websocket = await websockets.connect(
-        f'ws://{address}',
-        **kwargs,
-    )
+    if websockets_version >= 10:
+        websocket = await websockets.client.connect(
+            f'ws://{address}',
+            open_timeout=timeout,
+        )
+    else:  # pragma: no cover
+        websocket = await websockets.client.connect(f'ws://{address}')
+
     await websocket.send(
         serialize(PeerRegistrationRequest(uuid=uuid, name=name)),
     )
     try:
-        message = deserialize(
-            await asyncio.wait_for(websocket.recv(), timeout),
-        )
+        message = await asyncio.wait_for(websocket.recv(), timeout)
+        if isinstance(message, bytes):
+            message = deserialize(message)
+        else:
+            raise AssertionError('Received non-bytes type on websocket.')
     except websockets.exceptions.ConnectionClosed:
         raise PeerRegistrationError(
             'Connection to signaling server closed before peer '
@@ -352,7 +363,7 @@ async def serve(host: str, port: int) -> None:
     stop = loop.create_future()
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
-    async with websockets.serve(server.handler, host, port):
+    async with websockets.server.serve(server.handler, host, port):
         logger.info(f'serving signaling server on {host}:{port}')
         await stop
 

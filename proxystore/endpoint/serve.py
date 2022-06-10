@@ -1,6 +1,7 @@
 """CLI for serving an endpoint as a REST server."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import uuid
@@ -15,8 +16,8 @@ from proxystore.endpoint.exceptions import PeerRequestError
 logger = logging.getLogger(__name__)
 
 # Override Quart standard handlers
-quart.logging.default_handler = logging.NullHandler()
-quart.logging.serving_handler = logging.NullHandler()
+quart.logging.default_handler = logging.NullHandler()  # type: ignore
+quart.logging.serving_handler = logging.NullHandler()  # type: ignore
 
 
 def create_app(
@@ -47,94 +48,125 @@ def create_app(
     @app.before_serving
     async def startup() -> None:
         await endpoint.async_init()
-        app.endpoint = endpoint
 
     @app.after_serving
     async def shutdown() -> None:
-        await app.endpoint.close()
+        await endpoint.close()
 
     @app.route('/')
     async def home() -> tuple[str, int]:
         return ('', 200)
 
     @app.route('/endpoint', methods=['GET'])
-    async def endpoint_() -> tuple[dict[str, str], int]:
-        return ({'uuid': app.endpoint.uuid}, 200)
+    async def endpoint_() -> Response:
+        return Response(
+            json.dumps({'uuid': str(endpoint.uuid)}),
+            200,
+            content_type='application/json',
+        )
 
     @app.route('/evict', methods=['POST'])
-    async def evict() -> tuple[str, int]:
-        endpoint = request.args.get('endpoint', None)
-        if endpoint is not None:
+    async def evict() -> Response:
+        key = request.args.get('key', None)
+        if key is None:
+            return Response('request missing key', 400)
+
+        endpoint_uuid: str | uuid.UUID | None = request.args.get(
+            'endpoint',
+            None,
+        )
+        if isinstance(endpoint_uuid, str):
             try:
-                endpoint = uuid.UUID(endpoint, version=4)
+                endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
             except ValueError:
-                return (f'{endpoint} is not a valid UUID4', 400)
+                return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
+
         try:
-            await app.endpoint.evict(
-                key=request.args.get('key'),
-                endpoint=endpoint,
-            )
-            return ('', 200)
+            await endpoint.evict(key=key, endpoint=endpoint_uuid)
+            return Response('', 200)
         except PeerRequestError as e:
-            return (str(e), 400)
+            return Response(str(e), 400)
 
     @app.route('/exists', methods=['GET'])
-    async def exists() -> tuple[dict[str, bool] | str, int]:
-        endpoint = request.args.get('endpoint', None)
-        if endpoint is not None:
+    async def exists() -> Response:
+        key = request.args.get('key', None)
+        if key is None:
+            return Response('request missing key', 400)
+
+        endpoint_uuid: str | uuid.UUID | None = request.args.get(
+            'endpoint',
+            None,
+        )
+        if isinstance(endpoint_uuid, str):
             try:
-                endpoint = uuid.UUID(endpoint, version=4)
+                endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
             except ValueError:
-                return (f'{endpoint} is not a valid UUID4', 400)
+                return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
+
         try:
-            exists = await app.endpoint.exists(
-                key=request.args.get('key'),
-                endpoint=endpoint,
+            exists = await endpoint.exists(key=key, endpoint=endpoint_uuid)
+            return Response(
+                json.dumps({'exists': exists}),
+                200,
+                content_type='application/json',
             )
-            return ({'exists': exists}, 200)
         except PeerRequestError as e:
-            return (str(e), 400)
+            return Response(str(e), 400)
 
     @app.route('/get', methods=['GET'])
     async def get() -> Response:
-        endpoint = request.args.get('endpoint', None)
-        if endpoint is not None:
+        key = request.args.get('key', None)
+        if key is None:
+            return Response('request missing key', 400)
+
+        endpoint_uuid: str | uuid.UUID | None = request.args.get(
+            'endpoint',
+            None,
+        )
+        if isinstance(endpoint_uuid, str):
             try:
-                endpoint = uuid.UUID(endpoint, version=4)
+                endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
             except ValueError:
-                return (f'{endpoint} is not a valid UUID4', 400)
+                return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
+
         try:
-            data = await app.endpoint.get(
-                key=request.args.get('key'),
-                endpoint=endpoint,
-            )
+            data = await endpoint.get(key=key, endpoint=endpoint_uuid)
         except PeerRequestError as e:
-            return (str(e), 400)
+            return Response(str(e), 400)
+
         if data is not None:
             return Response(
                 response=data,
                 content_type='application/octet-stream',
             )
         else:
-            return ('', 400)
+            return Response('', 400)
 
     @app.route('/set', methods=['POST'])
-    async def set() -> tuple[str, int]:
-        endpoint = request.args.get('endpoint', None)
-        if endpoint is not None:
+    async def set() -> Response:
+        key = request.args.get('key', None)
+        if key is None:
+            return Response('request missing key', 400)
+
+        endpoint_uuid: str | uuid.UUID | None = request.args.get(
+            'endpoint',
+            None,
+        )
+        if isinstance(endpoint_uuid, str):
             try:
-                endpoint = uuid.UUID(endpoint, version=4)
+                endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
             except ValueError:
-                return (f'{endpoint} is not a valid UUID4', 400)
+                return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
+
         try:
-            await app.endpoint.set(
-                key=request.args.get('key'),
+            await endpoint.set(
+                key=key,
                 data=await request.get_data(),
-                endpoint=endpoint,
+                endpoint=endpoint_uuid,
             )
-            return ('', 200)
+            return Response('', 200)
         except PeerRequestError as e:
-            return (str(e), 400)
+            return Response(str(e), 400)
 
     logger.info(
         'quart routes registered to endpoint '

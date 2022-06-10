@@ -10,7 +10,7 @@ from typing import Generator
 from uuid import UUID
 
 import websockets
-from websockets import WebSocketServerProtocol
+from websockets.client import WebSocketClientProtocol
 
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
@@ -97,14 +97,14 @@ class PeerManager:
         self._message_queue: asyncio.Queue[tuple[UUID, Any]] = asyncio.Queue()
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
-        self._websocket_or_none: WebSocketServerProtocol | None = None
+        self._websocket_or_none: WebSocketClientProtocol | None = None
 
     @property
     def _log_prefix(self) -> str:
         return f'{self.__class__.__name__}[{log_name(self._uuid, self._name)}]'
 
     @property
-    def _websocket(self) -> WebSocketServerProtocol:
+    def _websocket(self) -> WebSocketClientProtocol:
         if self._websocket_or_none is not None:
             return self._websocket_or_none
         raise RuntimeError(
@@ -220,7 +220,11 @@ class PeerManager:
         )
         while True:
             try:
-                message = deserialize(await self._websocket.recv())
+                message = await self._websocket.recv()
+                if isinstance(message, bytes):
+                    message = deserialize(message)
+                else:
+                    raise AssertionError('Received non-bytes on websocket.')
             except websockets.exceptions.ConnectionClosedOK:
                 break
             except websockets.exceptions.ConnectionClosedError:

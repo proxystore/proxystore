@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import socket
+import sys
 import time
 import warnings
 from typing import Any
@@ -14,6 +15,11 @@ from typing import Generator
 from typing import Iterator
 from typing import Pattern
 from typing import Sequence
+
+if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+    from typing import Literal
+else:  # pragma: <3.9 cover
+    from typing_extensions import Literal
 
 import globus_sdk
 from parsl.data_provider import globus
@@ -271,7 +277,8 @@ class GlobusStore(Store):
         | list[GlobusEndpoint]
         | dict[str, dict[str, str]],
         polling_interval: int = 1,
-        sync_level: int | str = 'mtime',
+        sync_level: int
+        | Literal['exists', 'size', 'mtime', 'checksum'] = 'mtime',
         timeout: int = 60,
         cache_size: int = 16,
         stats: bool = False,
@@ -398,7 +405,7 @@ class GlobusStore(Store):
             raise e
         return True
 
-    def _wait_on_tasks(self, *tasks: str | list[str]) -> None:
+    def _wait_on_tasks(self, *tasks: str) -> None:
         """Wait on list of Globus tasks."""
         for task in tasks:
             done = self._transfer_client.task_wait(
@@ -433,6 +440,7 @@ class GlobusStore(Store):
         assert len(dst_endpoints) == 1
         dst_endpoint = dst_endpoints[0]
 
+        transfer_task: globus_sdk.DeleteData | globus_sdk.TransferData
         if delete:
             transfer_task = globus_sdk.DeleteData(
                 self._transfer_client,
@@ -454,11 +462,11 @@ class GlobusStore(Store):
             filenames = [filenames]
 
         for filename in filenames:
-            if delete:
+            if isinstance(transfer_task, globus_sdk.DeleteData):
                 transfer_task.add_item(
                     path=os.path.join(dst_endpoint.endpoint_path, filename),
                 )
-            else:
+            elif isinstance(transfer_task, globus_sdk.TransferData):
                 transfer_task.add_item(
                     source_path=os.path.join(
                         src_endpoint.endpoint_path,
@@ -469,11 +477,15 @@ class GlobusStore(Store):
                         filename,
                     ),
                 )
+            else:
+                raise AssertionError('Unreachable.')
 
-        if delete:
+        if isinstance(transfer_task, globus_sdk.DeleteData):
             tdata = self._transfer_client.submit_delete(transfer_task)
-        else:
+        elif isinstance(transfer_task, globus_sdk.TransferData):
             tdata = self._transfer_client.submit_transfer(transfer_task)
+        else:
+            raise AssertionError('Unreachable.')
 
         return tdata['task_id']
 

@@ -251,6 +251,28 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
         assert set_response.status_code == 400
 
 
+@pytest.mark.asyncio
+async def test_missing_key(quart_app) -> None:
+    client = quart_app.test_client()
+
+    evict_response = await client.post('evict')
+    assert evict_response.status_code == 400
+
+    exists_response = await client.get('exists')
+    assert exists_response.status_code == 400
+
+    get_response = await client.get('get')
+    assert get_response.status_code == 400
+
+    data = randbytes(100)
+    set_response = await client.post(
+        'set',
+        headers={'Content-Type': 'application/octet-stream'},
+        data=data,
+    )
+    assert set_response.status_code == 400
+
+
 @pytest.mark.timeout(5)
 def test_serve() -> None:
     name = 'my-endpoint'
