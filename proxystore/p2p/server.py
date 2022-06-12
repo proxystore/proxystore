@@ -3,8 +3,11 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import logging
+import datetime
+import logging.handlers
+import os
 import signal
+import sys
 from dataclasses import dataclass
 from socket import gethostname
 from typing import Sequence
@@ -358,14 +361,21 @@ async def serve(host: str, port: int) -> None:
         port (int): port to listen on.
     """
     server = SignalingServer()
-    # Set the stop condition when receiving SIGTERM (ctrl-C).
+
+    # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
     loop = asyncio.get_running_loop()
     stop = loop.create_future()
+    loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
+    # TODO: add logger=logger kwarg to serve() if websockets dependency
+    # is pinned to 10.0 or later
     async with websockets.server.serve(server.handler, host, port):
         logger.info(f'serving signaling server on {host}:{port}')
+        logger.info('use ctrl-C to stop')
         await stop
+
+    logger.info('server closed')
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -378,11 +388,14 @@ def main(argv: Sequence[str] | None = None) -> int:
        $ signaling-server {options}
        $ signaling-server --help
     """
-    parser = argparse.ArgumentParser('Websocket-based Signaling Server')
+    parser = argparse.ArgumentParser(
+        'Websocket-based Signaling Server',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         '--host',
         default='0.0.0.0',
-        help='host to listen on (defaults to 0.0.0.0 for all addresses)',
+        help='host to listen on',
     )
     parser.add_argument(
         '--port',
@@ -391,14 +404,39 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='port to listen on',
     )
     parser.add_argument(
+        '--log-dir',
+        default=None,
+        help='write logs named server.log.{timestamp} to this dir',
+    )
+    parser.add_argument(
         '--log-level',
-        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
         default='INFO',
         help='logging level',
     )
     args = parser.parse_args(argv)
 
-    logging.basicConfig(level=args.log_level)
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    if args.log_dir is not None:
+        os.makedirs(args.log_dir, exist_ok=True)
+        handlers.append(
+            logging.handlers.TimedRotatingFileHandler(
+                os.path.join(args.log_dir, 'server.log'),
+                # Rotate logs Sunday at midnight
+                when='W6',
+                atTime=datetime.time(hour=0, minute=0, second=0),
+            ),
+        )
+
+    logging.basicConfig(
+        format=(
+            '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+            '%(message)s'
+        ),
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=args.log_level,
+        handlers=handlers,
+    )
 
     asyncio.run(serve(args.host, args.port))
 
