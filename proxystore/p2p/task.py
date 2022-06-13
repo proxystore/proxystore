@@ -23,7 +23,7 @@ def exit_on_error(task: asyncio.Task[Any]) -> None:
         and task.exception() is not None
         and not isinstance(task.exception(), SafeTaskExit)
     ):
-        logger.error(task.exception(), exc_info=True)
+        logger.error(f'Exception in background coroutine: {task.exception()}')
         raise SystemExit(1)
 
 

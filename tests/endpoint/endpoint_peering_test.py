@@ -9,6 +9,8 @@ import proxystore.endpoint.messages as messages
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.p2p.messages import PeerMessage
+from proxystore.serialize import serialize
 from testing.compat import randbytes
 
 _NAME1 = 'test-endpoint-1'
@@ -143,7 +145,11 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
         signaling_server=signaling_server.address,
     ) as endpoint2:
         endpoint2._peer_manager._message_queue.put_nowait(
-            (endpoint1.uuid, 'nonsense_message'),
+            PeerMessage(
+                source_uuid=endpoint1.uuid,
+                peer_uuid=endpoint2.uuid,
+                message=serialize('nonsense_message').hex(),
+            ),
         )
         # Make request to endpoint 2 to establish connection
         assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
@@ -170,7 +176,11 @@ async def test_peer_message_missing_id(signaling_server, caplog) -> None:
         signaling_server=signaling_server.address,
     ) as endpoint2:
         endpoint2._peer_manager._message_queue.put_nowait(
-            (endpoint1.uuid, messages.ExistsRequest(key='key')),
+            PeerMessage(
+                source_uuid=endpoint1.uuid,
+                peer_uuid=endpoint2.uuid,
+                message=serialize(messages.ExistsRequest(key='key')).hex(),
+            ),
         )
         # Make request to endpoint 2 to establish connection
         assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
@@ -203,7 +213,13 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
 
         # Add bad message to queue
         endpoint2._peer_manager._message_queue.put_nowait(
-            (endpoint1.uuid, messages.ExistsRequest(key='key', _id='1234')),
+            PeerMessage(
+                source_uuid=endpoint1.uuid,
+                peer_uuid=endpoint2.uuid,
+                message=serialize(
+                    messages.ExistsRequest(key='key', _id='1234'),
+                ).hex(),
+            ),
         )
 
         # Make request to endpoint 2 to flush queue

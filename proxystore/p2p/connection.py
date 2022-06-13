@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import warnings
 from uuid import UUID
@@ -17,10 +16,9 @@ from aiortc.contrib.signaling import object_to_string
 from cryptography.utils import CryptographyDeprecationWarning
 from websockets.client import WebSocketClientProtocol
 
+from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
-from proxystore.p2p.messages import PeerConnectionMessage
-from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
 warnings.simplefilter('ignore', CryptographyDeprecationWarning)
@@ -92,7 +90,7 @@ class PeerConnection:
 
         self._handshake_success: asyncio.Future[bool] = asyncio.Future()
         self._pc = RTCPeerConnection()
-        self._message_queue: asyncio.Queue[bytes] = asyncio.Queue()
+        self._message_queue: asyncio.Queue[str] = asyncio.Queue()
 
         self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
@@ -121,24 +119,29 @@ class PeerConnection:
         logger.info(f'{self._log_prefix}: closing connection')
         await self._pc.close()
 
-    async def send(self, data: bytes) -> None:
+    async def send(self, message: str, timeout: int = 30) -> None:
         """Send message to peer.
 
         Args:
-            data (bytes): data to send to peer.
+            message (str): message to send to peer.
+            timeout (str): timeout to wait on peer connection to be ready.
+
+        Raises:
+            PeerConnectionTimeout:
+                if the peer connection is not established within the timeout.
         """
-        await self.ready()
-        self._channel.send(data)
+        await self.ready(timeout)
+        self._channel.send(message)
         # https://github.com/aiortc/aiortc/issues/547
         await self._channel._RTCDataChannel__transport._data_channel_flush()
         await self._channel._RTCDataChannel__transport._transmit()
         logger.debug(f'{self._log_prefix}: sending message to peer')
 
-    async def recv(self) -> bytes:
+    async def recv(self) -> str:
         """Receive next message from peer.
 
         Returns:
-            bytes received from peer.
+            str received from peer.
         """
         return await self._message_queue.get()
 
@@ -156,25 +159,21 @@ class PeerConnection:
             self._handshake_success.set_result(True)
 
         @self._channel.on('message')
-        def on_message(message: bytes) -> None:
+        def on_message(message: str) -> None:
             logger.debug(f'{self._log_prefix}: received message from peer')
             self._message_queue.put_nowait(message)
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
-        message = serialize(
-            PeerConnectionMessage(
-                source_uuid=self._uuid,
-                source_name=self._name,
-                peer_uuid=peer_uuid,
-                message=json.dumps(
-                    {
-                        'offer': object_to_string(self._pc.localDescription),
-                    },
-                ),
-            ),
+        message = messages.PeerConnection(
+            source_uuid=self._uuid,
+            source_name=self._name,
+            peer_uuid=peer_uuid,
+            description_type='offer',
+            description=object_to_string(self._pc.localDescription),
         )
+        message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending offer to {peer_uuid}')
-        await self._websocket.send(message)
+        await self._websocket.send(message_str)
 
     async def send_answer(self, peer_uuid: UUID) -> None:
         """Send answer to peering request via signaling server.
@@ -190,34 +189,30 @@ class PeerConnection:
             self._handshake_success.set_result(True)
 
             @channel.on('message')
-            def on_message(message: bytes) -> None:
+            def on_message(message: str) -> None:
                 logger.debug(f'{self._log_prefix}: received message from peer')
                 self._message_queue.put_nowait(message)
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
-        message = serialize(
-            PeerConnectionMessage(
-                source_uuid=self._uuid,
-                source_name=self._name,
-                peer_uuid=peer_uuid,
-                message=json.dumps(
-                    {
-                        'offer': object_to_string(self._pc.localDescription),
-                    },
-                ),
-            ),
+        message = messages.PeerConnection(
+            source_uuid=self._uuid,
+            source_name=self._name,
+            peer_uuid=peer_uuid,
+            description_type='answer',
+            description=object_to_string(self._pc.localDescription),
         )
+        message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
-        await self._websocket.send(message)
+        await self._websocket.send(message_str)
 
     async def handle_server_message(
         self,
-        message: PeerConnectionMessage,
+        message: messages.PeerConnection,
     ) -> None:
         """Handle message from the signaling server.
 
         Args:
-            message (PeerConnectionMessage): message received from the
+            message (PeerConnection): message received from the
                 signaling server.
         """
         if message.error is not None:
@@ -229,24 +224,18 @@ class PeerConnection:
             )
             return
 
-        if message.message is None:
-            raise AssertionError(
-                'Received message from signaling server that has no '
-                'message or error.',
-            )
-        message_data = json.loads(message.message)
-        if 'offer' in message_data:
+        if message.description_type == 'offer':
             logger.info(
                 f'{self._log_prefix}: received offer from '
                 f'{message.source_uuid} ({message.source_name})',
             )
-            obj = object_from_string(message_data['offer'])
-        elif 'answer' in message_data:  # pragma: no cover
+            obj = object_from_string(message.description)
+        elif message.description_type == 'answer':
             logger.info(
                 f'{self._log_prefix}: received answer from '
                 f'{message.source_uuid} ({message.source_name})',
             )
-            obj = object_from_string(message_data['answer'])
+            obj = object_from_string(message.description)
         else:
             raise AssertionError(
                 'P2P connection message does not contain either an offer or '

@@ -4,12 +4,11 @@ from uuid import uuid4
 
 import pytest
 
+from proxystore.p2p import messages
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
-from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.p2p.server import connect
-from proxystore.serialize import deserialize
 
 
 @pytest.mark.asyncio
@@ -21,9 +20,9 @@ async def test_p2p_connection(signaling_server) -> None:
     connection2 = PeerConnection(uuid2, name2, websocket2)
 
     await connection1.send_offer(uuid2)
-    offer = deserialize(await websocket2.recv())
+    offer = messages.decode(await websocket2.recv())
     await connection2.handle_server_message(offer)
-    answer = deserialize(await websocket1.recv())
+    answer = messages.decode(await websocket1.recv())
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
@@ -72,10 +71,12 @@ async def test_p2p_connection_error(signaling_server) -> None:
         pass
 
     await connection.handle_server_message(
-        PeerConnectionMessage(
+        messages.PeerConnection(
             source_uuid=uuid,
             source_name=name,
             peer_uuid=uuid4(),
+            description_type='offer',
+            description='',
             error=MyException(),
         ),
     )

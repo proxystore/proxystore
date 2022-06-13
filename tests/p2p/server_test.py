@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import sys
 from unittest import mock
 from uuid import UUID
@@ -9,14 +10,9 @@ from uuid import uuid4
 import pytest
 import websockets
 
+from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerRegistrationError
-from proxystore.p2p.messages import PeerConnectionMessage
-from proxystore.p2p.messages import PeerRegistrationRequest
-from proxystore.p2p.messages import PeerRegistrationResponse
-from proxystore.p2p.messages import ServerError
 from proxystore.p2p.server import connect
-from proxystore.serialize import deserialize
-from proxystore.serialize import serialize
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from unittest.mock import AsyncMock
@@ -50,23 +46,24 @@ async def test_connect_exceptions(signaling_server) -> None:
     with mock.patch(
         'websockets.WebSocketClientProtocol.recv',
         AsyncMock(
-            return_value=serialize(
-                PeerRegistrationResponse(
-                    uuid=uuid4(),
-                    error=Exception('abcd'),
+            return_value=messages.encode(
+                messages.ServerResponse(
+                    success=False,
+                    message='test error',
+                    error=True,
                 ),
             ),
         ),
     ):
-        with pytest.raises(PeerRegistrationError, match='abcd'):
+        with pytest.raises(PeerRegistrationError, match='test error'):
             await connect(signaling_server.address)
 
     # Check error if return message from signaling server is unknown type
     with mock.patch(
         'websockets.WebSocketClientProtocol.recv',
-        AsyncMock(return_value=serialize('nonsense message')),
+        AsyncMock(return_value='nonsense message'),
     ):
-        with pytest.raises(PeerRegistrationError, match='unknown'):
+        with pytest.raises(PeerRegistrationError, match='Unable to decode'):
             await connect(signaling_server.address)
 
     async def close(*args, **kwargs) -> None:
@@ -77,6 +74,21 @@ async def test_connect_exceptions(signaling_server) -> None:
         with pytest.raises(PeerRegistrationError, match='closed'):
             await connect(signaling_server.address)
 
+    # Unknown response from server
+    with mock.patch(
+        'websockets.WebSocketClientProtocol.recv',
+        AsyncMock(
+            return_value=messages.encode(
+                messages.ServerRegistration('name', uuid4()),
+            ),
+        ),
+    ):
+        with pytest.raises(
+            PeerRegistrationError,
+            match='unknown message type',
+        ):
+            await connect(signaling_server.address)
+
 
 @pytest.mark.asyncio
 async def test_connect_twice(signaling_server) -> None:
@@ -84,12 +96,19 @@ async def test_connect_twice(signaling_server) -> None:
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
     await websocket.send(
-        serialize(PeerRegistrationRequest(uuid=uuid, name='different-host')),
+        messages.encode(
+            messages.ServerRegistration(
+                name='different-host',
+                uuid=uuid,
+            ),
+        ),
     )
-    message = deserialize(await asyncio.wait_for(websocket.recv(), _WAIT_FOR))
-    assert isinstance(message, PeerRegistrationResponse)
-    assert message.error is None
-    assert message.uuid == uuid
+    message = messages.decode(
+        await asyncio.wait_for(websocket.recv(), _WAIT_FOR),
+    )
+    assert isinstance(message, messages.ServerResponse)
+    assert message.success
+    assert not message.error
 
 
 @pytest.mark.asyncio
@@ -157,7 +176,7 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
     # This message should cause deserialization error on server but
     # server should catch and wait for next message
-    await websocket.send(b'invalid message')
+    await websocket.send('invalid message')
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
@@ -167,26 +186,42 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
     websocket = await websockets.connect(f'ws://{signaling_server.address}')
     await websocket.send(
-        serialize(
-            PeerConnectionMessage(
+        messages.encode(
+            messages.PeerConnection(
                 source_uuid=uuid4(),
                 source_name='',
                 peer_uuid=uuid4(),
+                description_type='offer',
+                description='',
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(websocket.recv(), 1))
-    assert isinstance(message, ServerError)
-    assert 'not registered' in str(message)
+    message = messages.decode(await asyncio.wait_for(websocket.recv(), 1))
+    assert isinstance(message, messages.ServerResponse)
+    assert message.error
+    assert 'not registered' in message.message
 
 
 @pytest.mark.asyncio
 async def test_unknown_message_type(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
-    await websocket.send(serialize('message'))
-    message = deserialize(await asyncio.wait_for(websocket.recv(), _WAIT_FOR))
-    assert isinstance(message, ServerError)
-    assert 'unknown' in str(message)
+    await websocket.send(
+        messages.encode(
+            # Signaling server does not support PeerMessage because those
+            # should be sent of WebRTC channel.
+            messages.PeerMessage(
+                source_uuid=uuid4(),
+                peer_uuid=uuid4(),
+                message='',
+            ),
+        ),
+    )
+    message = messages.decode(
+        await asyncio.wait_for(websocket.recv(), _WAIT_FOR),
+    )
+    assert isinstance(message, messages.ServerResponse)
+    assert message.error
+    assert 'unknown' in message.message
 
 
 @pytest.mark.asyncio
@@ -196,45 +231,48 @@ async def test_p2p_message_passing(signaling_server) -> None:
 
     # Peer1 -> Peer2
     await peer1.send(
-        serialize(
-            PeerConnectionMessage(
+        messages.encode(
+            messages.PeerConnection(
                 source_uuid=peer1_uuid,
                 source_name=peer1_name,
                 peer_uuid=peer2_uuid,
-                message='',
+                description_type='offer',
+                description='',
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer2.recv(), _WAIT_FOR))
-    assert isinstance(message, PeerConnectionMessage)
+    message = messages.decode(await asyncio.wait_for(peer2.recv(), _WAIT_FOR))
+    assert isinstance(message, messages.PeerConnection)
 
     # Peer2 -> Peer1
     await peer2.send(
-        serialize(
-            PeerConnectionMessage(
+        messages.encode(
+            messages.PeerConnection(
                 source_uuid=peer2_uuid,
                 source_name=peer2_name,
                 peer_uuid=peer1_uuid,
-                message='',
+                description_type='offer',
+                description='',
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
-    assert isinstance(message, PeerConnectionMessage)
+    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    assert isinstance(message, messages.PeerConnection)
 
     # Peer1 -> Peer1
     await peer1.send(
-        serialize(
-            PeerConnectionMessage(
+        messages.encode(
+            messages.PeerConnection(
                 source_uuid=peer1_uuid,
                 source_name=peer1_name,
                 peer_uuid=peer1_uuid,
-                message='',
+                description_type='offer',
+                description='',
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
-    assert isinstance(message, PeerConnectionMessage)
+    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    assert isinstance(message, messages.PeerConnection)
 
 
 @pytest.mark.asyncio
@@ -243,15 +281,57 @@ async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
     peer2_uuid = uuid4()
 
     await peer1.send(
-        serialize(
-            PeerConnectionMessage(
+        messages.encode(
+            messages.PeerConnection(
                 source_uuid=peer1_uuid,
                 source_name=peer1_name,
                 peer_uuid=peer2_uuid,
-                message='',
+                description_type='offer',
+                description='',
             ),
         ),
     )
-    message = deserialize(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
-    assert isinstance(message, PeerConnectionMessage)
-    assert str(peer2_uuid) in str(message) and 'unknown' in str(message)
+    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    assert isinstance(message, messages.PeerConnection)
+    assert str(peer2_uuid) in message.error and 'unknown' in message.error
+
+
+@pytest.mark.asyncio
+async def test_signaling_server_send_encode_error(
+    signaling_server,
+    caplog,
+) -> None:
+    caplog.set_level(logging.ERROR)
+
+    _, _, websocket = await connect(signaling_server.address)
+    # Error should be logged but not raised
+    await signaling_server.signaling_server.send(websocket, 'abc')
+
+    assert any(
+        [
+            'failed to encode' in record.message
+            and record.levelname == 'ERROR'
+            for record in caplog.records
+        ],
+    )
+
+
+@pytest.mark.asyncio
+async def test_signaling_server_send_connection_closed(
+    signaling_server,
+    caplog,
+) -> None:
+    caplog.set_level(logging.ERROR)
+
+    _, _, websocket = await connect(signaling_server.address)
+    # Error should be logged but not raised
+    await websocket.close()
+    await signaling_server.signaling_server.send(websocket, messages.Message())
+
+    assert any(
+        [
+            'connection closed' in record.message
+            and record.levelname == 'ERROR'
+            for record in caplog.records
+        ],
+    )

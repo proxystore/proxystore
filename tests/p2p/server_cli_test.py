@@ -4,6 +4,7 @@ import asyncio
 import multiprocessing
 import os
 import subprocess
+import sys
 from unittest import mock
 
 import pytest
@@ -13,10 +14,15 @@ from proxystore.p2p.server import connect
 from proxystore.p2p.server import main
 from testing.utils import open_port
 
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
+    from unittest.mock import AsyncMock
+else:  # pragma: <3.8 cover
+    from asynctest import CoroutineMock as AsyncMock
+
 
 def test_logging_dir(tmp_dir) -> None:
     assert not os.path.isdir(tmp_dir)
-    with mock.patch('proxystore.p2p.server.serve'):
+    with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
         main(['--log-dir', tmp_dir])
     assert os.path.isdir(tmp_dir)
 

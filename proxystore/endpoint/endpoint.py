@@ -15,7 +15,12 @@ from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.messages import PeerMessage
 from proxystore.p2p.task import spawn_guarded_background_task
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
+
+# from proxystore.p2p.messages import PeerResponse
 
 logger = logging.getLogger(__name__)
 
@@ -194,7 +199,9 @@ class Endpoint:
         logger.info(f'{self._log_prefix}: listening for peer requests')
 
         while True:
-            source_endpoint, message = await self._peer_manager.recv()
+            message_ = await self._peer_manager.recv()
+            source_endpoint = message_.source_uuid
+            message = deserialize(bytes.fromhex(message_.message))
 
             if not isinstance(message, messages.Request):
                 logger.error(
@@ -269,7 +276,14 @@ class Endpoint:
                 f'to {type(message).__name__}(id={message._id}, '
                 f'key={message.key})',
             )
-            await self._peer_manager.send(source_endpoint, response)
+            await self._peer_manager.send(
+                source_endpoint,
+                PeerMessage(
+                    source_uuid=self.uuid,
+                    peer_uuid=source_endpoint,
+                    message=serialize(response).hex(),
+                ),
+            )
 
     async def _request_from_peer(
         self,
@@ -291,7 +305,14 @@ class Endpoint:
             f'id={request._id}, key={request.key}) to {endpoint}',
         )
         try:
-            await self._peer_manager.send(endpoint, request)
+            await self._peer_manager.send(
+                endpoint,
+                PeerMessage(
+                    source_uuid=self.uuid,
+                    peer_uuid=endpoint,
+                    message=serialize(request).hex(),
+                ),
+            )
         except Exception as e:
             self._pending_requests[request._id].set_exception(
                 PeerRequestError(
