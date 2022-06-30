@@ -144,6 +144,7 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
         uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
+        assert endpoint2._peer_manager is not None
         endpoint2._peer_manager._message_queue.put_nowait(
             PeerMessage(
                 source_uuid=endpoint1.uuid,
@@ -175,6 +176,7 @@ async def test_peer_message_missing_id(signaling_server, caplog) -> None:
         uuid=_UUID2,
         signaling_server=signaling_server.address,
     ) as endpoint2:
+        assert endpoint2._peer_manager is not None
         endpoint2._peer_manager._message_queue.put_nowait(
             PeerMessage(
                 source_uuid=endpoint1.uuid,
@@ -206,6 +208,8 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
         signaling_server=signaling_server.address,
     ) as endpoint2:
         # Force connection to establish
+        assert endpoint1._peer_manager is not None
+        assert endpoint2._peer_manager is not None
         connection = await endpoint1._peer_manager.get_connection(
             endpoint2.uuid,
         )

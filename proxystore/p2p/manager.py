@@ -306,14 +306,14 @@ class PeerManager:
         self,
         peer_uuid: UUID,
         message: messages.PeerMessage,
-        timeout: int = 30,
+        timeout: float = 30,
     ) -> None:
         """Send message to peer.
 
         Args:
             peer_uuid (str): UUID of peer to send message to.
             message (PeerMessage): message to send to peer.
-            timeout (int): timeout to wait on peer connection to be ready.
+            timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
             PeerConnectionTimeout:

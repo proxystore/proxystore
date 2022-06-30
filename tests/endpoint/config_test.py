@@ -128,7 +128,7 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     options.update(bad_cfg)
 
     if valid:
-        EndpointConfig(**options)
+        EndpointConfig(**options)  # type: ignore
     else:
         with pytest.raises(ValueError):
-            EndpointConfig(**options)
+            EndpointConfig(**options)  # type: ignore

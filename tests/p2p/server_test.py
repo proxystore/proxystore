@@ -103,9 +103,9 @@ async def test_connect_twice(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(
-        await asyncio.wait_for(websocket.recv(), _WAIT_FOR),
-    )
+    message_ = await asyncio.wait_for(websocket.recv(), _WAIT_FOR)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.ServerResponse)
     assert message.success
     assert not message.error
@@ -183,7 +183,7 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
 
 @pytest.mark.asyncio
 async def test_endpoint_not_registered_error(signaling_server) -> None:
-    _, _, websocket = await connect(signaling_server.address)
+    # _, _, websocket = await connect(signaling_server.address)
     websocket = await websockets.connect(f'ws://{signaling_server.address}')
     await websocket.send(
         messages.encode(
@@ -196,9 +196,12 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(await asyncio.wait_for(websocket.recv(), 1))
+    message_ = await asyncio.wait_for(websocket.recv(), 1)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.ServerResponse)
     assert message.error
+    assert message.message is not None
     assert 'not registered' in message.message
 
 
@@ -216,12 +219,12 @@ async def test_unknown_message_type(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(
-        await asyncio.wait_for(websocket.recv(), _WAIT_FOR),
-    )
+    message_ = await asyncio.wait_for(websocket.recv(), 1)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.ServerResponse)
     assert message.error
-    assert 'unknown' in message.message
+    assert message.message is not None and 'unknown' in message.message
 
 
 @pytest.mark.asyncio
@@ -241,7 +244,9 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(await asyncio.wait_for(peer2.recv(), _WAIT_FOR))
+    message_ = await asyncio.wait_for(peer2.recv(), 1)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.PeerConnection)
 
     # Peer2 -> Peer1
@@ -256,7 +261,9 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    message_ = await asyncio.wait_for(peer1.recv(), 1)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.PeerConnection)
 
     # Peer1 -> Peer1
@@ -271,7 +278,9 @@ async def test_p2p_message_passing(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    message_ = await asyncio.wait_for(peer1.recv(), 1)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.PeerConnection)
 
 
@@ -291,8 +300,11 @@ async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
             ),
         ),
     )
-    message = messages.decode(await asyncio.wait_for(peer1.recv(), _WAIT_FOR))
+    message_ = await asyncio.wait_for(peer1.recv(), _WAIT_FOR)
+    assert isinstance(message_, str)
+    message = messages.decode(message_)
     assert isinstance(message, messages.PeerConnection)
+    assert message.error is not None
     assert str(peer2_uuid) in message.error and 'unknown' in message.error
 
 

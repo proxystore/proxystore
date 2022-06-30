@@ -37,7 +37,7 @@ def test_no_endpoints_accessible(endpoint_store) -> None:
 def test_endpoint_uuid_mismatch(endpoint_store) -> None:
     response = requests.Response()
     response.status_code = 200
-    response.json = lambda: {'uuid': str(uuid.uuid4())}
+    response.json = lambda: {'uuid': str(uuid.uuid4())}  # type: ignore
 
     with mock.patch('requests.get', return_value=response):
         with pytest.raises(EndpointStoreError, match='Failed to find'):

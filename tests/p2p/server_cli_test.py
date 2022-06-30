@@ -44,6 +44,7 @@ def test_logging_config(tmp_dir) -> None:
     )
 
     # Wait for server to log that it is listening
+    assert server_handle.stdout is not None
     for line in server_handle.stdout:  # pragma: no cover
         if 'serving' in line:
             break
@@ -108,6 +109,7 @@ async def test_start_server_cli() -> None:
     )
 
     # Wait for server to log that it is listening
+    assert server_handle.stdout is not None
     for line in server_handle.stdout:  # pragma: no cover
         if 'serving signaling server' in line:
             break

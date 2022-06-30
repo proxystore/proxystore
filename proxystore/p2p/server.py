@@ -262,7 +262,7 @@ async def connect(
     address: str,
     uuid: UUID | None = None,
     name: str | None = None,
-    timeout: int = 10,
+    timeout: float = 10,
 ) -> tuple[UUID, str, WebSocketClientProtocol]:
     """Establish client connection to a Signaling Server.
 
@@ -273,7 +273,7 @@ async def connect(
         name (str, optional): readable name of the client to use when
             registering with the signaling server. By default the
             hostname will be used (default: None).
-        timeout (int): time to wait in seconds on server connections
+        timeout (float): time to wait in seconds on server connections
             (default: 10).
 
     Returns:

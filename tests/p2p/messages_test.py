@@ -144,11 +144,11 @@ def test_decode_errors() -> None:
 
 def test_encode_errors() -> None:
     with pytest.raises(messages.MessageEncodeError, match='not an instance'):
-        messages.encode('just a string')
+        messages.encode('just a string')  # type: ignore
 
     message = messages.ServerRegistration(name='name', uuid=uuid.uuid4())
     # UUID is not JSONable so will raise encode error
-    message.name = uuid.uuid4()
+    message.name = uuid.uuid4()  # type: ignore
     with pytest.raises(
         messages.MessageEncodeError,
         match='Error encoding message',

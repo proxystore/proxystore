@@ -1,6 +1,8 @@
 """Store Stat Tracking Tests."""
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import proxystore as ps
@@ -44,8 +46,9 @@ def test_stat_tracking(store_fixture, request) -> None:
         stats=True,
     )
 
-    p = store.proxy([1, 2, 3])
+    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
     key = ps.proxy.get_key(p)
+    assert key is not None
     ps.proxy.resolve(p)
 
     stats = store.stats(key)
@@ -81,7 +84,7 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
         stats=True,
     )
 
-    p = store.proxy([1, 2, 3])
+    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
 
     # Proxy has not been resolved yet so get/resolve should not exist
     stats = store.stats(p)
@@ -97,25 +100,27 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
 
     # Check that resolve stats are unique to that proxy and not merged into
     # the store's stats
-    stats = store.stats(ps.proxy.get_key(p))
+    key = ps.proxy.get_key(p)
+    assert key is not None
+    stats = store.stats(key)
     assert 'resolve' not in stats
 
     # Since we monkeypatch the stats into the factory, we need to handle
     # special cases of Factories without the _stats attr or the _stats attr
     # is None.
-    class FactoryMissingStats(ps.factory.Factory):
+    class FactoryMissingStats(ps.factory.Factory[Any]):
         def __init__(self, key: str):
             self.key = key
 
         def resolve(self):
             pass
 
-    p = ps.proxy.Proxy(FactoryMissingStats(ps.proxy.get_key(p)))
+    p = ps.proxy.Proxy(FactoryMissingStats(key))
     ps.proxy.resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
 
-    class FactoryNoneStats(ps.factory.Factory):
+    class FactoryNoneStats(ps.factory.Factory[Any]):
         def __init__(self, key: str):
             self.key = key
             self.stats = None
@@ -123,7 +128,7 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
         def resolve(self):
             pass
 
-    p = ps.proxy.Proxy(FactoryNoneStats(ps.proxy.get_key(p)))
+    p = ps.proxy.Proxy(FactoryNoneStats(key))
     ps.proxy.resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
@@ -134,6 +139,7 @@ def test_factory_preserves_tracking(store_fixture, request) -> None:
     """Test Factories Preserve the Stat Tracking Flag."""
     store_config = request.getfixturevalue(store_fixture)
 
+    store: ps.store.base.Store | None
     store = ps.store.init_store(
         store_config.type,
         store_config.name,
@@ -141,8 +147,9 @@ def test_factory_preserves_tracking(store_fixture, request) -> None:
         stats=True,
     )
 
-    p = store.proxy([1, 2, 3])
+    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
     key = ps.proxy.get_key(p)
+    assert key is not None
 
     # Force delete store so proxy recreates it when resolved
     ps.store._stores = {}
@@ -150,6 +157,7 @@ def test_factory_preserves_tracking(store_fixture, request) -> None:
     # Resolve the proxy
     assert p == [1, 2, 3]
     store = ps.store.get_store(store_config.name)
+    assert store is not None
 
     assert isinstance(store.stats(key), dict)
     assert store.stats(key)['get'].calls == 1

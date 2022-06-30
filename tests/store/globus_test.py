@@ -51,7 +51,7 @@ def test_globus_endpoint_objects() -> None:
     """Test GlobusEndpoint(s) Objects."""
     with pytest.raises(TypeError):
         GlobusEndpoint(
-            uuid=1,
+            uuid=1,  # type: ignore
             endpoint_path='1',
             local_path='1',
             host_regex='1',
@@ -59,7 +59,7 @@ def test_globus_endpoint_objects() -> None:
     with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid='1',
-            endpoint_path=1,
+            endpoint_path=1,  # type: ignore
             local_path='1',
             host_regex='1',
         )
@@ -67,7 +67,7 @@ def test_globus_endpoint_objects() -> None:
         GlobusEndpoint(
             uuid='1',
             endpoint_path='1',
-            local_path=1,
+            local_path=1,  # type: ignore
             host_regex='1',
         )
     with pytest.raises(TypeError):
@@ -75,7 +75,7 @@ def test_globus_endpoint_objects() -> None:
             uuid='1',
             endpoint_path='1',
             local_path='1',
-            host_regex=1,
+            host_regex=1,  # type: ignore
         )
 
     # GlobusEndpoint equality done by UUID
@@ -157,7 +157,7 @@ def test_globus_endpoints_from_dict() -> None:
     assert endpoints.dict() == data
 
     # Ensure Patterns are converted to strings in .dict()
-    data['UUID1']['host_regex'] = re.compile('host1')
+    data['UUID1']['host_regex'] = re.compile('host1')  # type: ignore
     endpoints = GlobusEndpoints.from_dict(data)
     assert isinstance(endpoints.dict()['UUID1']['host_regex'], str)
 
@@ -218,23 +218,23 @@ def test_globus_store_internals(globus_store) -> None:
         def __init__(self, status: int):
             self.http_status = status
 
-    def _http_error(status: int) -> None:
+    def _http_error(status: int):
         def _error(*args, **kwargs) -> None:
             raise PatchedError(status)
 
         return _error
 
-    store._transfer_client.get_task = _http_error(400)
+    store._transfer_client.get_task = _http_error(400)  # type: ignore
     assert not store._validate_key('uuid:filename')
 
-    store._transfer_client.get_task = _http_error(401)
+    store._transfer_client.get_task = _http_error(401)  # type: ignore
     with pytest.raises(globus_sdk.TransferAPIError):
         store._validate_key('uuid:filename')
 
-    def _fail_wait(*args, **kwargs) -> None:
+    def _fail_wait(*args, **kwargs) -> bool:
         return False
 
-    store._transfer_client.task_wait = _fail_wait
+    store._transfer_client.task_wait = _fail_wait  # type: ignore
     with pytest.raises(RuntimeError):
         store._wait_on_tasks('1234')
 

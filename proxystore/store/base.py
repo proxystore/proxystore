@@ -8,9 +8,9 @@ from abc import abstractmethod
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from typing import cast
 from typing import Sequence
 from typing import TypeVar
-from typing import cast
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -25,6 +25,7 @@ _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
 
 class StoreFactory(Factory[T]):
     """Base Factory for Stores.

@@ -29,7 +29,7 @@ def test_serialization() -> None:
 
     with raises(ValueError):
         # deserialize raises ValueError on non-bytes inputs
-        deserialize('xxx')
+        deserialize('xxx')  # type: ignore
 
     with raises(SerializationError):
         # No identifier

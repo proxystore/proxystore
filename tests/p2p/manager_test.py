@@ -84,7 +84,11 @@ async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
         signaling_server.address,
     ) as manager1:
         with pytest.raises(PeerConnectionError, match='unknown'):
-            await manager1.send(uuid.uuid4(), messages.Message(), timeout=0.2)
+            await manager1.send(
+                uuid.uuid4(),
+                messages.Message(),  # type: ignore
+                timeout=0.2,
+            )
 
 
 @pytest.mark.asyncio
@@ -104,6 +108,7 @@ async def test_p2p_connection_error_from_server(
     ) as manager2:
         # Mock manager 1 to receive error peer connection from
         # signaling server
+        assert manager1._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager1._websocket_or_none.recv,
             messages.encode(
@@ -117,7 +122,7 @@ async def test_p2p_connection_error_from_server(
                 ),
             ),
         )
-        manager1._websocket_or_none.recv = mock_recv
+        manager1._websocket_or_none.recv = mock_recv  # type: ignore
 
         connection1 = await manager1.get_connection(manager2.uuid)
 
@@ -162,7 +167,7 @@ async def test_p2p_messaging_error(signaling_server, caplog) -> None:
     ) as manager2:
         await manager1.send(
             manager2.uuid,
-            messages.ServerRegistration('name', uuid.uuid4()),
+            messages.ServerRegistration('name', uuid.uuid4()),  # type: ignore
         )
         # should raise timeout because sent message is not valid
         # and will not be put on received message queue
@@ -204,11 +209,12 @@ async def test_serialization_error(signaling_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+        assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
             'nonsense_string',
         )
-        manager._websocket_or_none.recv = mock_recv
+        manager._websocket_or_none.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -227,13 +233,14 @@ async def test_unexpected_server_response(signaling_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+        assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
             messages.encode(
                 messages.ServerResponse(success=True, message='', error=False),
             ),
         )
-        manager._websocket_or_none.recv = mock_recv
+        manager._websocket_or_none.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -251,11 +258,12 @@ async def test_unknown_message_type(signaling_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+        assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
             messages.encode(messages.ServerRegistration('name', uuid.uuid4())),
         )
-        manager._websocket_or_none.recv = mock_recv
+        manager._websocket_or_none.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 

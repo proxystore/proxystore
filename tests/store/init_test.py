@@ -107,7 +107,7 @@ def test_get_enum_by_type() -> None:
         pass
 
     with pytest.raises(KeyError):
-        STORES.get_str_by_type(FakeStore)
+        STORES.get_str_by_type(FakeStore)  # type: ignore
 
 
 def test_init_store_raises() -> None:
@@ -121,7 +121,7 @@ def test_init_store_raises() -> None:
         class TestStore:
             pass
 
-        ps.store.init_store(TestStore, name='')
+        ps.store.init_store(TestStore, name='')  # type: ignore
 
 
 def test_register_unregister_store() -> None:
@@ -157,12 +157,16 @@ def test_lookup_by_proxy(local_store, redis_store) -> None:
     )
 
     # Make a proxy with both
-    local_proxy = local.proxy([1, 2, 3])
-    redis_proxy = redis.proxy([1, 2, 3])
+    local_proxy: Proxy[list[int]] = local.proxy([1, 2, 3])
+    redis_proxy: Proxy[list[int]] = redis.proxy([1, 2, 3])
 
     # Make sure both look up correctly
-    assert ps.store.get_store(redis_proxy).name == redis.name
-    assert ps.store.get_store(local_proxy).name == local.name
+    sr = ps.store.get_store(redis_proxy)
+    assert sr is not None
+    assert sr.name == redis.name
+    sl = ps.store.get_store(local_proxy)
+    assert sl is not None
+    assert sl.name == local.name
 
     # Make a proxy without an associated store
     f = SimpleFactory([1, 2, 3])

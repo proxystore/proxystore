@@ -28,14 +28,14 @@ else:  # pragma: <3.8 cover
 
 @pytest_asyncio.fixture
 @pytest.mark.asyncio
-async def quart_app() -> AsyncGenerator[quart.Quart, None]:
+async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
     async with Endpoint(
         name='my-endpoint',
         uuid=uuid.uuid4(),
     ) as endpoint:
         app = create_app(endpoint)
         async with app.test_app() as test_app:
-            test_app.endpoint = endpoint
+            test_app.endpoint = endpoint  # type: ignore
             yield test_app
 
 

@@ -119,12 +119,12 @@ class PeerConnection:
         logger.info(f'{self._log_prefix}: closing connection')
         await self._pc.close()
 
-    async def send(self, message: str, timeout: int = 30) -> None:
+    async def send(self, message: str, timeout: float = 30) -> None:
         """Send message to peer.
 
         Args:
             message (str): message to send to peer.
-            timeout (str): timeout to wait on peer connection to be ready.
+            timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
             PeerConnectionTimeout:
@@ -258,11 +258,11 @@ class PeerConnection:
         else:
             raise AssertionError('received unknown message')
 
-    async def ready(self, timeout: int | None = None) -> None:
+    async def ready(self, timeout: float | None = None) -> None:
         """Wait for connection to be ready.
 
         Args:
-            timeout (int, optional): maximum time in seconds to wait for
+            timeout (float, optional): maximum time in seconds to wait for
                 the peer connection to establish. If None, block until
                 the connection is established (default: None).
 

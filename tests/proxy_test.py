@@ -14,8 +14,8 @@ from proxystore.proxy import Proxy
 def test_proxy() -> None:
     """Test Proxy behavior."""
     with raises(TypeError):
-        # Proxy requires type BaseFactory
-        Proxy('not a factory')
+        # Proxy requires a callable type
+        Proxy('not a factory')  # type: ignore
 
     x = np.array([1, 2, 3])
     f = SimpleFactory(x)

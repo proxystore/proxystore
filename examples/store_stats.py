@@ -6,6 +6,7 @@ Source code for:
 from __future__ import annotations
 
 from typing import Any
+
 import proxystore as ps
 
 store = ps.store.init_store(

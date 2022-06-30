@@ -1,9 +1,12 @@
 """Store Factory and Proxy Tests for Store Subclasses."""
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import proxystore as ps
+from proxystore.proxy import Proxy
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.local import LocalStore
@@ -25,7 +28,7 @@ def test_store_factory(store_fixture, request) -> None:
 
     # Clear store to see if factory can reinitialize it
     ps.store._stores = {}
-    f = StoreFactory(
+    f: StoreFactory[list[int]] = StoreFactory(
         key,
         store_config.type,
         store_config.name,
@@ -33,7 +36,7 @@ def test_store_factory(store_fixture, request) -> None:
     )
     assert f() == [1, 2, 3]
 
-    f2 = StoreFactory(
+    f2: StoreFactory[list[int]] = StoreFactory(
         key,
         store_config.type,
         store_config.name,
@@ -94,21 +97,23 @@ def test_store_proxy(store_fixture, request) -> None:
         cache_size=0,
     )
 
-    p = store.proxy([1, 2, 3])
+    p: Proxy[list[int]] = store.proxy([1, 2, 3])
     assert isinstance(p, ps.proxy.Proxy)
 
     # Check that we can get the associated store back
-    assert ps.store.get_store(p).name == store.name
+    s = ps.store.get_store(p)
+    assert s is not None and s.name == store.name
 
     assert p == [1, 2, 3]
-    assert store.get(ps.proxy.get_key(p)) == [1, 2, 3]
+    key = ps.proxy.get_key(p)
+    assert key is not None and store.get(key) == [1, 2, 3]
 
-    p2 = store.proxy(key=ps.proxy.get_key(p))
-    assert p2 == [1, 2, 3]
+    p = store.proxy(key=key)
+    assert p == [1, 2, 3]
 
     p = store.proxy([2, 3, 4])
     key = ps.proxy.get_key(p)
-    assert store.get(key=key) == [2, 3, 4]
+    assert key is not None and store.get(key) == [2, 3, 4]
 
     with pytest.raises(ValueError):
         # At least one of key or object must be passed
@@ -132,8 +137,9 @@ def test_proxy_recreates_store(store_fixture, request) -> None:
         cache_size=0,
     )
 
-    p = store.proxy([1, 2, 3])
+    p: Proxy[list[int]] = store.proxy([1, 2, 3])
     key = ps.proxy.get_key(p)
+    assert key is not None
 
     # Force delete store so proxy recreates it when resolved
     ps.store._stores = {}
@@ -143,7 +149,8 @@ def test_proxy_recreates_store(store_fixture, request) -> None:
 
     # The store that created the proxy had cache_size=0 so the restored
     # store should also have cache_size=0.
-    assert not ps.store.get_store(store_config.name).is_cached(key)
+    s = ps.store.get_store(store_config.name)
+    assert s is not None and not s.is_cached(key)
 
     # Repeat above but with cache_size=1
     store = ps.store.init_store(
@@ -154,9 +161,11 @@ def test_proxy_recreates_store(store_fixture, request) -> None:
     )
     p = store.proxy([1, 2, 3])
     key = ps.proxy.get_key(p)
+    assert key is not None
     ps.store._stores = {}
     assert p == [1, 2, 3]
-    assert ps.store.get_store(store_config.name).is_cached(key)
+    s = ps.store.get_store(store_config.name)
+    assert s is not None and s.is_cached(key)
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
@@ -173,21 +182,23 @@ def test_proxy_batch(store_fixture, request) -> None:
     with pytest.raises(ValueError):
         store.proxy_batch(None, keys=None)
 
-    values = [b'test_value1', b'test_value2', b'test_value3']
+    values1 = [b'test_value1', b'test_value2', b'test_value3']
 
-    proxies = store.proxy_batch(values, serialize=False)
-    for p, v in zip(proxies, values):
-        assert p == v
+    proxies1: list[Proxy[bytes]] = store.proxy_batch(values1, serialize=False)
+    for p1, v1 in zip(proxies1, values1):
+        assert p1 == v1
 
-    values = ['test_value1', 'test_value2', 'test_value3']
+    values2 = ['test_value1', 'test_value2', 'test_value3']
 
-    proxies = store.proxy_batch(values)
-    for p, v in zip(proxies, values):
-        assert p == v
+    proxies2: list[Proxy[str]] = store.proxy_batch(values2)
+    for p2, v2 in zip(proxies2, values2):
+        assert p2 == v2
 
-    proxies = store.proxy_batch(keys=[ps.proxy.get_key(p) for p in proxies])
-    for p, v in zip(proxies, values):
-        assert p == v
+    proxies3: list[Proxy[str]] = store.proxy_batch(
+        keys=[ps.proxy.get_key(p) for p in proxies2],  # type: ignore
+    )
+    for p3, v2 in zip(proxies3, values2):
+        assert p3 == v2
 
     store.close()
 
@@ -206,7 +217,7 @@ def test_raises_missing_key(store_fixture, request) -> None:
     key = 'test_key'
     assert not store.exists(key)
 
-    factory = StoreFactory(
+    factory: StoreFactory[Any] = StoreFactory(
         key,
         store_config.type,
         store_config.name,
@@ -215,6 +226,6 @@ def test_raises_missing_key(store_fixture, request) -> None:
     with pytest.raises(ProxyResolveMissingKey):
         factory.resolve()
 
-    proxy = store.proxy(key=key)
+    proxy: Proxy[Any] = store.proxy(key=key)
     with pytest.raises(ProxyResolveMissingKey):
         proxy()
