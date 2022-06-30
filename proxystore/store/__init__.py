@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from typing import Any
+from typing import TypeVar
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
@@ -13,6 +14,8 @@ from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
+
+T = TypeVar('T')
 
 _stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
@@ -72,7 +75,7 @@ class STORES(Enum):
         raise KeyError(f'Enum type matching type {store} not found')
 
 
-def get_store(val: str | Proxy) -> _Store | None:
+def get_store(val: str | Proxy[T]) -> _Store | None:
     """Get the backend store with name.
 
     Args:

@@ -9,6 +9,8 @@ from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Sequence
+from typing import TypeVar
+from typing import cast
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -22,8 +24,9 @@ from proxystore.store.stats import TimeStats
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T')
 
-class StoreFactory(Factory):
+class StoreFactory(Factory[T]):
     """Base Factory for Stores.
 
     Adds support for asynchronously retrieving objects from a
@@ -72,7 +75,7 @@ class StoreFactory(Factory):
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
-        self._obj_future: Future[Any] | None = None
+        self._obj_future: Future[T] | None = None
         self.stats: FunctionEventStats | None = None
         if 'stats' in self.store_kwargs and self.store_kwargs['stats'] is True:
             self.stats = FunctionEventStats()
@@ -103,7 +106,7 @@ class StoreFactory(Factory):
             'strict': self.strict,
         }
 
-    def _get_value(self) -> Any:
+    def _get_value(self) -> T:
         """Get the value associated with the key from the store."""
         store = self.get_store()
         obj = store.get(
@@ -122,7 +125,7 @@ class StoreFactory(Factory):
         if self.evict:
             store.evict(self.key)
 
-        return obj
+        return cast(T, obj)
 
     def _should_resolve_async(self) -> bool:
         """Check if it makes sense to do asynchronous resolution."""
@@ -156,7 +159,7 @@ class StoreFactory(Factory):
 
         return store
 
-    def resolve(self) -> Any:
+    def resolve(self) -> T:
         """Get object associated with key from store.
 
         Raises:
@@ -423,7 +426,7 @@ class Store(metaclass=ABCMeta):
         *,
         key: str | None = None,
         **kwargs: Any,
-    ) -> ps.proxy.Proxy:
+    ) -> ps.proxy.Proxy[T]:
         """Create a proxy that will resolve to an object in the store.
 
         Warning:
@@ -484,7 +487,7 @@ class Store(metaclass=ABCMeta):
         *,
         keys: Sequence[str] | None = None,
         **kwargs: Any,
-    ) -> list[ps.proxy.Proxy]:
+    ) -> list[ps.proxy.Proxy[T]]:
         """Create proxies for batch of objects in the store.
 
         See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
@@ -610,7 +613,7 @@ class Store(metaclass=ABCMeta):
 
     def stats(
         self,
-        key_or_proxy: str | ps.proxy.Proxy,
+        key_or_proxy: str | ps.proxy.Proxy[T],
     ) -> dict[str, TimeStats]:
         """Get stats on the store.
 

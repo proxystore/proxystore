@@ -5,6 +5,7 @@ Source code for:
 """
 from __future__ import annotations
 
+from typing import Any
 import proxystore as ps
 
 store = ps.store.init_store(
@@ -69,7 +70,7 @@ store = store.stats(key1)
 """,
 )
 
-target_proxy = store.proxy(target)
+target_proxy: ps.proxy.Proxy[Any] = store.proxy(target)
 stats = store.stats(target_proxy)
 print(
     f"""\
