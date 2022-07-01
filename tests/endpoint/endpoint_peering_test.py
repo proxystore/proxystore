@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import dataclasses
+import json
 import logging
 import uuid
 
 import pytest
 
-import proxystore.endpoint.messages as messages
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.messages import EndpointRequest
 from proxystore.p2p.messages import PeerMessage
 from proxystore.serialize import serialize
 from testing.compat import randbytes
@@ -68,6 +70,10 @@ async def test_get(signaling_server) -> None:
         await endpoint2.set('key', data2)
         assert (await endpoint1.get('key')) is None
         assert (await endpoint2.get('key')) == data2
+
+        assert (
+            await endpoint2.get('missingkey', endpoint=endpoint1.uuid)
+        ) is None
 
 
 @pytest.mark.asyncio
@@ -157,39 +163,8 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
 
     assert any(
         [
-            'unsupported message type' in record.message
+            'unable to decode message from peer' in record.message
             and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
-    )
-
-
-@pytest.mark.asyncio
-async def test_peer_message_missing_id(signaling_server, caplog) -> None:
-    caplog.set_level(logging.ERROR)
-    async with Endpoint(
-        name=_NAME1,
-        uuid=_UUID1,
-        signaling_server=signaling_server.address,
-    ) as endpoint1, Endpoint(
-        name=_NAME2,
-        uuid=_UUID2,
-        signaling_server=signaling_server.address,
-    ) as endpoint2:
-        assert endpoint2._peer_manager is not None
-        endpoint2._peer_manager._message_queue.put_nowait(
-            PeerMessage(
-                source_uuid=endpoint1.uuid,
-                peer_uuid=endpoint2.uuid,
-                message=serialize(messages.ExistsRequest(key='key')).hex(),
-            ),
-        )
-        # Make request to endpoint 2 to establish connection
-        assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
-
-    assert any(
-        [
-            'no request ID' in record.message and record.levelname == 'ERROR'
             for record in caplog.records
         ],
     )
@@ -220,9 +195,16 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
             PeerMessage(
                 source_uuid=endpoint1.uuid,
                 peer_uuid=endpoint2.uuid,
-                message=serialize(
-                    messages.ExistsRequest(key='key', _id='1234'),
-                ).hex(),
+                message=json.dumps(
+                    dataclasses.asdict(
+                        EndpointRequest(
+                            kind='request',
+                            op='evict',
+                            uuid='1234',
+                            key='key',
+                        ),
+                    ),
+                ),
             ),
         )
 

@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import enum
+import json
 import logging
 from types import TracebackType
 from typing import Any
@@ -10,15 +12,13 @@ from typing import Generator
 from uuid import UUID
 from uuid import uuid4
 
-from proxystore.endpoint import messages
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.messages import EndpointRequest
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.messages import PeerMessage
 from proxystore.p2p.task import spawn_guarded_background_task
-from proxystore.serialize import deserialize
-from proxystore.serialize import serialize
 
 # from proxystore.p2p.messages import PeerResponse
 
@@ -135,7 +135,7 @@ class Endpoint:
         self._data: dict[str, bytes] = {}
         self._pending_requests: dict[
             str,
-            asyncio.Future[messages.Response],
+            asyncio.Future[EndpointRequest],
         ] = {}
 
         self._async_init_done = False
@@ -201,95 +201,76 @@ class Endpoint:
         while True:
             message_ = await self._peer_manager.recv()
             source_endpoint = message_.source_uuid
-            message = deserialize(bytes.fromhex(message_.message))
-
-            if not isinstance(message, messages.Request):
+            try:
+                message = EndpointRequest(**json.loads(message_.message))
+            except (KeyError, json.JSONDecodeError) as e:
                 logger.error(
-                    f'{self._log_prefix}: received unsupported message type '
-                    f'{type(message).__name__} from peer endpoint '
-                    f'{source_endpoint}',
+                    f'{self._log_prefix}: unable to decode message from peer '
+                    f'endpoint {source_endpoint}: {e}',
                 )
                 continue
 
-            if message._id is None:
-                logger.error(
-                    f'{self._log_prefix}: received request from peer '
-                    f'{source_endpoint} with no request ID... skipping '
-                    'message',
-                )
-                continue
-
-            if isinstance(message, messages.Response):
-                if message._id not in self._pending_requests:
+            if message.kind == 'response':
+                if message.uuid not in self._pending_requests:
                     logger.error(
                         f'{self._log_prefix}: received '
-                        f'{type(message).__name__} with ID {message._id} '
+                        f'{type(message).__name__} with ID {message.uuid} '
                         'that does not match a pending request',
                     )
                 else:
-                    self._pending_requests[message._id].set_result(message)
-                    del self._pending_requests[message._id]
+                    self._pending_requests[message.uuid].set_result(message)
+                    del self._pending_requests[message.uuid]
                 continue
 
-            response: messages.Response
             logger.debug(
                 f'{self._log_prefix}: received {type(message).__name__}'
-                f'(id={message._id}, key={message.key}) from '
+                f'(id={message.uuid}, key={message.key}) from '
                 f'{source_endpoint}',
             )
-            if isinstance(message, messages.EvictRequest):
+            if message.op == 'evict':
                 await self.evict(message.key)
-                response = messages.EvictResponse(
-                    key=message.key,
-                    success=True,
-                    _id=message._id,
-                )
-            elif isinstance(message, messages.ExistsRequest):
-                exists = await self.exists(message.key)
-                response = messages.ExistsResponse(
-                    key=message.key,
-                    exists=exists,
-                    _id=message._id,
-                )
-            elif isinstance(message, messages.GetRequest):
+                message.success = True
+            elif message.op == 'exists':
+                message.exists = await self.exists(message.key)
+                message.success = True
+            elif message.op == 'get':
                 data = await self.get(message.key)
-                response = messages.GetResponse(
-                    key=message.key,
-                    data=data,
-                    _id=message._id,
-                )
-            elif isinstance(message, messages.SetRequest):
+                if isinstance(data, bytes):
+                    message.data = data.hex()
+                elif data is None:
+                    message.data = None
+                else:
+                    raise AssertionError('Unreachable.')
+                message.success = True
+            elif message.op == 'set':
                 assert message.data is not None
-                await self.set(message.key, message.data)
-                response = messages.SetResponse(
-                    key=message.key,
-                    success=True,
-                    _id=message._id,
-                )
+                await self.set(message.key, bytes.fromhex(message.data))
+                message.success = True
             else:
                 raise AssertionError(
                     f'unsupported request type {type(message).__name__}',
                 )
 
+            message.kind = 'response'
             logger.debug(
-                f'{self._log_prefix}: sending {type(response).__name__} '
-                f'to {type(message).__name__}(id={message._id}, '
-                f'key={message.key})',
+                f'{self._log_prefix}: sending {message.op} response with '
+                f'id={message.uuid} and key={message.key} to '
+                f'{source_endpoint}',
             )
             await self._peer_manager.send(
                 source_endpoint,
                 PeerMessage(
                     source_uuid=self.uuid,
                     peer_uuid=source_endpoint,
-                    message=serialize(response).hex(),
+                    message=json.dumps(dataclasses.asdict(message)),
                 ),
             )
 
     async def _request_from_peer(
         self,
         endpoint: UUID,
-        request: messages.Request,
-    ) -> asyncio.Future[messages.Response]:
+        request: EndpointRequest,
+    ) -> asyncio.Future[EndpointRequest]:
         """Send request to peer endpoint.
 
         Any exceptions will be set on the returned future.
@@ -298,11 +279,10 @@ class Endpoint:
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
         assert self._peer_manager is not None
-        request._id = str(uuid4())
-        self._pending_requests[request._id] = asyncio.Future()
+        self._pending_requests[request.uuid] = asyncio.Future()
         logger.debug(
-            f'{self._log_prefix}: sending {type(request).__name__}('
-            f'id={request._id}, key={request.key}) to {endpoint}',
+            f'{self._log_prefix}: sending {request.op} request with '
+            f'id={request.uuid} and key={request.key}) to {endpoint}',
         )
         try:
             await self._peer_manager.send(
@@ -310,16 +290,16 @@ class Endpoint:
                 PeerMessage(
                     source_uuid=self.uuid,
                     peer_uuid=endpoint,
-                    message=serialize(request).hex(),
+                    message=json.dumps(dataclasses.asdict(request)),
                 ),
             )
         except Exception as e:
-            self._pending_requests[request._id].set_exception(
+            self._pending_requests[request.uuid].set_exception(
                 PeerRequestError(
                     f'Request to peer {endpoint} failed: {str(e)}',
                 ),
             )
-        return self._pending_requests[request._id]
+        return self._pending_requests[request.uuid]
 
     def _is_peer_request(self, endpoint: UUID | None) -> bool:
         """Check if this request should be forwarded to peer endpoint."""
@@ -354,7 +334,12 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            request = messages.EvictRequest(key=key)
+            request = EndpointRequest(
+                kind='request',
+                op='evict',
+                uuid=str(uuid4()),
+                key=key,
+            )
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
         else:
@@ -382,10 +367,14 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            request = messages.ExistsRequest(key=key)
+            request = EndpointRequest(
+                kind='request',
+                op='exists',
+                uuid=str(uuid4()),
+                key=key,
+            )
             request_future = await self._request_from_peer(endpoint, request)
             response = await request_future
-            assert isinstance(response, messages.ExistsResponse)
             assert isinstance(response.exists, bool)
             return response.exists
         else:
@@ -416,11 +405,18 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            request = messages.GetRequest(key=key)
+            request = EndpointRequest(
+                kind='request',
+                op='get',
+                uuid=str(uuid4()),
+                key=key,
+            )
             request_future = await self._request_from_peer(endpoint, request)
             response = await request_future
-            assert isinstance(response, messages.GetResponse)
-            return response.data
+            if isinstance(response.data, str):
+                return bytes.fromhex(response.data)
+            else:
+                return response.data
         else:
             if key in self._data:
                 return self._data[key]
@@ -451,7 +447,13 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            request = messages.SetRequest(key=key, data=data)
+            request = EndpointRequest(
+                kind='request',
+                op='set',
+                uuid=str(uuid4()),
+                key=key,
+                data=data.hex(),
+            )
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
         else:
