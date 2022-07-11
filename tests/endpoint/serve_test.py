@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import multiprocessing
@@ -17,7 +18,9 @@ import requests
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import create_app
+from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
+from proxystore.utils import chunk_bytes
 from testing.compat import randbytes
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
@@ -93,6 +96,46 @@ async def test_get_request(quart_app) -> None:
         query_string={'key': 'missing-key'},
     )
     assert get_response.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_chunked_data(quart_app) -> None:
+    client = quart_app.test_client()
+    # Data needs to be larger than MAX_CHUNK_LENGTH
+    data = randbytes((2 * MAX_CHUNK_LENGTH) + 1)
+
+    async with client.request(
+        '/set',
+        method='POST',
+        headers={'Content-Type': 'application/octet-stream'},
+        query_string={'key': 'my-key'},
+    ) as connection:
+        for chunk in chunk_bytes(data, MAX_CHUNK_LENGTH):
+            await connection.send(chunk)
+            # Small sleep to simulate transfer time of chunks
+            await asyncio.sleep(0.01)
+        await connection.send_complete()
+    set_response = await connection.as_response()
+    assert set_response.status_code == 200
+
+    get_response = await client.get('/get', query_string={'key': 'my-key'})
+    assert get_response.status_code == 200
+    assert (await get_response.get_data()) == data
+
+
+@pytest.mark.asyncio
+async def test_empty_chunked_data(quart_app) -> None:
+    client = quart_app.test_client()
+
+    async with client.request(
+        '/set',
+        method='POST',
+        headers={'Content-Type': 'application/octet-stream'},
+        query_string={'key': 'my-key'},
+    ) as connection:
+        await connection.send_complete()
+    set_response = await connection.as_response()
+    assert set_response.status_code == 400
 
 
 @pytest.mark.asyncio
@@ -311,7 +354,6 @@ def test_serve_logging(mock_run, tmp_dir) -> None:
         # Make directory if necessary
         log_file = os.path.join(tmp_dir, 'log.txt')
         serve('name', uuid.uuid4(), '0.0.0.0', 1234, None, 'INFO', log_file)
-        print(os.listdir(tmp_dir))
         assert os.path.isdir(tmp_dir)
         assert os.path.exists(log_file)
 

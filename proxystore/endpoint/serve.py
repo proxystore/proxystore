@@ -12,6 +12,7 @@ from quart import Response
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,12 @@ quart.logging.serving_handler = logging.NullHandler()  # type: ignore
 
 routes_blueprint = quart.Blueprint('routes', __name__)
 
+MAX_CHUNK_LENGTH = 16 * 1000 * 1000
+
 
 def create_app(
     endpoint: Endpoint,
-    max_content_length: int = 1000 * 1000 * 1000,
+    max_content_length: int | None = None,
     body_timeout: int = 300,
 ) -> quart.Quart:
     """Creates quart app for endpoint and registers routes.
@@ -32,7 +35,7 @@ def create_app(
     Args:
         endpoint (Endpoint): initialized endpoint to forward quart routes to.
         max_content_length (int): max request body size in bytes
-            (default: 1 GB).
+            (default: None).
         body_timeout (int): number of seconds to wait for the body to be
             completely received (default: 300)
 
@@ -216,7 +219,7 @@ async def _get() -> Response:
 
     if data is not None:
         return Response(
-            response=data,
+            response=chunk_bytes(data, MAX_CHUNK_LENGTH),
             content_type='application/octet-stream',
         )
     else:
@@ -240,12 +243,18 @@ async def _set() -> Response:
         except ValueError:
             return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
 
+    data = bytearray()
+    # Note: tests/endpoint/serve_test.py::test_empty_chunked_data handles
+    # the branching case for where the code in the for loop is not executed
+    # but coverage is not detecting that hence the pragma here
+    async for chunk in request.body:  # pragma: no branch
+        data += chunk
+
+    if len(data) == 0:
+        return Response('Received empty payload', 400)
+
     try:
-        await endpoint.set(
-            key=key,
-            data=await request.get_data(),
-            endpoint=endpoint_uuid,
-        )
+        await endpoint.set(key=key, data=bytes(data), endpoint=endpoint_uuid)
     except PeerRequestError as e:
         return Response(str(e), 400)
     else:
