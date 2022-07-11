@@ -135,11 +135,13 @@ def decode(message: str) -> Message:
         message (str): JSON string to decode.
 
     Returns:
-        Instance of a subtype of :any:`<Message>`.
+        Instance of a subtype of
+        :any:`Message <proxystore.p2p.messages.Message>`.
 
     Raises:
         MessageDecodeError:
-            if the message cannot be decoded into a :any:`<Message>`.
+            if the message cannot be decoded into a
+            :any:`Message <proxystore.p2p.messages.Message>`.
     """
     try:
         data = json.loads(message)

@@ -41,8 +41,8 @@ def spawn_guarded_background_task(
     may not have their exceptions raised such that programs hang with no
     notice of the exception that caused the hang.
 
-    Tasks can raise :class:`<.SafeTaskExit>` to signal the task is finished
-    but should not cause a system exit.
+    Tasks can raise :class:`SafeTaskExit <SafeTaskExit>` to signal the task
+    is finished but should not cause a system exit.
 
     Source: `<https://stackoverflow.com/questions/62588076>`_
 

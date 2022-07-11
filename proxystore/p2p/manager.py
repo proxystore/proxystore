@@ -330,7 +330,7 @@ class PeerManager:
             peer_uuid (str, UUID): uuid of peer to make connection with.
 
         Returns:
-            :any:`PeerConnection <PeerConnection>`
+            :any:`PeerConnection <proxystore.p2p.connection.PeerConnection>`
         """
         peers = frozenset({self._uuid, peer_uuid})
 
