@@ -7,6 +7,7 @@ from typing import NamedTuple
 import pytest
 import pytest_asyncio
 import websockets
+from websockets.server import WebSocketServer
 
 from proxystore.p2p.server import SignalingServer
 
@@ -19,7 +20,7 @@ class SignalingServerInfo(NamedTuple):
     """NamedTuple returned by signaling_server fixture."""
 
     signaling_server: SignalingServer
-    websocket_server: websockets.WebSocketServerProtocol
+    websocket_server: WebSocketServer
     host: str
     port: int
     address: str
@@ -34,7 +35,7 @@ async def signaling_server() -> AsyncGenerator[SignalingServerInfo, None]:
         `SignalingServerInfo <.SignalingServerInfo>`
     """
     signaling_server = SignalingServer()
-    async with websockets.serve(
+    async with websockets.server.serve(
         signaling_server.handler,
         _SERVER_HOST,
         _SERVER_PORT,

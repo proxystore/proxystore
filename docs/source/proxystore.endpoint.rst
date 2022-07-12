@@ -9,6 +9,7 @@ proxystore.endpoint
    proxystore.endpoint.exceptions
    proxystore.endpoint.messages
    proxystore.endpoint.serve
+   proxystore.endpoint.storage
 
 .. automodule:: proxystore.endpoint
    :members:

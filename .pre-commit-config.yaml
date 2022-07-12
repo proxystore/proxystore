@@ -54,5 +54,10 @@ repos:
     rev: v0.961
     hooks:
     -   id: mypy
-        additional_dependencies: ['types-redis', 'types-requests']
-        exclude: (tests/)
+        additional_dependencies: [
+            'globus-sdk',
+            'types-redis',
+            'types-requests',
+            'quart',
+            'websockets',
+        ]

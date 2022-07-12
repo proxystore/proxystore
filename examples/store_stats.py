@@ -1,5 +1,11 @@
-"""Store Operation Statistics Examples."""
+"""Store Operation Statistics Examples.
+
+Source code for:
+    https://proxystore.readthedocs.io/en/latest/guides/performance.html
+"""
 from __future__ import annotations
+
+from typing import Any
 
 import proxystore as ps
 
@@ -65,7 +71,7 @@ store = store.stats(key1)
 """,
 )
 
-target_proxy = store.proxy(target)
+target_proxy: ps.proxy.Proxy[Any] = store.proxy(target)
 stats = store.stats(target_proxy)
 print(
     f"""\

@@ -25,38 +25,38 @@ def test_simple_factory() -> None:
 
 def test_lambda_factory() -> None:
     """Test LambdaFactory."""
-    f = LambdaFactory(lambda: [1, 2, 3])
+    f1 = LambdaFactory(lambda: [1, 2, 3])
 
     # Test callable
-    assert f() == [1, 2, 3]
+    assert f1() == [1, 2, 3]
 
     # Test pickleable
-    f_pkl = ps.serialize.serialize(f)
-    f = ps.serialize.deserialize(f_pkl)
-    assert f() == [1, 2, 3]
+    f1_pkl = ps.serialize.serialize(f1)
+    f1 = ps.serialize.deserialize(f1_pkl)
+    assert f1() == [1, 2, 3]
 
     # Test async resolve
-    f.resolve_async()
-    assert f() == [1, 2, 3]
+    f1.resolve_async()
+    assert f1() == [1, 2, 3]
 
     # Test with function
     def myfunc() -> str:
         return 'abc'
 
-    f = LambdaFactory(myfunc)
-    f_pkl = ps.serialize.serialize(f)
-    f = ps.serialize.deserialize(f_pkl)
-    assert f() == 'abc'
+    f2 = LambdaFactory(myfunc)
+    f2_pkl = ps.serialize.serialize(f2)
+    f2 = ps.serialize.deserialize(f2_pkl)
+    assert f2() == 'abc'
 
     # Test args/kwargs
     def power(a, b):
         return a**b
 
-    f = LambdaFactory(power, 2, 3)
-    assert f() == 8
+    f3 = LambdaFactory(power, 2, 3)
+    assert f3() == 8
 
-    f = LambdaFactory(power, a=2, b=4)
-    assert f() == 16
+    f3 = LambdaFactory(power, a=2, b=4)
+    assert f3() == 16
 
-    f = LambdaFactory(power, 2, b=5)
-    assert f() == 32
+    f3 = LambdaFactory(power, 2, b=5)
+    assert f3() == 32

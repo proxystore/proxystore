@@ -5,6 +5,7 @@ import os
 import uuid
 from multiprocessing import Process
 from multiprocessing import Queue
+from typing import Any
 from typing import Generator
 from unittest import mock
 
@@ -14,6 +15,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.p2p.server import connect
 from proxystore.p2p.server import serve
+from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.endpoint import EndpointStore
 from testing.endpoint import launch_endpoint
@@ -33,7 +35,9 @@ async def wait_for_server(host: str, port: int) -> None:
 
 
 @pytest.fixture
-def endpoints(tmp_dir) -> Generator[tuple[list[str], list[str]], None, None]:
+def endpoints(
+    tmp_dir,
+) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     """Launch the signaling server and two endpoints."""
     ss_host = 'localhost'
     ss_port = open_port()
@@ -110,22 +114,22 @@ def test_endpoint_proxy_transfer(endpoints) -> None:
     """Test transferring data via proxy between processes sharing endpoint."""
     endpoints, proxystore_dirs = endpoints
 
-    def produce(queue: Queue) -> None:
+    def produce(queue: Queue[Any]) -> None:
         store = EndpointStore(
             'store',
             endpoints=endpoints,
             proxystore_dir=proxystore_dirs[0],
         )
         obj = [1, 2, 3]
-        proxy = store.proxy(obj)
+        proxy: Proxy[Any] = store.proxy(obj)
         queue.put(proxy)
 
-    def consume(queue: Queue) -> None:
+    def consume(queue: Queue[Any]) -> None:
         # access proxy to force resolve which will reconstruct store
         obj = queue.get()
         assert obj == [1, 2, 3]
 
-    queue = Queue()
+    queue: Queue[Any] = Queue()
 
     producer = Process(target=produce, args=(queue,))
     consumer = Process(target=consume, args=(queue,))
@@ -148,17 +152,17 @@ def test_proxy_detects_endpoint(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 
     # Mock default_dir to simulate different systems
-    def produce(queue: Queue) -> None:
+    def produce(queue: Queue[Any]) -> None:
         with mock.patch(
             'proxystore.store.endpoint.default_dir',
             return_value=proxystore_dirs[0],
         ):
             store = EndpointStore('store', endpoints=endpoints)
             # Send port to other process to compare
-            proxy = store.proxy(store.endpoint_port)
+            proxy: Proxy[Any] = store.proxy(store.endpoint_port)
             queue.put(proxy)
 
-    def consume(queue: Queue) -> None:
+    def consume(queue: Queue[Any]) -> None:
         with mock.patch(
             'proxystore.store.endpoint.default_dir',
             return_value=proxystore_dirs[1],
@@ -169,9 +173,10 @@ def test_proxy_detects_endpoint(endpoints) -> None:
 
             # Make sure consumer is using different port
             store = get_store('store')
+            assert isinstance(store, EndpointStore)
             assert store.endpoint_port != port
 
-    queue = Queue()
+    queue: Queue[Any] = Queue()
 
     producer = Process(target=produce, args=(queue,))
     consumer = Process(target=consume, args=(queue,))

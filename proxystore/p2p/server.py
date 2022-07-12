@@ -1,36 +1,33 @@
-"""Signaling server for P2P connections."""
+"""Signaling server implementation for WebRTC peer connections."""
 from __future__ import annotations
 
 import argparse
 import asyncio
-import logging
+import datetime
+import logging.handlers
+import os
 import signal
+import sys
 from dataclasses import dataclass
 from socket import gethostname
 from typing import Sequence
 from uuid import UUID
 from uuid import uuid4
 
-import websockets
-from websockets import WebSocketServerProtocol
+import websockets.client
+import websockets.exceptions
+from websockets.client import WebSocketClientProtocol
+from websockets.server import WebSocketServerProtocol
 
+from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerRegistrationError
-from proxystore.p2p.exceptions import PeerUnknownError
-from proxystore.p2p.messages import BaseMessage
-from proxystore.p2p.messages import PeerConnectionMessage
-from proxystore.p2p.messages import PeerRegistrationRequest
-from proxystore.p2p.messages import PeerRegistrationResponse
-from proxystore.p2p.messages import ServerError
-from proxystore.serialize import deserialize
-from proxystore.serialize import SerializationError
-from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class Client:
-    """Client connection."""
+    """Representation of client connection."""
 
     name: str
     uuid: UUID
@@ -41,7 +38,29 @@ class SignalingServer:
     """Signaling Server implementation.
 
     The Signaling Server acts as a public third-party that helps two peers
-    (endpoints) establish a peer-to-peer connection.
+    (endpoints) establish a peer-to-peer connection during the WebRTC
+    peer connection initiation process. The signaling server's responsibility
+    is just to forward session descriptions between two peers, so the
+    server can be relatively lightweight and typically only needs to transfer
+    two messages to establish a peer connection, after which the peers no
+    longer need the signaling server.
+
+    To learn more about the WebRTC peer connection process, check out
+    `<https://webrtc.org/getting-started/peer-connections>`_.
+
+    The signaling server is built on websockets and designed to be
+    served using :code:`websockets.serve`.
+
+    .. code-block:: python
+
+       import websockets
+       from proxystore.p2p.server import SignalingServer
+
+       signaling_server = SignalingServer()
+       async with websockets.serve(
+            signaling_server.handler, host='localhost', port=1234
+       ) as websocket_server:
+           ...
     """
 
     def __init__(self) -> None:
@@ -52,50 +71,52 @@ class SignalingServer:
     async def send(
         self,
         websocket: WebSocketServerProtocol,
-        message: BaseMessage,
+        message: messages.Message,
     ) -> None:
         """Send message on the socket.
 
         Args:
             websocket (WebSocketServerProtocol): websocket to send message on.
-            message (BaseMesssage): message to serialize and send.
+            message (Message): message to json encode and send.
         """
-        message_bytes = serialize(message)
-        await websocket.send(message_bytes)
+        try:
+            message_str = messages.encode(message)
+        except messages.MessageEncodeError as e:
+            logger.error(f'failed to encode message: {e}')
+            return
+
+        try:
+            await websocket.send(message_str)
+        except websockets.exceptions.ConnectionClosed:
+            logger.error('connection closed while attempting to send message')
 
     async def register(
         self,
         websocket: WebSocketServerProtocol,
-        request: PeerRegistrationRequest,
+        request: messages.ServerRegistration,
     ) -> None:
         """Register peer with Signaling Server.
 
         Args:
             websocket (WebSocketServerProtocol): websocket connection with
                 client wanting to register.
-            request (PeerRegistrationRequest): registration request message.
+            request (ServerRegistration): registration request message.
         """
-        if request.uuid is None:
-            # New client so generate uuid for them
-            uuid_ = uuid4()
-        else:
-            uuid_ = request.uuid
-
         if websocket not in self._websocket_to_client:
             # Check if previous client reconnected on new socket so unregister
             # old socket. Warning: could be a client impersontating another
-            if uuid_ in self._uuid_to_client:
+            if request.uuid in self._uuid_to_client:
                 logger.info(
-                    f'previously registered client {uuid_} attempting to '
-                    'reregister so old registration will be removed',
+                    f'previously registered client {request.uuid} attempting '
+                    'to reregister so old registration will be removed',
                 )
                 await self.unregister(
-                    self._uuid_to_client[uuid_].websocket,
+                    self._uuid_to_client[request.uuid].websocket,
                     False,
                 )
             client = Client(
                 name=request.name,
-                uuid=uuid_,
+                uuid=request.uuid,
                 websocket=websocket,
             )
             self._websocket_to_client[websocket] = client
@@ -111,10 +132,7 @@ class SignalingServer:
                 'reregister so previous registration will be returned',
             )
 
-        await self.send(
-            websocket,
-            PeerRegistrationResponse(uuid=client.uuid),
-        )
+        await self.send(websocket, messages.ServerResponse(success=True))
 
     async def unregister(
         self,
@@ -144,7 +162,7 @@ class SignalingServer:
     async def connect(
         self,
         websocket: WebSocketServerProtocol,
-        message: PeerConnectionMessage,
+        message: messages.PeerConnection,
     ) -> None:
         """Pass peer connection messages between clients.
 
@@ -159,25 +177,18 @@ class SignalingServer:
                 f'client {client.uuid} ({client.name}) attempting to send '
                 f'message to unknown peer {message.peer_uuid}',
             )
-            await self.send(
-                websocket,
-                PeerConnectionMessage(
-                    source_uuid=self._websocket_to_client[websocket].uuid,
-                    source_name=self._websocket_to_client[websocket].name,
-                    peer_uuid=message.peer_uuid,
-                    error=PeerUnknownError(
-                        f'peer {message.peer_uuid} is unknown',
-                    ),
-                ),
+            message.error = (
+                'Cannot forward peer connection message to peer '
+                f'{message.peer_uuid} because this peer is unknown.'
             )
-            return
-
-        peer_client = self._uuid_to_client[message.peer_uuid]
-        logger.info(
-            f'transmitting message from {client.uuid} ({client.name}) '
-            f'to {message.peer_uuid}',
-        )
-        await self.send(peer_client.websocket, message)
+            await self.send(websocket, message)
+        else:
+            peer_client = self._uuid_to_client[message.peer_uuid]
+            logger.info(
+                f'transmitting message from {client.uuid} ({client.name}) '
+                f'to {message.peer_uuid}',
+            )
+            await self.send(peer_client.websocket, message)
 
     async def handler(
         self,
@@ -194,23 +205,29 @@ class SignalingServer:
         logger.info('signaling server listening for incoming connections')
         while True:
             try:
-                message = deserialize(await websocket.recv())
+                message_str = await websocket.recv()
+                if isinstance(message_str, str):
+                    message = messages.decode(message_str)
+                else:
+                    raise AssertionError(
+                        'Received non-str type on websocket.',
+                    )
             except websockets.exceptions.ConnectionClosedOK:
                 await self.unregister(websocket, expected=True)
                 break
             except websockets.exceptions.ConnectionClosedError:
                 await self.unregister(websocket, expected=False)
                 break
-            except SerializationError:
+            except messages.MessageDecodeError as e:
                 logger.error(
                     'caught deserialization error on message received from '
-                    f'{websocket.remote_address}... skipping message',
+                    f'{websocket.remote_address}: {e} ...skipping message',
                 )
                 continue
 
-            if isinstance(message, PeerRegistrationRequest):
+            if isinstance(message, messages.ServerRegistration):
                 await self.register(websocket, message)
-            elif isinstance(message, PeerConnectionMessage):
+            elif isinstance(message, messages.PeerConnection):
                 if websocket in self._websocket_to_client:
                     await self.connect(websocket, message)
                 else:
@@ -221,28 +238,32 @@ class SignalingServer:
                         f'unregistered client {message.source_uuid} '
                         f'({message.source_name})',
                     )
-                    await self.send(
-                        websocket,
-                        ServerError('client has not registered yet'),
+                    response = messages.ServerResponse(
+                        success=False,
+                        message='client has not registered yet',
+                        error=True,
                     )
+                    await self.send(websocket, response)
             else:
                 logger.error(
                     'returning server error to client at '
                     f'{websocket.remote_address} that sent unknown request '
                     f'type {type(message).__name__}',
                 )
-                await self.send(
-                    websocket,
-                    ServerError('unknown request type'),
+                response = messages.ServerResponse(
+                    success=False,
+                    message='unknown request type',
+                    error=True,
                 )
+                await self.send(websocket, response)
 
 
 async def connect(
     address: str,
     uuid: UUID | None = None,
     name: str | None = None,
-    timeout: int = 10,
-) -> tuple[UUID, str, WebSocketServerProtocol]:
+    timeout: float = 10,
+) -> tuple[UUID, str, WebSocketClientProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
@@ -252,7 +273,7 @@ async def connect(
         name (str, optional): readable name of the client to use when
             registering with the signaling server. By default the
             hostname will be used (default: None).
-        timeout (int): time to wait in seconds on server connections
+        timeout (float): time to wait in seconds on server connections
             (default: 10).
 
     Returns:
@@ -268,44 +289,54 @@ async def connect(
     """
     if name is None:
         name = gethostname()
+    if uuid is None:
+        uuid = uuid4()
 
     websockets_version = int(websockets.__version__.split('.')[0])
-    kwargs = {}
-    if websockets_version >= 10:  # pragma: no cover
-        kwargs['open_timeout'] = timeout
 
-    websocket = await websockets.connect(
-        f'ws://{address}',
-        **kwargs,
-    )
+    if websockets_version >= 10:
+        websocket = await websockets.client.connect(
+            f'ws://{address}',
+            open_timeout=timeout,
+        )
+    else:  # pragma: no cover
+        websocket = await websockets.client.connect(f'ws://{address}')
+
     await websocket.send(
-        serialize(PeerRegistrationRequest(uuid=uuid, name=name)),
+        messages.encode(messages.ServerRegistration(uuid=uuid, name=name)),
     )
     try:
-        message = deserialize(
-            await asyncio.wait_for(websocket.recv(), timeout),
-        )
+        message_str = await asyncio.wait_for(websocket.recv(), timeout)
+        if isinstance(message_str, str):
+            message = messages.decode(message_str)
+        else:
+            raise AssertionError('Received non-bytes type on websocket.')
     except websockets.exceptions.ConnectionClosed:
         raise PeerRegistrationError(
             'Connection to signaling server closed before peer '
             'registration completed.',
+        )
+    except messages.MessageDecodeError:
+        raise PeerRegistrationError(
+            'Unable to decode response message from signaling server.',
         )
     except asyncio.TimeoutError:
         raise PeerRegistrationError(
             'Signaling server did not reply to registration within timeout.',
         )
 
-    if isinstance(message, PeerRegistrationResponse):
-        if message.error is not None:
+    if isinstance(message, messages.ServerResponse):
+        if message.success:
+            logger.info(
+                'established client connection to signaling server at '
+                f'{address} with uuid={uuid} and name={name}',
+            )
+            return uuid, name, websocket
+        else:
             raise PeerRegistrationError(
                 'Failed to register as peer with signaling server. '
-                f'Got exception: {message.error}',
+                f'Got exception: {message.message}',
             )
-        logger.info(
-            f'established client connection to signaling server at {address} '
-            f'with uuid={message.uuid} and name={name}',
-        )
-        return message.uuid, name, websocket
     else:
         raise PeerRegistrationError(
             'Signaling server replied with unknown message type: '
@@ -325,23 +356,41 @@ async def serve(host: str, port: int) -> None:
         port (int): port to listen on.
     """
     server = SignalingServer()
-    # Set the stop condition when receiving SIGTERM (ctrl-C).
+
+    # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
     loop = asyncio.get_running_loop()
     stop = loop.create_future()
+    loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
-    async with websockets.serve(server.handler, host, port):
+    # TODO: add logger=logger kwarg to serve() if websockets dependency
+    # is pinned to 10.0 or later
+    async with websockets.server.serve(server.handler, host, port):
         logger.info(f'serving signaling server on {host}:{port}')
+        logger.info('use ctrl-C to stop')
         await stop
+
+    logger.info('server closed')
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting the signaling server."""
-    parser = argparse.ArgumentParser('Websocket-based Signaling Server')
+    """CLI for starting the signaling server.
+
+    Usage:
+
+    .. code-block:: console
+
+       $ signaling-server {options}
+       $ signaling-server --help
+    """
+    parser = argparse.ArgumentParser(
+        'Websocket-based Signaling Server',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser.add_argument(
         '--host',
         default='0.0.0.0',
-        help='host to listen on (defaults to 0.0.0.0 for all addresses)',
+        help='host to listen on',
     )
     parser.add_argument(
         '--port',
@@ -350,14 +399,39 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='port to listen on',
     )
     parser.add_argument(
+        '--log-dir',
+        default=None,
+        help='write logs named server.log.{timestamp} to this dir',
+    )
+    parser.add_argument(
         '--log-level',
-        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
         default='INFO',
         help='logging level',
     )
     args = parser.parse_args(argv)
 
-    logging.basicConfig(level=args.log_level)
+    handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
+    if args.log_dir is not None:
+        os.makedirs(args.log_dir, exist_ok=True)
+        handlers.append(
+            logging.handlers.TimedRotatingFileHandler(
+                os.path.join(args.log_dir, 'server.log'),
+                # Rotate logs Sunday at midnight
+                when='W6',
+                atTime=datetime.time(hour=0, minute=0, second=0),
+            ),
+        )
+
+    logging.basicConfig(
+        format=(
+            '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+            '%(message)s'
+        ),
+        datefmt='%Y-%m-%d %H:%M:%S',
+        level=args.log_level,
+        handlers=handlers,
+    )
 
     asyncio.run(serve(args.host, args.port))
 

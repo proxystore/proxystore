@@ -13,7 +13,7 @@ from proxystore.store.stats import TimeStats
 class TestClass:
     """Test Class."""
 
-    def get_value(self, key: str, value: int = 0) -> None:
+    def get_value(self, key: str, value: int = 0) -> int:
         """Returns value."""
         return value
 
@@ -21,7 +21,7 @@ class TestClass:
         """Function where key in arg."""
         pass
 
-    def key_return(self, *, key: str) -> None:
+    def key_return(self, *, key: str) -> str:
         """Function where key is kwarg."""
         return key
 
@@ -128,13 +128,13 @@ def test_enforces_types() -> None:
     stats = FunctionEventStats()
 
     with raises(TypeError):
-        stats['key']
+        stats['key']  # type: ignore
 
     with raises(TypeError):
-        stats[Event(function='function', key='key')] = 'value'
+        stats[Event(function='function', key='key')] = 'value'  # type: ignore
 
     with raises(TypeError):
-        stats['key'] = TimeStats()
+        stats['key'] = TimeStats()  # type: ignore
 
     with raises(TypeError):
         stats.update([('key', 'value')])

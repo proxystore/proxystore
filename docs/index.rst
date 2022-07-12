@@ -6,16 +6,28 @@
 Welcome to ProxyStore's documentation!
 ======================================
 
-ProxyStore provides a streamlined interface for passing objects through remote object stores via proxies.
-Proxies act as transparent wrappers to objects and provide just-in-time resolution of the wrapped objects.
+ProxyStore provides a unique interface to object stores through transparent
+object proxies that is designed to simplify the use of object stores for
+transferring large objects in distributed applications.
+ProxyStore's goals are to:
+
+* **Improve productivity.** ProxyStore enables easy decoupling of
+  communication from the rest of the code, allowing developers to focus
+  on functionality and performance.
+* **Improve compatibility.** Consumers of data can be agnostic to the
+  communication method because object proxies handle the communication
+  behind the scenes.
+* **Improve performance.** Transport methods and object stores can be changed
+  at runtime to optimal choices for the given data without the consumers
+  being aware of the change.
 
 ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Contents
 
-   quickstart
+   getstarted
    advanced
    guides
    contributing

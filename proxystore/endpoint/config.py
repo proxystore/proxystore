@@ -21,6 +21,8 @@ class EndpointConfig:
     host: str
     port: int
     server: str | None = None
+    max_memory: int | None = None
+    dump_dir: str | None = None
 
     def __post_init__(self) -> None:
         """Validate config contains reasonable values.
@@ -47,6 +49,8 @@ class EndpointConfig:
             raise ValueError(
                 'EndpointConfig.server cannot be an empty string.',
             )
+        if self.max_memory is not None and self.max_memory < 1:
+            raise ValueError('Max memory must be None or positive.')
 
 
 def default_dir() -> str:

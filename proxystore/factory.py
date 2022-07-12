@@ -11,11 +11,15 @@ from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Callable
+from typing import Generic
+from typing import TypeVar
 
 _default_pool = ThreadPoolExecutor()
 
+T = TypeVar('T')
 
-class Factory:
+
+class Factory(Generic[T]):
     """Abstract Factory Class.
 
     A factory is a callable object that when called, returns an object.
@@ -40,11 +44,11 @@ class Factory:
         """Init Factory."""
         raise NotImplementedError
 
-    def __call__(self) -> Any:
+    def __call__(self) -> T:
         """Aliases :func:`resolve()`."""
         return self.resolve()
 
-    def resolve(self) -> Any:
+    def resolve(self) -> T:
         """Resolve and return object."""
         raise NotImplementedError
 
@@ -60,10 +64,10 @@ class Factory:
         pass
 
 
-class SimpleFactory(Factory):
+class SimpleFactory(Factory[T]):
     """Simple Factory that stores object as class attribute."""
 
-    def __init__(self, obj: Any) -> None:
+    def __init__(self, obj: T) -> None:
         """Init Factory.
 
         Args:
@@ -71,21 +75,21 @@ class SimpleFactory(Factory):
         """
         self._obj = obj
 
-    def __call__(self) -> Any:
+    def __call__(self) -> T:
         """Resolve object."""
         return self.resolve()
 
-    def resolve(self) -> Any:
+    def resolve(self) -> T:
         """Return object."""
         return self._obj
 
 
-class LambdaFactory(Factory):
+class LambdaFactory(Factory[T]):
     """Factory that takes any callable object."""
 
     def __init__(
         self,
-        target: Callable[[], Any],
+        target: Callable[..., T],
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -101,9 +105,9 @@ class LambdaFactory(Factory):
         self._target = target
         self._args = args
         self._kwargs = kwargs
-        self._obj_future: Future[Any] | None = None
+        self._obj_future: Future[T] | None = None
 
-    def resolve(self) -> Any:
+    def resolve(self) -> T:
         """Return target object."""
         if self._obj_future is not None:
             obj = self._obj_future.result()
