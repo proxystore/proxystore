@@ -29,6 +29,8 @@ def configure_endpoint(
     port: int,
     server: str | None,
     proxystore_dir: str | None = None,
+    max_memory: int | None = None,
+    dump_dir: str | None = None,
 ) -> int:
     """Configure a new endpoint.
 
@@ -40,6 +42,11 @@ def configure_endpoint(
             connections.
         proxystore_dir (str): optionally specify the directory where endpoint
             configurations are saved. Defaults to :code:`$HOME/.proxystore`.
+        max_memory (int): optional max memory in bytes to use for storing
+            objects. If exceeded, LRU objects will be dumped to `dump_dir`
+            (default: None).
+        dump_dir (str): optional directory to dump objects to if the
+            memory limit is exceeded (default: None).
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -52,6 +59,8 @@ def configure_endpoint(
             host=host,
             port=port,
             server=server,
+            max_memory=max_memory,
+            dump_dir=dump_dir,
         )
     except ValueError as e:
         logger.error(str(e))
@@ -189,6 +198,8 @@ def start_endpoint(
         server=cfg.server,
         log_level=log_level,
         log_file=os.path.join(endpoint_dir, 'endpoint.log'),
+        max_memory=cfg.max_memory,
+        dump_dir=cfg.dump_dir,
     )
 
     return 0

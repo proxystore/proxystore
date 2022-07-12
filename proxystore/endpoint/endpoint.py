@@ -15,6 +15,7 @@ from uuid import uuid4
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
+from proxystore.endpoint.storage import EndpointStorage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.messages import PeerMessage
@@ -90,6 +91,8 @@ class Endpoint:
         uuid: UUID,
         signaling_server: str | None = None,
         peer_timeout: int = 30,
+        max_memory: int | None = None,
+        dump_dir: str | None = None,
     ) -> None:
         """Init Endpoint.
 
@@ -115,6 +118,11 @@ class Endpoint:
                 endpoints (default: None).
             peer_timeout (int): timeout for establishing p2p connection with
                 another endpoint (default: 30).
+            max_memory (int): optional max memory in bytes to use for storing
+                objects. If exceeded, LRU objects will be dumped to `dump_dir`
+                (default: None).
+            dump_dir (str): optional directory to dump objects to if the
+                memory limit is exceeded (default: None).
         """
         # TODO(gpauloski): need to consider semantics of operations
         #   - can all ops be triggered on remote?
@@ -132,7 +140,7 @@ class Endpoint:
 
         self._peer_manager: PeerManager | None = None
 
-        self._data: dict[str, bytes] = {}
+        self._data = EndpointStorage(max_size=max_memory, dump_dir=dump_dir)
         self._pending_requests: dict[
             str,
             asyncio.Future[EndpointRequest],
@@ -465,4 +473,5 @@ class Endpoint:
             self._peer_handler_task.cancel()
         if self._peer_manager is not None:
             await self._peer_manager.close()
+        self._data.cleanup()
         logger.info(f'{self._log_prefix}: endpoint close')

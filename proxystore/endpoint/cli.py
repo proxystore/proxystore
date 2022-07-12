@@ -49,7 +49,10 @@ def main(argv: Sequence[str] | None = None) -> int:
        $ proxystore-endpoint --help
     """
     argv = argv if argv is not None else sys.argv[1:]
-    parser = argparse.ArgumentParser(prog='proxystore-endpoint')
+    parser = argparse.ArgumentParser(
+        prog='proxystore-endpoint',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     # https://stackoverflow.com/a/8521644/812183
     parser.add_argument(
@@ -64,6 +67,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser_configure = subparsers.add_parser(
         'configure',
         help='configure a new endpoint',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser_configure.add_argument('name', help='name of endpoint')
     parser_configure.add_argument(
@@ -85,16 +89,41 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=None,
         help='signaling server address for P2P connections',
     )
+    parser_configure.add_argument(
+        '--max-memory',
+        default=None,
+        type=int,
+        required='--dump-dir' in sys.argv,
+        help='optional maximum number of bytes to store in memory',
+    )
+    parser_configure.add_argument(
+        '--dump-dir',
+        default=None,
+        required='--max-memory' in sys.argv,
+        help='optional directory to dump objects to if max_memory reached',
+    )
 
     # Command: list
-    subparsers.add_parser('list', help='list all user endpoints')
+    subparsers.add_parser(
+        'list',
+        help='list all user endpoints',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     # Command: remove
-    parser_remove = subparsers.add_parser('remove', help='remove an endpoint')
+    parser_remove = subparsers.add_parser(
+        'remove',
+        help='remove an endpoint',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser_remove.add_argument('name', help='name of endpoint')
 
     # Command: start
-    parser_start = subparsers.add_parser('start', help='start an endpoint')
+    parser_start = subparsers.add_parser(
+        'start',
+        help='start an endpoint',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     parser_start.add_argument('name', help='name of endpoint')
     parser_start.add_argument(
         '--log-level',
@@ -138,6 +167,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             host=host,
             port=args.port,
             server=args.server,
+            max_memory=args.max_memory,
+            dump_dir=args.dump_dir,
         )
     elif args.command == 'list':
         return list_endpoints()

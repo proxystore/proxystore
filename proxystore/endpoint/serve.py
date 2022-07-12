@@ -73,6 +73,8 @@ def serve(
     server: str | None = None,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,
+    max_memory: int | None = None,
+    dump_dir: str | None = None,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -90,6 +92,11 @@ def serve(
             peering) (default: None).
         log_level (int): logging level of endpoint (default: INFO).
         log_file (str): optional file path to append log to.
+        max_memory (int): optional max memory in bytes to use for storing
+            objects. If exceeded, LRU objects will be dumped to `dump_dir`
+            (default: None).
+        dump_dir (str): optional directory to dump objects to if the
+            memory limit is exceeded (default: None).
     """
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
@@ -107,7 +114,13 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    endpoint = Endpoint(name=name, uuid=uuid, signaling_server=server)
+    endpoint = Endpoint(
+        name=name,
+        uuid=uuid,
+        signaling_server=server,
+        max_memory=max_memory,
+        dump_dir=dump_dir,
+    )
     app = create_app(endpoint)
 
     logger.info(
