@@ -70,6 +70,7 @@ def serve(
     uuid: uuid.UUID,
     host: str,
     port: int,
+    *,
     server: str | None = None,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,

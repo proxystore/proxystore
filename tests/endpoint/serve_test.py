@@ -350,12 +350,28 @@ def test_serve() -> None:
 def test_serve_logging(mock_run, tmp_dir) -> None:
     # Make directory if necessary
     log_file = os.path.join(tmp_dir, 'log.txt')
-    serve('name', uuid.uuid4(), '0.0.0.0', 1234, None, 'INFO', log_file)
+    serve(
+        'name',
+        uuid.uuid4(),
+        '0.0.0.0',
+        1234,
+        server=None,
+        log_level='INFO',
+        log_file=log_file,
+    )
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file)
 
     # Write log to existing log directory
     log_file2 = os.path.join(tmp_dir, 'log2.txt')
-    serve('name', uuid.uuid4(), '0.0.0.0', 1234, None, 'INFO', log_file2)
+    serve(
+        'name',
+        uuid.uuid4(),
+        '0.0.0.0',
+        1234,
+        server=None,
+        log_level='INFO',
+        log_file=log_file2,
+    )
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file2)
