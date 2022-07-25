@@ -16,10 +16,6 @@ from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
 
-# Override Quart standard handlers
-quart.logging.default_handler = logging.NullHandler()  # type: ignore
-quart.logging.serving_handler = logging.NullHandler()  # type: ignore
-
 routes_blueprint = quart.Blueprint('routes', __name__)
 
 MAX_CHUNK_LENGTH = 16 * 1000 * 1000
@@ -43,12 +39,6 @@ def create_app(
         Quart app.
     """
     app = quart.Quart(__name__)
-
-    # Propagate custom handlers to Quart App and Serving loggers
-    app_logger = quart.logging.create_logger(app)
-    serving_logger = quart.logging.create_serving_logger()
-    app_logger.handlers = logger.handlers
-    serving_logger.handlers = logger.handlers
 
     app.config['endpoint'] = endpoint
 
