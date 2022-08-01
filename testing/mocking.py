@@ -12,7 +12,7 @@ else:  # pragma: <3.8 cover
 
 
 def async_mock_once(
-    func: Callable[[Any], Any],
+    func: Callable[..., Any],
     return_value: Any,
 ) -> AsyncMock:
     """Mock async function once then call function normally."""

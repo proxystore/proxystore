@@ -43,13 +43,16 @@ if __name__ == '__main__':
     parser.add_argument(
         '--proxy',
         action='store_true',
-        help='Use proxy store to pass inputs',
+        help='Use proxies to pass inputs',
     )
     parser.add_argument(
         '--redis-port',
         type=int,
         default=None,
-        help='If not None, use Redis backend',
+        help=(
+            'Optional Redis server running on the localhost '
+            'to use with ProxyStore '
+        ),
     )
     args = parser.parse_args()
 

@@ -2,21 +2,30 @@
 from __future__ import annotations
 
 import sys
-from typing import Any
 from typing import Callable
+from typing import Generic
+from typing import TypeVar
+from typing import Union
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from typing import SupportsIndex
 else:  # pragma: <3.8 cover
     SupportsIndex = int
 
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
+    from typing import TypeAlias
+else:  # pragma: <3.10 cover
+    from typing_extensions import TypeAlias
+
 from lazy_object_proxy import slots
 
 import proxystore
-from proxystore.factory import Factory
+
+T = TypeVar('T')
+FactoryType: TypeAlias = Callable[[], T]
 
 
-def _proxy_trampoline(factory: Factory) -> Proxy:
+def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     """Trampoline for helping Proxy pickling.
 
     `slots.Proxy` defines a property for ``__modules__`` which confuses
@@ -24,7 +33,7 @@ def _proxy_trampoline(factory: Factory) -> Proxy:
     a top-level function so pickle can correctly find it in this module.
 
     Args:
-        factory (Factory): factory to pass to ``Proxy`` constructor.
+        factory (FactoryType): factory to pass to ``Proxy`` constructor.
 
     Returns:
         ``Proxy`` instance
@@ -32,7 +41,7 @@ def _proxy_trampoline(factory: Factory) -> Proxy:
     return Proxy(factory)
 
 
-class Proxy(slots.Proxy):
+class Proxy(slots.Proxy, Generic[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from
@@ -74,7 +83,7 @@ class Proxy(slots.Proxy):
         will be called again to resolve the object.
     """
 
-    def __init__(self, factory: Factory) -> None:
+    def __init__(self, factory: FactoryType[T]) -> None:
         """Init Proxy.
 
         Args:
@@ -83,14 +92,15 @@ class Proxy(slots.Proxy):
 
         Raises:
             TypeError:
-                if `factory` is not an instance of `Factory
-                <proxystore.factory.Factory>`.
+                if `factory` is not callable.
         """
-        if not isinstance(factory, Factory):
-            raise TypeError('factory must be of type ps.factory.Factory')
+        if not callable(factory):
+            raise TypeError('factory must be callable')
         super().__init__(factory)
 
-    def __reduce__(self) -> tuple[Callable[[Factory], Proxy], tuple[Factory]]:
+    def __reduce__(
+        self,
+    ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
         """Use trampoline function for pickling.
 
         Override `Proxy.__reduce__` so that we only pickle the Factory
@@ -103,12 +113,15 @@ class Proxy(slots.Proxy):
     def __reduce_ex__(
         self,
         protocol: SupportsIndex,
-    ) -> tuple[Callable[[Factory], Proxy], tuple[Factory]]:
+    ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
         """See `__reduce__`."""
         return self.__reduce__()
 
 
-def extract(proxy: proxystore.proxy.Proxy) -> Any:
+ProxyType: TypeAlias = Union[Proxy[T], T]
+
+
+def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
     """Return object wrapped by proxy.
 
     If the proxy has not been resolved yet, this will force
@@ -123,7 +136,7 @@ def extract(proxy: proxystore.proxy.Proxy) -> Any:
     return proxy.__wrapped__
 
 
-def get_key(proxy: proxystore.proxy.Proxy) -> str | None:
+def get_key(proxy: proxystore.proxy.Proxy[T]) -> str | None:
     """Return key associated object wrapped by proxy.
 
     Keys are stored in the `factory` passed to the
@@ -141,7 +154,7 @@ def get_key(proxy: proxystore.proxy.Proxy) -> str | None:
     return None
 
 
-def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:
+def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
     """Check if a proxy is resolved.
 
     Args:
@@ -154,7 +167,7 @@ def is_resolved(proxy: proxystore.proxy.Proxy) -> bool:
     return proxy.__resolved__
 
 
-def resolve(proxy: proxystore.proxy.Proxy) -> None:
+def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
     """Force a proxy to resolve itself.
 
     Args:
@@ -163,7 +176,7 @@ def resolve(proxy: proxystore.proxy.Proxy) -> None:
     proxy.__wrapped__
 
 
-def resolve_async(proxy: proxystore.proxy.Proxy) -> None:
+def resolve_async(proxy: proxystore.proxy.Proxy[T]) -> None:
     """Begin resolving proxy asynchronously.
 
     Useful if the user knows a proxy will be needed soon and wants to

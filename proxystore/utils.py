@@ -3,6 +3,25 @@ from __future__ import annotations
 
 import random
 from typing import Any
+from typing import Generator
+
+
+def chunk_bytes(
+    data: bytes,
+    chunk_size: int,
+) -> Generator[bytes, None, None]:
+    """Yield chunks of binary data.
+
+    Args:
+        data (bytes): data to be chunked.
+        chunk_size (int): chunk size in bytes.
+
+    Returns:
+        Generator that yields chunks of bytes.
+    """
+    length = len(data)
+    for index in range(0, length, chunk_size):
+        yield data[index : min(index + chunk_size, length)]
 
 
 def create_key(obj: Any) -> str:

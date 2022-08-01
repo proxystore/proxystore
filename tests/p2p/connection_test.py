@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+from typing import cast
 from uuid import uuid4
 
 import pytest
 
+from proxystore.p2p import messages
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
-from proxystore.p2p.messages import PeerConnectionMessage
 from proxystore.p2p.server import connect
-from proxystore.serialize import deserialize
 
 
 @pytest.mark.asyncio
@@ -21,9 +21,11 @@ async def test_p2p_connection(signaling_server) -> None:
     connection2 = PeerConnection(uuid2, name2, websocket2)
 
     await connection1.send_offer(uuid2)
-    offer = deserialize(await websocket2.recv())
+    offer = messages.decode(cast(str, await websocket2.recv()))
+    assert isinstance(offer, messages.PeerConnection)
     await connection2.handle_server_message(offer)
-    answer = deserialize(await websocket1.recv())
+    answer = messages.decode(cast(str, await websocket1.recv()))
+    assert isinstance(answer, messages.PeerConnection)
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
@@ -32,10 +34,10 @@ async def test_p2p_connection(signaling_server) -> None:
     assert connection1.state == 'connected'
     assert connection2.state == 'connected'
 
-    await connection1.send(b'hello')
-    assert await connection2.recv() == b'hello'
-    await connection2.send(b'hello hello')
-    assert await connection1.recv() == b'hello hello'
+    await connection1.send('hello')
+    assert await connection2.recv() == 'hello'
+    await connection2.send('hello hello')
+    assert await connection1.recv() == 'hello hello'
 
     await websocket1.close()
     await websocket2.close()
@@ -72,11 +74,13 @@ async def test_p2p_connection_error(signaling_server) -> None:
         pass
 
     await connection.handle_server_message(
-        PeerConnectionMessage(
+        messages.PeerConnection(
             source_uuid=uuid,
             source_name=name,
             peer_uuid=uuid4(),
-            error=MyException(),
+            description_type='offer',
+            description='',
+            error=str(MyException()),
         ),
     )
 

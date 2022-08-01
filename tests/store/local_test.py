@@ -6,7 +6,7 @@ from proxystore.store.local import LocalStore
 
 def test_store_dict() -> None:
     """Test LocalStore reusable dict."""
-    d = {}
+    d: dict[str, bytes] = {}
     store1 = LocalStore('local1', store_dict=d)
     key = store1.set(123)
 

@@ -115,6 +115,7 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'port': 0}, False),
         ({'port': 1000000}, False),
         ({'server': ''}, False),
+        ({'max_memory': -1}, False),
     ),
 )
 def test_validate_config(bad_cfg: Any, valid: bool) -> None:
@@ -128,7 +129,7 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     options.update(bad_cfg)
 
     if valid:
-        EndpointConfig(**options)
+        EndpointConfig(**options)  # type: ignore
     else:
         with pytest.raises(ValueError):
-            EndpointConfig(**options)
+            EndpointConfig(**options)  # type: ignore

@@ -11,7 +11,9 @@ import proxystore as ps
 from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
+from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.store.base import Store
+from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -213,7 +215,10 @@ class EndpointStore(Store):
             stream=True,
         )
         if response.status_code == 200:
-            return response.raw.data
+            data = bytearray()
+            for chunk in response.iter_content(chunk_size=None):
+                data += chunk
+            return bytes(data)
         elif response.status_code == 400:
             return None
         else:
@@ -267,7 +272,8 @@ class EndpointStore(Store):
                 if endpoint_uuid is not None
                 else None,
             },
-            data=data,
+            data=chunk_bytes(data, MAX_CHUNK_LENGTH),  # type: ignore
+            stream=True,
         )
         if response.status_code != 200:
             raise EndpointStoreError(f'SET returned {response}')
