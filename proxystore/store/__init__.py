@@ -13,6 +13,7 @@ from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
+from proxystore.store.margo import MargoStore as _MargoStore
 
 _stores: dict[str, _Store] = {}
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class STORES(Enum):
     GLOBUS = _GlobusStore
     LOCAL = _LocalStore
     REDIS = _RedisStore
+    MARGO = _MargoStore
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store]) -> str:
@@ -122,6 +124,7 @@ def init_store(
             if `store_type` is not a `str` or member of
             :class:`STORES <.STORES>`.
     """  # noqa: E501
+    print(kwargs)
     if isinstance(store_type, str):
         try:
             _stores[name] = STORES[store_type.upper()].value(name, **kwargs)
