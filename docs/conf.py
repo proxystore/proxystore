@@ -83,7 +83,7 @@ copyright = '2021, Greg Pauloski'
 author = 'Greg Pauloski'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.3'
+release = proxystore.__version__
 
 todo_include_todos = True
 
