@@ -28,7 +28,7 @@ def linkcode_resolve(domain: str, info: dict[str, Any]) -> str | None:
         filename = 'proxystore/store/__init__'
     else:
         filename = info['module'].replace('.', '/')
-    return f'https://github.com/gpauloski/ProxyStore/blob/main/{filename}.py'
+    return f'https://github.com/proxystore/ProxyStore/blob/main/{filename}.py'
 
 
 def process_signature(
