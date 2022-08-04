@@ -423,7 +423,7 @@ class Store(metaclass=ABCMeta):
 
     def proxy(
         self,
-        obj: Any | None = None,
+        obj: T | None = None,
         *,
         key: str | None = None,
         **kwargs: Any,
@@ -472,19 +472,18 @@ class Store(metaclass=ABCMeta):
             f"PROXY key='{final_key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
-        return Proxy(
-            StoreFactory(
-                final_key,
-                store_type=type(self),
-                store_name=self.name,
-                store_kwargs=self.kwargs,
-                **kwargs,
-            ),
+        factory: StoreFactory[T] = StoreFactory(
+            final_key,
+            store_type=type(self),
+            store_name=self.name,
+            store_kwargs=self.kwargs,
+            **kwargs,
         )
+        return Proxy(factory)
 
     def proxy_batch(
         self,
-        objs: Sequence[Any] | None = None,
+        objs: Sequence[T] | None = None,
         *,
         keys: Sequence[str] | None = None,
         **kwargs: Any,
