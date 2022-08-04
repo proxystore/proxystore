@@ -10,7 +10,7 @@ and ProxyStore installed in editable mode.
 
 .. code-block:: bash
 
-   $ git clone https://github.com/gpauloski/ProxyStore.git
+   $ git clone https://github.com/proxystore/proxystore
    $ cd ProxyStore
    $ tox --devenv venv -e py39
    $ . venv/bin/activate

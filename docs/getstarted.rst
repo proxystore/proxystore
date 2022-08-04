@@ -167,4 +167,4 @@ Examples
 
 Examples of integrating ProxyStore into distributed applications built on
 `FuncX <https://funcx.org/>`_ and `Parsl <https://parsl-project.org/>`_ are
-`here <https://github.com/gpauloski/ProxyStore/tree/main/examples>`_.
+`here <https://github.com/proxystore/proxystore/tree/main/examples>`_.
