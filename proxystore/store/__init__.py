@@ -49,10 +49,15 @@ class STORES(Enum):
     """Available Store implementations."""
 
     ENDPOINT = _EndpointStore
+    """Corresponds to :class:`~proxystore.store.endpoint.EndpointStore`."""
     FILE = _FileStore
+    """Corresponds to :class:`~proxystore.store.file.FileStore`."""
     GLOBUS = _GlobusStore
+    """Corresponds to :class:`~proxystore.store.globus.GlobusStore`."""
     LOCAL = _LocalStore
+    """Corresponds to :class:`~proxystore.store.local.LocalStore`."""
     REDIS = _RedisStore
+    """Corresponds to :class:`~proxystore.store.redis.RedisStore`."""
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store]) -> str:
