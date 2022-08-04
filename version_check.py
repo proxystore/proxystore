@@ -6,16 +6,20 @@ import re
 import sys
 from typing import Sequence
 
-OFFICIAL_RELEASE_RE = r'^\d+\.\d+.\d+$'
+PEP440_VERSION = (
+    r'\d+\.\d+\.\d+'
+    r'(((a|b|rc)[1-9][0-9]*)|(\.post[1-9][0-9]*)|(\.dev[1-9][0-9]*))?'
+)
+PEP440_VERION_NO_ADDITIONAL = r'^\d+\.\d+.\d+$'
 
 PACKAGE_INIT_FILE = 'proxystore/__init__.py'
-PACKAGE_INIT_RE = r'^__version__ = \'(\d+\.\d+\.\d+(-.*)?)\'$'
+PACKAGE_INIT_RE = fr'^__version__ = \'({PEP440_VERSION})\'$'
 
 PACKAGE_SETUP_FILE = 'setup.cfg'
-PACKAGE_SETUP_RE = r'^version = (\d+\.\d+\.\d+(-.*)?)$'
+PACKAGE_SETUP_RE = fr'^version = ({PEP440_VERSION})$'
 
 CHANGELOG_FILE = 'docs/changelog.rst'
-CHANGELOG_RE = r'^Version (\d+\.\d+\.\d+)$'
+CHANGELOG_RE = fr'^Version ({PEP440_VERSION})$'
 
 
 def match_version(
@@ -79,8 +83,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     if version.lower().startswith('v'):
         version = version[1:]
 
-    failed = False
+    if not re.match(PEP440_VERSION, version):
+        # This is slightly misleading as we also require major.minor.patch
+        # notation and that pre/post/dev-release segments start at 1
+        print(f'FAILED: version {version} does not match PEP440')
+        return 1
 
+    failed = False
     try:
         match_version(PACKAGE_INIT_FILE, PACKAGE_INIT_RE, version)
     except ValueError as e:
@@ -93,7 +102,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f'FAILED: {e}')
         failed |= True
 
-    if re.match(OFFICIAL_RELEASE_RE, version):
+    if re.match(PEP440_VERION_NO_ADDITIONAL, version):
         try:
             match_version(CHANGELOG_FILE, CHANGELOG_RE, version, False)
         except ValueError as e:

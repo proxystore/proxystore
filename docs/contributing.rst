@@ -104,25 +104,29 @@ We use the standard GitHub contribution cycle.
 Release Instructions
 --------------------
 
-1. Update the versions in :code:`proxystore/__init__.py` and :code:`setup.py`.
-   ProxyStore uses semver (*major.minor.patch*) for version numbering with
-   optional suffixes for pre-releases (e.g., *1.2.3-alpha.1*).
-2. If this is a full release, add a changelog entry to
+1. Choose the next version number, referred to as :code:`{VERSION}` for the
+   rest of the instructions. ProxyStore versioning follows semver
+   (*major.minor.patch*) with optional `PEP-440 <https://peps.python.org/pep-0440>`_
+   pre-release/post-release/dev-release segments. Major/minor/patch numbers
+   start at 0 and pre-release/post-release/dev-release segments start at 1.
+2. Update the versions in :code:`proxystore/__init__.py` and :code:`setup.py`
+   to :code:`{VERSION}`.
+3. If this is a full release, add a changelog entry to
    :code:`docs/changelog.rst`.
-3. Verify the versions match with
-   :code:`python version_check.py {new-version}`.
-4. Commit and merge the version updates/changelogs into main.
-5. Tag the release commit and push (typically this is the commit updating the
+4. Verify the versions match with
+   :code:`python version_check.py {VERSION}`.
+5. Commit and merge the version updates/changelogs into main.
+6. Tag the release commit and push (typically this is the commit updating the
    version numbers).
 
    .. code-block:: bash
 
-      $ git tag -a v{version} -m "ProxyStore {version}"
-      $ git push origin v{version}
+      $ git tag -a v{VERSION} -m "ProxyStore {VERSION}"
+      $ git push origin v{VERSION}
 
    Note the version number is prepended by "v" for the tags so we can
    distinguish release tags from non-release tags.
-6. Build the package and upload to PyPI.
+7. Build the package and upload to PyPI.
 
    .. code-block:: bash
 
@@ -130,6 +134,6 @@ Release Instructions
       $ python -m build
       $ python -m twine upload dist/*
 
-7. Create a new release on GitHub using the tag. The ReadTheDocs changelog
+8. Create a new release on GitHub using the tag. The ReadTheDocs changelog
    is typically copied into the body, and the files in :code:`dist/*` are
    uploaded as well. See previous releases for the template.
