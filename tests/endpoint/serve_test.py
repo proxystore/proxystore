@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import logging
 import multiprocessing
 import os
 import sys
@@ -22,6 +20,7 @@ from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
 from proxystore.utils import chunk_bytes
 from testing.compat import randbytes
+from testing.utils import open_port
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from unittest.mock import AsyncMock
@@ -321,16 +320,12 @@ def test_serve() -> None:
     name = 'my-endpoint'
     uuid_ = uuid.uuid4()
     host = 'localhost'
-    port = 5823
+    port = open_port()
 
-    def serve_without_stdout() -> None:
-        with contextlib.redirect_stdout(None), contextlib.redirect_stderr(
-            None,
-        ):
-            logging.disable(10000)
-            serve(name=name, uuid=uuid_, host=host, port=port)
+    def serve_() -> None:
+        serve(name=name, uuid=uuid_, host=host, port=port)
 
-    process = multiprocessing.Process(target=serve_without_stdout)
+    process = multiprocessing.Process(target=serve_)
     process.start()
 
     try:
@@ -346,32 +341,33 @@ def test_serve() -> None:
         process.terminate()
 
 
-@mock.patch('quart.Quart.run')
-def test_serve_logging(mock_run, tmp_dir) -> None:
+def test_serve_logging(tmp_dir) -> None:
+    def _serve(log_file: str) -> None:
+        # serve() calls asyncio.run() but the pytest environment does not have
+        # a usable event loop so we need to manually create on.
+        # https://stackoverflow.com/questions/66583461
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        with mock.patch('hypercorn.asyncio.serve', AsyncMock()):
+            serve(
+                'name',
+                uuid.uuid4(),
+                '0.0.0.0',
+                open_port(),
+                server=None,
+                log_level='INFO',
+                log_file=log_file,
+            )
+        loop.close()
+
     # Make directory if necessary
     log_file = os.path.join(tmp_dir, 'log.txt')
-    serve(
-        'name',
-        uuid.uuid4(),
-        '0.0.0.0',
-        1234,
-        server=None,
-        log_level='INFO',
-        log_file=log_file,
-    )
+    _serve(log_file)
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file)
 
     # Write log to existing log directory
     log_file2 = os.path.join(tmp_dir, 'log2.txt')
-    serve(
-        'name',
-        uuid.uuid4(),
-        '0.0.0.0',
-        1234,
-        server=None,
-        log_level='INFO',
-        log_file=log_file2,
-    )
+    _serve(log_file2)
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file2)

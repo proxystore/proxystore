@@ -56,6 +56,7 @@ repos:
     -   id: mypy
         additional_dependencies: [
             'globus-sdk',
+            'hypercorn',
             'types-redis',
             'types-requests',
             'quart',

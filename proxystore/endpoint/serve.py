@@ -1,12 +1,15 @@
 """CLI for serving an endpoint as a REST server."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import uuid
 
+import hypercorn
 import quart
+import uvloop
 from quart import request
 from quart import Response
 
@@ -114,10 +117,18 @@ def serve(
     )
     app = create_app(endpoint)
 
+    config = hypercorn.config.Config()
+    config.bind = [f'{host}:{port}']
+    config.accesslog = logging.getLogger('hypercorn.access')
+    config.errorlog = logging.getLogger('hypercorn.error')
+
+    logger.debug('installing uvloop as default event loop')
+    uvloop.install()
+
     logger.info(
         f'serving endpoint {endpoint.uuid} ({endpoint.name}) on {host}:{port}',
     )
-    app.run(host=host, port=port)
+    asyncio.run(hypercorn.asyncio.serve(app, config))
 
 
 @routes_blueprint.before_app_serving
