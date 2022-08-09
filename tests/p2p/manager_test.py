@@ -99,6 +99,9 @@ async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
 async def test_p2p_connection_error_from_server(
     signaling_server,
 ) -> None:  # pragma: >=3.8 cover
+    # Record current tasks so we know which not to clean up
+    task_names = {task.get_name() for task in asyncio.all_tasks()}
+
     async with PeerManager(
         uuid.uuid4(),
         signaling_server.address,
@@ -131,6 +134,15 @@ async def test_p2p_connection_error_from_server(
 
         with pytest.raises(PeerConnectionError, match='test error'):
             await connection1.ready()
+
+    # Clean up tasks that were left pending because we raised an exception
+    for task in asyncio.all_tasks():
+        if task.get_name() not in task_names:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 
 @pytest.mark.asyncio

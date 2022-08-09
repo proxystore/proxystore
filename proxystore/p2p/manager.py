@@ -285,8 +285,16 @@ class PeerManager:
         """Close the connection manager."""
         if self._server_task is not None:
             self._server_task.cancel()
+            try:
+                await self._server_task
+            except (asyncio.CancelledError, SafeTaskExit):
+                pass
         for task in self._tasks.values():
             task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, SafeTaskExit):
+                pass
         async with self._peers_lock:
             for connection in self._peers.values():
                 await connection.close()

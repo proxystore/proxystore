@@ -88,6 +88,7 @@ def endpoints(
     ss.terminate()
 
 
+@pytest.mark.integration
 def test_endpoint_transfer(endpoints) -> None:
     """Test transferring data between two endpoints."""
     endpoints, proxystore_dirs = endpoints
@@ -110,6 +111,7 @@ def test_endpoint_transfer(endpoints) -> None:
     assert not store1.exists(key)
 
 
+@pytest.mark.integration
 def test_endpoint_proxy_transfer(endpoints) -> None:
     """Test transferring data via proxy between processes sharing endpoint."""
     endpoints, proxystore_dirs = endpoints
@@ -147,6 +149,7 @@ def test_endpoint_proxy_transfer(endpoints) -> None:
         raise Exception('Caught exception in consume().')
 
 
+@pytest.mark.integration
 def test_proxy_detects_endpoint(endpoints) -> None:
     """Test transferring data via proxy between two process and endpoints."""
     endpoints, proxystore_dirs = endpoints

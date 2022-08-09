@@ -28,7 +28,7 @@ def test_logging_dir(tmp_dir) -> None:
 
 
 def test_logging_config(tmp_dir) -> None:
-    server_handle = subprocess.Popen(
+    with subprocess.Popen(
         [
             'signaling-server',
             '--port',
@@ -41,15 +41,14 @@ def test_logging_config(tmp_dir) -> None:
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
-    )
+    ) as server_handle:
+        # Wait for server to log that it is listening
+        assert server_handle.stdout is not None
+        for line in server_handle.stdout:  # pragma: no cover
+            if 'serving' in line:
+                break
 
-    # Wait for server to log that it is listening
-    assert server_handle.stdout is not None
-    for line in server_handle.stdout:  # pragma: no cover
-        if 'serving' in line:
-            break
-
-    server_handle.terminate()
+        server_handle.terminate()
 
     logs = [
         f
