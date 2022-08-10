@@ -8,6 +8,7 @@ from uuid import UUID
 import requests
 
 import proxystore as ps
+import proxystore.serialize
 from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs

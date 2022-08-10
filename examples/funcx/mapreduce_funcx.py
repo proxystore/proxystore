@@ -9,6 +9,7 @@ import numpy as np
 from funcx.sdk.client import FuncXClient
 
 import proxystore as ps
+import proxystore.store
 
 # Note: types on function are not provided because FuncX has trouble
 # serializing them sometimes

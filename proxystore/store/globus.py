@@ -25,6 +25,7 @@ import globus_sdk
 from parsl.data_provider import globus
 
 import proxystore as ps
+import proxystore.serialize
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)

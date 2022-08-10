@@ -15,6 +15,7 @@ from typing import NamedTuple
 from typing import TypeVar
 
 import proxystore as ps
+import proxystore.proxy
 
 GenericCallable = TypeVar('GenericCallable', bound=Callable[..., Any])
 
