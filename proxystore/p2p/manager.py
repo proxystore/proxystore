@@ -9,8 +9,16 @@ from typing import Any
 from typing import Generator
 from uuid import UUID
 
-import websockets
-from websockets.client import WebSocketClientProtocol
+try:
+    import websockets
+    from websockets.client import WebSocketClientProtocol
+except ImportError as e:  # pragma: no cover
+    import warnings
+
+    warnings.warn(
+        f'{e}. To enable endpoint serving, install proxystore with '
+        '"pip install proxystore[endpoints]".',
+    )
 
 from proxystore.p2p import messages
 from proxystore.p2p.connection import log_name

@@ -6,22 +6,29 @@ import logging
 import warnings
 from uuid import UUID
 
-from aiortc import RTCDataChannel
-from aiortc import RTCIceCandidate
-from aiortc import RTCPeerConnection
-from aiortc import RTCSessionDescription
-from aiortc.contrib.signaling import BYE
-from aiortc.contrib.signaling import object_from_string
-from aiortc.contrib.signaling import object_to_string
-from cryptography.utils import CryptographyDeprecationWarning
-from websockets.client import WebSocketClientProtocol
+try:
+    from aiortc import RTCDataChannel
+    from aiortc import RTCIceCandidate
+    from aiortc import RTCPeerConnection
+    from aiortc import RTCSessionDescription
+    from aiortc.contrib.signaling import BYE
+    from aiortc.contrib.signaling import object_from_string
+    from aiortc.contrib.signaling import object_to_string
+    from cryptography.utils import CryptographyDeprecationWarning
+    from websockets.client import WebSocketClientProtocol
+
+    warnings.simplefilter('ignore', CryptographyDeprecationWarning)
+except ImportError as e:  # pragma: no cover
+    warnings.warn(
+        f'{e}. To enable endpoint serving, install proxystore with '
+        '"pip install proxystore[endpoints]".',
+    )
 
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
 
 logger = logging.getLogger(__name__)
-warnings.simplefilter('ignore', CryptographyDeprecationWarning)
 
 
 class PeerConnection:
