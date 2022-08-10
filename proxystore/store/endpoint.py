@@ -11,7 +11,7 @@ import proxystore as ps
 from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
-from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
+from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.store.base import Store
 from proxystore.utils import chunk_bytes
 
