@@ -7,17 +7,11 @@ from typing import Any
 
 import pytest
 
-from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.config import write_config
-
-
-def test_default_dir() -> None:
-    assert isinstance(default_dir(), str)
-    assert os.path.isabs(default_dir())
 
 
 def test_write_read_config(tmp_dir) -> None:

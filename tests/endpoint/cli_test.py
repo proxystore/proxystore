@@ -15,9 +15,12 @@ from proxystore.endpoint.config import read_config
 
 
 @pytest.fixture()
-def default_dir(tmp_dir) -> Generator[str, None, None]:
+def home_dir(tmp_dir: str) -> Generator[str, None, None]:
     with mock.patch(
-        'proxystore.endpoint.commands.default_dir',
+        'proxystore.utils.home_dir',
+        return_value=tmp_dir,
+    ), mock.patch(
+        'proxystore.endpoint.commands.home_dir',
         return_value=tmp_dir,
     ):
         yield tmp_dir
@@ -44,7 +47,7 @@ def test_help_with_command(capsys) -> None:
     assert captured.out.startswith('usage: proxystore-endpoint list [-h]')
 
 
-def test_configure(default_dir) -> None:
+def test_configure(home_dir) -> None:
     name = 'my-endpoint'
     host = '127.0.0.1'
     port = 4321
@@ -62,7 +65,7 @@ def test_configure(default_dir) -> None:
         ],
     )
 
-    endpoint_dir = os.path.join(default_dir, name)
+    endpoint_dir = os.path.join(home_dir, name)
     assert os.path.isdir(endpoint_dir)
     cfg = read_config(endpoint_dir)
     assert cfg.name == name
@@ -71,8 +74,8 @@ def test_configure(default_dir) -> None:
     assert cfg.server == server
 
 
-def test_list(default_dir, caplog) -> None:
-    # Note: because default_dir is mocked, there's nothing to list so we
+def test_list(home_dir, caplog) -> None:
+    # Note: because home_dir is mocked, there's nothing to list so we
     # are really testing that the correct command in
     # proxystore.endpoint.commands is called and leaving the testing of that
     # command to tests/endpoint/commands_test.py.
@@ -82,7 +85,7 @@ def test_list(default_dir, caplog) -> None:
     assert 'No valid endpoint configurations' in caplog.records[0].message
 
 
-def test_remove(default_dir, caplog) -> None:
+def test_remove(home_dir, caplog) -> None:
     # Note: similar to test_list()
     caplog.set_level(logging.ERROR)
     main(['remove', 'my-endpoint'])
@@ -92,7 +95,7 @@ def test_remove(default_dir, caplog) -> None:
     )
 
 
-def test_serve(default_dir, caplog) -> None:
+def test_serve(home_dir, caplog) -> None:
     # Note: similar to test_list()
     caplog.set_level(logging.ERROR)
     main(['start', 'my-endpoint'])

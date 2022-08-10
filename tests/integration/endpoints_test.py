@@ -154,10 +154,10 @@ def test_proxy_detects_endpoint(endpoints) -> None:
     """Test transferring data via proxy between two process and endpoints."""
     endpoints, proxystore_dirs = endpoints
 
-    # Mock default_dir to simulate different systems
+    # Mock home_dir to simulate different systems
     def produce(queue: Queue[Any]) -> None:
         with mock.patch(
-            'proxystore.store.endpoint.default_dir',
+            'proxystore.store.endpoint.home_dir',
             return_value=proxystore_dirs[0],
         ):
             store = EndpointStore('store', endpoints=endpoints)
@@ -167,7 +167,7 @@ def test_proxy_detects_endpoint(endpoints) -> None:
 
     def consume(queue: Queue[Any]) -> None:
         with mock.patch(
-            'proxystore.store.endpoint.default_dir',
+            'proxystore.store.endpoint.home_dir',
             return_value=proxystore_dirs[1],
         ):
             port = queue.get()

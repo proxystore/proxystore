@@ -9,12 +9,12 @@ import requests
 
 import proxystore as ps
 import proxystore.serialize
-from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.store.base import Store
 from proxystore.utils import chunk_bytes
+from proxystore.utils import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class EndpointStore(Store):
             e if isinstance(e, UUID) else UUID(e, version=4) for e in endpoints
         ]
         self.proxystore_dir = (
-            default_dir() if proxystore_dir is None else proxystore_dir
+            home_dir() if proxystore_dir is None else proxystore_dir
         )
 
         # Find the first locally accessible endpoint to use as our

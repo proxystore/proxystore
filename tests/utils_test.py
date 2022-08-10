@@ -8,6 +8,7 @@ import pytest
 from proxystore import utils
 from proxystore.factory import SimpleFactory
 from proxystore.utils import chunk_bytes
+from proxystore.utils import home_dir
 
 
 @pytest.mark.parametrize(
@@ -35,3 +36,8 @@ def test_fullname() -> None:
         == 'proxystore.factory.SimpleFactory'
     )
     assert utils.fullname('string') == 'str'
+
+
+def test_home_dir() -> None:
+    assert isinstance(home_dir(), str)
+    assert os.path.isabs(home_dir())
