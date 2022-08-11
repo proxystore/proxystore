@@ -319,7 +319,7 @@ class Store(metaclass=ABCMeta):
         *,
         deserialize: bool = True,
         default: object | None = None,
-    ) -> object | None:
+    ) -> Any | None:
         """Return object associated with key.
 
         Args:
@@ -380,13 +380,7 @@ class Store(metaclass=ABCMeta):
         """
         return self._cache.exists(key)
 
-    def proxy(
-        self,
-        obj: T | None = None,
-        *,
-        key: str | None = None,
-        **kwargs: Any,
-    ) -> ps.proxy.Proxy[T]:
+    def proxy(self, obj: T, **kwargs: Any) -> ps.proxy.Proxy[T]:
         """Create a proxy that will resolve to an object in the store.
 
         Warning:
@@ -400,39 +394,21 @@ class Store(metaclass=ABCMeta):
 
         Args:
             obj (object): object to place in store and return proxy for.
-                If an object is not provided, a key must be provided that
-                corresponds to an object already in the store
-                (default: None).
-            key (str): optional key to associate with `obj` in the store.
-                If not provided, a key will be generated (default: None).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
-            :any:`Proxy <proxystore.proxy.Proxy>`
-
-        Raises:
-            ValueError:
-                if `key` and `obj` are both `None`.
+            :any:`Proxy[T] <proxystore.proxy.Proxy>`
         """
-        if obj is not None:
-            if 'serialize' in kwargs:
-                final_key = self.set(
-                    obj,
-                    key=key,
-                    serialize=kwargs['serialize'],
-                )
-            else:
-                final_key = self.set(obj, key=key)
-        elif key is not None:
-            final_key = key
+        if 'serialize' in kwargs:
+            key = self.set(obj, serialize=kwargs['serialize'])
         else:
-            raise ValueError('At least one of key or obj must be specified')
+            key = self.set(obj)
         logger.debug(
-            f"PROXY key='{final_key}' FROM {self.__class__.__name__}"
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
         factory: StoreFactory[T] = StoreFactory(
-            final_key,
+            key,
             store_type=type(self),
             store_name=self.name,
             store_kwargs=self.kwargs,
@@ -442,9 +418,7 @@ class Store(metaclass=ABCMeta):
 
     def proxy_batch(
         self,
-        objs: Sequence[T] | None = None,
-        *,
-        keys: Sequence[str] | None = None,
+        objs: Sequence[T],
         **kwargs: Any,
     ) -> list[ps.proxy.Proxy[T]]:
         """Create proxies for batch of objects in the store.
@@ -454,56 +428,56 @@ class Store(metaclass=ABCMeta):
 
         Args:
             objs (Sequence[object]): objects to place in store and return
-                proxies for. If an iterable of objects is not provided, an
-                iterable of keys must be provided that correspond to objects
-                already in the store (default: None).
-            keys (Sequence[str]): optional keys to associate with `objs` in the
-                store. If not provided, keys will be generated (default: None).
+                proxies for.
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
-            List of :any:`Proxy <proxystore.proxy.Proxy>`
-
-        Raises:
-            ValueError:
-                if `keys` and `objs` are both `None`.
-            ValueError:
-                if `objs` is None and `keys` does not exist in the store.
+            List of :any:`Proxy[T] <proxystore.proxy.Proxy>`
         """
-        if objs is not None:
-            if 'serialize' in kwargs:
-                final_keys = self.set_batch(
-                    objs,
-                    keys=keys,
-                    serialize=kwargs['serialize'],
-                )
-            else:
-                final_keys = self.set_batch(objs, keys=keys)
-        elif keys is not None:
-            final_keys = list(keys)
+        if 'serialize' in kwargs:
+            keys = self.set_batch(objs, serialize=kwargs['serialize'])
         else:
-            raise ValueError('At least one of keys or objs must be specified')
-        return [self.proxy(None, key=key, **kwargs) for key in final_keys]
+            keys = self.set_batch(objs)
+        return [self.proxy_from_key(key, **kwargs) for key in keys]
 
-    def set(
-        self,
-        obj: Any,
-        *,
-        key: str | None = None,
-        serialize: bool = True,
-    ) -> str:
+    def proxy_from_key(self, key: str, **kwargs: Any) -> ps.proxy.Proxy[T]:
+        """Create a proxy to an object already in the store.
+
+        Note:
+            This method will not verify that the key is valid so an error
+            will not be raised until the returned proxy is resolved.
+
+        Args:
+            key (str): key corresponding to an object already in the store
+                that will be the target object of the returned proxy.
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            :any:`Proxy[T] <proxystore.proxy.Proxy>`
+        """
+        logger.debug(
+            f"PROXY key='{key}' FROM {self.__class__.__name__}"
+            f"(name='{self.name}')",
+        )
+        factory: StoreFactory[T] = StoreFactory(
+            key,
+            store_type=type(self),
+            store_name=self.name,
+            store_kwargs=self.kwargs,
+            **kwargs,
+        )
+        return Proxy(factory)
+
+    def set(self, obj: Any, *, serialize: bool = True) -> str:
         """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
-            key (str, optional): key to use with the object. If the key is not
-                provided, one will be created.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
 
         Returns:
-            key (str). Note that some implementations of a store may return
-            a key different from the provided key.
+            key that can be used to retrieve the object.
 
         Raises:
             TypeError:
@@ -511,12 +485,12 @@ class Store(metaclass=ABCMeta):
         """
         if serialize:
             obj = ps.serialize.serialize(obj)
-        if not isinstance(obj, bytes):
+        elif not isinstance(obj, bytes):
             raise TypeError('obj must be of type bytes if serialize=False.')
-        if key is None:
-            key = self.create_key(obj)
 
+        key = self.create_key(obj)
         self.set_bytes(key, obj)
+
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -527,7 +501,6 @@ class Store(metaclass=ABCMeta):
         self,
         objs: Sequence[Any],
         *,
-        keys: Sequence[str | None] | None = None,
         serialize: bool = True,
     ) -> list[str]:
         """Set objects in store.
@@ -535,30 +508,13 @@ class Store(metaclass=ABCMeta):
         Args:
             objs (Sequence[object]): iterable of objects to be placed in the
                 store.
-            keys (Sequence[str], optional): keys to use with the objects.
-                If the keys are not provided, keys will be created.
             serialize (bool): serialize object if True. If object is already
                 custom serialized, set this as False (default: True).
 
         Returns:
-            List of keys (str). Note that some implementations of a store may
-            return keys different from the provided keys.
-
-        Raises:
-            ValueError:
-                if :code:`keys is not None` and :code:`len(objs) != len(keys)`.
+            List of keys that can be used to retrieve the objects.
         """
-        if keys is not None and len(objs) != len(keys):
-            raise ValueError(
-                f'objs has length {len(objs)} but keys has length {len(keys)}',
-            )
-        if keys is None:
-            keys = [None] * len(objs)
-
-        return [
-            self.set(obj, key=key, serialize=serialize)
-            for key, obj in zip(keys, objs)
-        ]
+        return [self.set(obj, serialize=serialize) for obj in objs]
 
     @abstractmethod
     def set_bytes(self, key: str, data: bytes) -> None:

@@ -542,31 +542,23 @@ class GlobusStore(Store):
             return f.read()
 
     def set_bytes(self, key: str, data: bytes) -> None:
-        if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
         path = self._get_filepath(key)
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)
 
-    def set(
-        self,
-        obj: Any,
-        *,
-        key: str | None = None,
-        serialize: bool = True,
-    ) -> str:
+    def set(self, obj: Any, *, serialize: bool = True) -> str:
         if serialize:
             obj = ps.serialize.serialize(obj)
-        if key is None:
-            filename = self.create_key(obj)
-        else:
-            filename = key
+        elif not isinstance(obj, bytes):
+            raise TypeError('obj must be of type bytes if serialize=False.')
 
+        filename = self.create_key(obj)
         self.set_bytes(filename, obj)
         tid = self._transfer_files(filename)
         key = self._create_key(filename=filename, task_id=tid)
+
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -577,38 +569,29 @@ class GlobusStore(Store):
         self,
         objs: Sequence[Any],
         *,
-        keys: Sequence[str | None] | None = None,
         serialize: bool = True,
     ) -> list[str]:
-        if keys is not None and len(objs) != len(keys):
-            raise ValueError(
-                f'objs has length {len(objs)} but keys has length {len(keys)}',
-            )
-        if keys is None:
-            keys = [None] * len(objs)
-
         filenames = []
-        for obj, key in zip(objs, keys):
+        for obj in objs:
             if serialize:
                 obj = ps.serialize.serialize(obj)
-            if key is None:
-                filename = self.create_key(obj)
-            else:
-                filename = key
-            filenames.append(filename)
+            elif not isinstance(obj, bytes):
+                TypeError('obj must be of type bytes if serialize=False.')
 
+            filename = self.create_key(obj)
+            filenames.append(filename)
             self.set_bytes(filename, obj)
 
         # Batch of objs written to disk so we can trigger Globus transfer
         tid = self._transfer_files(filenames)
 
-        final_keys = []
+        keys = []
         for filename in filenames:
             key = self._create_key(filename=filename, task_id=tid)
             logger.debug(
                 f"SET key='{key}' IN {self.__class__.__name__}"
                 f"(name='{self.name}')",
             )
-            final_keys.append(key)
+            keys.append(key)
 
-        return final_keys
+        return keys

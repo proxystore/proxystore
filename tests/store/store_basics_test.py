@@ -38,7 +38,7 @@ def test_store_base(store_fixture, request) -> None:
     """Test Store Base Functionality."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = store_config.type(
+    store: Store = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
@@ -50,12 +50,13 @@ def test_store_base(store_fixture, request) -> None:
     key_bytes = store.set(str.encode(value))
     key_str = store.set(value)
     key_callable = store.set(lambda: value)
-    key_numpy = store.set(np.array([1, 2, 3]), key='key_numpy')
+    key_numpy = store.set(np.array([1, 2, 3]))
 
     # Store.get()
     assert store.get(key_bytes) == str.encode(value)
     assert store.get(key_str) == value
-    assert store.get(key_callable).__call__() == value
+    c = store.get(key_callable)
+    assert c is not None and c.__call__() == value
     assert store.get(key_fake) is None
     assert store.get(key_fake, default='alt_value') == 'alt_value'
     assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
@@ -80,7 +81,7 @@ def test_store_caching(store_fixture, request) -> None:
     """Test Store Caching Functionality."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = store_config.type(
+    store: Store = store_config.type(
         store_config.name,
         **store_config.kwargs,
         cache_size=1,
@@ -88,9 +89,7 @@ def test_store_caching(store_fixture, request) -> None:
 
     # Add our test value
     value = 'test_value'
-    base_key = 'base_key'
-    assert not store.exists(base_key)
-    key1 = store.set(value, key=base_key)
+    key1 = store.set(value)
 
     # Test caching
     assert not store.is_cached(key1)
@@ -125,7 +124,7 @@ def test_store_custom_serialization(store_fixture, request) -> None:
     """Test Store Custom Serialization."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = store_config.type(
+    store: Store = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
@@ -136,35 +135,25 @@ def test_store_custom_serialization(store_fixture, request) -> None:
 
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the numpy array is not already serialized
-        store.set(np.array([1, 2, 3]), key=key, serialize=False)
+        store.set(np.array([1, 2, 3]), serialize=False)
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
 def test_store_batch_ops(store_fixture, request) -> None:
+    """Test Batch Operations."""
     store_config = request.getfixturevalue(store_fixture)
 
-    """Test Batch Operations."""
-    store = store_config.type(
+    store: Store = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
 
-    keys = ['key1', 'key2', 'key3']
     values = ['test_value1', 'test_value2', 'test_value3']
 
     # Test without keys
-    new_keys = store.set_batch(values)
-    for key in new_keys:
+    keys = store.set_batch(values)
+    for key in keys:
         assert store.exists(key)
-
-    # Test with keys
-    new_keys = store.set_batch(values, keys=keys)
-    for key in new_keys:
-        assert store.exists(key)
-
-    # Test length mismatch between values and keys
-    with pytest.raises(ValueError):
-        store.set_batch(values, keys=new_keys[:1])
 
     store.close()
 
@@ -174,7 +163,7 @@ def test_store_batch_ops_remote(store_fixture, request) -> None:
     """Test Batch Operations for Remote Stores."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = store_config.type(
+    store: Store = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )

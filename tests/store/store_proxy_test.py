@@ -108,16 +108,12 @@ def test_store_proxy(store_fixture, request) -> None:
     key = ps.proxy.get_key(p)
     assert key is not None and store.get(key) == [1, 2, 3]
 
-    p = store.proxy(key=key)
+    p = store.proxy_from_key(key)
     assert p == [1, 2, 3]
 
     p = store.proxy([2, 3, 4])
     key = ps.proxy.get_key(p)
     assert key is not None and store.get(key) == [2, 3, 4]
-
-    with pytest.raises(ValueError):
-        # At least one of key or object must be passed
-        store.proxy()
 
     with pytest.raises(Exception):
         # String will not be serialized and should raise error when putting
@@ -179,11 +175,7 @@ def test_proxy_batch(store_fixture, request) -> None:
         **store_config.kwargs,
     )
 
-    with pytest.raises(ValueError):
-        store.proxy_batch(None, keys=None)
-
     values1 = [b'test_value1', b'test_value2', b'test_value3']
-
     proxies1: list[Proxy[bytes]] = store.proxy_batch(values1, serialize=False)
     for p1, v1 in zip(proxies1, values1):
         assert p1 == v1
@@ -193,12 +185,6 @@ def test_proxy_batch(store_fixture, request) -> None:
     proxies2: list[Proxy[str]] = store.proxy_batch(values2)
     for p2, v2 in zip(proxies2, values2):
         assert p2 == v2
-
-    proxies3: list[Proxy[str]] = store.proxy_batch(
-        keys=[ps.proxy.get_key(p) for p in proxies2],  # type: ignore
-    )
-    for p3, v2 in zip(proxies3, values2):
-        assert p3 == v2
 
     store.close()
 
@@ -226,6 +212,6 @@ def test_raises_missing_key(store_fixture, request) -> None:
     with pytest.raises(ProxyResolveMissingKey):
         factory.resolve()
 
-    proxy: Proxy[Any] = store.proxy(key=key)
+    proxy: Proxy[Any] = store.proxy_from_key(key=key)
     with pytest.raises(ProxyResolveMissingKey):
         proxy()

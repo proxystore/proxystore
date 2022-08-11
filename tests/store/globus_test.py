@@ -237,6 +237,15 @@ def test_globus_store_internals(globus_store) -> None:
         store._wait_on_tasks('1234')
 
 
+def test_globus_store_set_batch_type_error(globus_store) -> None:
+    """Test GlobusStore internal mechanisms."""
+    store = GlobusStore('globus', **globus_store.kwargs)
+
+    objs = [1, 2, 3]
+    with pytest.raises(TypeError):
+        store.set_batch(objs, serialize=False)
+
+
 def test_get_filepath(globus_store) -> None:
     """Test GlobusStore filepath building."""
     endpoints = GlobusEndpoints(
