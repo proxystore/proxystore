@@ -7,8 +7,6 @@ from uuid import UUID
 
 import requests
 
-import proxystore as ps
-import proxystore.serialize
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
@@ -121,9 +119,9 @@ class EndpointStore(Store):
             },
         )
 
-    @staticmethod
-    def _create_key(object_key: str, endpoint_uuid: UUID) -> str:
-        return f'{object_key}:{str(endpoint_uuid)}'
+    def create_key(self, obj: Any) -> str:
+        key = super().create_key(obj)
+        return f'{key}:{str(self.endpoint_uuid)}'
 
     @staticmethod
     def _parse_key(key: str) -> tuple[str, UUID | None]:
@@ -224,33 +222,6 @@ class EndpointStore(Store):
             return None
         else:
             raise EndpointStoreError(f'GET returned {response}')
-
-    def get_timestamp(self, key: str) -> float:
-        if not self.exists(key):
-            raise KeyError(f'key={key} does not exists in the endpoint')
-        return 0.0
-
-    def set(
-        self,
-        obj: Any,
-        *,
-        key: str | None = None,
-        serialize: bool = True,
-    ) -> str:
-        if serialize:
-            obj = ps.serialize.serialize(obj)
-        if not isinstance(obj, bytes):
-            raise TypeError('obj must be of type bytes if serialize=False.')
-        if key is None:
-            key = self.create_key(obj)
-        key = self._create_key(key, self.endpoint_uuid)
-
-        self.set_bytes(key, obj)
-        logger.debug(
-            f"SET key='{key}' IN {self.__class__.__name__}"
-            f"(name='{self.name}')",
-        )
-        return key
 
     def set_bytes(self, key: str, data: bytes) -> None:
         """Set serialized object in remote store with key.

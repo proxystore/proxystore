@@ -212,10 +212,6 @@ def test_globus_store_internals(globus_store) -> None:
     """Test GlobusStore internal mechanisms."""
     store = GlobusStore('globus', **globus_store.kwargs)
 
-    with pytest.warns(Warning):
-        # Check that warning for not supporting strict is raised
-        store.get('key', strict=True)
-
     class PatchedError(globus_sdk.TransferAPIError):
         def __init__(self, status: int):
             self.http_status = status
@@ -239,6 +235,15 @@ def test_globus_store_internals(globus_store) -> None:
     store._transfer_client.task_wait = _fail_wait  # type: ignore
     with pytest.raises(RuntimeError):
         store._wait_on_tasks('1234')
+
+
+def test_globus_store_set_batch_type_error(globus_store) -> None:
+    """Test GlobusStore internal mechanisms."""
+    store = GlobusStore('globus', **globus_store.kwargs)
+
+    objs = [1, 2, 3]
+    with pytest.raises(TypeError):
+        store.set_batch(objs, serialize=False)
 
 
 def test_get_filepath(globus_store) -> None:

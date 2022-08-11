@@ -131,10 +131,6 @@ class MockStrictRedis:
 
     def set(self, key: str, value: str | bytes | int | float) -> None:
         """Set value in MockStrictRedis."""
-        if isinstance(value, (int, float)):
-            value = str(value)
-        if isinstance(value, str):
-            value = value.encode()
         self.data[key] = value
 
 

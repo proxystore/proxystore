@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import time
 
 import redis
 
@@ -58,13 +57,5 @@ class RedisStore(Store):
     def get_bytes(self, key: str) -> bytes | None:
         return self._redis_client.get(key)
 
-    def get_timestamp(self, key: str) -> float:
-        value = self._redis_client.get(key + '_timestamp')
-        if value is None:
-            raise KeyError(f"Key='{key}' does not exist in Redis store")
-        return float(value.decode())
-
     def set_bytes(self, key: str, data: bytes) -> None:
-        # We store the creation time for the key as a separate redis key-value.
-        self._redis_client.set(key + '_timestamp', time.time())
         self._redis_client.set(key, data)
