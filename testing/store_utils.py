@@ -105,14 +105,6 @@ class MockTransferClient:
         return True
 
 
-class MockGlobusAuth:
-    """Mock Parsl GlobusAuth."""
-
-    def __init__(self):
-        """Init MockGlobusAuth."""
-        self.authorizer = None
-
-
 class MockStrictRedis:
     """Mock StrictRedis."""
 
@@ -210,8 +202,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     )
 
     with mock.patch(
-        'parsl.data_provider.globus.get_globus',
-        return_value=MockGlobusAuth(),
+        'proxystore.store.globus.get_proxystore_authorizer',
     ), mock.patch(
         'globus_sdk.TransferClient',
         MockTransferClient,

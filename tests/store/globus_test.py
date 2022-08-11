@@ -5,11 +5,13 @@ import json
 import os
 import re
 import uuid
+from unittest import mock
 
 import globus_sdk
 import pytest
 
 import proxystore as ps
+from proxystore.globus import GlobusAuthFileError
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
@@ -293,3 +295,10 @@ def test_expand_user_path(globus_store) -> None:
         filename,
         ep2,
     )
+
+
+def test_globus_auth_not_done(tmp_dir: str) -> None:
+    """Test Globus auth missing during Store init."""
+    with mock.patch('proxystore.globus.home_dir', return_value=tmp_dir):
+        with pytest.raises(GlobusAuthFileError):
+            GlobusStore('store', endpoints=[EP1, EP2])
