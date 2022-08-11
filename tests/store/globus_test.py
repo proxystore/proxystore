@@ -212,10 +212,6 @@ def test_globus_store_internals(globus_store) -> None:
     """Test GlobusStore internal mechanisms."""
     store = GlobusStore('globus', **globus_store.kwargs)
 
-    with pytest.warns(Warning):
-        # Check that warning for not supporting strict is raised
-        store.get('key', strict=True)
-
     class PatchedError(globus_sdk.TransferAPIError):
         def __init__(self, status: int):
             self.http_status = status

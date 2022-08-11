@@ -225,11 +225,6 @@ class EndpointStore(Store):
         else:
             raise EndpointStoreError(f'GET returned {response}')
 
-    def get_timestamp(self, key: str) -> float:
-        if not self.exists(key):
-            raise KeyError(f'key={key} does not exists in the endpoint')
-        return 0.0
-
     def set(
         self,
         obj: Any,

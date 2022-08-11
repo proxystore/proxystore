@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import logging
-import time
 
 from proxystore.store.base import Store
 
@@ -62,9 +61,5 @@ class LocalStore(Store):
     def get_bytes(self, key: str) -> bytes | None:
         return self._store.get(key, None)
 
-    def get_timestamp(self, key: str) -> float:
-        return float(self._store[key + '_timestamp'].decode())
-
     def set_bytes(self, key: str, data: bytes) -> None:
-        self._store[key + '_timestamp'] = str(time.time()).encode()
         self._store[key] = data

@@ -121,64 +121,6 @@ def test_store_caching(store_fixture, request) -> None:
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_store_timestamps(store_fixture, request) -> None:
-    """Test Store Timestamps."""
-    store_config = request.getfixturevalue(store_fixture)
-
-    store = store_config.type(
-        store_config.name,
-        **store_config.kwargs,
-        cache_size=1,
-    )
-
-    missing_key = 'key12398908352'
-    with pytest.raises(KeyError):
-        store.get_timestamp(missing_key)
-
-    key = store.set('timestamp_test_value')
-    assert isinstance(store.get_timestamp(key), float)
-
-
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_store_strict(store_fixture, request) -> None:
-    """Test Store Strict Functionality."""
-    store_config = request.getfixturevalue(store_fixture)
-
-    if store_config.type.__name__ in ('GlobusStore', 'EndpointStore'):
-        # GlobusStore/EndpointStore do not support strict guarantees
-        return
-
-    store = store_config.type(
-        store_config.name,
-        **store_config.kwargs,
-        cache_size=1,
-    )
-
-    # Add our test value
-    value = 'test_value'
-    base_key = 'strict_key'
-    assert not store.exists(base_key)
-    key = store.set(value, key=base_key)
-
-    # Access key so value is cached locally
-    assert store.get(key) == value
-    assert store.is_cached(key)
-
-    # Change value in Store
-    key = store.set('new_value', key=base_key)
-    # Old value of key is still cached
-    assert store.get(key) == value
-    assert store.is_cached(key)
-    assert not store.is_cached(key, strict=True)
-
-    # Access with strict=True so now most recent version should be cached
-    assert store.get(key, strict=True) == 'new_value'
-    assert store.get(key) == 'new_value'
-    assert store.is_cached(key)
-    assert store.is_cached(key, strict=True)
-
-
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
 def test_store_custom_serialization(store_fixture, request) -> None:
     """Test Store Custom Serialization."""
     store_config = request.getfixturevalue(store_fixture)

@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-import time
 
 from proxystore.store.base import Store
 
@@ -80,13 +79,6 @@ class FileStore(Store):
                 return data
         return None
 
-    def get_timestamp(self, key: str) -> float:
-        if not self.exists(key):
-            raise KeyError(
-                f"Key='{key}' does not have a corresponding file in the store",
-            )
-        return os.path.getmtime(os.path.join(self.store_dir, key))
-
     def set_bytes(self, key: str, data: bytes) -> None:
         """Write serialized object to file system with key.
 
@@ -97,7 +89,3 @@ class FileStore(Store):
         path = os.path.join(self.store_dir, key)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)
-        # Manually set timestamp on file with nanosecond precision because some
-        # filesystems can have low default file modified precisions
-        timestamp = time.time_ns()
-        os.utime(path, ns=(timestamp, timestamp))

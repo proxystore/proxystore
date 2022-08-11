@@ -48,7 +48,6 @@ class StoreFactory(Factory[T]):
         *,
         evict: bool = False,
         serialize: bool = True,
-        strict: bool = False,
     ) -> None:
         """Init StoreFactory.
 
@@ -63,9 +62,6 @@ class StoreFactory(Factory[T]):
                 :func:`resolve()` is called (default: False).
             serialize (bool): if True, object in store is serialized and
                 should be deserialized upon retrieval (default: True).
-            strict (bool): guarantee object produce when this object is called
-                is the most recent version of the object associated with the
-                key in the store (default: False).
         """
         self.key = key
         self.store_type = store_type
@@ -73,7 +69,6 @@ class StoreFactory(Factory[T]):
         self.store_kwargs = {} if store_kwargs is None else store_kwargs
         self.evict = evict
         self.serialize = serialize
-        self.strict = strict
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
@@ -105,17 +100,12 @@ class StoreFactory(Factory[T]):
         ), {
             'evict': self.evict,
             'serialize': self.serialize,
-            'strict': self.strict,
         }
 
     def _get_value(self) -> T:
         """Get the value associated with the key from the store."""
         store = self.get_store()
-        obj = store.get(
-            self.key,
-            deserialize=self.serialize,
-            strict=self.strict,
-        )
+        obj = store.get(self.key, deserialize=self.serialize)
 
         if obj is None:
             raise ProxyResolveMissingKey(
@@ -131,10 +121,7 @@ class StoreFactory(Factory[T]):
 
     def _should_resolve_async(self) -> bool:
         """Check if it makes sense to do asynchronous resolution."""
-        return not self.get_store().is_cached(
-            self.key,
-            strict=self.strict,
-        )
+        return not self.get_store().is_cached(self.key)
 
     def get_store(self) -> Store:
         """Get store and reinitialize if necessary.
@@ -331,7 +318,6 @@ class Store(metaclass=ABCMeta):
         key: str,
         *,
         deserialize: bool = True,
-        strict: bool = False,
         default: object | None = None,
     ) -> object | None:
         """Return object associated with key.
@@ -340,16 +326,14 @@ class Store(metaclass=ABCMeta):
             key (str): key corresponding to object.
             deserialize (bool): deserialize object if True. If objects
                 are custom serialized, set this as False (default: True).
-            strict (bool): guarantee returned object is the most recent
-                version (default: False).
             default: optionally provide value to be returned if an object
                 associated with the key does not exist (default: None).
 
         Returns:
             object associated with key or `default` if key does not exist.
         """
-        if self.is_cached(key, strict=strict):
-            value = self._cache.get(key)['value']
+        if self.is_cached(key):
+            value = self._cache.get(key)
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=True",
@@ -358,10 +342,9 @@ class Store(metaclass=ABCMeta):
 
         value = self.get_bytes(key)
         if value is not None:
-            timestamp = self.get_timestamp(key)
             if deserialize:
                 value = ps.serialize.deserialize(value)
-            self._cache.set(key, {'timestamp': timestamp, 'value': value})
+            self._cache.set(key, value)
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
                 f"(name='{self.name}'): was_cached=False",
@@ -386,41 +369,16 @@ class Store(metaclass=ABCMeta):
         """
         raise NotImplementedError
 
-    def get_timestamp(self, key: str) -> float:
-        """Get timestamp of most recent object version in the store.
-
-        Args:
-            key (str): key corresponding to object.
-
-        Returns:
-            timestamp (float) representing file modified time (seconds since
-            epoch).
-
-        Raises:
-            KeyError:
-                if `key` does not exist in store.
-        """
-        raise NotImplementedError
-
-    def is_cached(self, key: str, *, strict: bool = False) -> bool:
+    def is_cached(self, key: str) -> bool:
         """Check if object is cached locally.
 
         Args:
             key (str): key corresponding to object.
-            strict (bool): guarantee object in cache is most recent version
-                (default: False).
 
         Returns:
             if the object associated with the key is cached.
         """
-        if self._cache.exists(key):
-            if strict:
-                store_timestamp = self.get_timestamp(key)
-                cache_timestamp = self._cache.get(key)['timestamp']
-                return cache_timestamp >= store_timestamp
-            return True
-
-        return False
+        return self._cache.exists(key)
 
     def proxy(
         self,
