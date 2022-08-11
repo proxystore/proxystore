@@ -13,6 +13,7 @@ from typing import Sequence
 from typing import TypeVar
 
 import proxystore as ps
+import proxystore.serialize
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.store.cache import LRUCache

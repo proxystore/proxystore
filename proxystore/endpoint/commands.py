@@ -12,12 +12,12 @@ import os
 import shutil
 import uuid
 
-from proxystore.endpoint.config import default_dir
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.endpoint.serve import serve
+from proxystore.utils import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def configure_endpoint(
         return 1
 
     if proxystore_dir is None:
-        proxystore_dir = default_dir()
+        proxystore_dir = home_dir()
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if os.path.exists(endpoint_dir):
@@ -100,7 +100,7 @@ def list_endpoints(
         are logged to the default logger.
     """
     if proxystore_dir is None:
-        proxystore_dir = default_dir()
+        proxystore_dir = home_dir()
 
     endpoints = get_configs(proxystore_dir)
 
@@ -134,7 +134,7 @@ def remove_endpoint(
         are logged to the default logger.
     """
     if proxystore_dir is None:
-        proxystore_dir = default_dir()
+        proxystore_dir = home_dir()
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     if not os.path.exists(endpoint_dir):
@@ -167,7 +167,7 @@ def start_endpoint(
         are logged to the default logger.
     """
     if proxystore_dir is None:
-        proxystore_dir = default_dir()
+        proxystore_dir = home_dir()
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     if not os.path.exists(endpoint_dir):

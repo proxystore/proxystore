@@ -22,9 +22,11 @@ else:  # pragma: <3.9 cover
     from typing_extensions import Literal
 
 import globus_sdk
-from parsl.data_provider import globus
 
 import proxystore as ps
+import proxystore.serialize
+from proxystore.globus import get_proxystore_authorizer
+from proxystore.globus import GlobusAuthFileError
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
@@ -251,11 +253,9 @@ class GlobusStore(Store):
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
-        performed. The user will be prompted to authenticate when the
-        :class:`GlobusStore <.GlobusStore>` is initialized. Alternatively,
-        authentication can be performed on the command line with
-        :code:`$ parsl_globus_auth`. Note authentication only needs to be
-        performed once.
+        performed otherwise an error will be raised. Authentication can be
+        performed on the command line with :code:`$ proxystore-globus-auth`.
+        Authentication only needs to be performed once per system.
 
     Warning:
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
@@ -300,6 +300,8 @@ class GlobusStore(Store):
             stats (bool): collect stats on store operations (default: False).
 
         Raise:
+            GlobusAuthFileError:
+                if the Globus authentication file cannot be found.
             ValueError:
                 if `endpoints` is not a list of
                 :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
@@ -328,10 +330,16 @@ class GlobusStore(Store):
         self.sync_level = sync_level
         self.timeout = timeout
 
-        parsl_globus_auth = globus.get_globus()
+        try:
+            authorizer = get_proxystore_authorizer()
+        except GlobusAuthFileError:
+            raise GlobusAuthFileError(
+                'Error loading Globus auth tokens. Complete the '
+                'authentication process with the proxystore-globus-auth tool.',
+            )
 
         self._transfer_client = globus_sdk.TransferClient(
-            authorizer=parsl_globus_auth.authorizer,
+            authorizer=authorizer,
         )
 
         super().__init__(

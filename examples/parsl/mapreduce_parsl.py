@@ -8,6 +8,7 @@ import parsl
 from parsl import python_app
 
 import proxystore as ps
+import proxystore.store
 
 
 @python_app
