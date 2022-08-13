@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from typing import NamedTuple
 from uuid import UUID
 
 import requests
@@ -12,6 +13,7 @@ from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.store.base import Store
 from proxystore.utils import chunk_bytes
+from proxystore.utils import create_key
 from proxystore.utils import home_dir
 
 logger = logging.getLogger(__name__)
@@ -23,7 +25,14 @@ class EndpointStoreError(Exception):
     pass
 
 
-class EndpointStore(Store):
+class EndpointStoreKey(NamedTuple):
+    """Key to object in an Endpoint."""
+
+    object_id: str
+    endpoint_id: str | None
+
+
+class EndpointStore(Store[EndpointStoreKey]):
     """EndpointStore backend class."""
 
     def __init__(
@@ -119,40 +128,26 @@ class EndpointStore(Store):
             },
         )
 
-    def create_key(self, obj: Any) -> str:
-        key = super().create_key(obj)
-        return f'{key}:{str(self.endpoint_uuid)}'
+    def create_key(self, obj: Any) -> EndpointStoreKey:
+        return EndpointStoreKey(
+            object_id=create_key(obj),
+            endpoint_id=str(self.endpoint_uuid),
+        )
 
-    @staticmethod
-    def _parse_key(key: str) -> tuple[str, UUID | None]:
-        # TODO: validate format?
-        values = key.split(':')
-        if len(values) == 1:
-            return values[0], None
-        elif len(values) == 2:
-            return (values[0], UUID(values[1], version=4))
-        else:
-            raise ValueError(f'Failed to parse key {key}.')
-
-    def evict(self, key: str) -> None:
+    def evict(self, key: EndpointStoreKey) -> None:
         """Evict object associated with key.
 
         Args:
-            key (str): key corresponding to object in store to evict.
+            key (EndpointStoreKey): key corresponding to object in store to
+                evict.
 
         Raises:
             EndpointStoreError:
                 if the Endpoint returns a non-200 status code.
         """
-        object_key, endpoint_uuid = self._parse_key(key)
         response = requests.post(
             f'{self.address}/evict',
-            params={
-                'key': object_key,
-                'endpoint': str(endpoint_uuid)
-                if endpoint_uuid is not None
-                else None,
-            },
+            params={'key': key.object_id, 'endpoint': key.endpoint_id},
         )
         if response.status_code != 200:
             raise EndpointStoreError(f'EVICT returned {response}')
@@ -163,36 +158,30 @@ class EndpointStore(Store):
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
+    def exists(self, key: EndpointStoreKey) -> bool:
         """Check if key exists.
 
         Args:
-            key (str): key to check.
+            key (EndpointStoreKey): key to check.
 
         Raises:
             EndpointStoreError:
                 if the Endpoint returns a non-200 status code.
         """
-        object_key, endpoint_uuid = self._parse_key(key)
         response = requests.get(
             f'{self.address}/exists',
-            params={
-                'key': object_key,
-                'endpoint': str(endpoint_uuid)
-                if endpoint_uuid is not None
-                else None,
-            },
+            params={'key': key.object_id, 'endpoint': key.endpoint_id},
         )
         if response.status_code == 200:
             return response.json()['exists']
         else:
             raise EndpointStoreError(f'EXISTS returned {response}')
 
-    def get_bytes(self, key: str) -> bytes | None:
+    def get_bytes(self, key: EndpointStoreKey) -> bytes | None:
         """Get serialized object from remote store.
 
         Args:
-            key (str): key corresponding to object.
+            key (EndpointStoreError): key corresponding to object.
 
         Returns:
             serialized object or `None` if it does not exist on the endpoint.
@@ -202,15 +191,9 @@ class EndpointStore(Store):
                 if the Endpoint returns a status code other than 200 (success)
                 or 400 (missing key).
         """
-        object_key, endpoint_uuid = self._parse_key(key)
         response = requests.get(
             f'{self.address}/get',
-            params={
-                'key': object_key,
-                'endpoint': str(endpoint_uuid)
-                if endpoint_uuid is not None
-                else None,
-            },
+            params={'key': key.object_id, 'endpoint': key.endpoint_id},
             stream=True,
         )
         if response.status_code == 200:
@@ -223,27 +206,21 @@ class EndpointStore(Store):
         else:
             raise EndpointStoreError(f'GET returned {response}')
 
-    def set_bytes(self, key: str, data: bytes) -> None:
+    def set_bytes(self, key: EndpointStoreKey, data: bytes) -> None:
         """Set serialized object in remote store with key.
 
         Args:
-            key (str): key corresponding to object.
+            key (EndpointStoreKey): key corresponding to object.
             data (bytes): serialized object.
 
         Raises:
             EndpointStoreError:
                 if the endpoint does not return a 200 status code for success.
         """
-        object_key, endpoint_uuid = self._parse_key(key)
         response = requests.post(
             f'{self.address}/set',
             headers={'Content-Type': 'application/octet-stream'},
-            params={
-                'key': object_key,
-                'endpoint': str(endpoint_uuid)
-                if endpoint_uuid is not None
-                else None,
-            },
+            params={'key': key.object_id, 'endpoint': key.endpoint_id},
             data=chunk_bytes(data, MAX_CHUNK_LENGTH),  # type: ignore
             stream=True,
         )

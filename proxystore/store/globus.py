@@ -11,6 +11,7 @@ from typing import Any
 from typing import Collection
 from typing import Generator
 from typing import Iterator
+from typing import NamedTuple
 from typing import Pattern
 from typing import Sequence
 
@@ -23,6 +24,7 @@ import globus_sdk
 
 import proxystore as ps
 import proxystore.serialize
+import proxystore.utils as utils
 from proxystore.globus import get_proxystore_authorizer
 from proxystore.globus import GlobusAuthFileError
 from proxystore.store.base import Store
@@ -236,7 +238,14 @@ class GlobusEndpoints:
         raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
-class GlobusStore(Store):
+class GlobusStoreKey(NamedTuple):
+    """Key to object in a GlobusStore."""
+
+    filename: str
+    task_id: str
+
+
+class GlobusStore(Store[GlobusStoreKey]):
     """Globus backend class.
 
     The :class:`GlobusStore <.GlobusStore>` is similar to a
@@ -347,22 +356,10 @@ class GlobusStore(Store):
             },
         )
 
-    def _create_key(self, filename: str, task_id: str) -> str:
-        """Create key for GlobusStore.
-
-        Args:
-            filename (str): name of file in Globus.
-            task_id (str): Globus task id that should be waited on before
-                accessing `filename`.
-
-        Returns:
-            key that encodes the `filename` and `task_id`.
-        """
-        return f'{task_id}:{filename}'
-
-    def _get_filename(self, key: str) -> str:
-        """Extract filename from key."""
-        return key.split(':')[1]
+    def create_key(self, obj: Any) -> GlobusStoreKey:
+        # We do not know task ID at the time we need a filename so we leave
+        # task_id empty and update it later.
+        return GlobusStoreKey(filename=utils.create_key(obj), task_id='')
 
     def _get_filepath(
         self,
@@ -389,16 +386,10 @@ class GlobusStore(Store):
         """Get endpoint local to current host."""
         return self.endpoints.get_by_host(socket.gethostname())
 
-    def _get_task_id(self, key: str) -> str:
-        """Extract task id from key."""
-        return key.split(':')[0]
-
-    def _validate_key(self, key: str) -> bool:
+    def _validate_task_id(self, task_id: str) -> bool:
         """Validate key contains a real Globus task id."""
-        if len(key.split(':')) != 2:
-            return False
         try:
-            self._transfer_client.get_task(self._get_task_id(key))
+            self._transfer_client.get_task(task_id)
         except globus_sdk.TransferAPIError as e:
             if e.http_status == 400:
                 return False
@@ -513,51 +504,50 @@ class GlobusStore(Store):
             tdata = self._transfer_client.submit_delete(delete_task)
             self._wait_on_tasks(tdata['task_id'])
 
-    def evict(self, key: str) -> None:
+    def evict(self, key: GlobusStoreKey) -> None:
         if not self.exists(key):
             return
 
-        filename = self._get_filename(key)
-        path = self._get_filepath(filename)
+        path = self._get_filepath(key.filename)
         os.remove(path)
         self._cache.evict(key)
-        self._transfer_files(filename, delete=True)
+        self._transfer_files(key.filename, delete=True)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
-        if not self._validate_key(key):
+    def exists(self, key: GlobusStoreKey) -> bool:
+        if not self._validate_task_id(key.task_id):
             return False
-        self._wait_on_tasks(self._get_task_id(key))
-        return os.path.exists(self._get_filepath(self._get_filename(key)))
+        self._wait_on_tasks(key.task_id)
+        return os.path.exists(self._get_filepath(key.filename))
 
-    def get_bytes(self, key: str) -> bytes | None:
+    def get_bytes(self, key: GlobusStoreKey) -> bytes | None:
         if not self.exists(key):
             return None
 
-        path = self._get_filepath(self._get_filename(key))
+        path = self._get_filepath(key.filename)
         with open(path, 'rb') as f:
             return f.read()
 
-    def set_bytes(self, key: str, data: bytes) -> None:
-        path = self._get_filepath(key)
+    def set_bytes(self, key: GlobusStoreKey, data: bytes) -> None:
+        path = self._get_filepath(key.filename)
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)
 
-    def set(self, obj: Any, *, serialize: bool = True) -> str:
+    def set(self, obj: Any, *, serialize: bool = True) -> GlobusStoreKey:
         if serialize:
             obj = ps.serialize.serialize(obj)
         elif not isinstance(obj, bytes):
             raise TypeError('obj must be of type bytes if serialize=False.')
 
-        filename = self.create_key(obj)
-        self.set_bytes(filename, obj)
-        tid = self._transfer_files(filename)
-        key = self._create_key(filename=filename, task_id=tid)
+        temp_key = self.create_key(obj)
+        self.set_bytes(temp_key, obj)
+        tid = self._transfer_files(temp_key.filename)
+        key = temp_key._replace(task_id=tid)
 
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
@@ -570,28 +560,25 @@ class GlobusStore(Store):
         objs: Sequence[Any],
         *,
         serialize: bool = True,
-    ) -> list[str]:
-        filenames = []
+    ) -> list[GlobusStoreKey]:
+        temp_keys = []
         for obj in objs:
             if serialize:
                 obj = ps.serialize.serialize(obj)
             elif not isinstance(obj, bytes):
                 TypeError('obj must be of type bytes if serialize=False.')
 
-            filename = self.create_key(obj)
-            filenames.append(filename)
-            self.set_bytes(filename, obj)
+            temp_key = self.create_key(obj)
+            temp_keys.append(temp_key)
+            self.set_bytes(temp_key, obj)
 
         # Batch of objs written to disk so we can trigger Globus transfer
-        tid = self._transfer_files(filenames)
+        tid = self._transfer_files([k.filename for k in temp_keys])
 
-        keys = []
-        for filename in filenames:
-            key = self._create_key(filename=filename, task_id=tid)
-            logger.debug(
-                f"SET key='{key}' IN {self.__class__.__name__}"
-                f"(name='{self.name}')",
-            )
-            keys.append(key)
+        keys = [key._replace(task_id=tid) for key in temp_keys]
+        logger.debug(
+            f"SET keys='{keys}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')",
+        )
 
         return keys

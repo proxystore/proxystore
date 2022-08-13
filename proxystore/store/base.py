@@ -9,6 +9,8 @@ from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import cast
+from typing import Generic
+from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
 
@@ -21,14 +23,17 @@ from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
+from proxystore.store.utils import get_key
+
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
-class StoreFactory(Factory[T]):
+class StoreFactory(Factory[T], Generic[KeyT, T]):
     """Base Factory for Stores.
 
     Adds support for asynchronously retrieving objects from a
@@ -41,8 +46,8 @@ class StoreFactory(Factory[T]):
 
     def __init__(
         self,
-        key: str,
-        store_type: type[Store],
+        key: KeyT,
+        store_type: type[Store[KeyT]],
         store_name: str,
         store_kwargs: dict[str, Any] | None = None,
         *,
@@ -52,9 +57,9 @@ class StoreFactory(Factory[T]):
         """Init StoreFactory.
 
         Args:
-            key (str): key corresponding to object in store.
-            store_type (Store): type of store this factory will resolve an
-                object from.
+            key (KeyT): key corresponding to object in store.
+            store_type (Store[KeyT]): type of store this factory will resolve
+                an object from.
             store_name (str): name of store
             store_kwargs (dict): optional keyword arguments used to
                 reinitialize store.
@@ -90,7 +95,10 @@ class StoreFactory(Factory[T]):
 
     def __getnewargs_ex__(
         self,
-    ) -> tuple[tuple[str, type[Store], str, dict[str, Any]], dict[str, Any]]:
+    ) -> tuple[
+        tuple[KeyT, type[Store[KeyT]], str, dict[str, Any]],
+        dict[str, Any],
+    ]:
         """Pickle without possible futures."""
         return (
             self.key,
@@ -104,7 +112,7 @@ class StoreFactory(Factory[T]):
 
     def _get_value(self) -> T:
         """Get the value associated with the key from the store."""
-        store = self.get_store()
+        store: Store[KeyT] = self.get_store()
         obj = store.get(self.key, deserialize=self.serialize)
 
         if obj is None:
@@ -123,7 +131,7 @@ class StoreFactory(Factory[T]):
         """Check if it makes sense to do asynchronous resolution."""
         return not self.get_store().is_cached(self.key)
 
-    def get_store(self) -> Store:
+    def get_store(self) -> Store[KeyT]:
         """Get store and reinitialize if necessary.
 
         Raises:
@@ -169,13 +177,14 @@ class StoreFactory(Factory[T]):
             self._obj_future = _default_pool.submit(self._get_value)
 
 
-class Store(metaclass=ABCMeta):
+class Store(Generic[KeyT], metaclass=ABCMeta):
     """Key-value store interface.
 
     Provides base functionality for interaction with an object store including
     serialization and caching.
 
     Subclasses of :class:`Store` must implement
+    :func:`create_key() <Store.create_key()>`,
     :func:`evict() <Store.evict()>`, :func:`exists() <Store.exists()>`,
     :func:`get_bytes()`, and :func:`set_bytes()`. Subclasses may implement
     :func:`close() <Store.close()>` if needed.
@@ -217,7 +226,7 @@ class Store(metaclass=ABCMeta):
 
         self.name = name
 
-        self._cache = LRUCache(cache_size)
+        self._cache: LRUCache[KeyT, Any] = LRUCache(cache_size)
         self._kwargs = {'stats': stats, 'cache_size': cache_size}
         if kwargs is not None:  # pragma: no branch
             self._kwargs.update(kwargs)
@@ -281,32 +290,32 @@ class Store(metaclass=ABCMeta):
         """
         pass
 
-    def create_key(self, obj: Any) -> str:
+    def create_key(self, obj: Any) -> KeyT:
         """Create key for the object.
 
         Args:
             obj: object to be placed in store.
 
         Returns:
-            key (str)
-        """
-        return ps.utils.create_key(obj)
-
-    @abstractmethod
-    def evict(self, key: str) -> None:
-        """Evict object associated with key.
-
-        Args:
-            key (str): key corresponding to object in store to evict.
+            key (KeyT)
         """
         raise NotImplementedError
 
     @abstractmethod
-    def exists(self, key: str) -> bool:
+    def evict(self, key: KeyT) -> None:
+        """Evict object associated with key.
+
+        Args:
+            key (KeyT): key corresponding to object in store to evict.
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def exists(self, key: KeyT) -> bool:
         """Check if key exists.
 
         Args:
-            key (str): key to check.
+            key (KeyT): key to check.
 
         Returns:
             if the key exists in the store.
@@ -315,7 +324,7 @@ class Store(metaclass=ABCMeta):
 
     def get(
         self,
-        key: str,
+        key: KeyT,
         *,
         deserialize: bool = True,
         default: object | None = None,
@@ -323,7 +332,7 @@ class Store(metaclass=ABCMeta):
         """Return object associated with key.
 
         Args:
-            key (str): key corresponding to object.
+            key (KeyT): key corresponding to object.
             deserialize (bool): deserialize object if True. If objects
                 are custom serialized, set this as False (default: True).
             default: optionally provide value to be returned if an object
@@ -358,22 +367,22 @@ class Store(metaclass=ABCMeta):
         return default
 
     @abstractmethod
-    def get_bytes(self, key: str) -> bytes | None:
+    def get_bytes(self, key: KeyT) -> bytes | None:
         """Get serialized object from remote store.
 
         Args:
-            key (str): key corresponding to object.
+            key (KeyT): key corresponding to object.
 
         Returns:
             serialized object or `None` if it does not exist.
         """
         raise NotImplementedError
 
-    def is_cached(self, key: str) -> bool:
+    def is_cached(self, key: KeyT) -> bool:
         """Check if object is cached locally.
 
         Args:
-            key (str): key corresponding to object.
+            key (KeyT): key corresponding to object.
 
         Returns:
             if the object associated with the key is cached.
@@ -407,7 +416,7 @@ class Store(metaclass=ABCMeta):
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
-        factory: StoreFactory[T] = StoreFactory(
+        factory: StoreFactory[KeyT, T] = StoreFactory(
             key,
             store_type=type(self),
             store_name=self.name,
@@ -440,7 +449,7 @@ class Store(metaclass=ABCMeta):
             keys = self.set_batch(objs)
         return [self.proxy_from_key(key, **kwargs) for key in keys]
 
-    def proxy_from_key(self, key: str, **kwargs: Any) -> ps.proxy.Proxy[T]:
+    def proxy_from_key(self, key: KeyT, **kwargs: Any) -> ps.proxy.Proxy[T]:
         """Create a proxy to an object already in the store.
 
         Note:
@@ -448,7 +457,7 @@ class Store(metaclass=ABCMeta):
             will not be raised until the returned proxy is resolved.
 
         Args:
-            key (str): key corresponding to an object already in the store
+            key (KeyT): key corresponding to an object already in the store
                 that will be the target object of the returned proxy.
             kwargs (dict): additional arguments to pass to the Factory.
 
@@ -459,7 +468,7 @@ class Store(metaclass=ABCMeta):
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
-        factory: StoreFactory[T] = StoreFactory(
+        factory: StoreFactory[KeyT, T] = StoreFactory(
             key,
             store_type=type(self),
             store_name=self.name,
@@ -468,7 +477,7 @@ class Store(metaclass=ABCMeta):
         )
         return Proxy(factory)
 
-    def set(self, obj: Any, *, serialize: bool = True) -> str:
+    def set(self, obj: Any, *, serialize: bool = True) -> KeyT:
         """Set key-object pair in store.
 
         Args:
@@ -502,7 +511,7 @@ class Store(metaclass=ABCMeta):
         objs: Sequence[Any],
         *,
         serialize: bool = True,
-    ) -> list[str]:
+    ) -> list[KeyT]:
         """Set objects in store.
 
         Args:
@@ -517,23 +526,23 @@ class Store(metaclass=ABCMeta):
         return [self.set(obj, serialize=serialize) for obj in objs]
 
     @abstractmethod
-    def set_bytes(self, key: str, data: bytes) -> None:
+    def set_bytes(self, key: KeyT, data: bytes) -> None:
         """Set serialized object in remote store with key.
 
         Args:
-            key (str): key corresponding to object.
+            key (KeyT): key corresponding to object.
             data (bytes): serialized object.
         """
         raise NotImplementedError
 
     def stats(
         self,
-        key_or_proxy: str | ps.proxy.Proxy[T],
+        key_or_proxy: KeyT | ps.proxy.Proxy[T],
     ) -> dict[str, TimeStats]:
         """Get stats on the store.
 
         Args:
-            key_or_proxy (str, Proxy): key to get stats for or a proxy to
+            key_or_proxy (KeyT, Proxy): key to get stats for or a proxy to
                 extract the key from.
 
         Returns:
@@ -569,7 +578,7 @@ class Store(metaclass=ABCMeta):
             )
         stats = {}
         if isinstance(key_or_proxy, ps.proxy.Proxy):
-            key = ps.proxy.get_key(key_or_proxy)
+            key = get_key(key_or_proxy)
             # Merge stats from the proxy into self
             if hasattr(key_or_proxy.__factory__, 'stats'):
                 proxy_stats = key_or_proxy.__factory__.stats

@@ -15,6 +15,7 @@ from proxystore.globus import GlobusAuthFileError
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
+from proxystore.store.globus import GlobusStoreKey
 
 
 EP1 = GlobusEndpoint(
@@ -223,11 +224,12 @@ def test_globus_store_internals(globus_store) -> None:
         return _error
 
     store._transfer_client.get_task = _http_error(400)  # type: ignore
-    assert not store._validate_key('uuid:filename')
+    assert not store._validate_task_id('uuid')
+    assert not store.exists(GlobusStoreKey('fake', 'fake'))
 
     store._transfer_client.get_task = _http_error(401)  # type: ignore
     with pytest.raises(globus_sdk.TransferAPIError):
-        store._validate_key('uuid:filename')
+        store._validate_task_id('uuid')
 
     def _fail_wait(*args, **kwargs) -> bool:
         return False

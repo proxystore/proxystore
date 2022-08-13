@@ -10,6 +10,9 @@ from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.endpoint import EndpointStore as _EndpointStore
+from proxystore.store.exceptions import ProxyStoreFactoryError
+from proxystore.store.exceptions import StoreExistsError
+from proxystore.store.exceptions import UnknownStoreError
 from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
@@ -17,32 +20,8 @@ from proxystore.store.redis import RedisStore as _RedisStore
 
 T = TypeVar('T')
 
-_stores: dict[str, _Store] = {}
+_stores: dict[str, _Store[Any]] = {}
 logger = logging.getLogger(__name__)
-
-
-class StoreError(Exception):
-    """Base exception class for store errors."""
-
-    pass
-
-
-class StoreExistsError(StoreError):
-    """Exception raised when a store with the same name already exists."""
-
-    pass
-
-
-class UnknownStoreError(StoreError):
-    """Exception raised when the type of store to initialize is unknown."""
-
-    pass
-
-
-class ProxyStoreFactoryError(StoreError):
-    """Exception raised when a proxy was not created by a Store."""
-
-    pass
 
 
 class STORES(Enum):
@@ -60,7 +39,7 @@ class STORES(Enum):
     """Corresponds to :class:`~proxystore.store.redis.RedisStore`."""
 
     @classmethod
-    def get_str_by_type(cls, store: type[_Store]) -> str:
+    def get_str_by_type(cls, store: type[_Store[Any]]) -> str:
         """Get str corresponding to enum type of a store type.
 
         Args:
@@ -80,7 +59,7 @@ class STORES(Enum):
         raise KeyError(f'Enum type matching type {store} not found')
 
 
-def get_store(val: str | Proxy[T]) -> _Store | None:
+def get_store(val: str | Proxy[T]) -> _Store[Any] | None:
     """Get the backend store with name.
 
     Args:
@@ -117,10 +96,10 @@ def get_store(val: str | Proxy[T]) -> _Store | None:
 
 
 def init_store(
-    store_type: str | STORES | type[_Store],
+    store_type: str | STORES | type[_Store[Any]],
     name: str,
     **kwargs: Any,
-) -> _Store:
+) -> _Store[Any]:
     """Initialize a backend store and register globally.
 
     Usage:
@@ -179,7 +158,7 @@ def init_store(
     return store
 
 
-def register_store(store: _Store, exist_ok: bool = False) -> None:
+def register_store(store: _Store[Any], exist_ok: bool = False) -> None:
     """Register the store instance to the global registry.
 
     Note:

@@ -78,11 +78,6 @@ def test_bad_responses(endpoint_store) -> None:
             store.set([1, 2, 3])
 
 
-def test_key_parse() -> None:
-    with pytest.raises(ValueError, match='key'):
-        EndpointStore._parse_key('a:b:c')
-
-
 def test_chunked_requests(endpoint_store) -> None:
     store = EndpointStore(
         endpoint_store.name,

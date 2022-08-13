@@ -136,24 +136,6 @@ def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
     return proxy.__wrapped__
 
 
-def get_key(proxy: proxystore.proxy.Proxy[T]) -> str | None:
-    """Return key associated object wrapped by proxy.
-
-    Keys are stored in the `factory` passed to the
-    :class:`Proxy <proxystore.proxy.Proxy>` constructor; however, not all
-    :mod:`Factory <proxystore.factory>` classes use a key.
-
-    Args:
-        proxy (Proxy): proxy instance to get key from.
-
-    Returns:
-        key (`str`) if it exists otherwise `None`.
-    """
-    if hasattr(proxy.__factory__, 'key'):
-        return proxy.__factory__.key
-    return None
-
-
 def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
     """Check if a proxy is resolved.
 

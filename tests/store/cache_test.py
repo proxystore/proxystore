@@ -14,7 +14,7 @@ def test_lru_raises() -> None:
 
 def test_lru_cache() -> None:
     """Test LRU Cache."""
-    c = LRUCache(4)
+    c: LRUCache[str, int] = LRUCache(4)
     # Put 1, 2, 3, 4 in cache
     for i in range(1, 5):
         c.set(str(i), i)

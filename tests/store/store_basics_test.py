@@ -1,12 +1,15 @@
 """Store Base Functionality Tests."""
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pytest
 
 import proxystore as ps
 from proxystore.store.base import Store
 from testing.store_utils import FIXTURE_LIST
+from testing.store_utils import missing_key
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
@@ -38,12 +41,12 @@ def test_store_base(store_fixture, request) -> None:
     """Test Store Base Functionality."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: Store = store_config.type(
+    store: Store[Any] = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
 
-    key_fake = 'key_fake'
+    key_fake = missing_key(store)
     value = 'test_value'
 
     # Store.set()
@@ -81,7 +84,7 @@ def test_store_caching(store_fixture, request) -> None:
     """Test Store Caching Functionality."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: Store = store_config.type(
+    store: Store[Any] = store_config.type(
         store_config.name,
         **store_config.kwargs,
         cache_size=1,
@@ -124,7 +127,7 @@ def test_store_custom_serialization(store_fixture, request) -> None:
     """Test Store Custom Serialization."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: Store = store_config.type(
+    store: Store[Any] = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
@@ -143,7 +146,7 @@ def test_store_batch_ops(store_fixture, request) -> None:
     """Test Batch Operations."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: Store = store_config.type(
+    store: Store[Any] = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
@@ -163,7 +166,7 @@ def test_store_batch_ops_remote(store_fixture, request) -> None:
     """Test Batch Operations for Remote Stores."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: Store = store_config.type(
+    store: Store[Any] = store_config.type(
         store_config.name,
         **store_config.kwargs,
     )
