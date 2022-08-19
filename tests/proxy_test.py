@@ -22,8 +22,6 @@ def test_proxy() -> None:
     p = Proxy(f)
 
     assert not ps.proxy.is_resolved(p)
-    # BaseFactory does not use a key like KeyFactory or RedisFactory
-    assert ps.proxy.get_key(p) is None
 
     # Test pickleable
     p_pkl = pkl.dumps(p)

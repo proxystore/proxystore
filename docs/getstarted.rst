@@ -54,6 +54,8 @@ Installation
 
    $ pip install proxystore
 
+Serving :doc:`ProxyStore Endpoints <./guides/endpoints>` requires installing
+using the extras install: ``pip install proxystore[endpoints]``.
 See :doc:`Contributing <./contributing>` if you are installing for local
 development.
 
@@ -167,4 +169,14 @@ Examples
 
 Examples of integrating ProxyStore into distributed applications built on
 `FuncX <https://funcx.org/>`_ and `Parsl <https://parsl-project.org/>`_ are
-`here <https://github.com/gpauloski/ProxyStore/tree/main/examples>`_.
+`here <https://github.com/proxystore/proxystore/tree/main/examples>`_.
+
+
+Known Issues
+------------
+
+* :doc:`ProxyStore Endpoints <./guides/endpoints>` are not supported for
+  Python 3.7 on ARM-based Macs because
+  `aiortc <https://aiortc.readthedocs.io/>`_ does not have the corresponding
+  wheels. The base ProxyStore package can still be installed on this
+  software/hardware configurations---just not with the ``endpoints`` extras.

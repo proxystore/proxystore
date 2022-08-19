@@ -28,7 +28,7 @@ def linkcode_resolve(domain: str, info: dict[str, Any]) -> str | None:
         filename = 'proxystore/store/__init__'
     else:
         filename = info['module'].replace('.', '/')
-    return f'https://github.com/gpauloski/ProxyStore/blob/main/{filename}.py'
+    return f'https://github.com/proxystore/proxystore/blob/main/{filename}.py'
 
 
 def process_signature(
@@ -83,7 +83,7 @@ copyright = '2021, Greg Pauloski'
 author = 'Greg Pauloski'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.3'
+release = proxystore.__version__
 
 todo_include_todos = True
 

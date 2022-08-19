@@ -102,4 +102,4 @@ When :any:`Store.stats() <proxystore.store.base.Store.stats>` is passed a proxy,
    stats['resolve'].avg_time_ms
    # >>> 0.0587
 
-Python code used to generate the above examples can be found in the `GitHub repository <https://github.com/gpauloski/ProxyStore>`_ in :code:`examples/store_stats.py`.
+Python code used to generate the above examples can be found in the `GitHub repository <https://github.com/proxystore/proxystore>`_ in :code:`examples/store_stats.py`.

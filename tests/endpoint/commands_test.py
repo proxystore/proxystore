@@ -48,9 +48,9 @@ def test_configure_endpoint_basic(tmp_dir, caplog) -> None:
     )
 
 
-def test_configure_endpoint_default_dir(tmp_dir) -> None:
+def test_configure_endpoint_home_dir(tmp_dir) -> None:
     with mock.patch(
-        'proxystore.endpoint.commands.default_dir',
+        'proxystore.endpoint.commands.home_dir',
         return_value=tmp_dir,
     ):
         rv = configure_endpoint(
@@ -133,7 +133,7 @@ def test_list_endpoints_empty(tmp_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
 
     with mock.patch(
-        'proxystore.endpoint.commands.default_dir',
+        'proxystore.endpoint.commands.home_dir',
         return_value=tmp_dir,
     ):
         rv = list_endpoints()
@@ -167,7 +167,7 @@ def test_remove_endpoints_does_not_exist(tmp_dir, caplog) -> None:
     caplog.set_level(logging.ERROR)
 
     with mock.patch(
-        'proxystore.endpoint.commands.default_dir',
+        'proxystore.endpoint.commands.home_dir',
         return_value=tmp_dir,
     ):
         rv = remove_endpoint(_NAME)
@@ -195,7 +195,7 @@ def test_start_endpoint_does_not_exist(tmp_dir, caplog) -> None:
     caplog.set_level(logging.ERROR)
 
     with mock.patch(
-        'proxystore.endpoint.commands.default_dir',
+        'proxystore.endpoint.commands.home_dir',
         return_value=tmp_dir,
     ):
         rv = start_endpoint(_NAME)

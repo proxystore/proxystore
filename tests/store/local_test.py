@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 from proxystore.store.local import LocalStore
+from proxystore.store.local import LocalStoreKey
 
 
 def test_store_dict() -> None:
     """Test LocalStore reusable dict."""
-    d: dict[str, bytes] = {}
+    d: dict[LocalStoreKey, bytes] = {}
     store1 = LocalStore('local1', store_dict=d)
     key = store1.set(123)
 

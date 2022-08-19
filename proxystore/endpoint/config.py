@@ -4,11 +4,9 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
-import pathlib
 import re
 import uuid
 
-_DEFAULT_HOME_DIR = '.proxystore'
 _ENDPOINT_CONFIG_FILE = 'endpoint.json'
 
 
@@ -51,11 +49,6 @@ class EndpointConfig:
             )
         if self.max_memory is not None and self.max_memory < 1:
             raise ValueError('Max memory must be None or positive.')
-
-
-def default_dir() -> str:
-    """Returns path of $HOME/.proxystore."""
-    return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)
 
 
 def get_configs(proxystore_dir: str) -> list[EndpointConfig]:

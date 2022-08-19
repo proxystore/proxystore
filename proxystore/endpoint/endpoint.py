@@ -471,6 +471,10 @@ class Endpoint:
         """Close the endpoint and any open connections safely."""
         if self._peer_handler_task is not None:
             self._peer_handler_task.cancel()
+            try:
+                await self._peer_handler_task
+            except asyncio.CancelledError:
+                pass
         if self._peer_manager is not None:
             await self._peer_manager.close()
         self._data.cleanup()

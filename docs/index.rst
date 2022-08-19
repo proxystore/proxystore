@@ -21,7 +21,7 @@ ProxyStore's goals are to:
   at runtime to optimal choices for the given data without the consumers
   being aware of the change.
 
-ProxyStore can be found on `GitHub <https://github.com/gpauloski/ProxyStore>`_.
+ProxyStore can be found on `GitHub <https://github.com/proxystore/proxystore>`_.
 
 .. toctree::
    :maxdepth: 2

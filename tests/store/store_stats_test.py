@@ -2,10 +2,18 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import NamedTuple
 
 import pytest
 
-import proxystore as ps
+import proxystore.store
+from proxystore.proxy import Proxy
+from proxystore.proxy import resolve
+from proxystore.store import get_store
+from proxystore.store import init_store
+from proxystore.store.base import Store
+from proxystore.store.base import StoreFactory
+from proxystore.store.utils import get_key
 from testing.store_utils import FIXTURE_LIST
 
 
@@ -39,17 +47,17 @@ def test_stat_tracking(store_fixture, request) -> None:
     """Test stat tracking of store."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = ps.store.init_store(
+    store = init_store(
         store_config.type,
         store_config.name,
         **store_config.kwargs,
         stats=True,
     )
 
-    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
-    key = ps.proxy.get_key(p)
+    p: Proxy[list[int]] = store.proxy([1, 2, 3])
+    key = get_key(p)
     assert key is not None
-    ps.proxy.resolve(p)
+    resolve(p)
 
     stats = store.stats(key)
 
@@ -77,14 +85,14 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
     """Test Get Stats with Proxy."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = ps.store.init_store(
+    store = init_store(
         store_config.type,
         store_config.name,
         **store_config.kwargs,
         stats=True,
     )
 
-    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
+    p: Proxy[list[int]] = store.proxy([1, 2, 3])
 
     # Proxy has not been resolved yet so get/resolve should not exist
     stats = store.stats(p)
@@ -93,14 +101,14 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
     assert 'resolve' not in stats
 
     # Resolve proxy and verify get/resolve exist
-    ps.proxy.resolve(p)
+    resolve(p)
     stats = store.stats(p)
     assert 'get' in stats
     assert 'resolve' in stats
 
     # Check that resolve stats are unique to that proxy and not merged into
     # the store's stats
-    key = ps.proxy.get_key(p)
+    key = get_key(p)
     assert key is not None
     stats = store.stats(key)
     assert 'resolve' not in stats
@@ -108,28 +116,28 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
     # Since we monkeypatch the stats into the factory, we need to handle
     # special cases of Factories without the _stats attr or the _stats attr
     # is None.
-    class FactoryMissingStats(ps.factory.Factory[Any]):
-        def __init__(self, key: str):
+    class FactoryMissingStats(StoreFactory[Any, Any]):
+        def __init__(self, key: NamedTuple):
             self.key = key
 
         def resolve(self):
             pass
 
-    p = ps.proxy.Proxy(FactoryMissingStats(key))
-    ps.proxy.resolve(p)
+    p = Proxy(FactoryMissingStats(key))
+    resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
 
-    class FactoryNoneStats(ps.factory.Factory[Any]):
-        def __init__(self, key: str):
+    class FactoryNoneStats(StoreFactory[Any, Any]):
+        def __init__(self, key: NamedTuple):
             self.key = key
             self.stats = None
 
         def resolve(self):
             pass
 
-    p = ps.proxy.Proxy(FactoryNoneStats(key))
-    ps.proxy.resolve(p)
+    p = Proxy(FactoryNoneStats(key))
+    resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
 
@@ -139,24 +147,24 @@ def test_factory_preserves_tracking(store_fixture, request) -> None:
     """Test Factories Preserve the Stat Tracking Flag."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store: ps.store.base.Store | None
-    store = ps.store.init_store(
+    store: Store[Any] | None
+    store = init_store(
         store_config.type,
         store_config.name,
         **store_config.kwargs,
         stats=True,
     )
 
-    p: ps.proxy.Proxy[list[int]] = store.proxy([1, 2, 3])
-    key = ps.proxy.get_key(p)
+    p: Proxy[list[int]] = store.proxy([1, 2, 3])
+    key = get_key(p)
     assert key is not None
 
     # Force delete store so proxy recreates it when resolved
-    ps.store._stores = {}
+    proxystore.store._stores = {}
 
     # Resolve the proxy
     assert p == [1, 2, 3]
-    store = ps.store.get_store(store_config.name)
+    store = get_store(store_config.name)
     assert store is not None
 
     assert isinstance(store.stats(key), dict)

@@ -88,6 +88,7 @@ def endpoints(
     ss.terminate()
 
 
+@pytest.mark.integration
 def test_endpoint_transfer(endpoints) -> None:
     """Test transferring data between two endpoints."""
     endpoints, proxystore_dirs = endpoints
@@ -110,6 +111,7 @@ def test_endpoint_transfer(endpoints) -> None:
     assert not store1.exists(key)
 
 
+@pytest.mark.integration
 def test_endpoint_proxy_transfer(endpoints) -> None:
     """Test transferring data via proxy between processes sharing endpoint."""
     endpoints, proxystore_dirs = endpoints
@@ -147,14 +149,15 @@ def test_endpoint_proxy_transfer(endpoints) -> None:
         raise Exception('Caught exception in consume().')
 
 
+@pytest.mark.integration
 def test_proxy_detects_endpoint(endpoints) -> None:
     """Test transferring data via proxy between two process and endpoints."""
     endpoints, proxystore_dirs = endpoints
 
-    # Mock default_dir to simulate different systems
+    # Mock home_dir to simulate different systems
     def produce(queue: Queue[Any]) -> None:
         with mock.patch(
-            'proxystore.store.endpoint.default_dir',
+            'proxystore.store.endpoint.home_dir',
             return_value=proxystore_dirs[0],
         ):
             store = EndpointStore('store', endpoints=endpoints)
@@ -164,7 +167,7 @@ def test_proxy_detects_endpoint(endpoints) -> None:
 
     def consume(queue: Queue[Any]) -> None:
         with mock.patch(
-            'proxystore.store.endpoint.default_dir',
+            'proxystore.store.endpoint.home_dir',
             return_value=proxystore_dirs[1],
         ):
             port = queue.get()

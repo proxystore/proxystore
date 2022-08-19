@@ -58,7 +58,7 @@ def test_bad_responses(endpoint_store) -> None:
     response.status_code = 400
 
     with mock.patch('requests.get', return_value=response):
-        key = store.set([1, 2, 3], key='key')
+        key = store.set([1, 2, 3])
         assert store.get(key) is None
 
     response.status_code = 401
@@ -75,12 +75,7 @@ def test_bad_responses(endpoint_store) -> None:
             store.evict(key)
 
         with pytest.raises(EndpointStoreError, match='401'):
-            store.set([1, 2, 3], key='key')
-
-
-def test_key_parse() -> None:
-    with pytest.raises(ValueError, match='key'):
-        EndpointStore._parse_key('a:b:c')
+            store.set([1, 2, 3])
 
 
 def test_chunked_requests(endpoint_store) -> None:

@@ -14,10 +14,10 @@ from typing import KeysView
 from typing import NamedTuple
 from typing import TypeVar
 
-import proxystore as ps
+from proxystore.proxy import Proxy
+from proxystore.store.utils import get_key
 
 GenericCallable = TypeVar('GenericCallable', bound=Callable[..., Any])
-
 
 STORE_METHOD_KEY_IS_RESULT = {
     'evict': False,
@@ -35,7 +35,7 @@ class Event(NamedTuple):
     """Event corresponding to a function called with a specific key."""
 
     function: str
-    key: str | None
+    key: NamedTuple | None
 
 
 @dataclass
@@ -148,7 +148,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         self,
         function: GenericCallable,
         key_is_result: bool,
-        preset_key: str | None,
+        preset_key: NamedTuple | None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -158,8 +158,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             function (callable): function to wrap.
             key_is_result (bool): if `True`, the key is the return value of
                 `function` rather than the first argument. (default: False).
-            preset_key (str): optionally preset the key associated with
-                any calls to `function`. This overrides `key_is_returned`.
+            preset_key (NamedTuple): optionally preset the key associated
+                with any calls to `function`. This overrides `key_is_returned`.
             args: Arguments passed to `function`
             kwargs: Keywords arguments passed to `function`.
 
@@ -171,8 +171,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         time_ns = perf_counter_ns() - start_ns
 
         if key_is_result:
-            if isinstance(result, ps.proxy.Proxy):
-                key = ps.proxy.get_key(result)
+            if isinstance(result, Proxy):
+                key = get_key(result)
             else:
                 key = result
         elif preset_key is not None:
@@ -192,7 +192,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         function: GenericCallable,
         *,
         key_is_result: bool = False,
-        preset_key: str | None = None,
+        preset_key: NamedTuple | None = None,
     ) -> GenericCallable:
         """Wraps a method to log stats on calls to the function.
 
@@ -200,8 +200,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             function (callable): function to wrap.
             key_is_result (bool): if `True`, the key is the return value of
                 `function` rather than the first argument. (default: False).
-            preset_key (str): optionally preset the key associated with
-                any calls to `function`. This overrides `key_is_returned`.
+            preset_key (NamedTuple): optionally preset the key associated
+                with any calls to `function`. This overrides `key_is_returned`.
 
         Returns:
             callable with same interface as `function`.

@@ -9,8 +9,16 @@ from typing import Any
 from typing import Generator
 from uuid import UUID
 
-import websockets
-from websockets.client import WebSocketClientProtocol
+try:
+    import websockets
+    from websockets.client import WebSocketClientProtocol
+except ImportError as e:  # pragma: no cover
+    import warnings
+
+    warnings.warn(
+        f'{e}. To enable endpoint serving, install proxystore with '
+        '"pip install proxystore[endpoints]".',
+    )
 
 from proxystore.p2p import messages
 from proxystore.p2p.connection import log_name
@@ -285,8 +293,16 @@ class PeerManager:
         """Close the connection manager."""
         if self._server_task is not None:
             self._server_task.cancel()
+            try:
+                await self._server_task
+            except (asyncio.CancelledError, SafeTaskExit):
+                pass
         for task in self._tasks.values():
             task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, SafeTaskExit):
+                pass
         async with self._peers_lock:
             for connection in self._peers.values():
                 await connection.close()

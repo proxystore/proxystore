@@ -1,9 +1,13 @@
 """Utility functions."""
 from __future__ import annotations
 
+import os
+import pathlib
 import random
 from typing import Any
 from typing import Generator
+
+_DEFAULT_HOME_DIR = '.proxystore'
 
 
 def chunk_bytes(
@@ -54,3 +58,8 @@ def fullname(obj: Any) -> str:
     if module is None or module == str.__module__:
         return name
     return f'{module}.{name}'
+
+
+def home_dir() -> str:
+    """Returns path of $HOME/.proxystore."""
+    return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)

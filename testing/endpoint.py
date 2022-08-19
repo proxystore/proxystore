@@ -25,6 +25,7 @@ def serve_endpoint_silent(
         None,
     ):
         logging.disable(100000)
+        # https://stackoverflow.com/questions/66583461
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         serve(name, uuid, host, port, server=server)

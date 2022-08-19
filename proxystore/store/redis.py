@@ -2,16 +2,24 @@
 from __future__ import annotations
 
 import logging
-import time
+from typing import Any
+from typing import NamedTuple
 
 import redis
 
+import proxystore.utils as utils
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 
 
-class RedisStore(Store):
+class RedisStoreKey(NamedTuple):
+    """Key to objects in a RedisStore."""
+
+    redis_key: str
+
+
+class RedisStore(Store[RedisStoreKey]):
     """Redis backend class."""
 
     def __init__(
@@ -44,27 +52,22 @@ class RedisStore(Store):
             kwargs={'hostname': self.hostname, 'port': self.port},
         )
 
-    def evict(self, key: str) -> None:
-        self._redis_client.delete(key)
+    def create_key(self, obj: Any) -> RedisStoreKey:
+        return RedisStoreKey(redis_key=utils.create_key(obj))
+
+    def evict(self, key: RedisStoreKey) -> None:
+        self._redis_client.delete(key.redis_key)
         self._cache.evict(key)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
-        return bool(self._redis_client.exists(key))
+    def exists(self, key: RedisStoreKey) -> bool:
+        return bool(self._redis_client.exists(key.redis_key))
 
-    def get_bytes(self, key: str) -> bytes | None:
-        return self._redis_client.get(key)
+    def get_bytes(self, key: RedisStoreKey) -> bytes | None:
+        return self._redis_client.get(key.redis_key)
 
-    def get_timestamp(self, key: str) -> float:
-        value = self._redis_client.get(key + '_timestamp')
-        if value is None:
-            raise KeyError(f"Key='{key}' does not exist in Redis store")
-        return float(value.decode())
-
-    def set_bytes(self, key: str, data: bytes) -> None:
-        # We store the creation time for the key as a separate redis key-value.
-        self._redis_client.set(key + '_timestamp', time.time())
-        self._redis_client.set(key, data)
+    def set_bytes(self, key: RedisStoreKey, data: bytes) -> None:
+        self._redis_client.set(key.redis_key, data)

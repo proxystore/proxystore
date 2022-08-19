@@ -5,14 +5,17 @@ import json
 import os
 import re
 import uuid
+from unittest import mock
 
 import globus_sdk
 import pytest
 
 import proxystore as ps
+from proxystore.globus import GlobusAuthFileError
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
+from proxystore.store.globus import GlobusStoreKey
 
 
 EP1 = GlobusEndpoint(
@@ -210,10 +213,6 @@ def test_globus_store_internals(globus_store) -> None:
     """Test GlobusStore internal mechanisms."""
     store = GlobusStore('globus', **globus_store.kwargs)
 
-    with pytest.warns(Warning):
-        # Check that warning for not supporting strict is raised
-        store.get('key', strict=True)
-
     class PatchedError(globus_sdk.TransferAPIError):
         def __init__(self, status: int):
             self.http_status = status
@@ -225,11 +224,12 @@ def test_globus_store_internals(globus_store) -> None:
         return _error
 
     store._transfer_client.get_task = _http_error(400)  # type: ignore
-    assert not store._validate_key('uuid:filename')
+    assert not store._validate_task_id('uuid')
+    assert not store.exists(GlobusStoreKey('fake', 'fake'))
 
     store._transfer_client.get_task = _http_error(401)  # type: ignore
     with pytest.raises(globus_sdk.TransferAPIError):
-        store._validate_key('uuid:filename')
+        store._validate_task_id('uuid')
 
     def _fail_wait(*args, **kwargs) -> bool:
         return False
@@ -237,6 +237,15 @@ def test_globus_store_internals(globus_store) -> None:
     store._transfer_client.task_wait = _fail_wait  # type: ignore
     with pytest.raises(RuntimeError):
         store._wait_on_tasks('1234')
+
+
+def test_globus_store_set_batch_type_error(globus_store) -> None:
+    """Test GlobusStore internal mechanisms."""
+    store = GlobusStore('globus', **globus_store.kwargs)
+
+    objs = [1, 2, 3]
+    with pytest.raises(TypeError):
+        store.set_batch(objs, serialize=False)
 
 
 def test_get_filepath(globus_store) -> None:
@@ -293,3 +302,10 @@ def test_expand_user_path(globus_store) -> None:
         filename,
         ep2,
     )
+
+
+def test_globus_auth_not_done(tmp_dir: str) -> None:
+    """Test Globus auth missing during Store init."""
+    with mock.patch('proxystore.globus.home_dir', return_value=tmp_dir):
+        with pytest.raises(GlobusAuthFileError):
+            GlobusStore('store', endpoints=[EP1, EP2])

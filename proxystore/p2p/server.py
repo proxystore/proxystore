@@ -14,10 +14,18 @@ from typing import Sequence
 from uuid import UUID
 from uuid import uuid4
 
-import websockets.client
-import websockets.exceptions
-from websockets.client import WebSocketClientProtocol
-from websockets.server import WebSocketServerProtocol
+try:
+    import websockets.client
+    import websockets.exceptions
+    from websockets.client import WebSocketClientProtocol
+    from websockets.server import WebSocketServerProtocol
+except ImportError as e:  # pragma: no cover
+    import warnings
+
+    warnings.warn(
+        f'{e}. To enable endpoint serving, install proxystore with '
+        '"pip install proxystore[endpoints]".',
+    )
 
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerRegistrationError

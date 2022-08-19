@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 import proxystore as ps
+import proxystore.store
 
 store = ps.store.init_store(
     'file',

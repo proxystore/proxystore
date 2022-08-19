@@ -7,12 +7,11 @@ import os
 import re
 import socket
 import sys
-import time
-import warnings
 from typing import Any
 from typing import Collection
 from typing import Generator
 from typing import Iterator
+from typing import NamedTuple
 from typing import Pattern
 from typing import Sequence
 
@@ -22,9 +21,12 @@ else:  # pragma: <3.9 cover
     from typing_extensions import Literal
 
 import globus_sdk
-from parsl.data_provider import globus
 
 import proxystore as ps
+import proxystore.serialize
+import proxystore.utils as utils
+from proxystore.globus import get_proxystore_authorizer
+from proxystore.globus import GlobusAuthFileError
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
@@ -236,7 +238,14 @@ class GlobusEndpoints:
         raise ValueError(f'Cannot find endpoint matching host {host}')
 
 
-class GlobusStore(Store):
+class GlobusStoreKey(NamedTuple):
+    """Key to object in a GlobusStore."""
+
+    filename: str
+    task_id: str
+
+
+class GlobusStore(Store[GlobusStoreKey]):
     """Globus backend class.
 
     The :class:`GlobusStore <.GlobusStore>` is similar to a
@@ -251,22 +260,14 @@ class GlobusStore(Store):
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
-        performed. The user will be prompted to authenticate when the
-        :class:`GlobusStore <.GlobusStore>` is initialized. Alternatively,
-        authentication can be performed on the command line with
-        :code:`$ parsl_globus_auth`. Note authentication only needs to be
-        performed once.
+        performed otherwise an error will be raised. Authentication can be
+        performed on the command line with :code:`$ proxystore-globus-auth`.
+        Authentication only needs to be performed once per system.
 
     Warning:
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
         IDs into the keys, thus the keys returned by functions such
         as :func:`set() <set>` will be different.
-
-    Warning:
-        :class:`GlobusStore <.GlobusStore>` enforces strict guarantees on
-        object versions. I.e., the parameter :code:`strict` will be ignored
-        and objects returned by the store will always be the most up to date
-        version.
     """
 
     def __init__(
@@ -300,6 +301,8 @@ class GlobusStore(Store):
             stats (bool): collect stats on store operations (default: False).
 
         Raise:
+            GlobusAuthFileError:
+                if the Globus authentication file cannot be found.
             ValueError:
                 if `endpoints` is not a list of
                 :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
@@ -328,10 +331,16 @@ class GlobusStore(Store):
         self.sync_level = sync_level
         self.timeout = timeout
 
-        parsl_globus_auth = globus.get_globus()
+        try:
+            authorizer = get_proxystore_authorizer()
+        except GlobusAuthFileError:
+            raise GlobusAuthFileError(
+                'Error loading Globus auth tokens. Complete the '
+                'authentication process with the proxystore-globus-auth tool.',
+            )
 
         self._transfer_client = globus_sdk.TransferClient(
-            authorizer=parsl_globus_auth.authorizer,
+            authorizer=authorizer,
         )
 
         super().__init__(
@@ -347,22 +356,10 @@ class GlobusStore(Store):
             },
         )
 
-    def _create_key(self, filename: str, task_id: str) -> str:
-        """Create key for GlobusStore.
-
-        Args:
-            filename (str): name of file in Globus.
-            task_id (str): Globus task id that should be waited on before
-                accessing `filename`.
-
-        Returns:
-            key that encodes the `filename` and `task_id`.
-        """
-        return f'{task_id}:{filename}'
-
-    def _get_filename(self, key: str) -> str:
-        """Extract filename from key."""
-        return key.split(':')[1]
+    def create_key(self, obj: Any) -> GlobusStoreKey:
+        # We do not know task ID at the time we need a filename so we leave
+        # task_id empty and update it later.
+        return GlobusStoreKey(filename=utils.create_key(obj), task_id='')
 
     def _get_filepath(
         self,
@@ -389,16 +386,10 @@ class GlobusStore(Store):
         """Get endpoint local to current host."""
         return self.endpoints.get_by_host(socket.gethostname())
 
-    def _get_task_id(self, key: str) -> str:
-        """Extract task id from key."""
-        return key.split(':')[0]
-
-    def _validate_key(self, key: str) -> bool:
+    def _validate_task_id(self, task_id: str) -> bool:
         """Validate key contains a real Globus task id."""
-        if len(key.split(':')) != 2:
-            return False
         try:
-            self._transfer_client.get_task(self._get_task_id(key))
+            self._transfer_client.get_task(task_id)
         except globus_sdk.TransferAPIError as e:
             if e.http_status == 400:
                 return False
@@ -513,94 +504,51 @@ class GlobusStore(Store):
             tdata = self._transfer_client.submit_delete(delete_task)
             self._wait_on_tasks(tdata['task_id'])
 
-    def evict(self, key: str) -> None:
+    def evict(self, key: GlobusStoreKey) -> None:
         if not self.exists(key):
             return
 
-        filename = self._get_filename(key)
-        path = self._get_filepath(filename)
+        path = self._get_filepath(key.filename)
         os.remove(path)
         self._cache.evict(key)
-        self._transfer_files(filename, delete=True)
+        self._transfer_files(key.filename, delete=True)
         logger.debug(
             f"EVICT key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
-        if not self._validate_key(key):
+    def exists(self, key: GlobusStoreKey) -> bool:
+        if not self._validate_task_id(key.task_id):
             return False
-        self._wait_on_tasks(self._get_task_id(key))
-        return os.path.exists(self._get_filepath(self._get_filename(key)))
+        self._wait_on_tasks(key.task_id)
+        return os.path.exists(self._get_filepath(key.filename))
 
-    def get_bytes(self, key: str) -> bytes | None:
+    def get_bytes(self, key: GlobusStoreKey) -> bytes | None:
         if not self.exists(key):
             return None
 
-        path = self._get_filepath(self._get_filename(key))
+        path = self._get_filepath(key.filename)
         with open(path, 'rb') as f:
             return f.read()
 
-    def get_timestamp(self, key: str) -> float:
-        if not self.exists(key):
-            raise KeyError(
-                f"Key='{key}' does not have a corresponding file in the store",
-            )
-        return os.path.getmtime(self._get_filepath(self._get_filename(key)))
-
-    def get(
-        self,
-        key: str,
-        *,
-        deserialize: bool = True,
-        strict: bool = False,
-        default: Any | None = None,
-    ) -> Any | None:
-        if strict:
-            warnings.warn(
-                'GlobusStore objects are immutable so setting strict=True '
-                'has no effect.',
-            )
-        return super().get(
-            key,
-            deserialize=deserialize,
-            strict=False,
-            default=default,
-        )
-
-    def is_cached(self, key: str, *, strict: bool = False) -> bool:
-        return self._cache.exists(key)
-
-    def set_bytes(self, key: str, data: bytes) -> None:
-        if not isinstance(data, bytes):
-            raise TypeError(f'data must be of type bytes. Found {type(data)}')
-        path = self._get_filepath(key)
+    def set_bytes(self, key: GlobusStoreKey, data: bytes) -> None:
+        path = self._get_filepath(key.filename)
         if not os.path.isdir(os.path.dirname(path)):
             os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)
-        # Manually set timestamp on file with nanosecond precision because some
-        # filesystems can have low default file modified precisions
-        timestamp = time.time_ns()
-        os.utime(path, ns=(timestamp, timestamp))
 
-    def set(
-        self,
-        obj: Any,
-        *,
-        key: str | None = None,
-        serialize: bool = True,
-    ) -> str:
+    def set(self, obj: Any, *, serialize: bool = True) -> GlobusStoreKey:
         if serialize:
             obj = ps.serialize.serialize(obj)
-        if key is None:
-            filename = self.create_key(obj)
-        else:
-            filename = key
+        elif not isinstance(obj, bytes):
+            raise TypeError('obj must be of type bytes if serialize=False.')
 
-        self.set_bytes(filename, obj)
-        tid = self._transfer_files(filename)
-        key = self._create_key(filename=filename, task_id=tid)
+        temp_key = self.create_key(obj)
+        self.set_bytes(temp_key, obj)
+        tid = self._transfer_files(temp_key.filename)
+        key = temp_key._replace(task_id=tid)
+
         logger.debug(
             f"SET key='{key}' IN {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -611,38 +559,26 @@ class GlobusStore(Store):
         self,
         objs: Sequence[Any],
         *,
-        keys: Sequence[str | None] | None = None,
         serialize: bool = True,
-    ) -> list[str]:
-        if keys is not None and len(objs) != len(keys):
-            raise ValueError(
-                f'objs has length {len(objs)} but keys has length {len(keys)}',
-            )
-        if keys is None:
-            keys = [None] * len(objs)
-
-        filenames = []
-        for obj, key in zip(objs, keys):
+    ) -> list[GlobusStoreKey]:
+        temp_keys = []
+        for obj in objs:
             if serialize:
                 obj = ps.serialize.serialize(obj)
-            if key is None:
-                filename = self.create_key(obj)
-            else:
-                filename = key
-            filenames.append(filename)
+            elif not isinstance(obj, bytes):
+                TypeError('obj must be of type bytes if serialize=False.')
 
-            self.set_bytes(filename, obj)
+            temp_key = self.create_key(obj)
+            temp_keys.append(temp_key)
+            self.set_bytes(temp_key, obj)
 
         # Batch of objs written to disk so we can trigger Globus transfer
-        tid = self._transfer_files(filenames)
+        tid = self._transfer_files([k.filename for k in temp_keys])
 
-        final_keys = []
-        for filename in filenames:
-            key = self._create_key(filename=filename, task_id=tid)
-            logger.debug(
-                f"SET key='{key}' IN {self.__class__.__name__}"
-                f"(name='{self.name}')",
-            )
-            final_keys.append(key)
+        keys = [key._replace(task_id=tid) for key in temp_keys]
+        logger.debug(
+            f"SET keys='{keys}' IN {self.__class__.__name__}"
+            f"(name='{self.name}')",
+        )
 
-        return final_keys
+        return keys

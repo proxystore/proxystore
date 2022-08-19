@@ -1,15 +1,27 @@
 """CLI for serving an endpoint as a REST server."""
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
 import uuid
 
-import quart
-from quart import request
-from quart import Response
+try:
+    import hypercorn
+    import quart
+    import uvloop
+    from quart import request
+    from quart import Response
+except ImportError as e:  # pragma: no cover
+    # Usually we would just print a warning, but this file requires
+    # quart to be available to register functions to a top-level blueprint.
+    raise ImportError(
+        f'{e}. To enable endpoint serving, install proxystore with '
+        '"pip install proxystore[endpoints]".',
+    )
 
+from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.utils import chunk_bytes
@@ -17,8 +29,6 @@ from proxystore.utils import chunk_bytes
 logger = logging.getLogger(__name__)
 
 routes_blueprint = quart.Blueprint('routes', __name__)
-
-MAX_CHUNK_LENGTH = 16 * 1000 * 1000
 
 
 def create_app(
@@ -114,10 +124,18 @@ def serve(
     )
     app = create_app(endpoint)
 
+    config = hypercorn.config.Config()
+    config.bind = [f'{host}:{port}']
+    config.accesslog = logging.getLogger('hypercorn.access')
+    config.errorlog = logging.getLogger('hypercorn.error')
+
+    logger.debug('installing uvloop as default event loop')
+    uvloop.install()
+
     logger.info(
         f'serving endpoint {endpoint.uuid} ({endpoint.name}) on {host}:{port}',
     )
-    app.run(host=host, port=port)
+    asyncio.run(hypercorn.asyncio.serve(app, config))
 
 
 @routes_blueprint.before_app_serving
