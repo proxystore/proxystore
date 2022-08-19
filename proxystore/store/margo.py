@@ -8,7 +8,7 @@ import pickle
 import redis
 
 # currently in chameleon-ps-rdma repo
-from rdma_interface import RDMA
+from peer_service import RDMAClient as RDMA
 
 from proxystore.store.base import Store
 
@@ -21,8 +21,8 @@ class MargoStore(Store):
         self,
         name: str,
         *,
-        addr_str: str,
-        provider_id: int,
+        host: str,
+        port: int,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
@@ -30,23 +30,22 @@ class MargoStore(Store):
 
         Args:
             name (str): name of the store instance.
-            addr_str (str): URI of Margo server.
+            host (str): the IP address to launch the Margo server on (e.g., Infiniband IP).
+            port (int): the desired port for the Margo server
             cache_size (int): size of LRU cache (in # of objects). If 0,
                 the cache is disabled. The cache is local to the Python
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
-        self.addr = addr_str
-        self.provider_id = provider_id
-        print("mochi started")
-        self._mochi = RDMA(addr=addr_str, provider_id=provider_id)
-        print("mochi")
+        self.host = host
+        self.port = port
+        self._margo = RDMA(host=self.host, port=self.port)
         
         super().__init__(
             name,
             cache_size=cache_size,
             stats=stats,
-            kwargs={'addr_str': self.addr, 'provider_id': self.provider_id },
+            kwargs={'host': self.host, 'port': self.port },
         )
 
     def evict(self, key: str) -> None:
@@ -57,18 +56,21 @@ class MargoStore(Store):
         )
 
     def exists(self, key: str) -> bool:
-        return bool(self._mochi.exists(key))
+        return bool(self._margo.exists(key))
 
     def get_bytes(self, key: str) -> bytes | None:
-        return self._mochi.get(key)
+        return self._margo.get(key)
 
     def get_timestamp(self, key: str) -> float:
-        value = self._mochi.get(key + '_timestamp')
+        value = self._margo.get(key + '_timestamp')
         if value is None:
             raise KeyError(f"Key='{key}' does not exist in Redis store")
         return float(value.decode())
 
     def set_bytes(self, key: str, data: bytes) -> None:
         # We store the creation time for the key as a separate key-value.
-        self._mochi.set(key + '_timestamp', str(time.time()).encode())
-        self._mochi.set(key, data)
+        self._margo.set(key + '_timestamp', str(time.time()).encode())
+        self._margo.set(key, data)
+
+    def close(self):
+        self._margo.close()
