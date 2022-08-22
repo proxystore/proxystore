@@ -322,10 +322,10 @@ def test_serve() -> None:
     host = 'localhost'
     port = open_port()
 
-    def serve_() -> None:
-        serve(name=name, uuid=uuid_, host=host, port=port)
-
-    process = multiprocessing.Process(target=serve_)
+    process = multiprocessing.Process(
+        target=serve,
+        kwargs={'name': name, 'uuid': uuid_, 'host': host, 'port': port},
+    )
     process.start()
 
     try:

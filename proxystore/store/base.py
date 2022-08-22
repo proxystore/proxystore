@@ -7,6 +7,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
+from types import TracebackType
 from typing import Any
 from typing import cast
 from typing import Generic
@@ -257,6 +258,19 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
     def has_stats(self) -> bool:
         """Whether the store keeps track of performance stats."""
         return self._stats is not None
+
+    def __enter__(self) -> Store[KeyT]:
+        """Enter context manager."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        """Exit context manager."""
+        self.close()
 
     def __repr__(self) -> str:
         """Represent Store instance as string."""

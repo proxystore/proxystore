@@ -22,24 +22,18 @@ def test_init_stats(store_fixture, request) -> None:
     """Test Initializing Stat tracking."""
     store_config = request.getfixturevalue(store_fixture)
 
-    store = store_config.type(
-        store_config.name,
-        **store_config.kwargs,
-    )
+    with store_config.type(store_config.name, **store_config.kwargs) as store:
+        with pytest.raises(ValueError):
+            # Check raises an error because stats are not tracked by default
+            store.stats('key')
 
-    with pytest.raises(ValueError):
-        # Check raises an error because stats are not tracked by default
-        store.stats('key')
+        store = store_config.type(
+            store_config.name,
+            **store_config.kwargs,
+            stats=True,
+        )
 
-    store = store_config.type(
-        store_config.name,
-        **store_config.kwargs,
-        stats=True,
-    )
-
-    assert isinstance(store.stats('key'), dict)
-
-    store.close()
+        assert isinstance(store.stats('key'), dict)
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
