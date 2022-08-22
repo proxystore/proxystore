@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 from typing import NamedTuple
+from typing import Sequence
 from uuid import UUID
 
 import requests
@@ -39,7 +40,7 @@ class EndpointStore(Store[EndpointStoreKey]):
         self,
         name: str,
         *,
-        endpoints: list[str | UUID],
+        endpoints: Sequence[str | UUID],
         proxystore_dir: str | None = None,
         cache_size: int = 16,
         stats: bool = False,
@@ -55,9 +56,9 @@ class EndpointStore(Store[EndpointStoreKey]):
 
         Args:
             name (str): name of the store instance (default: None).
-            endpoints (list): list of valid and running endpoint UUIDs to use.
-                At least one of these endpoints must be accessible by this
-                process.
+            endpoints (sequence): sequence of valid and running endpoint
+                UUIDs to use. At least one of these endpoints must be
+                accessible by this process.
             proxystore_dir (str): directory containing endpoint configurations.
                 If None, defaults to :code:`$HOME/.proxystore` (default: None).
             cache_size (int): size of LRU cache (in # of objects). If 0,
