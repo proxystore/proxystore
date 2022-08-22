@@ -1,15 +1,17 @@
 """Store Imports and Initialization Unit Tests."""
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import proxystore as ps
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
-from proxystore.store import ProxyStoreFactoryError
-from proxystore.store import StoreExistsError
 from proxystore.store import STORES
-from proxystore.store import UnknownStoreError
+from proxystore.store.exceptions import ProxyStoreFactoryError
+from proxystore.store.exceptions import StoreExistsError
+from proxystore.store.exceptions import UnknownStoreError
 from proxystore.store.local import LocalStore
 
 
@@ -101,7 +103,7 @@ def test_get_enum_by_type() -> None:
     assert isinstance(t, str)
     assert STORES[t].value == ps.store.local.LocalStore
 
-    class FakeStore(ps.store.base.Store):
+    class FakeStore(ps.store.base.Store[Any]):
         """FakeStore type."""
 
         pass

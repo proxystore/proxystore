@@ -1,7 +1,33 @@
 """Exceptions for Stores."""
 from __future__ import annotations
 
-from proxystore import store
+from typing import NamedTuple
+
+from proxystore.store import base
+
+
+class StoreError(Exception):
+    """Base exception class for store errors."""
+
+    pass
+
+
+class StoreExistsError(StoreError):
+    """Exception raised when a store with the same name already exists."""
+
+    pass
+
+
+class UnknownStoreError(StoreError):
+    """Exception raised when the type of store to initialize is unknown."""
+
+    pass
+
+
+class ProxyStoreFactoryError(StoreError):
+    """Exception raised when a proxy was not created by a Store."""
+
+    pass
 
 
 class ProxyResolveMissingKey(Exception):
@@ -9,14 +35,14 @@ class ProxyResolveMissingKey(Exception):
 
     def __init__(
         self,
-        key: str,
-        store_type: type[store.base.Store],
+        key: NamedTuple,
+        store_type: type[base.Store[base.KeyT]],
         store_name: str,
     ) -> None:
         """Init ProxyResolveMissingKey.
 
         Args:
-            key (str): key associated with target object that could not be
+            key (tuple): key associated with target object that could not be
                 found in the store.
             store_type (Store): type of store that the key could not be found
                 in.

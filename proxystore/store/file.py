@@ -4,13 +4,22 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+from typing import Any
+from typing import NamedTuple
 
+import proxystore.utils as utils
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 
 
-class FileStore(Store):
+class FileStoreKey(NamedTuple):
+    """Key to objects in a FileStore."""
+
+    filename: str
+
+
+class FileStore(Store[FileStoreKey]):
     """File backend class."""
 
     def __init__(
@@ -57,8 +66,11 @@ class FileStore(Store):
         """
         shutil.rmtree(self.store_dir)
 
-    def evict(self, key: str) -> None:
-        path = os.path.join(self.store_dir, key)
+    def create_key(self, obj: Any) -> FileStoreKey:
+        return FileStoreKey(filename=utils.create_key(obj))
+
+    def evict(self, key: FileStoreKey) -> None:
+        path = os.path.join(self.store_dir, key.filename)
         if os.path.exists(path):
             os.remove(path)
         self._cache.evict(key)
@@ -67,25 +79,19 @@ class FileStore(Store):
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
-        path = os.path.join(self.store_dir, key)
+    def exists(self, key: FileStoreKey) -> bool:
+        path = os.path.join(self.store_dir, key.filename)
         return os.path.exists(path)
 
-    def get_bytes(self, key: str) -> bytes | None:
-        path = os.path.join(self.store_dir, key)
+    def get_bytes(self, key: FileStoreKey) -> bytes | None:
+        path = os.path.join(self.store_dir, key.filename)
         if os.path.exists(path):
             with open(path, 'rb') as f:
                 data = f.read()
                 return data
         return None
 
-    def set_bytes(self, key: str, data: bytes) -> None:
-        """Write serialized object to file system with key.
-
-        Args:
-            key (str): key corresponding to object.
-            data (bytes): serialized object.
-        """
-        path = os.path.join(self.store_dir, key)
+    def set_bytes(self, key: FileStoreKey, data: bytes) -> None:
+        path = os.path.join(self.store_dir, key.filename)
         with open(path, 'wb', buffering=0) as f:
             f.write(data)

@@ -9,6 +9,7 @@ import uuid
 from typing import Any
 from typing import Generator
 from typing import NamedTuple
+from typing import TypeVar
 from unittest import mock
 
 import globus_sdk
@@ -18,12 +19,17 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
 from proxystore.store.endpoint import EndpointStore
+from proxystore.store.endpoint import EndpointStoreKey
 from proxystore.store.file import FileStore
+from proxystore.store.file import FileStoreKey
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
+from proxystore.store.globus import GlobusStoreKey
 from proxystore.store.local import LocalStore
+from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
+from proxystore.store.redis import RedisStoreKey
 from testing.endpoint import launch_endpoint
 
 FIXTURE_LIST = [
@@ -34,6 +40,8 @@ FIXTURE_LIST = [
     'endpoint_store',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
+
+KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 class MockTransferData(globus_sdk.TransferData):
@@ -137,7 +145,7 @@ class MockStrictRedis:
 class StoreInfo(NamedTuple):
     """Info needed to initialize an arbitrary Store."""
 
-    type: type[Store]
+    type: type[Store[Any]]
     name: str
     kwargs: dict[str, Any]
 
@@ -241,3 +249,19 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     )
 
     server_handle.terminate()
+
+
+def missing_key(store: Store[KeyT]) -> NamedTuple:
+    """Generate a random key that is valid for the store type."""
+    if isinstance(store, EndpointStore):
+        return EndpointStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
+    elif isinstance(store, FileStore):
+        return FileStoreKey(str(uuid.uuid4()))
+    elif isinstance(store, GlobusStore):
+        return GlobusStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
+    elif isinstance(store, LocalStore):
+        return LocalStoreKey(str(uuid.uuid4()))
+    elif isinstance(store, RedisStore):
+        return RedisStoreKey(str(uuid.uuid4()))
+    else:
+        raise AssertionError(f'Unsupported store type {type(store).__name__}')

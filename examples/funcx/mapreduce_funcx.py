@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from typing import Any
 
 import numpy as np
 from funcx.sdk.client import FuncXClient
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     double_uuid = fxc.register_function(app_double)
     sum_uuid = fxc.register_function(app_sum)
 
-    store: ps.store.base.Store | None = None
+    store: ps.store.base.Store[Any] | None = None
     if args.ps_file:
         store = ps.store.init_store(
             'file',

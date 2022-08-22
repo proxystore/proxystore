@@ -2,20 +2,29 @@
 from __future__ import annotations
 
 import logging
+from typing import Any
+from typing import NamedTuple
 
+import proxystore.utils as utils
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 
 
-class LocalStore(Store):
+class LocalStoreKey(NamedTuple):
+    """Key to objects in a LocalStore."""
+
+    id: str
+
+
+class LocalStore(Store[LocalStoreKey]):
     """Local Memory Key-Object Store."""
 
     def __init__(
         self,
         name: str,
         *,
-        store_dict: dict[str, bytes] | None = None,
+        store_dict: dict[LocalStoreKey, bytes] | None = None,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
@@ -35,7 +44,7 @@ class LocalStore(Store):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
-        self._store: dict[str, bytes] = {}
+        self._store: dict[LocalStoreKey, bytes] = {}
         if store_dict is not None:
             self._store = store_dict
 
@@ -46,7 +55,10 @@ class LocalStore(Store):
             kwargs={'store_dict': self._store},
         )
 
-    def evict(self, key: str) -> None:
+    def create_key(self, obj: Any) -> LocalStoreKey:
+        return LocalStoreKey(id=utils.create_key(obj))
+
+    def evict(self, key: LocalStoreKey) -> None:
         if key in self._store:
             del self._store[key]
         self._cache.evict(key)
@@ -55,11 +67,11 @@ class LocalStore(Store):
             f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
+    def exists(self, key: LocalStoreKey) -> bool:
         return key in self._store
 
-    def get_bytes(self, key: str) -> bytes | None:
+    def get_bytes(self, key: LocalStoreKey) -> bytes | None:
         return self._store.get(key, None)
 
-    def set_bytes(self, key: str, data: bytes) -> None:
+    def set_bytes(self, key: LocalStoreKey, data: bytes) -> None:
         self._store[key] = data
