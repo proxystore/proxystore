@@ -41,7 +41,7 @@ class FileStore(Store[FileStoreKey]):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
-        self.store_dir = store_dir
+        self.store_dir = os.path.abspath(store_dir)
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
@@ -50,7 +50,7 @@ class FileStore(Store[FileStoreKey]):
             name,
             cache_size=cache_size,
             stats=stats,
-            kwargs={'store_dir': store_dir},
+            kwargs={'store_dir': self.store_dir},
         )
 
     def close(self) -> None:
