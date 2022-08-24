@@ -15,6 +15,7 @@ from proxystore.endpoint.config import write_config
 
 
 def test_write_read_config(tmp_dir) -> None:
+    tmp_dir = os.path.join(tmp_dir, 'config-dir')
     assert not os.path.exists(tmp_dir)
 
     cfg = EndpointConfig(
@@ -42,6 +43,7 @@ def test_read_config_missing_file(tmp_dir) -> None:
 
 
 def test_get_configs(tmp_dir) -> None:
+    tmp_dir = os.path.join(tmp_dir, 'config-dir')
     assert not os.path.exists(tmp_dir)
     # dir does not exists so empty list should be returned
     assert len(get_configs(tmp_dir)) == 0

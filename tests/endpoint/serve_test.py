@@ -342,6 +342,9 @@ def test_serve() -> None:
 
 
 def test_serve_logging(tmp_dir) -> None:
+    # Make a sub dir that should not exist to check serve makes the dir
+    tmp_dir = os.path.join(tmp_dir, 'log-dir')
+
     def _serve(log_file: str) -> None:
         # serve() calls asyncio.run() but the pytest environment does not have
         # a usable event loop so we need to manually create on.

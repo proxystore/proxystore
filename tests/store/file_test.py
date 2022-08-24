@@ -2,18 +2,16 @@
 from __future__ import annotations
 
 import os
-import uuid
 
 from proxystore.store.file import FileStore
 
 
-def test_file_store_close() -> None:
+def test_file_store_close(tmp_dir: str) -> None:
     """Test FileStore Cleanup."""
-    store_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
-    store = FileStore('files', store_dir=store_dir)
+    store = FileStore('files', store_dir=tmp_dir)
 
-    assert os.path.exists(store_dir)
+    assert os.path.exists(tmp_dir)
 
     store.close()
 
-    assert not os.path.exists(store_dir)
+    assert not os.path.exists(tmp_dir)

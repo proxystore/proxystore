@@ -1,22 +1,17 @@
 """Fixtures and utilities for testing."""
 from __future__ import annotations
 
-import os
-import shutil
+import pathlib
 import socket
-import uuid
 from typing import Generator
 
 import pytest
 
 
 @pytest.fixture()
-def tmp_dir() -> Generator[str, None, None]:
+def tmp_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
     """Yields unique path to directory and cleans up after."""
-    path = f'/tmp/{uuid.uuid4()}'
-    yield path
-    if os.path.exists(path):
-        shutil.rmtree(path)
+    yield str(tmp_path)
 
 
 def open_port() -> int:
