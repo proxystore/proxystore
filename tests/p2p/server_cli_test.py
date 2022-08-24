@@ -21,6 +21,7 @@ else:  # pragma: <3.8 cover
 
 
 def test_logging_dir(tmp_dir) -> None:
+    tmp_dir = os.path.join(tmp_dir, 'log-dir')
     assert not os.path.isdir(tmp_dir)
     with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
         main(['--log-dir', tmp_dir])
