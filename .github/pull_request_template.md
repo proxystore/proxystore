@@ -1,19 +1,27 @@
+<!---
+    Please fill out the following template for the PR. Some parts may not
+    apply to every PR type, so N/A can be used as necessary.
+--->
+
 # Description
 <!--- Describe your changes in detail --->
 
 
-### Fixes #{issue}
+### Fixes
 <!--- List any issue numbers above that this PR addresses --->
 
+- Fixes #XX
 
 ### Type of Change
 <!--- Check which off the following types describe this PR --->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)
+- [ ] Refactoring (internal implementation changes)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
 - [ ] Documentation update (no changes to the code)
 - [ ] CI change (changes to CI workflows, packages, templates, etc.)
+- [ ] Version changes (changes to the package or dependency versions)
 
 ## Testing
 <!--- Please describe the test ran to verify changes --->
