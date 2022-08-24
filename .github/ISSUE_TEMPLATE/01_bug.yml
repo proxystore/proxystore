@@ -5,6 +5,16 @@ assignees:
   - gpauloski
 body:
   - type: textarea
+    id: freeform
+    attributes:
+      label: Describe the problem.
+      description: >
+        Please describe the issue encounters, what you expected to happen,
+        and steps to reproduce the issue.
+    validations:
+      required: true
+
+  - type: textarea
     id: install
     attributes:
       label: How did you install ProxyStore?
@@ -23,7 +33,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: What version of ProxyStore are you using?
+      label: ProxyStore Version
       description: >
         Package version if installed via Pip or commit ID if installed
         from source.
@@ -31,12 +41,18 @@ body:
     validations:
       required: true
 
-  - type: textarea
-    id: freeform
+  - type: input
+    id: version
     attributes:
-      label: Describe the problem.
-      description: >
-        Please provide sample code and directions for reproducing
-        your problem and what you expected to happen.
+      label: Python Version
+      placeholder: 3.10
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: OS and Platform
+      placeholder: x86 Linux, ARM MacOS, etc.
     validations:
       required: true
