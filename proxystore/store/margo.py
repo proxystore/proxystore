@@ -1,20 +1,29 @@
 """MargoStore Implementation."""
 from __future__ import annotations
+from genericpath import getsize
 
 import logging
-import time
-import pickle
-
-import redis
+from sys import getsizeof
+from typing import Any
+from typing import NamedTuple
 
 # currently in chameleon-ps-rdma repo
 from peer_service import RDMAClient as RDMA
 
+import proxystore.utils as utils
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 
-class MargoStore(Store):
+
+class MargoStoreKey(NamedTuple):
+    """Key to objects in a MargoStore"""
+
+    margo_key: str
+    obj_size: int
+
+
+class MargoStore(Store[MargoStoreKey]):
     """Margo backend class."""
 
     def __init__(
@@ -40,37 +49,32 @@ class MargoStore(Store):
         self.host = host
         self.port = port
         self._margo = RDMA(host=self.host, port=self.port)
-        
+
         super().__init__(
             name,
             cache_size=cache_size,
             stats=stats,
-            kwargs={'host': self.host, 'port': self.port },
+            kwargs={"host": self.host, "port": self.port},
         )
 
-    def evict(self, key: str) -> None:
-        self._cache.evict(key)
+    def create_key(self, obj: Any) -> MargoStoreKey:
+        return MargoStoreKey(margo_key=utils.create_key(obj), obj_size=len(obj))
+
+    def evict(self, key: MargoStoreKey) -> None:
+        self._cache.evict(key.margo_key)
         logger.debug(
-            f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')",
+            f"EVICT key='{key}' FROM {self.__class__.__name__}" f"(name='{self.name}')",
         )
 
-    def exists(self, key: str) -> bool:
-        return bool(self._margo.exists(key))
+    def exists(self, key: MargoStoreKey) -> bool:
+        return bool(self._margo.exists(key.margo_key))
 
-    def get_bytes(self, key: str) -> bytes | None:
-        return self._margo.get(key)
+    def get_bytes(self, key: MargoStoreKey) -> bytes | None:
+        return self._margo.get(key.margo_key, key.obj_size)
 
-    def get_timestamp(self, key: str) -> float:
-        value = self._margo.get(key + '_timestamp')
-        if value is None:
-            raise KeyError(f"Key='{key}' does not exist in Redis store")
-        return float(value.decode())
-
-    def set_bytes(self, key: str, data: bytes) -> None:
+    def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
         # We store the creation time for the key as a separate key-value.
-        self._margo.set(key + '_timestamp', str(time.time()).encode())
-        self._margo.set(key, data)
+        self._margo.set(key.margo_key, data)
 
     def close(self):
         self._margo.close()
