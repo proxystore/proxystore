@@ -1,0 +1,15 @@
+ARG PYTHON_VERSION="3.10"
+
+from python:${PYTHON_VERSION}-slim-buster
+
+RUN apt-get update
+RUN apt-get install -y gcc
+
+COPY . /proxystore
+WORKDIR /proxystore
+
+RUN pip install --user --no-cache-dir .[endpoints]
+
+EXPOSE 8765
+
+CMD [ "signaling-server", "--log-dir", "./logs", "--log-level", "DEBUG" ]
