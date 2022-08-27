@@ -371,9 +371,12 @@ async def serve(host: str, port: int) -> None:
     loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
-    # TODO: add logger=logger kwarg to serve() if websockets dependency
-    # is pinned to 10.0 or later
-    async with websockets.server.serve(server.handler, host, port):
+    async with websockets.server.serve(
+        server.handler,
+        host,
+        port,
+        logger=logger,
+    ):
         logger.info(f'serving signaling server on {host}:{port}')
         logger.info('use ctrl-C to stop')
         await stop
