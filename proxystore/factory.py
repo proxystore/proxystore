@@ -7,14 +7,10 @@ object.
 """
 from __future__ import annotations
 
-from concurrent.futures import Future
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Callable
 from typing import Generic
 from typing import TypeVar
-
-_default_pool = ThreadPoolExecutor()
 
 T = TypeVar('T')
 
@@ -52,17 +48,6 @@ class Factory(Generic[T]):
         """Resolve and return object."""
         raise NotImplementedError
 
-    def resolve_async(self) -> None:
-        """Asynchronously resolve object.
-
-        Note:
-            The API has no requirements about the implementation
-            details of this method, only that :func:`resolve()` will
-            correctly deal with any side-effects of a call to
-            :func:`resolve_async()`.
-        """
-        pass
-
 
 class SimpleFactory(Factory[T]):
     """Simple Factory that stores object as class attribute."""
@@ -74,10 +59,6 @@ class SimpleFactory(Factory[T]):
             obj (object): object to produce when factory is called.
         """
         self._obj = obj
-
-    def __call__(self) -> T:
-        """Resolve object."""
-        return self.resolve()
 
     def resolve(self) -> T:
         """Return object."""
@@ -105,25 +86,7 @@ class LambdaFactory(Factory[T]):
         self._target = target
         self._args = args
         self._kwargs = kwargs
-        self._obj_future: Future[T] | None = None
 
     def resolve(self) -> T:
         """Return target object."""
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
-
         return self._target(*self._args, **self._kwargs)
-
-    def resolve_async(self) -> None:
-        """Asynchronously retrieve target object.
-
-        A subsequent call to :func:`resolve` will wait on the future and
-        return the result.
-        """
-        self._obj_future = _default_pool.submit(
-            self._target,
-            *self._args,
-            **self._kwargs,
-        )

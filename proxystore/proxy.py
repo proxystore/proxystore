@@ -156,29 +156,3 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
         proxy (Proxy): proxy instance to force resolve.
     """
     proxy.__wrapped__
-
-
-def resolve_async(proxy: proxystore.proxy.Proxy[T]) -> None:
-    """Begin resolving proxy asynchronously.
-
-    Useful if the user knows a proxy will be needed soon and wants to
-    resolve the proxy concurrently with other computation.
-
-    >>> ps.proxy.resolve_async(my_proxy)
-    >>> computation_without_proxy(...)
-    >>> # p is hopefully resolved
-    >>> computation_with_proxy(my_proxy, ...)
-
-    Note:
-        The asynchronous resolving functionality is implemented
-        in :func:`Factory.resolve_async()
-        <proxystore.factory.Factory.resolve_async()>`.
-        Most :mod:`Factory <proxystore.factory>` implementations will store a
-        future to the result and wait on that future the next
-        time the proxy is used.
-
-    Args:
-        proxy (Proxy): proxy instance to begin asynchronously resolving.
-    """
-    if not is_resolved(proxy):
-        proxy.__factory__.resolve_async()

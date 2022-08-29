@@ -29,13 +29,6 @@ def test_proxy() -> None:
 
     assert not ps.proxy.is_resolved(p)
 
-    # Test async
-    ps.proxy.resolve_async(p)
-    assert p[0] == 1
-    # Now async resolve should be a no-op
-    ps.proxy.resolve_async(p)
-    assert p[1] == 2
-
     assert isinstance(p, Proxy)
     assert isinstance(p, np.ndarray)
     assert ps.proxy.is_resolved(p)

@@ -18,10 +18,6 @@ def test_simple_factory() -> None:
     f = ps.serialize.deserialize(f_pkl)
     assert f() == [1, 2, 3]
 
-    # Test async resolve
-    f.resolve_async()
-    assert f() == [1, 2, 3]
-
 
 def test_lambda_factory() -> None:
     """Test LambdaFactory."""
@@ -33,10 +29,6 @@ def test_lambda_factory() -> None:
     # Test pickleable
     f1_pkl = ps.serialize.serialize(f1)
     f1 = ps.serialize.deserialize(f1_pkl)
-    assert f1() == [1, 2, 3]
-
-    # Test async resolve
-    f1.resolve_async()
     assert f1() == [1, 2, 3]
 
     # Test with function
