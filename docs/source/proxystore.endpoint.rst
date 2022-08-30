@@ -5,6 +5,8 @@ proxystore.endpoint
 
    proxystore.endpoint.cli
    proxystore.endpoint.commands
+   proxystore.endpoint.config
+   proxystore.endpoint.constants
    proxystore.endpoint.endpoint
    proxystore.endpoint.exceptions
    proxystore.endpoint.messages
