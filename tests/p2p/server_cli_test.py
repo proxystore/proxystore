@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 import websockets
 
-from proxystore.p2p.server import connect
+from proxystore.p2p.client import connect
 from proxystore.p2p.server import main
 from testing.utils import open_port
 

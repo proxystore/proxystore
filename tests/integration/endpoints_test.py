@@ -13,7 +13,7 @@ import pytest
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
-from proxystore.p2p.server import connect
+from proxystore.p2p.client import connect
 from proxystore.p2p.server import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
