@@ -13,7 +13,7 @@ import pytest
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
-from proxystore.p2p.server import connect
+from proxystore.p2p.client import connect
 from proxystore.p2p.server import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
@@ -26,7 +26,7 @@ async def wait_for_server(host: str, port: int) -> None:
     """Wait for websocket server to be available for connections."""
     while True:
         try:
-            _, _, connection = await connect(f'{host}:{port}')
+            _, _, connection = await connect(f'ws://{host}:{port}')
         except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)
         else:
@@ -64,7 +64,7 @@ def endpoints(
             uuid=uuid.uuid4(),
             host='localhost',
             port=port,
-            server=f'{ss_host}:{ss_port}',
+            server=f'ws://{ss_host}:{ss_port}',
         )
         # We want a unique proxystore_dir for each endpoint to simulate
         # different systems

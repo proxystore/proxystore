@@ -17,6 +17,11 @@ Replace `{VERSION}` with the current ProxyStore version.
 docker run --rm -it -p 8765:8765 --name signaling-server proxystore/signaling-server:latest
 ```
 
+To run with SSL/TLS:
+```
+docker run --rm -it -p 8765:8765 -e PROXYSTORE_SSL_ARGS="--certfile /path/to/certfile --keyfile /path/to/keyfile" --name signaling-server proxystore/signaling-server:latest
+```
+
 ## Endpoint
 
 Coming in the future.
