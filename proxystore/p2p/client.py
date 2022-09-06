@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import ssl
 from socket import gethostname
 from uuid import UUID
 from uuid import uuid4
@@ -30,11 +31,13 @@ async def connect(
     uuid: UUID | None = None,
     name: str | None = None,
     timeout: float = 10,
+    ssl: ssl.SSLContext | None = None,
 ) -> tuple[UUID, str, WebSocketClientProtocol]:
     """Establish client connection to a Signaling Server.
 
     Args:
-        address (str): address of the Signaling Server.
+        address (str): address of the Signaling Server. Should start with
+            ws:// or wss://.
         uuid (str, optional): optional uuid of client to use when registering
             with signaling server (default: None).
         name (str, optional): readable name of the client to use when
@@ -42,6 +45,11 @@ async def connect(
             hostname will be used (default: None).
         timeout (float): time to wait in seconds on server connections
             (default: 10).
+        ssl (SSLContext, optional): by default when None, the correct value to
+            pass to :code:`websockets.connect` is inferred from `address`.
+            If `address` starts with "wss://" the value is True, otherwise is
+            False. Optionally provide a custom SSLContext (useful
+            if the server uses self-signed certificates) (default: None).
 
     Returns:
         tuple of the UUID of this client returned by the signaling server,
@@ -59,9 +67,12 @@ async def connect(
     if uuid is None:
         uuid = uuid4()
 
+    ssl_default = True if address.startswith('wss://') else None
+
     websocket = await websockets.client.connect(
-        f'ws://{address}',
+        address,
         open_timeout=timeout,
+        ssl=ssl_default if ssl is None else ssl,
     )
 
     await websocket.send(

@@ -108,9 +108,7 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
 @pytest.mark.asyncio
 async def test_endpoint_not_registered_error(signaling_server) -> None:
     # _, _, websocket = await connect(signaling_server.address)
-    websocket = await websockets.client.connect(
-        f'ws://{signaling_server.address}',
-    )
+    websocket = await websockets.client.connect(signaling_server.address)
     await websocket.send(
         messages.encode(
             messages.PeerConnection(

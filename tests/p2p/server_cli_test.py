@@ -64,14 +64,16 @@ def test_logging_config(tmp_dir) -> None:
 
 @pytest.mark.timeout(5)
 @pytest.mark.asyncio
-async def test_server() -> None:
+async def test_server_with_mock_ssl() -> None:
     host = 'localhost'
-    port = str(open_port())
-    address = f'{host}:{port}'
+    port = open_port()
+    address = f'ws://{host}:{port}'
 
     process = multiprocessing.Process(
         target=main,
-        args=(['--host', host, '--port', port, '--log-level', 'CRITICAL'],),
+        args=(
+            ['--host', host, '--port', str(port), '--log-level', 'CRITICAL'],
+        ),
     )
     process.start()
 
@@ -99,7 +101,7 @@ async def test_server() -> None:
 async def test_start_server_cli() -> None:
     host = 'localhost'
     port = str(open_port())
-    address = f'{host}:{port}'
+    address = f'ws://{host}:{port}'
 
     server_handle = subprocess.Popen(
         ['signaling-server', '--host', host, '--port', port],

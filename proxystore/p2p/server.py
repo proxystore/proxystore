@@ -7,6 +7,7 @@ import datetime
 import logging.handlers
 import os
 import signal
+import ssl
 import sys
 from dataclasses import dataclass
 from typing import Sequence
@@ -262,7 +263,12 @@ class SignalingServer:
                 await self.send(websocket, response)
 
 
-async def serve(host: str, port: int) -> None:
+async def serve(
+    host: str,
+    port: int,
+    certfile: str | None = None,
+    keyfile: str | None = None,
+) -> None:
     """Run the signaling server.
 
     Initializes a :class:`SignalingServer <.SignalingServer>` and starts a
@@ -272,6 +278,10 @@ async def serve(host: str, port: int) -> None:
     Args:
         host (str): host to listen on.
         port (int): port to listen on.
+        certfile (str): optional certificate file (PEM format) to enable
+            TLS while serving.
+        keyfile (str): optional private key file. If not specified, the key
+            will be taken from the certfile.
     """
     server = SignalingServer()
 
@@ -281,11 +291,17 @@ async def serve(host: str, port: int) -> None:
     loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
+    ssl_context: ssl.SSLContext | None = None
+    if certfile is not None:  # pragma: no cover
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ssl_context.load_cert_chain(certfile, keyfile=keyfile)
+
     async with websockets.server.serve(
         server.handler,
         host,
         port,
         logger=logger,
+        ssl=ssl_context,
     ):
         logger.info(f'serving signaling server on {host}:{port}')
         logger.info('use ctrl-C to stop')
@@ -318,6 +334,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=8765,
         type=int,
         help='port to listen on',
+    )
+    parser.add_argument(
+        '--certfile',
+        default=None,
+        help='certificate file for serving with TLS',
+    )
+    parser.add_argument(
+        '--keyfile',
+        default=None,
+        help='private key file associated with the certificate file',
     )
     parser.add_argument(
         '--log-dir',
@@ -354,7 +380,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         handlers=handlers,
     )
 
-    asyncio.run(serve(args.host, args.port))
+    asyncio.run(
+        serve(
+            args.host,
+            args.port,
+            certfile=args.certfile,
+            keyfile=args.keyfile,
+        ),
+    )
 
     return 0
 
