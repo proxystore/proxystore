@@ -59,15 +59,10 @@ async def connect(
     if uuid is None:
         uuid = uuid4()
 
-    websockets_version = int(websockets.__version__.split('.')[0])
-
-    if websockets_version >= 10:
-        websocket = await websockets.client.connect(
-            f'ws://{address}',
-            open_timeout=timeout,
-        )
-    else:  # pragma: no cover
-        websocket = await websockets.client.connect(f'ws://{address}')
+    websocket = await websockets.client.connect(
+        f'ws://{address}',
+        open_timeout=timeout,
+    )
 
     await websocket.send(
         messages.encode(messages.ServerRegistration(uuid=uuid, name=name)),
