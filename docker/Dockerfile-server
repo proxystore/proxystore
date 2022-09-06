@@ -1,6 +1,9 @@
 ARG PYTHON_VERSION="3.10"
+ARG SSL_ARGS=""
 
 from python:${PYTHON_VERSION}-slim-buster
+
+ENV PROXYSTORE_SSL_ARGS $SSL_ARGS
 
 RUN apt-get update
 RUN apt-get install -y gcc
@@ -12,4 +15,4 @@ RUN pip install --user --no-cache-dir .[endpoints]
 
 EXPOSE 8765
 
-CMD [ "signaling-server", "--log-dir", "./logs", "--log-level", "DEBUG" ]
+CMD [ "sh", "-c", "python -m proxystore.p2p.server --log-dir ./logs --log-level DEBUG $PROXYSTORE_SSL_ARGS" ]
