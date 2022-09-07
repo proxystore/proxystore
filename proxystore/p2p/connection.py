@@ -30,6 +30,8 @@ from proxystore.p2p.exceptions import PeerConnectionTimeout
 
 logger = logging.getLogger(__name__)
 
+MAX_CHUNK_SIZE = 16384
+
 
 class PeerConnection:
     """Peer-to-peer connection.
@@ -102,6 +104,8 @@ class PeerConnection:
         self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
 
+        self._send_lock = asyncio.Lock()
+
     @property
     def _log_prefix(self) -> str:
         local = log_name(self._uuid, self._name)
@@ -138,7 +142,13 @@ class PeerConnection:
                 if the peer connection is not established within the timeout.
         """
         await self.ready(timeout)
-        self._channel.send(message)
+
+        async with self._send_lock:
+            size = len(message)
+            for i in range(0, size, MAX_CHUNK_SIZE):
+                self._channel.send(message[i : min(i + MAX_CHUNK_SIZE, size)])
+            self._channel.send('__DONE__')
+
         # https://github.com/aiortc/aiortc/issues/547
         await self._channel._RTCDataChannel__transport._data_channel_flush()
         await self._channel._RTCDataChannel__transport._transmit()
@@ -150,7 +160,13 @@ class PeerConnection:
         Returns:
             str received from peer.
         """
-        return await self._message_queue.get()
+        messages = []
+        while True:
+            message = await self._message_queue.get()
+            if message == '__DONE__':
+                break
+            messages.append(message)
+        return ''.join(messages)
 
     async def send_offer(self, peer_uuid: UUID) -> None:
         """Send offer for peering via signaling server.
