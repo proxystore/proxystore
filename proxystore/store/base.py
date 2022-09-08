@@ -19,6 +19,7 @@ import proxystore as ps
 import proxystore.serialize
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
+from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.stats import FunctionEventStats
@@ -403,7 +404,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """
         return self._cache.exists(key)
 
-    def proxy(self, obj: T, **kwargs: Any) -> ps.proxy.Proxy[T]:
+    def proxy(self, obj: T, **kwargs: Any) -> Proxy[T]:
         """Create a proxy that will resolve to an object in the store.
 
         Warning:
@@ -443,7 +444,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         self,
         objs: Sequence[T],
         **kwargs: Any,
-    ) -> list[ps.proxy.Proxy[T]]:
+    ) -> list[Proxy[T]]:
         """Create proxies for batch of objects in the store.
 
         See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
@@ -463,7 +464,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             keys = self.set_batch(objs)
         return [self.proxy_from_key(key, **kwargs) for key in keys]
 
-    def proxy_from_key(self, key: KeyT, **kwargs: Any) -> ps.proxy.Proxy[T]:
+    def proxy_from_key(self, key: KeyT, **kwargs: Any) -> Proxy[T]:
         """Create a proxy to an object already in the store.
 
         Note:
@@ -490,6 +491,18 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             **kwargs,
         )
         return Proxy(factory)
+
+    def locked_proxy(self, obj: T, **kwargs: Any) -> ProxyLocker[T]:
+        """Create a proxy locker that will prevent resolution.
+
+        Args:
+            obj (object): object to place in store and create proxy of.
+            kwargs (dict): additional arguments to pass to the Factory.
+
+        Returns:
+            :class:`~proxystore.proxy.ProxyLocker`
+        """
+        return ProxyLocker(self.proxy(obj, **kwargs))
 
     def set(self, obj: Any, *, serialize: bool = True) -> KeyT:
         """Set key-object pair in store.
