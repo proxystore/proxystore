@@ -6,10 +6,10 @@ from uuid import uuid4
 import pytest
 
 from proxystore.p2p import messages
+from proxystore.p2p.client import connect
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
-from proxystore.p2p.server import connect
 
 
 @pytest.mark.asyncio

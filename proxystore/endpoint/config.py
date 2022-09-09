@@ -59,7 +59,7 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
             configurations.
 
     Returns:
-        list of :class:`<.EndpointConfig>`s
+        list of :class:`~proxystore.endpoint.config.EndpointConfig`.
     """
     endpoints: list[EndpointConfig] = []
 

@@ -249,6 +249,7 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     )
 
     server_handle.terminate()
+    server_handle.join()
 
 
 def missing_key(store: Store[KeyT]) -> NamedTuple:

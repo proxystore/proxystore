@@ -7,6 +7,7 @@ import pytest
 
 import proxystore as ps
 from proxystore.proxy import Proxy
+from proxystore.proxy import ProxyLocker
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.local import LocalStore
@@ -120,6 +121,8 @@ def test_store_proxy(store_fixture, request) -> None:
         # String will not be serialized and should raise error when putting
         # array into Redis
         store.proxy('mystring', serialize=False)
+
+    assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)

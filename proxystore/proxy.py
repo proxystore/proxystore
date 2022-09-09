@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Any
 from typing import Callable
 from typing import Generic
 from typing import TypeVar
@@ -158,27 +159,32 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
     proxy.__wrapped__
 
 
-def resolve_async(proxy: proxystore.proxy.Proxy[T]) -> None:
-    """Begin resolving proxy asynchronously.
+class ProxyLocker(Generic[T]):
+    """Proxy locker that prevents resolution of wrapped proxies.
 
-    Useful if the user knows a proxy will be needed soon and wants to
-    resolve the proxy concurrently with other computation.
-
-    >>> ps.proxy.resolve_async(my_proxy)
-    >>> computation_without_proxy(...)
-    >>> # p is hopefully resolved
-    >>> computation_with_proxy(my_proxy, ...)
-
-    Note:
-        The asynchronous resolving functionality is implemented
-        in :func:`Factory.resolve_async()
-        <proxystore.factory.Factory.resolve_async()>`.
-        Most :mod:`Factory <proxystore.factory>` implementations will store a
-        future to the result and wait on that future the next
-        time the proxy is used.
-
-    Args:
-        proxy (Proxy): proxy instance to begin asynchronously resolving.
+    The :class:`~proxystore.proxy.ProxyLocker` unintended access to a wrapped
+    proxy to ensure a proxy is not resolved. The wrapped proxy can
+    be retrieved with :func:`~proxystore.proxy.ProxyLocker.unlock`.
     """
-    if not is_resolved(proxy):
-        proxy.__factory__.resolve_async()
+
+    def __init__(self, proxy: Proxy[T]) -> None:
+        """Init ProxyLocker.
+
+        Args:
+            proxy (Proxy[T]): proxy to lock.
+        """
+        self._proxy = proxy
+
+    def __getattribute__(self, attr: str) -> Any:
+        """Override to raise an error if the proxy is accessed."""
+        if attr == '_proxy':
+            raise AttributeError('Cannot access proxy attribute of a Locker')
+        return super().__getattribute__(attr)
+
+    def unlock(self) -> Proxy[T]:
+        """Retrieve the locked proxy.
+
+        Returns:
+            proxy object.
+        """
+        return super().__getattribute__('_proxy')

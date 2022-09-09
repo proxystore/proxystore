@@ -13,7 +13,7 @@ from proxystore.p2p.server import SignalingServer
 
 _SERVER_HOST = 'localhost'
 _SERVER_PORT = 8765
-_SERVER_ADDRESS = f'{_SERVER_HOST}:{_SERVER_PORT}'
+_SERVER_ADDRESS = f'ws://{_SERVER_HOST}:{_SERVER_PORT}'
 
 
 class SignalingServerInfo(NamedTuple):
