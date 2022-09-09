@@ -21,6 +21,7 @@ class MargoStoreKey(NamedTuple):
 
     margo_key: str
     obj_size: int
+    peer: RDMA.Peer
 
 
 class MargoStore(Store[MargoStoreKey]):
@@ -58,7 +59,11 @@ class MargoStore(Store[MargoStoreKey]):
         )
 
     def create_key(self, obj: Any) -> MargoStoreKey:
-        return MargoStoreKey(margo_key=utils.create_key(obj), obj_size=len(obj))
+        return MargoStoreKey(
+            margo_key=utils.create_key(obj),
+            obj_size=len(obj),
+            peer=RDMA.Peer(self._margo.addr, self._margo.provider_id),
+        )
 
     def evict(self, key: MargoStoreKey) -> None:
         self._cache.evict(key.margo_key)
@@ -67,14 +72,14 @@ class MargoStore(Store[MargoStoreKey]):
         )
 
     def exists(self, key: MargoStoreKey) -> bool:
-        return bool(self._margo.exists(key.margo_key))
+        return bool(self._margo.exists(key.margo_key, peer=key.peer))
 
     def get_bytes(self, key: MargoStoreKey) -> bytes | None:
-        return self._margo.get(key.margo_key, key.obj_size)
+        return self._margo.get(key.margo_key, key.obj_size, peer=key.peer)
 
     def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
         # We store the creation time for the key as a separate key-value.
-        self._margo.set(key.margo_key, data)
+        self._margo.set(key.margo_key, data, peer=key.peer)
 
     def close(self):
         self._margo.close()
