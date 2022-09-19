@@ -51,17 +51,23 @@ async def amain(
 
     if actor == 'producer':
         data = 'x' * size
-        data_bytes = sys.getsizeof(data)
-        print(f'transfering {data_bytes} bytes')
         start = time.perf_counter()
         await connection.send(data)
         assert await connection.recv() == 'done'
         end = time.perf_counter()
-        print(f'time (s): {end - start:.3f}')
-        print(f'mbps: {data_bytes * 8 / (end - start) / 1e6:.3f}')
     elif actor == 'consumer':
+        start = time.perf_counter()
         data = await connection.recv()
         await connection.send('done')
+        end = time.perf_counter()
+
+    print('buf', connection._channel.bufferedAmountLowThreshold)
+
+    verb = 'transferred' if actor == 'producer' else 'received'
+    data_bytes = sys.getsizeof(data)
+    print(f'{verb} {data_bytes} bytes')
+    print(f'time (s): {end - start:.3f}')
+    print(f'mbps: {data_bytes * 8 / (end - start) / 1e6:.3f}')
 
     await connection.close()
 
@@ -87,7 +93,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         '--server',
         help='signaling server address',
     )
+    parser.add_argument(
+        '--no-uvloop',
+        action='store_true',
+        help='override using uvloop if available',
+    )
     args = parser.parse_args(argv)
+
+    if not args.no_uvloop:
+        try:
+            import uvloop
+
+            uvloop.install()
+            print('using uvloop')
+        except ImportError:
+            print('uvloop unavailable... using default asyncio event loop')
 
     logging.basicConfig()
 
