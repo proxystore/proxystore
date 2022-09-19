@@ -7,6 +7,7 @@ import pytest
 
 from proxystore.p2p import messages
 from proxystore.p2p.client import connect
+from proxystore.p2p.connection import MAX_CHUNK_SIZE
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
@@ -34,8 +35,10 @@ async def test_p2p_connection(signaling_server) -> None:
     assert connection1.state == 'connected'
     assert connection2.state == 'connected'
 
-    await connection1.send('hello')
-    assert await connection2.recv() == 'hello'
+    # Very long message to test chunking
+    message = 'x' * MAX_CHUNK_SIZE * 4
+    await connection1.send(message)
+    assert await connection2.recv() == message
     await connection2.send('hello hello')
     assert await connection1.recv() == 'hello hello'
 

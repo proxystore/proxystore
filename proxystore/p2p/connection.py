@@ -30,7 +30,7 @@ from proxystore.p2p.exceptions import PeerConnectionTimeout
 
 logger = logging.getLogger(__name__)
 
-MAX_CHUNK_SIZE = 16384
+MAX_CHUNK_SIZE = 2 * 16384
 
 
 class PeerConnection:
@@ -105,6 +105,7 @@ class PeerConnection:
         self._peer_name: str | None = None
 
         self._send_lock = asyncio.Lock()
+        self._buffer_low = asyncio.Event()
 
     @property
     def _log_prefix(self) -> str:
@@ -128,7 +129,15 @@ class PeerConnection:
     async def close(self) -> None:
         """Terminate the peer connection."""
         logger.info(f'{self._log_prefix}: closing connection')
-        await self._pc.close()
+        # Do not close if something is sending currently
+        async with self._send_lock:
+            # Flush send buffers before close
+            # https://github.com/aiortc/aiortc/issues/547
+            if hasattr(self, '_channel'):
+                transport = self._channel._RTCDataChannel__transport
+                await transport._data_channel_flush()
+                await transport._transmit()
+            await self._pc.close()
 
     async def send(self, message: str, timeout: float = 30) -> None:
         """Send message to peer.
@@ -144,14 +153,17 @@ class PeerConnection:
         await self.ready(timeout)
 
         async with self._send_lock:
-            size = len(message)
-            for i in range(0, size, MAX_CHUNK_SIZE):
-                self._channel.send(message[i : min(i + MAX_CHUNK_SIZE, size)])
+            for i in range(0, len(message), MAX_CHUNK_SIZE):
+                chunk = message[i : min(i + MAX_CHUNK_SIZE, len(message))]
+                if (
+                    self._channel.bufferedAmount
+                    > self._channel.bufferedAmountLowThreshold
+                ):
+                    await self._buffer_low.wait()
+                    self._buffer_low.clear()
+                self._channel.send(chunk)
             self._channel.send('__DONE__')
 
-        # https://github.com/aiortc/aiortc/issues/547
-        await self._channel._RTCDataChannel__transport._data_channel_flush()
-        await self._channel._RTCDataChannel__transport._transmit()
         logger.debug(f'{self._log_prefix}: sending message to peer')
 
     async def recv(self) -> str:
@@ -181,10 +193,8 @@ class PeerConnection:
             logger.info(f'{self._log_prefix}: peer channel established')
             self._handshake_success.set_result(True)
 
-        @self._channel.on('message')
-        def on_message(message: str) -> None:
-            logger.debug(f'{self._log_prefix}: received message from peer')
-            self._message_queue.put_nowait(message)
+        self._channel.on('bufferedamountlow', self._on_bufferedamountlow)
+        self._channel.on('message', self._on_message)
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
         message = messages.PeerConnection(
@@ -211,10 +221,8 @@ class PeerConnection:
             self._channel = channel
             self._handshake_success.set_result(True)
 
-            @channel.on('message')
-            def on_message(message: str) -> None:
-                logger.debug(f'{self._log_prefix}: received message from peer')
-                self._message_queue.put_nowait(message)
+            channel.on('bufferedamountlow', self._on_bufferedamountlow)
+            channel.on('message', self._on_message)
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
         message = messages.PeerConnection(
@@ -227,6 +235,13 @@ class PeerConnection:
         message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
         await self._websocket.send(message_str)
+
+    def _on_bufferedamountlow(self) -> None:
+        self._buffer_low.set()
+
+    async def _on_message(self, message: str) -> None:
+        logger.debug(f'{self._log_prefix}: received message from peer')
+        await self._message_queue.put(message)
 
     async def handle_server_message(
         self,
