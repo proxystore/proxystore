@@ -21,8 +21,6 @@ from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.messages import PeerMessage
 from proxystore.p2p.task import spawn_guarded_background_task
 
-# from proxystore.p2p.messages import PeerResponse
-
 logger = logging.getLogger(__name__)
 
 
