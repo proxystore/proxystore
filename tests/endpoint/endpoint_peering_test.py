@@ -11,8 +11,6 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
-from proxystore.p2p.messages import PeerMessage
-from proxystore.serialize import serialize
 from testing.compat import randbytes
 
 _NAME1 = 'test-endpoint-1'
@@ -152,11 +150,7 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
     ) as endpoint2:
         assert endpoint2._peer_manager is not None
         endpoint2._peer_manager._message_queue.put_nowait(
-            PeerMessage(
-                source_uuid=endpoint1.uuid,
-                peer_uuid=endpoint2.uuid,
-                message=serialize('nonsense_message').hex(),
-            ),
+            (endpoint1.uuid, 'nonsense_message'),
         )
         # Make request to endpoint 2 to establish connection
         assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
@@ -191,21 +185,18 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
         await connection.ready()
 
         # Add bad message to queue
-        endpoint2._peer_manager._message_queue.put_nowait(
-            PeerMessage(
-                source_uuid=endpoint1.uuid,
-                peer_uuid=endpoint2.uuid,
-                message=json.dumps(
-                    dataclasses.asdict(
-                        EndpointRequest(
-                            kind='request',
-                            op='evict',
-                            uuid='1234',
-                            key='key',
-                        ),
-                    ),
+        message = json.dumps(
+            dataclasses.asdict(
+                EndpointRequest(
+                    kind='request',
+                    op='evict',
+                    uuid='1234',
+                    key='key',
                 ),
             ),
+        )
+        endpoint2._peer_manager._message_queue.put_nowait(
+            (endpoint1.uuid, message),
         )
 
         # Make request to endpoint 2 to flush queue

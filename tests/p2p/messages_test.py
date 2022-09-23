@@ -85,17 +85,6 @@ def test_str_to_uuid_conversion(
             description_type='answer',
             description='',
         ),
-        messages.PeerMessage(
-            source_uuid=uuid.uuid4(),
-            peer_uuid=uuid.uuid4(),
-            message='',
-        ),
-        messages.PeerMessage(
-            source_uuid=uuid.uuid4(),
-            peer_uuid=uuid.uuid4(),
-            message='',
-            error=True,
-        ),
     ),
 )
 def test_encode_decode(message: messages.Message) -> None:

@@ -130,28 +130,6 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
-async def test_unknown_message_type(signaling_server) -> None:
-    _, _, websocket = await connect(signaling_server.address)
-    await websocket.send(
-        messages.encode(
-            # Signaling server does not support PeerMessage because those
-            # should be sent of WebRTC channel.
-            messages.PeerMessage(
-                source_uuid=uuid4(),
-                peer_uuid=uuid4(),
-                message='',
-            ),
-        ),
-    )
-    message_ = await asyncio.wait_for(websocket.recv(), 1)
-    assert isinstance(message_, str)
-    message = messages.decode(message_)
-    assert isinstance(message, messages.ServerResponse)
-    assert message.error
-    assert message.message is not None and 'unknown' in message.message
-
-
-@pytest.mark.asyncio
 async def test_p2p_message_passing(signaling_server) -> None:
     peer1_uuid, peer1_name, peer1 = await connect(signaling_server.address)
     peer2_uuid, peer2_name, peer2 = await connect(signaling_server.address)

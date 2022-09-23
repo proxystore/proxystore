@@ -18,7 +18,6 @@ from proxystore.endpoint.messages import EndpointRequest
 from proxystore.endpoint.storage import EndpointStorage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.messages import PeerMessage
 from proxystore.p2p.task import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -205,10 +204,9 @@ class Endpoint:
         logger.info(f'{self._log_prefix}: listening for peer requests')
 
         while True:
-            message_ = await self._peer_manager.recv()
-            source_endpoint = message_.source_uuid
+            source_endpoint, message_ = await self._peer_manager.recv()
             try:
-                message = EndpointRequest(**json.loads(message_.message))
+                message = EndpointRequest(**json.loads(message_))
             except (KeyError, json.JSONDecodeError) as e:
                 logger.error(
                     f'{self._log_prefix}: unable to decode message from peer '
@@ -265,11 +263,7 @@ class Endpoint:
             )
             await self._peer_manager.send(
                 source_endpoint,
-                PeerMessage(
-                    source_uuid=self.uuid,
-                    peer_uuid=source_endpoint,
-                    message=json.dumps(dataclasses.asdict(message)),
-                ),
+                json.dumps(dataclasses.asdict(message)),
             )
 
     async def _request_from_peer(
@@ -295,11 +289,7 @@ class Endpoint:
         try:
             await self._peer_manager.send(
                 endpoint,
-                PeerMessage(
-                    source_uuid=self.uuid,
-                    peer_uuid=endpoint,
-                    message=json.dumps(dataclasses.asdict(request)),
-                ),
+                json.dumps(dataclasses.asdict(request)),
             )
         except Exception as e:
             self._pending_requests[request.uuid].set_exception(

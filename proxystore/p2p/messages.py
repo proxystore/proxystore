@@ -20,7 +20,6 @@ class MessageType(enum.Enum):
     server_response = 'ServerResponse'
     server_registration = 'ServerRegistration'
     peer_connection = 'PeerConnection'
-    peer_message = 'PeerMessage'
 
 
 @dataclasses.dataclass
@@ -60,17 +59,6 @@ class PeerConnection(Message):
     description: str
     error: str | None = None
     message_type: str = MessageType.peer_connection.name
-
-
-@dataclasses.dataclass
-class PeerMessage(Message):
-    """Message sent between peers."""
-
-    source_uuid: uuid.UUID
-    peer_uuid: uuid.UUID
-    message: str
-    error: bool = False
-    message_type: str = MessageType.peer_message.name
 
 
 class MessageDecodeError(Exception):
