@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
+from typing import cast
+from typing import List
 from uuid import UUID
 
 try:
@@ -30,7 +32,10 @@ from proxystore.p2p.exceptions import PeerConnectionTimeout
 
 logger = logging.getLogger(__name__)
 
-MAX_CHUNK_SIZE = 2 * 16384
+# These values were manually found using
+# testing/scripts/peer_connection_bandwidth.py
+MAX_CHUNK_SIZE_STRING = 2**15
+MAX_CHUNK_SIZE_BYTES = 2**15
 
 
 class PeerConnection:
@@ -101,7 +106,7 @@ class PeerConnection:
             bool
         ] = asyncio.get_running_loop().create_future()
         self._pc = RTCPeerConnection()
-        self._message_queue: asyncio.Queue[str] = asyncio.Queue()
+        self._message_queue: asyncio.Queue[bytes | str] = asyncio.Queue()
 
         self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
@@ -141,11 +146,11 @@ class PeerConnection:
                 await transport._transmit()
             await self._pc.close()
 
-    async def send(self, message: str, timeout: float = 30) -> None:
+    async def send(self, message: bytes | str, timeout: float = 30) -> None:
         """Send message to peer.
 
         Args:
-            message (str): message to send to peer.
+            message (bytes, str): message to send to peer.
             timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
@@ -154,25 +159,30 @@ class PeerConnection:
         """
         await self.ready(timeout)
 
+        chunk_size = (
+            MAX_CHUNK_SIZE_STRING
+            if isinstance(message, str)
+            else MAX_CHUNK_SIZE_BYTES
+        )
+        threshold = self._channel.bufferedAmountLowThreshold
+
         async with self._send_lock:
-            for i in range(0, len(message), MAX_CHUNK_SIZE):
-                chunk = message[i : min(i + MAX_CHUNK_SIZE, len(message))]
-                if (
-                    self._channel.bufferedAmount
-                    > self._channel.bufferedAmountLowThreshold
-                ):
+            for i in range(0, len(message), chunk_size):
+                chunk = message[i : min(i + chunk_size, len(message))]
+                if self._channel.bufferedAmount > threshold:
                     await self._buffer_low.wait()
                     self._buffer_low.clear()
                 self._channel.send(chunk)
+            # TODO(gpauloski): find a better sentinel method
             self._channel.send('__DONE__')
 
         logger.debug(f'{self._log_prefix}: sending message to peer')
 
-    async def recv(self) -> str:
+    async def recv(self) -> bytes | str:
         """Receive next message from peer.
 
         Returns:
-            str received from peer.
+            message (string or bytes) received from peer.
         """
         messages = []
         while True:
@@ -180,7 +190,12 @@ class PeerConnection:
             if message == '__DONE__':
                 break
             messages.append(message)
-        return ''.join(messages)
+        if isinstance(messages[0], bytes):
+            messages_bytes = cast(List[bytes], messages)
+            return b''.join(messages_bytes)
+        else:
+            messages_str = cast(List[str], messages)
+            return ''.join(messages_str)
 
     async def send_offer(self, peer_uuid: UUID) -> None:
         """Send offer for peering via signaling server.
