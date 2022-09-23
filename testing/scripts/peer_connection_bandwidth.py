@@ -1,4 +1,4 @@
-"""Peer transfer speed test."""
+"""Peer connection transfer speed test."""
 from __future__ import annotations
 
 import argparse
@@ -13,6 +13,7 @@ from typing import Sequence
 from proxystore.p2p import messages
 from proxystore.p2p.client import connect
 from proxystore.p2p.connection import PeerConnection
+from testing.compat import randbytes
 
 
 async def get_connection(
@@ -49,8 +50,9 @@ async def amain(
     """Measure transfer speed between producer and consumer."""
     connection = await get_connection(actor, server)
 
+    data: str | bytes
     if actor == 'producer':
-        data = 'x' * size
+        data = randbytes(size)
         start = time.perf_counter()
         await connection.send(data)
         assert await connection.recv() == 'done'
@@ -60,8 +62,6 @@ async def amain(
         data = await connection.recv()
         await connection.send('done')
         end = time.perf_counter()
-
-    print('buf', connection._channel.bufferedAmountLowThreshold)
 
     verb = 'transferred' if actor == 'producer' else 'received'
     data_bytes = sys.getsizeof(data)
@@ -77,7 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     argv = argv if argv is not None else sys.argv[1:]
 
     parser = argparse.ArgumentParser(
-        description='Measure transfer speed between two RTC Peers.',
+        description='Measure transfer speed between two WebRTC peers.',
     )
     parser.add_argument(
         'actor',
@@ -87,7 +87,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         '--size',
         type=int,
-        help='message length in characters',
+        help='message length in bytes',
     )
     parser.add_argument(
         '--server',
@@ -97,6 +97,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         '--no-uvloop',
         action='store_true',
         help='override using uvloop if available',
+    )
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='set debug mode in asyncio',
     )
     args = parser.parse_args(argv)
 
@@ -111,7 +116,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     logging.basicConfig()
 
-    asyncio.run(amain(args.actor, args.size, args.server))
+    asyncio.run(amain(args.actor, args.size, args.server), debug=args.debug)
 
     return 0
 
