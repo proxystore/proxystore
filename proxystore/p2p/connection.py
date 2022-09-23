@@ -97,7 +97,9 @@ class PeerConnection:
         self._name = name
         self._websocket = websocket
 
-        self._handshake_success: asyncio.Future[bool] = asyncio.Future()
+        self._handshake_success: asyncio.Future[
+            bool
+        ] = asyncio.get_running_loop().create_future()
         self._pc = RTCPeerConnection()
         self._message_queue: asyncio.Queue[str] = asyncio.Queue()
 
