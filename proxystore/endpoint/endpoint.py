@@ -2,9 +2,7 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
 import enum
-import json
 import logging
 from types import TracebackType
 from typing import Any
@@ -19,6 +17,9 @@ from proxystore.endpoint.storage import EndpointStorage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.task import spawn_guarded_background_task
+from proxystore.serialize import deserialize
+from proxystore.serialize import SerializationError
+from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
 
@@ -205,9 +206,10 @@ class Endpoint:
 
         while True:
             source_endpoint, message_ = await self._peer_manager.recv()
+            assert isinstance(message_, bytes)
             try:
-                message = EndpointRequest(**json.loads(message_))
-            except (KeyError, json.JSONDecodeError) as e:
+                message: EndpointRequest = deserialize(message_)
+            except SerializationError as e:
                 logger.error(
                     f'{self._log_prefix}: unable to decode message from peer '
                     f'endpoint {source_endpoint}: {e}',
@@ -238,17 +240,11 @@ class Endpoint:
                 message.exists = await self.exists(message.key)
                 message.success = True
             elif message.op == 'get':
-                data = await self.get(message.key)
-                if isinstance(data, bytes):
-                    message.data = data.hex()
-                elif data is None:
-                    message.data = None
-                else:
-                    raise AssertionError('Unreachable.')
+                message.data = await self.get(message.key)
                 message.success = True
             elif message.op == 'set':
                 assert message.data is not None
-                await self.set(message.key, bytes.fromhex(message.data))
+                await self.set(message.key, message.data)
                 message.success = True
             else:
                 raise AssertionError(
@@ -261,10 +257,7 @@ class Endpoint:
                 f'id={message.uuid} and key={message.key} to '
                 f'{source_endpoint}',
             )
-            await self._peer_manager.send(
-                source_endpoint,
-                json.dumps(dataclasses.asdict(message)),
-            )
+            await self._peer_manager.send(source_endpoint, serialize(message))
 
     async def _request_from_peer(
         self,
@@ -287,10 +280,7 @@ class Endpoint:
             f'id={request.uuid} and key={request.key}) to {endpoint}',
         )
         try:
-            await self._peer_manager.send(
-                endpoint,
-                json.dumps(dataclasses.asdict(request)),
-            )
+            await self._peer_manager.send(endpoint, serialize(request))
         except Exception as e:
             self._pending_requests[request.uuid].set_exception(
                 PeerRequestError(
@@ -411,10 +401,7 @@ class Endpoint:
             )
             request_future = await self._request_from_peer(endpoint, request)
             response = await request_future
-            if isinstance(response.data, str):
-                return bytes.fromhex(response.data)
-            else:
-                return response.data
+            return response.data
         else:
             if key in self._data:
                 return self._data[key]
@@ -450,7 +437,7 @@ class Endpoint:
                 op='set',
                 uuid=str(uuid4()),
                 key=key,
-                data=data.hex(),
+                data=data,
             )
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
