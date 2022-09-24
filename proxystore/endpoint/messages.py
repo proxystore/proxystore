@@ -20,4 +20,4 @@ class EndpointRequest:
     key: str
     data: bytes | None = None
     exists: bool | None = None
-    success: bool | None = None
+    error: Exception | None = None

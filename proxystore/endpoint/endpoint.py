@@ -224,8 +224,11 @@ class Endpoint:
                         'that does not match a pending request',
                     )
                 else:
-                    self._pending_requests[message.uuid].set_result(message)
-                    del self._pending_requests[message.uuid]
+                    fut = self._pending_requests.pop(message.uuid)
+                    if message.error is None:
+                        fut.set_result(message)
+                    else:
+                        fut.set_exception(message.error)
                 continue
 
             logger.debug(
@@ -233,22 +236,25 @@ class Endpoint:
                 f'(id={message.uuid}, key={message.key}) from '
                 f'{source_endpoint}',
             )
-            if message.op == 'evict':
-                await self.evict(message.key)
-            elif message.op == 'exists':
-                message.exists = await self.exists(message.key)
-            elif message.op == 'get':
-                message.data = await self.get(message.key)
-            elif message.op == 'set':
-                assert message.data is not None
-                await self.set(message.key, message.data)
-                message.data = None
-            else:
-                raise AssertionError(
-                    f'unsupported request type {type(message).__name__}',
-                )
 
-            message.success = True
+            try:
+                if message.op == 'evict':
+                    await self.evict(message.key)
+                elif message.op == 'exists':
+                    message.exists = await self.exists(message.key)
+                elif message.op == 'get':
+                    message.data = await self.get(message.key)
+                elif message.op == 'set':
+                    assert message.data is not None
+                    await self.set(message.key, message.data)
+                    message.data = None
+                else:
+                    raise AssertionError(
+                        f'unsupported request type {type(message).__name__}',
+                    )
+            except Exception as e:
+                message.error = e
+
             message.kind = 'response'
             logger.debug(
                 f'{self._log_prefix}: sending {message.op} response with '

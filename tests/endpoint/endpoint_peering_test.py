@@ -112,6 +112,22 @@ async def test_exists(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
+async def test_remote_error_propogation(signaling_server) -> None:
+    async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
+        signaling_server=signaling_server.address,
+    ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
+        signaling_server=signaling_server.address,
+    ) as endpoint2:
+        with pytest.raises(AssertionError):
+            ep = endpoint2.uuid
+            await endpoint1.set('key', None, endpoint=ep)  # type: ignore
+
+
+@pytest.mark.asyncio
 async def test_peering_not_available(signaling_server) -> None:
     endpoint = Endpoint(
         name=_NAME1,
