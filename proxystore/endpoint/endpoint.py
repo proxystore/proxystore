@@ -235,22 +235,19 @@ class Endpoint:
             )
             if message.op == 'evict':
                 await self.evict(message.key)
-                message.success = True
             elif message.op == 'exists':
                 message.exists = await self.exists(message.key)
-                message.success = True
             elif message.op == 'get':
                 message.data = await self.get(message.key)
-                message.success = True
             elif message.op == 'set':
                 assert message.data is not None
                 await self.set(message.key, message.data)
-                message.success = True
             else:
                 raise AssertionError(
                     f'unsupported request type {type(message).__name__}',
                 )
 
+            message.success = True
             message.kind = 'response'
             logger.debug(
                 f'{self._log_prefix}: sending {message.op} response with '
