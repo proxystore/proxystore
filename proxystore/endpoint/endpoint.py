@@ -242,6 +242,7 @@ class Endpoint:
             elif message.op == 'set':
                 assert message.data is not None
                 await self.set(message.key, message.data)
+                message.data = None
             else:
                 raise AssertionError(
                     f'unsupported request type {type(message).__name__}',
