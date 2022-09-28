@@ -84,11 +84,7 @@ async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
         signaling_server.address,
     ) as manager1:
         with pytest.raises(PeerConnectionError, match='unknown'):
-            await manager1.send(
-                uuid.uuid4(),
-                messages.Message(),  # type: ignore
-                timeout=0.2,
-            )
+            await manager1.send(uuid.uuid4(), 'hello', timeout=0.2)
 
 
 @pytest.mark.asyncio
@@ -154,45 +150,10 @@ async def test_p2p_messaging(signaling_server) -> None:
         uuid.uuid4(),
         signaling_server.address,
     ) as manager2:
-        await manager1.send(
-            manager2.uuid,
-            messages.PeerMessage(
-                source_uuid=manager1.uuid,
-                peer_uuid=manager2.uuid,
-                message='hello hello',
-            ),
-        )
-        message = await manager2.recv()
-        assert message.source_uuid == manager1.uuid
-        assert message.message == 'hello hello'
-
-
-@pytest.mark.asyncio
-async def test_p2p_messaging_error(signaling_server, caplog) -> None:
-    caplog.set_level(logging.ERROR)
-    async with PeerManager(
-        uuid.uuid4(),
-        signaling_server.address,
-    ) as manager1, PeerManager(
-        uuid.uuid4(),
-        signaling_server.address,
-    ) as manager2:
-        await manager1.send(
-            manager2.uuid,
-            messages.ServerRegistration('name', uuid.uuid4()),  # type: ignore
-        )
-        # should raise timeout because sent message is not valid
-        # and will not be put on received message queue
-        with pytest.raises(asyncio.TimeoutError):
-            await asyncio.wait_for(manager2.recv(), 0.2)
-
-        assert any(
-            [
-                'non-peer message type' in record.message
-                and record.levelname == 'ERROR'
-                for record in caplog.records
-            ],
-        )
+        await manager1.send(manager2.uuid, 'hello hello')
+        source_uuid, message = await manager2.recv()
+        assert source_uuid == manager1.uuid
+        assert message == 'hello hello'
 
 
 @pytest.mark.asyncio
