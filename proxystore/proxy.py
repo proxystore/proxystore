@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sys
+from typing import Any
 from typing import Callable
 from typing import Generic
 from typing import TypeVar
@@ -156,3 +157,34 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
         proxy (Proxy): proxy instance to force resolve.
     """
     proxy.__wrapped__
+
+
+class ProxyLocker(Generic[T]):
+    """Proxy locker that prevents resolution of wrapped proxies.
+
+    The :class:`~proxystore.proxy.ProxyLocker` unintended access to a wrapped
+    proxy to ensure a proxy is not resolved. The wrapped proxy can
+    be retrieved with :func:`~proxystore.proxy.ProxyLocker.unlock`.
+    """
+
+    def __init__(self, proxy: Proxy[T]) -> None:
+        """Init ProxyLocker.
+
+        Args:
+            proxy (Proxy[T]): proxy to lock.
+        """
+        self._proxy = proxy
+
+    def __getattribute__(self, attr: str) -> Any:
+        """Override to raise an error if the proxy is accessed."""
+        if attr == '_proxy':
+            raise AttributeError('Cannot access proxy attribute of a Locker')
+        return super().__getattribute__(attr)
+
+    def unlock(self) -> Proxy[T]:
+        """Retrieve the locked proxy.
+
+        Returns:
+            proxy object.
+        """
+        return super().__getattribute__('_proxy')
