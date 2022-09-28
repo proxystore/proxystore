@@ -17,7 +17,7 @@ from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
-from proxystore.store.margo import MargoStore as _MargoStore
+from proxystore.store.intrasite import IntrasiteStore as _IntrasiteStore
 
 T = TypeVar('T')
 
@@ -38,8 +38,8 @@ class STORES(Enum):
     """Corresponds to :class:`~proxystore.store.local.LocalStore`."""
     REDIS = _RedisStore
     """Corresponds to :class:`~proxystore.store.redis.RedisStore`."""
-    MARGO = _MargoStore
-    """Corresponds to :class:`~proxystore.store.margo.MargoStore`."""
+    INTRASITE = _IntrasiteStore
+    """Corresponds to :class:`~proxystore.store.intrasite.IntrasiteStore`."""
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store[Any]]) -> str:
