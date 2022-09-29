@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import dataclasses
-import json
 import logging
 import uuid
 
@@ -11,7 +9,6 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
-from proxystore.p2p.messages import PeerMessage
 from proxystore.serialize import serialize
 from testing.compat import randbytes
 
@@ -115,6 +112,22 @@ async def test_exists(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
+async def test_remote_error_propogation(signaling_server) -> None:
+    async with Endpoint(
+        name=_NAME1,
+        uuid=_UUID1,
+        signaling_server=signaling_server.address,
+    ) as endpoint1, Endpoint(
+        name=_NAME2,
+        uuid=_UUID2,
+        signaling_server=signaling_server.address,
+    ) as endpoint2:
+        with pytest.raises(AssertionError):
+            ep = endpoint2.uuid
+            await endpoint1.set('key', None, endpoint=ep)  # type: ignore
+
+
+@pytest.mark.asyncio
 async def test_peering_not_available(signaling_server) -> None:
     endpoint = Endpoint(
         name=_NAME1,
@@ -152,11 +165,7 @@ async def test_unsupported_peer_message(signaling_server, caplog) -> None:
     ) as endpoint2:
         assert endpoint2._peer_manager is not None
         endpoint2._peer_manager._message_queue.put_nowait(
-            PeerMessage(
-                source_uuid=endpoint1.uuid,
-                peer_uuid=endpoint2.uuid,
-                message=serialize('nonsense_message').hex(),
-            ),
+            (endpoint1.uuid, b'nonsense_message'),
         )
         # Make request to endpoint 2 to establish connection
         assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
@@ -191,21 +200,16 @@ async def test_unexpected_response(signaling_server, caplog) -> None:
         await connection.ready()
 
         # Add bad message to queue
-        endpoint2._peer_manager._message_queue.put_nowait(
-            PeerMessage(
-                source_uuid=endpoint1.uuid,
-                peer_uuid=endpoint2.uuid,
-                message=json.dumps(
-                    dataclasses.asdict(
-                        EndpointRequest(
-                            kind='request',
-                            op='evict',
-                            uuid='1234',
-                            key='key',
-                        ),
-                    ),
-                ),
+        message = serialize(
+            EndpointRequest(
+                kind='request',
+                op='evict',
+                uuid='1234',
+                key='key',
             ),
+        )
+        endpoint2._peer_manager._message_queue.put_nowait(
+            (endpoint1.uuid, message),
         )
 
         # Make request to endpoint 2 to flush queue

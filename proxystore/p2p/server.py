@@ -250,17 +250,7 @@ class SignalingServer:
                     )
                     await self.send(websocket, response)
             else:
-                logger.error(
-                    'returning server error to client at '
-                    f'{websocket.remote_address} that sent unknown request '
-                    f'type {type(message).__name__}',
-                )
-                response = messages.ServerResponse(
-                    success=False,
-                    message='unknown request type',
-                    error=True,
-                )
-                await self.send(websocket, response)
+                raise AssertionError('Unreachable.')
 
 
 async def serve(
