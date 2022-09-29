@@ -72,7 +72,7 @@ class IntrasiteStore(Store[IntrasiteStoreKey]):
         return bool(self._peer.exists(key.is_key, peer=key.peer))
 
     def get_bytes(self, key: IntrasiteStoreKey) -> bytes | None:
-        return self._peer.get(key.is_key, key.obj_size, peer=key.peer)
+        return self._peer.get(key.is_key, peer=key.peer, size=key.obj_size)
 
     def set_bytes(self, key: IntrasiteStoreKey, data: bytes) -> None:
         # We store the creation time for the key as a separate key-value.
