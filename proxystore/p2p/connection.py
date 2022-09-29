@@ -4,6 +4,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
+from typing import cast
+from typing import List
 from uuid import UUID
 
 try:
@@ -29,6 +31,11 @@ from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
 
 logger = logging.getLogger(__name__)
+
+# These values were manually found using
+# testing/scripts/peer_connection_bandwidth.py
+MAX_CHUNK_SIZE_STRING = 2**15
+MAX_CHUNK_SIZE_BYTES = 2**15
 
 
 class PeerConnection:
@@ -95,12 +102,17 @@ class PeerConnection:
         self._name = name
         self._websocket = websocket
 
-        self._handshake_success: asyncio.Future[bool] = asyncio.Future()
+        self._handshake_success: asyncio.Future[
+            bool
+        ] = asyncio.get_running_loop().create_future()
         self._pc = RTCPeerConnection()
-        self._message_queue: asyncio.Queue[str] = asyncio.Queue()
+        self._message_queue: asyncio.Queue[bytes | str] = asyncio.Queue()
 
         self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
+
+        self._send_lock = asyncio.Lock()
+        self._buffer_low = asyncio.Event()
 
     @property
     def _log_prefix(self) -> str:
@@ -124,13 +136,21 @@ class PeerConnection:
     async def close(self) -> None:
         """Terminate the peer connection."""
         logger.info(f'{self._log_prefix}: closing connection')
-        await self._pc.close()
+        # Do not close if something is sending currently
+        async with self._send_lock:
+            # Flush send buffers before close
+            # https://github.com/aiortc/aiortc/issues/547
+            if hasattr(self, '_channel'):
+                transport = self._channel._RTCDataChannel__transport
+                await transport._data_channel_flush()
+                await transport._transmit()
+            await self._pc.close()
 
-    async def send(self, message: str, timeout: float = 30) -> None:
+    async def send(self, message: bytes | str, timeout: float = 30) -> None:
         """Send message to peer.
 
         Args:
-            message (str): message to send to peer.
+            message (bytes, str): message to send to peer.
             timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
@@ -138,19 +158,44 @@ class PeerConnection:
                 if the peer connection is not established within the timeout.
         """
         await self.ready(timeout)
-        self._channel.send(message)
-        # https://github.com/aiortc/aiortc/issues/547
-        await self._channel._RTCDataChannel__transport._data_channel_flush()
-        await self._channel._RTCDataChannel__transport._transmit()
+
+        chunk_size = (
+            MAX_CHUNK_SIZE_STRING
+            if isinstance(message, str)
+            else MAX_CHUNK_SIZE_BYTES
+        )
+        threshold = self._channel.bufferedAmountLowThreshold
+
+        async with self._send_lock:
+            for i in range(0, len(message), chunk_size):
+                chunk = message[i : min(i + chunk_size, len(message))]
+                if self._channel.bufferedAmount > threshold:
+                    await self._buffer_low.wait()
+                    self._buffer_low.clear()
+                self._channel.send(chunk)
+            # TODO(gpauloski): find a better sentinel method
+            self._channel.send('__DONE__')
+
         logger.debug(f'{self._log_prefix}: sending message to peer')
 
-    async def recv(self) -> str:
+    async def recv(self) -> bytes | str:
         """Receive next message from peer.
 
         Returns:
-            str received from peer.
+            message (string or bytes) received from peer.
         """
-        return await self._message_queue.get()
+        messages = []
+        while True:
+            message = await self._message_queue.get()
+            if message == '__DONE__':
+                break
+            messages.append(message)
+        if isinstance(messages[0], bytes):
+            messages_bytes = cast(List[bytes], messages)
+            return b''.join(messages_bytes)
+        else:
+            messages_str = cast(List[str], messages)
+            return ''.join(messages_str)
 
     async def send_offer(self, peer_uuid: UUID) -> None:
         """Send offer for peering via signaling server.
@@ -165,10 +210,8 @@ class PeerConnection:
             logger.info(f'{self._log_prefix}: peer channel established')
             self._handshake_success.set_result(True)
 
-        @self._channel.on('message')
-        def on_message(message: str) -> None:
-            logger.debug(f'{self._log_prefix}: received message from peer')
-            self._message_queue.put_nowait(message)
+        self._channel.on('bufferedamountlow', self._on_bufferedamountlow)
+        self._channel.on('message', self._on_message)
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
         message = messages.PeerConnection(
@@ -195,10 +238,8 @@ class PeerConnection:
             self._channel = channel
             self._handshake_success.set_result(True)
 
-            @channel.on('message')
-            def on_message(message: str) -> None:
-                logger.debug(f'{self._log_prefix}: received message from peer')
-                self._message_queue.put_nowait(message)
+            channel.on('bufferedamountlow', self._on_bufferedamountlow)
+            channel.on('message', self._on_message)
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
         message = messages.PeerConnection(
@@ -211,6 +252,13 @@ class PeerConnection:
         message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
         await self._websocket.send(message_str)
+
+    def _on_bufferedamountlow(self) -> None:
+        self._buffer_low.set()
+
+    async def _on_message(self, message: str) -> None:
+        logger.debug(f'{self._log_prefix}: received message from peer')
+        await self._message_queue.put(message)
 
     async def handle_server_message(
         self,

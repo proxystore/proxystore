@@ -99,8 +99,9 @@ class PeerManager:
 
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
+
         self._message_queue: asyncio.Queue[
-            messages.PeerMessage
+            tuple[UUID, bytes | str]
         ] = asyncio.Queue()
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
@@ -209,24 +210,12 @@ class PeerManager:
             f'{peer_name}',
         )
         while True:
-            message_str = await connection.recv()
-            if isinstance(message_str, str):
-                message = messages.decode(message_str)
-            else:
-                raise AssertionError(
-                    'Received non-str object on peer connection.',
-                )
-            if isinstance(message, messages.PeerMessage):
-                await self._message_queue.put(message)
-                logger.debug(
-                    f'{self._log_prefix}: placed message from {peer_name} on '
-                    'queue',
-                )
-            else:
-                logger.error(
-                    f'{self._log_prefix}: received non-peer message type from '
-                    f'{peer_name}. Got type {type(message)}',
-                )
+            message = await connection.recv()
+            await self._message_queue.put((peer_uuid, message))
+            logger.debug(
+                f'{self._log_prefix}: placed message from {peer_name} on '
+                'queue',
+            )
 
     async def _handle_server_messages(self) -> None:
         """Handle messages from the signaling server.
@@ -310,25 +299,26 @@ class PeerManager:
             await self._websocket_or_none.close()
         logger.info(f'{self._log_prefix}: peer manager closed')
 
-    async def recv(self) -> messages.PeerMessage:
+    async def recv(self) -> tuple[UUID, bytes | str]:
         """Receive next message from a peer.
 
         Returns:
-            message received from peer.
+            tuple containing the UUID of the peer that sent the message
+            and the message itself.
         """
         return await self._message_queue.get()
 
     async def send(
         self,
         peer_uuid: UUID,
-        message: messages.PeerMessage,
+        message: bytes | str,
         timeout: float = 30,
     ) -> None:
         """Send message to peer.
 
         Args:
             peer_uuid (str): UUID of peer to send message to.
-            message (PeerMessage): message to send to peer.
+            message (bytes, str): message to send to peer.
             timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
@@ -336,8 +326,7 @@ class PeerManager:
                 if the peer connection is not established within the timeout.
         """
         connection = await self.get_connection(peer_uuid)
-        message_str = messages.encode(message)
-        await connection.send(message_str, timeout)
+        await connection.send(message, timeout)
 
     async def get_connection(self, peer_uuid: UUID) -> PeerConnection:
         """Get connection to the peer.
