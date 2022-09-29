@@ -1,12 +1,9 @@
 """MargoStore Implementation."""
 from __future__ import annotations
-from genericpath import getsize
 
 import logging
-from sys import getsizeof
 from typing import Any
 from typing import NamedTuple
-from proxystore.serialize import serialize
 
 from proxystore_rdma.peers import PeerClient
 
@@ -55,7 +52,7 @@ class IntrasiteStore(Store[IntrasiteStoreKey]):
             name,
             cache_size=cache_size,
             stats=stats,
-            kwargs={"interface": self.interface, "port": self.port, "serialize": False},
+            kwargs={"interface": self.interface, "port": self.port},
         )
 
     def create_key(self, obj: Any) -> IntrasiteStoreKey:
