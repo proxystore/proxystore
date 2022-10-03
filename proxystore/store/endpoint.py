@@ -222,7 +222,7 @@ class EndpointStore(Store[EndpointStoreKey]):
             f'{self.address}/set',
             headers={'Content-Type': 'application/octet-stream'},
             params={'key': key.object_id, 'endpoint': key.endpoint_id},
-            data=chunk_bytes(data, MAX_CHUNK_LENGTH),  # type: ignore
+            data=chunk_bytes(data, MAX_CHUNK_LENGTH),
             stream=True,
         )
         if response.status_code != 200:
