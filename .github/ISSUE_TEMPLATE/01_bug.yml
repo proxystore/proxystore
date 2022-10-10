@@ -31,28 +31,28 @@ body:
       required: true
 
   - type: input
-    id: version
+    id: proxystore-version
     attributes:
       label: ProxyStore Version
       description: >
         Package version if installed via Pip or commit ID if installed
         from source.
-      placeholder: v0.3.1
+      placeholder: "v0.3.1"
     validations:
       required: true
 
   - type: input
-    id: version
+    id: python-version
     attributes:
       label: Python Version
-      placeholder: 3.10
+      placeholder: "3.10"
     validations:
       required: true
 
   - type: input
-    id: version
+    id: platform
     attributes:
       label: OS and Platform
-      placeholder: x86 Linux, ARM MacOS, etc.
+      placeholder: "x86 Linux, ARM MacOS, etc."
     validations:
       required: true
