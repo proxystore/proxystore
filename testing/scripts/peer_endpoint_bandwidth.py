@@ -54,14 +54,14 @@ async def amain(
         await endpoint.set('key', data, target_uuid)
         end = time.perf_counter_ns()
         print(f'Elapsed time: {(end - start) / 1e6:.3f} ms')
-        print(f'Mbps: {(size / 1e6) / ((end - start) / 1e9)}')
+        print(f'Mbps: {(size * 8 / 1e6) / ((end - start) / 1e9)}')
 
         print(f'Retrieving {size} bytes to remote')
         start = time.perf_counter_ns()
         await endpoint.get('key', target_uuid)
         end = time.perf_counter_ns()
         print(f'Elapsed time: {(end - start) / 1e6:.3f} ms')
-        print(f'Mbps: {(size / 1e6) / ((end - start) / 1e9)}')
+        print(f'Mbps: {(size * 8 / 1e6) / ((end - start) / 1e9)}')
 
         await endpoint.evict('key', target_uuid)
     elif actor == 'remote':
