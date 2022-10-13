@@ -84,7 +84,7 @@ def configure_endpoint(
     logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
     logger.info('')
     logger.info('To start the endpoint:')
-    logger.info(f'  $ proxystore-endpoint start {cfg.name}.')
+    logger.info(f'  $ proxystore-endpoint start {cfg.name}')
 
     return 0
 
