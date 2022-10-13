@@ -19,10 +19,11 @@ from testing.compat import randbytes
 async def get_connection(
     actor: Literal['producer', 'consumer'],
     server: str,
+    channels: int = 1,
 ) -> PeerConnection:
     """Returns a ready PeerConnection."""
     local_uuid, name, websocket = await connect(server)
-    connection = PeerConnection(local_uuid, name, websocket)
+    connection = PeerConnection(local_uuid, name, websocket, channels=channels)
 
     print(f'{actor} uuid: {local_uuid}')
     remote_uuid = uuid.UUID(input('enter the remote uuid: ').strip())
@@ -46,9 +47,10 @@ async def amain(
     actor: Literal['producer', 'consumer'],
     size: int,
     server: str,
+    channels: int = 1,
 ) -> None:
     """Measure transfer speed between producer and consumer."""
-    connection = await get_connection(actor, server)
+    connection = await get_connection(actor, server, channels)
 
     data: str | bytes
     if actor == 'producer':
@@ -94,6 +96,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='signaling server address',
     )
     parser.add_argument(
+        '--channels',
+        type=int,
+        default=1,
+        help='number of datachannels to split message sending over',
+    )
+    parser.add_argument(
         '--no-uvloop',
         action='store_true',
         help='override using uvloop if available',
@@ -116,7 +124,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     logging.basicConfig()
 
-    asyncio.run(amain(args.actor, args.size, args.server), debug=args.debug)
+    asyncio.run(
+        amain(args.actor, args.size, args.server, args.channels),
+        debug=args.debug,
+    )
 
     return 0
 

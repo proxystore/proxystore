@@ -21,6 +21,7 @@ class EndpointConfig:
     server: str | None = None
     max_memory: int | None = None
     dump_dir: str | None = None
+    peer_channels: int = 1
 
     def __post_init__(self) -> None:
         """Validate config contains reasonable values.

@@ -57,6 +57,36 @@ async def test_p2p_connection(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
+async def test_p2p_connection_multichannel(signaling_server) -> None:
+    uuid1, name1, websocket1 = await connect(signaling_server.address)
+    # Set channels as different to verify the answerer respects the
+    # number of channels from the offerer
+    connection1 = PeerConnection(uuid1, name1, websocket1, channels=4)
+
+    uuid2, name2, websocket2 = await connect(signaling_server.address)
+    connection2 = PeerConnection(uuid2, name2, websocket2, channels=1)
+
+    await connection1.send_offer(uuid2)
+    offer = messages.decode(cast(str, await websocket2.recv()))
+    assert isinstance(offer, messages.PeerConnection)
+    await connection2.handle_server_message(offer)
+    answer = messages.decode(cast(str, await websocket1.recv()))
+    assert isinstance(answer, messages.PeerConnection)
+    await connection1.handle_server_message(answer)
+
+    await connection1.ready()
+    await connection2.ready()
+
+    assert len(connection1._channels) == 4
+    assert len(connection2._channels) == 4
+
+    await websocket1.close()
+    await websocket2.close()
+    await connection1.close()
+    await connection2.close()
+
+
+@pytest.mark.asyncio
 async def test_p2p_connection_timeout(signaling_server) -> None:
     uuid1, name1, websocket1 = await connect(signaling_server.address)
     connection1 = PeerConnection(uuid1, name1, websocket1)

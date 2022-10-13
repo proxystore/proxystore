@@ -68,7 +68,9 @@ class PeerManager:
         uuid: UUID,
         signaling_server: str,
         name: str | None = None,
+        *,
         timeout: int = 30,
+        peer_channels: int = 1,
     ) -> None:
         """Init PeerManager.
 
@@ -91,11 +93,14 @@ class PeerManager:
                 logging. If unspecified, the hostname will be used.
             timeout (int): timeout in seconds when waiting for a peer
                 or signaling server connection to be established (default: 30).
+            peer_channels (int): number of datachannels to split message
+                sending over between each peer (default: 1).
         """
         self._uuid = uuid
         self._signaling_server = signaling_server
         self._name = name if name is not None else socket.gethostname()
         self._timeout = timeout
+        self._peer_channels = peer_channels
 
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
@@ -256,6 +261,7 @@ class PeerManager:
                         uuid=self._uuid,
                         name=self._name,
                         websocket=self._websocket,
+                        channels=self._peer_channels,
                     )
                     async with self._peers_lock:
                         self._peers[peers] = connection
@@ -347,6 +353,7 @@ class PeerManager:
                 self._uuid,
                 self._name,
                 self._websocket,
+                channels=self._peer_channels,
             )
             self._peers[peers] = connection
 
