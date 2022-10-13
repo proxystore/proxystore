@@ -31,6 +31,7 @@ def configure_endpoint(
     proxystore_dir: str | None = None,
     max_memory: int | None = None,
     dump_dir: str | None = None,
+    peer_channels: int = 1,
 ) -> int:
     """Configure a new endpoint.
 
@@ -47,6 +48,8 @@ def configure_endpoint(
             (default: None).
         dump_dir (str): optional directory to dump objects to if the
             memory limit is exceeded (default: None).
+        peer_channels (int): number of datachannels per peer connection
+            to another endpoint to communicate over (default: 1).
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -61,6 +64,7 @@ def configure_endpoint(
             server=server,
             max_memory=max_memory,
             dump_dir=dump_dir,
+            peer_channels=peer_channels,
         )
     except ValueError as e:
         logger.error(str(e))
@@ -200,6 +204,7 @@ def start_endpoint(
         log_file=os.path.join(endpoint_dir, 'endpoint.log'),
         max_memory=cfg.max_memory,
         dump_dir=cfg.dump_dir,
+        peer_channels=cfg.peer_channels,
     )
 
     return 0

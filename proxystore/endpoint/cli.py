@@ -102,6 +102,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         required='--max-memory' in sys.argv,
         help='optional directory to dump objects to if max_memory reached',
     )
+    parser_configure.add_argument(
+        '--peer-channels',
+        default=1,
+        type=int,
+        help='datachannels per peer connection',
+    )
 
     # Command: list
     subparsers.add_parser(

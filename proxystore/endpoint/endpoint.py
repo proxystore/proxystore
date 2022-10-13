@@ -91,6 +91,7 @@ class Endpoint:
         peer_timeout: int = 30,
         max_memory: int | None = None,
         dump_dir: str | None = None,
+        peer_channels: int = 1,
     ) -> None:
         """Init Endpoint.
 
@@ -121,6 +122,8 @@ class Endpoint:
                 (default: None).
             dump_dir (str): optional directory to dump objects to if the
                 memory limit is exceeded (default: None).
+            peer_channels (int): number of datachannels per peer connection
+                to another endpoint to communicate over (default: 1).
         """
         # TODO(gpauloski): need to consider semantics of operations
         #   - can all ops be triggered on remote?
@@ -129,6 +132,7 @@ class Endpoint:
         self._uuid = uuid
         self._signaling_server = signaling_server
         self._peer_timeout = peer_timeout
+        self._peer_channels = peer_channels
 
         self._mode = (
             EndpointMode.SOLO
@@ -192,6 +196,7 @@ class Endpoint:
                 signaling_server=self._signaling_server,
                 name=self.name,
                 timeout=self._peer_timeout,
+                peer_channels=self._peer_channels,
             )
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,
