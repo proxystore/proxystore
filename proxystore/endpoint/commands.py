@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import socket
 import uuid
 
 from proxystore.endpoint.config import EndpointConfig
@@ -25,7 +26,6 @@ logger = logging.getLogger(__name__)
 def configure_endpoint(
     name: str,
     *,
-    host: str,
     port: int,
     server: str | None,
     proxystore_dir: str | None = None,
@@ -37,7 +37,6 @@ def configure_endpoint(
 
     Args:
         name (str): name of endpoint.
-        host (str): IP address of host the endpoint will be run on.
         port (int): port for endpoint to listen on.
         server (str): optional address of signaling server for P2P endpoint
             connections.
@@ -59,7 +58,7 @@ def configure_endpoint(
         cfg = EndpointConfig(
             name=name,
             uuid=uuid.uuid4(),
-            host=host,
+            host=None,
             port=port,
             server=server,
             max_memory=max_memory,
@@ -84,7 +83,7 @@ def configure_endpoint(
     logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
     logger.info('')
     logger.info('To start the endpoint:')
-    logger.info(f'  $ proxystore-endpoint start {cfg.name}.')
+    logger.info(f'  $ proxystore-endpoint start {cfg.name}')
 
     return 0
 
@@ -192,6 +191,10 @@ def start_endpoint(
         logger.error(str(e))
         logger.error('Correct the endpoint config and try again.')
         return 1
+
+    cfg.host = socket.gethostbyname(socket.gethostname())
+    # Write out new config with host so clients can see the current host
+    write_config(cfg, endpoint_dir)
 
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     serve(

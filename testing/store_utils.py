@@ -235,6 +235,7 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     endpoint_dir = os.path.join(tmp_dir, cfg.name)
     write_config(cfg, endpoint_dir)
 
+    assert cfg.host is not None
     server_handle = launch_endpoint(
         cfg.name,
         cfg.uuid,
