@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import argparse
 import logging
-import socket
 import sys
 from typing import Sequence
 
@@ -70,14 +69,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser_configure.add_argument('name', help='name of endpoint')
-    parser_configure.add_argument(
-        '--host',
-        default=None,
-        help=(
-            'IP address of host that the endpoint will be run on '
-            '(default is IP address of current host)'
-        ),
-    )
     parser_configure.add_argument(
         '--port',
         type=int,
@@ -163,14 +154,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     if args.command == 'configure':
-        host = (
-            socket.gethostbyname(socket.gethostname())
-            if args.host is None
-            else args.host
-        )
         return configure_endpoint(
             args.name,
-            host=host,
             port=args.port,
             server=args.server,
             max_memory=args.max_memory,

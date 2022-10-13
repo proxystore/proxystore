@@ -14,7 +14,6 @@ from proxystore.endpoint.config import read_config
 
 _NAME = 'default'
 _UUID = 'a128eee9-bcf8-44eb-b4ec-ce725b1e5167'
-_HOST = '0.0.0.0'
 _PORT = 1234
 _SERVER = None
 
@@ -24,7 +23,6 @@ def test_configure_endpoint_basic(tmp_dir, caplog) -> None:
 
     rv = configure_endpoint(
         name=_NAME,
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
         proxystore_dir=tmp_dir,
@@ -36,7 +34,7 @@ def test_configure_endpoint_basic(tmp_dir, caplog) -> None:
 
     cfg = read_config(endpoint_dir)
     assert cfg.name == _NAME
-    assert cfg.host == _HOST
+    assert cfg.host is None
     assert cfg.port == _PORT
     assert cfg.server == _SERVER
 
@@ -55,7 +53,6 @@ def test_configure_endpoint_home_dir(tmp_dir) -> None:
     ):
         rv = configure_endpoint(
             name=_NAME,
-            host=_HOST,
             port=_PORT,
             server=_SERVER,
         )
@@ -70,7 +67,6 @@ def test_configure_endpoint_invalid_name(caplog) -> None:
 
     rv = configure_endpoint(
         name='abc?',
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
     )
@@ -84,7 +80,6 @@ def test_configure_endpoint_already_exists_error(tmp_dir, caplog) -> None:
 
     rv = configure_endpoint(
         name=_NAME,
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
         proxystore_dir=tmp_dir,
@@ -93,7 +88,6 @@ def test_configure_endpoint_already_exists_error(tmp_dir, caplog) -> None:
 
     rv = configure_endpoint(
         name=_NAME,
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
         proxystore_dir=tmp_dir,
@@ -115,7 +109,6 @@ def test_list_endpoints(tmp_dir, caplog) -> None:
         for name in names:
             configure_endpoint(
                 name=name,
-                host=_HOST,
                 port=_PORT,
                 server=_SERVER,
                 proxystore_dir=tmp_dir,
@@ -148,7 +141,6 @@ def test_remove_endpoint(tmp_dir, caplog) -> None:
 
     configure_endpoint(
         name=_NAME,
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
         proxystore_dir=tmp_dir,
@@ -181,7 +173,6 @@ def test_remove_endpoints_does_not_exist(tmp_dir, caplog) -> None:
 def test_start_endpoint(tmp_dir) -> None:
     configure_endpoint(
         name=_NAME,
-        host=_HOST,
         port=_PORT,
         server=_SERVER,
         proxystore_dir=tmp_dir,
