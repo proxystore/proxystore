@@ -4,8 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import warnings
-from typing import cast
-from typing import List
+from collections import defaultdict
 from uuid import UUID
 
 try:
@@ -29,6 +28,10 @@ except ImportError as e:  # pragma: no cover
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeout
+from proxystore.p2p.chunks import Chunk
+from proxystore.p2p.chunks import chunkify
+from proxystore.p2p.chunks import reconstruct
+from proxystore.p2p.counter import AtomicCounter
 
 logger = logging.getLogger(__name__)
 
@@ -106,13 +109,15 @@ class PeerConnection:
             bool
         ] = asyncio.get_running_loop().create_future()
         self._pc = RTCPeerConnection()
-        self._message_queue: asyncio.Queue[bytes | str] = asyncio.Queue()
+
+        self._incoming_queue: asyncio.Queue[bytes | str] = asyncio.Queue()
+        self._incoming_chunks: dict[int, list[Chunk]] = defaultdict(list)
+        # Max size of unsigned long (4 bytes) is 2^32 - 1
+        self._message_counter = AtomicCounter(size=2**32 - 1)
+        self._buffer_low = asyncio.Event()
 
         self._peer_uuid: UUID | None = None
         self._peer_name: str | None = None
-
-        self._send_lock = asyncio.Lock()
-        self._buffer_low = asyncio.Event()
 
     @property
     def _log_prefix(self) -> str:
@@ -136,15 +141,13 @@ class PeerConnection:
     async def close(self) -> None:
         """Terminate the peer connection."""
         logger.info(f'{self._log_prefix}: closing connection')
-        # Do not close if something is sending currently
-        async with self._send_lock:
-            # Flush send buffers before close
-            # https://github.com/aiortc/aiortc/issues/547
-            if hasattr(self, '_channel'):
-                transport = self._channel._RTCDataChannel__transport
-                await transport._data_channel_flush()
-                await transport._transmit()
-            await self._pc.close()
+        # Flush send buffers before close
+        # https://github.com/aiortc/aiortc/issues/547
+        if hasattr(self, '_channel'):
+            transport = self._channel._RTCDataChannel__transport
+            await transport._data_channel_flush()
+            await transport._transmit()
+        await self._pc.close()
 
     async def send(self, message: bytes | str, timeout: float = 30) -> None:
         """Send message to peer.
@@ -166,15 +169,12 @@ class PeerConnection:
         )
         threshold = self._channel.bufferedAmountLowThreshold
 
-        async with self._send_lock:
-            for i in range(0, len(message), chunk_size):
-                chunk = message[i : min(i + chunk_size, len(message))]
-                if self._channel.bufferedAmount > threshold:
-                    await self._buffer_low.wait()
-                    self._buffer_low.clear()
-                self._channel.send(chunk)
-            # TODO(gpauloski): find a better sentinel method
-            self._channel.send('__DONE__')
+        message_id = self._message_counter.increment()
+        for chunk in chunkify(message, chunk_size, message_id):
+            if self._channel.bufferedAmount > threshold:
+                await self._buffer_low.wait()
+                self._buffer_low.clear()
+            self._channel.send(bytes(chunk))
 
         logger.debug(f'{self._log_prefix}: sending message to peer')
 
@@ -184,18 +184,7 @@ class PeerConnection:
         Returns:
             message (string or bytes) received from peer.
         """
-        messages = []
-        while True:
-            message = await self._message_queue.get()
-            if message == '__DONE__':
-                break
-            messages.append(message)
-        if isinstance(messages[0], bytes):
-            messages_bytes = cast(List[bytes], messages)
-            return b''.join(messages_bytes)
-        else:
-            messages_str = cast(List[str], messages)
-            return ''.join(messages_str)
+        return await self._incoming_queue.get()
 
     async def send_offer(self, peer_uuid: UUID) -> None:
         """Send offer for peering via signaling server.
@@ -203,7 +192,7 @@ class PeerConnection:
         Args:
             peer_uuid (str): uuid of peer client to establish connection with.
         """
-        self._channel = self._pc.createDataChannel('p2p')
+        self._channel = self._pc.createDataChannel('p2p', ordered=False)
 
         @self._channel.on('open')
         def on_open() -> None:
@@ -256,9 +245,15 @@ class PeerConnection:
     def _on_bufferedamountlow(self) -> None:
         self._buffer_low.set()
 
-    async def _on_message(self, message: str) -> None:
-        logger.debug(f'{self._log_prefix}: received message from peer')
-        await self._message_queue.put(message)
+    async def _on_message(self, data: bytes) -> None:
+        chunk = Chunk.from_bytes(data)
+        self._incoming_chunks[chunk.stream_id].append(chunk)
+
+        if len(self._incoming_chunks[chunk.stream_id]) == chunk.seq_len:
+            chunks = self._incoming_chunks.pop(chunk.stream_id)
+            message = reconstruct(chunks)
+            await self._incoming_queue.put(message)
+            logger.debug(f'{self._log_prefix}: received message from peer')
 
     async def handle_server_message(
         self,
