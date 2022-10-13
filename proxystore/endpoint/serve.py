@@ -77,6 +77,7 @@ def serve(
     max_memory: int | None = None,
     dump_dir: str | None = None,
     peer_channels: int = 1,
+    verify_certificate: bool = True,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -101,6 +102,8 @@ def serve(
             memory limit is exceeded (default: None).
         peer_channels (int): number of datachannels per peer connection
             to another endpoint to communicate over (default: 1).
+        verify_certificate (bool): verify the signaling server's SSL
+            certificate (default: True).
     """
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
@@ -125,6 +128,7 @@ def serve(
         max_memory=max_memory,
         dump_dir=dump_dir,
         peer_channels=peer_channels,
+        verify_certificate=verify_certificate,
     )
     app = create_app(endpoint)
 
