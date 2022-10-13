@@ -50,6 +50,13 @@ async def test_uuid_name_properties(signaling_server) -> None:
         assert manager.name == name
 
 
+def test_address_validation() -> None:
+    PeerManager(uuid.uuid4(), 'ws://example.com')
+    PeerManager(uuid.uuid4(), 'wss://example.com')
+    with pytest.raises(ValueError, match='wss://'):
+        PeerManager(uuid.uuid4(), 'http://example.com')
+
+
 @pytest.mark.asyncio
 async def test_uuid_mismatch(signaling_server) -> None:
     amock = AsyncMock(return_value=('wrong-uuid', None, None))
@@ -149,6 +156,7 @@ async def test_p2p_messaging(signaling_server) -> None:
     ) as manager1, PeerManager(
         uuid.uuid4(),
         signaling_server.address,
+        verify_certificate=False,
     ) as manager2:
         await manager1.send(manager2.uuid, 'hello hello')
         source_uuid, message = await manager2.recv()
