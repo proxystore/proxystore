@@ -110,8 +110,13 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'uuid': 'abc-abc-abc'}, False),
         ({'port': 0}, False),
         ({'port': 1000000}, False),
+        ({'server': 'ws://'}, True),
+        ({'server': 'wss://'}, True),
         ({'server': ''}, False),
+        ({'server': 'https://'}, False),
         ({'max_memory': -1}, False),
+        ({'peer_channels': 1}, True),
+        ({'peer_channels': 0}, False),
     ),
 )
 def test_validate_config(bad_cfg: Any, valid: bool) -> None:
@@ -120,7 +125,7 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
         uuid=uuid.uuid4(),
         host='host',
         port=1234,
-        server='myserver.com',
+        server='wss://myserver.com',
     )
     options.update(bad_cfg)
 

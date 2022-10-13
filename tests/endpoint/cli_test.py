@@ -51,7 +51,7 @@ def test_configure(home_dir) -> None:
     name = 'my-endpoint'
     host = '127.0.0.1'
     port = 4321
-    server = 'server:1234'
+    server = 'ws://server:1234'
     main(
         [
             'configure',

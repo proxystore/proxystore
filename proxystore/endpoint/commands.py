@@ -205,6 +205,7 @@ def start_endpoint(
         max_memory=cfg.max_memory,
         dump_dir=cfg.dump_dir,
         peer_channels=cfg.peer_channels,
+        verify_certificate=cfg.verify_certificate,
     )
 
     return 0

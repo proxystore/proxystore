@@ -22,6 +22,7 @@ class EndpointConfig:
     max_memory: int | None = None
     dump_dir: str | None = None
     peer_channels: int = 1
+    verify_certificate: bool = True
 
     def __post_init__(self) -> None:
         """Validate config contains reasonable values.
@@ -44,12 +45,16 @@ class EndpointConfig:
                 raise ValueError(f'{self.uuid} is not a valid UUID4 string.')
         if self.port < 1 or self.port > 65535:
             raise ValueError('Port must be in range [1, 65535].')
-        if self.server == '':
+        if self.server is not None and not (
+            self.server.startswith('ws://') or self.server.startswith('wss://')
+        ):
             raise ValueError(
-                'EndpointConfig.server cannot be an empty string.',
+                'Server must start with ws:// or wss://.',
             )
         if self.max_memory is not None and self.max_memory < 1:
             raise ValueError('Max memory must be None or positive.')
+        if self.peer_channels < 1:
+            raise ValueError('Peer channels must be >= 1.')
 
 
 def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
