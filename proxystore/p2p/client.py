@@ -61,12 +61,19 @@ async def connect(
             if the connection to the signaling server is closed, does not reply
             to the registration request within the timeout, or replies with an
             error.
+        ValueError:
+            if address does not start with ws:// or wss://.
     """
     if name is None:
         name = gethostname()
     if uuid is None:
         uuid = uuid4()
 
+    if not (address.startswith('ws://') or address.startswith('wss://')):
+        raise ValueError(
+            'Signaling server address must start with ws:// or wss://.'
+            f'Got {address}.',
+        )
     ssl_default = True if address.startswith('wss://') else None
 
     websocket = await websockets.client.connect(

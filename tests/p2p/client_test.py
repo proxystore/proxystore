@@ -32,6 +32,12 @@ async def test_connect_and_ping_server(signaling_server) -> None:
 
 
 @pytest.mark.asyncio
+async def test_invalid_address_protocol() -> None:
+    with pytest.raises(ValueError, match='wss://'):
+        await connect('myserver.com', name='test', uuid=uuid4())
+
+
+@pytest.mark.asyncio
 async def test_connect_exceptions(signaling_server) -> None:
     async def sleep(*args, **kwargs) -> None:
         await asyncio.sleep(10)
