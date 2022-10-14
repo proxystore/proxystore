@@ -44,7 +44,7 @@ resolve themselves without the program being aware.
 
 ProxyStore provides the proxy interface to a number of commonly used object
 stores as well as the :any:`Proxy <proxystore.proxy.Proxy>` and
-:any:`Factory <proxystore.factory.Factory>` building blocks to allow developers
+:class:`~proxystore.factory.Factory` building blocks to allow developers
 to create powerful just-in-time resolution functionality for Python objects.
 
 Installation
@@ -55,7 +55,12 @@ Installation
    $ pip install proxystore
 
 Serving :doc:`ProxyStore Endpoints <./guides/endpoints>` requires installing
-using the extras install: ``pip install proxystore[endpoints]``.
+using the extras install.
+
+.. code-block:: bash
+
+   $ pip install proxystore[endpoints]
+
 See :doc:`Contributing <./contributing>` if you are installing for local
 development.
 
@@ -63,14 +68,14 @@ Usage
 -----
 
 ProxyStore is intended to be used via the
-:any:`Store <proxystore.store.base.Store>` interface which provide the
-:any:`proxy() <proxystore.store.base.Store.proxy>` method for placing objects
+:class:`~proxystore.store.base.Store` interface which provide the
+:py:meth:`~proxystore.store.base.Store.proxy` method for placing objects
 in stores and creating proxies that will resolve to the associated object in
 the store.
 
-ProxyStore provides many :any:`Store <proxystore.store.base.Store>`
+ProxyStore provides many :class:`~proxystore.store.base.Store`
 implementations and more can be added by extending the
-:any:`Store <proxystore.store.base.Store>` class.
+:class:`~proxystore.store.base.Store` class.
 
 .. list-table::
    :widths: 15 50
@@ -79,31 +84,31 @@ implementations and more can be added by extending the
 
    * - Type
      - Use Case
-   * - :any:`LocalStore <proxystore.store.local.LocalStore>`
+   * - :class:`~proxystore.store.local.LocalStore`
      - In-memory object store local to the process. Useful for development.
-   * - :any:`RedisStore <proxystore.store.redis.RedisStore>`
+   * - :class:`~proxystore.store.redis.RedisStore`
      - Store objects in a preconfigured Redis server.
-   * - :any:`FileStore <proxystore.store.file.FileStore>`
+   * - :class:`~proxystore.store.file.FileStore`
      - Use a globally accessible file system for storing objects.
-   * - :any:`GlobusStore <proxystore.store.globus.GlobusStore>`
+   * - :class:`~proxystore.store.globus.GlobusStore`
      - Transfer objects between two Globus endpoints.
-   * - :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>`
+   * - :class:`~proxystore.store.endpoint.EndpointStore`
      - [*Experimental*] P2P object stores for multi-site applications.
 
 The following example uses the
-:any:`RedisStore <proxystore.store.redis.RedisStore>` to interface with a
+:class:`~proxystore.store.redis.RedisStore` to interface with a
 running Redis server using proxies.
 
 .. code-block:: python
 
-   import proxystore as ps
+   import proxystore.store
 
-   store = ps.store.init_store(
+   store = proxystore.store.init_store(
        'redis', name='my-store', hostname=REDIS_HOST, port=REDIS_PORT
    )
 
    # An already initialized store can be retrieved
-   store = ps.store.get_store('my-store')
+   store = proxystore.store.get_store('my-store')
 
    # Stores have basic get/set functionality
    key = store.set(my_object)
@@ -120,7 +125,7 @@ arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.
 
-Using the :any:`Store <proxystore.store.base.Store>` store interface allows
+Using the :class:`~proxystore.store.base.Store~` store interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.
@@ -162,15 +167,32 @@ In this model, only the producer of the data needs to be aware of which
 ProxyStore backend to use, and no modification to consumer code are ever
 required.
 
+**How is this more efficient?**
+
+The ProxyStore model can improve application performance in many ways:
+
+1. Unused proxies are not resolved so not resources/time were wasted on the
+   communication.
+2. Object communication always takes place between the producer, the store, and
+   the consumer meaning communication is not wasted on intermediate processes
+   which have a proxy but do not use it.
+3. Different backends can be used that are optimized for specific usage
+   patterns.
+4. Proxies have built-in caching for frequently used objects
+   (:ref:`advanced-caching`).
+
 See :doc:`Advanced Usage <./advanced>` to learn more!
 
-Examples
---------
+Related
+-------
 
+**Examples:**
 Examples of integrating ProxyStore into distributed applications built on
 `FuncX <https://funcx.org/>`_ and `Parsl <https://parsl-project.org/>`_ are
 `here <https://github.com/proxystore/proxystore/tree/main/examples>`_.
 
+**Benchmarks:**
+ProxyStore benchmarks are maintained at `<https://github.com/proxystore/proxystore-benchmarks>`_.
 
 Known Issues
 ------------

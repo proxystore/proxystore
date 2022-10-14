@@ -1,4 +1,4 @@
-"""ProxyStore Endpoint CLI."""
+""":code:`proxystore-endpoint` command-line interface."""
 from __future__ import annotations
 
 import argparse

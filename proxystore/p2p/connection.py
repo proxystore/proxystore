@@ -59,28 +59,28 @@ class PeerConnection:
     .. code-block:: python
 
        from proxystore.p2p.connection import PeerConnection
+       from proxystore.p2p.messages import decode
        from proxystore.p2p.server import connect
-       from proxystore.serialize import deserialize
 
-       uuid1, name1, websocket1 = await connect(signaling_server.address)
+       uuid1, name1, websocket1 = await connect(signaling_server_address)
        connection1 = PeerConnection(uuid1, name1, websocket1)
 
-       uuid2, name2, websocket2 = await connect(signaling_server.address)
+       uuid2, name2, websocket2 = await connect(signaling_server_address)
        connection2 = PeerConnection(uuid2, name2, websocket2)
 
        await connection1.send_offer(uuid2)
-       offer = deserialize(await websocket2.recv())
+       offer = decode(await websocket2.recv())
        await connection2.handle_server_message(offer)
-       answer = deserialize(await websocket1.recv())
+       answer = decode(await websocket1.recv())
        await connection1.handle_server_message(answer)
 
        await connection1.ready()
        await connection2.ready()
 
-       await connection1.send(b'hello')
-       assert await connection2.recv() == b'hello'
-       await connection2.send(b'hello hello')
-       assert await connection1.recv() == b'hello hello'
+       await connection1.send('hello')
+       assert await connection2.recv() == 'hello'
+       await connection2.send('hello hello')
+       assert await connection1.recv() == 'hello hello'
 
        await websocket1.close()
        await websocket2.close()

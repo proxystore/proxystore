@@ -45,8 +45,8 @@ class PeerManager:
 
        from proxystore.p2p.manager import PeerManager
 
-       pm1 = await PeerManager(uuid.uuid4(), signaling_server.address)
-       pm2 = await PeerManager(uuid.uuid4(), signaling_server.address)
+       pm1 = await PeerManager(uuid.uuid4(), signaling_server_address)
+       pm2 = await PeerManager(uuid.uuid4(), signaling_server_address)
 
        await pm1.send(pm2.uuid, 'hello hello')
        source_uuid, message = await pm2.recv()

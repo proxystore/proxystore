@@ -1,4 +1,4 @@
-"""Utility functions."""
+"""General purpose utility functions."""
 from __future__ import annotations
 
 import os

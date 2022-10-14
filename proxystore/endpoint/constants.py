@@ -1,4 +1,4 @@
-"""ProxyStore Endpoint Constants."""
+"""Endpoint constants."""
 from __future__ import annotations
 
 

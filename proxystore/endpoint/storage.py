@@ -1,4 +1,4 @@
-"""Storage interface for Endpoints."""
+"""Storage interface for blobs."""
 from __future__ import annotations
 
 import collections

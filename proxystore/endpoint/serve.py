@@ -1,4 +1,4 @@
-"""CLI for serving an endpoint as a REST server."""
+"""Endpoint serving."""
 from __future__ import annotations
 
 import asyncio

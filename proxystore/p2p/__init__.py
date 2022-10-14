@@ -1,4 +1,4 @@
-"""Peer-to-peer connection utilities and services.
+"""Peer-to-peer communication and signaling.
 
 This module provides two main functionalities: the
 :any:`PeerManager <proxystore.p2p.manager.PeerManager>` and
