@@ -16,7 +16,7 @@ class EndpointConfig:
 
     name: str
     uuid: uuid.UUID
-    host: str
+    host: str | None
     port: int
     server: str | None = None
     max_memory: int | None = None

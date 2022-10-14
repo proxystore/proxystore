@@ -66,6 +66,7 @@ def endpoints(
             port=port,
             server=f'ws://{ss_host}:{ss_port}',
         )
+        assert cfg.host is not None
         # We want a unique proxystore_dir for each endpoint to simulate
         # different systems
         proxystore_dir = os.path.join(tmp_dir, str(port))
