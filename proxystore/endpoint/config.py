@@ -1,4 +1,4 @@
-"""Endpoint config utilities."""
+"""Endpoint configuration."""
 from __future__ import annotations
 
 import dataclasses

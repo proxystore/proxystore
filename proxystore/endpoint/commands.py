@@ -1,4 +1,4 @@
-"""ProxyStore endpoint commands.
+"""Endpoint management commands.
 
 These are the implementations of the commands available via the
 :any:`proxystore-endpoint <proxystore.endpoint.cli.main>` command.

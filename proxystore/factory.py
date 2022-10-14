@@ -1,4 +1,4 @@
-"""ProxyStore Factory Implementations.
+"""Factory implementations.
 
 Factories are callable classes that wrap up the functionality needed
 to resolve a proxy, where resolving is the process of retrieving the

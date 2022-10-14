@@ -1,4 +1,4 @@
-"""Message types for endpoint-to-endpoint operations."""
+"""Endpoint to endpoint messages."""
 from __future__ import annotations
 
 import sys

@@ -1,4 +1,4 @@
-"""Globus OAuth Utilities.
+"""Globus OAuth tools.
 
 This implementation is based on
 `Parsl's implementation <https://github.com/Parsl/parsl/blob/1.2.0/parsl/data_provider/globus.py>`_  # noqa: E501

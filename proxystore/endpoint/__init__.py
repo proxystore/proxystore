@@ -1,4 +1,4 @@
-"""ProxyStore Endpoints.
+"""Endpoints for direct, cross-site communication.
 
 Note:
    Please refer to the :ref:`endpoints-guide` for an introduction to

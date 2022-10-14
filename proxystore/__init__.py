@@ -1,4 +1,4 @@
-"""Top-level module for ProxyStore."""
+"""ProxyStore is a library for decoupling object communication from code."""
 from __future__ import annotations
 
 

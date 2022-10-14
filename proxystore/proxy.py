@@ -1,4 +1,4 @@
-"""ProxyStore Proxy Implementation and Utilities."""
+"""Proxy implementation and helpers."""
 from __future__ import annotations
 
 import sys
