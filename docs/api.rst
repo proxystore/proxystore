@@ -1,8 +1,9 @@
 API
 ###
 
-.. toctree::
-   :maxdepth: 1
+.. autosummary::
+   :toctree: _autosummary
+   :recursive:
 
    proxystore.endpoint
    proxystore.factory
@@ -12,3 +13,9 @@ API
    proxystore.serialize
    proxystore.store
    proxystore.utils
+
+.. automodule:: proxystore
+   :members:
+   :inherited-members:
+   :member-order: bysource
+   :show-inheritance:

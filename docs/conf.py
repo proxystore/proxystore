@@ -16,6 +16,7 @@ from typing import Any
 import proxystore  # noqa: F401
 
 PROXY_PROPERTY_RE = r'<property object at 0x.*>.Proxy'
+PROXY_DOCSTRING = 'proxy.txt'
 
 
 def linkcode_resolve(domain: str, info: dict[str, Any]) -> str | None:
@@ -31,6 +32,23 @@ def linkcode_resolve(domain: str, info: dict[str, Any]) -> str | None:
     return f'https://github.com/proxystore/proxystore/blob/main/{filename}.py'
 
 
+def process_docstring(
+    app: Any,
+    what: Any,
+    name: str,
+    obj: Any,
+    options: Any,
+    lines: list[str],
+) -> list[str]:
+    """Insert Proxy docstring into proxy module."""
+    if what == 'module' and name == 'proxystore.proxy':
+        lines.append('')
+        with open(PROXY_DOCSTRING) as f:
+            lines.extend(f.read().splitlines())
+        lines.append('')
+    return lines
+
+
 def process_signature(
     app: Any,
     what: Any,
@@ -44,13 +62,13 @@ def process_signature(
     if signature is not None:
         signature = re.sub(
             PROXY_PROPERTY_RE,
-            'proxystore.proxy.Proxy',
+            'proxystore.proxy._Proxy',
             signature,
         )
     if return_annotations is not None:
         return_annotations = re.sub(
             PROXY_PROPERTY_RE,
-            'proxystore.proxy.Proxy',
+            'proxystore.proxy._Proxy',
             return_annotations,
         )
     return (signature, return_annotations)
@@ -73,6 +91,7 @@ def skip(
 def setup(app: Any) -> None:
     """Setup sphinx docs."""
     app.connect('autodoc-skip-member', skip)
+    app.connect('autodoc-process-docstring', process_docstring)
     app.connect('autodoc-process-signature', process_signature)
 
 
@@ -94,13 +113,15 @@ todo_include_todos = True
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.todo',
     'sphinx.ext.linkcode',
 ]
+autosummary_generate = True
 
 # Add any paths that contain templates here, relative to this directory.
-# templates_path = ['_templates']
+templates_path = ['_templates']
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

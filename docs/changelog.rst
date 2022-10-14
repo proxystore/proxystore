@@ -8,8 +8,8 @@ Version 0.3.3
 
 **Summary of Changes**
 
-#. Allow :func:`get_store() <proxystore.store.get_store>` to take a proxy as input to make it easier to get stats from a :any:`Store <proxystore.store.base.Store>` given a proxy (`PR #43 <https://github.com/proxystore/proxystore/pull/43>`_).
-#. Add base :any:`StoreFactory <proxystore.store.base.StoreFactory>` (`Issue #44 <https://github.com/proxystore/proxystore/issues/44>`_).
+#. Allow :func:`get_store() <proxystore.store.get_store>` to take a proxy as input to make it easier to get stats from a :class:`Store <proxystore.store.base.Store>` given a proxy (`PR #43 <https://github.com/proxystore/proxystore/pull/43>`_).
+#. Add base :class:`StoreFactory <proxystore.store.base.StoreFactory>` (`Issue #44 <https://github.com/proxystore/proxystore/issues/44>`_).
 
 
 Version 0.3.2
@@ -19,12 +19,12 @@ Version 0.3.2
 
 **Summary of Changes**
 
-#. :any:`GlobusStore <proxystore.store.globus.GlobusStore>` improvements:
+#. :class:`GlobusStore <proxystore.store.globus.GlobusStore>` improvements:
 
    * Endpoints parameter supports dict for better serialization (`#e71e96f <https://github.com/proxystore/proxystore/commit/e71e96ffe2af8ace2da1249744fee71a71d4e221>`_).
    * Files for Globus transfer are now specified rather than recursively discovered (`#c3e69f0 <https://github.com/proxystore/proxystore/commit/c3e69f05f4a69609ddd9cdefc58beca41dc2434e>`_).
    * Added note on Globus Auth (`Issue #20 <https://github.com/proxystore/proxystore/issues/20>`_).
-   * Added warning on use of `strict` with :any:`GlobusStore <proxystore.store.globus.GlobusStore>` (`Issue #21 <https://github.com/proxystore/proxystore/issues/21>`_).
+   * Added warning on use of `strict` with :class:`GlobusStore <proxystore.store.globus.GlobusStore>` (`Issue #21 <https://github.com/proxystore/proxystore/issues/21>`_).
    * User home :code:`~/` is now expanded in paths (`Issue #22 <https://github.com/proxystore/proxystore/issues/22>`_).
 
 #. Fix :code:`RemoteStore.proxy()` logging the incorrect key (`Issue #26 <https://github.com/proxystore/proxystore/issues/26>`_).
@@ -64,18 +64,18 @@ Version 0.3.0
 
 **Summary of Changes**
 
-#. :any:`LambdaFactory <proxystore.factory.LambdaFactory>` takes :code:`*args, **kwargs` now. See `Issue #13 <https://github.com/proxystore/proxystore/issues/13>`_. (`#86e6cac <https://github.com/proxystore/proxystore/commit/86e6cac2c782bca7d2ef2e573bd4afc254c4c678>`_)
+#. :class:`LambdaFactory <proxystore.factory.LambdaFactory>` takes :code:`*args, **kwargs` now. See `Issue #13 <https://github.com/proxystore/proxystore/issues/13>`_. (`#86e6cac <https://github.com/proxystore/proxystore/commit/86e6cac2c782bca7d2ef2e573bd4afc254c4c678>`_)
 #. Added source code button to ReadTheDocs. (`#8a20c20 <https://github.com/proxystore/proxystore/commit/8a20c2099e9eea5235b1dc819ef8c633b21ab662>`_)
-#. Added :any:`FileStore <proxystore.store.file.FileStore>`. (`#e7f8849 <https://github.com/proxystore/proxystore/commit/e7f8849dfd412cb2a451a624ff1fcd001a4615ca>`_)
-#. Added :code:`Store.cleanup()` to store interface for implementations that need to add cleanup logic (such as :any:`FileStore <proxystore.store.file.FileStore>` cleaning up its directory). (`#e7f8849 <https://github.com/proxystore/proxystore/commit/e7f8849dfd412cb2a451a624ff1fcd001a4615ca>`_)
-#. Added :any:`GlobusStore <proxystore.store.globus.GlobusStore>` and FuncX+Globus example. (`Issue #15 <https://github.com/proxystore/proxystore/issues/15>`_)
-#. The key is now an optional parameter to :any:`Store.set() <proxystore.store.base.Store.set>` and the official get used by the store will be returned by :any:`Store.set() <proxystore.store.base.Store.set>`. :any:`Store.create_key() <proxystore.store.base.Store.create_key>` can be used to specify key generation when a key is not provided. (`#38a78fa <https://github.com/proxystore/proxystore/commit/38a78fad4ec95012923620523c35e9b9c8083828>`_)
+#. Added :class:`FileStore <proxystore.store.file.FileStore>`. (`#e7f8849 <https://github.com/proxystore/proxystore/commit/e7f8849dfd412cb2a451a624ff1fcd001a4615ca>`_)
+#. Added :code:`Store.cleanup()` to store interface for implementations that need to add cleanup logic (such as :class:`FileStore <proxystore.store.file.FileStore>` cleaning up its directory). (`#e7f8849 <https://github.com/proxystore/proxystore/commit/e7f8849dfd412cb2a451a624ff1fcd001a4615ca>`_)
+#. Added :class:`GlobusStore <proxystore.store.globus.GlobusStore>` and FuncX+Globus example. (`Issue #15 <https://github.com/proxystore/proxystore/issues/15>`_)
+#. The key is now an optional parameter to :py:meth:`Store.set() <proxystore.store.base.Store.set>` and the official get used by the store will be returned by :py:meth:`Store.set() <proxystore.store.base.Store.set>`. :py:meth:`Store.create_key() <proxystore.store.base.Store.create_key>` can be used to specify key generation when a key is not provided. (`#38a78fa <https://github.com/proxystore/proxystore/commit/38a78fad4ec95012923620523c35e9b9c8083828>`_)
 #. Better inheritance for subclasses of :code:`RemoteStore` and created the base class :code:`RemoteFactory` to reduce redundant code in other factory types. (`#cf0a631 <https://github.com/proxystore/proxystore/commit/cf0a631646cbec676928daa6a166218185847fa6>`_)
 #. Serialization in ProxyStore is now done to bytes rather than strings. (`#d68ac9d <https://github.com/proxystore/proxystore/commit/d68ac9de92cc5d2b902c2fed462e75df7c830c8e>`_)
-#. Added :code:`DEBUG` level logging to :any:`proxystore.store <proxystore.store>`. (`#e0f1052 <https://github.com/proxystore/proxystore/commit/e0f1052a1bae3ccf2af10320852605989b501521>`_)
-#. Better testing infrastructure. Generic store tests now use fixtures to test multiple store types so code is not copy/pasted between tests. Added Globus and Parsl mocking to support unittests for :any:`GlobusStore <proxystore.store.globus.GlobusStore>`. (`#91d3894 <https://github.com/proxystore/proxystore/commit/91d3894bd85de8686fda0d9e425f18e122fa9e82>`_)
-#. Better handling of timestamps in stores that support mutable objects and strict guarantees. Added :code:`RemoteStore.get_timestamp(key)`. :any:`FileStore <proxystore.store.file.FileStore>` now uses file modified time. (`#e1bbdb8 <https://github.com/proxystore/proxystore/commit/e1bbdb8d485369e86b1a9acef6ccd2c1321c2e8d>`_)
-#. Added the batch methods :any:`Store.set_batch() <proxystore.store.base.Store.set_batch>` and :any:`Store.proxy_batch() <proxystore.store.base.Store.proxy_batch>`. (`#d1d24f7 <https://github.com/proxystore/proxystore/commit/d1d24f76fd8c2e50405d1580f116ac8c7e3d2339>`_)
+#. Added :code:`DEBUG` level logging to :py:mod:`proxystore.store <proxystore.store>`. (`#e0f1052 <https://github.com/proxystore/proxystore/commit/e0f1052a1bae3ccf2af10320852605989b501521>`_)
+#. Better testing infrastructure. Generic store tests now use fixtures to test multiple store types so code is not copy/pasted between tests. Added Globus and Parsl mocking to support unittests for :class:`GlobusStore <proxystore.store.globus.GlobusStore>`. (`#91d3894 <https://github.com/proxystore/proxystore/commit/91d3894bd85de8686fda0d9e425f18e122fa9e82>`_)
+#. Better handling of timestamps in stores that support mutable objects and strict guarantees. Added :code:`RemoteStore.get_timestamp(key)`. :class:`FileStore <proxystore.store.file.FileStore>` now uses file modified time. (`#e1bbdb8 <https://github.com/proxystore/proxystore/commit/e1bbdb8d485369e86b1a9acef6ccd2c1321c2e8d>`_)
+#. Added the batch methods :py:meth:`Store.set_batch() <proxystore.store.base.Store.set_batch>` and :py:meth:`Store.proxy_batch() <proxystore.store.base.Store.proxy_batch>`. (`#d1d24f7 <https://github.com/proxystore/proxystore/commit/d1d24f76fd8c2e50405d1580f116ac8c7e3d2339>`_)
 #. Various docstring and documentation updates.
 
 Version 0.2.0
@@ -85,11 +85,11 @@ Version 0.2.0
 
 **Summary of Changes**
 
-#. Proxies created by :any:`Store.proxy() <proxystore.store.base.Store.proxy>` can auto-evict the data from the store after the proxy has resolved itself using the `evict=True` flag (`#0ef8f61 <https://github.com/proxystore/proxystore/commit/0ef8f617118926737c85936adf2c0355150d93ee>`_).
+#. Proxies created by :py:meth:`Store.proxy() <proxystore.store.base.Store.proxy>` can auto-evict the data from the store after the proxy has resolved itself using the `evict=True` flag (`#0ef8f61 <https://github.com/proxystore/proxystore/commit/0ef8f617118926737c85936adf2c0355150d93ee>`_).
 #. Added cloudpickle to ProxyStore serialization utilities for lambda pickling support (`#a992ec7 <https://github.com/proxystore/proxystore/commit/a992ec756b40551fa36455e39d4bc617cb7cc2ce>`_).
-#. Added :any:`LambdaFactory <proxystore.factory.LambdaFactory>` (`#fc7674a <https://github.com/proxystore/proxystore/commit/fc76746a432cfe6f50214bece98ebe956abd848b>`_).
+#. Added :class:`LambdaFactory <proxystore.factory.LambdaFactory>` (`#fc7674a <https://github.com/proxystore/proxystore/commit/fc76746a432cfe6f50214bece98ebe956abd848b>`_).
 #. Extensive ProxyStore refactor to separate proxy/factory building blocks from the key-value store implementations. See `Issue #8 <https://github.com/proxystore/proxystore/issues/8>`_ and `Pull Request #9 <https://github.com/proxystore/proxystore/pull/9>`_ for more details (`#0564e5f <https://github.com/proxystore/proxystore/commit/0564e5f437cc34097528dd93256460a4bf1e6345>`_).
-#. Pass custom factories to :any:`Store.proxy() <proxystore.store.base.Store.proxy>` (`#dffba4c <https://github.com/proxystore/proxystore/commit/dffba4c7b0a81ea12f91d75c1ab014ded435868b>`_).
+#. Pass custom factories to :py:meth:`Store.proxy() <proxystore.store.base.Store.proxy>` (`#dffba4c <https://github.com/proxystore/proxystore/commit/dffba4c7b0a81ea12f91d75c1ab014ded435868b>`_).
 #. Initialize multiple factories of the same type (`#1411c0f <https://github.com/proxystore/proxystore/commit/1411c0f638e22cdb4ea0047fa97137c84eab8538>`_ and `#41b4bd3 <https://github.com/proxystore/proxystore/commit/41b4bd3c4e432ac00c3b9c3c91fb911fb1450353>`_).
 
 

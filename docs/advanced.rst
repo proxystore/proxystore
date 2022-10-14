@@ -10,7 +10,7 @@ Asynchronous Resolving
 It is common in distributed computation for inputs to functions executed
 remotely to not be needed immediately upon execution.
 Store implementations
-(E.g., :any:`RedisStore <proxystore.store.redis.RedisStore>`) provide support
+(E.g., :class:`~proxystore.store.redis.RedisStore`) provide support
 for asynchronously resolving proxies to overlap communication and computation.
 
 .. code-block:: python
@@ -29,7 +29,7 @@ for asynchronously resolving proxies to overlap communication and computation.
 Caching
 -------
 
-:any:`Stores <proxystore.store.base.Store>` provides built in caching
+:class:`~proxystore.store.base.Store` provides built in caching
 functionality.
 Caches are local to the Python process but will speed up the resolution when
 multiple proxies refer to the same object.
@@ -60,7 +60,7 @@ Proxies can be created easily using ProxyStore.
 :code:`resolve_object()` will be called when the proxy :code:`p` does its
 just-in-time resolution, and then :code:`p` will behave exactly like
 :code:`obj`.
-The :any:`LambdaFactory <proxystore.factory.LambdaFactory>` accepts any
+The :class:`~proxystore.factory.LambdaFactory` accepts any
 callable Python object (functions, lambdas, etc.).
 
 Proxies are powerful because they can intercept and redefine functionality of
@@ -97,7 +97,7 @@ from `lazy-object-proxy <https://github.com/ionelmc/python-lazy-object-proxy>`_
 which intercepts all calls to the object's magic functions
 (:code:`__func_name__()` functions) and forwards the calls to the wrapped
 object. If the wrapped object has not been resolved yet, the proxy calls the
-:any:`Factory <proxystore.factory.Factory>` that was passed to the proxy
+:class:`~proxystore.factory.Factory` that was passed to the proxy
 constructor to retrieve the object that should be wrapped.
 
 Generally, a proxy is only ever resolved once.

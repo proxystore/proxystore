@@ -44,7 +44,7 @@ resolve themselves without the program being aware.
 
 ProxyStore provides the proxy interface to a number of commonly used object
 stores as well as the :any:`Proxy <proxystore.proxy.Proxy>` and
-:any:`Factory <proxystore.factory.Factory>` building blocks to allow developers
+:class:`Factory <proxystore.factory.Factory>` building blocks to allow developers
 to create powerful just-in-time resolution functionality for Python objects.
 
 Installation
@@ -63,14 +63,14 @@ Usage
 -----
 
 ProxyStore is intended to be used via the
-:any:`Store <proxystore.store.base.Store>` interface which provide the
-:any:`proxy() <proxystore.store.base.Store.proxy>` method for placing objects
+:class:`Store <proxystore.store.base.Store>` interface which provide the
+:py:meth:`proxy() <proxystore.store.base.Store.proxy>` method for placing objects
 in stores and creating proxies that will resolve to the associated object in
 the store.
 
-ProxyStore provides many :any:`Store <proxystore.store.base.Store>`
+ProxyStore provides many :class:`Store <proxystore.store.base.Store>`
 implementations and more can be added by extending the
-:any:`Store <proxystore.store.base.Store>` class.
+:class:`Store <proxystore.store.base.Store>` class.
 
 .. list-table::
    :widths: 15 50
@@ -79,19 +79,19 @@ implementations and more can be added by extending the
 
    * - Type
      - Use Case
-   * - :any:`LocalStore <proxystore.store.local.LocalStore>`
+   * - :class:`LocalStore <proxystore.store.local.LocalStore>`
      - In-memory object store local to the process. Useful for development.
-   * - :any:`RedisStore <proxystore.store.redis.RedisStore>`
+   * - :class:`RedisStore <proxystore.store.redis.RedisStore>`
      - Store objects in a preconfigured Redis server.
-   * - :any:`FileStore <proxystore.store.file.FileStore>`
+   * - :class:`FileStore <proxystore.store.file.FileStore>`
      - Use a globally accessible file system for storing objects.
-   * - :any:`GlobusStore <proxystore.store.globus.GlobusStore>`
+   * - :class:`GlobusStore <proxystore.store.globus.GlobusStore>`
      - Transfer objects between two Globus endpoints.
-   * - :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>`
+   * - :class:`EndpointStore <proxystore.store.endpoint.EndpointStore>`
      - [*Experimental*] P2P object stores for multi-site applications.
 
 The following example uses the
-:any:`RedisStore <proxystore.store.redis.RedisStore>` to interface with a
+:class:`RedisStore <proxystore.store.redis.RedisStore>` to interface with a
 running Redis server using proxies.
 
 .. code-block:: python
@@ -120,7 +120,7 @@ arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.
 
-Using the :any:`Store <proxystore.store.base.Store>` store interface allows
+Using the :class:`Store <proxystore.store.base.Store>` store interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.

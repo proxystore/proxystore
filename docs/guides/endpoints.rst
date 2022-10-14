@@ -3,7 +3,7 @@
 Peer-to-Peer Endpoints
 ######################
 
-ProxyStore :any:`Endpoints  <proxystore.endpoint>` are in-memory object stores
+ProxyStore :py:mod:`Endpoints  <proxystore.endpoint>` are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.
 
@@ -20,10 +20,10 @@ between multiple sites using NAT traversal.
 Overview
 --------
 
-At its core, the :any:`Endpoint <proxystore.endpoint.endpoint.Endpoint>` is
+At its core, the :class:`Endpoint <proxystore.endpoint.endpoint.Endpoint>` is
 an in-memory data store built on asyncio. Endpoints provide a REST
 API, served using `Quart <https://pgjones.gitlab.io/quart/>`_, and ProxyStore
-provides the :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` as
+provides the :class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` as
 the primary interface for clients to interact with endpoints.
 
 .. figure:: ../static/endpoints.png
@@ -109,12 +109,12 @@ EndpointStore
 -------------
 
 The primary interface to endpoints is the
-:any:`EndpointStore <proxystore.store.endpoint.EndpointStore>`.
+:class:`EndpointStore <proxystore.store.endpoint.EndpointStore>`.
 
 .. note::
 
    This section assumes familiarity with proxies and the
-   :any:`Store <proxystore.store.base.Store>` interface. See the
+   :class:`Store <proxystore.store.base.Store>` interface. See the
    :ref:`get-started` guide before getting started with endpoints.
 
 .. code-block:: python
@@ -133,15 +133,15 @@ The primary interface to endpoints is the
 
     p = store.proxy(my_object)
 
-The :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` takes
+The :class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` takes
 a list of endpoint UUIDs. This list represents any endpoint that proxies
 created by this store may interact with to resolve themselves. The
-:any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` will use this
+:class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` will use this
 list to find its *home* endpoint, the endpoint that will be used to issue
 operations to. To find the *home* endpoint, the ProxyStore home directory
 (``~/.proxystore``) will be scanned for any endpoint configurations matching
 the one of the UUIDs. If a match is found, the
-:any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` will attempt
+:class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` will attempt
 to connect to the endpoint using the host and port in the configuration. This
 process is repeated until a reachable endpoint is found. While the user could
 specify the home endpoint directly, the home endpoint may change when a proxy
@@ -159,7 +159,7 @@ Proxy Lifecycle
    endpoints.
 
 In distributed systems, proxies created from an
-:any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` can be used
+:class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` can be used
 to facilitate simple and fast data communication.
 The flow of data and their associated proxies are shown in **Fig. 2**.
 
@@ -168,7 +168,7 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
    The proxy contains the key referencing the *target*, the endpoint UUID with
    the *target* data (Endpoint 1's UUID), and the list of
    all endpoint UUIDs configured with the
-   :any:`EndpointStore <proxystore.store.endpoint.EndpointStore>` (the UUIDs
+   :class:`EndpointStore <proxystore.store.endpoint.EndpointStore>` (the UUIDs
    of Endpoints 1 and 2).
 #. Host A communicates the proxy object to Host B. This communication is
    cheap because the proxy is just a thin reference to the object.

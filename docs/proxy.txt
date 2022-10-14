@@ -1,6 +1,3 @@
-proxystore.proxy
-################
-
 .. class:: proxystore.proxy.Proxy(factory: Callable[[], T])
 
    Bases: :class:`Generic`\[:class:`T`\]
@@ -45,8 +42,3 @@ proxystore.proxy
    :type factory: :class:`Callable[[], T]`
 
    :raises TypeError: if `factory` is not callable.
-
-.. automodule:: proxystore.proxy
-   :members:
-   :inherited-members:
-   :show-inheritance:
