@@ -2,6 +2,7 @@ proxystore.store
 ################
 
 .. toctree::
+   :maxdepth: 1
 
    proxystore.store.base
    proxystore.store.cache

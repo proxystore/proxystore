@@ -2,6 +2,7 @@ API
 ###
 
 .. toctree::
+   :maxdepth: 1
 
    proxystore.endpoint
    proxystore.factory

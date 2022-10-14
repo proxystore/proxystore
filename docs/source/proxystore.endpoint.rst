@@ -2,6 +2,7 @@ proxystore.endpoint
 ###################
 
 .. toctree::
+   :maxdepth: 1
 
    proxystore.endpoint.cli
    proxystore.endpoint.commands

@@ -2,6 +2,7 @@ proxystore.p2p
 ##############
 
 .. toctree::
+   :maxdepth: 1
 
    proxystore.p2p.chunks
    proxystore.p2p.connection
