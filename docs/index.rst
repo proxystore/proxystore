@@ -31,5 +31,5 @@ ProxyStore can be found on `GitHub <https://github.com/proxystore/proxystore>`_.
    advanced
    guides
    contributing
-   source/api
+   api
    changelog

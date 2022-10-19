@@ -1,4 +1,4 @@
-"""ProxyStore Proxy Implementation and Utilities."""
+"""Proxy implementation and helpers."""
 from __future__ import annotations
 
 import sys
@@ -82,6 +82,23 @@ class Proxy(slots.Proxy, Generic[T]):
         the wrapped object. Thus, proxy instances can be pickled and passed
         around cheaply, and once the proxy is unpickled and used, the `factory`
         will be called again to resolve the object.
+
+    Warning:
+        Python bindings to other languages (e.g., C, C++) may throw type
+        errors when receiving a :class:`~proxystore.proxy.Proxy`.
+        Casting the proxy or extracting the target object may be needed.
+
+        .. code-block:: python
+
+           >>> import io
+           >>> from proxystore.proxy import Proxy
+           >>> s = 'mystring'
+           >>> p = Proxy(lambda: s)
+           >>> io.StringIO(p)
+           Traceback (most recent call last):
+             File "<stdin>", line 1, in <module>
+           TypeError: initial_value must be str or None, not Proxy
+           >>> io.StringIO(str(p))  # succeeds
     """
 
     def __init__(self, factory: FactoryType[T]) -> None:

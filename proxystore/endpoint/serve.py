@@ -1,4 +1,4 @@
-"""CLI for serving an endpoint as a REST server."""
+"""Endpoint serving."""
 from __future__ import annotations
 
 import asyncio
@@ -76,6 +76,8 @@ def serve(
     log_file: str | None = None,
     max_memory: int | None = None,
     dump_dir: str | None = None,
+    peer_channels: int = 1,
+    verify_certificate: bool = True,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -98,6 +100,10 @@ def serve(
             (default: None).
         dump_dir (str): optional directory to dump objects to if the
             memory limit is exceeded (default: None).
+        peer_channels (int): number of datachannels per peer connection
+            to another endpoint to communicate over (default: 1).
+        verify_certificate (bool): verify the signaling server's SSL
+            certificate (default: True).
     """
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
@@ -121,6 +127,8 @@ def serve(
         signaling_server=server,
         max_memory=max_memory,
         dump_dir=dump_dir,
+        peer_channels=peer_channels,
+        verify_certificate=verify_certificate,
     )
     app = create_app(endpoint)
 

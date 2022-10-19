@@ -1,4 +1,4 @@
-"""ProxyStore Endpoint."""
+"""Endpoint implementation."""
 from __future__ import annotations
 
 import asyncio
@@ -91,6 +91,8 @@ class Endpoint:
         peer_timeout: int = 30,
         max_memory: int | None = None,
         dump_dir: str | None = None,
+        peer_channels: int = 1,
+        verify_certificate: bool = True,
     ) -> None:
         """Init Endpoint.
 
@@ -121,6 +123,11 @@ class Endpoint:
                 (default: None).
             dump_dir (str): optional directory to dump objects to if the
                 memory limit is exceeded (default: None).
+            peer_channels (int): number of datachannels per peer connection
+                to another endpoint to communicate over (default: 1).
+            verify_certificate (bool): verify the signaling server's SSL
+                certificate. This should almost never be disabled except for
+                testing with self-signed certificates (default: True).
         """
         # TODO(gpauloski): need to consider semantics of operations
         #   - can all ops be triggered on remote?
@@ -129,6 +136,8 @@ class Endpoint:
         self._uuid = uuid
         self._signaling_server = signaling_server
         self._peer_timeout = peer_timeout
+        self._peer_channels = peer_channels
+        self._verify_certificate = verify_certificate
 
         self._mode = (
             EndpointMode.SOLO
@@ -192,6 +201,8 @@ class Endpoint:
                 signaling_server=self._signaling_server,
                 name=self.name,
                 timeout=self._peer_timeout,
+                peer_channels=self._peer_channels,
+                verify_certificate=self._verify_certificate,
             )
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,

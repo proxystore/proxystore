@@ -1,9 +1,8 @@
-"""ProxyStore Endpoint CLI."""
+""":code:`proxystore-endpoint` command-line interface."""
 from __future__ import annotations
 
 import argparse
 import logging
-import socket
 import sys
 from typing import Sequence
 
@@ -71,14 +70,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser_configure.add_argument('name', help='name of endpoint')
     parser_configure.add_argument(
-        '--host',
-        default=None,
-        help=(
-            'IP address of host that the endpoint will be run on '
-            '(default is IP address of current host)'
-        ),
-    )
-    parser_configure.add_argument(
         '--port',
         type=int,
         default=9753,
@@ -101,6 +92,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=None,
         required='--max-memory' in sys.argv,
         help='optional directory to dump objects to if max_memory reached',
+    )
+    parser_configure.add_argument(
+        '--peer-channels',
+        default=1,
+        type=int,
+        help='datachannels per peer connection',
     )
 
     # Command: list
@@ -157,14 +154,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, handlers=[handler])
 
     if args.command == 'configure':
-        host = (
-            socket.gethostbyname(socket.gethostname())
-            if args.host is None
-            else args.host
-        )
         return configure_endpoint(
             args.name,
-            host=host,
             port=args.port,
             server=args.server,
             max_memory=args.max_memory,

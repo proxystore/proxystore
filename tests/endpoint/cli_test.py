@@ -49,15 +49,12 @@ def test_help_with_command(capsys) -> None:
 
 def test_configure(home_dir) -> None:
     name = 'my-endpoint'
-    host = '127.0.0.1'
     port = 4321
-    server = 'server:1234'
+    server = 'ws://server:1234'
     main(
         [
             'configure',
             name,
-            '--host',
-            host,
             '--port',
             str(port),
             '--server',
@@ -69,7 +66,6 @@ def test_configure(home_dir) -> None:
     assert os.path.isdir(endpoint_dir)
     cfg = read_config(endpoint_dir)
     assert cfg.name == name
-    assert cfg.host == host
     assert cfg.port == port
     assert cfg.server == server
 

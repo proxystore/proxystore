@@ -1,4 +1,4 @@
-"""ProxyStore endpoint commands.
+"""Endpoint management commands.
 
 These are the implementations of the commands available via the
 :any:`proxystore-endpoint <proxystore.endpoint.cli.main>` command.
@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import socket
 import uuid
 
 from proxystore.endpoint.config import EndpointConfig
@@ -25,18 +26,17 @@ logger = logging.getLogger(__name__)
 def configure_endpoint(
     name: str,
     *,
-    host: str,
     port: int,
     server: str | None,
     proxystore_dir: str | None = None,
     max_memory: int | None = None,
     dump_dir: str | None = None,
+    peer_channels: int = 1,
 ) -> int:
     """Configure a new endpoint.
 
     Args:
         name (str): name of endpoint.
-        host (str): IP address of host the endpoint will be run on.
         port (int): port for endpoint to listen on.
         server (str): optional address of signaling server for P2P endpoint
             connections.
@@ -47,6 +47,8 @@ def configure_endpoint(
             (default: None).
         dump_dir (str): optional directory to dump objects to if the
             memory limit is exceeded (default: None).
+        peer_channels (int): number of datachannels per peer connection
+            to another endpoint to communicate over (default: 1).
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -56,11 +58,12 @@ def configure_endpoint(
         cfg = EndpointConfig(
             name=name,
             uuid=uuid.uuid4(),
-            host=host,
+            host=None,
             port=port,
             server=server,
             max_memory=max_memory,
             dump_dir=dump_dir,
+            peer_channels=peer_channels,
         )
     except ValueError as e:
         logger.error(str(e))
@@ -80,7 +83,7 @@ def configure_endpoint(
     logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>.')
     logger.info('')
     logger.info('To start the endpoint:')
-    logger.info(f'  $ proxystore-endpoint start {cfg.name}.')
+    logger.info(f'  $ proxystore-endpoint start {cfg.name}')
 
     return 0
 
@@ -189,6 +192,10 @@ def start_endpoint(
         logger.error('Correct the endpoint config and try again.')
         return 1
 
+    cfg.host = socket.gethostbyname(socket.gethostname())
+    # Write out new config with host so clients can see the current host
+    write_config(cfg, endpoint_dir)
+
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     serve(
         name=cfg.name,
@@ -200,6 +207,8 @@ def start_endpoint(
         log_file=os.path.join(endpoint_dir, 'endpoint.log'),
         max_memory=cfg.max_memory,
         dump_dir=cfg.dump_dir,
+        peer_channels=cfg.peer_channels,
+        verify_certificate=cfg.verify_certificate,
     )
 
     return 0

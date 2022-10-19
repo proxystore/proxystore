@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import socket
+import ssl
 from types import TracebackType
 from typing import Any
 from typing import Generator
@@ -44,8 +45,8 @@ class PeerManager:
 
        from proxystore.p2p.manager import PeerManager
 
-       pm1 = await PeerManager(uuid.uuid4(), signaling_server.address)
-       pm2 = await PeerManager(uuid.uuid4(), signaling_server.address)
+       pm1 = await PeerManager(uuid.uuid4(), signaling_server_address)
+       pm2 = await PeerManager(uuid.uuid4(), signaling_server_address)
 
        await pm1.send(pm2.uuid, 'hello hello')
        source_uuid, message = await pm2.recv()
@@ -68,7 +69,10 @@ class PeerManager:
         uuid: UUID,
         signaling_server: str,
         name: str | None = None,
+        *,
         timeout: int = 30,
+        peer_channels: int = 1,
+        verify_certificate: bool = True,
     ) -> None:
         """Init PeerManager.
 
@@ -91,11 +95,30 @@ class PeerManager:
                 logging. If unspecified, the hostname will be used.
             timeout (int): timeout in seconds when waiting for a peer
                 or signaling server connection to be established (default: 30).
+            peer_channels (int): number of datachannels to split message
+                sending over between each peer (default: 1).
+            verify_certificate (bool): verify the signaling server's SSL
+                certificate (default: True).
+
+        Raises:
+            ValueError:
+                if the signaling server address does not start with ws://
+                or wss://.
         """
+        if not (
+            signaling_server.startswith('ws://')
+            or signaling_server.startswith('wss://')
+        ):
+            raise ValueError(
+                'Signaling server address must start with ws:// or wss://'
+                f'Got {signaling_server}.',
+            )
         self._uuid = uuid
         self._signaling_server = signaling_server
         self._name = name if name is not None else socket.gethostname()
         self._timeout = timeout
+        self._peer_channels = peer_channels
+        self._verify_certificate = verify_certificate
 
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
@@ -134,12 +157,21 @@ class PeerManager:
     async def async_init(self) -> None:
         """Connect to signaling server."""
         if self._websocket_or_none is None:
+            ssl_context = ssl.create_default_context()
+            if not self._verify_certificate:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
             uuid, _, socket = await connect(
                 address=self._signaling_server,
                 uuid=self._uuid,
                 name=self._name,
                 timeout=self._timeout,
+                ssl=ssl_context
+                if self._signaling_server.startswith('wss://')
+                else None,
             )
+
             if uuid != self._uuid:
                 raise PeerRegistrationError(
                     'Signaling server responded to registration request '
@@ -256,6 +288,7 @@ class PeerManager:
                         uuid=self._uuid,
                         name=self._name,
                         websocket=self._websocket,
+                        channels=self._peer_channels,
                     )
                     async with self._peers_lock:
                         self._peers[peers] = connection
@@ -347,6 +380,7 @@ class PeerManager:
                 self._uuid,
                 self._name,
                 self._websocket,
+                channels=self._peer_channels,
             )
             self._peers[peers] = connection
 
