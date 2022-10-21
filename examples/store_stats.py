@@ -7,10 +7,9 @@ from __future__ import annotations
 
 from typing import Any
 
-import proxystore as ps
 import proxystore.store
 
-store = ps.store.init_store(
+store = proxystore.store.init_store(
     'file',
     name='default',
     store_dir='/tmp/proxystore-dump',
@@ -31,6 +30,7 @@ stats1 = store.stats(key1)
   stats1['set'] = {stats1['set']}
   stats1['set'].calls = {stats1['set'].calls}
   stats1['set'].avg_time_ms = {stats1['set'].avg_time_ms}
+  stats1['set_bytes'].size_bytes = {stats1['set_bytes'].size_bytes}
 """,
 )
 print(
@@ -41,8 +41,11 @@ store2 = store.stats(key2)
   stats2['set'] = {stats2['set']}
   stats2['set'].calls = {stats2['set'].calls}
   stats2['set'].avg_time_ms = {stats2['set'].avg_time_ms}
+  stats2['set_bytes'].size_bytes = {stats2['set_bytes'].size_bytes}
 """,
 )
+
+print(stats1['set'], stats1['set_bytes'])
 
 print('Call store.get(key1)')
 store.get(key1)
@@ -55,6 +58,7 @@ store = store.stats(key1)
   stats['get'] = {stats['get']}
   stats['get'].calls = {stats['get'].calls}
   stats['get'].avg_time_ms = {stats['get'].avg_time_ms}
+  stats['get_bytes'].size_bytes = {stats['get_bytes'].size_bytes}
 """,
 )
 
@@ -72,7 +76,7 @@ store = store.stats(key1)
 """,
 )
 
-target_proxy: ps.proxy.Proxy[Any] = store.proxy(target)
+target_proxy: proxystore.proxy.Proxy[Any] = store.proxy(target)
 stats = store.stats(target_proxy)
 print(
     f"""\

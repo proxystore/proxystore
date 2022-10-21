@@ -309,3 +309,13 @@ def test_globus_auth_not_done(tmp_dir: str) -> None:
     with mock.patch('proxystore.globus.home_dir', return_value=tmp_dir):
         with pytest.raises(GlobusAuthFileError):
             GlobusStore('store', endpoints=[EP1, EP2])
+
+
+def test_globus_store_key_equality() -> None:
+    """Test GlobusStoreKey custom equality."""
+    key = GlobusStoreKey('a', 'b')
+    assert key == GlobusStoreKey('a', 'b')
+    assert key == ('a', 'b')
+    assert key != ('b', 'b')
+    assert key == ('a', 'c')
+    assert key != 'a'

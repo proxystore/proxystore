@@ -244,6 +244,21 @@ class GlobusStoreKey(NamedTuple):
     filename: str
     task_id: str
 
+    def __eq__(self, other: Any) -> bool:
+        """Match keys by filename only.
+
+        This is a hack around the fact that the task_id is not created until
+        after the filename is so there can be a state where the task_id
+        is empty.
+        """
+        if isinstance(other, tuple):
+            return self[0] == other[0]
+        return False
+
+    def __ne__(self, other: Any) -> bool:
+        """Match keys by filename only."""
+        return not self == other
+
 
 class GlobusStore(Store[GlobusStoreKey]):
     """Globus backend class.
