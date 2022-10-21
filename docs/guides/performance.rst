@@ -6,9 +6,9 @@ Performance tracking is disable by default and can be enabled by passing :code:`
 
 .. code-block:: python
 
-   import proxystore as ps
+   import proxystore.store
 
-   store = ps.store.init_store(
+   store = proxystore.store.init_store(
        "file",
        name="default",
        store_dir="/tmp/proxystore-dump",
@@ -41,11 +41,23 @@ In the following block, we add an object to the store and see that there are now
    stats['set']
    # >>> TimeStats(
    # >>>     calls=1,
-   # >>>     avg_time_ms=0.0755,
-   # >>>     min_time_ms=0.0755,
-   # >>>     max_time_ms=0.0755
+   # >>>     avg_time_ms=0.0686,
+   # >>>     min_time_ms=0.0686,
+   # >>>     max_time_ms=0.0686,
+   # >>>     size_bytes=None,
+   # >>> )
+   stats['set_bytes']
+   # >>> TimeStats(
+   # >>>     calls=1,
+   # >>>     avg_time_ms=0.0339,
+   # >>>     min_time_ms=0.0339,
+   # >>>     max_time_ms=0.0339,
+   # >>>     size_bytes=219,
    # >>> )
 
+Operations that work directly on bytes (i.e., :code:`get_bytes` and
+:code:`set_bytes`) will also note the size of the byte array used in the
+operation in the :code:`TimeStats.size_bytes` attribute.
 As more operations are performed on the store, more statistics will be accumulated.
 
 .. code-block:: python
