@@ -14,11 +14,9 @@ if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
 else:  # pragma: <3.9 cover
     from typing import MutableMapping
 
-
-class FileDumpNotAvailableError(Exception):
-    """Error raised when dumping objects to file is not available."""
-
-    pass
+from proxystore.utils import bytes_to_readable
+from proxystore.endpoint.exceptions import FileDumpNotAvailableError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 
 
 class BlobLocation(enum.Enum):
@@ -106,13 +104,17 @@ class EndpointStorage(MutableMapping[str, bytes]):
     def __init__(
         self,
         max_size: int | None = None,
+        max_object_size: int | None = None,
         dump_dir: str | None = None,
     ) -> None:
         """Init EndpointStorage.
 
         Args:
             max_size (int): optional maximum size in bytes for in-memory
-                storage of blobs.
+                storage of blobs. If the memory limit is exceeded, least
+                recently used blobs will be dumped to disk (if configured).
+            max_object_size (int): optional maximum size in bytes for any
+                single blob.
             dump_dir (str): optional directory to dump blobs to when
                 `max_size` is reached.
         """
@@ -124,6 +126,7 @@ class EndpointStorage(MutableMapping[str, bytes]):
                 'or neither.',
             )
         self.max_size = max_size
+        self.max_object_size = max_object_size
         self.dump_dir = dump_dir
 
         if self.dump_dir is not None:
@@ -166,10 +169,20 @@ class EndpointStorage(MutableMapping[str, bytes]):
             ValueError:
                 if `value` is larger than `max_size`.
         """
+        if (
+            self.max_object_size is not None
+            and len(value) > self.max_object_size
+        ):
+            raise ObjectSizeExceededError(
+                f'Bytes value has size {bytes_to_readable(len(value))} which '
+                f'exceeds the {bytes_to_readable(self.max_object_size)} '
+                'object limit.',
+            )
         if self.max_size is not None and len(value) > self.max_size:
-            raise ValueError(
-                'The object is too large to fit in the storage. Max size is '
-                f'{self.max_size} bytes but the object is {len(value)} bytes.',
+            raise ObjectSizeExceededError(
+                f'Bytes value has size {bytes_to_readable(len(value))} which '
+                f'exceeds the {bytes_to_readable(self.max_size)} '
+                'memory limit.',
             )
         filepath = (
             None if self.dump_dir is None else os.path.join(self.dump_dir, key)
