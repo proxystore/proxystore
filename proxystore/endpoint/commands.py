@@ -198,17 +198,9 @@ def start_endpoint(
 
     # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     serve(
-        name=cfg.name,
-        uuid=cfg.uuid,
-        host=cfg.host,
-        port=cfg.port,
-        server=cfg.server,
+        cfg,
         log_level=log_level,
         log_file=os.path.join(endpoint_dir, 'endpoint.log'),
-        max_memory=cfg.max_memory,
-        dump_dir=cfg.dump_dir,
-        peer_channels=cfg.peer_channels,
-        verify_certificate=cfg.verify_certificate,
     )
 
     return 0
