@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import json
 import logging
 import os
@@ -101,15 +102,16 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    endpoint = Endpoint(
-        name=config.name,
-        uuid=config.uuid,
-        signaling_server=config.server,
-        max_memory=config.max_memory,
-        dump_dir=config.dump_dir,
-        peer_channels=config.peer_channels,
-        verify_certificate=config.verify_certificate,
-    )
+    kwargs = dataclasses.asdict(config)
+    # These are the only two EndpointConfig attributes not passed to the
+    # Endpoint constructor
+    kwargs.pop('host', None)
+    kwargs.pop('port', None)
+    # Backwards compatibility hack because EndpointConfig and Endpoint call
+    # the signaling server fields differently
+    kwargs['signaling_server'] = kwargs.pop('server')
+
+    endpoint = Endpoint(**kwargs)
     app = create_app(endpoint)
 
     serve_config = hypercorn.config.Config()
@@ -124,6 +126,7 @@ def serve(
         f'serving endpoint {endpoint.uuid} ({endpoint.name}) on '
         f'{config.host}:{config.port}',
     )
+    logger.info(f'config: {config}')
     asyncio.run(hypercorn.asyncio.serve(app, serve_config))
 
 

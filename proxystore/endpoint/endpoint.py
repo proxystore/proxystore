@@ -10,6 +10,7 @@ from typing import Generator
 from uuid import UUID
 from uuid import uuid4
 
+from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
@@ -22,9 +23,6 @@ from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
-
-# Default to 1 GB
-_MAX_OBJECT_SIZE_DEFAULT = int(1e9)
 
 
 class EndpointMode(enum.Enum):
@@ -93,7 +91,7 @@ class Endpoint:
         signaling_server: str | None = None,
         peer_timeout: int = 30,
         max_memory: int | None = None,
-        max_object_size: int | None = _MAX_OBJECT_SIZE_DEFAULT,
+        max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
         dump_dir: str | None = None,
         peer_channels: int = 1,
         verify_certificate: bool = True,
