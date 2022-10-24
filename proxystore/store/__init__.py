@@ -17,13 +17,12 @@ from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
-from proxystore.store.intrasite import IntrasiteStore as _IntrasiteStore
+from proxystore.store.dim.margo import MargoStore as _MargoStore
 
 T = TypeVar('T')
 
 _stores: dict[str, _Store[Any]] = {}
 logger = logging.getLogger(__name__)
-
 
 class STORES(Enum):
     """Available Store implementations."""
@@ -38,8 +37,8 @@ class STORES(Enum):
     """Corresponds to :class:`~proxystore.store.local.LocalStore`."""
     REDIS = _RedisStore
     """Corresponds to :class:`~proxystore.store.redis.RedisStore`."""
-    INTRASITE = _IntrasiteStore
-    """Corresponds to :class:`~proxystore.store.intrasite.IntrasiteStore`."""
+    MARGO = _MargoStore
+    """Corresponds to :class:`~proxystore.store.dim.margo.MargoStore`."""
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store[Any]]) -> str:

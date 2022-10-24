@@ -15,6 +15,12 @@ from unittest import mock
 import globus_sdk
 import pytest
 
+import sys
+from . import pymargo_mocker
+sys.modules['pymargo'] = pymargo_mocker
+sys.modules['pymargo.bulk'] = pymargo_mocker
+sys.modules['pymargo.core'] = pymargo_mocker
+
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
@@ -30,7 +36,12 @@ from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
+from proxystore.store.dim.margo import MargoStore
+from proxystore.store.dim.margo import MargoStoreKey
+import proxystore.store.dim.margo
 from testing.endpoint import launch_endpoint
+
+from . import pymargo_mocker as pymargo
 
 FIXTURE_LIST = [
     'local_store',
@@ -38,6 +49,7 @@ FIXTURE_LIST = [
     'redis_store',
     'globus_store',
     'endpoint_store',
+    'margo_store'
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
@@ -252,6 +264,21 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     server_handle.terminate()
     server_handle.join()
 
+base_import = __import__
+def margo_import(name: str, *args) -> Any:
+    if 'pymargo' in name:
+        # replace with returning mock module
+        from . import pymargo_mocker
+    return base_import(name, *args)
+
+
+@pytest.fixture
+def margo_store() -> Generator[StoreInfo, None, None]:
+    """Margo Store fixture."""
+
+    #with mock.patch(proxystore.store.dim.margo.builtins.__import__.py, side_effect=margo_import):
+    yield StoreInfo(MargoStore, 'margo', {'protocol': 'tcp://', 'interface': 'en0', 'port': 6000 })
+
 
 def missing_key(store: Store[KeyT]) -> NamedTuple:
     """Generate a random key that is valid for the store type."""
@@ -265,5 +292,7 @@ def missing_key(store: Store[KeyT]) -> NamedTuple:
         return LocalStoreKey(str(uuid.uuid4()))
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
+    elif isinstance(store, MargoStore):
+        return MargoStoreKey(str(uuid.uuid4()))
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')

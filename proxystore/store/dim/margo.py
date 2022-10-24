@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+from __future__ import annotations
 
 import logging
 from multiprocessing import Process
@@ -7,10 +7,16 @@ from typing import Dict, Any, NamedTuple
 
 import numpy as np
 
-import pymargo
-import pymargo.bulk as bulk
-from pymargo.core import Engine, Handle
-from pymargo.bulk import Bulk
+try:
+    import pymargo
+    import pymargo.bulk as bulk
+    from pymargo.core import Engine, Handle
+    from pymargo.bulk import Bulk
+    
+    pymargo_import_error = None
+except ImportError as e:
+    pymargo_import_error = e
+    
 
 import proxystore.utils as utils
 from proxystore.store.base import Store
@@ -23,7 +29,7 @@ class MargoStoreKey(NamedTuple):
     obj_size: int
     peer: str
     
-class MargoClient(Store[MargoStoreKey]):
+class MargoStore(Store[MargoStoreKey]):
 
     host: str
     addr: str
@@ -49,6 +55,9 @@ class MargoClient(Store[MargoStoreKey]):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
+        # raise error if modules not properly loaded
+        if pymargo_import_error is not None:
+            raise pymargo_import_error
 
         self._logger = logging.getLogger(type(self).__name__)
         self.protocol = protocol
@@ -68,8 +77,8 @@ class MargoClient(Store[MargoStoreKey]):
         self.engine = Engine(self.protocol, mode=pymargo.client)
 
         self._rpcs = {
-            "set": self.engine.register("set"),
-            "get": self.engine.register("get"),
+            "set": self.engine.register("set_bytes"),
+            "get": self.engine.register("get_bytes"),
             "exists": self.engine.register("exists"),
             "evict": self.engine.register("evict"),
         }
@@ -218,12 +227,12 @@ class MargoServer:
         self._logger = logging.getLogger(type(self).__name__)
 
         self.engine = engine
-        self.engine.register("get", self.get)
-        self.engine.register("set", self.set)
+        self.engine.register("get", self.get_bytes)
+        self.engine.register("set", self.set_bytes)
         self.engine.register("exists", self.exists)
         self.engine.register("evict", self.evict)
 
-    def set(self, handle: Handle, bulk_str: Bulk, bulk_size: int, key: str) -> None:
+    def set_bytes(self, handle: Handle, bulk_str: Bulk, bulk_size: int, key: str) -> None:
         """Obtain data from the client and store it in local dictionary
 
         Arguments:
@@ -244,7 +253,7 @@ class MargoServer:
             self._logger.error("An exception was caught: %s", error)
             handle.respond("ERROR")
 
-    def get(self, handle: Handle, bulk_str: Bulk, bulk_size: int, key: str) -> None:
+    def get_bytes(self, handle: Handle, bulk_str: Bulk, bulk_size: int, key: str) -> None:
         """Return data at a given key back to the client.
 
         Arguments:
