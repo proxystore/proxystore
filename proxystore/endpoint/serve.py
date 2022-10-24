@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import json
 import logging
 import os
@@ -22,6 +23,7 @@ except ImportError as e:  # pragma: no cover
     )
 
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
+from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.utils import chunk_bytes
@@ -66,18 +68,10 @@ def create_app(
 
 
 def serve(
-    name: str,
-    uuid: uuid.UUID,
-    host: str,
-    port: int,
+    config: EndpointConfig,
     *,
-    server: str | None = None,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,
-    max_memory: int | None = None,
-    dump_dir: str | None = None,
-    peer_channels: int = 1,
-    verify_certificate: bool = True,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -85,26 +79,13 @@ def serve(
         This function does not return until the Quart app is terminated.
 
     Args:
-        name (str): name of endpoint.
-        uuid (str): uuid of endpoint.
-        host (str): host address to server Quart app on.
-        port (int): port to serve Quart app on.
-        server (str): address of signaling server that endpoint
-            will register with and use for establishing peer to peer
-            connections. If None, endpoint will operate in solo mode (no
-            peering) (default: None).
+        config (EndpointConfig): configuration object.
         log_level (int): logging level of endpoint (default: INFO).
         log_file (str): optional file path to append log to.
-        max_memory (int): optional max memory in bytes to use for storing
-            objects. If exceeded, LRU objects will be dumped to `dump_dir`
-            (default: None).
-        dump_dir (str): optional directory to dump objects to if the
-            memory limit is exceeded (default: None).
-        peer_channels (int): number of datachannels per peer connection
-            to another endpoint to communicate over (default: 1).
-        verify_certificate (bool): verify the signaling server's SSL
-            certificate (default: True).
     """
+    if config.host is None:
+        raise ValueError('EndpointConfig has NoneType as host.')
+
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
         if not os.path.isdir(parent_dir):
@@ -121,29 +102,32 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    endpoint = Endpoint(
-        name=name,
-        uuid=uuid,
-        signaling_server=server,
-        max_memory=max_memory,
-        dump_dir=dump_dir,
-        peer_channels=peer_channels,
-        verify_certificate=verify_certificate,
-    )
+    kwargs = dataclasses.asdict(config)
+    # These are the only two EndpointConfig attributes not passed to the
+    # Endpoint constructor
+    kwargs.pop('host', None)
+    kwargs.pop('port', None)
+    # Backwards compatibility hack because EndpointConfig and Endpoint call
+    # the signaling server fields differently
+    kwargs['signaling_server'] = kwargs.pop('server')
+
+    endpoint = Endpoint(**kwargs)
     app = create_app(endpoint)
 
-    config = hypercorn.config.Config()
-    config.bind = [f'{host}:{port}']
-    config.accesslog = logging.getLogger('hypercorn.access')
-    config.errorlog = logging.getLogger('hypercorn.error')
+    serve_config = hypercorn.config.Config()
+    serve_config.bind = [f'{config.host}:{config.port}']
+    serve_config.accesslog = logging.getLogger('hypercorn.access')
+    serve_config.errorlog = logging.getLogger('hypercorn.error')
 
     logger.debug('installing uvloop as default event loop')
     uvloop.install()
 
     logger.info(
-        f'serving endpoint {endpoint.uuid} ({endpoint.name}) on {host}:{port}',
+        f'serving endpoint {endpoint.uuid} ({endpoint.name}) on '
+        f'{config.host}:{config.port}',
     )
-    asyncio.run(hypercorn.asyncio.serve(app, config))
+    logger.info(f'config: {config}')
+    asyncio.run(hypercorn.asyncio.serve(app, serve_config))
 
 
 @routes_blueprint.before_app_serving

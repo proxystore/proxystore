@@ -1,9 +1,11 @@
 """General purpose utility functions."""
 from __future__ import annotations
 
+import decimal
 import os
 import pathlib
 import random
+import re
 from typing import Any
 from typing import Generator
 
@@ -63,3 +65,114 @@ def fullname(obj: Any) -> str:
 def home_dir() -> str:
     """Returns path of $HOME/.proxystore."""
     return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)
+
+
+def bytes_to_readable(size: int, precision: int = 3) -> str:
+    """Converts bytes to human readable value.
+
+    Note:
+        This method uses base-10 values for KB, MB, GB, etc. instead of
+        base-2 values (i.e., KiB, MiB, GiB, etc.).
+
+    Args:
+        size (int): byte count to make readable.
+        precision (int): number of decimal places (default: 3).
+
+    Returns:
+        string with human readable number of bytes.
+
+    Raises:
+        ValueError:
+            if size is negative.
+    """
+    kb = int(1e3)
+    mb = int(1e6)
+    gb = int(1e9)
+    tb = int(1e12)
+
+    size_ = float(size)
+    if 0 <= size < kb:
+        suffix = 'B'
+    elif kb <= size < mb:
+        suffix = 'KB'
+        size_ /= kb
+    elif mb <= size < gb:
+        suffix = 'MB'
+        size_ /= mb
+    elif gb <= size < tb:
+        suffix = 'GB'
+        size_ /= gb
+    elif tb <= size:
+        suffix = 'TB'
+        size_ /= tb
+    else:
+        raise ValueError(f'Size ({size}) cannot be negative.')
+
+    value = str(round(size_, precision))
+    value = value.rstrip('0').rstrip('.')
+    return f'{value} {suffix}'
+
+
+def readable_to_bytes(size: str) -> int:
+    """Converts string with bytes units to the integer value of bytes.
+
+    Example:
+        >>> readable_to_bytes('1.2 KB')
+        1200
+        >>> readable_to_bytes('0.6 MiB')
+        629146
+
+    Args:
+        size (str): string to parse for bytes size.
+
+    Returns:
+        integer number of bytes parsed from the string.
+
+    Raises:
+        ValueError:
+            if the input string contains more than two parts (i.e., a value
+            and a unit).
+        ValueError:
+            if the unit is not one of KB, MB, GB, TB, KiB, MiB, GiB, or TiB.
+        ValueError:
+            if the value cannot be cast to a float.
+    """
+    units_to_bytes = dict(
+        b=1,
+        kb=int(1e3),
+        mb=int(1e6),
+        gb=int(1e9),
+        tb=int(1e12),
+        kib=int(2**10),
+        mib=int(2**20),
+        gib=int(2**30),
+        tib=int(2**40),
+    )
+
+    # Try casting size to value (will only work if no units)
+    try:
+        return int(float(size))
+    except ValueError:
+        pass
+
+    # Ensure space between value and unit
+    size = re.sub(r'([a-zA-Z]+)', r' \1', size.strip())
+
+    parts = [s.strip() for s in size.split()]
+    if len(parts) != 2:
+        raise ValueError(
+            'Input string "{size}" must contain only a value and a unit.',
+        )
+
+    value, unit = parts
+
+    try:
+        value_size = decimal.Decimal(value)
+    except decimal.InvalidOperation:
+        raise ValueError(f'Unable to interpret "{value}" as a float.')
+    try:
+        unit_size = units_to_bytes[unit.lower()]
+    except KeyError:
+        raise ValueError(f'Unknown unit type {unit}.')
+
+    return int(value_size * unit_size)
