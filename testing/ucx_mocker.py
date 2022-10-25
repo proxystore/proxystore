@@ -54,7 +54,6 @@ class MockEndpoint:
 class MockUCP:
     """Mock UCP"""
     
-    print("CALLED MOCKER")
     def get_address(ifname: str) -> str:
         return ifname
     
