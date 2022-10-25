@@ -5,8 +5,6 @@ from multiprocessing import Process
 from time import sleep
 from typing import Dict, Any, NamedTuple
 
-import numpy as np
-
 try:
     import pymargo
     import pymargo.bulk as bulk
