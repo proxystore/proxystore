@@ -81,6 +81,17 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         # allocate some time to start the server process
         sleep(2)
 
+        super().__init__(
+            name,
+            cache_size=cache_size,
+            stats=stats,
+            kwargs={
+                'interface': interface,
+                'port': self.port,
+                'max_size': self.max_size,
+            },
+        )
+
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""
         print(f'starting server on host {self.host} with port {self.port}')
