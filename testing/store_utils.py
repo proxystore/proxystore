@@ -15,18 +15,13 @@ from unittest import mock
 import globus_sdk
 import pytest
 
-import sys
-from . import pymargo_mocker
-sys.modules['pymargo'] = pymargo_mocker
-sys.modules['pymargo.bulk'] = pymargo_mocker
-sys.modules['pymargo.core'] = pymargo_mocker
-
-from . import ucx_mocker
-sys.modules['ucp'] = ucx_mocker.MockUCP
-
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
+from proxystore.store.dim.margo import MargoStore
+from proxystore.store.dim.margo import MargoStoreKey
+from proxystore.store.dim.ucx import UCXStore
+from proxystore.store.dim.ucx import UCXStoreKey
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.endpoint import EndpointStoreKey
 from proxystore.store.file import FileStore
@@ -39,13 +34,7 @@ from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
-from proxystore.store.dim.margo import MargoStore
-from proxystore.store.dim.margo import MargoStoreKey
-from proxystore.store.dim.ucx import UCXStore
-from proxystore.store.dim.ucx import UCXStoreKey
 from testing.endpoint import launch_endpoint
-
-from . import pymargo_mocker as pymargo
 
 FIXTURE_LIST = [
     'local_store',
@@ -158,6 +147,7 @@ class MockStrictRedis:
         """Set value in MockStrictRedis."""
         self.data[key] = value
 
+
 class StoreInfo(NamedTuple):
     """Info needed to initialize an arbitrary Store."""
 
@@ -268,25 +258,31 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     server_handle.terminate()
     server_handle.join()
 
+
 base_import = __import__
-def margo_import(name: str, *args) -> Any:
-    if 'pymargo' in name:
-        # replace with returning mock module
-        from . import pymargo_mocker
-    return base_import(name, *args)
+
 
 @pytest.fixture
 def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
-    
-    with mock.patch("multiprocessing.Process.start"), mock.patch("multiprocessing.Process.terminate"):
-        yield StoreInfo(UCXStore, 'ucx', { 'interface': 'en0', 'port': 6000 })
+    with mock.patch('multiprocessing.Process.start'), mock.patch(
+        'multiprocessing.Process.terminate',
+    ):
+        yield StoreInfo(UCXStore, 'ucx', {'interface': 'en0', 'port': 6000})
+
 
 @pytest.fixture
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
-    #with mock.patch(proxystore.store.dim.margo.builtins.__import__.py, side_effect=margo_import):
-    yield StoreInfo(MargoStore, 'margo', { 'protocol': 'tcp://', 'interface': 'en0', 'port': 6000 })
+    with mock.patch('multiprocessing.Process.start'), mock.patch(
+        'multiprocessing.Process.terminate',
+    ):
+        yield StoreInfo(
+            MargoStore,
+            'margo',
+            {'protocol': 'tcp', 'interface': 'en0', 'port': 6000},
+        )
+
 
 def missing_key(store: Store[KeyT]) -> NamedTuple:
     """Generate a random key that is valid for the store type."""
@@ -301,8 +297,8 @@ def missing_key(store: Store[KeyT]) -> NamedTuple:
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
     elif isinstance(store, MargoStore):
-        return MargoStoreKey(str(uuid.uuid4()))
+        return MargoStoreKey(str(uuid.uuid4()), 0, 'localhost:6000')
     elif isinstance(store, UCXStore):
-        return UCXStoreKey(str(uuid.uuid4()), 0, "localhost:6000")
+        return UCXStoreKey(str(uuid.uuid4()), 0, 'localhost:6000')
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
