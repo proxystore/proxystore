@@ -6,9 +6,10 @@ from testing.store_utils import endpoint_store
 from testing.store_utils import file_store
 from testing.store_utils import globus_store
 from testing.store_utils import local_store
-from testing.store_utils import redis_store
 from testing.store_utils import margo_store
+from testing.store_utils import redis_store
 from testing.store_utils import ucx_store
+from testing.store_utils import websocket_store
 from testing.utils import tmp_dir
 
 # Import fixtures from testing/ so they are known by pytest

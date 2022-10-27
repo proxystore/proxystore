@@ -86,6 +86,8 @@ def test_store_factory(store_fixture, request) -> None:
     with pytest.raises(ValueError, match='store of type'):
         f()
 
+    store.close()
+
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
 def test_store_proxy(store_fixture, request) -> None:
@@ -123,6 +125,8 @@ def test_store_proxy(store_fixture, request) -> None:
         store.proxy('mystring', serialize=False)
 
     assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
+
+    store.close()
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
@@ -166,6 +170,8 @@ def test_proxy_recreates_store(store_fixture, request) -> None:
     assert p == [1, 2, 3]
     s = ps.store.get_store(store_config.name)
     assert s is not None and s.is_cached(key)
+
+    store.close()
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
@@ -215,3 +221,5 @@ def test_raises_missing_key(store_fixture, request) -> None:
     proxy = store.proxy_from_key(key=key)
     with pytest.raises(ProxyResolveMissingKey):
         proxy()
+
+    store.close()

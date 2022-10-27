@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import sys
 
-from testing import pymargo_mocker
-from testing import ucx_mocker
+from testing.mocker_modules import pymargo_mocker
+from testing.mocker_modules import ucx_mocker
 
 # pymargo and ucx mocker imports
 

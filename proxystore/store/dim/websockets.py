@@ -17,6 +17,9 @@ from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
 
+server_process = None
+
+
 class WebsocketStoreKey(NamedTuple):
     """Key to objects in a WebsocketStore."""
 
@@ -29,12 +32,11 @@ class WebsocketStore(Store[WebsocketStoreKey]):
     """Distributed in-memory store using websockets."""
 
     addr: str
-    server: Process
     provider_id: int
     max_size: int
     chunk_size: int
+    _server: Process
     _logger: logging.Logger
-    _loop: Any
 
     def __init__(
         self,
@@ -63,6 +65,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             stats (bool): collect stats on store operations (default: False).
 
         """
+        global server_process
+
         self._logger = logging.getLogger(type(self).__name__)
         self._logger.debug('Instantiating client and server')
 
@@ -74,12 +78,12 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
         self.addr = f'ws://{self.host}:{self.port}'
 
-        self.server = Process(target=self._start_server)
-        self.server.start()
-        self._loop = asyncio.get_event_loop()
+        if server_process is None:
+            server_process = Process(target=self._start_server)
+            server_process.start()
 
         # allocate some time to start the server process
-        sleep(2)
+        sleep(0.2)
 
         super().__init__(
             name,
@@ -120,7 +124,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'evict'},
         )
-        self._loop.run_until_complete(self.handler(event, key.peer))
+        asyncio.run(self.handler(event, key.peer))
+        self._cache.evict(key)
 
     def exists(self, key: WebsocketStoreKey) -> bool:
         self._logger.debug('Client issuing an exists request on key %s', key)
@@ -129,7 +134,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
         )
         return bool(
-            int(self._loop.run_until_complete(self.handler(event, key.peer))),
+            int(asyncio.run(self.handler(event, key.peer))),
         )
 
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
@@ -138,9 +143,9 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'get'},
         )
-        res = self._loop.run_until_complete(self.handler(event, key.peer))
+        res = asyncio.run(self.handler(event, key.peer))
 
-        if res == 'ERROR':
+        if res == b'ERROR':
             return None
         return res
 
@@ -151,8 +156,10 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             self.addr,
         )
 
-        event = pickle.dumps({'key': key, 'data': data, 'op': 'set'})
-        self._loop.run_until_complete(self.handler(event, self.addr))
+        event = pickle.dumps(
+            {'key': key.websocket_key, 'data': data, 'op': 'set'},
+        )
+        asyncio.run(self.handler(event, self.addr))
 
     async def handler(self, event: bytes, addr: str) -> Any:
         """Websocket handler function implementation.
@@ -177,9 +184,14 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
     def close(self) -> None:
         """Terminate Peer server process."""
+        global server_process
+
         self._logger.info('Clean up requested')
-        self._loop.close()
-        self.server.terminate()
+
+        if server_process is not None:
+            server_process.terminate()
+
+        server_process = None
         self._logger.debug('Clean up completed')
 
 
@@ -214,6 +226,7 @@ class WebsocketServer:
         self.port = port
         self.max_size = max_size
         self.chunk_size = chunk_size
+        self.data = {}
         super().__init__()
 
     def set(self, key: str, data: bytes) -> bytes:
@@ -298,10 +311,14 @@ class WebsocketServer:
 
     async def launch(self) -> None:
         """Launch the server."""
-        async with serve(
-            self.handler,
-            self.host,
-            self.port,
-            max_size=self.max_size,
-        ):
-            await asyncio.Future()  # run forever
+        try:
+            async with serve(
+                self.handler,
+                self.host,
+                self.port,
+                max_size=self.max_size,
+            ):
+                await asyncio.Future()  # run forever
+
+        except OSError:
+            self.logger.warn('Server already exists')
