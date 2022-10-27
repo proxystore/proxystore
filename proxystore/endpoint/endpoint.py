@@ -10,6 +10,7 @@ from typing import Generator
 from uuid import UUID
 from uuid import uuid4
 
+from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
@@ -90,6 +91,7 @@ class Endpoint:
         signaling_server: str | None = None,
         peer_timeout: int = 30,
         max_memory: int | None = None,
+        max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
         dump_dir: str | None = None,
         peer_channels: int = 1,
         verify_certificate: bool = True,
@@ -121,6 +123,9 @@ class Endpoint:
             max_memory (int): optional max memory in bytes to use for storing
                 objects. If exceeded, LRU objects will be dumped to `dump_dir`
                 (default: None).
+            max_object_size (int): optional max size in bytes for any single
+                object stored by the endpoint. If exceeded, an error is
+                raised (default: 1 GB).
             dump_dir (str): optional directory to dump objects to if the
                 memory limit is exceeded (default: None).
             peer_channels (int): number of datachannels per peer connection
@@ -147,7 +152,11 @@ class Endpoint:
 
         self._peer_manager: PeerManager | None = None
 
-        self._data = EndpointStorage(max_size=max_memory, dump_dir=dump_dir)
+        self._data = EndpointStorage(
+            max_size=max_memory,
+            max_object_size=max_object_size,
+            dump_dir=dump_dir,
+        )
         self._pending_requests: dict[
             str,
             asyncio.Future[EndpointRequest],
@@ -439,6 +448,9 @@ class Endpoint:
                 will be performed on the local endpoint.
 
         Raises:
+            ObjectSizeExceededError:
+                if the max object size is configured and the data exceeds that
+                size.
             PeerRequestError:
                 if request to a peer endpoint fails.
         """

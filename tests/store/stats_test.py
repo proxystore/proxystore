@@ -9,6 +9,7 @@ from pytest import raises
 from proxystore.store.stats import Event
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import TimeStats
+from testing.compat import randbytes
 
 
 class _TestKey(NamedTuple):
@@ -112,6 +113,7 @@ def test_function_timing() -> None:
     assert stats[event].avg_time_ms >= 0.001
     assert stats[event].min_time_ms > 0
     assert stats[event].min_time_ms == stats[event].max_time_ms
+    assert stats[event].size_bytes is None
 
     old_max = stats[event].max_time_ms
     wrapped(key, 1)
@@ -122,6 +124,33 @@ def test_function_timing() -> None:
     wrapped(key, 0)
     assert stats[event].calls == 3
     assert stats[event].min_time_ms < old_min
+
+
+def test_get_set_bytes() -> None:
+    """Test get_bytes and set_bytes."""
+    stats = FunctionEventStats()
+
+    def set_bytes(key: _TestKey, data: bytes) -> None:
+        return
+
+    def get_bytes(key: _TestKey, size: int) -> bytes:
+        return randbytes(size)
+
+    key = _TestKey('key')
+    wrapped_get = stats.wrap(get_bytes)
+    wrapped_set = stats.wrap(set_bytes)
+
+    get_event = Event(function='get_bytes', key=key)
+    set_event = Event(function='set_bytes', key=key)
+    wrapped_get(key, 120)
+    wrapped_set(key, randbytes(100))
+
+    assert get_event in stats
+    assert set_event in stats
+    assert stats[get_event].calls == 1
+    assert stats[set_event].calls == 1
+    assert stats[get_event].size_bytes == 120
+    assert stats[set_event].size_bytes == 100
 
 
 def test_default_times() -> None:

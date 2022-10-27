@@ -1,9 +1,10 @@
 """Globus OAuth tools.
 
 This implementation is based on
-`Parsl's implementation <https://github.com/Parsl/parsl/blob/1.2.0/parsl/data_provider/globus.py>`_  # noqa: E501
-and the `Globus examples <https://github.com/globus/native-app-examples/blob/064569e103f7d328f3d6c4b1242234011c81dffb/example_copy_paste_refresh_token.py>`_.  # noqa: #501
-"""
+`Parsl's implementation <https://github.com/Parsl/parsl/blob/1.2.0/parsl/data_provider/globus.py>`_
+and the
+`Globus examples <https://github.com/globus/native-app-examples/blob/064569e103f7d328f3d6c4b1242234011c81dffb/example_copy_paste_refresh_token.py>`_.
+"""  # noqa: E501
 from __future__ import annotations
 
 import functools

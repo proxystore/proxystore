@@ -117,6 +117,9 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'max_memory': -1}, False),
         ({'peer_channels': 1}, True),
         ({'peer_channels': 0}, False),
+        ({'max_object_size': 0}, False),
+        ({'max_object_size': 1}, True),
+        ({'max_object_size': -1}, False),
     ),
 )
 def test_validate_config(bad_cfg: Any, valid: bool) -> None:

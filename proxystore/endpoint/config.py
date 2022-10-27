@@ -7,6 +7,8 @@ import os
 import re
 import uuid
 
+from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+
 _ENDPOINT_CONFIG_FILE = 'endpoint.json'
 
 
@@ -20,6 +22,7 @@ class EndpointConfig:
     port: int
     server: str | None = None
     max_memory: int | None = None
+    max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT
     dump_dir: str | None = None
     peer_channels: int = 1
     verify_certificate: bool = True
@@ -52,7 +55,11 @@ class EndpointConfig:
                 'Server must start with ws:// or wss://.',
             )
         if self.max_memory is not None and self.max_memory < 1:
-            raise ValueError('Max memory must be None or positive.')
+            raise ValueError('Max memory must be None or greater than zero.')
+        if self.max_object_size is not None and self.max_object_size < 1:
+            raise ValueError(
+                'Max object size must be None or greater than zero.',
+            )
         if self.peer_channels < 1:
             raise ValueError('Peer channels must be >= 1.')
 

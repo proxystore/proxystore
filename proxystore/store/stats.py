@@ -46,6 +46,7 @@ class TimeStats:
     avg_time_ms: float = 0
     min_time_ms: float = math.inf
     max_time_ms: float = 0
+    size_bytes: int | None = None
 
     def __add__(self, other: TimeStats) -> TimeStats:
         """Add two instances together."""
@@ -61,11 +62,13 @@ class TimeStats:
             max_time_ms=max(self.max_time_ms, other.max_time_ms),
         )
 
-    def add_time(self, time_ms: float) -> None:
+    def add_time(self, time_ms: float, size_bytes: int | None = None) -> None:
         """Add a new time to the stats.
 
         Args:
             time_ms (float): time (milliseconds) of a method execution.
+            size_bytes (int): optionally note the data size associated with
+                the operation that produced these statistics.
         """
         self.avg_time_ms = self._weighted_avg(
             self.avg_time_ms,
@@ -76,6 +79,7 @@ class TimeStats:
         self.min_time_ms = min(time_ms, self.min_time_ms)
         self.max_time_ms = max(time_ms, self.max_time_ms)
         self.calls += 1
+        self.size_bytes = size_bytes
 
     def _weighted_avg(self, a1: float, n1: int, a2: float, n2: float) -> float:
         """Compute weighted average between two separate averages.
@@ -182,8 +186,14 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         else:
             key = None
 
+        size_bytes: int | None = None
+        if function.__name__ == 'get_bytes':
+            size_bytes = len(result)
+        elif function.__name__ == 'set_bytes':
+            size_bytes = len(args[1])
+
         event = Event(function=function.__name__, key=key)
-        self[event].add_time(time_ns / 1e6)
+        self[event].add_time(time_ns / 1e6, size_bytes=size_bytes)
 
         return result
 

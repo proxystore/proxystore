@@ -10,6 +10,7 @@ from multiprocessing import Process
 
 import requests
 
+from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.serve import serve
 
 
@@ -28,7 +29,14 @@ def serve_endpoint_silent(
         # https://stackoverflow.com/questions/66583461
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        serve(name, uuid, host, port, server=server)
+        config = EndpointConfig(
+            name=name,
+            uuid=uuid,
+            host=host,
+            port=port,
+            server=server,
+        )
+        serve(config)
         loop.close()
 
 

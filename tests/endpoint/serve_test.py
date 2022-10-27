@@ -14,6 +14,7 @@ import pytest_asyncio
 import quart
 import requests
 
+from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
@@ -317,21 +318,20 @@ async def test_missing_key(quart_app) -> None:
 
 @pytest.mark.timeout(5)
 def test_serve() -> None:
-    name = 'my-endpoint'
-    uuid_ = uuid.uuid4()
-    host = 'localhost'
-    port = open_port()
-
-    process = multiprocessing.Process(
-        target=serve,
-        kwargs={'name': name, 'uuid': uuid_, 'host': host, 'port': port},
+    config = EndpointConfig(
+        name='my-endpoint',
+        uuid=uuid.uuid4(),
+        host='localhost',
+        port=open_port(),
     )
+
+    process = multiprocessing.Process(target=serve, args=(config,))
     process.start()
 
     try:
         while True:
             try:
-                r = requests.get(f'http://{host}:{port}/')
+                r = requests.get(f'http://{config.host}:{config.port}/')
             except requests.exceptions.ConnectionError:
                 time.sleep(0.01)
                 continue
@@ -339,6 +339,17 @@ def test_serve() -> None:
                 break
     finally:
         process.terminate()
+
+
+def test_serve_config_validation() -> None:
+    config = EndpointConfig(
+        name='my-endpoint',
+        uuid=uuid.uuid4(),
+        host=None,
+        port=open_port(),
+    )
+    with pytest.raises(ValueError, match='host'):
+        serve(config)
 
 
 def test_serve_logging(tmp_dir) -> None:
@@ -351,16 +362,15 @@ def test_serve_logging(tmp_dir) -> None:
         # https://stackoverflow.com/questions/66583461
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
+        config = EndpointConfig(
+            name='name',
+            uuid=uuid.uuid4(),
+            host='0.0.0.0',
+            port=open_port(),
+            server=None,
+        )
         with mock.patch('hypercorn.asyncio.serve', AsyncMock()):
-            serve(
-                'name',
-                uuid.uuid4(),
-                '0.0.0.0',
-                open_port(),
-                server=None,
-                log_level='INFO',
-                log_file=log_file,
-            )
+            serve(config, log_level='INFO', log_file=log_file)
         loop.close()
 
     # Make directory if necessary

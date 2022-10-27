@@ -4,6 +4,7 @@ import os
 
 import pytest
 
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.storage import Blob
 from proxystore.endpoint.storage import BlobLocation
 from proxystore.endpoint.storage import EndpointStorage
@@ -134,7 +135,13 @@ def test_endpoint_storage_dumping(tmp_dir: str) -> None:
     assert not os.path.isdir(tmp_dir)
 
 
-def test_object_too_large(tmp_dir: str) -> None:
+def test_object_exceeds_memory(tmp_dir: str) -> None:
     storage = EndpointStorage(max_size=100, dump_dir=tmp_dir)
-    with pytest.raises(ValueError, match='too large'):
+    with pytest.raises(ObjectSizeExceededError, match='memory limit'):
+        storage['key'] = randbytes(200)
+
+
+def test_object_exceeds_object_size(tmp_dir: str) -> None:
+    storage = EndpointStorage(max_object_size=100)
+    with pytest.raises(ObjectSizeExceededError, match='object limit'):
         storage['key'] = randbytes(200)
