@@ -11,6 +11,7 @@ from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
+from proxystore.endpoint.commands import stop_endpoint
 
 
 class _CLIFormatter(logging.Formatter):
@@ -19,22 +20,28 @@ class _CLIFormatter(logging.Formatter):
     Source: https://stackoverflow.com/questions/1343227
     """
 
-    yellow = '\x1b[0;33m'
+    grey = '\x1b[0;30m'
     red = '\x1b[0;31m'
+    green = '\x1b[0;32m'
+    yellow = '\x1b[0;33m'
+    cyan = '\x1b[0;36m'
     bold_red = '\x1b[1;31m'
     reset = '\x1b[0m'
 
     FORMATS = {
-        logging.DEBUG: 'DEBUG: %(message)s',
-        logging.INFO: '%(message)s',
+        logging.DEBUG: f'{cyan}DEBUG:{reset} %(message)s',
+        logging.INFO: f'{green}INFO:{reset} %(message)s',
         logging.WARNING: f'{yellow}WARNING:{reset} %(message)s',
         logging.ERROR: f'{red}ERROR:{reset} %(message)s',
         logging.CRITICAL: f'{bold_red}CRITICAL:{reset} %(message)s',
     }
 
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
-        formatter = logging.Formatter(self.FORMATS[record.levelno])
-        return formatter.format(record)
+        if hasattr(record, 'simple') and record.simple:  # type: ignore
+            return record.getMessage()
+        else:
+            formatter = logging.Formatter(self.FORMATS[record.levelno])
+            return formatter.format(record)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -59,6 +66,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         '--version',
         action='version',
         version=f'%(prog)s {proxystore.__version__}',
+    )
+    parser.add_argument(
+        '--log-level',
+        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        default='INFO',
+        help='logging level for CLI and any subprocesses',
     )
     subparsers = parser.add_subparsers(dest='command')
 
@@ -123,11 +136,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser_start.add_argument('name', help='name of endpoint')
     parser_start.add_argument(
-        '--log-level',
-        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
-        default='INFO',
-        help='minimum logging level',
+        '--no-detach',
+        action='store_true',
+        help='do not detach the endpoint process',
     )
+
+    # Command: stop
+    parser_stop = subparsers.add_parser(
+        'stop',
+        help='stop an endpoint',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser_stop.add_argument('name', help='name of endpoint')
 
     # Source: https://github.com/pre-commit/pre-commit
     parser_help = subparsers.add_parser(
@@ -142,7 +162,10 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if len(argv) == 0:
         argv = ['--help']
-    args = parser.parse_args(argv)
+
+    # https://stackoverflow.com/questions/46962065
+    known, unknown = parser.parse_known_args(argv)
+    args = parser.parse_args(unknown, namespace=known)
 
     if args.command == 'help' and args.help_command is not None:
         parser.parse_args([args.help_command, '--help'])
@@ -151,7 +174,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(_CLIFormatter())
-    logging.basicConfig(level=logging.INFO, handlers=[handler])
+    logging.basicConfig(level=args.log_level, handlers=[handler])
 
     if args.command == 'configure':
         return configure_endpoint(
@@ -166,7 +189,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     elif args.command == 'remove':
         return remove_endpoint(args.name)
     elif args.command == 'start':
-        return start_endpoint(args.name, log_level=args.log_level)
+        return start_endpoint(
+            args.name,
+            detach=not args.no_detach,
+            log_level=args.log_level,
+        )
+    elif args.command == 'stop':
+        return stop_endpoint(args.name)
     else:
         raise NotImplementedError(
             f'{args.command} is not a supported command. '
