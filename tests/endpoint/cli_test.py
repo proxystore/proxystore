@@ -91,10 +91,20 @@ def test_remove(home_dir, caplog) -> None:
     )
 
 
-def test_serve(home_dir, caplog) -> None:
+def test_start(home_dir, caplog) -> None:
     # Note: similar to test_list()
     caplog.set_level(logging.ERROR)
     main(['start', 'my-endpoint'])
+    assert len(caplog.records) == 2
+    assert any(
+        ['does not exist' in record.message for record in caplog.records],
+    )
+
+
+def test_stop(home_dir, caplog) -> None:
+    # Note: similar to test_list()
+    caplog.set_level(logging.ERROR)
+    main(['stop', 'my-endpoint'])
     assert len(caplog.records) == 2
     assert any(
         ['does not exist' in record.message for record in caplog.records],
