@@ -80,7 +80,7 @@ class UCXStore(Store[UCXStoreKey]):
         self._server.start()
 
         # allocate some time to start the server process
-        sleep(2)
+        sleep(0.2)
 
         super().__init__(
             name,
@@ -165,6 +165,7 @@ class UCXStore(Store[UCXStoreKey]):
         await ep.close()
         assert ep.closed()
 
+        print('handler res', res)
         return res
 
     def close(self) -> None:
@@ -193,6 +194,7 @@ class UCXServer:
         self._logger = logging.getLogger(type(self).__name__)
         self.host = host
         self.port = port
+        self.data = {}
         self.lf = None
 
     def set(self, key: str, data: bytes) -> bytes:

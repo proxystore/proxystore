@@ -14,21 +14,29 @@ class MockEndpoint:
     last_event: str
     key: str
     response: str
+    req: Any
 
-    def __init__(self):
+    def __init__(self, server=False):
         """Initializes the MockEndpoint."""
         self.key = ''
         self.last_event = ''
         self.response = ''
+        self.req = None
+        self.server = server
 
-    async def send_obj(self, obj: Any) -> None:
+    async def send_obj(self, req: Any) -> None:
         """Mocks the `ucp.send_obj` function.
 
         Args:
-            obj (Any): the object to communicate
+            req (Any): the object to communicate
 
         """
-        event = loads(obj)
+        self.req = None
+        if self.server:
+            self.req = req
+            return
+
+        event = loads(req)
 
         if event['op'] == 'set':
             data[event['key']] = event['data']
@@ -38,6 +46,9 @@ class MockEndpoint:
 
     async def recv_obj(self) -> Any:
         """Mocks the `ucp.recv_obj` function."""
+        if self.req is not None:
+            return self.req
+
         if self.last_event == 'get':
             try:
                 return data[self.key]
