@@ -5,6 +5,7 @@ import pytest
 
 from proxystore.store.dim.margo import MargoServer
 from proxystore.store.dim.margo import MargoStore
+from proxystore.store.dim.margo import when_finalize
 from testing.mocker_modules.pymargo_mocker import Bulk
 from testing.mocker_modules.pymargo_mocker import Engine
 from testing.mocker_modules.pymargo_mocker import Handle
@@ -40,6 +41,9 @@ def test_margo_server(margo_server) -> None:
     margo_server.set(h, bulk_str, size, key)
     assert margo_server.data[key] == bytearray(val)
 
+    margo_server.set(h, bulk_str, -1, key)
+    assert h.last_msg == 'ERROR'
+
     local_buff = bytearray(size)
     bulk_str = Bulk(local_buff)
     margo_server.get(h, bulk_str, size, key)
@@ -56,10 +60,13 @@ def test_margo_server(margo_server) -> None:
     margo_server.exists(h, bulk_str, size, key)
     assert bulk_str.data == bytes('1', encoding=ENCODING)
 
-    local_buff = bytearray(1)
-    bulk_str = Bulk(local_buff)
     margo_server.exists(h, bulk_str, size, 'test')
     assert bulk_str.data == bytes('0', encoding=ENCODING)
+
+    local_buff = bytearray(2)
+    bulk_str = Bulk(local_buff)
+    margo_server.exists(h, bulk_str, -1, key)
+    assert h.last_msg == 'ERROR'
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
@@ -71,3 +78,5 @@ def test_margo_server(margo_server) -> None:
     bulk_str = Bulk(local_buff)
     margo_server.evict(h, bulk_str, size, 'test')
     assert h.last_msg == 'ERROR'
+
+    when_finalize()

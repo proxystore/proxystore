@@ -61,6 +61,9 @@ class Engine:
         bulk_size: int,
     ) -> None:
         """Mock transfer."""
+        if bulk_size == -1 or len(bulk_str.data) == 2:
+            raise Exception
+
         if bulk_op == 'pull':
             local_bulk.data[:] = bulk_str.data
         else:

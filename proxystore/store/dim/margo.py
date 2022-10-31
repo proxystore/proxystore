@@ -14,7 +14,7 @@ try:
     from pymargo.bulk import Bulk
 
     pymargo_import_error = None
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     pymargo_import_error = e
 
 
@@ -70,7 +70,7 @@ class MargoStore(Store[MargoStoreKey]):
             stats (bool): collect stats on store operations (default: False).
         """
         # raise error if modules not properly loaded
-        if pymargo_import_error is not None:
+        if pymargo_import_error is not None:  # pragma: no cover
             raise pymargo_import_error
 
         self._logger = logging.getLogger(type(self).__name__)
@@ -283,8 +283,8 @@ class MargoServer:
         """
         self._logger.debug('Received set RPC for key %s.', key)
 
-        local_buffer = bytearray(bulk_size)
         try:
+            local_buffer = bytearray(bulk_size)
             local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
             self.engine.transfer(
                 bulk.pull,
