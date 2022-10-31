@@ -34,9 +34,9 @@ class Engine:
         """Mock engine wait_for_finalize."""
         pass
 
-    def create_bulk(self, data: bytes, bulk_type: str) -> bytes:
+    def create_bulk(self, data: bytes, bulk_type: str) -> Bulk:
         """Mock create_bulk implementation."""
-        return data
+        return Bulk(data)
 
     def lookup(self, addr: str) -> Engine:
         """Mock lookup implementation."""
@@ -50,9 +50,21 @@ class Engine:
         """Mock finalize."""
         pass
 
-    def transfer(self, *args: Any) -> None:
+    def transfer(
+        self,
+        bulk_op: str,
+        addr: str,
+        bulk_str: Bulk,
+        oo: int,
+        local_bulk: Bulk,
+        lo: int,
+        bulk_size: int,
+    ) -> None:
         """Mock transfer."""
-        pass
+        if bulk_op == 'pull':
+            local_bulk.data[:] = bulk_str.data
+        else:
+            bulk_str.data[:] = local_bulk.data
 
     def register(self, funcname: str, *args: Any) -> RPC:
         """Mock register.
@@ -75,16 +87,16 @@ class RPC:
         """Mock RPC on implementation."""
         return self.mockfunc
 
-    def mockfunc(self, array_str: bytearray, size: int, key: str) -> str:
+    def mockfunc(self, array_str: Bulk, size: int, key: str) -> str:
         """Mockfunc implementation."""
         if self.name == 'set_bytes':
-            data_dict[key] = array_str
+            data_dict[key] = array_str.data
             return 'OK'
         elif self.name == 'get_bytes':
             if key not in data_dict:
                 return 'ERROR'
             else:
-                array_str[:] = data_dict[key]
+                array_str.data[:] = data_dict[key]
             return 'OK'
         elif self.name == 'evict':
             if key not in data_dict:
@@ -93,7 +105,7 @@ class RPC:
                 del data_dict[key]
             return 'OK'
         else:
-            array_str[:] = bytes(str(int(key in data_dict)), 'utf-8')
+            array_str.data[:] = bytes(str(int(key in data_dict)), 'utf-8')
             return 'OK'
 
 
@@ -102,6 +114,7 @@ class MockBulkMod:
 
     # bulk variable
     read_write = 'rw'
+    read_only = 'r'
     write_only = 'w'
     push = 'push'
     pull = 'pull'
@@ -113,22 +126,27 @@ bulk = MockBulkMod()
 class Bulk:
     """Mock Bulk implementation."""
 
-    def __init__(self) -> None:
+    data: bytearray
+
+    def __init__(self, data) -> None:
         """Mock Bulk initialization."""
-        pass
+        self.data = data
 
 
 class Handle:
     """Mock Handle implementation."""
 
+    last_msg: str
+
     def __init__(self) -> None:
         """Mock handle initialization."""
-        pass
+        self.last_msg = ''
 
     def respond(self, text: str) -> str:
         """Mock respond."""
+        self.last_msg = text
         return text
 
-    def get_address(self) -> str:
+    def get_addr(self) -> str:
         """Mock addr."""
         return 'addr'

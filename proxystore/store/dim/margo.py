@@ -85,7 +85,7 @@ class MargoStore(Store[MargoStoreKey]):
         self._server.start()
 
         # allocate some time to start the server process
-        sleep(2)
+        sleep(0.2)
 
         # start client
         self.engine = Engine(self.protocol, mode=pymargo.client)
@@ -258,14 +258,15 @@ class MargoServer:
 
         """
         self._logger = logging.getLogger(type(self).__name__)
+        self.data = {}
 
         self.engine = engine
-        self.engine.register('get', self.get_bytes)
-        self.engine.register('set', self.set_bytes)
+        self.engine.register('get', self.get)
+        self.engine.register('set', self.set)
         self.engine.register('exists', self.exists)
         self.engine.register('evict', self.evict)
 
-    def set_bytes(
+    def set(
         self,
         handle: Handle,
         bulk_str: Bulk,
@@ -282,7 +283,7 @@ class MargoServer:
         """
         self._logger.debug('Received set RPC for key %s.', key)
 
-        local_buffer = bytes(bulk_size)
+        local_buffer = bytearray(bulk_size)
         try:
             local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
             self.engine.transfer(
@@ -300,7 +301,7 @@ class MargoServer:
             self._logger.error('An exception was caught: %s', error)
             handle.respond('ERROR')
 
-    def get_bytes(
+    def get(
         self,
         handle: Handle,
         bulk_str: Bulk,
