@@ -79,13 +79,19 @@ class MockEndpoint:
 class Listener:
     """Mock listener implementation."""
 
+    called: bool
+
     def __init__(self) -> None:
         """Mock listener init implementation."""
-        pass
+        self.called = False
 
     def closed(self) -> bool:
         """Mock closed."""
-        return True
+        if not self.called:
+            self.called = False
+        else:
+            self.called = True
+        return self.called
 
 
 def get_address(ifname: str) -> str:
