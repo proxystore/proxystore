@@ -53,14 +53,14 @@ class MockEndpoint:
             try:
                 return data[self.key]
             except KeyError:
-                return None
+                return bytes('ERROR', encoding='UTF-8')
         elif self.last_event == 'exists':
             return self.key in data
         elif self.last_event == 'evict':
             try:
                 del data[self.key]
             except KeyError:
-                pass
+                return bytes('ERROR', encoding='UTF-8')
             return None
         return True
 

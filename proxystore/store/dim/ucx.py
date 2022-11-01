@@ -157,13 +157,7 @@ class UCXStore(Store[UCXStoreKey]):
 
         await ep.send_obj(event)
 
-        if 'close' == pickle.loads(event)['op']:
-            return
-
         res = await ep.recv_obj()
-
-        if isinstance(res, bytearray):
-            res = bytes(res)
 
         await ep.close()
         assert ep.closed()
