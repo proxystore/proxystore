@@ -9,7 +9,7 @@ try:
     import ucp
 
     ucx_import_error = None
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     ucx_import_error = e
 
 from multiprocessing import Process
@@ -19,6 +19,9 @@ from typing import Any, NamedTuple
 import proxystore.utils as utils
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
+
+
+ENCODING = 'UTF-8'
 
 
 class UCXStoreKey(NamedTuple):
@@ -63,7 +66,7 @@ class UCXStore(Store[UCXStoreKey]):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
-        if ucx_import_error is not None:
+        if ucx_import_error is not None:  # pragma: no cover
             print('UCX import error is not None')
             raise ucx_import_error
 
@@ -112,7 +115,7 @@ class UCXStore(Store[UCXStoreKey]):
         event = pickle.dumps({'key': key.ucx_key, 'data': None, 'op': 'evict'})
         res = asyncio.run(self.handler(event, key.peer))
 
-        if res == bytes('ERROR', 'utf-8'):
+        if res == bytes('ERROR', encoding=ENCODING):
             res = None
 
         self._cache.evict(key)
@@ -131,7 +134,7 @@ class UCXStore(Store[UCXStoreKey]):
         event = pickle.dumps({'key': key.ucx_key, 'data': '', 'op': 'get'})
         res = asyncio.run(self.handler(event, key.peer))
 
-        if res == bytes('ERROR', 'utf-8'):
+        if res == bytes('ERROR', encoding=ENCODING):
             res = None
         return res
 
@@ -165,7 +168,6 @@ class UCXStore(Store[UCXStoreKey]):
         await ep.close()
         assert ep.closed()
 
-        print('handler res', res)
         return res
 
     def close(self) -> None:
@@ -207,7 +209,7 @@ class UCXServer:
             That the operation has successfully completed
         """
         self.data[key] = data
-        return bytes('1', 'utf-8')
+        return bytes('1', encoding=ENCODING)
 
     def get(self, key: str) -> bytes:
         """Return data at a given key back to the client.
@@ -221,7 +223,7 @@ class UCXServer:
         try:
             return self.data[key]
         except KeyError:
-            return bytes('ERROR', 'utf-8')
+            return bytes('ERROR', encoding=ENCODING)
 
     def evict(self, key: str) -> bytes:
         """Remove key from local dictionary.
@@ -235,9 +237,9 @@ class UCXServer:
         """
         try:
             del self.data[key]
-            return bytes('1', 'utf-8')
+            return bytes('1', encoding=ENCODING)
         except KeyError:
-            return bytes('ERROR', 'utf-8')
+            return bytes('ERROR', encoding=ENCODING)
 
     def exists(self, key: str) -> bytes:
         """Verifies whether key exists within local dictionary.
@@ -249,7 +251,7 @@ class UCXServer:
             whether key exists
 
         """
-        return bytes(str(int(key in self.data)), 'utf-8')
+        return bytes(str(int(key in self.data)), encoding=ENCODING)
 
     async def handler(self, ep: Any) -> None:
         """Function handler implementation.

@@ -9,6 +9,8 @@ from typing import TypeVar
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.base import StoreFactory
+from proxystore.store.dim.margo import MargoStore as _MargoStore
+from proxystore.store.dim.ucx import UCXStore as _UCXStore
 from proxystore.store.endpoint import EndpointStore as _EndpointStore
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
@@ -17,13 +19,12 @@ from proxystore.store.file import FileStore as _FileStore
 from proxystore.store.globus import GlobusStore as _GlobusStore
 from proxystore.store.local import LocalStore as _LocalStore
 from proxystore.store.redis import RedisStore as _RedisStore
-from proxystore.store.dim.margo import MargoStore as _MargoStore
-from proxystore.store.dim.ucx import UCXStore as _UCXStore
 
 T = TypeVar('T')
 
 _stores: dict[str, _Store[Any]] = {}
 logger = logging.getLogger(__name__)
+
 
 class STORES(Enum):
     """Available Store implementations."""
