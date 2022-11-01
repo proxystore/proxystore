@@ -15,6 +15,8 @@ class MockEndpoint:
     key: str
     response: str
     req: Any
+    server: Any
+    is_closed: bool
 
     def __init__(self, server=False):
         """Initializes the MockEndpoint."""
@@ -23,6 +25,7 @@ class MockEndpoint:
         self.response = ''
         self.req = None
         self.server = server
+        self.is_closed = False
 
     async def send_obj(self, req: Any) -> None:
         """Mocks the `ucp.send_obj` function.
@@ -66,11 +69,11 @@ class MockEndpoint:
 
     async def close(self) -> None:
         """Mock close implementation."""
-        return None
+        self.is_closed = True
 
     def closed(self) -> bool:
         """Mock closed implementation."""
-        return True
+        return self.is_closed
 
 
 class Listener:
