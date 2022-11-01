@@ -88,10 +88,9 @@ class Listener:
     def closed(self) -> bool:
         """Mock closed."""
         if not self.called:
-            self.called = False
-        else:
             self.called = True
-        return self.called
+            return False
+        return True
 
 
 def get_address(ifname: str) -> str:
