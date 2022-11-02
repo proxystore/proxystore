@@ -18,6 +18,7 @@ from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
 
+logger = logging.getLogger(__name__)
 server_process = None
 
 
@@ -67,8 +68,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         """
         global server_process
 
-        self._logger = logging.getLogger(type(self).__name__)
-        self._logger.debug('Instantiating client and server')
+        logger.debug('Instantiating client and server')
 
         self.max_size = max_size
         self.chunk_size = 16 * 1024
@@ -98,7 +98,9 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""
-        print(f'starting server on host {self.host} with port {self.port}')
+        logger.info(
+            f'starting server on host {self.host} with port {self.port}',
+        )
 
         # create server
         ps = WebsocketServer(
@@ -109,7 +111,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
         asyncio.run(ps.launch())
 
-        self._logger.info('Server running at address %s', self.addr)
+        logger.info('Server running at address %s', self.addr)
 
     def create_key(self, obj: Any) -> WebsocketStoreKey:
         return WebsocketStoreKey(
@@ -119,7 +121,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
 
     def evict(self, key: WebsocketStoreKey) -> None:
-        self._logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug('Client issuing an evict request on key %s', key)
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'evict'},
@@ -128,7 +130,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         self._cache.evict(key)
 
     def exists(self, key: WebsocketStoreKey) -> bool:
-        self._logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug('Client issuing an exists request on key %s', key)
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
@@ -138,7 +140,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
 
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
-        self._logger.debug('Client issuing get request on key %s', key)
+        logger.debug('Client issuing get request on key %s', key)
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'get'},
@@ -150,7 +152,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         return res
 
     def set_bytes(self, key: WebsocketStoreKey, data: bytes) -> None:
-        self._logger.debug(
+        logger.debug(
             'Client issuing set request on key %s with addr %s',
             key,
             self.addr,
@@ -186,13 +188,13 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         """Terminate Peer server process."""
         global server_process
 
-        self._logger.info('Clean up requested')
+        logger.info('Clean up requested')
 
         if server_process is not None:
             server_process.terminate()
             server_process = None
 
-        self._logger.debug('Clean up completed')
+        logger.debug('Clean up completed')
 
 
 class WebsocketServer:
@@ -221,7 +223,6 @@ class WebsocketServer:
             chunk_size (int): the chunk size for the data (default: 64MB)
 
         """
-        self.logger = logging.getLogger(type(self).__name__)
         self.host = host
         self.port = port
         self.max_size = max_size
@@ -327,4 +328,4 @@ class WebsocketServer:
                 await stop  # run forever
 
         except OSError:
-            self.logger.warning('Server already exists')
+            logger.warning('Server already exists')

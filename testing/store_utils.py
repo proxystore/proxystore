@@ -228,7 +228,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     ):
         yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
 
-    if os.path.exists(file_dir):
+    if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
@@ -297,7 +297,7 @@ def websocket_store() -> Generator[StoreInfo, None, None]:
     yield StoreInfo(
         WebsocketStore,
         'websocket',
-        {'interface': 'localhost', 'port': 6000},
+        {'interface': '127.0.0.1', 'port': 6000},
     )
 
 
@@ -314,10 +314,10 @@ def missing_key(store: Store[KeyT]) -> NamedTuple:
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
     elif isinstance(store, MargoStore):
-        return MargoStoreKey(str(uuid.uuid4()), 0, 'localhost:6000')
+        return MargoStoreKey(str(uuid.uuid4()), 0, '127.0.0.1:6000')
     elif isinstance(store, UCXStore):
-        return UCXStoreKey(str(uuid.uuid4()), 0, 'localhost:6000')
+        return UCXStoreKey(str(uuid.uuid4()), 0, '127.0.0.1:6000')
     elif isinstance(store, WebsocketStore):
-        return WebsocketStoreKey(str(uuid.uuid4()), 0, 'ws://localhost:6000')
+        return WebsocketStoreKey(str(uuid.uuid4()), 0, 'ws://127.0.0.1:6000')
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
