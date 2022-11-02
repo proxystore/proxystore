@@ -19,6 +19,8 @@ def test_file_store_close(tmp_dir: str) -> None:
 
 def test_cwd_change(tmp_dir: str) -> None:
     """Checks FileStore proxies still resolve when the CWD changes."""
+    current = os.getcwd()
+
     os.chdir(tmp_dir)
     store_dir = './store-dir'
 
@@ -29,3 +31,5 @@ def test_cwd_change(tmp_dir: str) -> None:
         p = store.proxy('data')
         os.chdir(new_working_dir)
         assert p == 'data'
+
+    os.chdir(current)
