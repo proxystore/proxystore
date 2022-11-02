@@ -42,7 +42,7 @@ class STORES(Enum):
     MARGO = _MargoStore
     """Corresponds to :class:`~proxystore.store.dim.margo.MargoStore`."""
     UCX = _UCXStore
-    """Corresponds to :class:`~proxystore.store.dim.ucx.UCXStore"""
+    """Corresponds to :class:`~proxystore.store.dim.ucx.UCXStore`."""
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store[Any]]) -> str:
