@@ -23,6 +23,9 @@ from proxystore.store.dim.utils import get_ip_address
 
 ENCODING = 'UTF-8'
 
+server_process = None
+logger = logging.getLogger(__name__)
+
 
 class UCXStoreKey(NamedTuple):
     """Key to objects in a MargoStore."""
@@ -40,7 +43,6 @@ class UCXStore(Store[UCXStoreKey]):
     port: int
     server: Process
     _loop: Any
-    _logger: logging.Logger
 
     # TODO : make host optional and try to get infiniband path automatically
     def __init__(
@@ -66,12 +68,13 @@ class UCXStore(Store[UCXStoreKey]):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
+        global server_process
+
         if ucx_import_error is not None:  # pragma: no cover
             print('UCX import error is not None')
             raise ucx_import_error
 
-        self._logger = logging.getLogger(type(self).__name__)
-        self._logger.debug('Instantiating client and server')
+        logger.debug('Instantiating client and server')
 
         self.host = get_ip_address(interface)
         self.port = port
@@ -79,11 +82,13 @@ class UCXStore(Store[UCXStoreKey]):
         self.addr = f'{ucp.get_address(ifname=interface)}:{self.port}'
 
         # self._loop = asyncio.get_event_loop()
-        self._server = Process(target=self._start_server)
-        self._server.start()
 
-        # allocate some time to start the server process
-        sleep(0.2)
+        if server_process is None:
+            server_process = Process(target=self._start_server)
+            server_process.start()
+
+            # allocate some time to start the server process
+            sleep(0.2)
 
         super().__init__(
             name,
@@ -94,13 +99,15 @@ class UCXStore(Store[UCXStoreKey]):
 
     def _start_server(self) -> None:
         """Launch the local UCX server (Peer) process."""
-        print(f'starting server on host {self.host} with port {self.port}')
+        logger.info(
+            f'starting server on host {self.host} with port {self.port}',
+        )
 
         # create server
         ps = UCXServer(self.host, self.port)
         asyncio.run(ps.launch())
 
-        self._logger.info('Server running at address %s', self.addr)
+        logger.info('Server running at address %s', self.addr)
 
     def create_key(self, obj: Any) -> UCXStoreKey:
         return UCXStoreKey(
@@ -110,7 +117,7 @@ class UCXStore(Store[UCXStoreKey]):
         )
 
     def evict(self, key: UCXStoreKey) -> None:
-        self._logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug('Client issuing an evict request on key %s', key)
 
         event = pickle.dumps({'key': key.ucx_key, 'data': None, 'op': 'evict'})
         res = asyncio.run(self.handler(event, key.peer))
@@ -121,7 +128,7 @@ class UCXStore(Store[UCXStoreKey]):
         self._cache.evict(key)
 
     def exists(self, key: UCXStoreKey) -> bool:
-        self._logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug('Client issuing an exists request on key %s', key)
 
         event = pickle.dumps(
             {'key': key.ucx_key, 'data': None, 'op': 'exists'},
@@ -129,7 +136,7 @@ class UCXStore(Store[UCXStoreKey]):
         return bool(int(asyncio.run(self.handler(event, key.peer))))
 
     def get_bytes(self, key: UCXStoreKey) -> bytes | None:
-        self._logger.debug('Client issuing get request on key %s', key)
+        logger.debug('Client issuing get request on key %s', key)
 
         event = pickle.dumps({'key': key.ucx_key, 'data': '', 'op': 'get'})
         res = asyncio.run(self.handler(event, key.peer))
@@ -139,7 +146,7 @@ class UCXStore(Store[UCXStoreKey]):
         return res
 
     def set_bytes(self, key: UCXStoreKey, data: bytes) -> None:
-        self._logger.debug(
+        logger.debug(
             'Client issuing set request on key %s with addr %s',
             key,
             self.addr,
@@ -166,9 +173,15 @@ class UCXStore(Store[UCXStoreKey]):
 
     def close(self) -> None:
         """Terminate Peer server process."""
-        self._logger.info('Clean up requested')
-        self._server.terminate()
-        self._logger.debug('Clean up completed')
+        global server_process
+
+        logger.info('Clean up requested')
+
+        if server_process is not None:
+            server_process.terminate()
+            server_process = None
+
+        logger.debug('Clean up completed')
 
 
 class UCXServer:
@@ -187,7 +200,6 @@ class UCXServer:
             port (int): the server port
 
         """
-        self._logger = logging.getLogger(type(self).__name__)
         self.host = host
         self.port = port
         self.data = {}

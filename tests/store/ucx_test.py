@@ -35,6 +35,8 @@ def test_ucx_store(ucx_store) -> None:
     """
     store = UCXStore(ucx_store.name, **ucx_store.kwargs)
     store._start_server()
+    store.close()
+    store.close()  # check that nothing happens
 
 
 def test_ucx_server(ucx_server) -> None:
