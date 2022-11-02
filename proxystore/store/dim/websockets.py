@@ -17,6 +17,7 @@ import proxystore.utils as utils
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
+ENCODING = 'UTF-8'
 
 logger = logging.getLogger(__name__)
 server_process = None
@@ -241,7 +242,7 @@ class WebsocketServer:
             That the operation has successfully completed
         """
         self.data[key] = data
-        return bytes(str(1), encoding='UTF-8')
+        return bytes(str(1), encoding=ENCODING)
 
     def get(self, key: str) -> bytes:
         """Return data at a given key back to the client.
@@ -268,7 +269,7 @@ class WebsocketServer:
         """
         try:
             del self.data[key]
-            return bytes(str(1), encoding='UTF-8')
+            return bytes(str(1), encoding=ENCODING)
         except KeyError:
             return b'ERROR'
 
@@ -281,7 +282,7 @@ class WebsocketServer:
         Returns (bytes):
             whether key exists
         """
-        return bytes(str(int(key in self.data)), encoding='UTF-8')
+        return bytes(str(int(key in self.data)), encoding=ENCODING)
 
     async def handler(self, websocket: Any) -> None:
         """The handler implementation for the websocket server.
