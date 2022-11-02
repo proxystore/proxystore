@@ -33,6 +33,8 @@ def test_store_init(store_fixture, request) -> None:
             cache_size=-1,
         )
 
+    store.close()
+
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
 def test_store_base(store_fixture, request) -> None:
