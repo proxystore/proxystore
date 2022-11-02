@@ -9,6 +9,8 @@ import pytest
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
+from proxystore.endpoint.config import get_log_filepath
+from proxystore.endpoint.config import get_pid_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.config import write_config
@@ -137,3 +139,15 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     else:
         with pytest.raises(ValueError):
             EndpointConfig(**options)  # type: ignore
+
+
+def test_get_pid_filepath() -> None:
+    fp = get_pid_filepath('/tmp')
+    assert isinstance(fp, str)
+    assert not os.path.exists(fp)
+
+
+def test_get_log_filepath() -> None:
+    fp = get_log_filepath('/tmp')
+    assert isinstance(fp, str)
+    assert not os.path.exists(fp)

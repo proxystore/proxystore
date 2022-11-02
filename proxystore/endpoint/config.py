@@ -10,6 +10,8 @@ import uuid
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 
 _ENDPOINT_CONFIG_FILE = 'endpoint.json'
+_ENDPOINT_LOG_FILE = 'endpoint.log'
+_ENDPOINT_PID_FILE = 'daemon.pid'
 
 
 @dataclasses.dataclass
@@ -92,6 +94,30 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
             endpoints.append(cfg)
 
     return endpoints
+
+
+def get_log_filepath(endpoint_dir: str) -> str:
+    """Returns path to log file for endpoint.
+
+    Args:
+        endpoint_dir (str): directory for the endpoint.
+
+    Returns:
+        path to log file.
+    """
+    return os.path.join(endpoint_dir, _ENDPOINT_LOG_FILE)
+
+
+def get_pid_filepath(endpoint_dir: str) -> str:
+    """Returns path to PID file for endpoint.
+
+    Args:
+        endpoint_dir (str): directory for the endpoint.
+
+    Returns:
+        path to PID file.
+    """
+    return os.path.join(endpoint_dir, _ENDPOINT_PID_FILE)
 
 
 def read_config(endpoint_dir: str) -> EndpointConfig:
