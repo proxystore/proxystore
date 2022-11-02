@@ -42,7 +42,7 @@ class UCXStore(Store[UCXStoreKey]):
     host: str
     port: int
     server: Process
-    _loop: Any
+    _loop: asyncio.events.AbstractEventLoop
 
     # TODO : make host optional and try to get infiniband path automatically
     def __init__(
@@ -81,7 +81,7 @@ class UCXStore(Store[UCXStoreKey]):
 
         self.addr = f'{ucp.get_address(ifname=interface)}:{self.port}'
 
-        # self._loop = asyncio.get_event_loop()
+        self._loop = asyncio.new_event_loop()
 
         if server_process is None:
             server_process = Process(target=self._start_server)
@@ -120,7 +120,7 @@ class UCXStore(Store[UCXStoreKey]):
         logger.debug('Client issuing an evict request on key %s', key)
 
         event = pickle.dumps({'key': key.ucx_key, 'data': None, 'op': 'evict'})
-        res = asyncio.run(self.handler(event, key.peer))
+        res = self._loop.run_until_complete(self.handler(event, key.peer))
 
         if res == bytes('ERROR', encoding=ENCODING):
             res = None
@@ -133,13 +133,15 @@ class UCXStore(Store[UCXStoreKey]):
         event = pickle.dumps(
             {'key': key.ucx_key, 'data': None, 'op': 'exists'},
         )
-        return bool(int(asyncio.run(self.handler(event, key.peer))))
+        return bool(
+            int(self._loop.run_until_complete(self.handler(event, key.peer))),
+        )
 
     def get_bytes(self, key: UCXStoreKey) -> bytes | None:
         logger.debug('Client issuing get request on key %s', key)
 
         event = pickle.dumps({'key': key.ucx_key, 'data': '', 'op': 'get'})
-        res = asyncio.run(self.handler(event, key.peer))
+        res = self._loop.run_until_complete(self.handler(event, key.peer))
 
         if res == bytes('ERROR', encoding=ENCODING):
             res = None
@@ -154,7 +156,7 @@ class UCXStore(Store[UCXStoreKey]):
 
         event = pickle.dumps({'key': key.ucx_key, 'data': data, 'op': 'set'})
 
-        asyncio.run(self.handler(event, self.addr))
+        self._loop.run_until_complete(self.handler(event, self.addr))
 
     async def handler(self, event: bytes, addr: str) -> Any:
         host = addr.split(':')[0]  # quick fix
