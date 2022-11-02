@@ -228,7 +228,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     ):
         yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
 
-    if os.path.exists(file_dir):  # pragma: no branch
+    if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
