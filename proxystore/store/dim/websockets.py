@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import pickle
+import signal
 from multiprocessing import Process
 from time import sleep
 from typing import Any
@@ -312,6 +313,12 @@ class WebsocketServer:
 
     async def launch(self) -> None:
         """Launch the server."""
+        loop = asyncio.get_running_loop()
+        stop = loop.create_future()
+
+        loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
+        loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+
         try:
             async with serve(
                 self.handler,
@@ -319,7 +326,7 @@ class WebsocketServer:
                 self.port,
                 max_size=self.max_size,
             ):
-                await asyncio.Future()  # run forever
+                await stop  # run forever
 
         except OSError:
             self.logger.warn('Server already exists')
