@@ -38,7 +38,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
     provider_id: int
     max_size: int
     chunk_size: int
-    _logger: logging.Logger
+    _loop: asyncio.events.AbstractEventLoop
 
     def __init__(
         self,
@@ -82,6 +82,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         if server_process is None:
             server_process = Process(target=self._start_server)
             server_process.start()
+
+        self._loop = asyncio.new_event_loop()
 
         # allocate some time to start the server process
         sleep(0.2)
@@ -127,7 +129,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'evict'},
         )
-        asyncio.run(self.handler(event, key.peer))
+        self._loop.run_until_complete(self.handler(event, key.peer))
         self._cache.evict(key)
 
     def exists(self, key: WebsocketStoreKey) -> bool:
@@ -137,7 +139,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
         )
         return bool(
-            int(asyncio.run(self.handler(event, key.peer))),
+            int(self._loop.run_until_complete(self.handler(event, key.peer))),
         )
 
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
@@ -146,7 +148,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'get'},
         )
-        res = asyncio.run(self.handler(event, key.peer))
+        res = self._loop.run_until_complete(self.handler(event, key.peer))
 
         if res == b'ERROR':
             return None
@@ -162,7 +164,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': data, 'op': 'set'},
         )
-        asyncio.run(self.handler(event, self.addr))
+        self._loop.run_until_complete(self.handler(event, self.addr))
 
     async def handler(self, event: bytes, addr: str) -> Any:
         """Websocket handler function implementation.
