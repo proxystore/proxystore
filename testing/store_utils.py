@@ -171,7 +171,7 @@ def file_store() -> Generator[StoreInfo, None, None]:
     """File Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
     yield StoreInfo(FileStore, 'file', {'store_dir': file_dir})
-    if os.path.exists(file_dir):  # pragma: no branch
+    if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
@@ -228,7 +228,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     ):
         yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
 
-    if os.path.exists(file_dir):  # pragma: no cover
+    if os.path.exists(file_dir):
         shutil.rmtree(file_dir)
 
 
