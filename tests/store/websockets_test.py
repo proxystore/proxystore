@@ -11,4 +11,7 @@ def test_websocket_store(websocket_store) -> None:
     tests/store/store_*_test.py.
     """
     store = WebsocketStore(websocket_store.name, **websocket_store.kwargs)
+    # starting server when already started should return existing server
+    store._start_server()
     store.close()
+    store.close()  # close when already closed doesn't do anything
