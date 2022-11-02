@@ -28,6 +28,8 @@ def test_margo_store(margo_store) -> None:
     """
     store = MargoStore(margo_store.name, **margo_store.kwargs)
     store._start_server()
+    store.close()
+    store.close()  # check that nothing happens
 
 
 def test_margo_server(margo_server) -> None:

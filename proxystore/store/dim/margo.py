@@ -22,6 +22,11 @@ import proxystore.utils as utils
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
+ENCODING = 'UTF-8'
+
+server_process = None
+logger = logging.getLogger(__name__)
+
 
 class MargoStoreKey(NamedTuple):
     """Key to objects in a MargoStore."""
@@ -38,9 +43,7 @@ class MargoStore(Store[MargoStoreKey]):
     addr: str
     protocol: str
     engine: Engine
-    _server: Process
     _rpc: dict[str, Any]
-    _logger: logging.Logger
 
     # TODO : make host optional and try to get infiniband path automatically
     def __init__(
@@ -69,11 +72,12 @@ class MargoStore(Store[MargoStoreKey]):
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
+        global server_process
+
         # raise error if modules not properly loaded
         if pymargo_import_error is not None:  # pragma: no cover
             raise pymargo_import_error
 
-        self._logger = logging.getLogger(type(self).__name__)
         self.protocol = protocol
 
         self.host = get_ip_address(interface)
@@ -81,8 +85,9 @@ class MargoStore(Store[MargoStoreKey]):
 
         self.addr = f'{self.protocol}://{self.host}:{port}'
 
-        self._server = Process(target=self._start_server)
-        self._server.start()
+        if server_process is None:
+            server_process = Process(target=self._start_server)
+            server_process.start()
 
         # allocate some time to start the server process
         sleep(0.2)
@@ -110,10 +115,10 @@ class MargoStore(Store[MargoStoreKey]):
 
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""
-        print(f'starting server {self.addr}')
+        logger.info(f'starting server {self.addr}')
         server_engine = Engine(self.addr)
 
-        self._logger.info(
+        logger.info(
             'Server running at address %s',
             str(server_engine.addr()),
         )
@@ -134,7 +139,7 @@ class MargoStore(Store[MargoStoreKey]):
         )
 
     def evict(self, key: MargoStoreKey) -> None:
-        self._logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug('Client issuing an evict request on key %s', key)
         self.call_rpc_on(
             self.engine,
             key.peer,
@@ -142,13 +147,12 @@ class MargoStore(Store[MargoStoreKey]):
             '',
             key.margo_key,
             0,
-            self._logger,
         )
 
         self._cache.evict(key)
 
     def exists(self, key: MargoStoreKey) -> bool:
-        self._logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug('Client issuing an exists request on key %s', key)
         buff = bytearray(1)  # equivalent to malloc
 
         blk = self.engine.create_bulk(buff, bulk.read_write)
@@ -160,12 +164,11 @@ class MargoStore(Store[MargoStoreKey]):
             blk,
             key.margo_key,
             len(buff),
-            self._logger,
         )
-        return bool(int(bytes(buff).decode('utf-8')))
+        return bool(int(bytes(buff).decode(ENCODING)))
 
     def get_bytes(self, key: MargoStoreKey) -> bytes | None:
-        self._logger.debug('Client issuing get request on key %s', key)
+        logger.debug('Client issuing get request on key %s', key)
 
         buff = bytearray(key.obj_size)
         blk = self.engine.create_bulk(buff, bulk.read_write)
@@ -177,7 +180,6 @@ class MargoStore(Store[MargoStoreKey]):
             blk,
             key.margo_key,
             key.obj_size,
-            self._logger,
         )
 
         if ret == 'ERROR':
@@ -186,7 +188,7 @@ class MargoStore(Store[MargoStoreKey]):
         return bytes(buff)
 
     def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
-        self._logger.debug(
+        logger.debug(
             'Client %s issuing set request on key %s',
             self.addr,
             key,
@@ -199,15 +201,19 @@ class MargoStore(Store[MargoStoreKey]):
             blk,
             key.margo_key,
             key.obj_size,
-            self._logger,
         )
 
     def close(self) -> None:
         """Terminate Peer server process."""
-        self._logger.info('Clean up requested')
+        global server_process
+
+        logger.info('Clean up requested')
         self.engine.lookup(self.addr).shutdown()
         self.engine.finalize()
-        self._server.terminate()
+
+        if server_process is not None:
+            server_process.terminate()
+            server_process = None
 
     @staticmethod
     def call_rpc_on(
@@ -217,7 +223,6 @@ class MargoStore(Store[MargoStoreKey]):
         array_str: str,
         key: str,
         size: int,
-        logger: logging.Logger,
     ) -> str:
         """Initiates the desired RPC call on the specified provider.
 
@@ -248,6 +253,7 @@ class MargoServer:
     """MargoServer implementation."""
 
     data: dict[str, bytes]
+    engine: Engine
 
     def __init__(self, engine: Engine) -> None:
         """Initialize the server and register all RPC calls.
@@ -257,7 +263,6 @@ class MargoServer:
                       specified network address
 
         """
-        self._logger = logging.getLogger(type(self).__name__)
         self.data = {}
 
         self.engine = engine
@@ -281,7 +286,7 @@ class MargoServer:
             bulk_size (int): the size of the data being transferred
             key (str): the data key
         """
-        self._logger.debug('Received set RPC for key %s.', key)
+        logger.debug('Received set RPC for key %s.', key)
 
         try:
             local_buffer = bytearray(bulk_size)
@@ -298,7 +303,7 @@ class MargoServer:
             self.data[key] = local_buffer
             handle.respond('OK')
         except Exception as error:
-            self._logger.error('An exception was caught: %s', error)
+            logger.error('An exception was caught: %s', error)
             handle.respond('ERROR')
 
     def get(
@@ -317,7 +322,7 @@ class MargoServer:
             key (str): the data's key
 
         """
-        self._logger.debug('Received get RPC for key %s.', key)
+        logger.debug('Received get RPC for key %s.', key)
 
         try:
             local_array = self.data[key]
@@ -333,7 +338,7 @@ class MargoServer:
             )
             handle.respond('OK')
         except Exception as error:
-            self._logger.error('An exception was caught: %s', error)
+            logger.error('An exception was caught: %s', error)
             handle.respond('ERROR')
 
     def evict(
@@ -352,13 +357,13 @@ class MargoServer:
             key (str): the identifier of the data
 
         """
-        self._logger.debug('Received exists RPC for key %s', key)
+        logger.debug('Received exists RPC for key %s', key)
 
         try:
             del self.data[key]
             handle.respond('OK')
         except Exception as error:
-            self._logger.error('An exception was caught: %s', error)
+            logger.error('An exception was caught: %s', error)
             handle.respond('ERROR')
 
     def exists(
@@ -377,10 +382,10 @@ class MargoServer:
             key (str): the identifier of the data
 
         """
-        self._logger.debug('Received exists RPC for key %s', key)
+        logger.debug('Received exists RPC for key %s', key)
 
         try:
-            local_array = bytes(str(int(key in self.data)), 'utf-8')
+            local_array = bytes(str(int(key in self.data)), encoding=ENCODING)
             local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
             size = len(local_array)
             self.engine.transfer(
@@ -394,10 +399,10 @@ class MargoServer:
             )
             handle.respond('OK')
         except Exception as error:
-            self._logger.error('An exception was caught: %s', error)
+            logger.error('An exception was caught: %s', error)
             handle.respond('ERROR')
 
 
 def when_finalize() -> None:
     """Prints a statement advising that engine finalization was triggered."""
-    print('Finalize was called. Cleaning up.')
+    logger.info('Finalize was called. Cleaning up.')
