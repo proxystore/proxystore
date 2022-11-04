@@ -318,7 +318,6 @@ def missing_key(store: Store[Any]) -> NamedTuple:
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
     elif isinstance(store, MargoStore):
-        print('help', store)
         return MargoStoreKey(
             str(uuid.uuid4()),
             0,

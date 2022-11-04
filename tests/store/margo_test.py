@@ -44,7 +44,7 @@ def test_margo_server(margo_server) -> None:
     assert margo_server.data[key] == bytearray(val)
 
     margo_server.set(h, bulk_str, -1, key)
-    assert h.last_msg == 'ERROR'
+    assert not h.response.success
 
     local_buff = bytearray(size)
     bulk_str = Bulk(local_buff)
@@ -53,9 +53,9 @@ def test_margo_server(margo_server) -> None:
 
     local_buff = bytearray(size)
     bulk_str = Bulk(local_buff)
-    assert h.last_msg != 'ERROR'
+    assert h.response.success
     margo_server.get(h, bulk_str, size, 'test')
-    assert h.last_msg == 'ERROR'
+    assert not h.response.success
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
@@ -68,17 +68,17 @@ def test_margo_server(margo_server) -> None:
     local_buff = bytearray(2)
     bulk_str = Bulk(local_buff)
     margo_server.exists(h, bulk_str, -1, key)
-    assert h.last_msg == 'ERROR'
+    assert not h.response.success
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
     margo_server.evict(h, bulk_str, size, key)
-    assert h.last_msg == 'OK'
+    assert h.response.success
     assert key not in margo_server.data
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
     margo_server.evict(h, bulk_str, size, 'test')
-    assert h.last_msg == 'ERROR'
+    assert not h.response.success
 
     when_finalize()

@@ -4,6 +4,7 @@ from __future__ import annotations
 import fcntl
 import socket
 import struct
+from typing import NamedTuple
 
 
 def get_ip_address(ifname: str) -> str:
@@ -32,3 +33,10 @@ def get_ip_address(ifname: str) -> str:
         # Not a solution, but the above doesn't work with Macs
         # need to provide IP rather than the interface name for the time being
         return ifname
+
+
+class Status(NamedTuple):
+    """Task status response."""
+
+    success: bool
+    error: Exception | None = None

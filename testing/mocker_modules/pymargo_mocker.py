@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import NamedTuple
 
 # pymargo vars
 client = 'client'
@@ -9,6 +10,18 @@ server = 'server'
 
 # server dictionary
 data_dict = {}
+
+
+class Status(NamedTuple):
+    """Status implementation.
+
+    reimplemented here as importing the module,
+    executes `store/__init__.py` and attempts to
+    import pymargo.
+    """
+
+    success: bool
+    error: Exception | None
 
 
 class Engine:
@@ -90,26 +103,32 @@ class RPC:
         """Mock RPC on implementation."""
         return self.mockfunc
 
-    def mockfunc(self, array_str: Bulk, size: int, key: str) -> str:
+    def mockfunc(self, array_str: Bulk, size: int, key: str) -> Status:
         """Mockfunc implementation."""
         if self.name == 'set_bytes':
             data_dict[key] = array_str.data
-            return 'OK'
+            return Status(True, None)
         elif self.name == 'get_bytes':
             if key not in data_dict:
-                return 'ERROR'
+                return Status(
+                    False,
+                    Exception('MockException occurred in `get_bytes`'),
+                )
             else:
                 array_str.data[:] = data_dict[key]
-            return 'OK'
+            return Status(True, None)
         elif self.name == 'evict':
             if key not in data_dict:
-                return 'ERROR'
+                return Status(
+                    False,
+                    Exception('MockException occurred in `evict`'),
+                )
             else:
                 del data_dict[key]
-            return 'OK'
+            return Status(True, None)
         else:
             array_str.data[:] = bytes(str(int(key in data_dict)), 'utf-8')
-            return 'OK'
+            return Status(True, None)
 
 
 class MockBulkMod:
@@ -139,16 +158,16 @@ class Bulk:
 class Handle:
     """Mock Handle implementation."""
 
-    last_msg: str
+    response: Status
 
     def __init__(self) -> None:
         """Mock handle initialization."""
-        self.last_msg = ''
+        self.response = Status(True, None)
 
-    def respond(self, text: str) -> str:
+    def respond(self, status: Status) -> Status:
         """Mock respond."""
-        self.last_msg = text
-        return text
+        self.response = status
+        return self.response
 
     def get_addr(self) -> str:
         """Mock addr."""
