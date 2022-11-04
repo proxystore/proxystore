@@ -114,7 +114,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
         asyncio.run(ps.launch())
 
-        logger.info('Server running at address %s', self.addr)
+        logger.info(f'Server running at address {self.addr}')
 
     def create_key(self, obj: Any) -> WebsocketStoreKey:
         return WebsocketStoreKey(
@@ -124,7 +124,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
 
     def evict(self, key: WebsocketStoreKey) -> None:
-        logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug(f'Client issuing an evict request on key {key}.')
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'evict'},
@@ -133,7 +133,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         self._cache.evict(key)
 
     def exists(self, key: WebsocketStoreKey) -> bool:
-        logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug(f'Client issuing an exists request on key {key}.')
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
@@ -143,7 +143,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
 
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
-        logger.debug('Client issuing get request on key %s', key)
+        logger.debug('Client issuing get request on key {key}')
 
         event = pickle.dumps(
             {'key': key.websocket_key, 'data': None, 'op': 'get'},
@@ -156,9 +156,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
     def set_bytes(self, key: WebsocketStoreKey, data: bytes) -> None:
         logger.debug(
-            'Client issuing set request on key %s with addr %s',
-            key,
-            self.addr,
+            f'Client issuing set request on key {key} with addr {self.addr}',
         )
 
         event = pickle.dumps(

@@ -10,7 +10,9 @@ from typing import NamedTuple
 try:
     import pymargo
     import pymargo.bulk as bulk
-    from pymargo.core import Engine, Handle
+    from pymargo.core import Engine
+    from pymargo.core import Handle
+    from pymargo.core import RemoteFunction
     from pymargo.bulk import Bulk
 
     pymargo_import_error = None
@@ -24,7 +26,7 @@ from proxystore.store.dim.utils import get_ip_address
 
 ENCODING = 'UTF-8'
 
-server_process = None
+server_process: Process | None = None
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +45,7 @@ class MargoStore(Store[MargoStoreKey]):
     addr: str
     protocol: str
     engine: Engine
-    _rpc: dict[str, Any]
+    _rpc: dict[str, RemoteFunction]
 
     # TODO : make host optional and try to get infiniband path automatically
     def __init__(
@@ -118,10 +120,7 @@ class MargoStore(Store[MargoStoreKey]):
         logger.info(f'starting server {self.addr}')
         server_engine = Engine(self.addr)
 
-        logger.info(
-            'Server running at address %s',
-            str(server_engine.addr()),
-        )
+        logger.info(f'Server running at address {str(server_engine.addr())}')
 
         server_engine.on_finalize(when_finalize)
         server_engine.enable_remote_shutdown()
@@ -139,7 +138,7 @@ class MargoStore(Store[MargoStoreKey]):
         )
 
     def evict(self, key: MargoStoreKey) -> None:
-        logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug(f'Client issuing an evict request on key {key}')
         self.call_rpc_on(
             self.engine,
             key.peer,
@@ -152,7 +151,7 @@ class MargoStore(Store[MargoStoreKey]):
         self._cache.evict(key)
 
     def exists(self, key: MargoStoreKey) -> bool:
-        logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug(f'Client issuing an exists request on key {key}')
         buff = bytearray(1)  # equivalent to malloc
 
         blk = self.engine.create_bulk(buff, bulk.read_write)
@@ -168,7 +167,7 @@ class MargoStore(Store[MargoStoreKey]):
         return bool(int(bytes(buff).decode(ENCODING)))
 
     def get_bytes(self, key: MargoStoreKey) -> bytes | None:
-        logger.debug('Client issuing get request on key %s', key)
+        logger.debug(f'Client issuing get request on key {key}')
 
         buff = bytearray(key.obj_size)
         blk = self.engine.create_bulk(buff, bulk.read_write)
@@ -188,11 +187,7 @@ class MargoStore(Store[MargoStoreKey]):
         return bytes(buff)
 
     def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
-        logger.debug(
-            'Client %s issuing set request on key %s',
-            self.addr,
-            key,
-        )
+        logger.debug(f'Client {self.addr} issuing set request on key {key}')
         blk = self.engine.create_bulk(data, bulk.read_write)
         self.call_rpc_on(
             self.engine,
@@ -219,7 +214,7 @@ class MargoStore(Store[MargoStoreKey]):
     def call_rpc_on(
         engine: Engine,
         addr: str,
-        rpc: Any,
+        rpc: RemoteFunction,
         array_str: str,
         key: str,
         size: int,
@@ -286,7 +281,7 @@ class MargoServer:
             bulk_size (int): the size of the data being transferred
             key (str): the data key
         """
-        logger.debug('Received set RPC for key %s.', key)
+        logger.debug(f'Received set RPC for key {key}.')
 
         try:
             local_buffer = bytearray(bulk_size)
@@ -303,7 +298,7 @@ class MargoServer:
             self.data[key] = local_buffer
             handle.respond('OK')
         except Exception as error:
-            logger.error('An exception was caught: %s', error)
+            logger.error(f'An exception was caught: {error}')
             handle.respond('ERROR')
 
     def get(
@@ -322,7 +317,7 @@ class MargoServer:
             key (str): the data's key
 
         """
-        logger.debug('Received get RPC for key %s.', key)
+        logger.debug(f'Received get RPC for key {key}.')
 
         try:
             local_array = self.data[key]
@@ -338,7 +333,7 @@ class MargoServer:
             )
             handle.respond('OK')
         except Exception as error:
-            logger.error('An exception was caught: %s', error)
+            logger.error(f'An exception was caught: {error}')
             handle.respond('ERROR')
 
     def evict(
@@ -357,13 +352,13 @@ class MargoServer:
             key (str): the identifier of the data
 
         """
-        logger.debug('Received exists RPC for key %s', key)
+        logger.debug(f'Received exists RPC for key {key}')
 
         try:
             del self.data[key]
             handle.respond('OK')
         except Exception as error:
-            logger.error('An exception was caught: %s', error)
+            logger.error(f'An exception was caught: {error}')
             handle.respond('ERROR')
 
     def exists(
@@ -382,7 +377,7 @@ class MargoServer:
             key (str): the identifier of the data
 
         """
-        logger.debug('Received exists RPC for key %s', key)
+        logger.debug(f'Received exists RPC for key {key}')
 
         try:
             local_array = bytes(str(int(key in self.data)), encoding=ENCODING)

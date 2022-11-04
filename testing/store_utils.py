@@ -262,9 +262,6 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     server_handle.join()
 
 
-base_import = __import__
-
-
 @pytest.fixture
 def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""

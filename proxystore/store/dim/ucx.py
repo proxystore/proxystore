@@ -71,7 +71,6 @@ class UCXStore(Store[UCXStoreKey]):
         global server_process
 
         if ucx_import_error is not None:  # pragma: no cover
-            print('UCX import error is not None')
             raise ucx_import_error
 
         logger.debug('Instantiating client and server')
@@ -107,7 +106,7 @@ class UCXStore(Store[UCXStoreKey]):
         ps = UCXServer(self.host, self.port)
         asyncio.run(ps.launch())
 
-        logger.info('Server running at address %s', self.addr)
+        logger.info(f'Server running at address {self.addr}')
 
     def create_key(self, obj: Any) -> UCXStoreKey:
         return UCXStoreKey(
@@ -117,7 +116,7 @@ class UCXStore(Store[UCXStoreKey]):
         )
 
     def evict(self, key: UCXStoreKey) -> None:
-        logger.debug('Client issuing an evict request on key %s', key)
+        logger.debug(f'Client issuing an evict request on key {key}.')
 
         event = pickle.dumps({'key': key.ucx_key, 'data': None, 'op': 'evict'})
         res = self._loop.run_until_complete(self.handler(event, key.peer))
@@ -128,7 +127,7 @@ class UCXStore(Store[UCXStoreKey]):
         self._cache.evict(key)
 
     def exists(self, key: UCXStoreKey) -> bool:
-        logger.debug('Client issuing an exists request on key %s', key)
+        logger.debug(f'Client issuing an exists request on key {key}.')
 
         event = pickle.dumps(
             {'key': key.ucx_key, 'data': None, 'op': 'exists'},
@@ -138,7 +137,7 @@ class UCXStore(Store[UCXStoreKey]):
         )
 
     def get_bytes(self, key: UCXStoreKey) -> bytes | None:
-        logger.debug('Client issuing get request on key %s', key)
+        logger.debug(f'Client issuing get request on key {key}.')
 
         event = pickle.dumps({'key': key.ucx_key, 'data': '', 'op': 'get'})
         res = self._loop.run_until_complete(self.handler(event, key.peer))
@@ -149,9 +148,7 @@ class UCXStore(Store[UCXStoreKey]):
 
     def set_bytes(self, key: UCXStoreKey, data: bytes) -> None:
         logger.debug(
-            'Client issuing set request on key %s with addr %s',
-            key,
-            self.addr,
+            f'Client issuing set request on key {key} with addr {self.addr}',
         )
 
         event = pickle.dumps({'key': key.ucx_key, 'data': data, 'op': 'set'})
