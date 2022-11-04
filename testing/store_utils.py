@@ -37,6 +37,7 @@ from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
 from testing.endpoint import launch_endpoint
+from testing.utils import open_port
 
 FIXTURE_LIST = [
     'local_store',
@@ -265,40 +266,46 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
 @pytest.fixture
 def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
+    port = open_port()
+
     with mock.patch('multiprocessing.Process.start'), mock.patch(
         'multiprocessing.Process.terminate',
     ):
         yield StoreInfo(
             UCXStore,
             'ucx',
-            {'interface': 'localhost', 'port': 6000},
+            {'interface': 'localhost', 'port': port},
         )
 
 
 @pytest.fixture
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
+    port = open_port()
+
     with mock.patch('multiprocessing.Process.start'), mock.patch(
         'multiprocessing.Process.terminate',
     ):
         yield StoreInfo(
             MargoStore,
             'margo',
-            {'protocol': 'tcp', 'interface': 'localhost', 'port': 6000},
+            {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
         )
 
 
 @pytest.fixture
 def websocket_store() -> Generator[StoreInfo, None, None]:
     """Websocket store fixture."""
+    port = open_port()
+
     yield StoreInfo(
         WebsocketStore,
         'websocket',
-        {'interface': '127.0.0.1', 'port': 6000},
+        {'interface': '127.0.0.1', 'port': port},
     )
 
 
-def missing_key(store: Store[KeyT]) -> NamedTuple:
+def missing_key(store: Store[Any]) -> NamedTuple:
     """Generate a random key that is valid for the store type."""
     if isinstance(store, EndpointStore):
         return EndpointStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
@@ -311,10 +318,23 @@ def missing_key(store: Store[KeyT]) -> NamedTuple:
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
     elif isinstance(store, MargoStore):
-        return MargoStoreKey(str(uuid.uuid4()), 0, '127.0.0.1:6000')
+        print('help', store)
+        return MargoStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'127.0.0.1:{store.kwargs["port"]}',
+        )
     elif isinstance(store, UCXStore):
-        return UCXStoreKey(str(uuid.uuid4()), 0, '127.0.0.1:6000')
+        return UCXStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'127.0.0.1:{store.kwargs["port"]}',
+        )
     elif isinstance(store, WebsocketStore):
-        return WebsocketStoreKey(str(uuid.uuid4()), 0, 'ws://127.0.0.1:6000')
+        return WebsocketStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'ws://127.0.0.1:{store.kwargs["port"]}',
+        )
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')

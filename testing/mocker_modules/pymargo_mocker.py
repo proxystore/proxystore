@@ -153,3 +153,9 @@ class Handle:
     def get_addr(self) -> str:
         """Mock addr."""
         return 'addr'
+
+
+class RemoteFunction:
+    """Remote function implementation."""
+
+    pass
