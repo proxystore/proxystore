@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import pickle
 import signal
 from multiprocessing import Process
 from time import sleep
@@ -12,8 +11,11 @@ from typing import NamedTuple
 
 from websockets.client import connect
 from websockets.server import serve
+from websockets.server import WebSocketServerProtocol
 
 import proxystore.utils as utils
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
@@ -126,7 +128,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
     def evict(self, key: WebsocketStoreKey) -> None:
         logger.debug(f'Client issuing an evict request on key {key}.')
 
-        event = pickle.dumps(
+        event = serialize(
             {'key': key.websocket_key, 'data': None, 'op': 'evict'},
         )
         self._loop.run_until_complete(self.handler(event, key.peer))
@@ -135,7 +137,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
     def exists(self, key: WebsocketStoreKey) -> bool:
         logger.debug(f'Client issuing an exists request on key {key}.')
 
-        event = pickle.dumps(
+        event = serialize(
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
         )
         return bool(
@@ -145,7 +147,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
         logger.debug('Client issuing get request on key {key}')
 
-        event = pickle.dumps(
+        event = serialize(
             {'key': key.websocket_key, 'data': None, 'op': 'get'},
         )
         res = self._loop.run_until_complete(self.handler(event, key.peer))
@@ -159,7 +161,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             f'Client issuing set request on key {key} with addr {self.addr}',
         )
 
-        event = pickle.dumps(
+        event = serialize(
             {'key': key.websocket_key, 'data': data, 'op': 'set'},
         )
         self._loop.run_until_complete(self.handler(event, self.addr))
@@ -284,15 +286,18 @@ class WebsocketServer:
         """
         return bytes(str(int(key in self.data)), encoding=ENCODING)
 
-    async def handler(self, websocket: Any) -> None:
+    async def handler(self, websocket: WebSocketServerProtocol) -> None:
         """The handler implementation for the websocket server.
 
         Args:
-            websocket (Any): the websocket to connect to
+            websocket (WebSocketServerProtocol): the websocket server
 
         """
         pkv = await websocket.recv()
-        kv = pickle.loads(pkv)
+
+        assert isinstance(pkv, bytes)
+
+        kv = deserialize(pkv)
 
         key = kv['key']
         data = kv['data']

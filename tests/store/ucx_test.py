@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import asyncio
-import pickle
 from typing import Any
 
 import pytest
 
+from proxystore.serialize import serialize
 from proxystore.store.dim.ucx import UCXServer
 from proxystore.store.dim.ucx import UCXStore
 from testing.mocker_modules.ucx_mocker import MockEndpoint
@@ -44,7 +44,7 @@ def test_ucx_server(ucx_server) -> None:
     key = 'hello'
     val = bytes('world', encoding=ENCODING)
 
-    obj = pickle.dumps({'key': key, 'data': val, 'op': 'set'})
+    obj = serialize({'key': key, 'data': val, 'op': 'set'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
     assert ret == bytes('1', encoding=ENCODING)
     assert ucx_server.data[key] == val
@@ -52,7 +52,7 @@ def test_ucx_server(ucx_server) -> None:
     data = ucx_server.get(key)
     assert data == val
 
-    obj = pickle.dumps({'key': key, 'data': '', 'op': 'get'})
+    obj = serialize({'key': key, 'data': '', 'op': 'get'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
     assert ret == val
 
@@ -62,13 +62,13 @@ def test_ucx_server(ucx_server) -> None:
     ret = ucx_server.exists(key)
     assert ret == bytes('1', encoding=ENCODING)
 
-    obj = pickle.dumps({'key': 'test', 'data': '', 'op': 'exists'})
+    obj = serialize({'key': 'test', 'data': '', 'op': 'exists'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
     assert ret == bytes('0', encoding=ENCODING)
     ret = ucx_server.exists('test')
     assert ret == bytes('0', encoding=ENCODING)
 
-    obj = pickle.dumps({'key': key, 'data': '', 'op': 'evict'})
+    obj = serialize({'key': key, 'data': '', 'op': 'evict'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
     assert ret == bytes('1', encoding=ENCODING)
 

@@ -3,7 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import pickle
+from multiprocessing import Process
+from time import sleep
+from typing import Any
+from typing import NamedTuple
 
 try:
     import ucp
@@ -12,11 +15,9 @@ try:
 except ImportError as e:  # pragma: no cover
     ucx_import_error = e
 
-from multiprocessing import Process
-from time import sleep
-from typing import Any, NamedTuple
-
 import proxystore.utils as utils
+from proxystore.serialize import serialize
+from proxystore.serialize import deserialize
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 
@@ -118,18 +119,15 @@ class UCXStore(Store[UCXStoreKey]):
     def evict(self, key: UCXStoreKey) -> None:
         logger.debug(f'Client issuing an evict request on key {key}.')
 
-        event = pickle.dumps({'key': key.ucx_key, 'data': None, 'op': 'evict'})
-        res = self._loop.run_until_complete(self.handler(event, key.peer))
-
-        if res == bytes('ERROR', encoding=ENCODING):
-            res = None
+        event = serialize({'key': key.ucx_key, 'data': None, 'op': 'evict'})
+        self._loop.run_until_complete(self.handler(event, key.peer))
 
         self._cache.evict(key)
 
     def exists(self, key: UCXStoreKey) -> bool:
         logger.debug(f'Client issuing an exists request on key {key}.')
 
-        event = pickle.dumps(
+        event = serialize(
             {'key': key.ucx_key, 'data': None, 'op': 'exists'},
         )
         return bool(
@@ -137,9 +135,10 @@ class UCXStore(Store[UCXStoreKey]):
         )
 
     def get_bytes(self, key: UCXStoreKey) -> bytes | None:
+        res: bytes | None
         logger.debug(f'Client issuing get request on key {key}.')
 
-        event = pickle.dumps({'key': key.ucx_key, 'data': '', 'op': 'get'})
+        event = serialize({'key': key.ucx_key, 'data': '', 'op': 'get'})
         res = self._loop.run_until_complete(self.handler(event, key.peer))
 
         if res == bytes('ERROR', encoding=ENCODING):
@@ -151,11 +150,11 @@ class UCXStore(Store[UCXStoreKey]):
             f'Client issuing set request on key {key} with addr {self.addr}',
         )
 
-        event = pickle.dumps({'key': key.ucx_key, 'data': data, 'op': 'set'})
+        event = serialize({'key': key.ucx_key, 'data': data, 'op': 'set'})
 
         self._loop.run_until_complete(self.handler(event, self.addr))
 
-    async def handler(self, event: bytes, addr: str) -> Any:
+    async def handler(self, event: bytes, addr: str) -> bytes:
         host = addr.split(':')[0]  # quick fix
         port = int(addr.split(':')[1])
 
@@ -188,7 +187,7 @@ class UCXServer:
 
     host: str
     port: int
-    lf: Any
+    ucp_listener: ucp.core.Listener
     data: dict[str, bytes]
 
     def __init__(self, host: str, port: int) -> None:
@@ -202,7 +201,7 @@ class UCXServer:
         self.host = host
         self.port = port
         self.data = {}
-        self.lf = None
+        self.ucp_listener = ucp.Listener
 
     def set(self, key: str, data: bytes) -> bytes:
         """Obtain data from the client and store it in local dictionary.
@@ -210,6 +209,7 @@ class UCXServer:
         Args:
             key (str): object key to use
             data (bytes): data to store
+
         Returns (bytes):
             That the operation has successfully completed
         """
@@ -221,6 +221,7 @@ class UCXServer:
 
         Args:
             key (str): the object key
+
         Returns (bytes):
             The data associated with provided key
 
@@ -258,15 +259,15 @@ class UCXServer:
         """
         return bytes(str(int(key in self.data)), encoding=ENCODING)
 
-    async def handler(self, ep: Any) -> None:
+    async def handler(self, ep: ucp.Endpoint) -> None:
         """Function handler implementation.
 
         Args:
-            ep (Any): the endpoint to communicate with.
+            ep (ucp.Endpoint): the endpoint to communicate with.
 
         """
         json_kv = await ep.recv_obj()
-        kv = pickle.loads(json_kv)
+        kv = deserialize(json_kv)
 
         key = kv['key']
         data = kv['data']
@@ -287,7 +288,7 @@ class UCXServer:
 
     async def launch(self) -> None:
         """Create a listener for the handler."""
-        self.lf = ucp.create_listener(self.handler, self.port)
+        self.ucp_listener = ucp.create_listener(self.handler, self.port)
 
-        while not self.lf.closed():
+        while not self.ucp_listener.closed():
             await asyncio.sleep(0.1)

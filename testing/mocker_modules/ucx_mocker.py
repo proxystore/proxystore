@@ -1,8 +1,9 @@
 """UCX mocker implementation."""
 from __future__ import annotations
 
-from pickle import loads
 from typing import Any
+
+from proxystore.serialize import deserialize
 
 
 data = {}
@@ -39,7 +40,7 @@ class MockEndpoint:
             self.req = req
             return
 
-        event = loads(req)
+        event = deserialize(req)
 
         if event['op'] == 'set':
             data[event['key']] = event['data']

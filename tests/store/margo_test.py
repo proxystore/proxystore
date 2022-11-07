@@ -79,6 +79,6 @@ def test_margo_server(margo_server) -> None:
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
     margo_server.evict(h, bulk_str, size, 'test')
-    assert not h.response.success
+    assert h.response.success
 
     when_finalize()

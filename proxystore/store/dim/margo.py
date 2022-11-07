@@ -226,7 +226,7 @@ class MargoStore(Store[MargoStoreKey]):
             engine (Engine): The client-side engine
             addr (str): The address of Margo provider to access
                         (e.g. tcp://172.21.2.203:6367)
-            rpc (Any): the rpc to issue to the server
+            rpc (RemoteFunction): the rpc to issue to the server
             array_str (str): the serialized data/buffer to send
                              to the server.
             key (str): the identifier of the data stored on the server
@@ -361,13 +361,8 @@ class MargoServer:
         """
         logger.debug(f'Received exists RPC for key {key}')
 
+        self.data.pop(key, None)
         s = Status(True, None)
-
-        try:
-            del self.data[key]
-        except Exception as error:
-            logger.error(f'An exception was caught: {error}')
-            s = Status(False, error)
 
         handle.respond(s)
 
