@@ -314,8 +314,10 @@ class WebsocketServer:
                 func = self.get
             elif func == 'exists':
                 func = self.exists
-            else:
+            elif func == 'evict':
                 func = self.evict
+            else:
+                raise AssertionError('Unreachable.')
             res = func(key)
 
         await websocket.send(utils.chunk_bytes(res, self.chunk_size))

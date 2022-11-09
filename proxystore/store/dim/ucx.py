@@ -284,7 +284,7 @@ class UCXServer:
                 func = self.get
             elif func == 'exists':
                 func = self.exists
-            else:
+            elif func == 'evict':
                 func = self.evict
             res = func(key)
 
