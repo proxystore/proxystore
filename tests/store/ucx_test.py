@@ -75,3 +75,7 @@ def test_ucx_server(ucx_server) -> None:
 
     ret = ucx_server.evict('test')
     assert deserialize(ret).success
+
+    with pytest.raises(AssertionError):
+        obj = serialize({'key': key, 'data': '', 'op': 'sum'})
+        ret = asyncio.run(execute_handler(obj, ucx_server))

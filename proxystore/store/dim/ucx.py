@@ -286,6 +286,8 @@ class UCXServer:
                 func = self.exists
             elif func == 'evict':
                 func = self.evict
+            else:
+                raise AssertionError('Unreachable.')
             res = func(key)
 
         await ep.send_obj(res)
