@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.ucx import UCXServer
 from proxystore.store.dim.ucx import UCXStore
@@ -46,7 +47,7 @@ def test_ucx_server(ucx_server) -> None:
 
     obj = serialize({'key': key, 'data': val, 'op': 'set'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
-    assert ret == bytes('1', encoding=ENCODING)
+    assert deserialize(ret).success
     assert ucx_server.data[key] == val
 
     data = ucx_server.get(key)
@@ -57,7 +58,7 @@ def test_ucx_server(ucx_server) -> None:
     assert ret == val
 
     data = ucx_server.get('test')
-    assert data == bytes('ERROR', encoding=ENCODING)
+    assert not deserialize(data).success
 
     ret = ucx_server.exists(key)
     assert ret == bytes('1', encoding=ENCODING)
@@ -70,7 +71,7 @@ def test_ucx_server(ucx_server) -> None:
 
     obj = serialize({'key': key, 'data': '', 'op': 'evict'})
     ret = asyncio.run(execute_handler(obj, ucx_server))
-    assert ret == bytes('1', encoding=ENCODING)
+    assert deserialize(ret).success
 
     ret = ucx_server.evict('test')
-    assert ret == bytes('ERROR', encoding=ENCODING)
+    assert deserialize(ret).success

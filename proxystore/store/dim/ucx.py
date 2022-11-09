@@ -18,8 +18,10 @@ except ImportError as e:  # pragma: no cover
 import proxystore.utils as utils
 from proxystore.serialize import serialize
 from proxystore.serialize import deserialize
+from proxystore.serialize import SerializationError
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
+from proxystore.store.dim.utils import Status
 
 
 ENCODING = 'UTF-8'
@@ -141,9 +143,14 @@ class UCXStore(Store[UCXStoreKey]):
         event = serialize({'key': key.ucx_key, 'data': '', 'op': 'get'})
         res = self._loop.run_until_complete(self.handler(event, key.peer))
 
-        if res == bytes('ERROR', encoding=ENCODING):
-            res = None
-        return res
+        try:
+            s = deserialize(res)
+
+            if isinstance(s, Status) and not s.success:
+                return None
+            return res
+        except SerializationError:
+            return res
 
     def set_bytes(self, key: UCXStoreKey, data: bytes) -> None:
         logger.debug(
@@ -214,7 +221,7 @@ class UCXServer:
             That the operation has successfully completed
         """
         self.data[key] = data
-        return bytes('1', encoding=ENCODING)
+        return serialize(Status(success=True, error=None))
 
     def get(self, key: str) -> bytes:
         """Return data at a given key back to the client.
@@ -228,8 +235,8 @@ class UCXServer:
         """
         try:
             return self.data[key]
-        except KeyError:
-            return bytes('ERROR', encoding=ENCODING)
+        except KeyError as e:
+            return serialize(Status(success=False, error=e))
 
     def evict(self, key: str) -> bytes:
         """Remove key from local dictionary.
@@ -241,11 +248,8 @@ class UCXServer:
             That the evict operation has been successful
 
         """
-        try:
-            del self.data[key]
-            return bytes('1', encoding=ENCODING)
-        except KeyError:
-            return bytes('ERROR', encoding=ENCODING)
+        self.data.pop(key, None)
+        return serialize(Status(success=True, error=None))
 
     def exists(self, key: str) -> bytes:
         """Verifies whether key exists within local dictionary.

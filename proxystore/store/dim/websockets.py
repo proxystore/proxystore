@@ -15,11 +15,15 @@ from websockets.server import WebSocketServerProtocol
 
 import proxystore.utils as utils
 from proxystore.serialize import deserialize
+from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
+from proxystore.store.dim.utils import Status
 
 ENCODING = 'UTF-8'
+MAX_CHUNK_LENGTH = 64 * 1024
+MAX_SIZE_DEFAULT = 1024**3
 
 logger = logging.getLogger(__name__)
 server_process = None
@@ -48,7 +52,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         *,
         interface: str,
         port: int,
-        max_size: int = 1024**3,
+        max_size: int = MAX_SIZE_DEFAULT,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
@@ -74,7 +78,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         logger.debug('Instantiating client and server')
 
         self.max_size = max_size
-        self.chunk_size = 16 * 1024
+        self.chunk_size = MAX_CHUNK_LENGTH
 
         self.host = get_ip_address(interface)
         self.port = port
@@ -112,7 +116,6 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             self.host,
             self.port,
             self.max_size,
-            chunk_size=self.chunk_size,
         )
         asyncio.run(ps.launch())
 
@@ -152,9 +155,14 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
         res = self._loop.run_until_complete(self.handler(event, key.peer))
 
-        if res == b'ERROR':
-            return None
-        return res
+        try:
+            s = deserialize(res)
+
+            if isinstance(s, Status) and not s.success:
+                return None
+            return res
+        except SerializationError:
+            return res
 
     def set_bytes(self, key: WebsocketStoreKey, data: bytes) -> None:
         logger.debug(
@@ -214,7 +222,6 @@ class WebsocketServer:
         host: str,
         port: int,
         max_size: int,
-        chunk_size: int = 64 * 1024,
     ) -> None:
         """Initialize the server and register all RPC calls.
 
@@ -229,7 +236,7 @@ class WebsocketServer:
         self.host = host
         self.port = port
         self.max_size = max_size
-        self.chunk_size = chunk_size
+        self.chunk_size = MAX_CHUNK_LENGTH
         self.data = {}
         super().__init__()
 
@@ -257,8 +264,8 @@ class WebsocketServer:
         """
         try:
             return self.data[key]
-        except KeyError:
-            return b'ERROR'
+        except KeyError as e:
+            return serialize(Status(False, e))
 
     def evict(self, key: str) -> bytes:
         """Remove key from local dictionary.
@@ -269,11 +276,8 @@ class WebsocketServer:
         Returns (bytes):
             That the evict operation has been successful
         """
-        try:
-            del self.data[key]
-            return bytes(str(1), encoding=ENCODING)
-        except KeyError:
-            return b'ERROR'
+        self.data.pop(key, None)
+        return bytes(str(1), encoding=ENCODING)
 
     def exists(self, key: str) -> bytes:
         """Verifies whether key exists within local dictionary.

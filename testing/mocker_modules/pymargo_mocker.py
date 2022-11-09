@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import NamedTuple
 
 # pymargo vars
 client = 'client'
@@ -10,18 +9,6 @@ server = 'server'
 
 # server dictionary
 data_dict = {}
-
-
-class Status(NamedTuple):
-    """Status implementation.
-
-    reimplemented here as importing the module,
-    executes `store/__init__.py` and attempts to
-    import pymargo.
-    """
-
-    success: bool
-    error: Exception | None
 
 
 class Engine:
@@ -103,8 +90,15 @@ class RPC:
         """Mock RPC on implementation."""
         return self.mockfunc
 
-    def mockfunc(self, array_str: Bulk, size: int, key: str) -> Status:
+    def mockfunc(
+        self,
+        array_str: Bulk,
+        size: int,
+        key: str,
+    ) -> Any:
         """Mockfunc implementation."""
+        from proxystore.store.dim.utils import Status
+
         if self.name == 'set_bytes':
             data_dict[key] = array_str.data
             return Status(True, None)
@@ -158,13 +152,18 @@ class Bulk:
 class Handle:
     """Mock Handle implementation."""
 
-    response: Status
+    response: Any
 
     def __init__(self) -> None:
         """Mock handle initialization."""
+        from proxystore.store.dim.utils import Status
+
         self.response = Status(True, None)
 
-    def respond(self, status: Status) -> Status:
+    def respond(
+        self,
+        status: Any,
+    ) -> Any:
         """Mock respond."""
         self.response = status
         return self.response

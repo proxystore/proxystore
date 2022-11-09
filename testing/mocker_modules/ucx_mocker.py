@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 
 from proxystore.serialize import deserialize
-
+from proxystore.serialize import serialize
 
 data = {}
 
@@ -50,22 +50,21 @@ class MockEndpoint:
 
     async def recv_obj(self) -> Any:
         """Mocks the `ucp.recv_obj` function."""
+        from proxystore.store.dim.utils import Status
+
         if self.req is not None:
             return self.req
 
         if self.last_event == 'get':
             try:
                 return data[self.key]
-            except KeyError:
-                return bytes('ERROR', encoding='UTF-8')
+            except KeyError as e:
+                return serialize(Status(success=False, error=e))
         elif self.last_event == 'exists':
             return self.key in data
         elif self.last_event == 'evict':
-            try:
-                del data[self.key]
-            except KeyError:
-                return bytes('ERROR', encoding='UTF-8')
-            return None
+            data.pop(self.key, None)
+            return serialize(Status(success=True, error=None))
         return True
 
     async def close(self) -> None:
