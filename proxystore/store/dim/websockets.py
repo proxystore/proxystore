@@ -143,8 +143,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         event = serialize(
             {'key': key.websocket_key, 'data': None, 'op': 'exists'},
         )
-        return bool(
-            int(self._loop.run_until_complete(self.handler(event, key.peer))),
+        return deserialize(
+            self._loop.run_until_complete(self.handler(event, key.peer)),
         )
 
     def get_bytes(self, key: WebsocketStoreKey) -> bytes | None:
@@ -240,7 +240,7 @@ class WebsocketServer:
         self.data = {}
         super().__init__()
 
-    def set(self, key: str, data: bytes) -> bytes:
+    def set(self, key: str, data: bytes) -> Status:
         """Obtain and store locally data from client.
 
         Args:
@@ -251,9 +251,9 @@ class WebsocketServer:
             That the operation has successfully completed
         """
         self.data[key] = data
-        return bytes(str(1), encoding=ENCODING)
+        return Status(success=True, error=None)
 
-    def get(self, key: str) -> bytes:
+    def get(self, key: str) -> bytes | Status:
         """Return data at a given key back to the client.
 
         Args:
@@ -265,9 +265,9 @@ class WebsocketServer:
         try:
             return self.data[key]
         except KeyError as e:
-            return serialize(Status(False, e))
+            return Status(False, e)
 
-    def evict(self, key: str) -> bytes:
+    def evict(self, key: str) -> Status:
         """Remove key from local dictionary.
 
         Args:
@@ -277,9 +277,9 @@ class WebsocketServer:
             That the evict operation has been successful
         """
         self.data.pop(key, None)
-        return bytes(str(1), encoding=ENCODING)
+        return Status(success=True, error=None)
 
-    def exists(self, key: str) -> bytes:
+    def exists(self, key: str) -> bool:
         """Verifies whether key exists within local dictionary.
 
         Args:
@@ -288,7 +288,7 @@ class WebsocketServer:
         Returns (bytes):
             whether key exists
         """
-        return bytes(str(int(key in self.data)), encoding=ENCODING)
+        return key in self.data
 
     async def handler(self, websocket: WebSocketServerProtocol) -> None:
         """The handler implementation for the websocket server.
@@ -320,7 +320,14 @@ class WebsocketServer:
                 raise AssertionError('Unreachable.')
             res = func(key)
 
-        await websocket.send(utils.chunk_bytes(res, self.chunk_size))
+        if isinstance(res, Status) or isinstance(res, bool):
+            serialized_res = serialize(res)
+        else:
+            serialized_res = res
+
+        await websocket.send(
+            utils.chunk_bytes(serialized_res, self.chunk_size),
+        )
 
     async def launch(self) -> None:
         """Launch the server."""

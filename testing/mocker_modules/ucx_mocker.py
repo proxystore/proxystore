@@ -38,7 +38,7 @@ class MockEndpoint:
         self.req = None
         if self.server:
             self.req = req
-            return
+            return self.req
 
         event = deserialize(req)
 
@@ -61,11 +61,11 @@ class MockEndpoint:
             except KeyError as e:
                 return serialize(Status(success=False, error=e))
         elif self.last_event == 'exists':
-            return self.key in data
+            return serialize(self.key in data)
         elif self.last_event == 'evict':
             data.pop(self.key, None)
             return serialize(Status(success=True, error=None))
-        return True
+        return serialize(True)
 
     async def close(self) -> None:
         """Mock close implementation."""

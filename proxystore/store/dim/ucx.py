@@ -132,8 +132,8 @@ class UCXStore(Store[UCXStoreKey]):
         event = serialize(
             {'key': key.ucx_key, 'data': None, 'op': 'exists'},
         )
-        return bool(
-            int(self._loop.run_until_complete(self.handler(event, key.peer))),
+        return deserialize(
+            self._loop.run_until_complete(self.handler(event, key.peer)),
         )
 
     def get_bytes(self, key: UCXStoreKey) -> bytes | None:
@@ -210,7 +210,7 @@ class UCXServer:
         self.data = {}
         self.ucp_listener = ucp.Listener
 
-    def set(self, key: str, data: bytes) -> bytes:
+    def set(self, key: str, data: bytes) -> Status:
         """Obtain data from the client and store it in local dictionary.
 
         Args:
@@ -221,9 +221,9 @@ class UCXServer:
             That the operation has successfully completed
         """
         self.data[key] = data
-        return serialize(Status(success=True, error=None))
+        return Status(success=True, error=None)
 
-    def get(self, key: str) -> bytes:
+    def get(self, key: str) -> bytes | Status:
         """Return data at a given key back to the client.
 
         Args:
@@ -236,9 +236,9 @@ class UCXServer:
         try:
             return self.data[key]
         except KeyError as e:
-            return serialize(Status(success=False, error=e))
+            return Status(success=False, error=e)
 
-    def evict(self, key: str) -> bytes:
+    def evict(self, key: str) -> Status:
         """Remove key from local dictionary.
 
         Args:
@@ -249,9 +249,9 @@ class UCXServer:
 
         """
         self.data.pop(key, None)
-        return serialize(Status(success=True, error=None))
+        return Status(success=True, error=None)
 
-    def exists(self, key: str) -> bytes:
+    def exists(self, key: str) -> bool:
         """Verifies whether key exists within local dictionary.
 
         Args:
@@ -261,7 +261,7 @@ class UCXServer:
             whether key exists
 
         """
-        return bytes(str(int(key in self.data)), encoding=ENCODING)
+        return key in self.data
 
     async def handler(self, ep: ucp.Endpoint) -> None:
         """Function handler implementation.
@@ -290,7 +290,12 @@ class UCXServer:
                 raise AssertionError('Unreachable.')
             res = func(key)
 
-        await ep.send_obj(res)
+        if isinstance(res, Status) or isinstance(res, bool):
+            serialized_res = serialize(res)
+        else:
+            serialized_res = res
+
+        await ep.send_obj(serialized_res)
 
     async def launch(self) -> None:
         """Create a listener for the handler."""

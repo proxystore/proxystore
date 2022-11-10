@@ -46,8 +46,8 @@ def test_ucx_server(ucx_server) -> None:
     val = bytes('world', encoding=ENCODING)
 
     obj = serialize({'key': key, 'data': val, 'op': 'set'})
-    ret = asyncio.run(execute_handler(obj, ucx_server))
-    assert deserialize(ret).success
+    ret = deserialize(asyncio.run(execute_handler(obj, ucx_server)))
+    assert ret.success
     assert ucx_server.data[key] == val
 
     data = ucx_server.get(key)
@@ -58,23 +58,23 @@ def test_ucx_server(ucx_server) -> None:
     assert ret == val
 
     data = ucx_server.get('test')
-    assert not deserialize(data).success
+    assert not data.success
 
     ret = ucx_server.exists(key)
-    assert ret == bytes('1', encoding=ENCODING)
+    assert ret
 
     obj = serialize({'key': 'test', 'data': '', 'op': 'exists'})
-    ret = asyncio.run(execute_handler(obj, ucx_server))
-    assert ret == bytes('0', encoding=ENCODING)
+    ret = deserialize(asyncio.run(execute_handler(obj, ucx_server)))
+    assert not ret
     ret = ucx_server.exists('test')
-    assert ret == bytes('0', encoding=ENCODING)
+    assert not ret
 
     obj = serialize({'key': key, 'data': '', 'op': 'evict'})
-    ret = asyncio.run(execute_handler(obj, ucx_server))
-    assert deserialize(ret).success
+    ret = deserialize(asyncio.run(execute_handler(obj, ucx_server)))
+    assert ret.success
 
     ret = ucx_server.evict('test')
-    assert deserialize(ret).success
+    assert ret.success
 
     with pytest.raises(AssertionError):
         obj = serialize({'key': key, 'data': '', 'op': 'sum'})
