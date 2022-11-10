@@ -337,14 +337,10 @@ class WebsocketServer:
         loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
         loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
 
-        try:
-            async with serve(
-                self.handler,
-                self.host,
-                self.port,
-                max_size=self.max_size,
-            ):
-                await stop  # run forever
-
-        except OSError:
-            logger.warning('Server already exists')
+        async with serve(
+            self.handler,
+            self.host,
+            self.port,
+            max_size=self.max_size,
+        ):
+            await stop  # run forever
