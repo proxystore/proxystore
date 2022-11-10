@@ -1,4 +1,4 @@
-"""RedisStore Unit Tests."""
+"""MargoStore Unit Tests."""
 from __future__ import annotations
 
 import pytest
@@ -9,6 +9,7 @@ from proxystore.store.dim.margo import when_finalize
 from testing.mocker_modules.pymargo_mocker import Bulk
 from testing.mocker_modules.pymargo_mocker import Engine
 from testing.mocker_modules.pymargo_mocker import Handle
+from testing.utils import open_port
 
 ENCODING = 'UTF-8'
 
@@ -16,12 +17,12 @@ ENCODING = 'UTF-8'
 @pytest.fixture
 def margo_server():
     """Margo server fixture."""
-    e = Engine('tcp://127.0.0.1:6000')
+    e = Engine(f'tcp://127.0.0.1:{open_port()}')
     yield MargoServer(e)
 
 
 def test_margo_store(margo_store) -> None:
-    """Test RedisStore.
+    """Test MargoStore.
 
     All MargoStore functionality should be covered in
     tests/store/store_*_test.py.
@@ -81,4 +82,6 @@ def test_margo_server(margo_server) -> None:
     margo_server.evict(h, bulk_str, size, 'test')
     assert h.response.success
 
+
+def test_finalize() -> None:
     when_finalize()
