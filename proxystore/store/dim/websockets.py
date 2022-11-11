@@ -5,7 +5,6 @@ import asyncio
 import logging
 import signal
 from multiprocessing import Process
-from time import sleep
 from typing import Any
 from typing import NamedTuple
 
@@ -90,9 +89,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             server_process.start()
 
         self._loop = asyncio.new_event_loop()
-
-        # allocate some time to start the server process
-        sleep(0.2)
+        self._loop.run_until_complete(self.server_started())
 
         super().__init__(
             name,
@@ -206,6 +203,19 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             server_process = None
 
         logger.debug('Clean up completed')
+
+    async def server_started(self) -> None:
+        while True:
+            try:
+                websocket = await connect(self.addr)
+            except OSError:
+                await asyncio.sleep(0.1)
+            else:
+                break  # pragma: no cover
+
+        pong_waiter = await websocket.ping()
+        await pong_waiter
+        await websocket.close()
 
 
 class WebsocketServer:
