@@ -20,7 +20,6 @@ from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 from proxystore.store.dim.utils import Status
 
-ENCODING = 'UTF-8'
 MAX_CHUNK_LENGTH = 64 * 1024
 MAX_SIZE_DEFAULT = 1024**3
 
@@ -103,7 +102,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
 
     def _start_server(self) -> None:
-        """Launch the local Margo server (Peer) process."""
+        """Launch the local Websocket server process."""
         logger.info(
             f'starting server on host {self.host} with port {self.port}',
         )
