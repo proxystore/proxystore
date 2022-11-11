@@ -4,7 +4,6 @@ from __future__ import annotations
 import asyncio
 import logging
 from multiprocessing import Process
-from time import sleep
 from typing import Any
 from typing import NamedTuple
 
@@ -88,9 +87,6 @@ class UCXStore(Store[UCXStoreKey]):
         if server_process is None:
             server_process = Process(target=self._start_server)
             server_process.start()
-
-            # allocate some time to start the server process
-            sleep(0.2)
 
         super().__init__(
             name,
