@@ -11,6 +11,7 @@ from proxystore.store.base import Store as _Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.dim.margo import MargoStore as _MargoStore
 from proxystore.store.dim.ucx import UCXStore as _UCXStore
+from proxystore.store.dim.websockets import WebsocketStore as _WebsocketStore
 from proxystore.store.endpoint import EndpointStore as _EndpointStore
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
@@ -43,6 +44,10 @@ class STORES(Enum):
     """Corresponds to :class:`~proxystore.store.dim.margo.MargoStore`."""
     UCX = _UCXStore
     """Corresponds to :class:`~proxystore.store.dim.ucx.UCXStore`."""
+    WEBSOCKET = _WebsocketStore
+    """Corresponds to
+    :class:`~proxystore.store.dim.websockets.WebsocketStore`.
+    """
 
     @classmethod
     def get_str_by_type(cls, store: type[_Store[Any]]) -> str:
