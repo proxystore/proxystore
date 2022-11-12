@@ -140,6 +140,7 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
     resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
+    store.close()
 
 
 @pytest.mark.parametrize('store_fixture', FIXTURE_LIST)

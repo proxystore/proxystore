@@ -18,6 +18,12 @@ import pytest
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
+from proxystore.store.dim.margo import MargoStore
+from proxystore.store.dim.margo import MargoStoreKey
+from proxystore.store.dim.ucx import UCXStore
+from proxystore.store.dim.ucx import UCXStoreKey
+from proxystore.store.dim.websockets import WebsocketStore
+from proxystore.store.dim.websockets import WebsocketStoreKey
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.endpoint import EndpointStoreKey
 from proxystore.store.file import FileStore
@@ -31,6 +37,7 @@ from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
 from testing.endpoint import launch_endpoint
+from testing.utils import open_port
 
 FIXTURE_LIST = [
     'local_store',
@@ -38,6 +45,9 @@ FIXTURE_LIST = [
     'redis_store',
     'globus_store',
     'endpoint_store',
+    'margo_store',
+    'ucx_store',
+    'websocket_store',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
@@ -162,7 +172,7 @@ def file_store() -> Generator[StoreInfo, None, None]:
     """File Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
     yield StoreInfo(FileStore, 'file', {'store_dir': file_dir})
-    if os.path.exists(file_dir):  # pragma: no branch
+    if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
@@ -219,7 +229,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     ):
         yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
 
-    if os.path.exists(file_dir):  # pragma: no branch
+    if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
@@ -253,7 +263,49 @@ def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
     server_handle.join()
 
 
-def missing_key(store: Store[KeyT]) -> NamedTuple:
+@pytest.fixture
+def ucx_store() -> Generator[StoreInfo, None, None]:
+    """UCX Store fixture."""
+    port = open_port()
+
+    with mock.patch('multiprocessing.Process.start'), mock.patch(
+        'multiprocessing.Process.terminate',
+    ):
+        yield StoreInfo(
+            UCXStore,
+            'ucx',
+            {'interface': 'localhost', 'port': port},
+        )
+
+
+@pytest.fixture
+def margo_store() -> Generator[StoreInfo, None, None]:
+    """Margo Store fixture."""
+    port = open_port()
+
+    with mock.patch('multiprocessing.Process.start'), mock.patch(
+        'multiprocessing.Process.terminate',
+    ):
+        yield StoreInfo(
+            MargoStore,
+            'margo',
+            {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
+        )
+
+
+@pytest.fixture
+def websocket_store() -> Generator[StoreInfo, None, None]:
+    """Websocket store fixture."""
+    port = open_port()
+
+    yield StoreInfo(
+        WebsocketStore,
+        'websocket',
+        {'interface': '127.0.0.1', 'port': port},
+    )
+
+
+def missing_key(store: Store[Any]) -> NamedTuple:
     """Generate a random key that is valid for the store type."""
     if isinstance(store, EndpointStore):
         return EndpointStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
@@ -265,5 +317,23 @@ def missing_key(store: Store[KeyT]) -> NamedTuple:
         return LocalStoreKey(str(uuid.uuid4()))
     elif isinstance(store, RedisStore):
         return RedisStoreKey(str(uuid.uuid4()))
+    elif isinstance(store, MargoStore):
+        return MargoStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'127.0.0.1:{store.kwargs["port"]}',
+        )
+    elif isinstance(store, UCXStore):
+        return UCXStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'127.0.0.1:{store.kwargs["port"]}',
+        )
+    elif isinstance(store, WebsocketStore):
+        return WebsocketStoreKey(
+            str(uuid.uuid4()),
+            0,
+            f'ws://127.0.0.1:{store.kwargs["port"]}',
+        )
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
