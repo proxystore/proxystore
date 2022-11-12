@@ -170,7 +170,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         )
         self._loop.run_until_complete(self.handler(event, self.addr))
 
-    async def handler(self, event: bytes, addr: str) -> Any:
+    async def handler(self, event: bytes, addr: str) -> bytes:
         """Websocket handler function implementation.
 
         Args:
@@ -178,7 +178,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
                 its key and the operation to perform on the data
             addr (str): the address of the server to connect to
 
-        Returns (Any):
+        Returns (bytes):
             the result of the operation on the data
 
         """
@@ -188,6 +188,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         ) as websocket:
             await websocket.send(utils.chunk_bytes(event, self.chunk_size))
             res = await websocket.recv()
+
+        assert isinstance(res, bytes)
 
         return res
 
