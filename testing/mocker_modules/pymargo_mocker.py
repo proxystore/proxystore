@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from proxystore.serialize import serialize
+
 # pymargo vars
 client = 'client'
 server = 'server'
@@ -101,28 +103,32 @@ class RPC:
 
         if self.name == 'set_bytes':
             data_dict[key] = array_str.data
-            return Status(True, None)
+            return serialize(Status(True, None))
         elif self.name == 'get_bytes':
             if key not in data_dict:
-                return Status(
-                    False,
-                    Exception('MockException occurred in `get_bytes`'),
+                return serialize(
+                    Status(
+                        False,
+                        Exception('MockException occurred in `get_bytes`'),
+                    ),
                 )
             else:
                 array_str.data[:] = data_dict[key]
-            return Status(True, None)
+            return serialize(Status(True, None))
         elif self.name == 'evict':
             if key not in data_dict:
-                return Status(
-                    False,
-                    Exception('MockException occurred in `evict`'),
+                return serialize(
+                    Status(
+                        False,
+                        Exception('MockException occurred in `evict`'),
+                    ),
                 )
             else:
                 del data_dict[key]
-            return Status(True, None)
+            return serialize(Status(True, None))
         else:
             array_str.data[:] = bytes(str(int(key in data_dict)), 'utf-8')
-            return Status(True, None)
+            return serialize(Status(True, None))
 
 
 class MockBulkMod:

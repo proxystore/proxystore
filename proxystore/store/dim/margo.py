@@ -21,6 +21,8 @@ except ImportError as e:  # pragma: no cover
 
 
 import proxystore.utils as utils
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 from proxystore.store.dim.utils import Status
@@ -195,7 +197,7 @@ class MargoStore(Store[MargoStoreKey]):
         buff = bytearray(key.obj_size)
         blk = self.engine.create_bulk(buff, bulk.read_write)
 
-        success = self.call_rpc_on(
+        s = self.call_rpc_on(
             self.engine,
             key.peer,
             self._rpcs['get'],
@@ -204,7 +206,8 @@ class MargoStore(Store[MargoStoreKey]):
             key.obj_size,
         )
 
-        if not success:
+        if not s.success:
+            logger.error(s.error)
             return None
 
         return bytes(buff)
@@ -241,7 +244,7 @@ class MargoStore(Store[MargoStoreKey]):
         array_str: str,
         key: str,
         size: int,
-    ) -> bool:
+    ) -> Status:
         """Initiates the desired RPC call on the specified provider.
 
         Arguments:
@@ -259,12 +262,8 @@ class MargoStore(Store[MargoStoreKey]):
 
         """
         server_addr = engine.lookup(addr)
-        s = rpc.on(server_addr)(array_str, size, key)
 
-        if not s.success:
-            logger.error(f'{s.error}')
-
-        return s.success
+        return deserialize(rpc.on(server_addr)(array_str, size, key))
 
 
 class MargoServer:
@@ -325,7 +324,7 @@ class MargoServer:
             logger.error(f'An exception was caught: {error}')
             s = Status(False, error)
 
-        handle.respond(s)
+        handle.respond(serialize(s))
 
     def get(
         self,
@@ -363,7 +362,7 @@ class MargoServer:
             logger.error(f'An exception was caught: {error}')
             s = Status(False, error)
 
-        handle.respond(s)
+        handle.respond(serialize(s))
 
     def evict(
         self,
@@ -386,7 +385,7 @@ class MargoServer:
         self.data.pop(key, None)
         s = Status(True, None)
 
-        handle.respond(s)
+        handle.respond(serialize(s))
 
     def exists(
         self,
@@ -425,7 +424,7 @@ class MargoServer:
             logger.error(f'An exception was caught: {error}')
             s = Status(False, error)
 
-        handle.respond(s)
+        handle.respond(serialize(s))
 
 
 def when_finalize() -> None:
