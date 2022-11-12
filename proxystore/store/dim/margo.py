@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from multiprocessing import Process
 from typing import Any
 from typing import NamedTuple
@@ -30,6 +31,18 @@ server_process: Process | None = None
 logger = logging.getLogger(__name__)
 
 
+class Protocol(Enum):
+    """Available Mercury plugins and transports."""
+
+    OFI_TCP = 'ofi+tcp'
+    OFI_VERBS = 'ofi+verbs'
+    OFI_GNI = 'ofi+gni'
+    UCX_TCP = 'ucx+tcp'
+    UCX_VERBS = 'ucx+verbs'
+    SM_SHM = 'sm+shm'
+    BMI_TCP = 'bmi+tcp'
+
+
 class MargoStoreKey(NamedTuple):
     """Key to objects in a MargoStore."""
 
@@ -43,7 +56,7 @@ class MargoStore(Store[MargoStoreKey]):
 
     host: str
     addr: str
-    protocol: str
+    protocol: Protocol
     engine: Engine
     _rpc: dict[str, RemoteFunction]
 
@@ -54,7 +67,7 @@ class MargoStore(Store[MargoStoreKey]):
         *,
         interface: str,
         port: int,
-        protocol: str = 'verbs',
+        protocol: Protocol = Protocol.OFI_VERBS,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
