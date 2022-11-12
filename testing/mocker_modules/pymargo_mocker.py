@@ -63,8 +63,8 @@ class Engine:
         bulk_size: int,
     ) -> None:
         """Mock transfer."""
-        if bulk_size == -1 or len(bulk_str.data) == 2:
-            raise Exception
+        if bulk_size == -1:  # pragma: no cover
+            raise ValueError
 
         if bulk_op == 'pull':
             local_bulk.data[:] = bulk_str.data
@@ -127,7 +127,7 @@ class RPC:
                 del data_dict[key]
             return serialize(Status(True, None))
         else:
-            array_str.data[:] = bytes(str(int(key in data_dict)), 'utf-8')
+            array_str.data[:] = serialize(key in data_dict)
             return serialize(Status(True, None))
 
 

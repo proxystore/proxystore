@@ -4,6 +4,7 @@ from __future__ import annotations
 import pytest
 
 from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
 from proxystore.store.dim.margo import MargoServer
 from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.margo import when_finalize
@@ -36,7 +37,7 @@ def test_margo_store(margo_store) -> None:
 
 def test_margo_server(margo_server) -> None:
     key = 'hello'
-    val = bytes('world', encoding=ENCODING)
+    val = serialize('world')
     size = len(val)
 
     bulk_str = Bulk(val)
@@ -45,8 +46,8 @@ def test_margo_server(margo_server) -> None:
     margo_server.set(h, bulk_str, size, key)
     assert margo_server.data[key] == bytearray(val)
 
-    margo_server.set(h, bulk_str, -1, key)
-    assert not deserialize(h.response).success
+    with pytest.raises(ValueError):
+        margo_server.set(h, bulk_str, -1, key)
 
     local_buff = bytearray(size)
     bulk_str = Bulk(local_buff)
@@ -62,15 +63,10 @@ def test_margo_server(margo_server) -> None:
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)
     margo_server.exists(h, bulk_str, size, key)
-    assert bulk_str.data == bytes('1', encoding=ENCODING)
+    assert deserialize(bytes(bulk_str.data))
 
     margo_server.exists(h, bulk_str, size, 'test')
-    assert bulk_str.data == bytes('0', encoding=ENCODING)
-
-    local_buff = bytearray(2)
-    bulk_str = Bulk(local_buff)
-    margo_server.exists(h, bulk_str, -1, key)
-    assert not deserialize(h.response).success
+    assert not deserialize(bytes(bulk_str.data))
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)

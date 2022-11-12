@@ -27,8 +27,6 @@ from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 from proxystore.store.dim.utils import Status
 
-ENCODING = 'UTF-8'
-
 server_process: Process | None = None
 logger = logging.getLogger(__name__)
 
@@ -189,7 +187,7 @@ class MargoStore(Store[MargoStoreKey]):
             key.margo_key,
             len(buff),
         )
-        return bool(int(bytes(buff).decode(ENCODING)))
+        return deserialize(bytes(buff))
 
     def get_bytes(self, key: MargoStoreKey) -> bytes | None:
         logger.debug(f'Client issuing get request on key {key}')
@@ -307,22 +305,18 @@ class MargoServer:
 
         s = Status(True, None)
 
-        try:
-            local_buffer = bytearray(bulk_size)
-            local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
-            self.engine.transfer(
-                bulk.pull,
-                handle.get_addr(),
-                bulk_str,
-                0,
-                local_bulk,
-                0,
-                bulk_size,
-            )
-            self.data[key] = local_buffer
-        except Exception as error:
-            logger.error(f'An exception was caught: {error}')
-            s = Status(False, error)
+        local_buffer = bytearray(bulk_size)
+        local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
+        self.engine.transfer(
+            bulk.pull,
+            handle.get_addr(),
+            bulk_str,
+            0,
+            local_bulk,
+            0,
+            bulk_size,
+        )
+        self.data[key] = local_buffer
 
         handle.respond(serialize(s))
 
@@ -358,8 +352,8 @@ class MargoServer:
                 0,
                 bulk_size,
             )
-        except Exception as error:
-            logger.error(f'An exception was caught: {error}')
+        except KeyError as error:
+            logger.error(error)
             s = Status(False, error)
 
         handle.respond(serialize(s))
@@ -407,22 +401,18 @@ class MargoServer:
 
         s = Status(True, None)
 
-        try:
-            local_array = bytes(str(int(key in self.data)), encoding=ENCODING)
-            local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
-            size = len(local_array)
-            self.engine.transfer(
-                bulk.push,
-                handle.get_addr(),
-                bulk_str,
-                0,
-                local_bulk,
-                0,
-                size,
-            )
-        except Exception as error:
-            logger.error(f'An exception was caught: {error}')
-            s = Status(False, error)
+        local_array = serialize(key in self.data)
+        local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
+        size = len(local_array)
+        self.engine.transfer(
+            bulk.push,
+            handle.get_addr(),
+            bulk_str,
+            0,
+            local_bulk,
+            0,
+            size,
+        )
 
         handle.respond(serialize(s))
 
