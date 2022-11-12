@@ -88,6 +88,9 @@ class UCXStore(Store[UCXStoreKey]):
             server_process = Process(target=self._start_server)
             server_process.start()
 
+        # TODO: Verify if create_endpoint error handling will successfully
+        # connect to endpoint or if error handling needs to be done here
+
         super().__init__(
             name,
             cache_size=cache_size,

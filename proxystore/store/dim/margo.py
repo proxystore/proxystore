@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from multiprocessing import Process
-from time import sleep
 from typing import Any
 from typing import NamedTuple
 
@@ -92,11 +91,10 @@ class MargoStore(Store[MargoStoreKey]):
             server_process = Process(target=self._start_server)
             server_process.start()
 
-        # allocate some time to start the server process
-        sleep(0.2)
-
         # start client
         self.engine = Engine(self.protocol, mode=pymargo.client)
+
+        self.server_started()
 
         self._rpcs = {
             'set': self.engine.register('set_bytes'),
@@ -130,6 +128,17 @@ class MargoStore(Store[MargoStoreKey]):
         MargoServer(server_engine)
 
         server_engine.wait_for_finalize()
+
+    # TODO: Verify that this actually does anything useful in integration tests
+    def server_started(self) -> None:  # pragma: no cover
+        """Loop until server has started."""
+        while True:
+            try:
+                self.engine.lookup(self.addr)
+            except Exception as e:
+                print(e)  # don't yet know if any error will be thrown
+            else:
+                break
 
     def create_key(self, obj: Any) -> MargoStoreKey:
         return MargoStoreKey(
