@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import random
 import shutil
 import socket
@@ -144,9 +145,10 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 @pytest.fixture
 def endpoint_store(
     endpoint: EndpointConfig,
-    tmp_dir: str,
+    tmp_path: pathlib.Path,
 ) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
+    tmp_dir = str(tmp_path)
     endpoint_dir = os.path.join(tmp_dir, endpoint.name)
     write_config(endpoint, endpoint_dir)
 

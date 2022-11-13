@@ -36,7 +36,6 @@ from testing.store_utils import margo_store
 from testing.store_utils import redis_store
 from testing.store_utils import ucx_store
 from testing.store_utils import websocket_store
-from testing.utils import tmp_dir
 
 
 @pytest.fixture(scope='session')

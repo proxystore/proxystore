@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 
 import pytest
 
@@ -30,12 +31,12 @@ def test_blob_in_memory_only() -> None:
         blob.dump()
 
 
-def test_blob_filedump(tmp_dir) -> None:
-    os.makedirs(tmp_dir, exist_ok=True)
+def test_blob_filedump(tmp_path: pathlib.Path) -> None:
+    os.makedirs(tmp_path, exist_ok=True)
 
     key = 'key'
     value = randbytes(100)
-    filepath = os.path.join(tmp_dir, key)
+    filepath = os.path.join(tmp_path, key)
 
     blob = Blob(key, value, filepath)
 
@@ -92,8 +93,8 @@ def test_endpoint_storage_init_error() -> None:
         EndpointStorage(max_size=None, dump_dir='')
 
 
-def test_endpoint_storage_dumping(tmp_dir: str) -> None:
-    storage = EndpointStorage(max_size=100, dump_dir=tmp_dir)
+def test_endpoint_storage_dumping(tmp_path: pathlib.Path) -> None:
+    storage = EndpointStorage(max_size=100, dump_dir=str(tmp_path))
 
     for i in range(20):
         storage[str(i)] = randbytes(10)
@@ -101,8 +102,8 @@ def test_endpoint_storage_dumping(tmp_dir: str) -> None:
     # Keys 0-9 should be dumped to dir.
     files1 = [
         f
-        for f in os.listdir(tmp_dir)
-        if os.path.isfile(os.path.join(tmp_dir, f))
+        for f in os.listdir(tmp_path)
+        if os.path.isfile(os.path.join(tmp_path, f))
     ]
     assert len(files1) == 10
 
@@ -113,8 +114,8 @@ def test_endpoint_storage_dumping(tmp_dir: str) -> None:
 
     files2 = [
         f
-        for f in os.listdir(tmp_dir)
-        if os.path.isfile(os.path.join(tmp_dir, f))
+        for f in os.listdir(tmp_path)
+        if os.path.isfile(os.path.join(tmp_path, f))
     ]
     assert len(files2) == 10
     assert len(set(files1) & set(files2)) == 0
@@ -126,22 +127,22 @@ def test_endpoint_storage_dumping(tmp_dir: str) -> None:
     # We don't bring objects back into memory when we delete and free up space
     files3 = [
         f
-        for f in os.listdir(tmp_dir)
-        if os.path.isfile(os.path.join(tmp_dir, f))
+        for f in os.listdir(tmp_path)
+        if os.path.isfile(os.path.join(tmp_path, f))
     ]
     assert len(files3) == 5
 
     storage.cleanup()
-    assert not os.path.isdir(tmp_dir)
+    assert not os.path.isdir(tmp_path)
 
 
-def test_object_exceeds_memory(tmp_dir: str) -> None:
-    storage = EndpointStorage(max_size=100, dump_dir=tmp_dir)
+def test_object_exceeds_memory(tmp_path: pathlib.Path) -> None:
+    storage = EndpointStorage(max_size=100, dump_dir=str(tmp_path))
     with pytest.raises(ObjectSizeExceededError, match='memory limit'):
         storage['key'] = randbytes(200)
 
 
-def test_object_exceeds_object_size(tmp_dir: str) -> None:
+def test_object_exceeds_object_size(tmp_path: pathlib.Path) -> None:
     storage = EndpointStorage(max_object_size=100)
     with pytest.raises(ObjectSizeExceededError, match='object limit'):
         storage['key'] = randbytes(200)

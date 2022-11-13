@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import multiprocessing
 import os
+import pathlib
 import sys
 import time
 import uuid
@@ -352,9 +353,9 @@ def test_serve_config_validation() -> None:
         serve(config)
 
 
-def test_serve_logging(tmp_dir) -> None:
+def test_serve_logging(tmp_path: pathlib.Path) -> None:
     # Make a sub dir that should not exist to check serve makes the dir
-    tmp_dir = os.path.join(tmp_dir, 'log-dir')
+    tmp_dir = os.path.join(tmp_path, 'log-dir')
 
     def _serve(log_file: str) -> None:
         # serve() calls asyncio.run() but the pytest environment does not have

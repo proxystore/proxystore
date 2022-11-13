@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import re
 import uuid
 from unittest import mock
@@ -304,9 +305,9 @@ def test_expand_user_path(globus_store) -> None:
     )
 
 
-def test_globus_auth_not_done(tmp_dir: str) -> None:
+def test_globus_auth_not_done(tmp_path: pathlib.Path) -> None:
     """Test Globus auth missing during Store init."""
-    with mock.patch('proxystore.globus.home_dir', return_value=tmp_dir):
+    with mock.patch('proxystore.globus.home_dir', return_value=str(tmp_path)):
         with pytest.raises(GlobusAuthFileError):
             GlobusStore('store', endpoints=[EP1, EP2])
 

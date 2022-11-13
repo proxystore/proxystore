@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import pathlib
 import uuid
 from multiprocessing import Process
 from multiprocessing import Queue
@@ -43,7 +44,7 @@ def serve_signaling_server(host: str, port: int) -> None:
 @pytest.fixture
 def endpoints(
     signaling_server,
-    tmp_dir,
+    tmp_path: pathlib.Path,
 ) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     """Launch the signaling server and two endpoints."""
     ss_host = 'localhost'
@@ -72,7 +73,7 @@ def endpoints(
 
         # We want a unique proxystore_dir for each endpoint to simulate
         # different systems
-        proxystore_dir = os.path.join(tmp_dir, str(port))
+        proxystore_dir = os.path.join(tmp_path, str(port))
         endpoint_dir = os.path.join(proxystore_dir, cfg.name)
         write_config(cfg, endpoint_dir)
         uuids.append(cfg.uuid)
