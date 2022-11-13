@@ -10,9 +10,10 @@ import websockets
 from websockets.server import WebSocketServer
 
 from proxystore.p2p.server import SignalingServer
+from testing.utils import open_port
 
 _SERVER_HOST = 'localhost'
-_SERVER_PORT = 8765
+_SERVER_PORT = open_port()
 _SERVER_ADDRESS = f'ws://{_SERVER_HOST}:{_SERVER_PORT}'
 
 
@@ -26,10 +27,16 @@ class SignalingServerInfo(NamedTuple):
     address: str
 
 
-@pytest_asyncio.fixture
+@pytest_asyncio.fixture(scope='session')
 @pytest.mark.asyncio
-async def signaling_server() -> AsyncGenerator[SignalingServerInfo, None]:
+async def signaling_server(
+    event_loop,
+) -> AsyncGenerator[SignalingServerInfo, None]:
     """Fixture that runs signaling server locally.
+
+    Warning:
+        This fixture has session scope so the signaling server will be shared
+        between many tests.
 
     Yields:
         `SignalingServerInfo <.SignalingServerInfo>`

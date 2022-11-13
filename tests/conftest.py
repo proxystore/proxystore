@@ -1,7 +1,11 @@
 """Public fixtures for unit tests."""
 from __future__ import annotations
 
+import asyncio
 import sys
+from typing import Generator
+
+import pytest
 
 try:
     import pymargo
@@ -33,3 +37,18 @@ from testing.utils import tmp_dir
 
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
+
+
+@pytest.fixture(scope='session')
+def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
+    """Get event loop.
+
+    Share event loop between all tests. Necessary for session scoped asyncio
+    fixtures.
+
+    Source: https://github.com/pytest-dev/pytest-asyncio#event_loop
+    """
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
