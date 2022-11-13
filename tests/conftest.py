@@ -6,18 +6,18 @@ import sys
 try:
     import pymargo
 except ImportError:
-    from testing.mocker_modules import pymargo_mocker
+    from testing.mocked import pymargo
 
-    sys.modules['pymargo'] = pymargo_mocker
-    sys.modules['pymargo.bulk'] = pymargo_mocker
-    sys.modules['pymargo.core'] = pymargo_mocker
+    sys.modules['pymargo'] = pymargo
+    sys.modules['pymargo.bulk'] = pymargo
+    sys.modules['pymargo.core'] = pymargo
 
 try:
     import ucp
 except ImportError:
-    from testing.mocker_modules import ucx_mocker
+    from testing.mocked import ucx
 
-    sys.modules['ucp'] = ucx_mocker
+    sys.modules['ucp'] = ucx
 
 
 from testing.signaling_server import signaling_server

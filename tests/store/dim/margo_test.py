@@ -8,9 +8,9 @@ from proxystore.serialize import serialize
 from proxystore.store.dim.margo import MargoServer
 from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.margo import when_finalize
-from testing.mocker_modules.pymargo_mocker import Bulk
-from testing.mocker_modules.pymargo_mocker import Engine
-from testing.mocker_modules.pymargo_mocker import Handle
+from testing.mocked.pymargo import Bulk
+from testing.mocked.pymargo import Engine
+from testing.mocked.pymargo import Handle
 from testing.utils import open_port
 
 ENCODING = 'UTF-8'

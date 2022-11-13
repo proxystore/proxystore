@@ -12,7 +12,6 @@ from typing import NamedTuple
 from typing import TypeVar
 from unittest import mock
 
-import globus_sdk
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
@@ -37,6 +36,10 @@ from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
 from testing.endpoint import launch_endpoint
+from testing.mocked.globus import MockDeleteData
+from testing.mocked.globus import MockTransferClient
+from testing.mocked.globus import MockTransferData
+from testing.mocked.redis import MockStrictRedis
 from testing.utils import open_port
 
 FIXTURE_LIST = [
@@ -49,107 +52,10 @@ FIXTURE_LIST = [
     'ucx_store',
     'websocket_store',
 ]
+
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)
-
-
-class MockTransferData(globus_sdk.TransferData):
-    """Mock the Globus TransferData."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockTransferData."""
-        pass
-
-    def __setitem__(self, key, item):
-        """Set item."""
-        self.__dict__[key] = item
-
-    def add_item(
-        self,
-        source_path: str,
-        destination_path: str,
-        **kwargs: Any,
-    ) -> None:
-        """Add item."""
-        assert isinstance(source_path, str)
-        assert isinstance(destination_path, str)
-
-
-class MockDeleteData(globus_sdk.DeleteData):
-    """Mock the Globus DeleteData."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockDeleteData."""
-        pass
-
-    def __setitem__(self, key, item):
-        """Set item."""
-        self.__dict__[key] = item
-
-    def add_item(self, path: str, **kwargs: Any) -> None:
-        """Add item."""
-        assert isinstance(path, str)
-
-
-class MockTransferClient:
-    """Mock the Globus TransferClient."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockTransferClient."""
-        pass
-
-    def get_task(self, task_id: str) -> Any:
-        """Get task."""
-        assert isinstance(task_id, str)
-        return None
-
-    def submit_delete(self, delete_data: MockDeleteData) -> dict[str, str]:
-        """Submit DeleteData."""
-        assert isinstance(delete_data, MockDeleteData)
-        return {'task_id': str(uuid.uuid4())}
-
-    def submit_transfer(
-        self,
-        transfer_data: MockTransferData,
-    ) -> dict[str, str]:
-        """Submit TransferData."""
-        assert isinstance(transfer_data, MockTransferData)
-        return {'task_id': str(uuid.uuid4())}
-
-    def task_wait(self, task_id: str, **kwargs: Any) -> bool:
-        """Wait on tasks."""
-        assert isinstance(task_id, str)
-        return True
-
-
-class MockStrictRedis:
-    """Mock StrictRedis."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockStrictRedis."""
-        # Use global MOCK_REDIS_CACHE so different RedisStores access the
-        # same data
-        self.data = MOCK_REDIS_CACHE
-
-    def delete(self, key: str) -> None:
-        """Delete key."""
-        if key in self.data:
-            del self.data[key]
-
-    def exists(self, key: str) -> bool:
-        """Check if key exists."""
-        return key in self.data
-
-    def get(self, key: str) -> Any:
-        """Get value with key."""
-        if key in self.data:
-            return self.data[key]
-        return None
-
-    def set(self, key: str, value: str | bytes | int | float) -> None:
-        """Set value in MockStrictRedis."""
-        self.data[key] = value
 
 
 class StoreInfo(NamedTuple):
@@ -186,7 +92,10 @@ def redis_store() -> Generator[StoreInfo, None, None]:
     global MOCK_REDIS_CACHE
     MOCK_REDIS_CACHE = {}
 
-    with mock.patch('redis.StrictRedis', side_effect=MockStrictRedis):
+    def create_mocked_redis(*args: Any, **kwargs: Any) -> MockStrictRedis:
+        return MockStrictRedis(MOCK_REDIS_CACHE, *args, **kwargs)
+
+    with mock.patch('redis.StrictRedis', side_effect=create_mocked_redis):
         yield StoreInfo(
             RedisStore,
             'redis',
