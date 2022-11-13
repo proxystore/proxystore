@@ -35,7 +35,6 @@ from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
-from testing.endpoint import launch_endpoint
 from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
@@ -143,33 +142,19 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 
 
 @pytest.fixture
-def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
+def endpoint_store(
+    endpoint: EndpointConfig,
+    tmp_dir: str,
+) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
-    cfg = EndpointConfig(
-        name='test-endpoint',
-        uuid=uuid.uuid4(),
-        host='localhost',
-        port=random.randint(5000, 5500),
-    )
-    endpoint_dir = os.path.join(tmp_dir, cfg.name)
-    write_config(cfg, endpoint_dir)
+    endpoint_dir = os.path.join(tmp_dir, endpoint.name)
+    write_config(endpoint, endpoint_dir)
 
-    assert cfg.host is not None
-    server_handle = launch_endpoint(
-        cfg.name,
-        cfg.uuid,
-        cfg.host,
-        cfg.port,
-        None,
-    )
     yield StoreInfo(
         EndpointStore,
         'endpoint',
-        {'endpoints': [cfg.uuid], 'proxystore_dir': tmp_dir},
+        {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
     )
-
-    server_handle.terminate()
-    server_handle.join()
 
 
 @pytest.fixture

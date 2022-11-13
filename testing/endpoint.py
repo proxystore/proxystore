@@ -7,21 +7,22 @@ import logging
 import time
 import uuid
 from multiprocessing import Process
+from typing import Generator
 
+import pytest
 import requests
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.serve import serve
+from testing.utils import open_port
 
 
-def serve_endpoint_silent(
-    name: str,
-    uuid: uuid.UUID,
-    host: str,
-    port: int,
-    server: str | None,
-) -> None:
-    """Serve endpoint and suppress all output."""
+def serve_endpoint_silent(config: EndpointConfig) -> None:
+    """Serve endpoint and suppress all output.
+
+    Warning:
+        This should be run in a subprocess.
+    """
     with contextlib.redirect_stdout(None), contextlib.redirect_stderr(
         None,
     ):
@@ -29,38 +30,47 @@ def serve_endpoint_silent(
         # https://stackoverflow.com/questions/66583461
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        config = EndpointConfig(
-            name=name,
-            uuid=uuid,
-            host=host,
-            port=port,
-            server=server,
-        )
         serve(config)
         loop.close()
 
 
-def launch_endpoint(
-    name: str,
-    uuid: uuid.UUID,
-    host: str,
-    port: int,
-    server: str | None,
-) -> Process:
-    """Launch endpoint in subprocess."""
-    server_handle = Process(
-        target=serve_endpoint_silent,
-        args=(name, uuid, host, port, server),
-    )
-    server_handle.start()
+def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
+    """Wait for the endpoint at host:port to be available."""
+    waited_s = 0.0
+    sleep_s = 0.01
 
     while True:
         try:
             r = requests.get(f'http://{host}:{port}/')
         except requests.exceptions.ConnectionError:
-            time.sleep(0.01)
+            if waited_s >= max_time_s:  # pragma: no cover
+                raise RuntimeError(
+                    'Unable to connect to endpoint with {max_time_s} seconds.',
+                )
+            time.sleep(sleep_s)
+            waited_s += sleep_s
             continue
         if r.status_code == 200:  # pragma: no branch
             break
 
-    return server_handle
+
+@pytest.fixture(scope='session')
+def endpoint() -> Generator[EndpointConfig, None, None]:
+    """Launch endpoint in subprocess."""
+    config = EndpointConfig(
+        name='endpoint-fixture',
+        uuid=uuid.uuid4(),
+        host='localhost',
+        port=open_port(),
+        server=None,
+    )
+    server_handle = Process(target=serve_endpoint_silent, args=[config])
+    server_handle.start()
+
+    assert config.host is not None
+    wait_for_endpoint(config.host, config.port)
+
+    yield config
+
+    server_handle.terminate()
+    server_handle.join()

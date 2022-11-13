@@ -24,6 +24,9 @@ except ImportError:
     sys.modules['ucp'] = ucx
 
 
+# Import fixtures from testing/ so they are known by pytest
+# and can be used with
+from testing.endpoint import endpoint
 from testing.signaling_server import signaling_server
 from testing.store_utils import endpoint_store
 from testing.store_utils import file_store
@@ -34,9 +37,6 @@ from testing.store_utils import redis_store
 from testing.store_utils import ucx_store
 from testing.store_utils import websocket_store
 from testing.utils import tmp_dir
-
-# Import fixtures from testing/ so they are known by pytest
-# and can be used with
 
 
 @pytest.fixture(scope='session')

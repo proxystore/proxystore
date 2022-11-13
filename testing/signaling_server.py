@@ -12,10 +12,6 @@ from websockets.server import WebSocketServer
 from proxystore.p2p.server import SignalingServer
 from testing.utils import open_port
 
-_SERVER_HOST = 'localhost'
-_SERVER_PORT = open_port()
-_SERVER_ADDRESS = f'ws://{_SERVER_HOST}:{_SERVER_PORT}'
-
 
 class SignalingServerInfo(NamedTuple):
     """NamedTuple returned by signaling_server fixture."""
@@ -41,18 +37,22 @@ async def signaling_server(
     Yields:
         `SignalingServerInfo <.SignalingServerInfo>`
     """
+    host = 'localhost'
+    port = open_port()
+    address = f'ws://{host}:{port}'
+
     signaling_server = SignalingServer()
     async with websockets.server.serve(
         signaling_server.handler,
-        _SERVER_HOST,
-        _SERVER_PORT,
+        host,
+        port,
     ) as websocket_server:
         server_info = SignalingServerInfo(
             signaling_server=signaling_server,
             websocket_server=websocket_server,
-            host=_SERVER_HOST,
-            port=_SERVER_PORT,
-            address=_SERVER_ADDRESS,
+            host=host,
+            port=port,
+            address=address,
         )
         assert websocket_server.is_serving()
         yield server_info
