@@ -8,9 +8,14 @@ from multiprocessing import Process
 from typing import Any
 from typing import NamedTuple
 
-from websockets.client import connect
-from websockets.server import serve
-from websockets.server import WebSocketServerProtocol
+try:
+    from websockets.client import connect
+    from websockets.server import serve
+    from websockets.server import WebSocketServerProtocol
+
+    websockets_import_error = None
+except ImportError as e:  # pragma: no cover
+    websockets_import_error = e
 
 import proxystore.utils as utils
 from proxystore.serialize import deserialize
@@ -72,6 +77,11 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
         """
         global server_process
+
+        # Websockets is not a default dependency so we don't want to raise
+        # an error unless the user actually tries to use this code
+        if websockets_import_error is not None:  # pragma: no cover
+            raise websockets_import_error
 
         logger.debug('Instantiating client and server')
 
