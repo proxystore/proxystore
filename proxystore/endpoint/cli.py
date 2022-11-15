@@ -37,7 +37,7 @@ class _CLIFormatter(logging.Formatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
-        if hasattr(record, 'simple') and record.simple:  # type: ignore
+        if hasattr(record, 'simple') and record.simple:
             return record.getMessage()
         else:
             formatter = logging.Formatter(self.FORMATS[record.levelno])
