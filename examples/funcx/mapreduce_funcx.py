@@ -162,6 +162,6 @@ if __name__ == '__main__':
 
     if store is not None:
         if hasattr(store, 'cleanup'):
-            store.cleanup()  # type: ignore
+            store.cleanup()
         elif hasattr(store, 'close'):
             store.close()
