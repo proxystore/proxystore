@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import socket
 import ssl
 from types import TracebackType
 from typing import Any
@@ -21,6 +20,7 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     )
 
+from proxystore import utils
 from proxystore.p2p import messages
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
@@ -115,7 +115,7 @@ class PeerManager:
             )
         self._uuid = uuid
         self._signaling_server = signaling_server
-        self._name = name if name is not None else socket.gethostname()
+        self._name = name if name is not None else utils.hostname()
         self._timeout = timeout
         self._peer_channels = peer_channels
         self._verify_certificate = verify_certificate

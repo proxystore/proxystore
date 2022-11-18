@@ -18,7 +18,7 @@ ENCODING = 'UTF-8'
 
 @pytest.fixture
 def ucx_server():
-    yield UCXServer('127.0.0.1', open_port())
+    yield UCXServer('localhost', open_port())
 
 
 async def execute_handler(obj: Any, server: UCXServer) -> Any:

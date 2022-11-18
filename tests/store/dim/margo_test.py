@@ -19,7 +19,7 @@ ENCODING = 'UTF-8'
 @pytest.fixture
 def margo_server():
     """Margo server fixture."""
-    e = Engine(f'tcp://127.0.0.1:{open_port()}')
+    e = Engine(f'tcp://localhost:{open_port()}')
     yield MargoServer(e)
 
 

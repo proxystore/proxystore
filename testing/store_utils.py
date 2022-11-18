@@ -5,7 +5,6 @@ import os
 import pathlib
 import random
 import shutil
-import socket
 import uuid
 from typing import Any
 from typing import Generator
@@ -15,6 +14,7 @@ from unittest import mock
 
 import pytest
 
+from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
@@ -113,13 +113,13 @@ def globus_store() -> Generator[StoreInfo, None, None]:
                 uuid='EP1UUID',
                 endpoint_path='/~/',
                 local_path=file_dir,
-                host_regex=socket.gethostname(),
+                host_regex=utils.hostname(),
             ),
             GlobusEndpoint(
                 uuid='EP2UUID',
                 endpoint_path='/~/',
                 local_path=file_dir,
-                host_regex=socket.gethostname(),
+                host_regex=utils.hostname(),
             ),
         ],
     )
@@ -197,7 +197,7 @@ def websocket_store() -> Generator[StoreInfo, None, None]:
     yield StoreInfo(
         WebsocketStore,
         'websocket',
-        {'interface': '127.0.0.1', 'port': port},
+        {'interface': 'localhost', 'port': port},
     )
 
 
@@ -217,19 +217,19 @@ def missing_key(store: Store[Any]) -> NamedTuple:
         return MargoStoreKey(
             str(uuid.uuid4()),
             0,
-            f'127.0.0.1:{store.kwargs["port"]}',
+            f'localhost:{store.kwargs["port"]}',
         )
     elif isinstance(store, UCXStore):
         return UCXStoreKey(
             str(uuid.uuid4()),
             0,
-            f'127.0.0.1:{store.kwargs["port"]}',
+            f'localhost:{store.kwargs["port"]}',
         )
     elif isinstance(store, WebsocketStore):
         return WebsocketStoreKey(
             str(uuid.uuid4()),
             0,
-            f'ws://127.0.0.1:{store.kwargs["port"]}',
+            f'ws://localhost:{store.kwargs["port"]}',
         )
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
