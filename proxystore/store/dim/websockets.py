@@ -97,7 +97,10 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             server_process = Process(target=self._start_server)
             server_process.start()
 
-        self._loop = asyncio.new_event_loop()
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
         self._loop.run_until_complete(self.server_started())
 
         super().__init__(
@@ -123,9 +126,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             self.port,
             self.max_size,
         )
-        asyncio.run(ps.launch())
 
-        logger.info(f'Server running at address {self.addr}')
+        asyncio.run(ps.launch())
 
     def create_key(self, obj: Any) -> WebsocketStoreKey:
         return WebsocketStoreKey(
@@ -220,7 +222,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             try:
                 websocket = await connect(self.addr)
             except OSError:
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
             else:
                 break  # pragma: no cover
 
@@ -318,37 +320,35 @@ class WebsocketServer:
             websocket (WebSocketServerProtocol): the websocket server
 
         """
-        pkv = await websocket.recv()
+        async for pkv in websocket:
+            assert isinstance(pkv, bytes)
+            kv = deserialize(pkv)
 
-        assert isinstance(pkv, bytes)
+            key = kv['key']
+            data = kv['data']
+            func = kv['op']
 
-        kv = deserialize(pkv)
-
-        key = kv['key']
-        data = kv['data']
-        func = kv['op']
-
-        if func == 'set':
-            res = self.set(key, data)
-        else:
-            if func == 'get':
-                func = self.get
-            elif func == 'exists':
-                func = self.exists
-            elif func == 'evict':
-                func = self.evict
+            if func == 'set':
+                res = self.set(key, data)
             else:
-                raise AssertionError('Unreachable.')
-            res = func(key)
+                if func == 'get':
+                    func = self.get
+                elif func == 'exists':
+                    func = self.exists
+                elif func == 'evict':
+                    func = self.evict
+                else:
+                    raise AssertionError('Unreachable.')
+                res = func(key)
 
-        if isinstance(res, Status) or isinstance(res, bool):
-            serialized_res = serialize(res)
-        else:
-            serialized_res = res
+            if isinstance(res, Status) or isinstance(res, bool):
+                serialized_res = serialize(res)
+            else:
+                serialized_res = res
 
-        await websocket.send(
-            utils.chunk_bytes(serialized_res, self.chunk_size),
-        )
+            await websocket.send(
+                utils.chunk_bytes(serialized_res, self.chunk_size),
+            )
 
     async def launch(self) -> None:
         """Launch the server."""
