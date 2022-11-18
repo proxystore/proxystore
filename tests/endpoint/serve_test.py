@@ -318,7 +318,7 @@ async def test_missing_key(quart_app) -> None:
 
 
 @pytest.mark.timeout(5)
-def test_serve() -> None:
+def test_serve(use_uvloop: bool) -> None:
     config = EndpointConfig(
         name='my-endpoint',
         uuid=uuid.uuid4(),
@@ -326,7 +326,11 @@ def test_serve() -> None:
         port=open_port(),
     )
 
-    process = multiprocessing.Process(target=serve, args=(config,))
+    process = multiprocessing.Process(
+        target=serve,
+        args=(config,),
+        kwargs={'use_uvloop': use_uvloop},
+    )
     process.start()
 
     try:
@@ -353,7 +357,7 @@ def test_serve_config_validation() -> None:
         serve(config)
 
 
-def test_serve_logging(tmp_path: pathlib.Path) -> None:
+def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     # Make a sub dir that should not exist to check serve makes the dir
     tmp_dir = os.path.join(tmp_path, 'log-dir')
 
@@ -371,7 +375,12 @@ def test_serve_logging(tmp_path: pathlib.Path) -> None:
             server=None,
         )
         with mock.patch('hypercorn.asyncio.serve', AsyncMock()):
-            serve(config, log_level='INFO', log_file=log_file)
+            serve(
+                config,
+                log_level='INFO',
+                log_file=log_file,
+                use_uvloop=use_uvloop,
+            )
         loop.close()
 
     # Make directory if necessary

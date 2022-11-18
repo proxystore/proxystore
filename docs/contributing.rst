@@ -63,6 +63,10 @@ Code that is useful for building tests but is not a test itself belongs in the
    # Run a specific test
    $ tox -e py39 -- tests/factory_test.py::test_lambda_factory
 
+Many of the tests are asyncio tests.
+The asyncio default event loop is used by default, but uvloop can be used
+instead by passing :code:`--use-uvloop` to pytest.
+
 Docs
 ^^^^
 

@@ -17,7 +17,11 @@ from proxystore.endpoint.serve import serve
 from testing.utils import open_port
 
 
-def serve_endpoint_silent(config: EndpointConfig) -> None:
+def serve_endpoint_silent(
+    config: EndpointConfig,
+    *,
+    use_uvloop: bool = False,
+) -> None:
     """Serve endpoint and suppress all output.
 
     Warning:
@@ -30,7 +34,7 @@ def serve_endpoint_silent(config: EndpointConfig) -> None:
         # https://stackoverflow.com/questions/66583461
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        serve(config)
+        serve(config, use_uvloop=use_uvloop)
         loop.close()
 
 
@@ -55,7 +59,7 @@ def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
 
 
 @pytest.fixture(scope='session')
-def endpoint() -> Generator[EndpointConfig, None, None]:
+def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
     """Launch endpoint in subprocess."""
     config = EndpointConfig(
         name='endpoint-fixture',
@@ -64,7 +68,11 @@ def endpoint() -> Generator[EndpointConfig, None, None]:
         port=open_port(),
         server=None,
     )
-    server_handle = Process(target=serve_endpoint_silent, args=[config])
+    server_handle = Process(
+        target=serve_endpoint_silent,
+        args=[config],
+        kwargs={'use_uvloop': use_uvloop},
+    )
     server_handle.start()
 
     assert config.host is not None
