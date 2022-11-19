@@ -35,10 +35,11 @@ def test_ucx_store(ucx_store) -> None:
     All UCXStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    store = UCXStore(ucx_store.name, **ucx_store.kwargs)
-    store._start_server()
-    store.close()
-    store.close()  # check that nothing happens
+    with ucx_store.ctx():
+        store = UCXStore(ucx_store.name, **ucx_store.kwargs)
+        store._start_server()
+        store.close()
+        store.close()  # check that nothing happens
 
 
 def test_ucx_server(ucx_server) -> None:

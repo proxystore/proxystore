@@ -26,24 +26,41 @@ jobs:
         - os: ubuntu-latest
           python: '3.10'
           toxenv: py310
+        - os: macos-latest
+          python: '3.10'
+          toxenv: py310
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Set up Python ${{matrix.python}}
-        uses: actions/setup-python@v2
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: Use pip cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('setup.cfg') }}-${{ hashFiles('requirements-dev.txt') }}
+          restore-keys: |
+            ${{ matrix.os }}-pip-${{ matrix.python }}
+
       - name: Install Packages
-        run: python -mpip install --upgrade setuptools pip tox virtualenv
+        if: steps.pip-cache.outputs.cache-hit != 'true'
+        run: pip install --upgrade setuptools pip tox virtualenv
 
       - name: Run Tox
         run: tox -e ${{ matrix.toxenv }}
 
       - name: Check if ~/.proxystore created
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "~/.proxystore"
 
