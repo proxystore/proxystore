@@ -5,44 +5,49 @@ from typing import NamedTuple
 
 import pytest
 
-import proxystore as ps
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
+from proxystore.store import get_store
+from proxystore.store import register_store
+from proxystore.store import unregister_store
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.local import LocalStore
 from proxystore.store.utils import get_key
-from testing.store_utils import FIXTURE_LIST
+from testing.stores import StoreFixtureType
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_store_factory(store_fixture, request) -> None:
+def test_store_factory(store_implementation: StoreFixtureType) -> None:
     """Test Store Factory."""
-    store_config = request.getfixturevalue(store_fixture)
+    _, store_info = store_implementation
 
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
+    store = store_info.type(
+        store_info.name,
+        cache_size=16,
+        **store_info.kwargs,
     )
+    register_store(store)
 
     key = store.set([1, 2, 3])
 
     # Clear store to see if factory can reinitialize it
-    ps.store._stores = {}
+    unregister_store(store_info.name)
+
     f: StoreFactory[NamedTuple, list[int]] = StoreFactory(
         key,
-        store_config.type,
-        store_config.name,
-        store_kwargs=store_config.kwargs,
+        store_info.type,
+        store_info.name,
+        store_kwargs=store_info.kwargs,
     )
     assert f() == [1, 2, 3]
 
     f2: StoreFactory[NamedTuple, list[int]] = StoreFactory(
         key,
-        store_config.type,
-        store_config.name,
-        store_kwargs=store_config.kwargs,
+        store_info.type,
+        store_info.name,
+        store_kwargs=store_info.kwargs,
         evict=True,
     )
     assert store.exists(key)
@@ -51,12 +56,13 @@ def test_store_factory(store_fixture, request) -> None:
 
     key = store.set([1, 2, 3])
     # Clear store to see if factory can reinitialize it
-    ps.store._stores = {}
+    unregister_store(store_info.name)
+
     f = StoreFactory(
         key,
-        store_config.type,
-        store_config.name,
-        store_kwargs=store_config.kwargs,
+        store_info.type,
+        store_info.name,
+        store_kwargs=store_info.kwargs,
     )
     f.resolve_async()
     assert f._obj_future is not None
@@ -68,8 +74,8 @@ def test_store_factory(store_fixture, request) -> None:
     assert f._obj_future is None
     assert f() == [1, 2, 3]
 
-    f_str = ps.serialize.serialize(f)
-    f = ps.serialize.deserialize(f_str)
+    f_str = serialize(f)
+    f = deserialize(f_str)
     assert f() == [1, 2, 3]
 
     class _MyStore(LocalStore):
@@ -80,32 +86,26 @@ def test_store_factory(store_fixture, request) -> None:
     f = StoreFactory(
         key,
         _MyStore,
-        store_config.name,
-        store_kwargs=store_config.kwargs,
+        store_info.name,
+        store_kwargs=store_info.kwargs,
     )
     with pytest.raises(ValueError, match='store of type'):
         f()
 
-    store.close()
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_store_proxy(store_fixture, request) -> None:
+def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     """Test Store Proxy."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
-        cache_size=0,
-    )
+    register_store(store)
 
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
-    assert isinstance(p, ps.proxy.Proxy)
+    assert isinstance(p, Proxy)
 
     # Check that we can get the associated store back
-    s = ps.store.get_store(p)
+    s = get_store(p)
     assert s is not None and s.name == store.name
 
     assert p == [1, 2, 3]
@@ -126,64 +126,39 @@ def test_store_proxy(store_fixture, request) -> None:
 
     assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
 
-    store.close()
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_proxy_recreates_store(store_fixture, request) -> None:
+def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
     """Test Proxy Recreates Store."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
-        cache_size=0,
-    )
+    register_store(store)
 
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
     key = get_key(p)
     assert key is not None
 
-    # Force delete store so proxy recreates it when resolved
-    ps.store._stores = {}
+    # Unregister store so proxy recreates it when resolved
+    unregister_store(store_info.name)
 
     # Resolve the proxy
     assert p == [1, 2, 3]
 
     # The store that created the proxy had cache_size=0 so the restored
     # store should also have cache_size=0.
-    s = ps.store.get_store(store_config.name)
+    s = get_store(store_info.name)
+    assert store._cache.maxsize == 0
     assert s is not None and not s.is_cached(key)
 
-    # Repeat above but with cache_size=1
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
-        cache_size=1,
-    )
-    p = store.proxy([1, 2, 3])
-    key = get_key(p)
-    assert key is not None
-    ps.store._stores = {}
-    assert p == [1, 2, 3]
-    s = ps.store.get_store(store_config.name)
-    assert s is not None and s.is_cached(key)
-
-    store.close()
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_proxy_batch(store_fixture, request) -> None:
+def test_proxy_batch(store_implementation: StoreFixtureType) -> None:
     """Test Batch Creation of Proxies."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
-    )
+    register_store(store)
 
     values1 = [b'test_value1', b'test_value2', b'test_value3']
     proxies1: list[Proxy[bytes]] = store.proxy_batch(values1, serialize=False)
@@ -196,19 +171,14 @@ def test_proxy_batch(store_fixture, request) -> None:
     for p2, v2 in zip(proxies2, values2):
         assert p2 == v2
 
-    store.close()
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_raises_missing_key(store_fixture, request) -> None:
+def test_raises_missing_key(store_implementation: StoreFixtureType) -> None:
     """Test Proxy/Factory raise missing key error."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    store = ps.store.init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
-    )
+    register_store(store)
 
     proxy = store.proxy([1, 2, 3])
     key = get_key(proxy)
@@ -222,4 +192,4 @@ def test_raises_missing_key(store_fixture, request) -> None:
     with pytest.raises(ProxyResolveMissingKey):
         proxy()
 
-    store.close()
+    unregister_store(store_info.name)

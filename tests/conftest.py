@@ -33,14 +33,15 @@ except ImportError:
 # and can be used with
 from testing.endpoint import endpoint
 from testing.signaling_server import signaling_server
-from testing.store_utils import endpoint_store
-from testing.store_utils import file_store
-from testing.store_utils import globus_store
-from testing.store_utils import local_store
-from testing.store_utils import margo_store
-from testing.store_utils import redis_store
-from testing.store_utils import ucx_store
-from testing.store_utils import websocket_store
+from testing.stores import endpoint_store
+from testing.stores import file_store
+from testing.stores import globus_store
+from testing.stores import local_store
+from testing.stores import margo_store
+from testing.stores import redis_store
+from testing.stores import ucx_store
+from testing.stores import websocket_store
+from testing.stores import store_implementation
 
 
 def pytest_addoption(parser):

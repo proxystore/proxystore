@@ -1,14 +1,17 @@
 """Mocking utilities for Store tests."""
 from __future__ import annotations
 
+import contextlib
 import os
-import pathlib
 import random
 import shutil
 import uuid
 from typing import Any
+from typing import Callable
+from typing import ContextManager
 from typing import Generator
 from typing import NamedTuple
+from typing import Tuple
 from typing import TypeVar
 from unittest import mock
 
@@ -64,25 +67,47 @@ class StoreInfo(NamedTuple):
     type: type[Store[Any]]
     name: str
     kwargs: dict[str, Any]
+    # ctx is a callable that takes no arguments and returns a context
+    # manager designed for enabling easy mocking without
+    # having to mock at the session level. I.e., all of the store fixtures
+    # here are session scoped so mocking in the fixture would have the mock
+    # affect ALL tests. Instead, tests/fixtures can invoke the context as
+    # needed when creating an instance of the store. Not all mocks need to be
+    # in context, just the ones that effect objects that may be needed in
+    # unmocked form by other tests.
+    ctx: Callable[[], ContextManager[None]]
 
 
-@pytest.fixture
+StoreFixtureType = Tuple[Store[Any], StoreInfo]
+
+
+@pytest.fixture(scope='session')
 def local_store() -> Generator[StoreInfo, None, None]:
     """Local Store fixture."""
     store_dict: dict[str, bytes] = {}
-    yield StoreInfo(LocalStore, 'local', {'store_dict': store_dict})
+    yield StoreInfo(
+        LocalStore,
+        'local',
+        {'store_dict': store_dict},
+        contextlib.nullcontext,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def file_store() -> Generator[StoreInfo, None, None]:
     """File Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
-    yield StoreInfo(FileStore, 'file', {'store_dir': file_dir})
+    yield StoreInfo(
+        FileStore,
+        'file',
+        {'store_dir': file_dir},
+        contextlib.nullcontext,
+    )
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def redis_store() -> Generator[StoreInfo, None, None]:
     """Redis Store fixture."""
     redis_host = 'localhost'
@@ -100,10 +125,11 @@ def redis_store() -> Generator[StoreInfo, None, None]:
             RedisStore,
             'redis',
             {'hostname': redis_host, 'port': redis_port},
+            contextlib.nullcontext,
         )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def globus_store() -> Generator[StoreInfo, None, None]:
     """Globus Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
@@ -136,18 +162,24 @@ def globus_store() -> Generator[StoreInfo, None, None]:
         'globus_sdk.TransferData',
         MockTransferData,
     ):
-        yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
+        yield StoreInfo(
+            GlobusStore,
+            'globus',
+            {'endpoints': endpoints},
+            contextlib.nullcontext,
+        )
 
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def endpoint_store(
     endpoint: EndpointConfig,
-    tmp_path: pathlib.Path,
+    tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
+    tmp_path = tmp_path_factory.mktemp('endpoint-store-fixture')
     tmp_dir = str(tmp_path)
     endpoint_dir = os.path.join(tmp_dir, endpoint.name)
     write_config(endpoint, endpoint_dir)
@@ -156,40 +188,51 @@ def endpoint_store(
         EndpointStore,
         'endpoint',
         {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
+        contextlib.nullcontext,
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
     port = open_port()
 
-    with mock.patch('multiprocessing.Process.start'), mock.patch(
-        'multiprocessing.Process.terminate',
-    ):
-        yield StoreInfo(
-            UCXStore,
-            'ucx',
-            {'interface': 'localhost', 'port': port},
-        )
+    @contextlib.contextmanager
+    def _mock_manager() -> Generator[None, None, None]:
+        with mock.patch('multiprocessing.Process.start'), mock.patch(
+            'multiprocessing.Process.terminate',
+        ):
+            yield
+
+    yield StoreInfo(
+        UCXStore,
+        'ucx',
+        {'interface': 'localhost', 'port': port},
+        _mock_manager,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
     port = open_port()
 
-    with mock.patch('multiprocessing.Process.start'), mock.patch(
-        'multiprocessing.Process.terminate',
-    ):
-        yield StoreInfo(
-            MargoStore,
-            'margo',
-            {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
-        )
+    @contextlib.contextmanager
+    def _mock_manager() -> Generator[None, None, None]:
+        with mock.patch('multiprocessing.Process.start'), mock.patch(
+            'multiprocessing.Process.terminate',
+        ):
+            yield
+
+    yield StoreInfo(
+        MargoStore,
+        'margo',
+        {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
+        _mock_manager,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def websocket_store() -> Generator[StoreInfo, None, None]:
     """Websocket store fixture."""
     port = open_port()
@@ -198,7 +241,36 @@ def websocket_store() -> Generator[StoreInfo, None, None]:
         WebsocketStore,
         'websocket',
         {'interface': 'localhost', 'port': port},
+        contextlib.nullcontext,
     )
+
+
+@pytest.fixture(scope='session', params=FIXTURE_LIST)
+def store_implementation(
+    request,
+) -> Generator[StoreFixtureType, None, None]:
+    """Parameterized fixture that yields all Store implementations."""
+    store_info = request.getfixturevalue(request.param)
+
+    with store_info.ctx():
+        store = store_info.type(
+            store_info.name,
+            cache_size=0,
+            **store_info.kwargs,
+        )
+
+    with mock.patch.object(
+        store,
+        'close',
+        side_effect=RuntimeError(
+            'Tests using the store_implementation fixture should not call '
+            'close() on the yielded Store instance.',
+        ),
+    ):
+        yield store, store_info
+
+    with store_info.ctx():
+        store.close()
 
 
 def missing_key(store: Store[Any]) -> NamedTuple:

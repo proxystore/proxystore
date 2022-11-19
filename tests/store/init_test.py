@@ -96,6 +96,8 @@ def test_init_store(local_store, redis_store) -> None:
     # Return None if store with name does not exist
     assert ps.store.get_store('unknown') is None
 
+    ps.store._stores = {}
+
 
 def test_get_enum_by_type() -> None:
     """Test getting enum with type."""
@@ -175,3 +177,5 @@ def test_lookup_by_proxy(local_store, redis_store) -> None:
     p = Proxy(f)
     with pytest.raises(ProxyStoreFactoryError):
         ps.store.get_store(p)
+
+    ps.store._stores = {}

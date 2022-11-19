@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import json
 import os
-import pathlib
 import re
 import uuid
 from unittest import mock
@@ -185,6 +184,10 @@ def test_globus_store_init(globus_store) -> None:
     )
     assert s1.kwargs == s2.kwargs == s3.kwargs
 
+    ps.store.unregister_store(s1.name)
+    ps.store.unregister_store(s2.name)
+    ps.store.unregister_store(s3.name)
+
     with pytest.raises(ValueError):
         # Invalid endpoint type
         ps.store.init_store(
@@ -305,10 +308,13 @@ def test_expand_user_path(globus_store) -> None:
     )
 
 
-def test_globus_auth_not_done(tmp_path: pathlib.Path) -> None:
+def test_globus_auth_not_done() -> None:
     """Test Globus auth missing during Store init."""
-    with mock.patch('proxystore.globus.home_dir', return_value=str(tmp_path)):
-        with pytest.raises(GlobusAuthFileError):
+    with mock.patch(
+        'proxystore.store.globus.get_proxystore_authorizer',
+        side_effect=GlobusAuthFileError,
+    ):
+        with pytest.raises(GlobusAuthFileError, match='Complete the'):
             GlobusStore('store', endpoints=[EP1, EP2])
 
 

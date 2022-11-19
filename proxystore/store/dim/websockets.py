@@ -217,12 +217,21 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
         logger.debug('Clean up completed')
 
-    async def server_started(self) -> None:
+    async def server_started(self, timeout: float = 5.0) -> None:
+        sleep_time = 0.01
+        time_waited = 0.0
+
         while True:
             try:
                 websocket = await connect(self.addr)
             except OSError:
-                await asyncio.sleep(0.01)
+                if time_waited >= timeout:
+                    raise RuntimeError(
+                        'Failed to connect to server within timeout '
+                        f'({timeout} seconds).',
+                    )
+                await asyncio.sleep(sleep_time)
+                time_waited += sleep_time
             else:
                 break  # pragma: no cover
 
