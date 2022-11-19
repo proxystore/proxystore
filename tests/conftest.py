@@ -52,6 +52,12 @@ def pytest_addoption(parser):
         default=False,
         help='Use uvloop as the default event loop for asyncio tests',
     )
+    parser.addoption(
+        '--extras',
+        action='store_true',
+        default=False,
+        help='Run extra tests that are disable by default',
+    )
 
 
 @pytest.fixture(scope='session')

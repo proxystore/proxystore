@@ -112,7 +112,8 @@ def test_stop(home_dir, caplog) -> None:
     )
 
 
-def test_entry_point() -> None:
+@pytest.mark.skipif('not config.getoption("extras")')
+def test_entry_point() -> None:  # pragma: no cover
     result = subprocess.run(
         ['proxystore-endpoint', '--version'],
         capture_output=True,
