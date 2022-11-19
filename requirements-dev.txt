@@ -1,4 +1,4 @@
-asynctest
+asynctest; python_version < '3.8'
 black
 covdefaults>=2.2
 coverage
