@@ -26,13 +26,16 @@ jobs:
         - os: ubuntu-latest
           python: '3.10'
           toxenv: py310
+        - os: macos-latest
+          python: '3.10'
+          toxenv: py310
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python ${{matrix.python}}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python }}
 
@@ -43,7 +46,7 @@ jobs:
         run: tox -e ${{ matrix.toxenv }}
 
       - name: Check if ~/.proxystore created
-        uses: andstor/file-existence-action@v1
+        uses: andstor/file-existence-action@v2
         with:
           files: "~/.proxystore"
 
