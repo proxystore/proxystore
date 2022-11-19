@@ -116,7 +116,7 @@ def test_function_timing() -> None:
     assert stats[event].size_bytes is None
 
     old_max = stats[event].max_time_ms
-    wrapped(key, 1)
+    wrapped(key, 0.02)
     assert stats[event].calls == 2
     assert stats[event].max_time_ms > old_max
 
