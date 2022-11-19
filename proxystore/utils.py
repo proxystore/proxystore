@@ -6,6 +6,7 @@ import os
 import pathlib
 import random
 import re
+import socket
 from typing import Any
 from typing import Generator
 
@@ -65,6 +66,11 @@ def fullname(obj: Any) -> str:
 def home_dir() -> str:
     """Returns path of $HOME/.proxystore."""
     return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)
+
+
+def hostname() -> str:
+    """Returns current hostname."""
+    return socket.gethostname()
 
 
 def bytes_to_readable(size: int, precision: int = 3) -> str:

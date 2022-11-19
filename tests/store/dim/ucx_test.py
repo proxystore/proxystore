@@ -10,7 +10,7 @@ from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.ucx import UCXServer
 from proxystore.store.dim.ucx import UCXStore
-from testing.mocker_modules.ucx_mocker import MockEndpoint
+from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
 ENCODING = 'UTF-8'
@@ -18,7 +18,7 @@ ENCODING = 'UTF-8'
 
 @pytest.fixture
 def ucx_server():
-    yield UCXServer('127.0.0.1', open_port())
+    yield UCXServer('localhost', open_port())
 
 
 async def execute_handler(obj: Any, server: UCXServer) -> Any:

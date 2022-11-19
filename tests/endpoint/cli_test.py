@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import pathlib
 import subprocess
 import uuid
 from typing import Generator
@@ -15,15 +16,15 @@ from proxystore.endpoint.config import read_config
 
 
 @pytest.fixture()
-def home_dir(tmp_dir: str) -> Generator[str, None, None]:
+def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
     with mock.patch(
         'proxystore.utils.home_dir',
-        return_value=tmp_dir,
+        return_value=str(tmp_path),
     ), mock.patch(
         'proxystore.endpoint.commands.home_dir',
-        return_value=tmp_dir,
+        return_value=str(tmp_path),
     ):
-        yield tmp_dir
+        yield str(tmp_path)
 
 
 def test_no_args_prints_help(capsys) -> None:
@@ -111,7 +112,8 @@ def test_stop(home_dir, caplog) -> None:
     )
 
 
-def test_entry_point() -> None:
+@pytest.mark.skipif('not config.getoption("extras")')
+def test_entry_point() -> None:  # pragma: no cover
     result = subprocess.run(
         ['proxystore-endpoint', '--version'],
         capture_output=True,

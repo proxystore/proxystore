@@ -72,6 +72,7 @@ def serve(
     *,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,
+    use_uvloop: bool = True,
 ) -> None:
     """Initialize endpoint and serve Quart app.
 
@@ -82,6 +83,8 @@ def serve(
         config (EndpointConfig): configuration object.
         log_level (int): logging level of endpoint (default: INFO).
         log_file (str): optional file path to append log to.
+        use_uvloop (bool): install uvloop as the default event loop
+            implementation (default: True).
     """
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
@@ -119,8 +122,9 @@ def serve(
     serve_config.accesslog = logging.getLogger('hypercorn.access')
     serve_config.errorlog = logging.getLogger('hypercorn.error')
 
-    logger.debug('installing uvloop as default event loop')
-    uvloop.install()
+    if use_uvloop:  # pragma: no cover
+        logger.debug('installing uvloop as default event loop')
+        uvloop.install()
 
     logger.info(
         f'serving endpoint {endpoint.uuid} ({endpoint.name}) on '

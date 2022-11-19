@@ -18,8 +18,8 @@ if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
 else:  # pragma: <3.8 cover
     from asynctest import CoroutineMock as AsyncMock
 
-# Use 200ms as wait_for/timeout to keep test short
-_WAIT_FOR = 0.2
+# Use 100ms as wait_for/timeout to keep test short
+_WAIT_FOR = 0.1
 
 
 @pytest.mark.asyncio

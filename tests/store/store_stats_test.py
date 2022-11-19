@@ -6,47 +6,44 @@ from typing import NamedTuple
 
 import pytest
 
-import proxystore.store
 from proxystore.proxy import Proxy
 from proxystore.proxy import resolve
 from proxystore.store import get_store
-from proxystore.store import init_store
+from proxystore.store import register_store
+from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.utils import get_key
-from testing.store_utils import FIXTURE_LIST
+from testing.stores import StoreFixtureType
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_init_stats(store_fixture, request) -> None:
+def test_init_stats(store_implementation: StoreFixtureType) -> None:
     """Test Initializing Stat tracking."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    with store_config.type(store_config.name, **store_config.kwargs) as store:
-        with pytest.raises(ValueError):
-            # Check raises an error because stats are not tracked by default
-            store.stats('key')
+    with pytest.raises(ValueError):
+        # Check raises an error because stats are not tracked by default
+        store.stats('key')
 
-        store = store_config.type(
-            store_config.name,
-            **store_config.kwargs,
-            stats=True,
-        )
-
-        assert isinstance(store.stats('key'), dict)
-
-
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_stat_tracking(store_fixture, request) -> None:
-    """Test stat tracking of store."""
-    store_config = request.getfixturevalue(store_fixture)
-
-    store = init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
+    store = store_info.type(
+        store_info.name,
+        **store_info.kwargs,
         stats=True,
     )
+
+    assert isinstance(store.stats('key'), dict)
+
+
+def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
+    """Test stat tracking of store."""
+    _, store_info = store_implementation
+
+    store = store_info.type(
+        store_info.name,
+        **store_info.kwargs,
+        stats=True,
+    )
+    register_store(store)
 
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
     key = get_key(p)
@@ -77,20 +74,19 @@ def test_stat_tracking(store_fixture, request) -> None:
 
     assert len(stats) == 0
 
-    store.close()
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_get_stats_with_proxy(store_fixture, request) -> None:
+def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
     """Test Get Stats with Proxy."""
-    store_config = request.getfixturevalue(store_fixture)
+    store, store_info = store_implementation
 
-    store = init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
+    store = store_info.type(
+        store_info.name,
+        **store_info.kwargs,
         stats=True,
     )
+    register_store(store)
 
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
 
@@ -140,35 +136,37 @@ def test_get_stats_with_proxy(store_fixture, request) -> None:
     resolve(p)
     stats = store.stats(p)
     assert 'resolve' not in stats
-    store.close()
+
+    unregister_store(store_info.name)
 
 
-@pytest.mark.parametrize('store_fixture', FIXTURE_LIST)
-def test_factory_preserves_tracking(store_fixture, request) -> None:
+def test_factory_preserves_tracking(
+    store_implementation: StoreFixtureType,
+) -> None:
     """Test Factories Preserve the Stat Tracking Flag."""
-    store_config = request.getfixturevalue(store_fixture)
+    _, store_info = store_implementation
 
     store: Store[Any] | None
-    store = init_store(
-        store_config.type,
-        store_config.name,
-        **store_config.kwargs,
+    store = store_info.type(
+        store_info.name,
+        **store_info.kwargs,
         stats=True,
     )
+    register_store(store)
 
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
     key = get_key(p)
     assert key is not None
 
-    # Force delete store so proxy recreates it when resolved
-    proxystore.store._stores = {}
+    # Remove store so proxy recreates it when resolved
+    unregister_store(store_info.name)
 
     # Resolve the proxy
     assert p == [1, 2, 3]
-    store = get_store(store_config.name)
+    store = get_store(store_info.name)
     assert store is not None
 
     assert isinstance(store.stats(key), dict)
     assert store.stats(key)['get'].calls == 1
 
-    store.close()
+    unregister_store(store_info.name)

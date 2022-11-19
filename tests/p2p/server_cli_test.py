@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import multiprocessing
 import os
+import pathlib
 import subprocess
 import sys
 from unittest import mock
@@ -20,22 +21,22 @@ else:  # pragma: <3.8 cover
     from asynctest import CoroutineMock as AsyncMock
 
 
-def test_logging_dir(tmp_dir) -> None:
-    tmp_dir = os.path.join(tmp_dir, 'log-dir')
+def test_logging_dir(tmp_path: pathlib.Path) -> None:
+    tmp_dir = os.path.join(tmp_path, 'log-dir')
     assert not os.path.isdir(tmp_dir)
     with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
-        main(['--log-dir', tmp_dir])
+        main(['--log-dir', str(tmp_dir)])
     assert os.path.isdir(tmp_dir)
 
 
-def test_logging_config(tmp_dir) -> None:
+def test_logging_config(tmp_path: pathlib.Path) -> None:
     with subprocess.Popen(
         [
             'signaling-server',
             '--port',
             str(open_port()),
             '--log-dir',
-            tmp_dir,
+            str(tmp_path),
             '--log-level',
             'INFO',
         ],
@@ -53,11 +54,11 @@ def test_logging_config(tmp_dir) -> None:
 
     logs = [
         f
-        for f in os.listdir(tmp_dir)
-        if os.path.isfile(os.path.join(tmp_dir, f))
+        for f in os.listdir(tmp_path)
+        if os.path.isfile(os.path.join(tmp_path, f))
     ]
     for log in logs:
-        with open(os.path.join(tmp_dir, log)) as f:
+        with open(os.path.join(tmp_path, log)) as f:
             assert 'DEBUG' not in f.read()
     assert len(logs) >= 1
 

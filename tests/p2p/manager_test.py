@@ -50,7 +50,8 @@ async def test_uuid_name_properties(signaling_server) -> None:
         assert manager.name == name
 
 
-def test_address_validation() -> None:
+@pytest.mark.asyncio
+async def test_address_validation() -> None:
     PeerManager(uuid.uuid4(), 'ws://example.com')
     PeerManager(uuid.uuid4(), 'wss://example.com')
     with pytest.raises(ValueError, match='wss://'):

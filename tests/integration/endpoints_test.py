@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import pathlib
 import uuid
 from multiprocessing import Process
 from multiprocessing import Queue
@@ -18,7 +19,8 @@ from proxystore.p2p.server import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.endpoint import EndpointStore
-from testing.endpoint import launch_endpoint
+from testing.endpoint import serve_endpoint_silent
+from testing.endpoint import wait_for_endpoint
 from testing.utils import open_port
 
 
@@ -41,7 +43,8 @@ def serve_signaling_server(host: str, port: int) -> None:
 
 @pytest.fixture
 def endpoints(
-    tmp_dir,
+    signaling_server,
+    tmp_path: pathlib.Path,
 ) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     """Launch the signaling server and two endpoints."""
     ss_host = 'localhost'
@@ -67,22 +70,20 @@ def endpoints(
             server=f'ws://{ss_host}:{ss_port}',
         )
         assert cfg.host is not None
+
         # We want a unique proxystore_dir for each endpoint to simulate
         # different systems
-        proxystore_dir = os.path.join(tmp_dir, str(port))
+        proxystore_dir = os.path.join(tmp_path, str(port))
         endpoint_dir = os.path.join(proxystore_dir, cfg.name)
         write_config(cfg, endpoint_dir)
         uuids.append(cfg.uuid)
         dirs.append(proxystore_dir)
-        handles.append(
-            launch_endpoint(
-                cfg.name,
-                cfg.uuid,
-                cfg.host,
-                cfg.port,
-                cfg.server,
-            ),
-        )
+
+        handle = Process(target=serve_endpoint_silent, args=[cfg])
+        handle.start()
+        handles.append(handle)
+
+        wait_for_endpoint(cfg.host, cfg.port)
 
     if not ss.is_alive():  # pragma: no cover
         raise RuntimeError('Signaling server died.')
@@ -91,7 +92,10 @@ def endpoints(
 
     for handle in handles:
         handle.terminate()
+        handle.join()
+
     ss.terminate()
+    ss.join()
 
 
 @pytest.mark.integration

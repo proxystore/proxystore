@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import pathlib
 from unittest import mock
 
 import globus_sdk
@@ -20,9 +21,9 @@ from proxystore.globus import proxystore_authenticate
 from proxystore.globus import save_tokens_to_file
 
 
-def test_save_load_tokens(tmp_dir: str) -> None:
-    os.makedirs(tmp_dir, exist_ok=True)
-    tmp_file = os.path.join(tmp_dir, 'globus.json')
+def test_save_load_tokens(tmp_path: pathlib.Path) -> None:
+    os.makedirs(tmp_path, exist_ok=True)
+    tmp_file = os.path.join(tmp_path, 'globus.json')
     data = {'tokens': {'token': '123456789'}}
     with mock.patch('globus_sdk.OAuthTokenResponse'):
         tokens = globus_sdk.OAuthTokenResponse()
@@ -43,7 +44,7 @@ def test_authenticate(capsys) -> None:
         authenticate('1234', 'https://redirect')
 
 
-def test_get_authorizer(tmp_dir: str) -> None:
+def test_get_authorizer(tmp_path: pathlib.Path) -> None:
     tokens = {
         'transfer.api.globus.org': {
             'refresh_token': 1234,
@@ -51,8 +52,8 @@ def test_get_authorizer(tmp_dir: str) -> None:
             'expires_at_seconds': 1234,
         },
     }
-    os.makedirs(tmp_dir, exist_ok=True)
-    filepath = os.path.join(tmp_dir, 'tokens.json')
+    os.makedirs(tmp_path, exist_ok=True)
+    filepath = os.path.join(tmp_path, 'tokens.json')
     with open(filepath, 'w') as f:
         json.dump(tokens, f)
 
@@ -62,28 +63,28 @@ def test_get_authorizer(tmp_dir: str) -> None:
         get_authorizer('client id', filepath, 'redirect uri')
 
 
-def test_get_authorizer_missing_file(tmp_dir: str) -> None:
-    filepath = os.path.join(tmp_dir, 'missing_file')
+def test_get_authorizer_missing_file(tmp_path: pathlib.Path) -> None:
+    filepath = os.path.join(tmp_path, 'missing_file')
     with pytest.raises(GlobusAuthFileError):
         get_authorizer('client id', filepath, 'redirect uri')
 
 
-def test_proxystore_authenticate(tmp_dir: str) -> None:
+def test_proxystore_authenticate(tmp_path: pathlib.Path) -> None:
     data = {'tokens': {'token': '123456789'}}
     with mock.patch('globus_sdk.OAuthTokenResponse'):
         tokens = globus_sdk.OAuthTokenResponse()
         tokens.by_resource_server = data  # type: ignore
 
     with mock.patch('proxystore.globus.authenticate', return_value=tokens):
-        proxystore_authenticate(tmp_dir)
+        proxystore_authenticate(str(tmp_path))
 
-    assert load_tokens_from_file(os.path.join(tmp_dir, _TOKENS_FILE)) == data
+    assert load_tokens_from_file(os.path.join(tmp_path, _TOKENS_FILE)) == data
 
     with mock.patch('proxystore.globus.get_authorizer'):
-        get_proxystore_authorizer(tmp_dir)
+        get_proxystore_authorizer(str(tmp_path))
 
 
-def test_main(tmp_dir: str) -> None:
+def test_main(tmp_path: pathlib.Path) -> None:
     with mock.patch('proxystore.globus.proxystore_authenticate'), mock.patch(
         'proxystore.globus.get_proxystore_authorizer',
         side_effect=[GlobusAuthFileError(), None, None],

@@ -98,7 +98,7 @@ async def test_p2p_connection_timeout(signaling_server) -> None:
     # Don't finish offer/answer sending so wait() times out
 
     with pytest.raises(PeerConnectionTimeout):
-        await connection1.ready(timeout=0.5)
+        await connection1.ready(timeout=0.05)
 
     await websocket1.close()
     await websocket2.close()

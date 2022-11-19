@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import re
-import socket
 import sys
 from typing import Any
 from typing import Collection
@@ -399,7 +398,7 @@ class GlobusStore(Store[GlobusStoreKey]):
 
     def _get_local_endpoint(self) -> GlobusEndpoint:
         """Get endpoint local to current host."""
-        return self.endpoints.get_by_host(socket.gethostname())
+        return self.endpoints.get_by_host(utils.hostname())
 
     def _validate_task_id(self, task_id: str) -> bool:
         """Validate key contains a real Globus task id."""

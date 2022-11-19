@@ -1,7 +1,6 @@
 """Serialization Unit Tests."""
 from __future__ import annotations
 
-import numpy as np
 from pytest import raises
 
 from proxystore.serialize import deserialize
@@ -19,9 +18,9 @@ def test_serialization() -> None:
     b = serialize(xs)
     assert deserialize(b) == xs
 
-    xa = np.array([1, 2, 3])
+    xa = [1, 2, 3]
     b = serialize(xa)
-    assert np.array_equal(deserialize(b), xa)
+    assert deserialize(b) == xa
 
     b = serialize(lambda: [1, 2, 3])
     f = deserialize(b)

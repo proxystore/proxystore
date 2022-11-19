@@ -8,9 +8,14 @@ from multiprocessing import Process
 from typing import Any
 from typing import NamedTuple
 
-from websockets.client import connect
-from websockets.server import serve
-from websockets.server import WebSocketServerProtocol
+try:
+    from websockets.client import connect
+    from websockets.server import serve
+    from websockets.server import WebSocketServerProtocol
+
+    websockets_import_error = None
+except ImportError as e:  # pragma: no cover
+    websockets_import_error = e
 
 import proxystore.utils as utils
 from proxystore.serialize import deserialize
@@ -73,6 +78,11 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         """
         global server_process
 
+        # Websockets is not a default dependency so we don't want to raise
+        # an error unless the user actually tries to use this code
+        if websockets_import_error is not None:  # pragma: no cover
+            raise websockets_import_error
+
         logger.debug('Instantiating client and server')
 
         self.max_size = max_size
@@ -87,7 +97,10 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             server_process = Process(target=self._start_server)
             server_process.start()
 
-        self._loop = asyncio.new_event_loop()
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
         self._loop.run_until_complete(self.server_started())
 
         super().__init__(
@@ -113,9 +126,8 @@ class WebsocketStore(Store[WebsocketStoreKey]):
             self.port,
             self.max_size,
         )
-        asyncio.run(ps.launch())
 
-        logger.info(f'Server running at address {self.addr}')
+        asyncio.run(ps.launch())
 
     def create_key(self, obj: Any) -> WebsocketStoreKey:
         return WebsocketStoreKey(
@@ -205,12 +217,21 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
         logger.debug('Clean up completed')
 
-    async def server_started(self) -> None:
+    async def server_started(self, timeout: float = 5.0) -> None:
+        sleep_time = 0.01
+        time_waited = 0.0
+
         while True:
             try:
                 websocket = await connect(self.addr)
             except OSError:
-                await asyncio.sleep(0.1)
+                if time_waited >= timeout:
+                    raise RuntimeError(
+                        'Failed to connect to server within timeout '
+                        f'({timeout} seconds).',
+                    )
+                await asyncio.sleep(sleep_time)
+                time_waited += sleep_time
             else:
                 break  # pragma: no cover
 
@@ -308,37 +329,35 @@ class WebsocketServer:
             websocket (WebSocketServerProtocol): the websocket server
 
         """
-        pkv = await websocket.recv()
+        async for pkv in websocket:
+            assert isinstance(pkv, bytes)
+            kv = deserialize(pkv)
 
-        assert isinstance(pkv, bytes)
+            key = kv['key']
+            data = kv['data']
+            func = kv['op']
 
-        kv = deserialize(pkv)
-
-        key = kv['key']
-        data = kv['data']
-        func = kv['op']
-
-        if func == 'set':
-            res = self.set(key, data)
-        else:
-            if func == 'get':
-                func = self.get
-            elif func == 'exists':
-                func = self.exists
-            elif func == 'evict':
-                func = self.evict
+            if func == 'set':
+                res = self.set(key, data)
             else:
-                raise AssertionError('Unreachable.')
-            res = func(key)
+                if func == 'get':
+                    func = self.get
+                elif func == 'exists':
+                    func = self.exists
+                elif func == 'evict':
+                    func = self.evict
+                else:
+                    raise AssertionError('Unreachable.')
+                res = func(key)
 
-        if isinstance(res, Status) or isinstance(res, bool):
-            serialized_res = serialize(res)
-        else:
-            serialized_res = res
+            if isinstance(res, Status) or isinstance(res, bool):
+                serialized_res = serialize(res)
+            else:
+                serialized_res = res
 
-        await websocket.send(
-            utils.chunk_bytes(serialized_res, self.chunk_size),
-        )
+            await websocket.send(
+                utils.chunk_bytes(serialized_res, self.chunk_size),
+            )
 
     async def launch(self) -> None:
         """Launch the server."""

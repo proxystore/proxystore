@@ -13,13 +13,13 @@ import logging
 import os
 import shutil
 import signal
-import socket
 import uuid
 from typing import Generator
 
 import daemon.pidfile
 import psutil
 
+from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
@@ -264,7 +264,7 @@ def start_endpoint(
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     cfg = read_config(endpoint_dir)
-    hostname = socket.gethostbyname(socket.gethostname())
+    hostname = utils.hostname()
 
     pid_file = get_pid_filepath(endpoint_dir)
 
@@ -337,7 +337,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     cfg = read_config(endpoint_dir)
-    hostname = socket.gethostbyname(socket.gethostname())
+    hostname = utils.hostname()
     pid_file = get_pid_filepath(endpoint_dir)
 
     if (

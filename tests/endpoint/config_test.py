@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import uuid
 from typing import Any
 
@@ -16,8 +17,8 @@ from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.config import write_config
 
 
-def test_write_read_config(tmp_dir) -> None:
-    tmp_dir = os.path.join(tmp_dir, 'config-dir')
+def test_write_read_config(tmp_path: pathlib.Path) -> None:
+    tmp_dir = os.path.join(tmp_path, 'config-dir')
     assert not os.path.exists(tmp_dir)
 
     cfg = EndpointConfig(
@@ -37,15 +38,15 @@ def test_write_read_config(tmp_dir) -> None:
     assert cfg == new_cfg
 
 
-def test_read_config_missing_file(tmp_dir) -> None:
-    os.makedirs(tmp_dir, exist_ok=True)
+def test_read_config_missing_file(tmp_path: pathlib.Path) -> None:
+    os.makedirs(tmp_path, exist_ok=True)
 
     with pytest.raises(FileNotFoundError):
-        read_config(tmp_dir)
+        read_config(str(tmp_path))
 
 
-def test_get_configs(tmp_dir) -> None:
-    tmp_dir = os.path.join(tmp_dir, 'config-dir')
+def test_get_configs(tmp_path: pathlib.Path) -> None:
+    tmp_dir = os.path.join(tmp_path, 'config-dir')
     assert not os.path.exists(tmp_dir)
     # dir does not exists so empty list should be returned
     assert len(get_configs(tmp_dir)) == 0

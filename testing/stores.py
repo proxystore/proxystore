@@ -1,20 +1,23 @@
 """Mocking utilities for Store tests."""
 from __future__ import annotations
 
+import contextlib
 import os
 import random
 import shutil
-import socket
 import uuid
 from typing import Any
+from typing import Callable
+from typing import ContextManager
 from typing import Generator
 from typing import NamedTuple
+from typing import Tuple
 from typing import TypeVar
 from unittest import mock
 
-import globus_sdk
 import pytest
 
+from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
@@ -36,7 +39,10 @@ from proxystore.store.local import LocalStore
 from proxystore.store.local import LocalStoreKey
 from proxystore.store.redis import RedisStore
 from proxystore.store.redis import RedisStoreKey
-from testing.endpoint import launch_endpoint
+from testing.mocked.globus import MockDeleteData
+from testing.mocked.globus import MockTransferClient
+from testing.mocked.globus import MockTransferData
+from testing.mocked.redis import MockStrictRedis
 from testing.utils import open_port
 
 FIXTURE_LIST = [
@@ -49,107 +55,10 @@ FIXTURE_LIST = [
     'ucx_store',
     'websocket_store',
 ]
+
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)
-
-
-class MockTransferData(globus_sdk.TransferData):
-    """Mock the Globus TransferData."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockTransferData."""
-        pass
-
-    def __setitem__(self, key, item):
-        """Set item."""
-        self.__dict__[key] = item
-
-    def add_item(
-        self,
-        source_path: str,
-        destination_path: str,
-        **kwargs: Any,
-    ) -> None:
-        """Add item."""
-        assert isinstance(source_path, str)
-        assert isinstance(destination_path, str)
-
-
-class MockDeleteData(globus_sdk.DeleteData):
-    """Mock the Globus DeleteData."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockDeleteData."""
-        pass
-
-    def __setitem__(self, key, item):
-        """Set item."""
-        self.__dict__[key] = item
-
-    def add_item(self, path: str, **kwargs: Any) -> None:
-        """Add item."""
-        assert isinstance(path, str)
-
-
-class MockTransferClient:
-    """Mock the Globus TransferClient."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockTransferClient."""
-        pass
-
-    def get_task(self, task_id: str) -> Any:
-        """Get task."""
-        assert isinstance(task_id, str)
-        return None
-
-    def submit_delete(self, delete_data: MockDeleteData) -> dict[str, str]:
-        """Submit DeleteData."""
-        assert isinstance(delete_data, MockDeleteData)
-        return {'task_id': str(uuid.uuid4())}
-
-    def submit_transfer(
-        self,
-        transfer_data: MockTransferData,
-    ) -> dict[str, str]:
-        """Submit TransferData."""
-        assert isinstance(transfer_data, MockTransferData)
-        return {'task_id': str(uuid.uuid4())}
-
-    def task_wait(self, task_id: str, **kwargs: Any) -> bool:
-        """Wait on tasks."""
-        assert isinstance(task_id, str)
-        return True
-
-
-class MockStrictRedis:
-    """Mock StrictRedis."""
-
-    def __init__(self, *args, **kwargs):
-        """Init MockStrictRedis."""
-        # Use global MOCK_REDIS_CACHE so different RedisStores access the
-        # same data
-        self.data = MOCK_REDIS_CACHE
-
-    def delete(self, key: str) -> None:
-        """Delete key."""
-        if key in self.data:
-            del self.data[key]
-
-    def exists(self, key: str) -> bool:
-        """Check if key exists."""
-        return key in self.data
-
-    def get(self, key: str) -> Any:
-        """Get value with key."""
-        if key in self.data:
-            return self.data[key]
-        return None
-
-    def set(self, key: str, value: str | bytes | int | float) -> None:
-        """Set value in MockStrictRedis."""
-        self.data[key] = value
 
 
 class StoreInfo(NamedTuple):
@@ -158,25 +67,47 @@ class StoreInfo(NamedTuple):
     type: type[Store[Any]]
     name: str
     kwargs: dict[str, Any]
+    # ctx is a callable that takes no arguments and returns a context
+    # manager designed for enabling easy mocking without
+    # having to mock at the session level. I.e., all of the store fixtures
+    # here are session scoped so mocking in the fixture would have the mock
+    # affect ALL tests. Instead, tests/fixtures can invoke the context as
+    # needed when creating an instance of the store. Not all mocks need to be
+    # in context, just the ones that effect objects that may be needed in
+    # unmocked form by other tests.
+    ctx: Callable[[], ContextManager[None]]
 
 
-@pytest.fixture
+StoreFixtureType = Tuple[Store[Any], StoreInfo]
+
+
+@pytest.fixture(scope='session')
 def local_store() -> Generator[StoreInfo, None, None]:
     """Local Store fixture."""
     store_dict: dict[str, bytes] = {}
-    yield StoreInfo(LocalStore, 'local', {'store_dict': store_dict})
+    yield StoreInfo(
+        LocalStore,
+        'local',
+        {'store_dict': store_dict},
+        contextlib.nullcontext,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def file_store() -> Generator[StoreInfo, None, None]:
     """File Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
-    yield StoreInfo(FileStore, 'file', {'store_dir': file_dir})
+    yield StoreInfo(
+        FileStore,
+        'file',
+        {'store_dir': file_dir},
+        contextlib.nullcontext,
+    )
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def redis_store() -> Generator[StoreInfo, None, None]:
     """Redis Store fixture."""
     redis_host = 'localhost'
@@ -186,15 +117,19 @@ def redis_store() -> Generator[StoreInfo, None, None]:
     global MOCK_REDIS_CACHE
     MOCK_REDIS_CACHE = {}
 
-    with mock.patch('redis.StrictRedis', side_effect=MockStrictRedis):
+    def create_mocked_redis(*args: Any, **kwargs: Any) -> MockStrictRedis:
+        return MockStrictRedis(MOCK_REDIS_CACHE, *args, **kwargs)
+
+    with mock.patch('redis.StrictRedis', side_effect=create_mocked_redis):
         yield StoreInfo(
             RedisStore,
             'redis',
             {'hostname': redis_host, 'port': redis_port},
+            contextlib.nullcontext,
         )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def globus_store() -> Generator[StoreInfo, None, None]:
     """Globus Store fixture."""
     file_dir = f'/tmp/proxystore-test-{uuid.uuid4()}'
@@ -204,13 +139,13 @@ def globus_store() -> Generator[StoreInfo, None, None]:
                 uuid='EP1UUID',
                 endpoint_path='/~/',
                 local_path=file_dir,
-                host_regex=socket.gethostname(),
+                host_regex=utils.hostname(),
             ),
             GlobusEndpoint(
                 uuid='EP2UUID',
                 endpoint_path='/~/',
                 local_path=file_dir,
-                host_regex=socket.gethostname(),
+                host_regex=utils.hostname(),
             ),
         ],
     )
@@ -227,73 +162,77 @@ def globus_store() -> Generator[StoreInfo, None, None]:
         'globus_sdk.TransferData',
         MockTransferData,
     ):
-        yield StoreInfo(GlobusStore, 'globus', {'endpoints': endpoints})
+        yield StoreInfo(
+            GlobusStore,
+            'globus',
+            {'endpoints': endpoints},
+            contextlib.nullcontext,
+        )
 
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
 
 
-@pytest.fixture
-def endpoint_store(tmp_dir: str) -> Generator[StoreInfo, None, None]:
+@pytest.fixture(scope='session')
+def endpoint_store(
+    endpoint: EndpointConfig,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Generator[StoreInfo, None, None]:
     """Endpoint Store fixture."""
-    cfg = EndpointConfig(
-        name='test-endpoint',
-        uuid=uuid.uuid4(),
-        host='localhost',
-        port=random.randint(5000, 5500),
-    )
-    endpoint_dir = os.path.join(tmp_dir, cfg.name)
-    write_config(cfg, endpoint_dir)
+    tmp_path = tmp_path_factory.mktemp('endpoint-store-fixture')
+    tmp_dir = str(tmp_path)
+    endpoint_dir = os.path.join(tmp_dir, endpoint.name)
+    write_config(endpoint, endpoint_dir)
 
-    assert cfg.host is not None
-    server_handle = launch_endpoint(
-        cfg.name,
-        cfg.uuid,
-        cfg.host,
-        cfg.port,
-        None,
-    )
     yield StoreInfo(
         EndpointStore,
         'endpoint',
-        {'endpoints': [cfg.uuid], 'proxystore_dir': tmp_dir},
+        {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
+        contextlib.nullcontext,
     )
 
-    server_handle.terminate()
-    server_handle.join()
 
-
-@pytest.fixture
+@pytest.fixture(scope='session')
 def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
     port = open_port()
 
-    with mock.patch('multiprocessing.Process.start'), mock.patch(
-        'multiprocessing.Process.terminate',
-    ):
-        yield StoreInfo(
-            UCXStore,
-            'ucx',
-            {'interface': 'localhost', 'port': port},
-        )
+    @contextlib.contextmanager
+    def _mock_manager() -> Generator[None, None, None]:
+        with mock.patch('multiprocessing.Process.start'), mock.patch(
+            'multiprocessing.Process.terminate',
+        ):
+            yield
+
+    yield StoreInfo(
+        UCXStore,
+        'ucx',
+        {'interface': 'localhost', 'port': port},
+        _mock_manager,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
     port = open_port()
 
-    with mock.patch('multiprocessing.Process.start'), mock.patch(
-        'multiprocessing.Process.terminate',
-    ):
-        yield StoreInfo(
-            MargoStore,
-            'margo',
-            {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
-        )
+    @contextlib.contextmanager
+    def _mock_manager() -> Generator[None, None, None]:
+        with mock.patch('multiprocessing.Process.start'), mock.patch(
+            'multiprocessing.Process.terminate',
+        ):
+            yield
+
+    yield StoreInfo(
+        MargoStore,
+        'margo',
+        {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
+        _mock_manager,
+    )
 
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def websocket_store() -> Generator[StoreInfo, None, None]:
     """Websocket store fixture."""
     port = open_port()
@@ -301,8 +240,37 @@ def websocket_store() -> Generator[StoreInfo, None, None]:
     yield StoreInfo(
         WebsocketStore,
         'websocket',
-        {'interface': '127.0.0.1', 'port': port},
+        {'interface': 'localhost', 'port': port},
+        contextlib.nullcontext,
     )
+
+
+@pytest.fixture(scope='session', params=FIXTURE_LIST)
+def store_implementation(
+    request,
+) -> Generator[StoreFixtureType, None, None]:
+    """Parameterized fixture that yields all Store implementations."""
+    store_info = request.getfixturevalue(request.param)
+
+    with store_info.ctx():
+        store = store_info.type(
+            store_info.name,
+            cache_size=0,
+            **store_info.kwargs,
+        )
+
+    with mock.patch.object(
+        store,
+        'close',
+        side_effect=RuntimeError(
+            'Tests using the store_implementation fixture should not call '
+            'close() on the yielded Store instance.',
+        ),
+    ):
+        yield store, store_info
+
+    with store_info.ctx():
+        store.close()
 
 
 def missing_key(store: Store[Any]) -> NamedTuple:
@@ -321,19 +289,19 @@ def missing_key(store: Store[Any]) -> NamedTuple:
         return MargoStoreKey(
             str(uuid.uuid4()),
             0,
-            f'127.0.0.1:{store.kwargs["port"]}',
+            f'localhost:{store.kwargs["port"]}',
         )
     elif isinstance(store, UCXStore):
         return UCXStoreKey(
             str(uuid.uuid4()),
             0,
-            f'127.0.0.1:{store.kwargs["port"]}',
+            f'localhost:{store.kwargs["port"]}',
         )
     elif isinstance(store, WebsocketStore):
         return WebsocketStoreKey(
             str(uuid.uuid4()),
             0,
-            f'ws://127.0.0.1:{store.kwargs["port"]}',
+            f'ws://localhost:{store.kwargs["port"]}',
         )
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
