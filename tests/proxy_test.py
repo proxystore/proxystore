@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import pickle as pkl
 
-import numpy as np
 import pytest
 
 import proxystore as ps
@@ -21,7 +20,7 @@ def test_proxy() -> None:
         # Proxy requires a callable type
         Proxy('not a factory')  # type: ignore
 
-    x = np.array([1, 2, 3])
+    x = [1, 2, 3]
     f = SimpleFactory(x)
     p = Proxy(f)
 
@@ -34,43 +33,38 @@ def test_proxy() -> None:
     assert not ps.proxy.is_resolved(p)
 
     assert isinstance(p, Proxy)
-    assert isinstance(p, np.ndarray)
+    assert isinstance(p, list)
     assert ps.proxy.is_resolved(p)
 
     # Test extracting
     x_ = ps.proxy.extract(p)
-    assert isinstance(x_, np.ndarray)
+    assert isinstance(x_, list)
     assert not isinstance(x_, Proxy)
-    assert np.array_equal(x, x_)
+    assert x == x_
 
-    p = p + 1
+    p = p + [1]
     assert not isinstance(p, Proxy)
-    assert np.array_equal(p, [2, 3, 4])
-    assert len(p) == 3
-    assert np.sum(p) == 9
+    assert p == [1, 2, 3, 1]
+    assert len(p) == 4
+    assert sum(p) == 7
 
     # Adding two proxies returns type of wrapped
     p = Proxy(f)
     p = p + p
-    assert np.sum(p) == 12
-    assert isinstance(p, np.ndarray)
+    assert sum(p) == 12
+    assert isinstance(p, list)
     assert not isinstance(p, Proxy)
 
     def double(y):
-        return 2 * y
+        return [2 * x for x in y]
 
     p = Proxy(f)
     res = double(p)
     assert not isinstance(res, Proxy)
-    assert np.array_equal(res, [2, 4, 6])
-
-    p = Proxy(SimpleFactory([np.array([1, 2, 3]), np.array([2, 3, 4])]))
-    res = np.sum(p, axis=0)
-    assert not isinstance(res, Proxy)
-    assert np.array_equal(res, [3, 5, 7])
+    assert res == [2, 4, 6]
 
     p = Proxy(f)
-    assert isinstance(p, np.ndarray)
+    assert isinstance(p, list)
 
     p = Proxy(SimpleFactory('hello'))
     assert not ps.proxy.is_resolved(p)

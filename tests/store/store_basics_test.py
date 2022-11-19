@@ -4,7 +4,6 @@ from __future__ import annotations
 from typing import Any
 from unittest import mock
 
-import numpy as np
 import pytest
 
 import proxystore as ps
@@ -38,7 +37,7 @@ def test_store_base(store_implementation: StoreFixtureType) -> None:
     key_bytes = store.set(str.encode(value))
     key_str = store.set(value)
     key_callable = store.set(lambda: value)
-    key_numpy = store.set(np.array([1, 2, 3]))
+    key_array = store.set([1, 2, 3])
 
     # Store.get()
     assert store.get(key_bytes) == str.encode(value)
@@ -47,7 +46,7 @@ def test_store_base(store_implementation: StoreFixtureType) -> None:
     assert c is not None and c.__call__() == value
     assert store.get(key_fake) is None
     assert store.get(key_fake, default='alt_value') == 'alt_value'
-    assert np.array_equal(store.get(key_numpy), np.array([1, 2, 3]))
+    assert store.get(key_array) == [1, 2, 3]
 
     # Store.exists()
     assert store.exists(key_bytes)
@@ -108,8 +107,8 @@ def test_store_custom_serialization(
     assert store.get(key, deserialize=False) == s
 
     with pytest.raises(TypeError, match='bytes'):
-        # Should fail because the numpy array is not already serialized
-        store.set(np.array([1, 2, 3]), serialize=False)
+        # Should fail because the array is not already serialized
+        store.set([1, 2, 3], serialize=False)
 
 
 def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
