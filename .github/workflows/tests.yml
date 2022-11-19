@@ -40,20 +40,19 @@ jobs:
           python-version: ${{ matrix.python }}
 
       - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+        id: pip-cache-dir
+        run: echo "PIP_CACHE_DIR=$(pip cache dir)" >> $GITHUB_ENV
 
       - name: Use pip cache
+        id: pip-cache
         uses: actions/cache@v3
         with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('setup.cfg') }}-${{ hashFiles('requirements-dev.txt') }}
+          path: ${{ env.PIP_CACHE_DIR }}
+          key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('setup.cfg', 'requirements-dev.txt') }}
           restore-keys: |
-            ${{ matrix.os }}-pip-${{ matrix.python }}
+            ${{ matrix.os }}-pip-${{ matrix.python }}-
 
       - name: Install Packages
-        if: steps.pip-cache.outputs.cache-hit != 'true'
         run: pip install --upgrade setuptools pip tox virtualenv
 
       - name: Run Tox
