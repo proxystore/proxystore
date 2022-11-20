@@ -2,13 +2,16 @@
 from __future__ import annotations
 
 import argparse
+from typing import Any
 
 import numpy as np
 import parsl
 from parsl import python_app
 
-import proxystore as ps
-import proxystore.store
+from proxystore.store import register_store
+from proxystore.store.base import Store
+from proxystore.store.local import LocalStore
+from proxystore.store.redis import RedisStore
 
 
 @python_app
@@ -60,15 +63,16 @@ if __name__ == '__main__':
     parsl.load()
 
     if args.proxy:
+        store: Store[Any]
         if args.redis_port is None:
-            store = ps.store.init_store('local', name='local')
+            store = LocalStore('local')
         else:
-            store = ps.store.init_store(
+            store = RedisStore(
                 'redis',
-                name='redis',
-                hostname='127.0.0.1',
+                hostname='localhost',
                 port=args.redis_port,
             )
+        register_store(store)
 
     mapped_results = []
     for _ in range(args.num_arrays):

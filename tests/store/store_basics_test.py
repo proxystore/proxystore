@@ -6,7 +6,6 @@ from unittest import mock
 
 import pytest
 
-import proxystore as ps
 from proxystore.store.cache import LRUCache
 from testing.stores import missing_key
 from testing.stores import StoreFixtureType
@@ -18,12 +17,7 @@ def test_store_init(store_implementation: StoreFixtureType) -> None:
 
     with pytest.raises(ValueError):
         # Negative Cache Size Error
-        ps.store.init_store(
-            store_info.type,
-            store_info.name,
-            **store_info.kwargs,
-            cache_size=-1,
-        )
+        store_info.type(store_info.name, **store_info.kwargs, cache_size=-1)
 
 
 def test_store_base(store_implementation: StoreFixtureType) -> None:

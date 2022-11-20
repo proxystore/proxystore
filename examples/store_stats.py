@@ -5,16 +5,16 @@ Source code for:
 """
 from __future__ import annotations
 
+import tempfile
 from typing import Any
 
-import proxystore.store
+from proxystore.proxy import Proxy
+from proxystore.store.file import FileStore
 
-store = proxystore.store.init_store(
-    'file',
-    name='default',
-    store_dir='/tmp/proxystore-dump',
-    stats=True,
-)
+
+fp = tempfile.TemporaryDirectory()
+
+store = FileStore(name='default', store_dir=fp.name, stats=True)
 
 target = list(range(0, 100))
 key1 = store.set(target)
@@ -76,7 +76,7 @@ store = store.stats(key1)
 """,
 )
 
-target_proxy: proxystore.proxy.Proxy[Any] = store.proxy(target)
+target_proxy: Proxy[Any] = store.proxy(target)
 stats = store.stats(target_proxy)
 print(
     f"""\
@@ -102,3 +102,4 @@ store = store.stats(target_proxy)
 )
 
 store.close()
+fp.cleanup()

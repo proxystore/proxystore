@@ -9,8 +9,12 @@ from typing import Any
 import numpy as np
 from funcx.sdk.client import FuncXClient
 
-import proxystore as ps
-import proxystore.store
+from proxystore.store import register_store
+from proxystore.store.base import Store
+from proxystore.store.file import FileStore
+from proxystore.store.globus import GlobusEndpoints
+from proxystore.store.globus import GlobusStore
+from proxystore.store.redis import RedisStore
 
 # Note: types on function are not provided because FuncX has trouble
 # serializing them sometimes
@@ -101,29 +105,21 @@ if __name__ == '__main__':
     double_uuid = fxc.register_function(app_double)
     sum_uuid = fxc.register_function(app_sum)
 
-    store: ps.store.base.Store[Any] | None = None
+    store: Store[Any] | None = None
     if args.ps_file:
-        store = ps.store.init_store(
-            'file',
-            name='file',
-            store_dir=args.ps_file_dir,
-        )
+        store = FileStore('file', store_dir=args.ps_file_dir)
     elif args.ps_globus:
-        endpoints = ps.store.globus.GlobusEndpoints.from_json(
-            args.ps_globus_config,
-        )
-        store = ps.store.init_store(
-            'globus',
-            name='globus',
-            endpoints=endpoints,
-        )
+        endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
+        store = GlobusStore('globus', endpoints=endpoints)
     elif args.ps_redis:
-        store = ps.store.init_store(
+        store = RedisStore(
             'redis',
-            name='redis',
             hostname='localhost',
             port=args.ps_redis_port,
         )
+
+    if store is not None:
+        register_store(store)
 
     start = time.perf_counter()
 

@@ -143,11 +143,8 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         """
         store = ps.store.get_store(self.store_name)
         if store is None:
-            store = ps.store.init_store(
-                self.store_type,
-                self.store_name,
-                **self.store_kwargs,
-            )
+            store = self.store_type(self.store_name, **self.store_kwargs)
+            ps.store.register_store(store)
 
         if not isinstance(store, self.store_type):
             raise ValueError(
