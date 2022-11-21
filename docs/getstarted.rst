@@ -74,26 +74,8 @@ in stores and creating proxies that will resolve to the associated object in
 the store.
 
 ProxyStore provides many :class:`~proxystore.store.base.Store`
-implementations and more can be added by extending the
-:class:`~proxystore.store.base.Store` class.
-
-.. list-table::
-   :widths: 15 50
-   :header-rows: 1
-   :align: center
-
-   * - Type
-     - Use Case
-   * - :class:`~proxystore.store.local.LocalStore`
-     - In-memory object store local to the process. Useful for development.
-   * - :class:`~proxystore.store.redis.RedisStore`
-     - Store objects in a preconfigured Redis server.
-   * - :class:`~proxystore.store.file.FileStore`
-     - Use a globally accessible file system for storing objects.
-   * - :class:`~proxystore.store.globus.GlobusStore`
-     - Transfer objects between two Globus endpoints.
-   * - :class:`~proxystore.store.endpoint.EndpointStore`
-     - [*Experimental*] P2P object stores for multi-site applications.
+implementations (list :py:mod:`here <proxystore.store>`) and more can be
+added by extending the :class:`~proxystore.store.base.Store` class.
 
 The following example uses the
 :class:`~proxystore.store.redis.RedisStore` to interface with a

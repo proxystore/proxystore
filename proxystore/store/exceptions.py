@@ -18,12 +18,6 @@ class StoreExistsError(StoreError):
     pass
 
 
-class UnknownStoreError(StoreError):
-    """Exception raised when the type of store to initialize is unknown."""
-
-    pass
-
-
 class ProxyStoreFactoryError(StoreError):
     """Exception raised when a proxy was not created by a Store."""
 

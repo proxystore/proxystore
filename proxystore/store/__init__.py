@@ -1,73 +1,45 @@
-"""Module containing all Store implementations."""
+"""Module containing all :class:`~proxystore.store.base.Store` implementations.
+
+.. list-table::
+   :widths: 15 50
+   :header-rows: 1
+   :align: center
+
+   * - Type
+     - Use Case
+   * - :class:`~proxystore.store.local.LocalStore`
+     - In-memory object store local to the process. Useful for development.
+   * - :class:`~proxystore.store.redis.RedisStore`
+     - Store objects in a preconfigured Redis server.
+   * - :class:`~proxystore.store.file.FileStore`
+     - Use a globally accessible file system for storing objects.
+   * - :class:`~proxystore.store.globus.GlobusStore`
+     - Transfer objects between two Globus endpoints.
+   * - :class:`~proxystore.store.endpoint.EndpointStore`
+     - [*Experimental*] P2P object stores for multi-site applications.
+   * - :class:`~proxystore.store.dim.margo.MargoStore`
+     - Distributed in-memory storage across nodes with Margo communication.
+   * - :class:`~proxystore.store.dim.ucx.UCXStore`
+     - Distributed in-memory storage across nodes with UCX communication.
+   * - :class:`~proxystore.store.dim.websockets.WebsocketStore`
+     - Distributed in-memory storage across nodes with Websocket communication.
+"""
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from typing import Any
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store as _Store
 from proxystore.store.base import StoreFactory
-from proxystore.store.dim.margo import MargoStore as _MargoStore
-from proxystore.store.dim.ucx import UCXStore as _UCXStore
-from proxystore.store.dim.websockets import WebsocketStore as _WebsocketStore
-from proxystore.store.endpoint import EndpointStore as _EndpointStore
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
-from proxystore.store.exceptions import UnknownStoreError
-from proxystore.store.file import FileStore as _FileStore
-from proxystore.store.globus import GlobusStore as _GlobusStore
-from proxystore.store.local import LocalStore as _LocalStore
-from proxystore.store.redis import RedisStore as _RedisStore
 
 T = TypeVar('T')
 
 _stores: dict[str, _Store[Any]] = {}
 logger = logging.getLogger(__name__)
-
-
-class STORES(Enum):
-    """Available Store implementations."""
-
-    ENDPOINT = _EndpointStore
-    """Corresponds to :class:`~proxystore.store.endpoint.EndpointStore`."""
-    FILE = _FileStore
-    """Corresponds to :class:`~proxystore.store.file.FileStore`."""
-    GLOBUS = _GlobusStore
-    """Corresponds to :class:`~proxystore.store.globus.GlobusStore`."""
-    LOCAL = _LocalStore
-    """Corresponds to :class:`~proxystore.store.local.LocalStore`."""
-    REDIS = _RedisStore
-    """Corresponds to :class:`~proxystore.store.redis.RedisStore`."""
-    MARGO = _MargoStore
-    """Corresponds to :class:`~proxystore.store.dim.margo.MargoStore`."""
-    UCX = _UCXStore
-    """Corresponds to :class:`~proxystore.store.dim.ucx.UCXStore`."""
-    WEBSOCKET = _WebsocketStore
-    """Corresponds to
-    :class:`~proxystore.store.dim.websockets.WebsocketStore`.
-    """
-
-    @classmethod
-    def get_str_by_type(cls, store: type[_Store[Any]]) -> str:
-        """Get str corresponding to enum type of a store type.
-
-        Args:
-            store: type of store to check enum for
-
-        Returns:
-            String that will index :class:`STORES` and return the same type
-            as `store`.
-
-        Raises:
-            KeyError:
-                if enum type matching `store` is not found.
-        """
-        for option in cls:
-            if option.value == store:
-                return option.name
-        raise KeyError(f'Enum type matching type {store} not found')
 
 
 def get_store(val: str | Proxy[T]) -> _Store[Any] | None:
@@ -104,69 +76,6 @@ def get_store(val: str | Proxy[T]) -> _Store[Any] | None:
     if name in _stores:
         return _stores[name]
     return None
-
-
-def init_store(
-    store_type: str | STORES | type[_Store[Any]],
-    name: str,
-    **kwargs: Any,
-) -> _Store[Any]:
-    """Initialize a backend store and register globally.
-
-    Usage:
-        >>> from proxystore.store import init_store
-        >>> from proxystore.store import STORES
-        >>> from proxystore.store.redis import RedisStore
-        >>>
-        >>> # The following are equivalent
-        >>> init_store('redis', name='default-store', ...)
-        >>> init_store(STORES.REDIS, name='default-store', ...)
-        >>> init_store(RedisStore, name='default-store', ...)
-
-    Args:
-        store_type (str, STORES, Store): type of store to initialize. Can be
-            either a string corresponding to an enum value or the enum value
-            itself in :class:`STORES <.STORES>` or a subclass of
-            :class:`Store <proxystore.store.base.Store>`.
-        name (str): unique name of store. The name is needed to get the store
-            again with :func:`get_store() <.get_store>`.
-        kwargs (dict): keyword args to pass to store constructor.
-
-    Returns:
-        :any:`Store <proxystore.store.base.Store>`
-
-    Raises:
-        UnknownStoreError:
-            if `store_type` is a string but does not match a value
-            in :class:`STORES <.STORES>`.
-        UnknownStoreError:
-            if `store_type` is not a `str`, member of
-            :class:`STORES <.STORES>`, or a type that is a subtype of
-            :class:`Store <proxystore.store.base.Store>`.
-    """
-    if isinstance(store_type, str):
-        try:
-            store = STORES[store_type.upper()].value(name, **kwargs)
-        except KeyError:
-            raise UnknownStoreError(
-                f'No store with name {store_type}. Valid types include: '
-                f'{",".join(s.name for s in STORES)}.',
-            )
-    elif isinstance(store_type, STORES):
-        store = store_type.value(name, **kwargs)
-    elif issubclass(store_type, _Store):
-        store = store_type(name, **kwargs)
-    else:
-        raise UnknownStoreError(
-            'The store_type argument must be a string corresponding to '
-            'proxystore.store.STORES, member of proxystore.store.STORES, or '
-            'a type that extends Store. '
-            f'Found type f{type(store_type).__name__} instead.',
-        )
-
-    register_store(store, exist_ok=True)
-
-    return store
 
 
 def register_store(store: _Store[Any], exist_ok: bool = False) -> None:
