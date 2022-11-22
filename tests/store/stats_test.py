@@ -1,6 +1,7 @@
 """ProxyStore Stat Tests."""
 from __future__ import annotations
 
+import sys
 import time
 from typing import NamedTuple
 
@@ -102,21 +103,31 @@ def test_function_timing() -> None:
     """Test function timing."""
     stats = FunctionEventStats()
 
+    if sys.platform == 'darwin':  # pragma: darwin cover
+        # The Github MacOS runners are so slow that we need to have a greater
+        # difference between the slow and fast function to reliably have
+        # them measured correctly relative to each other
+        short_time = 0.001
+        long_time = 0.1
+    else:  # pragma: darwin no cover
+        short_time = 0.01
+        long_time = 0.02
+
     key = _TestKey('key')
     wrapped = stats.wrap(sleep)
 
     event = Event(function='sleep', key=key)
-    wrapped(key, 0.01)
+    wrapped(key, short_time)
 
     assert event in stats
     assert stats[event].calls == 1
-    assert stats[event].avg_time_ms >= 0.001
+    assert stats[event].avg_time_ms >= short_time / 2
     assert stats[event].min_time_ms > 0
     assert stats[event].min_time_ms == stats[event].max_time_ms
     assert stats[event].size_bytes is None
 
     old_max = stats[event].max_time_ms
-    wrapped(key, 0.02)
+    wrapped(key, long_time)
     assert stats[event].calls == 2
     assert stats[event].max_time_ms > old_max
 

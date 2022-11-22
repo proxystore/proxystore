@@ -10,7 +10,6 @@ from unittest import mock
 import globus_sdk
 import pytest
 
-import proxystore as ps
 from proxystore.globus import GlobusAuthFileError
 from proxystore.store.globus import GlobusEndpoint
 from proxystore.store.globus import GlobusEndpoints
@@ -171,46 +170,22 @@ def test_globus_store_init(globus_store) -> None:
 
     GlobusStore('globus', endpoints=[EP1, EP2])
 
-    s1 = ps.store.init_store(
-        ps.store.STORES.GLOBUS,
-        'globus1',
-        endpoints=[EP1, EP2],
-    )
-    s2 = ps.store.init_store(ps.store.STORES.GLOBUS, 'globus2', endpoints=eps)
-    s3 = ps.store.init_store(
-        ps.store.STORES.GLOBUS,
-        'globus3',
-        endpoints=eps.dict(),
-    )
+    s1 = GlobusStore('globus1', endpoints=[EP1, EP2])
+    s2 = GlobusStore('globus2', endpoints=eps)
+    s3 = GlobusStore('globus3', endpoints=eps.dict())
     assert s1.kwargs == s2.kwargs == s3.kwargs
-
-    ps.store.unregister_store(s1.name)
-    ps.store.unregister_store(s2.name)
-    ps.store.unregister_store(s3.name)
 
     with pytest.raises(ValueError):
         # Invalid endpoint type
-        ps.store.init_store(
-            ps.store.STORES.GLOBUS,
-            'globus',
-            endpoints=None,
-        )
+        GlobusStore('globus', endpoints=None)  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
         # Too many endpoints
-        ps.store.init_store(
-            ps.store.STORES.GLOBUS,
-            'globus',
-            endpoints=[EP1, EP2, EP3],
-        )
+        GlobusStore('globus', endpoints=[EP1, EP2, EP3])
 
     with pytest.raises(ValueError):
         # Not enough endpoints
-        ps.store.init_store(
-            ps.store.STORES.GLOBUS,
-            'globus',
-            endpoints=[EP1],
-        )
+        GlobusStore('globus', endpoints=[EP1])
 
 
 def test_globus_store_internals(globus_store) -> None:

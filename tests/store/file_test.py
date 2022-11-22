@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import tempfile
 
 from proxystore.store.file import FileStore
 
@@ -22,15 +23,17 @@ def test_cwd_change(tmp_path: pathlib.Path) -> None:
     """Checks FileStore proxies still resolve when the CWD changes."""
     current = os.getcwd()
 
-    os.chdir(tmp_path)
-    store_dir = './store-dir'
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        os.chdir(tmp_dir)
 
-    new_working_dir = os.path.join(tmp_path, 'new-working-dir')
-    os.makedirs(new_working_dir, exist_ok=True)
+        # relative to tmp_dir
+        store_dir = './store-dir'
+        new_working_dir = os.path.join(tmp_dir, 'new-working-dir')
+        os.makedirs(new_working_dir, exist_ok=True)
 
-    with FileStore('store', store_dir=store_dir, cache_size=0) as store:
-        p = store.proxy('data')
-        os.chdir(new_working_dir)
-        assert p == 'data'
+        with FileStore('store', store_dir=store_dir, cache_size=0) as store:
+            key = store.set('data')
+            os.chdir(new_working_dir)
+            assert store.get(key) == 'data'
 
     os.chdir(current)

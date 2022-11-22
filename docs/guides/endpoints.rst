@@ -119,10 +119,9 @@ The primary interface to endpoints is the
 
 .. code-block:: python
 
-   import proxystore as ps
+   from proxystore.store.endpoint import EndpointStore
 
-   store = ps.store.init_store(
-       'endpoint',
+   store = EndpointStore(
        name='default',
        endpoints=[
            '5349ffce-edeb-4a8b-94a6-ab16ade1c1a1',

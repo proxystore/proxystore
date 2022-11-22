@@ -2,17 +2,16 @@ Performance Tracking
 ####################
 
 The ProxyStore :class:`~proxystore.store.base.Store` interface provides low-level performance tracking on store operations (e.g., `get` and `set`).
-Performance tracking is disable by default and can be enabled by passing :code:`stats=True` to either the :class:`~proxystore.store.base.Store` constructor or :py:func:`~proxystore.store.init_store`.
+Performance tracking is disable by default and can be enabled by passing :code:`stats=True` to a :class:`~proxystore.store.base.Store` constructor.
 
 .. code-block:: python
 
-   import proxystore.store
+   from proxystore.store.file import FileStore
 
-   store = proxystore.store.init_store(
-       "file",
+   store = FileStore(
        name="default",
        store_dir="/tmp/proxystore-dump",
-       stats=True
+       stats=True,
     )
 
 Performance statistics are aggregated on a per-`key` level and can be accessed via the :py:meth:`~proxystore.store.base.Store.stats` method.

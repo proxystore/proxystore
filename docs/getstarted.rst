@@ -74,26 +74,8 @@ in stores and creating proxies that will resolve to the associated object in
 the store.
 
 ProxyStore provides many :class:`~proxystore.store.base.Store`
-implementations and more can be added by extending the
-:class:`~proxystore.store.base.Store` class.
-
-.. list-table::
-   :widths: 15 50
-   :header-rows: 1
-   :align: center
-
-   * - Type
-     - Use Case
-   * - :class:`~proxystore.store.local.LocalStore`
-     - In-memory object store local to the process. Useful for development.
-   * - :class:`~proxystore.store.redis.RedisStore`
-     - Store objects in a preconfigured Redis server.
-   * - :class:`~proxystore.store.file.FileStore`
-     - Use a globally accessible file system for storing objects.
-   * - :class:`~proxystore.store.globus.GlobusStore`
-     - Transfer objects between two Globus endpoints.
-   * - :class:`~proxystore.store.endpoint.EndpointStore`
-     - [*Experimental*] P2P object stores for multi-site applications.
+implementations (list :py:mod:`here <proxystore.store>`) and more can be
+added by extending the :class:`~proxystore.store.base.Store` class.
 
 The following example uses the
 :class:`~proxystore.store.redis.RedisStore` to interface with a
@@ -101,14 +83,15 @@ running Redis server using proxies.
 
 .. code-block:: python
 
-   import proxystore.store
+   from proxystore.store import get_store
+   from proxystore.store import register_store
+   from proxystore.store.redis import RedisStore
 
-   store = proxystore.store.init_store(
-       'redis', name='my-store', hostname=REDIS_HOST, port=REDIS_PORT
-   )
+   store = RedisStore(name='my-store', hostname='localhost', port=1234)
+   register_store(store)
 
-   # An already initialized store can be retrieved
-   store = proxystore.store.get_store('my-store')
+   # A registered store can be retrieved by name
+   store = get_store('my-store')
 
    # Stores have basic get/set functionality
    key = store.set(my_object)
@@ -125,7 +108,7 @@ arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.
 
-Using the :class:`~proxystore.store.base.Store~` store interface allows
+Using the :class:`~proxystore.store.base.Store` store interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.

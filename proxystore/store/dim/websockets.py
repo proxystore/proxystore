@@ -213,6 +213,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
         if server_process is not None:
             server_process.terminate()
+            server_process.join()
             server_process = None
 
         logger.debug('Clean up completed')
