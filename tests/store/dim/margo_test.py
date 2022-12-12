@@ -6,7 +6,6 @@ import pytest
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.margo import MargoServer
-from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.margo import when_finalize
 from testing.mocked.pymargo import Bulk
 from testing.mocked.pymargo import Engine
@@ -21,7 +20,7 @@ def margo_server():
     """Margo server fixture."""
     host = '127.0.0.1'
     port = open_port()
-    margo_addr = 'tcp://{host}:{port}'
+    margo_addr = f'tcp://{host}:{port}'
     e = Engine(margo_addr)
     yield MargoServer(e)
 
@@ -32,7 +31,7 @@ def test_margo_store(margo_store) -> None:
     All MargoStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    with margo_store.ctx(): # pragma: no cover
+    with margo_store.ctx():  # pragma: no cover
         store = margo_store.type(
             margo_store.name,
             cache_size=16,

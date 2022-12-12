@@ -14,7 +14,7 @@ import uvloop
 
 try:
     import pymargo
-except ImportError:
+except ImportError:  # pragma: no cover
     from testing.mocked import pymargo
 
     sys.modules['pymargo'] = pymargo
@@ -23,7 +23,7 @@ except ImportError:
 
 try:
     import ucp
-except ImportError:
+except ImportError:  # pragma: no cover
     from testing.mocked import ucx
 
     sys.modules['ucp'] = ucx

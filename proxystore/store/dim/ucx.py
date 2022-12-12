@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 from multiprocessing import Process
+from time import sleep
 from typing import Any
 from typing import NamedTuple
 
@@ -80,13 +82,17 @@ class UCXStore(Store[UCXStoreKey]):
         self.host = get_ip_address(interface)
         self.port = port
 
-        self.addr = f'{ucp.get_address(ifname=interface)}:{self.port}'
+        self.addr = f'{self.host}:{self.port}'
 
-        self._loop = asyncio.new_event_loop()
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
 
         if server_process is None:
             server_process = Process(target=self._start_server)
             server_process.start()
+            self._loop.run_until_complete(self.server_started())
 
         # TODO: Verify if create_endpoint error handling will successfully
         # connect to endpoint or if error handling needs to be done here
@@ -109,6 +115,28 @@ class UCXStore(Store[UCXStoreKey]):
         asyncio.run(ps.launch())
 
         logger.info(f'Server running at address {self.addr}')
+
+    async def server_started(self, timeout: float = 5.0) -> None:
+        sleep_time = 0.01
+        time_waited = 0.0
+
+        while True:
+            try:
+                ep = await ucp.create_endpoint(self.host, self.port)
+            except ucp._libs.exceptions.UCXNotConnected:  # pragma: no cover
+                if time_waited >= timeout:
+                    raise RuntimeError(
+                        'Failed to connect to server within timeout '
+                        f'({timeout} seconds).',
+                    )
+                await asyncio.sleep(sleep_time)
+                time_waited += sleep_time
+            else:
+                break  # pragma: no cover
+        await ep.send_obj(bytes(1))
+        _ = await ep.recv_obj()
+        await ep.close()
+        assert ep.closed()
 
     def create_key(self, obj: Any) -> UCXStoreKey:
         return UCXStoreKey(
@@ -171,9 +199,8 @@ class UCXStore(Store[UCXStoreKey]):
         res = await ep.recv_obj()
 
         await ep.close()
-        assert ep.closed()
 
-        return res
+        return bytes(res)  # returns bytearray by default
 
     def close(self) -> None:
         """Terminate Peer server process."""
@@ -183,7 +210,9 @@ class UCXStore(Store[UCXStoreKey]):
 
         if server_process is not None:
             server_process.terminate()
+            server_process.join()
             server_process = None
+        ucp.reset()
 
         logger.debug('Clean up completed')
 
@@ -204,10 +233,13 @@ class UCXServer:
             port (int): the server port
 
         """
+        signal.signal(signal.SIGINT, self.close)
+        signal.signal(signal.SIGTERM, self.close)
+
         self.host = host
         self.port = port
         self.data = {}
-        self.ucp_listener = ucp.Listener
+        self.ucp_listener = None
 
     def set(self, key: str, data: bytes) -> Status:
         """Obtain data from the client and store it in local dictionary.
@@ -270,7 +302,12 @@ class UCXServer:
 
         """
         json_kv = await ep.recv_obj()
-        kv = deserialize(json_kv)
+
+        if json_kv == bytes(1):
+            await ep.send_obj(bytes(1))
+            return
+
+        kv = deserialize(bytes(json_kv))
 
         key = kv['key']
         data = kv['data']
@@ -298,7 +335,21 @@ class UCXServer:
 
     async def launch(self) -> None:
         """Create a listener for the handler."""
+        ucp.reset()
+        ucp.init()
         self.ucp_listener = ucp.create_listener(self.handler, self.port)
 
         while not self.ucp_listener.closed():
             await asyncio.sleep(0.1)
+
+        self.ucp_listener = None
+
+    def close(self, *args: Any) -> None:
+        self.ucp_listener.close()
+
+        # listener takes time to close
+        # added a sleep here to try to ensure
+        # that launch function terminates prior to
+        # the process termination
+        while not self.ucp_listener.closed():
+            sleep(0.1)

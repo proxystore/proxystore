@@ -4,7 +4,6 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from multiprocessing import Process
-from pathlib import Path
 from os import getpid
 from typing import Any
 from typing import NamedTuple
@@ -32,10 +31,10 @@ from proxystore.store.dim.utils import get_ip_address
 from proxystore.store.dim.utils import Status
 
 server_process: Process | None = None
-client_pids: set = set()
+client_pids: set[int] = set()
 logger = logging.getLogger(__name__)
 engine: Engine | None = None
-_rpcs: dict[str, RemoteFunction] | None = None
+_rpcs: dict[str, RemoteFunction]
 
 
 class Protocol(Enum):
@@ -115,10 +114,14 @@ class MargoStore(Store[MargoStoreKey]):
         if server_process is None:
             server_process = Process(target=self._start_server)
             server_process.start()
-        
+
         if engine is None:
             # start client
-            engine = Engine(self.protocol, mode=pymargo.client, use_progress_thread=True)
+            engine = Engine(
+                self.protocol,
+                mode=pymargo.client,
+                use_progress_thread=True,
+            )
 
             _rpcs = {
                 'set': engine.register('set'),
@@ -131,7 +134,7 @@ class MargoStore(Store[MargoStoreKey]):
         self._rpcs = _rpcs
 
         self.server_started()
-        
+
         self._pid = getpid()
         client_pids.add(self._pid)
 
@@ -148,7 +151,6 @@ class MargoStore(Store[MargoStoreKey]):
 
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""
-        
         logger.info(f'starting server {self.addr}')
         server_engine = Engine(self.addr)
 
@@ -167,8 +169,9 @@ class MargoStore(Store[MargoStoreKey]):
 
     def server_started(self) -> None:  # pragma: no cover
         """Loop until server has started."""
-        logger.debug("Checking if server has started")
+        logger.debug('Checking if server has started')
         while True:
+            assert engine is not None
             try:
                 self._mochi_addr = engine.lookup(self.addr)
                 break
@@ -227,15 +230,14 @@ class MargoStore(Store[MargoStoreKey]):
         )
 
         if not s.success:
-            logger.error(s.error)
+            logger.error(f'{s.error}')
             return None
-
         return bytes(buff)
 
     def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
         logger.debug(f'Client {self.addr} issuing set request on key {key}')
         blk = self.engine.create_bulk(data, bulk.read_only)
-        out = self.call_rpc_on(
+        self.call_rpc_on(
             self.engine,
             self.addr,
             self._rpcs['set'],
@@ -249,7 +251,7 @@ class MargoStore(Store[MargoStoreKey]):
         global server_process
         global client_pids
         global engine
-        
+
         client_pids.discard(self._pid)
 
         logger.info('Clean up requested')
@@ -258,7 +260,7 @@ class MargoStore(Store[MargoStoreKey]):
             engine = None
             self._mochi_addr.shutdown()
             self.engine.finalize()
-            server_process.terminate()
+            server_process.join()
             server_process = None
 
     @staticmethod
@@ -308,7 +310,7 @@ class MargoServer:
 
         self.engine = engine
 
-        logger.debug("Server initialized")
+        logger.debug('Server initialized')
 
     def set(
         self,
@@ -377,7 +379,7 @@ class MargoServer:
                 bulk_size,
             )
         except KeyError as error:
-            logger.error(error)
+            logger.error(f'key {error} not found.')
             s = Status(False, error)
 
         handle.respond(serialize(s))
@@ -426,8 +428,8 @@ class MargoServer:
         s = Status(True, None)
 
         # converting to int then string because length appears to be 7 for
-        # True with pickle protocol 4 and cannot always guarantee that that protocol
-        # will be selected
+        # True with pickle protocol 4 and cannot always guarantee that that
+        # protocol will be selected
         local_array = serialize(str(int(key in self.data)))
         local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
         size = len(local_array)
@@ -442,6 +444,7 @@ class MargoServer:
         )
 
         handle.respond(serialize(s))
+
 
 def when_finalize() -> None:
     """Prints a statement advising that engine finalization was triggered."""

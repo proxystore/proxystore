@@ -4,9 +4,39 @@ from __future__ import annotations
 from typing import Any
 
 from proxystore.serialize import deserialize
+from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
 data = {}
+
+
+def reset() -> None:  # pragma: no cover
+    """Reset ucp mock."""
+    pass
+
+
+def init() -> None:  # pragma: no cover
+    """Init ucp mock."""
+    pass
+
+
+class Lib:
+    """Mock ucp Lib implementation."""
+
+    def __init__(self):
+        """Mock lib init implementation."""
+        pass
+
+    class exceptions:  # noqa: N801
+        """Mock Lib exceptions implementation."""
+
+        class UCXNotConnected(Exception):
+            """Mock Exception implementation."""
+
+            pass
+
+
+_libs = Lib()
 
 
 class MockEndpoint:
@@ -14,7 +44,7 @@ class MockEndpoint:
 
     last_event: str
     key: str
-    response: str
+    response: str | int
     req: Any
     server: Any
     is_closed: bool
@@ -28,7 +58,7 @@ class MockEndpoint:
         self.server = server
         self.is_closed = False
 
-    async def send_obj(self, req: Any) -> None:
+    async def send_obj(self, req: Any) -> None:  # pragma: no cover
         """Mocks the `ucp.send_obj` function.
 
         Args:
@@ -40,7 +70,13 @@ class MockEndpoint:
             self.req = req
             return self.req
 
-        event = deserialize(req)
+        try:
+            event = deserialize(req)
+        except SerializationError:
+            event = {}
+            event['op'] = 'exists'
+            event['key'] = ''
+            self.response = 1
 
         if event['op'] == 'set':
             data[event['key']] = event['data']
@@ -48,7 +84,7 @@ class MockEndpoint:
         self.key = event['key']
         self.last_event = event['op']
 
-    async def recv_obj(self) -> Any:
+    async def recv_obj(self) -> Any:  # pragma: no cover
         """Mocks the `ucp.recv_obj` function."""
         from proxystore.store.dim.utils import Status
 
@@ -61,17 +97,20 @@ class MockEndpoint:
             except KeyError as e:
                 return serialize(Status(success=False, error=e))
         elif self.last_event == 'exists':
-            return serialize(self.key in data)
+            if self.key != '':
+                return serialize(self.key in data)
+            else:
+                return self.response
         elif self.last_event == 'evict':
             data.pop(self.key, None)
             return serialize(Status(success=True, error=None))
         return serialize(True)
 
-    async def close(self) -> None:
+    async def close(self) -> None:  # pragma: no cover
         """Mock close implementation."""
         self.is_closed = True
 
-    def closed(self) -> bool:
+    def closed(self) -> bool:  # pragma: no cover
         """Mock closed implementation."""
         return self.is_closed
 
@@ -85,7 +124,11 @@ class Listener:
         """Mock listener init implementation."""
         self.called = False
 
-    def closed(self) -> bool:
+    def close(self) -> None:
+        """Close implementation."""
+        pass
+
+    def closed(self) -> bool:  # pragma: no cover
         """Mock closed."""
         if not self.called:
             self.called = True
@@ -93,12 +136,12 @@ class Listener:
         return True
 
 
-def get_address(ifname: str) -> str:
+def get_address(ifname: str) -> str:  # pragma: no cover
     """Get address mock implementation."""
     return ifname
 
 
-def create_listener(handler: Any, port: int) -> Any:
+def create_listener(handler: Any, port: int) -> Any:  # pragma: no cover
     """Create_listener mock implementation.
 
     Args:
@@ -109,6 +152,9 @@ def create_listener(handler: Any, port: int) -> Any:
     return Listener()
 
 
-async def create_endpoint(host: str, port: int) -> MockEndpoint:
+async def create_endpoint(
+    host: str,
+    port: int,
+) -> MockEndpoint:  # pragma: no cover
     """Create endpoint mock implementation."""
     return MockEndpoint()

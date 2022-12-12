@@ -9,7 +9,7 @@ import pytest
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.ucx import UCXServer
-from proxystore.store.dim.ucx import UCXStore
+from testing.mocked.ucx import Listener
 from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
@@ -18,7 +18,11 @@ ENCODING = 'UTF-8'
 
 @pytest.fixture
 def ucx_server():
-    yield UCXServer('localhost', open_port())
+    server = UCXServer('localhost', open_port())
+    yield server
+    if server.ucp_listener is None:  # pragma: no cover
+        server.ucp_listener = Listener()
+    server.close()
 
 
 async def execute_handler(obj: Any, server: UCXServer) -> Any:
@@ -35,17 +39,29 @@ def test_ucx_store(ucx_store) -> None:
     All UCXStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    with ucx_store.ctx():
-        store = UCXStore(ucx_store.name, **ucx_store.kwargs)
-        store._start_server()
+    ucx_store.kwargs['port'] = open_port()  # update port
+    with ucx_store.ctx():  # pragma: no cover
+        store = ucx_store.type(
+            ucx_store.name,
+            cache_size=16,
+            **ucx_store.kwargs,
+        )
         store.close()
         store.close()  # check that nothing happens
+
+        if '_mock' in ucx_store.ctx.__name__:
+            store._start_server()
+            store.close()
 
 
 def test_ucx_server(ucx_server) -> None:
     """Test UCXServer."""
     key = 'hello'
     val = bytes('world', encoding=ENCODING)
+
+    # server_started call
+    ret = asyncio.run(execute_handler(bytes(1), ucx_server))
+    assert ret == bytes(1)
 
     obj = serialize({'key': key, 'data': val, 'op': 'set'})
     ret = deserialize(asyncio.run(execute_handler(obj, ucx_server)))

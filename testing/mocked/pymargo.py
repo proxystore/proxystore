@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
 # pymargo vars
@@ -15,43 +14,50 @@ data_dict = {}
 
 
 class MargoException(Exception):
-    """Mock Exception implementation"""
-    
-    def __init__(self): # pragma: no cover
+    """Mock Exception implementation."""
+
+    def __init__(self):  # pragma: no cover
+        """Exception init implementation."""
         pass
 
-class Address: # pragma: no cover
+
+class Address:  # pragma: no cover
     """Mock Address implementation."""
-    
+
     def __init__(self) -> None:
         """Mock Address initialization."""
         pass
-    
+
     def shutdown(self) -> None:
         """Mock shutdown."""
         pass
-    
-    
+
+
 class Engine:
     """Mock Engine implementation."""
 
-    def __init__(self, url: str, mode: str = server, use_progress_thread: bool = False) -> None:
+    def __init__(
+        self,
+        url: str,
+        mode: str = server,
+        use_progress_thread: bool = False,
+    ) -> None:
         """Mock Engine initialization."""
         self.url = url
 
-    def addr(self) -> str:
+    def addr(self) -> str:  # pragma: no cover
         """Get Mock Engine address."""
         return self.url
 
-    def on_finalize(self, func: Any) -> None:
+    def on_finalize(self, func: Any) -> None:  # pragma: no cover
         """Mock engine on_finalize."""
         pass
 
-    def enable_remote_shutdown(self) -> None:
+    def enable_remote_shutdown(self) -> None:  # pragma: no cover
         """Mock engine enable_remote_shutdown."""
         pass
 
-    def wait_for_finalize(self) -> None:
+    def wait_for_finalize(self) -> None:  # pragma: no cover
         """Mock engine wait_for_finalize."""
         pass
 
@@ -59,15 +65,15 @@ class Engine:
         """Mock create_bulk implementation."""
         return Bulk(data)
 
-    def lookup(self, addr: str) -> Engine:
+    def lookup(self, addr: str) -> Engine:  # pragma: no cover
         """Mock lookup implementation."""
         return self
 
-    def shutdown(self) -> None:
+    def shutdown(self) -> None:  # pragma: no cover
         """Mock shutdown."""
         pass
 
-    def finalize(self) -> None:
+    def finalize(self) -> None:  # pragma: no cover
         """Mock finalize."""
         pass
 
@@ -80,17 +86,26 @@ class Engine:
         local_bulk: Bulk,
         lo: int,
         bulk_size: int,
-    ) -> None:
+    ) -> None:  # pragma: no cover
         """Mock transfer."""
         if bulk_size == -1:  # pragma: no cover
             raise ValueError
 
-        if bulk_op == 'pull':
-            local_bulk.data[:] = bulk_str.data
-        else:
-            bulk_str.data[:] = local_bulk.data
+        if bulk_op == 'pull':  # pragma: no cover
+            try:
+                assert isinstance(local_bulk.data, bytearray)
+                local_bulk.data[:] = bulk_str.data
+            except AssertionError:
+                local_bulk.data = bulk_str.data
 
-    def register(self, funcname: str, *args: Any) -> RPC:
+        else:
+            try:
+                assert isinstance(bulk_str.data, bytearray)
+                bulk_str.data[:] = local_bulk.data
+            except AssertionError:
+                bulk_str.data = local_bulk.data
+
+    def register(self, funcname: str, *args: Any) -> RPC:  # pragma: no cover
         """Mock register.
 
         Args:
@@ -103,11 +118,11 @@ class Engine:
 class RPC:
     """Mock RPC implementation."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str) -> None:  # pragma: no cover
         """Mock RPC initialization."""
         self.name = name
 
-    def on(self, addr: str) -> Any:
+    def on(self, addr: str) -> Any:  # pragma: no cover
         """Mock RPC on implementation."""
         return self.mockfunc
 
@@ -116,7 +131,7 @@ class RPC:
         array_str: Bulk,
         size: int,
         key: str,
-    ) -> Any:
+    ) -> Any:  # pragma: no cover
         """Mockfunc implementation."""
         from proxystore.store.dim.utils import Status
 
@@ -133,8 +148,9 @@ class RPC:
                 )
             else:
                 try:
+                    assert isinstance(array_str.data, bytearray)
                     array_str.data[:] = data_dict[key]
-                except TypeError: # pragma: no cover
+                except AssertionError:  # pragma: no cover
                     array_str.data = data_dict[key]
             return serialize(Status(True, None))
         elif self.name == 'evict':
@@ -150,8 +166,9 @@ class RPC:
             return serialize(Status(True, None))
         else:
             try:
+                assert isinstance(array_str.data, bytearray)
                 array_str.data[:] = serialize(key in data_dict)
-            except TypeError: # pragma: no cover
+            except AssertionError:  # pragma: no cover
                 array_str.data = serialize(key in data_dict)
             return serialize(Status(True, None))
 
@@ -173,9 +190,9 @@ bulk = MockBulkMod()
 class Bulk:
     """Mock Bulk implementation."""
 
-    data: bytearray
+    data: bytearray | bytes
 
-    def __init__(self, data: bytearray) -> None:
+    def __init__(self, data: bytearray | bytes) -> None:
         """Mock Bulk initialization."""
         self.data = data
 

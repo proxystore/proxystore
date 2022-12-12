@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import contextlib
-import importlib
+import importlib.util
 import os
 import random
 import shutil
@@ -198,16 +198,18 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
     port = open_port()
 
-    ctx = contextlib.nullcontext
-    ucp_spec = importlib.util.find_spec("ucp")
+    ctx: Any = contextlib.nullcontext
+    ucp_spec = importlib.util.find_spec('ucp')
 
-    if "mocked" in ucp_spec.name: # pragma: no cover
+    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no cover
+
         @contextlib.contextmanager
         def _mock_manager() -> Generator[None, None, None]:
             with mock.patch('multiprocessing.Process.start'), mock.patch(
                 'multiprocessing.Process.terminate',
             ), mock.patch('multiprocessing.Process.join'):
                 yield
+
         ctx = _mock_manager
 
     yield StoreInfo(
@@ -221,21 +223,24 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
 @pytest.fixture(scope='session')
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
-    host = "127.0.0.1"
+    host = '127.0.0.1'
     port = open_port()
-    protocol = "tcp"
+    protocol = 'tcp'
 
-    ctx = contextlib.nullcontext
-    margo_spec = importlib.util.find_spec("pymargo")
+    ctx: Any = contextlib.nullcontext
+    margo_spec = importlib.util.find_spec('pymargo')
 
-    if 'mocked' in margo_spec.name: # pragma: no cover
+    if (
+        margo_spec is not None and 'mocked' in margo_spec.name
+    ):  # pragma: no cover
+
         @contextlib.contextmanager
         def _mock_manager() -> Generator[None, None, None]:
             with mock.patch('multiprocessing.Process.start'), mock.patch(
-                'multiprocessing.Process.terminate',
+                'multiprocessing.Process.join',
             ):
                 yield
-        
+
         ctx = _mock_manager
 
     yield StoreInfo(
@@ -284,9 +289,8 @@ def store_implementation(
         yield store, store_info
 
     # TODO: temp solution since ucx engine does not appear to close properly
-    if "ucx" not in store_info.name:
-        with store_info.ctx():
-            store.close()
+    with store_info.ctx():
+        store.close()
 
 
 def missing_key(store: Store[Any]) -> NamedTuple:
