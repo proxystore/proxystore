@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
 # pymargo vars
@@ -13,10 +14,28 @@ server = 'server'
 data_dict = {}
 
 
+class MargoException(Exception):
+    """Mock Exception implementation"""
+    
+    def __init__(self): # pragma: no cover
+        pass
+
+class Address: # pragma: no cover
+    """Mock Address implementation."""
+    
+    def __init__(self) -> None:
+        """Mock Address initialization."""
+        pass
+    
+    def shutdown(self) -> None:
+        """Mock shutdown."""
+        pass
+    
+    
 class Engine:
     """Mock Engine implementation."""
 
-    def __init__(self, url: str, mode: str = server) -> None:
+    def __init__(self, url: str, mode: str = server, use_progress_thread: bool = False) -> None:
         """Mock Engine initialization."""
         self.url = url
 
@@ -101,10 +120,10 @@ class RPC:
         """Mockfunc implementation."""
         from proxystore.store.dim.utils import Status
 
-        if self.name == 'set_bytes':
+        if self.name == 'set':
             data_dict[key] = array_str.data
             return serialize(Status(True, None))
-        elif self.name == 'get_bytes':
+        elif self.name == 'get':
             if key not in data_dict:
                 return serialize(
                     Status(
@@ -113,7 +132,10 @@ class RPC:
                     ),
                 )
             else:
-                array_str.data[:] = data_dict[key]
+                try:
+                    array_str.data[:] = data_dict[key]
+                except TypeError: # pragma: no cover
+                    array_str.data = data_dict[key]
             return serialize(Status(True, None))
         elif self.name == 'evict':
             if key not in data_dict:
@@ -127,7 +149,10 @@ class RPC:
                 del data_dict[key]
             return serialize(Status(True, None))
         else:
-            array_str.data[:] = serialize(key in data_dict)
+            try:
+                array_str.data[:] = serialize(key in data_dict)
+            except TypeError: # pragma: no cover
+                array_str.data = serialize(key in data_dict)
             return serialize(Status(True, None))
 
 
@@ -150,7 +175,7 @@ class Bulk:
 
     data: bytearray
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: bytearray) -> None:
         """Mock Bulk initialization."""
         self.data = data
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib
 import os
 import random
 import shutil
@@ -197,38 +198,51 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
     port = open_port()
 
-    @contextlib.contextmanager
-    def _mock_manager() -> Generator[None, None, None]:
-        with mock.patch('multiprocessing.Process.start'), mock.patch(
-            'multiprocessing.Process.terminate',
-        ):
-            yield
+    ctx = contextlib.nullcontext
+    ucp_spec = importlib.util.find_spec("ucp")
+
+    if "mocked" in ucp_spec.name: # pragma: no cover
+        @contextlib.contextmanager
+        def _mock_manager() -> Generator[None, None, None]:
+            with mock.patch('multiprocessing.Process.start'), mock.patch(
+                'multiprocessing.Process.terminate',
+            ), mock.patch('multiprocessing.Process.join'):
+                yield
+        ctx = _mock_manager
 
     yield StoreInfo(
         UCXStore,
         'ucx',
-        {'interface': 'localhost', 'port': port},
-        _mock_manager,
+        {'interface': '127.0.0.1', 'port': port},
+        ctx,
     )
 
 
 @pytest.fixture(scope='session')
 def margo_store() -> Generator[StoreInfo, None, None]:
     """Margo Store fixture."""
+    host = "127.0.0.1"
     port = open_port()
+    protocol = "tcp"
 
-    @contextlib.contextmanager
-    def _mock_manager() -> Generator[None, None, None]:
-        with mock.patch('multiprocessing.Process.start'), mock.patch(
-            'multiprocessing.Process.terminate',
-        ):
-            yield
+    ctx = contextlib.nullcontext
+    margo_spec = importlib.util.find_spec("pymargo")
+
+    if 'mocked' in margo_spec.name: # pragma: no cover
+        @contextlib.contextmanager
+        def _mock_manager() -> Generator[None, None, None]:
+            with mock.patch('multiprocessing.Process.start'), mock.patch(
+                'multiprocessing.Process.terminate',
+            ):
+                yield
+        
+        ctx = _mock_manager
 
     yield StoreInfo(
         MargoStore,
         'margo',
-        {'protocol': 'tcp', 'interface': 'localhost', 'port': port},
-        _mock_manager,
+        {'protocol': protocol, 'interface': host, 'port': port},
+        ctx,
     )
 
 
@@ -269,8 +283,10 @@ def store_implementation(
     ):
         yield store, store_info
 
-    with store_info.ctx():
-        store.close()
+    # TODO: temp solution since ucx engine does not appear to close properly
+    if "ucx" not in store_info.name:
+        with store_info.ctx():
+            store.close()
 
 
 def missing_key(store: Store[Any]) -> NamedTuple:
@@ -288,19 +304,19 @@ def missing_key(store: Store[Any]) -> NamedTuple:
     elif isinstance(store, MargoStore):
         return MargoStoreKey(
             str(uuid.uuid4()),
-            0,
-            f'localhost:{store.kwargs["port"]}',
+            1,
+            f'tcp://{store.kwargs["interface"]}:{store.kwargs["port"]}',
         )
     elif isinstance(store, UCXStore):
         return UCXStoreKey(
             str(uuid.uuid4()),
-            0,
+            1,
             f'localhost:{store.kwargs["port"]}',
         )
     elif isinstance(store, WebsocketStore):
         return WebsocketStoreKey(
             str(uuid.uuid4()),
-            0,
+            1,
             f'ws://localhost:{store.kwargs["port"]}',
         )
     else:
