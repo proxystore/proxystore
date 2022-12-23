@@ -128,7 +128,7 @@ class Listener:
         """Close implementation."""
         pass
 
-    def closed(self) -> bool:  # pragma: no cover
+    def closed(self) -> bool:
         """Mock closed."""
         if not self.called:
             self.called = True

@@ -24,6 +24,7 @@ from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
 from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.margo import MargoStoreKey
+from proxystore.store.dim.ucx import reset_ucp
 from proxystore.store.dim.ucx import UCXStore
 from proxystore.store.dim.ucx import UCXStoreKey
 from proxystore.store.dim.websockets import WebsocketStore
@@ -219,6 +220,11 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
         ctx,
     )
 
+    if (
+        ucp_spec is not None and 'mocked' not in ucp_spec.name
+    ):  # pragma: no cover
+        reset_ucp()
+
 
 @pytest.fixture(scope='session')
 def margo_store() -> Generator[StoreInfo, None, None]:
@@ -288,7 +294,6 @@ def store_implementation(
     ):
         yield store, store_info
 
-    # TODO: temp solution since ucx engine does not appear to close properly
     with store_info.ctx():
         store.close()
 

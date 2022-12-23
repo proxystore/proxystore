@@ -2,14 +2,21 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from typing import Any
+from unittest import mock
+
+if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
+    from unittest.mock import AsyncMock
+else:  # pragma: <3.8 cover
+    from asynctest import CoroutineMock as AsyncMock
 
 import pytest
 
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.ucx import UCXServer
-from testing.mocked.ucx import Listener
+from proxystore.store.dim.ucx import launch_server
 from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
@@ -17,11 +24,10 @@ ENCODING = 'UTF-8'
 
 
 @pytest.fixture
-def ucx_server():
+def ucx_server(ucx_store):
+    # We use the ucx_store fixture for its cleanup
     server = UCXServer('localhost', open_port())
     yield server
-    if server.ucp_listener is None:  # pragma: no cover
-        server.ucp_listener = Listener()
     server.close()
 
 
@@ -49,9 +55,25 @@ def test_ucx_store(ucx_store) -> None:
         store.close()
         store.close()  # check that nothing happens
 
-        if '_mock' in ucx_store.ctx.__name__:
-            store._start_server()
-            store.close()
+
+def test_launched_mocked_server() -> None:
+    with mock.patch('proxystore.store.dim.ucx.UCXServer.run', AsyncMock()):
+        launch_server(host='localhost', port=open_port())
+
+
+async def test_run_mocked_server() -> None:
+    server = UCXServer(host='localhost', port=open_port())
+
+    loop = asyncio.get_running_loop()
+    fut = loop.create_future()
+    fut.set_result(True)
+
+    with mock.patch.object(
+        loop,
+        'create_future',
+        return_value=fut,
+    ), mock.patch('proxystore.store.dim.ucx.reset_ucp_async', AsyncMock()):
+        await server.run()
 
 
 def test_ucx_server(ucx_server) -> None:
