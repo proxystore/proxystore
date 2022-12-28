@@ -31,7 +31,7 @@ def test_margo_store(margo_store) -> None:
     All MargoStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    with margo_store.ctx():  # pragma: no cover
+    with margo_store.ctx():
         store = margo_store.type(
             margo_store.name,
             cache_size=16,
@@ -40,7 +40,7 @@ def test_margo_store(margo_store) -> None:
         store.close()
         store.close()  # check that nothing happens
 
-        if '_mock' in margo_store.ctx.__name__:
+        if 'mock' in margo_store.ctx.__name__:  # pragma: no branch
             store._start_server()
             store.close()
 

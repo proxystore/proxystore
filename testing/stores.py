@@ -45,6 +45,7 @@ from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
+from testing.mocking import mock_multiprocessing
 from testing.utils import open_port
 
 FIXTURE_LIST = [
@@ -202,16 +203,8 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
     ctx: Any = contextlib.nullcontext
     ucp_spec = importlib.util.find_spec('ucp')
 
-    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no cover
-
-        @contextlib.contextmanager
-        def _mock_manager() -> Generator[None, None, None]:
-            with mock.patch('multiprocessing.Process.start'), mock.patch(
-                'multiprocessing.Process.terminate',
-            ), mock.patch('multiprocessing.Process.join'):
-                yield
-
-        ctx = _mock_manager
+    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no branch
+        ctx = mock_multiprocessing
 
     yield StoreInfo(
         UCXStore,
@@ -236,18 +229,10 @@ def margo_store() -> Generator[StoreInfo, None, None]:
     ctx: Any = contextlib.nullcontext
     margo_spec = importlib.util.find_spec('pymargo')
 
-    if (
+    if (  # pragma: no branch
         margo_spec is not None and 'mocked' in margo_spec.name
-    ):  # pragma: no cover
-
-        @contextlib.contextmanager
-        def _mock_manager() -> Generator[None, None, None]:
-            with mock.patch('multiprocessing.Process.start'), mock.patch(
-                'multiprocessing.Process.join',
-            ):
-                yield
-
-        ctx = _mock_manager
+    ):
+        ctx = mock_multiprocessing
 
     yield StoreInfo(
         MargoStore,

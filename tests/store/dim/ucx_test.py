@@ -45,8 +45,8 @@ def test_ucx_store(ucx_store) -> None:
     All UCXStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    ucx_store.kwargs['port'] = open_port()  # update port
-    with ucx_store.ctx():  # pragma: no cover
+    ucx_store.kwargs['port'] = open_port()
+    with ucx_store.ctx():
         store = ucx_store.type(
             ucx_store.name,
             cache_size=16,

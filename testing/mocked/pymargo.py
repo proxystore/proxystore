@@ -13,10 +13,10 @@ server = 'server'
 data_dict = {}
 
 
-class MargoException(Exception):
+class MargoException(Exception):  # pragma: no cover
     """Mock Exception implementation."""
 
-    def __init__(self):  # pragma: no cover
+    def __init__(self):
         """Exception init implementation."""
         pass
 
@@ -45,19 +45,19 @@ class Engine:
         """Mock Engine initialization."""
         self.url = url
 
-    def addr(self) -> str:  # pragma: no cover
+    def addr(self) -> str:
         """Get Mock Engine address."""
         return self.url
 
-    def on_finalize(self, func: Any) -> None:  # pragma: no cover
+    def on_finalize(self, func: Any) -> None:
         """Mock engine on_finalize."""
         pass
 
-    def enable_remote_shutdown(self) -> None:  # pragma: no cover
+    def enable_remote_shutdown(self) -> None:
         """Mock engine enable_remote_shutdown."""
         pass
 
-    def wait_for_finalize(self) -> None:  # pragma: no cover
+    def wait_for_finalize(self) -> None:
         """Mock engine wait_for_finalize."""
         pass
 
@@ -65,15 +65,15 @@ class Engine:
         """Mock create_bulk implementation."""
         return Bulk(data)
 
-    def lookup(self, addr: str) -> Engine:  # pragma: no cover
+    def lookup(self, addr: str) -> Engine:
         """Mock lookup implementation."""
         return self
 
-    def shutdown(self) -> None:  # pragma: no cover
+    def shutdown(self) -> None:
         """Mock shutdown."""
         pass
 
-    def finalize(self) -> None:  # pragma: no cover
+    def finalize(self) -> None:
         """Mock finalize."""
         pass
 
@@ -86,26 +86,20 @@ class Engine:
         local_bulk: Bulk,
         lo: int,
         bulk_size: int,
-    ) -> None:  # pragma: no cover
+    ) -> None:
         """Mock transfer."""
         if bulk_size == -1:  # pragma: no cover
             raise ValueError
 
-        if bulk_op == 'pull':  # pragma: no cover
-            try:
-                assert isinstance(local_bulk.data, bytearray)
-                local_bulk.data[:] = bulk_str.data
-            except AssertionError:
-                local_bulk.data = bulk_str.data
+        if bulk_op == 'pull':
+            assert isinstance(local_bulk.data, bytearray)
+            local_bulk.data[:] = bulk_str.data
 
         else:
-            try:
-                assert isinstance(bulk_str.data, bytearray)
-                bulk_str.data[:] = local_bulk.data
-            except AssertionError:
-                bulk_str.data = local_bulk.data
+            assert isinstance(bulk_str.data, bytearray)
+            bulk_str.data[:] = local_bulk.data
 
-    def register(self, funcname: str, *args: Any) -> RPC:  # pragma: no cover
+    def register(self, funcname: str, *args: Any) -> RPC:
         """Mock register.
 
         Args:
@@ -118,11 +112,11 @@ class Engine:
 class RPC:
     """Mock RPC implementation."""
 
-    def __init__(self, name: str) -> None:  # pragma: no cover
+    def __init__(self, name: str) -> None:
         """Mock RPC initialization."""
         self.name = name
 
-    def on(self, addr: str) -> Any:  # pragma: no cover
+    def on(self, addr: str) -> Any:
         """Mock RPC on implementation."""
         return self.mockfunc
 
@@ -131,7 +125,7 @@ class RPC:
         array_str: Bulk,
         size: int,
         key: str,
-    ) -> Any:  # pragma: no cover
+    ) -> Any:
         """Mockfunc implementation."""
         from proxystore.store.dim.utils import Status
 
@@ -147,11 +141,8 @@ class RPC:
                     ),
                 )
             else:
-                try:
-                    assert isinstance(array_str.data, bytearray)
-                    array_str.data[:] = data_dict[key]
-                except AssertionError:  # pragma: no cover
-                    array_str.data = data_dict[key]
+                assert isinstance(array_str.data, bytearray)
+                array_str.data[:] = data_dict[key]
             return serialize(Status(True, None))
         elif self.name == 'evict':
             if key not in data_dict:
@@ -165,11 +156,8 @@ class RPC:
                 del data_dict[key]
             return serialize(Status(True, None))
         else:
-            try:
-                assert isinstance(array_str.data, bytearray)
-                array_str.data[:] = serialize(key in data_dict)
-            except AssertionError:  # pragma: no cover
-                array_str.data = serialize(key in data_dict)
+            assert isinstance(array_str.data, bytearray)
+            array_str.data[:] = serialize(key in data_dict)
             return serialize(Status(True, None))
 
 

@@ -10,16 +10,6 @@ from proxystore.serialize import serialize
 data = {}
 
 
-def reset() -> None:  # pragma: no cover
-    """Reset ucp mock."""
-    pass
-
-
-def init() -> None:  # pragma: no cover
-    """Init ucp mock."""
-    pass
-
-
 class Lib:
     """Mock ucp Lib implementation."""
 
@@ -58,7 +48,7 @@ class MockEndpoint:
         self.server = server
         self.is_closed = False
 
-    async def send_obj(self, req: Any) -> None:  # pragma: no cover
+    async def send_obj(self, req: Any) -> None:
         """Mocks the `ucp.send_obj` function.
 
         Args:
@@ -84,7 +74,7 @@ class MockEndpoint:
         self.key = event['key']
         self.last_event = event['op']
 
-    async def recv_obj(self) -> Any:  # pragma: no cover
+    async def recv_obj(self) -> Any:
         """Mocks the `ucp.recv_obj` function."""
         from proxystore.store.dim.utils import Status
 
@@ -106,11 +96,11 @@ class MockEndpoint:
             return serialize(Status(success=True, error=None))
         return serialize(True)
 
-    async def close(self) -> None:  # pragma: no cover
+    async def close(self) -> None:
         """Mock close implementation."""
         self.is_closed = True
 
-    def closed(self) -> bool:  # pragma: no cover
+    def closed(self) -> bool:
         """Mock closed implementation."""
         return self.is_closed
 
@@ -136,12 +126,7 @@ class Listener:
         return True
 
 
-def get_address(ifname: str) -> str:  # pragma: no cover
-    """Get address mock implementation."""
-    return ifname
-
-
-def create_listener(handler: Any, port: int) -> Any:  # pragma: no cover
+def create_listener(handler: Any, port: int) -> Any:
     """Create_listener mock implementation.
 
     Args:
@@ -155,6 +140,6 @@ def create_listener(handler: Any, port: int) -> Any:  # pragma: no cover
 async def create_endpoint(
     host: str,
     port: int,
-) -> MockEndpoint:  # pragma: no cover
+) -> MockEndpoint:
     """Create endpoint mock implementation."""
     return MockEndpoint()
