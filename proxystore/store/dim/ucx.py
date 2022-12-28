@@ -341,7 +341,10 @@ def launch_server(host: str, port: int) -> None:
     logger.info(f'starting server on host {host} with port {port}')
 
     ps = UCXServer(host, port)
-    asyncio.run(ps.run())
+    # CI occasionally timeouts when starting this server in the
+    # store_implementation session fixture. It seems to not happen when
+    # debug=True, but this is just a temporary fix.
+    asyncio.run(ps.run(), debug=True)
 
     logger.info(f'server running at address {host}:{port}')
 
