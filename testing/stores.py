@@ -200,7 +200,7 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
     """UCX Store fixture."""
     port = open_port()
 
-    ctx: Any = contextlib.nullcontext
+    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
     ucp_spec = importlib.util.find_spec('ucp')
 
     if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no branch
@@ -226,7 +226,7 @@ def margo_store() -> Generator[StoreInfo, None, None]:
     port = open_port()
     protocol = 'tcp'
 
-    ctx: Any = contextlib.nullcontext
+    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
     margo_spec = importlib.util.find_spec('pymargo')
 
     if (  # pragma: no branch
