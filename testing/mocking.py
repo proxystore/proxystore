@@ -1,9 +1,12 @@
 """Mocking utilities."""
 from __future__ import annotations
 
+import contextlib
 import sys
 from typing import Any
 from typing import Callable
+from typing import Generator
+from unittest import mock
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from unittest.mock import AsyncMock
@@ -26,3 +29,14 @@ def async_mock_once(
     amock.side_effect = return_once
 
     return amock
+
+
+@contextlib.contextmanager
+def mock_multiprocessing() -> Generator[None, None, None]:
+    """Mocks Process.{start,join,terminate}."""
+    with mock.patch('multiprocessing.Process.start'), mock.patch(
+        'multiprocessing.Process.join',
+    ), mock.patch(
+        'multiprocessing.Process.terminate',
+    ):
+        yield

@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import signal
 from multiprocessing import Process
+from time import sleep
 from typing import Any
 from typing import NamedTuple
 
@@ -80,13 +82,22 @@ class UCXStore(Store[UCXStoreKey]):
         self.host = get_ip_address(interface)
         self.port = port
 
-        self.addr = f'{ucp.get_address(ifname=interface)}:{self.port}'
+        self.addr = f'{self.host}:{self.port}'
 
-        self._loop = asyncio.new_event_loop()
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
 
         if server_process is None:
-            server_process = Process(target=self._start_server)
+            server_process = Process(
+                target=launch_server,
+                args=(self.host, self.port),
+            )
             server_process.start()
+            self._loop.run_until_complete(
+                wait_for_server(self.host, self.port),
+            )
 
         # TODO: Verify if create_endpoint error handling will successfully
         # connect to endpoint or if error handling needs to be done here
@@ -97,18 +108,6 @@ class UCXStore(Store[UCXStoreKey]):
             stats=stats,
             kwargs={'interface': interface, 'port': self.port},
         )
-
-    def _start_server(self) -> None:
-        """Launch the local UCX server (Peer) process."""
-        logger.info(
-            f'starting server on host {self.host} with port {self.port}',
-        )
-
-        # create server
-        ps = UCXServer(self.host, self.port)
-        asyncio.run(ps.launch())
-
-        logger.info(f'Server running at address {self.addr}')
 
     def create_key(self, obj: Any) -> UCXStoreKey:
         return UCXStoreKey(
@@ -171,9 +170,8 @@ class UCXStore(Store[UCXStoreKey]):
         res = await ep.recv_obj()
 
         await ep.close()
-        assert ep.closed()
 
-        return res
+        return bytes(res)  # returns bytearray by default
 
     def close(self) -> None:
         """Terminate Peer server process."""
@@ -183,6 +181,7 @@ class UCXStore(Store[UCXStoreKey]):
 
         if server_process is not None:
             server_process.terminate()
+            server_process.join()
             server_process = None
 
         logger.debug('Clean up completed')
@@ -193,7 +192,7 @@ class UCXServer:
 
     host: str
     port: int
-    ucp_listener: ucp.core.Listener
+    ucp_listener: ucp.core.Listener | None
     data: dict[str, bytes]
 
     def __init__(self, host: str, port: int) -> None:
@@ -207,7 +206,7 @@ class UCXServer:
         self.host = host
         self.port = port
         self.data = {}
-        self.ucp_listener = ucp.Listener
+        self.ucp_listener = None
 
     def set(self, key: str, data: bytes) -> Status:
         """Obtain data from the client and store it in local dictionary.
@@ -270,7 +269,12 @@ class UCXServer:
 
         """
         json_kv = await ep.recv_obj()
-        kv = deserialize(json_kv)
+
+        if json_kv == bytes(1):
+            await ep.send_obj(bytes(1))
+            return
+
+        kv = deserialize(bytes(json_kv))
 
         key = kv['key']
         data = kv['data']
@@ -296,9 +300,154 @@ class UCXServer:
 
         await ep.send_obj(serialized_res)
 
-    async def launch(self) -> None:
-        """Create a listener for the handler."""
+    async def run(self) -> None:
+        """Run this UCXServer forever.
+
+        Creates a listener for the handler method and waits on SIGINT/TERM
+        events to exit. Also handles cleaning up UCP objects.
+        """
         self.ucp_listener = ucp.create_listener(self.handler, self.port)
 
-        while not self.ucp_listener.closed():
-            await asyncio.sleep(0.1)
+        # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
+        loop = asyncio.get_running_loop()
+        stop = loop.create_future()
+        loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
+        loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
+
+        await stop
+        self.close()
+        await reset_ucp_async()
+
+    def close(self) -> None:
+        if self.ucp_listener is not None:
+            self.ucp_listener.close()
+
+            while not self.ucp_listener.closed():
+                sleep(0.001)
+
+            # Need to lose reference to Listener because UCP does reference
+            # counting
+            del self.ucp_listener
+            self.ucp_listener = None
+
+
+def launch_server(host: str, port: int) -> None:
+    """Launch the UCXServer in asyncio.
+
+    Args:
+        host (str): host for server to listen on.
+        port (int): port for server to listen on.
+    """
+    logger.info(f'starting server on host {host} with port {port}')
+
+    ps = UCXServer(host, port)
+    # CI occasionally timeouts when starting this server in the
+    # store_implementation session fixture. It seems to not happen when
+    # debug=True, but this is just a temporary fix.
+    asyncio.run(ps.run(), debug=True)
+
+    logger.info(f'server running at address {host}:{port}')
+
+
+def reset_ucp() -> None:  # pragma: no cover
+    """Hard reset all of UCP.
+
+    UCP provides :code:`ucp.reset()`; however, this function does not correctly
+    shutdown all asyncio tasks and readers. This function wraps
+    :code:`ucp.reset()` and additionally removes all readers on the event loop
+    and cancels/awaits all asyncio tasks.
+    """
+
+    def inner_context() -> None:
+        ctx = ucp.core._get_ctx()
+
+        for task in ctx.progress_tasks:
+            if task is None:
+                continue
+            task.event_loop.remove_reader(ctx.epoll_fd)
+            if task.asyncio_task is not None:
+                try:
+                    task.asyncio_task.cancel()
+                    task.event_loop.run_until_complete(task.asyncio_task)
+                except asyncio.CancelledError:
+                    pass
+
+    # We access ucp.core._get_ctx() inside this nested function so our local
+    # reference to the UCP context goes out of scope before calling
+    # ucp.reset(). ucp.reset() will fail if there are any weak references to
+    # to the UCP context because it assumes those may be Listeners or
+    # Endpoints that were not properly closed.
+    inner_context()
+
+    try:
+        ucp.reset()
+    except ucp.UCXError:
+        pass
+
+
+async def reset_ucp_async() -> None:  # pragma: no cover
+    """Hard reset all of UCP.
+
+    UCP provides :code:`ucp.reset()`; however, this function does not correctly
+    shutdown all asyncio tasks and readers. This function wraps
+    :code:`ucp.reset()` and additionally removes all readers on the event loop
+    and cancels/awaits all asyncio tasks.
+    """
+
+    async def inner_context() -> None:
+        ctx = ucp.core._get_ctx()
+
+        for task in ctx.progress_tasks:
+            if task is None:
+                continue
+            task.event_loop.remove_reader(ctx.epoll_fd)
+            if task.asyncio_task is not None:
+                try:
+                    task.asyncio_task.cancel()
+                    await task.asyncio_task
+                except asyncio.CancelledError:
+                    pass
+
+    # We access ucp.core._get_ctx() inside this nested function so our local
+    # reference to the UCP context goes out of scope before calling
+    # ucp.reset(). ucp.reset() will fail if there are any weak references to
+    # to the UCP context because it assumes those may be Listeners or
+    # Endpoints that were not properly closed.
+    await inner_context()
+
+    try:
+        ucp.reset()
+    except ucp.UCXError:
+        pass
+
+
+async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
+    """Wait until the UCXServer responds.
+
+    Args:
+        host (str): host of UCXServer to ping.
+        port (int): port of UCXServer to ping.
+        timeout (float): max time in seconds to wait for server response
+            (default: 5.0).
+    """
+    sleep_time = 0.01
+    time_waited = 0.0
+
+    while True:
+        try:
+            ep = await ucp.create_endpoint(host, port)
+        except ucp._libs.exceptions.UCXNotConnected:  # pragma: no cover
+            if time_waited >= timeout:
+                raise RuntimeError(
+                    'Failed to connect to server within timeout '
+                    f'({timeout} seconds).',
+                )
+            await asyncio.sleep(sleep_time)
+            time_waited += sleep_time
+        else:
+            break  # pragma: no cover
+
+    await ep.send_obj(bytes(1))
+    _ = await ep.recv_obj()
+    await ep.close()
+    assert ep.closed()

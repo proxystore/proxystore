@@ -6,7 +6,6 @@ import pytest
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.dim.margo import MargoServer
-from proxystore.store.dim.margo import MargoStore
 from proxystore.store.dim.margo import when_finalize
 from testing.mocked.pymargo import Bulk
 from testing.mocked.pymargo import Engine
@@ -19,7 +18,10 @@ ENCODING = 'UTF-8'
 @pytest.fixture
 def margo_server():
     """Margo server fixture."""
-    e = Engine(f'tcp://localhost:{open_port()}')
+    host = '127.0.0.1'
+    port = open_port()
+    margo_addr = f'tcp://{host}:{port}'
+    e = Engine(margo_addr)
     yield MargoServer(e)
 
 
@@ -29,15 +31,23 @@ def test_margo_store(margo_store) -> None:
     All MargoStore functionality should be covered in
     tests/store/store_*_test.py.
     """
-    store = MargoStore(margo_store.name, **margo_store.kwargs)
-    store._start_server()
-    store.close()
-    store.close()  # check that nothing happens
+    with margo_store.ctx():
+        store = margo_store.type(
+            margo_store.name,
+            cache_size=16,
+            **margo_store.kwargs,
+        )
+        store.close()
+        store.close()  # check that nothing happens
+
+        if 'mock' in margo_store.ctx.__name__:  # pragma: no branch
+            store._start_server()
+            store.close()
 
 
 def test_margo_server(margo_server) -> None:
     key = 'hello'
-    val = serialize('world')
+    val = bytearray(serialize('world'))
     size = len(val)
 
     bulk_str = Bulk(val)
@@ -66,7 +76,7 @@ def test_margo_server(margo_server) -> None:
     assert deserialize(bytes(bulk_str.data))
 
     margo_server.exists(h, bulk_str, size, 'test')
-    assert not deserialize(bytes(bulk_str.data))
+    assert not bool(int(deserialize(bytes(bulk_str.data))))
 
     local_buff = bytearray(1)
     bulk_str = Bulk(local_buff)

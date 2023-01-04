@@ -13,10 +13,35 @@ server = 'server'
 data_dict = {}
 
 
+class MargoException(Exception):  # pragma: no cover
+    """Mock Exception implementation."""
+
+    def __init__(self):
+        """Exception init implementation."""
+        pass
+
+
+class Address:  # pragma: no cover
+    """Mock Address implementation."""
+
+    def __init__(self) -> None:
+        """Mock Address initialization."""
+        pass
+
+    def shutdown(self) -> None:
+        """Mock shutdown."""
+        pass
+
+
 class Engine:
     """Mock Engine implementation."""
 
-    def __init__(self, url: str, mode: str = server) -> None:
+    def __init__(
+        self,
+        url: str,
+        mode: str = server,
+        use_progress_thread: bool = False,
+    ) -> None:
         """Mock Engine initialization."""
         self.url = url
 
@@ -67,8 +92,11 @@ class Engine:
             raise ValueError
 
         if bulk_op == 'pull':
+            assert isinstance(local_bulk.data, bytearray)
             local_bulk.data[:] = bulk_str.data
+
         else:
+            assert isinstance(bulk_str.data, bytearray)
             bulk_str.data[:] = local_bulk.data
 
     def register(self, funcname: str, *args: Any) -> RPC:
@@ -101,10 +129,10 @@ class RPC:
         """Mockfunc implementation."""
         from proxystore.store.dim.utils import Status
 
-        if self.name == 'set_bytes':
+        if self.name == 'set':
             data_dict[key] = array_str.data
             return serialize(Status(True, None))
-        elif self.name == 'get_bytes':
+        elif self.name == 'get':
             if key not in data_dict:
                 return serialize(
                     Status(
@@ -113,6 +141,7 @@ class RPC:
                     ),
                 )
             else:
+                assert isinstance(array_str.data, bytearray)
                 array_str.data[:] = data_dict[key]
             return serialize(Status(True, None))
         elif self.name == 'evict':
@@ -127,6 +156,7 @@ class RPC:
                 del data_dict[key]
             return serialize(Status(True, None))
         else:
+            assert isinstance(array_str.data, bytearray)
             array_str.data[:] = serialize(key in data_dict)
             return serialize(Status(True, None))
 
@@ -148,9 +178,9 @@ bulk = MockBulkMod()
 class Bulk:
     """Mock Bulk implementation."""
 
-    data: bytearray
+    data: bytearray | bytes
 
-    def __init__(self, data) -> None:
+    def __init__(self, data: bytearray | bytes) -> None:
         """Mock Bulk initialization."""
         self.data = data
 
