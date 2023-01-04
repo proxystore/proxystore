@@ -31,18 +31,18 @@ from typing import Any
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
-from proxystore.store.base import Store as _Store
+from proxystore.store.base import Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 
 T = TypeVar('T')
 
-_stores: dict[str, _Store[Any]] = {}
+_stores: dict[str, Store[Any]] = {}
 logger = logging.getLogger(__name__)
 
 
-def get_store(val: str | Proxy[T]) -> _Store[Any] | None:
+def get_store(val: str | Proxy[T]) -> Store[Any] | None:
     """Get the backend store with name.
 
     Args:
@@ -78,7 +78,7 @@ def get_store(val: str | Proxy[T]) -> _Store[Any] | None:
     return None
 
 
-def register_store(store: _Store[Any], exist_ok: bool = False) -> None:
+def register_store(store: Store[Any], exist_ok: bool = False) -> None:
     """Register the store instance to the global registry.
 
     Note:
