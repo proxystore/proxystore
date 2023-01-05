@@ -35,8 +35,11 @@ class UCXStoreKey(NamedTuple):
     """Key to objects in a MargoStore."""
 
     ucx_key: str
+    """Unique object key."""
     obj_size: int
+    """Object size in bytes."""
     peer: str
+    """Peer where object is located."""
 
 
 class UCXStore(Store[UCXStoreKey]):

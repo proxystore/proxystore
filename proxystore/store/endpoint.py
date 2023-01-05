@@ -30,7 +30,9 @@ class EndpointStoreKey(NamedTuple):
     """Key to object in an Endpoint."""
 
     object_id: str
+    """Unique object ID."""
     endpoint_id: str | None
+    """Endpoint UUID where object is stored."""
 
 
 class EndpointStore(Store[EndpointStoreKey]):
