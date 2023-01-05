@@ -41,20 +41,30 @@ class Protocol(Enum):
     """Available Mercury plugins and transports."""
 
     OFI_TCP = 'ofi+tcp'
+    """libfabric tcp provider (TCP/IP)"""
     OFI_VERBS = 'ofi+verbs'
+    """libfabric Verbs provider (InfiniBand or RoCE)"""
     OFI_GNI = 'ofi+gni'
+    """libfabric GNI provider (Cray Aries)"""
     UCX_TCP = 'ucx+tcp'
+    """UCX TCP/IP"""
     UCX_VERBS = 'ucx+verbs'
+    """UCX Verbs"""
     SM_SHM = 'sm+shm'
+    """Shared memory shm"""
     BMI_TCP = 'bmi+tcp'
+    """BMI tcp module (TCP/IP)"""
 
 
 class MargoStoreKey(NamedTuple):
     """Key to objects in a MargoStore."""
 
     margo_key: str
+    """Unique object key."""
     obj_size: int
+    """Object size in bytes."""
     peer: str
+    """Peer where object is located."""
 
 
 class MargoStore(Store[MargoStoreKey]):

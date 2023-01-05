@@ -241,7 +241,9 @@ class GlobusStoreKey(NamedTuple):
     """Key to object in a GlobusStore."""
 
     filename: str
+    """Unique object filename."""
     task_id: str
+    """Globus transfer task ID for the file."""
 
     def __eq__(self, other: Any) -> bool:
         """Match keys by filename only.

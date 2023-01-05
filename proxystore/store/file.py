@@ -17,6 +17,7 @@ class FileStoreKey(NamedTuple):
     """Key to objects in a FileStore."""
 
     filename: str
+    """Unique object filename."""
 
 
 class FileStore(Store[FileStoreKey]):

@@ -15,6 +15,7 @@ class LocalStoreKey(NamedTuple):
     """Key to objects in a LocalStore."""
 
     id: str
+    """Unique object ID."""
 
 
 class LocalStore(Store[LocalStoreKey]):

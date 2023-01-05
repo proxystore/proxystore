@@ -17,6 +17,7 @@ class RedisStoreKey(NamedTuple):
     """Key to objects in a RedisStore."""
 
     redis_key: str
+    """Unique object ID."""
 
 
 class RedisStore(Store[RedisStoreKey]):
