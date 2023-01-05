@@ -67,6 +67,24 @@ Many of the tests are asyncio tests.
 The asyncio default event loop is used by default, but uvloop can be used
 instead by passing :code:`--use-uvloop` to pytest.
 
+Tests (docker)
+^^^^^^^^^^^^^^
+
+The test suite mocks certain third-party programs that cannot be installed via
+pip (e.g., Margo, UCX, Redis). For Margo and UCX, a Docker image is provided
+at
+`proxystore-dockerfiles <https://github.com/proxystore/proxystore-dockerfiles>`_
+with the software pre-built and Python installed. The tox environments
+:code:`py{version}-dim` can be run in the container to validate changes against
+the un-mocked software.
+
+.. code-block:: bash
+
+   $ docker pull ghcr.io/proxystore/proxystore-dim:nightly
+   $ docker run --rm -it --network host -v /path/to/proxystore:/proxystore proxystore-dim
+   # Inside container
+   $ tox -e py310-dim
+
 Docs
 ^^^^
 
@@ -98,23 +116,24 @@ compliance.
 
 **Nits:**
 
-- Avoid imports in :code:`__init__.py` (reduces the likelihood of circular
+* Avoid imports in :code:`__init__.py` (reduces the likelihood of circular
   imports).
-- Prefer pure functions where possible.
-- Define all class attributes inside `__init__` so all attributes are visible
+* Prefer pure functions where possible.
+* Define all class attributes inside `__init__` so all attributes are visible
   in one place. Attributes that are defined later can be set as :code:`None`
   as a placeholder.
-- Prefer f-strings (:code:`f'name: {name}`) over string format
+* Prefer f-strings (:code:`f'name: {name}`) over string format
   (:code:`'name: {}'.format(name)`). Never use the :code:`%` operator.
-- Prefer :code:`typing.NamedTuple` over :code:`collections.namedtuple`.
-- Use lower-case and no punctuation for log messages, but use upper-case and
+* Prefer :code:`typing.NamedTuple` over :code:`collections.namedtuple`.
+* Use lower-case and no punctuation for log messages, but use upper-case and
   punctuation for exception values.
 
   .. code-block:: python
 
      logger.info(f'new connection opened to {address}')
      raise ValueError('Name must contain alphanumeric characters only.')
-- Document all exceptions that may be raised by a function in the docstring.
+
+* Document all exceptions that may be raised by a function in the docstring.
 
 Issues
 ------
@@ -130,54 +149,54 @@ Pull Requests
 We use the standard GitHub contribution cycle where all contributions are
 made via pull requests (including code owners!).
 
-1. Fork the repository and clone to your local machine.
-2. Create local changes.
+#. Fork the repository and clone to your local machine.
+#. Create local changes.
 
-   - Changes should conform to the style and testing guidelines, referenced
+   * Changes should conform to the style and testing guidelines, referenced
      above.
-   - Preferred commit message format (`source <https://cbea.ms/git-commit/>`_):
+   * Preferred commit message format (`source <https://cbea.ms/git-commit/>`_):
 
-     - separate subject from body with a blank line,
-     - limit subject line to 50 characters,
-     - capitalize first word of subject line,
-     - do not end the subject line with a period,
-     - use the imperative mood for subject lines,
-     - include related issue numbers at end of subject line,
-     - wrap body at 72 characters, and
-     - use the body to explain what/why rather than how.
+     * separate subject from body with a blank line,
+     * limit subject line to 50 characters,
+     * capitalize first word of subject line,
+     * do not end the subject line with a period,
+     * use the imperative mood for subject lines,
+     * include related issue numbers at end of subject line,
+     * wrap body at 72 characters, and
+     * use the body to explain what/why rather than how.
 
      Example: `Fix concurrency bug in Store (#42)`
 
-3. Push commits to your fork.
+#. Push commits to your fork.
 
-   - Please squash commits fixing mistakes to keep the git history clean.
+   * Please squash commits fixing mistakes to keep the git history clean.
      For example, if commit "b" follows commit "a" and only fixes a small typo
      from "a", please squash "a" and "b" into a single, correct commit.
      This keeps the commit history readable and easier to search through when
      debugging (e.g., git blame/bisect).
 
-4. Open a pull request in this repository.
+#. Open a pull request in this repository.
 
-   - The pull request should include a description of the motivation for the
+   * The pull request should include a description of the motivation for the
      PR and included changes. A PR template is provided to guide this process.
 
 
 Release Instructions
 --------------------
 
-1. Choose the next version number, referred to as :code:`{VERSION}` for the
+#. Choose the next version number, referred to as :code:`{VERSION}` for the
    rest of the instructions. ProxyStore versioning follows semver
    (*major.minor.patch*) with optional `PEP-440 <https://peps.python.org/pep-0440>`_
    pre-release/post-release/dev-release segments. Major/minor/patch numbers
    start at 0 and pre-release/post-release/dev-release segments start at 1.
-2. Update the versions in :code:`proxystore/__init__.py` and :code:`setup.py`
+#. Update the versions in :code:`proxystore/__init__.py` and :code:`setup.py`
    to :code:`{VERSION}`.
-3. If this is a full release, add a changelog entry to
+#. If this is a full release, add a changelog entry to
    :code:`docs/changelog.rst`.
-4. Verify the versions match with
+#. Verify the versions match with
    :code:`python version_check.py {VERSION}`.
-5. Commit and merge the version updates/changelogs into main.
-6. Tag the release commit and push (typically this is the commit updating the
+#. Commit and merge the version updates/changelogs into main.
+#. Tag the release commit and push (typically this is the commit updating the
    version numbers).
 
    .. code-block:: bash
@@ -187,7 +206,7 @@ Release Instructions
 
    Note the version number is prepended by "v" for the tags so we can
    distinguish release tags from non-release tags.
-7. Build the package and upload to PyPI.
+#. Build the package and upload to PyPI.
 
    .. code-block:: bash
 
@@ -195,6 +214,6 @@ Release Instructions
       $ python -m build
       $ python -m twine upload dist/*
 
-8. Create a new release on GitHub using the tag. The ReadTheDocs changelog
+#. Create a new release on GitHub using the tag. The ReadTheDocs changelog
    is typically copied into the body, and the files in :code:`dist/*` are
    uploaded as well. See previous releases for the template.

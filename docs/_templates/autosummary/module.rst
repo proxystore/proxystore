@@ -11,7 +11,7 @@
 
 {% for item in modules %}
    {{ item }}
-{%- endfor %}
+{% endfor %}
 {% endif %}
 {% endblock %}
 
