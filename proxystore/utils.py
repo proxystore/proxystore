@@ -3,14 +3,11 @@ from __future__ import annotations
 
 import decimal
 import os
-import pathlib
 import random
 import re
 import socket
 from typing import Any
 from typing import Generator
-
-_DEFAULT_HOME_DIR = '.proxystore'
 
 
 def chunk_bytes(
@@ -64,8 +61,19 @@ def fullname(obj: Any) -> str:
 
 
 def home_dir() -> str:
-    """Returns path of $HOME/.proxystore."""
-    return os.path.join(pathlib.Path.home(), _DEFAULT_HOME_DIR)
+    """Returns the absolute path to the proxystore home directory.
+
+    If set, ``$PROXYSTORE_HOME`` is preferred. Otherwise,
+    ``$XDG_DATA_HOME/proxystore`` is returned where ``$XDG_DATA_HOME`` defaults
+    to ``$HOME/.local/share`` if unset.
+    """
+    path = os.environ.get('PROXYSTORE_HOME')
+    if path is None:
+        prefix = os.environ.get('XDG_DATA_HOME') or os.path.expanduser(
+            '~/.local/share',
+        )
+        path = os.path.join(prefix, 'proxystore')
+    return os.path.abspath(path)
 
 
 def hostname() -> str:

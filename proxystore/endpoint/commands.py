@@ -54,8 +54,8 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
 
     Args:
         name (str): name of endpoint to check.
-        proxystore_dir (str): optionally specify the directory where the
-            endpoint configuration is. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
         :py:attr:`.EndpointStatus.RUNNING` if the endpoint has a valid
@@ -111,8 +111,8 @@ def configure_endpoint(
         port (int): port for endpoint to listen on.
         server (str): optional address of signaling server for P2P endpoint
             connections.
-        proxystore_dir (str): optionally specify the directory where endpoint
-            configurations are saved. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
         max_memory (int): optional max memory in bytes to use for storing
             objects. If exceeded, LRU objects will be dumped to `dump_dir`
             (default: None).
@@ -164,8 +164,8 @@ def list_endpoints(
     """List available endpoints.
 
     Args:
-        proxystore_dir (str): optionally specify the directory to look in for
-            endpoint configurations. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -202,8 +202,8 @@ def remove_endpoint(
 
     Args:
         name (str): name of endpoint to remove.
-        proxystore_dir (str): optionally specify the directory where the
-            endpoint configuration is. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -243,8 +243,8 @@ def start_endpoint(
         name (str): name of endpoint to start.
         detach (bool): start the endpoint as a daemon process.
         log_level (str): set logging level of endpoint.
-        proxystore_dir (str): optionally specify the directory where the
-            endpoint configuration is. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -316,8 +316,8 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
 
     Args:
         name (str): name of endpoint to start.
-        proxystore_dir (str): optionally specify the directory where the
-            endpoint configuration is. Defaults to :code:`$HOME/.proxystore`.
+        proxystore_dir (str): optionally specify the proxystore home directory.
+            Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages

@@ -78,8 +78,9 @@ command.
    To start the endpoint:
        $ proxystore-endpoint start my-endpoint
 
-Endpoint configurations are stored to ``~/.proxystore/{endpoint-name}`` and
-contain the name, UUID, host address, port, and singaling server address.
+Endpoint configurations are stored to ``$PROXYSTORE_HOME/{endpoint-name}``
+(see :py:func:`~proxystore.utils.home_dir`) and contain the name, UUID,
+host address, port, and singaling server address.
 
 #. **Name:** readable name of the endpoint. Used for management in the CLI and
    to improve log readability.
@@ -138,7 +139,7 @@ created by this store may interact with to resolve themselves. The
 :class:`~proxystore.store.endpoint.EndpointStore` will use this
 list to find its *home* endpoint, the endpoint that will be used to issue
 operations to. To find the *home* endpoint, the ProxyStore home directory
-(``~/.proxystore``) will be scanned for any endpoint configurations matching
+will be scanned for any endpoint configurations matching
 the one of the UUIDs. If a match is found, the
 :class:`~proxystore.store.endpoint.EndpointStore` will attempt
 to connect to the endpoint using the host and port in the configuration. This
