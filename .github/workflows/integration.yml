@@ -2,7 +2,7 @@ name: integration
 
 on:
   push:
-    branches: [main]
+    branches: [main, test-me-*]
     tags:
   pull_request:
   workflow_dispatch:
@@ -14,14 +14,10 @@ jobs:
     strategy:
       matrix:
         include:
-        - python: 3.7
-          toxenv: py37
-        - python: 3.8
-          toxenv: py38
-        - python: 3.9
-          toxenv: py39
-        - python: '3.10'
-          toxenv: py310
+          - toxenv: py37-dim
+          - toxenv: py38-dim
+          - toxenv: py39-dim
+          - toxenv: py310-dim
 
     runs-on: ubuntu-latest
 
@@ -38,4 +34,4 @@ jobs:
           registry: ghcr.io
           image: ghcr.io/proxystore/proxystore-dim:nightly
           options: -v ${{ github.workspace }}:/proxystore --network host --workdir /proxystore
-          run: tox -e ${{ matrix.toxenv }}-dim
+          run: tox -e ${{ matrix.toxenv }}
