@@ -58,11 +58,9 @@ jobs:
       - name: Run Tox
         run: tox -e ${{ matrix.toxenv }}
 
-      - name: Check if ~/.proxystore created
-        uses: andstor/file-existence-action@v2
-        with:
-          files: "~/.proxystore"
-
-      - name: Fail if ~/.proxystore created
-        if: steps.check_files.outputs.file_exists == 'true'
-        run: echo "Test suite created ~/.proxystore when it shouldn't!" && false
+      - name: Verify proxystore home directory not created
+        run: |
+          # The home directory could be any of the following
+          if [[ -n $PROXYSTORE_HOME ]]; then test ! -d $PROXYSTORE_HOME; else true; fi
+          if [[ -n $XDG_DATA_HOME ]]; then test ! -d $XDG_DATA_HOME/proxystore; else true; fi
+          test ! -d ~/.local/share/proxystore

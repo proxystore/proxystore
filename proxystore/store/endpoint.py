@@ -61,8 +61,8 @@ class EndpointStore(Store[EndpointStoreKey]):
             endpoints (sequence): sequence of valid and running endpoint
                 UUIDs to use. At least one of these endpoints must be
                 accessible by this process.
-            proxystore_dir (str): directory containing endpoint configurations.
-                If None, defaults to :code:`$HOME/.proxystore` (default: None).
+            proxystore_dir (str): optionally specify the proxystore home
+                directory. Defaults to :py:func:`~proxystore.utils.home_dir`.
             cache_size (int): size of LRU cache (in # of objects). If 0,
                 the cache is disabled. The cache is local to the Python
                 process (default: 16).
