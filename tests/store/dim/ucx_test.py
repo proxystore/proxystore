@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import importlib
 import sys
 from typing import Any
 from unittest import mock
@@ -21,6 +22,8 @@ from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
 ENCODING = 'UTF-8'
+
+UCP_SPEC = importlib.util.find_spec('ucp')
 
 
 @pytest.fixture
@@ -61,19 +64,32 @@ def test_launched_mocked_server() -> None:
         launch_server(host='localhost', port=open_port())
 
 
-async def test_run_mocked_server() -> None:
-    server = UCXServer(host='localhost', port=open_port())
+@pytest.mark.skipif(
+    UCP_SPEC is not None and 'mock' not in UCP_SPEC.name,
+    reason='only valid for running against the mocked ucp module',
+)
+def test_run_mocked_server() -> None:
+    server = UCXServer(host='localhost', port=-1)
 
-    loop = asyncio.get_running_loop()
-    fut = loop.create_future()
-    fut.set_result(True)
+    # We use this fake awaitable Future because we are not running in an
+    # event loop so asyncio.create_future() will error.
+    class _Future:
+        def set_result(self, value: Any) -> None:
+            ...
 
-    with mock.patch.object(
-        loop,
-        'create_future',
-        return_value=fut,
+        def __await__(self) -> Any:
+            yield
+            return None
+
+    mock_loop = mock.MagicMock()
+    mock_loop.create_future = mock.MagicMock()
+    mock_loop.create_future.return_value = _Future()
+
+    with mock.patch(
+        'asyncio.get_running_loop',
+        return_value=mock_loop,
     ), mock.patch('proxystore.store.dim.ucx.reset_ucp_async', AsyncMock()):
-        await server.run()
+        asyncio.run(server.run())
 
 
 def test_ucx_server(ucx_server) -> None:
