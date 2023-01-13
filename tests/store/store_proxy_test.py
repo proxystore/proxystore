@@ -122,7 +122,7 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     with pytest.raises(Exception):
         # String will not be serialized and should raise error when putting
         # array into Redis
-        store.proxy('mystring', serialize=False)
+        store.proxy('mystring', serializer=lambda s: s)
 
     assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
 
@@ -161,7 +161,11 @@ def test_proxy_batch(store_implementation: StoreFixtureType) -> None:
     register_store(store)
 
     values1 = [b'test_value1', b'test_value2', b'test_value3']
-    proxies1: list[Proxy[bytes]] = store.proxy_batch(values1, serialize=False)
+    proxies1: list[Proxy[bytes]] = store.proxy_batch(
+        values1,
+        serializer=lambda s: s,
+        deserializer=lambda s: s,
+    )
     for p1, v1 in zip(proxies1, values1):
         assert p1 == v1
 

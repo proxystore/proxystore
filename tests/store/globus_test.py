@@ -224,7 +224,7 @@ def test_globus_store_set_batch_type_error(globus_store) -> None:
 
     objs = [1, 2, 3]
     with pytest.raises(TypeError):
-        store.set_batch(objs, serialize=False)
+        store.set_batch(objs, serializer=lambda s: s)
 
 
 def test_get_filepath(globus_store) -> None:
