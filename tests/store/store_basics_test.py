@@ -97,12 +97,12 @@ def test_store_custom_serialization(
 
     # Pretend serialized string
     s = b'ABC'
-    key = store.set(s, serialize=False)
-    assert store.get(key, deserialize=False) == s
+    key = store.set(s, serializer=lambda s: s)
+    assert store.get(key, deserializer=lambda s: s) == s
 
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the array is not already serialized
-        store.set([1, 2, 3], serialize=False)
+        store.set([1, 2, 3], serializer=lambda s: s)
 
 
 def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
@@ -125,6 +125,6 @@ def test_store_batch_ops_remote(
 
     values = ['test_value1', 'test_value2', 'test_value3']
 
-    new_keys = store.set_batch(values, serialize=True)
+    new_keys = store.set_batch(values, serializer=lambda s: str.encode(s))
     for key in new_keys:
         assert store.exists(key)

@@ -138,3 +138,47 @@ ProxyStore is designed around optimizing the communication of ephemeral data
 (e.g., inputs and outputs of functions) which is typically write-once,
 read-many. Thus, ProxyStore does not provides any guarantees about object
 versions if a user manually overwrites an object.
+
+Serialization
+-------------
+
+All :class:`~proxystore.store.base.Store` operation uses ProxyStore's provided
+serialization utilities (:py:mod:`~proxystore.serialize`) by default. However,
+all :class:`~proxystore.store.base.Store` methods that move data in or out of
+the store can be provided custom serializers or deserializers of the form:
+
+.. code-block:: python
+
+   serializer = Callable[[Any], bytes]
+   deserializer = Callable[[bytes], Any]
+
+In some cases, data may already be serialized in which case an identity
+function can be passed as the serializer/deserializer (e.g., ``lambda x: x``).
+Implementing a custom serializer may be beneficial for complex structures
+where pickle/cloudpickle (the default serializers used by ProxyStore) are
+innefficient. E.g.,
+
+.. code-block:: python
+
+   import torch
+   import io
+
+   from proxystore.serialize import serialize
+   from proxystore.store.redis import RedisStore
+
+   def serialize_torch_model(obj: Any) -> bytes:
+       if isinstance(obj, torch.nn.Module):
+           buffer = io.BytesIO()
+           torch.save(model, buffer)
+           return buffer.read()
+       else:
+           # Fallback for unsupported types
+           return serialize(obj)
+
+   mymodel = torch.nn.Module()
+
+   store = RedisStore(...)
+   key = store.set(mymodel, serializer=serialize_torch_model)
+
+See `Issue #146 <https://github.com/proxystore/proxystore/issues/146>`_ for
+further discussion.

@@ -16,11 +16,17 @@ class SerializationError(Exception):
 def serialize(obj: Any) -> bytes:
     """Serialize object.
 
+    Objects are serialized using
+    `pickle <https://docs.python.org/3/library/pickle.html>`_ (protocol 4)
+    except for ``bytes`` or ``str`` objects.
+    If pickle fails, `cloudpickle <https://github.com/cloudpipe/cloudpickle>`_
+    is used as a fallback.
+
     Args:
         obj: object to serialize.
 
     Returns:
-        `bytes` that can be passed to `deserialize()`.
+        ``bytes`` that can be passed to :py:func:`~deserialize`.
     """
     if isinstance(obj, bytes):
         identifier = b'01\n'
@@ -48,29 +54,28 @@ def deserialize(data: bytes) -> Any:
     """Deserialize object.
 
     Args:
-        data (bytes): bytes produced by `serialize()`.
+        data (bytes): bytes produced by :py:func:`~serialize`.
 
     Returns:
-        object that was serialized.
+        deserialized object.
 
     Raises:
         ValueError:
-            if `data` is not of type `bytes`.
+            if ``data`` is not of type ``bytes``.
         SerializationError:
-            if the identifier of `data` is missing or invalid.
-            The identifier is prepended to the string in `serialize()` to
-            indicate which serialization method was used
-            (e.g., no serialization, Pickle, etc.).
+            if the identifier of ``data`` is missing or invalid.
+            The identifier is prepended to the string in
+            :py:func:`~serialize` to indicate which serialization method was
+            used (e.g., no serialization, pickle, etc.).
     """
     if not isinstance(data, bytes):
         raise ValueError(
-            'deserialize only accepts bytes arguments, not '
-            '{}'.format(type(data)),
+            f'Expected data to be of type bytes, not {type(data)}.',
         )
     identifier, separator, data = data.partition(b'\n')
     if separator == b'' or len(identifier) != len(b'00'):
         raise SerializationError(
-            'data does not have required identifier for deserialization',
+            'Data does not have required identifier for deserialization.',
         )
     if identifier == b'01':
         return data
@@ -82,5 +87,5 @@ def deserialize(data: bytes) -> Any:
         return cloudpickle.loads(data)
     else:
         raise SerializationError(
-            f'Unknown identifier {identifier!r} for deserialization',
+            f'Unknown identifier {identifier!r} for deserialization,',
         )

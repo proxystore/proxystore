@@ -9,6 +9,7 @@ from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any
+from typing import Callable
 from typing import cast
 from typing import Generic
 from typing import NamedTuple
@@ -16,10 +17,11 @@ from typing import Sequence
 from typing import TypeVar
 
 import proxystore as ps
-import proxystore.serialize
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.serialize import deserialize as default_deserializer
+from proxystore.serialize import serialize as default_serializer
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKey
 from proxystore.store.stats import FunctionEventStats
@@ -27,12 +29,13 @@ from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
 from proxystore.store.utils import get_key
 
-
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
 KeyT = TypeVar('KeyT', bound=NamedTuple)
+SerializerT = Callable[[Any], bytes]
+DeserializerT = Callable[[bytes], Any]
 
 
 class StoreFactory(Factory[T], Generic[KeyT, T]):
@@ -54,7 +57,7 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         store_kwargs: dict[str, Any] | None = None,
         *,
         evict: bool = False,
-        serialize: bool = True,
+        deserializer: DeserializerT | None = None,
     ) -> None:
         """Init StoreFactory.
 
@@ -67,15 +70,17 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
                 reinitialize store.
             evict (bool): If True, evict the object from the store once
                 :func:`resolve()` is called (default: False).
-            serialize (bool): if True, object in store is serialized and
-                should be deserialized upon retrieval (default: True).
+            deserializer (callable): optional callable used to deserialize the
+                byte string. If ``None``, the default deserializer
+                (:py:func:`~proxystore.serialize.deserialize`) will be used
+                (default: None).
         """
         self.key = key
         self.store_type = store_type
         self.store_name = store_name
         self.store_kwargs = {} if store_kwargs is None else store_kwargs
         self.evict = evict
-        self.serialize = serialize
+        self.deserializer = deserializer
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
@@ -109,13 +114,13 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
             self.store_kwargs,
         ), {
             'evict': self.evict,
-            'serialize': self.serialize,
+            'deserializer': self.deserializer,
         }
 
     def _get_value(self) -> T:
         """Get the value associated with the key from the store."""
         store: Store[KeyT] = self.get_store()
-        obj = store.get(self.key, deserialize=self.serialize)
+        obj = store.get(self.key, deserializer=self.deserializer)
 
         if obj is None:
             raise ProxyResolveMissingKey(
@@ -338,15 +343,17 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         self,
         key: KeyT,
         *,
-        deserialize: bool = True,
+        deserializer: DeserializerT | None = None,
         default: object | None = None,
     ) -> Any | None:
         """Return object associated with key.
 
         Args:
             key (KeyT): key corresponding to object.
-            deserialize (bool): deserialize object if True. If objects
-                are custom serialized, set this as False (default: True).
+            deserializer (callable): optional callable used to deserialize the
+                byte string. If ``None``, the default deserializer
+                (:py:func:`~proxystore.serialize.deserialize`) will be used
+                (default: None).
             default: optionally provide value to be returned if an object
                 associated with the key does not exist (default: None).
 
@@ -363,8 +370,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
 
         value = self.get_bytes(key)
         if value is not None:
-            if deserialize:
-                value = ps.serialize.deserialize(value)
+            if deserializer is not None:
+                value = deserializer(value)
+            else:
+                value = default_deserializer(value)
             self._cache.set(key, value)
             logger.debug(
                 f"GET key='{key}' FROM {self.__class__.__name__}"
@@ -401,7 +410,13 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """
         return self._cache.exists(key)
 
-    def proxy(self, obj: T, **kwargs: Any) -> Proxy[T]:
+    def proxy(
+        self,
+        obj: T,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
+        **kwargs: Any,
+    ) -> Proxy[T]:
         """Create a proxy that will resolve to an object in the store.
 
         Warning:
@@ -415,15 +430,20 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
 
         Args:
             obj (object): object to place in store and return proxy for.
+            serializer (callable): optional callable which serializes the
+                object. If ``None``, the default serializer
+                (:py:func:`~proxystore.serialize.serialize`) will be used
+                (default: None).
+            deserializer (callable): optional callable used by the factory
+                to deserialize the byte string. If ``None``, the default
+                deserializer (:py:func:`~proxystore.serialize.deserialize`)
+                will be used (default: None).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
             :any:`Proxy[T] <proxystore.proxy.Proxy>`
         """
-        if 'serialize' in kwargs:
-            key = self.set(obj, serialize=kwargs['serialize'])
-        else:
-            key = self.set(obj)
+        key = self.set(obj, serializer=serializer)
         logger.debug(
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
             f"(name='{self.name}')",
@@ -433,6 +453,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             store_type=type(self),
             store_name=self.name,
             store_kwargs=self.kwargs,
+            deserializer=deserializer,
             **kwargs,
         )
         return Proxy(factory)
@@ -440,6 +461,8 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
     def proxy_batch(
         self,
         objs: Sequence[T],
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
         **kwargs: Any,
     ) -> list[Proxy[T]]:
         """Create proxies for batch of objects in the store.
@@ -450,18 +473,31 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         Args:
             objs (Sequence[object]): objects to place in store and return
                 proxies for.
+            serializer (callable): optional callable which serializes the
+                object. If ``None``, the default serializer
+                (:py:func:`~proxystore.serialize.serialize`) will be used
+                (default: None).
+            deserializer (callable): optional callable used by the factory
+                to deserialize the byte string. If ``None``, the default
+                deserializer (:py:func:`~proxystore.serialize.deserialize`)
+                will be used (default: None).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
             List of :any:`Proxy[T] <proxystore.proxy.Proxy>`
         """
-        if 'serialize' in kwargs:
-            keys = self.set_batch(objs, serialize=kwargs['serialize'])
-        else:
-            keys = self.set_batch(objs)
-        return [self.proxy_from_key(key, **kwargs) for key in keys]
+        keys = self.set_batch(objs, serializer=serializer)
+        return [
+            self.proxy_from_key(key, deserializer=deserializer, **kwargs)
+            for key in keys
+        ]
 
-    def proxy_from_key(self, key: KeyT, **kwargs: Any) -> Proxy[T]:
+    def proxy_from_key(
+        self,
+        key: KeyT,
+        deserializer: DeserializerT | None = None,
+        **kwargs: Any,
+    ) -> Proxy[T]:
         """Create a proxy to an object already in the store.
 
         Note:
@@ -471,6 +507,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         Args:
             key (KeyT): key corresponding to an object already in the store
                 that will be the target object of the returned proxy.
+            deserializer (callable): optional callable used by the factory
+                to deserialize the byte string. If ``None``, the default
+                deserializer (:py:func:`~proxystore.serialize.deserialize`)
+                will be used (default: None).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
@@ -485,41 +525,73 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             store_type=type(self),
             store_name=self.name,
             store_kwargs=self.kwargs,
+            deserializer=deserializer,
             **kwargs,
         )
         return Proxy(factory)
 
-    def locked_proxy(self, obj: T, **kwargs: Any) -> ProxyLocker[T]:
+    def locked_proxy(
+        self,
+        obj: T,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
+        **kwargs: Any,
+    ) -> ProxyLocker[T]:
         """Create a proxy locker that will prevent resolution.
 
         Args:
             obj (object): object to place in store and create proxy of.
+            serializer (callable): optional callable which serializes the
+                object. If ``None``, the default serializer
+                (:py:func:`~proxystore.serialize.serialize`) will be used
+                (default: None).
+            deserializer (callable): optional callable used by the factory
+                to deserialize the byte string. If ``None``, the default
+                deserializer (:py:func:`~proxystore.serialize.deserialize`)
+                will be used (default: None).
             kwargs (dict): additional arguments to pass to the Factory.
 
         Returns:
             :class:`~proxystore.proxy.ProxyLocker`
         """
-        return ProxyLocker(self.proxy(obj, **kwargs))
+        return ProxyLocker(
+            self.proxy(
+                obj,
+                serializer=serializer,
+                deserializer=deserializer,
+                **kwargs,
+            ),
+        )
 
-    def set(self, obj: Any, *, serialize: bool = True) -> KeyT:
+    def set(
+        self,
+        obj: Any,
+        *,
+        serializer: SerializerT | None = None,
+    ) -> KeyT:
         """Set key-object pair in store.
 
         Args:
             obj (object): object to be placed in the store.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
+            serializer (callable): optional callable which serializes the
+                object. If ``None``, the default serializer
+                (:py:func:`~proxystore.serialize.serialize`) will be used
+                (default: None).
 
         Returns:
             key that can be used to retrieve the object.
 
         Raises:
             TypeError:
-                if `serialize=False` and `obj` is not an instance of `bytes`.
+                if the output of `serializer` is not bytes.
         """
-        if serialize:
-            obj = ps.serialize.serialize(obj)
-        elif not isinstance(obj, bytes):
-            raise TypeError('obj must be of type bytes if serialize=False.')
+        if serializer is not None:
+            obj = serializer(obj)
+        else:
+            obj = default_serializer(obj)
+
+        if not isinstance(obj, bytes):
+            raise TypeError('Serializer must produce bytes.')
 
         key = self.create_key(obj)
         self.set_bytes(key, obj)
@@ -534,20 +606,26 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         self,
         objs: Sequence[Any],
         *,
-        serialize: bool = True,
+        serializer: SerializerT | None = None,
     ) -> list[KeyT]:
         """Set objects in store.
 
         Args:
             objs (Sequence[object]): iterable of objects to be placed in the
                 store.
-            serialize (bool): serialize object if True. If object is already
-                custom serialized, set this as False (default: True).
+            serializer (callable): optional callable which serializes the
+                object. If ``None``, the default serializer
+                (:py:func:`~proxystore.serialize.serialize`) will be used
+                (default: None).
 
         Returns:
             List of keys that can be used to retrieve the objects.
+
+        Raises:
+            TypeError:
+                if the output of `serializer` is not bytes.
         """
-        return [self.set(obj, serialize=serialize) for obj in objs]
+        return [self.set(obj, serializer=serializer) for obj in objs]
 
     @abstractmethod
     def set_bytes(self, key: KeyT, data: bytes) -> None:

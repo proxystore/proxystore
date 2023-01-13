@@ -7,6 +7,7 @@ import os
 import re
 import sys
 from typing import Any
+from typing import Callable
 from typing import Collection
 from typing import Generator
 from typing import Iterator
@@ -21,8 +22,7 @@ else:  # pragma: <3.9 cover
 
 import globus_sdk
 
-import proxystore as ps
-import proxystore.serialize
+from proxystore.serialize import serialize as default_serializer
 import proxystore.utils as utils
 from proxystore.globus import get_proxystore_authorizer
 from proxystore.globus import GlobusAuthFileError
@@ -30,6 +30,8 @@ from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
+
+SerializerT = Callable[[Any], bytes]
 
 
 class GlobusEndpoint:
@@ -554,11 +556,19 @@ class GlobusStore(Store[GlobusStoreKey]):
         with open(path, 'wb', buffering=0) as f:
             f.write(data)
 
-    def set(self, obj: Any, *, serialize: bool = True) -> GlobusStoreKey:
-        if serialize:
-            obj = ps.serialize.serialize(obj)
-        elif not isinstance(obj, bytes):
-            raise TypeError('obj must be of type bytes if serialize=False.')
+    def set(
+        self,
+        obj: Any,
+        *,
+        serializer: SerializerT | None = None,
+    ) -> GlobusStoreKey:
+        if serializer is not None:
+            obj = serializer(obj)
+        else:
+            obj = default_serializer(obj)
+
+        if not isinstance(obj, bytes):
+            raise TypeError('Serializer must produce bytes.')
 
         temp_key = self.create_key(obj)
         self.set_bytes(temp_key, obj)
@@ -575,14 +585,17 @@ class GlobusStore(Store[GlobusStoreKey]):
         self,
         objs: Sequence[Any],
         *,
-        serialize: bool = True,
+        serializer: SerializerT | None = None,
     ) -> list[GlobusStoreKey]:
         temp_keys = []
         for obj in objs:
-            if serialize:
-                obj = ps.serialize.serialize(obj)
-            elif not isinstance(obj, bytes):
-                TypeError('obj must be of type bytes if serialize=False.')
+            if serializer is not None:
+                obj = serializer(obj)
+            else:
+                obj = default_serializer(obj)
+
+            if not isinstance(obj, bytes):
+                raise TypeError('Serializer must produce bytes.')
 
             temp_key = self.create_key(obj)
             temp_keys.append(temp_key)
