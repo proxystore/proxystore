@@ -1,6 +1,71 @@
 Changelog
 #########
 
+Version 0.4.0
+-------------
+
+`Released 16 January 2023`
+
+**Breaking Changes**
+
+#. Object keys can no longer be specified
+   (PR `#90 <https://github.com/proxystore/proxystore/pull/90>`_).
+#. :py:class:`~proxystore.store.base.Store` keys are now named tuples
+   (PR `#91 <https://github.com/proxystore/proxystore/pull/91>`_).
+#. Move ``resolve_async`` to :py:func:`proxystore.store.utils.resolve_async() <proxystore.store.utils.resolve_async>`
+   (PR `#103 <https://github.com/proxystore/proxystore/pull/103>`_).
+#. Remove ``init_store()``
+   (PR `#157 <https://github.com/proxystore/proxystore/pull/157>`_).
+#. Support custom serializers
+   (PR `#174 <https://github.com/proxystore/proxystore/pull/174>`_).
+
+**New Features**
+
+#. ProxyStore Endpoints for peer-to-peer data transfer via WebRTC.
+   Endpoints can be enabled using the ``endpoint`` extras install.
+   E.g., ``pip install proxystore[endpoint]``.
+   See the `Guide <https://proxystore.readthedocs.io/en/latest/guides/endpoints.html>`_ for more details (PRs
+   `#51 <https://github.com/proxystore/proxystore/pull/51>`_,
+   `#53 <https://github.com/proxystore/proxystore/pull/53>`_,
+   `#106 <https://github.com/proxystore/proxystore/pull/106>`_,
+   `#112 <https://github.com/proxystore/proxystore/pull/112>`_,
+   `#129 <https://github.com/proxystore/proxystore/pull/129>`_,
+   `#130 <https://github.com/proxystore/proxystore/pull/130>`_,
+   `#131 <https://github.com/proxystore/proxystore/pull/131>`_,
+   `#137 <https://github.com/proxystore/proxystore/pull/137>`_, and
+   `#140 <https://github.com/proxystore/proxystore/pull/140>`_).
+#. Add built-in Globus auth tools
+   (PR `#89 <https://github.com/proxystore/proxystore/pull/89>`_).
+#. :py:class:`~proxystore.store.base.Store` can now be used as a context manager
+   (PR `#93 <https://github.com/proxystore/proxystore/pull/93>`_).
+#. Add :py:class:`~proxystore.proxy.ProxyLocker` and :py:meth:`~proxystore.store.base.Store.locked_proxy`
+   (PR `#108 <https://github.com/proxystore/proxystore/pull/108>`_).
+#. Store object size in :py:class:`~proxystore.store.stats.TimeStats`
+   (PR `#135 <https://github.com/proxystore/proxystore/pull/135>`_).
+#. Experimental support for distributed in-memory stores using three backends: websockets, margo, and UCX (PRs
+   `#144 <https://github.com/proxystore/proxystore/pull/144>`_ and
+   `#163 <https://github.com/proxystore/proxystore/pull/163>`_).
+#. Support ``$PROXYSTORE_HOME`` and ``$XDG_DATA_HOME`` for ProxyStore user data
+   (PR `#171 <https://github.com/proxystore/proxystore/pull/171>`_).
+
+**Bug Fixes**
+
+#. Improved typing on :py:meth:`~proxystore.store.base.Store.proxy`
+   (PR `#82 <https://github.com/proxystore/proxystore/pull/82>`_).
+#. Fix relative path bug in :py:class:`~proxystore.store.file.FileStore`
+   (PR `#100 <https://github.com/proxystore/proxystore/pull/100>`_).
+
+**Non-package Changes**
+
+#. Dockerfile and images for testing ProxyStore are now located at `<https://github.com/proxystore/images>`_.
+#. API docs now use autosummary
+   (PR `#132 <https://github.com/proxystore/proxystore/pull/132>`_).
+#. Major refactor to the test suite
+   (PR `#154 <https://github.com/proxystore/proxystore/pull/154>`_).
+#. GitHub workflow improvements (PRs
+   `#155 <https://github.com/proxystore/proxystore/pull/155>`_ and
+   `#156 <https://github.com/proxystore/proxystore/pull/156>`_).
+
 Version 0.3.3
 -------------
 
