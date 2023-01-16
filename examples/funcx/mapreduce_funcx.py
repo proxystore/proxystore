@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 import numpy as np
-from funcx.sdk.client import FuncXClient
+from funcx.sdk.executor import FuncXExecutor
 
 from proxystore.store import register_store
 from proxystore.store.base import Store
@@ -100,11 +100,6 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    fxc = FuncXClient()
-
-    double_uuid = fxc.register_function(app_double)
-    sum_uuid = fxc.register_function(app_sum)
-
     store: Store[Any] | None = None
     if args.ps_file:
         store = FileStore('file', store_dir=args.ps_file_dir)
@@ -123,37 +118,21 @@ if __name__ == '__main__':
 
     start = time.perf_counter()
 
-    results = []
-    for _ in range(args.num_arrays):
-        x = np.random.rand(args.size, args.size)
+    with FuncXExecutor(endpoint_id=args.endpoint) as fxe:
+        futures = []
+        for _ in range(args.num_arrays):
+            x = np.random.rand(args.size, args.size)
+            if store is not None:
+                x = store.proxy(x)
+            futures.append(fxe.submit(app_double, x))
+
+        mapped_results = [future.result() for future in futures]
+
         if store is not None:
-            x = store.proxy(x)
-        results.append(
-            fxc.run(
-                x,
-                endpoint_id=args.endpoint,
-                function_id=double_uuid,
-            ),
-        )
+            mapped_results = store.proxy(mapped_results)
+        total = fxe.submit(app_sum, mapped_results).result()
 
-    for result in results:
-        while fxc.get_task(result)['pending']:
-            time.sleep(0.1)
-
-    mapped_results = [fxc.get_result(result) for result in results]
-
-    if store is not None:
-        mapped_results = store.proxy(mapped_results)
-    total = fxc.run(
-        mapped_results,
-        endpoint_id=args.endpoint,
-        function_id=sum_uuid,
-    )
-
-    while fxc.get_task(total)['pending']:
-        time.sleep(0.1)
-
-    print(f'Sum: {fxc.get_result(total)}')
+    print(f'Sum: {total}')
     print(f'Time: {time.perf_counter() - start:.2f}')
 
     if store is not None:
