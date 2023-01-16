@@ -119,7 +119,7 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     key = get_key(p)
     assert key is not None and store.get(key) == [2, 3, 4]
 
-    with pytest.raises(Exception):
+    with pytest.raises(TypeError):
         # String will not be serialized and should raise error when putting
         # array into Redis
         store.proxy('mystring', serializer=lambda s: s)
