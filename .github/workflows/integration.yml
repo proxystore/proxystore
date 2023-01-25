@@ -18,6 +18,7 @@ jobs:
           - toxenv: py38-dim
           - toxenv: py39-dim
           - toxenv: py310-dim
+          - toxenv: py311-dim
 
     runs-on: ubuntu-latest
 
