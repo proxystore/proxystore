@@ -189,31 +189,22 @@ Release Instructions
    (*major.minor.patch*) with optional `PEP-440 <https://peps.python.org/pep-0440>`_
    pre-release/post-release/dev-release segments. Major/minor/patch numbers
    start at 0 and pre-release/post-release/dev-release segments start at 1.
-#. Update the versions in :code:`proxystore/__init__.py` and :code:`setup.py`
-   to :code:`{VERSION}`.
-#. If this is a full release, add a changelog entry to
-   :code:`docs/changelog.rst`.
-#. Verify the versions match with
-   :code:`python version_check.py {VERSION}`.
+#. Update the version in :code:`pyproject.toml` to :code:`{VERSION}`.
+#. Add a changelog entry to :code:`docs/changelog.rst`. Pre/post/dev-releases
+   can keep the changelog simple (e.g., Pre-release for upcoming vX.X.X
+   release).
 #. Commit and merge the version updates/changelogs into main.
 #. Tag the release commit and push (typically this is the commit updating the
    version numbers).
 
    .. code-block:: bash
 
-      $ git tag -a v{VERSION} -m "ProxyStore {VERSION}"
+      $ git tag -s v{VERSION} -m "ProxyStore v{VERSION}"
       $ git push origin v{VERSION}
 
    Note the version number is prepended by "v" for the tags so we can
    distinguish release tags from non-release tags.
-#. Build the package and upload to PyPI.
-
-   .. code-block:: bash
-
-      $ rm dist/*
-      $ python -m build
-      $ python -m twine upload dist/*
-
-#. Create a new release on GitHub using the tag. The ReadTheDocs changelog
-   is typically copied into the body, and the files in :code:`dist/*` are
-   uploaded as well. See previous releases for the template.
+#. Create a new release on GitHub using the tag. The title should be
+   ``ProxyStore v{VERSION}``. The ReadTheDocs changelog is typically copied
+   into the body. After releasing, a GitHub workflow will be triggered to
+   verify the versions, build the package, and upload to PyPI.
