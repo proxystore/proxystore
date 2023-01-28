@@ -16,7 +16,6 @@ from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
 from proxystore.store.globus import GlobusStoreKey
 
-
 EP1 = GlobusEndpoint(
     uuid='1',
     endpoint_path='/path',

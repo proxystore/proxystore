@@ -20,7 +20,7 @@ class Lib:
     class exceptions:  # noqa: N801
         """Mock Lib exceptions implementation."""
 
-        class UCXNotConnected(Exception):
+        class UCXNotConnected(Exception):  # noqa: 818
             """Mock Exception implementation."""
 
             pass
@@ -40,7 +40,7 @@ class MockEndpoint:
     is_closed: bool
 
     def __init__(self, server=False):
-        """Initializes the MockEndpoint."""
+        """Initialize a MockEndpoint."""
         self.key = ''
         self.last_event = ''
         self.response = ''
@@ -49,7 +49,7 @@ class MockEndpoint:
         self.is_closed = False
 
     async def send_obj(self, req: Any) -> None:
-        """Mocks the `ucp.send_obj` function.
+        """Mock the `ucp.send_obj` function.
 
         Args:
             req (Any): the object to communicate
@@ -75,7 +75,7 @@ class MockEndpoint:
         self.last_event = event['op']
 
     async def recv_obj(self) -> Any:
-        """Mocks the `ucp.recv_obj` function."""
+        """Mock the `ucp.recv_obj` function."""
         from proxystore.store.dim.utils import Status
 
         if self.req is not None:

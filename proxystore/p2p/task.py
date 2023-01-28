@@ -10,7 +10,7 @@ from typing import Coroutine
 logger = logging.getLogger(__name__)
 
 
-class SafeTaskExit(Exception):
+class SafeTaskExitError(Exception):
     """Exception that can be raised inside a task to safely exit it."""
 
     pass
@@ -21,7 +21,7 @@ def exit_on_error(task: asyncio.Task[Any]) -> None:
     if (
         not task.cancelled()
         and task.exception() is not None
-        and not isinstance(task.exception(), SafeTaskExit)
+        and not isinstance(task.exception(), SafeTaskExitError)
     ):
         logger.error(f'Exception in background coroutine: {task.exception()}')
         raise SystemExit(1)

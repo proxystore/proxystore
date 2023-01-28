@@ -22,10 +22,10 @@ else:  # pragma: <3.9 cover
 
 import globus_sdk
 
-from proxystore.serialize import serialize as default_serializer
 import proxystore.utils as utils
 from proxystore.globus import get_proxystore_authorizer
 from proxystore.globus import GlobusAuthFileError
+from proxystore.serialize import serialize as default_serializer
 from proxystore.store.base import Store
 
 logger = logging.getLogger(__name__)
@@ -131,7 +131,9 @@ class GlobusEndpoints:
         try:
             return self._endpoints[uuid]
         except KeyError:
-            raise KeyError(f'Endpoint with UUID {uuid} does not exist.')
+            raise KeyError(
+                f'Endpoint with UUID {uuid} does not exist.',
+            ) from None
 
     def __iter__(self) -> Iterator[GlobusEndpoint]:
         """Iterate over GlobusEndpoints."""
@@ -351,11 +353,11 @@ class GlobusStore(Store[GlobusStoreKey]):
 
         try:
             authorizer = get_proxystore_authorizer()
-        except GlobusAuthFileError:
+        except GlobusAuthFileError as e:
             raise GlobusAuthFileError(
                 'Error loading Globus auth tokens. Complete the '
                 'authentication process with the proxystore-globus-auth tool.',
-            )
+            ) from e
 
         self._transfer_client = globus_sdk.TransferClient(
             authorizer=authorizer,

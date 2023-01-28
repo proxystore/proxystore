@@ -61,7 +61,7 @@ def fullname(obj: Any) -> str:
 
 
 def home_dir() -> str:
-    """Returns the absolute path to the proxystore home directory.
+    """Return the absolute path to the proxystore home directory.
 
     If set, ``$PROXYSTORE_HOME`` is preferred. Otherwise,
     ``$XDG_DATA_HOME/proxystore`` is returned where ``$XDG_DATA_HOME`` defaults
@@ -77,12 +77,12 @@ def home_dir() -> str:
 
 
 def hostname() -> str:
-    """Returns current hostname."""
+    """Return current hostname."""
     return socket.gethostname()
 
 
 def bytes_to_readable(size: int, precision: int = 3) -> str:
-    """Converts bytes to human readable value.
+    """Convert bytes to human readable value.
 
     Note:
         This method uses base-10 values for KB, MB, GB, etc. instead of
@@ -128,7 +128,7 @@ def bytes_to_readable(size: int, precision: int = 3) -> str:
 
 
 def readable_to_bytes(size: str) -> int:
-    """Converts string with bytes units to the integer value of bytes.
+    """Convert string with bytes units to the integer value of bytes.
 
     Example:
         >>> readable_to_bytes('1.2 KB')
@@ -182,11 +182,11 @@ def readable_to_bytes(size: str) -> int:
 
     try:
         value_size = decimal.Decimal(value)
-    except decimal.InvalidOperation:
-        raise ValueError(f'Unable to interpret "{value}" as a float.')
+    except decimal.InvalidOperation as e:
+        raise ValueError(f'Unable to interpret "{value}" as a float.') from e
     try:
         unit_size = units_to_bytes[unit.lower()]
-    except KeyError:
-        raise ValueError(f'Unknown unit type {unit}.')
+    except KeyError as e:
+        raise ValueError(f'Unknown unit type {unit}.') from e
 
     return int(value_size * unit_size)

@@ -89,7 +89,7 @@ def skip(
 
 
 def setup(app: Any) -> None:
-    """Setup sphinx docs."""
+    """Configure sphinx docs."""
     app.connect('autodoc-skip-member', skip)
     app.connect('autodoc-process-docstring', process_docstring)
     app.connect('autodoc-process-signature', process_signature)
@@ -98,7 +98,7 @@ def setup(app: Any) -> None:
 # -- Project information -----------------------------------------------------
 
 project = 'ProxyStore'
-copyright = '2021, Greg Pauloski'
+copyright = '2021, Greg Pauloski'  # noqa: A001
 author = 'Greg Pauloski'
 
 # The full version, including alpha/beta/rc tags

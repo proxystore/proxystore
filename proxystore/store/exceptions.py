@@ -24,7 +24,7 @@ class ProxyStoreFactoryError(StoreError):
     pass
 
 
-class ProxyResolveMissingKey(Exception):
+class ProxyResolveMissingKeyError(Exception):
     """Exception raised when the key associated with a proxy is missing."""
 
     def __init__(
@@ -33,7 +33,7 @@ class ProxyResolveMissingKey(Exception):
         store_type: type[base.Store[base.KeyT]],
         store_name: str,
     ) -> None:
-        """Init ProxyResolveMissingKey.
+        """Init ProxyResolveMissingKeyError.
 
         Args:
             key (tuple): key associated with target object that could not be

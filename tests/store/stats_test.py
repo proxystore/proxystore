@@ -23,15 +23,15 @@ class _TestClass:
     """Test Class."""
 
     def get_value(self, key: _TestKey, value: int = 0) -> int:
-        """Returns value."""
+        """Return value."""
         return value
 
     def key_arg(self, key: _TestKey) -> None:
-        """Function where key in arg."""
+        """Test function where key in arg."""
         pass
 
     def key_return(self, *, key: _TestKey) -> _TestKey:
-        """Function where key is kwarg."""
+        """Test function where key is kwarg."""
         return key
 
 

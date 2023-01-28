@@ -84,7 +84,7 @@ def get_authorizer(
     except OSError as e:
         raise GlobusAuthFileError(
             f'Error loading tokens from {tokens_file}: {e}.',
-        )
+        ) from e
 
     transfer_tokens = tokens['transfer.api.globus.org']
     auth_client = globus_sdk.NativeAppAuthClient(client_id=client_id)

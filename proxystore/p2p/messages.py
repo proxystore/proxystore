@@ -111,8 +111,8 @@ def str_to_uuid(data: dict[str, Any]) -> dict[str, Any]:
                 data[key] = uuid.UUID(data[key])
             except (AttributeError, TypeError, ValueError) as e:
                 raise MessageDecodeError(
-                    f'Failed to convert key {key} to UUID: {e}',
-                )
+                    f'Failed to convert key {key} to UUID.',
+                ) from e
     return data
 
 
@@ -134,25 +134,25 @@ def decode(message: str) -> Message:
     try:
         data = json.loads(message)
     except json.JSONDecodeError as e:
-        raise MessageDecodeError(f'Failed to load string as JSON: {e}')
+        raise MessageDecodeError('Failed to load string as JSON.') from e
 
     try:
         message_type_name = data.pop('message_type')
-    except KeyError:
+    except KeyError as e:
         raise MessageDecodeError(
             'Message does not contain a message_type key.',
-        )
+        ) from e
 
     try:
         message_type = getattr(
             sys.modules[__name__],
             MessageType[message_type_name].value,
         )
-    except (AttributeError, KeyError):
+    except (AttributeError, KeyError) as e:
         raise MessageDecodeError(
             'The message is of an unknown message type: '
             f'{message_type_name}.',
-        )
+        ) from e
 
     data = str_to_uuid(data)
 
@@ -161,7 +161,7 @@ def decode(message: str) -> Message:
     except TypeError as e:
         raise MessageDecodeError(
             f'Failed to convert message to {message_type.__name__}: {e}',
-        )
+        ) from e
 
 
 def encode(message: Message) -> str:
@@ -186,4 +186,4 @@ def encode(message: Message) -> str:
     try:
         return json.dumps(data)
     except TypeError as e:
-        raise MessageEncodeError(f'Error encoding message: {e}')
+        raise MessageEncodeError('Error encoding message.') from e

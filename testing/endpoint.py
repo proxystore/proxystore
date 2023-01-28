@@ -46,11 +46,11 @@ def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
     while True:
         try:
             r = requests.get(f'http://{host}:{port}/')
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as e:
             if waited_s >= max_time_s:  # pragma: no cover
                 raise RuntimeError(
                     'Unable to connect to endpoint with {max_time_s} seconds.',
-                )
+                ) from e
             time.sleep(sleep_s)
             waited_s += sleep_s
             continue

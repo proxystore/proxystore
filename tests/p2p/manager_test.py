@@ -14,7 +14,6 @@ from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.manager import PeerManager
 from testing.mocking import async_mock_once
 
-
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from unittest.mock import AsyncMock
 else:  # pragma: <3.8 cover

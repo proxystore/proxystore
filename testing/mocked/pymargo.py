@@ -13,7 +13,7 @@ server = 'server'
 data_dict = {}
 
 
-class MargoException(Exception):  # pragma: no cover
+class MargoException(Exception):  # pragma: no cover  # noqa: N818
     """Mock Exception implementation."""
 
     def __init__(self):
@@ -103,7 +103,8 @@ class Engine:
         """Mock register.
 
         Args:
-            funcname (str): the function name
+            funcname (str): the function name.
+            args (Any): additional positional arguments.
 
         """
         return RPC(funcname)

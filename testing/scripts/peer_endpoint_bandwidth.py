@@ -23,7 +23,7 @@ async def get_endpoint(
     actor: Literal['local', 'remote'],
     server: str,
 ) -> tuple[Endpoint, uuid.UUID | None]:
-    """Returns a ready PeerConnection."""
+    """Return a ready PeerConnection."""
     endpoint = await Endpoint(
         name=socket.gethostname(),
         uuid=uuid.uuid4(),

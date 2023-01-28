@@ -25,7 +25,7 @@ async def get_connection(
     server: str,
     channels: int = 1,
 ) -> PeerConnection:
-    """Returns a ready PeerConnection."""
+    """Return a ready PeerConnection."""
     local_uuid, name, websocket = await connect(server)
     connection = PeerConnection(local_uuid, name, websocket, channels=channels)
 

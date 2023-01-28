@@ -16,8 +16,8 @@ import pytest
 
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.store.dim.ucx import UCXServer
 from proxystore.store.dim.ucx import launch_server
+from proxystore.store.dim.ucx import UCXServer
 from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
