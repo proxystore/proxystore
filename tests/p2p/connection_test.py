@@ -11,7 +11,7 @@ from proxystore.p2p.connection import MAX_CHUNK_SIZE_BYTES
 from proxystore.p2p.connection import MAX_CHUNK_SIZE_STRING
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
-from proxystore.p2p.exceptions import PeerConnectionTimeout
+from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_p2p_connection_timeout(signaling_server) -> None:
     await connection1.send_offer(uuid2)
     # Don't finish offer/answer sending so wait() times out
 
-    with pytest.raises(PeerConnectionTimeout):
+    with pytest.raises(PeerConnectionTimeoutError):
         await connection1.ready(timeout=0.05)
 
     await websocket1.close()
@@ -111,7 +111,7 @@ async def test_p2p_connection_error(signaling_server) -> None:
     uuid, name, websocket = await connect(signaling_server.address)
     connection = PeerConnection(uuid, name, websocket)
 
-    class MyException(Exception):
+    class MyError(Exception):
         pass
 
     await connection.handle_server_message(
@@ -121,7 +121,7 @@ async def test_p2p_connection_error(signaling_server) -> None:
             peer_uuid=uuid4(),
             description_type='offer',
             description='',
-            error=str(MyException()),
+            error=str(MyError()),
         ),
     )
 

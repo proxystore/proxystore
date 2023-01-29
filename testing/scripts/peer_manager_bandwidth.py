@@ -22,7 +22,7 @@ async def get_manager(
     actor: Literal['producer', 'consumer'],
     server: str,
 ) -> tuple[PeerManager, uuid.UUID]:
-    """Returns a ready PeerManager."""
+    """Return a ready PeerManager."""
     manager = await PeerManager(uuid.uuid4(), server)
 
     print(f'{actor} uuid: {manager.uuid}')

@@ -27,12 +27,12 @@ except ImportError as e:  # pragma: no cover
     )
 
 from proxystore.p2p import messages
-from proxystore.p2p.exceptions import PeerConnectionError
-from proxystore.p2p.exceptions import PeerConnectionTimeout
 from proxystore.p2p.chunks import Chunk
 from proxystore.p2p.chunks import chunkify
 from proxystore.p2p.chunks import reconstruct
 from proxystore.p2p.counter import AtomicCounter
+from proxystore.p2p.exceptions import PeerConnectionError
+from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ class PeerConnection:
             timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
-            PeerConnectionTimeout:
+            PeerConnectionTimeoutError:
                 if the peer connection is not established within the timeout.
         """
         await self.ready(timeout)
@@ -346,18 +346,18 @@ class PeerConnection:
                 the connection is established (default: None).
 
         Raises:
-            PeerConnectionTimeout:
+            PeerConnectionTimeoutError:
                 if the connection is not ready within the timeout.
             PeerConnectionError:
                 if there is an error establishing the peer connection.
         """
         try:
             await asyncio.wait_for(self._handshake_success, timeout)
-        except asyncio.TimeoutError:
-            raise PeerConnectionTimeout(
+        except asyncio.TimeoutError as e:
+            raise PeerConnectionTimeoutError(
                 'Timeout waiting for peer to peer connection to establish '
                 f'in {self._log_prefix}.',
-            )
+            ) from e
 
 
 def log_name(uuid: UUID, name: str) -> str:

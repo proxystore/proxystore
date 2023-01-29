@@ -11,7 +11,6 @@ from typing import Any
 from proxystore.proxy import Proxy
 from proxystore.store.file import FileStore
 
-
 fp = tempfile.TemporaryDirectory()
 
 store = FileStore(name='default', store_dir=fp.name, stats=True)

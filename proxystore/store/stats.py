@@ -145,7 +145,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             self._events[event] = stats
 
     def keys(self) -> KeysView[Event]:
-        """Returns list of events being tracked."""
+        """Return list of events being tracked."""
         return self._events.keys()
 
     def _function(
@@ -204,7 +204,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         key_is_result: bool = False,
         preset_key: NamedTuple | None = None,
     ) -> GenericCallable:
-        """Wraps a method to log stats on calls to the function.
+        """Wrap a method to log stats on calls to the function.
 
         Args:
             function (callable): function to wrap.

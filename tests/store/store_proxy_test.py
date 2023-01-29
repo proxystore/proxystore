@@ -13,7 +13,7 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import StoreFactory
-from proxystore.store.exceptions import ProxyResolveMissingKey
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.local import LocalStore
 from proxystore.store.utils import get_key
 from testing.stores import StoreFixtureType
@@ -189,11 +189,11 @@ def test_raises_missing_key(store_implementation: StoreFixtureType) -> None:
     store.evict(key)
     assert not store.exists(key)
 
-    with pytest.raises(ProxyResolveMissingKey):
+    with pytest.raises(ProxyResolveMissingKeyError):
         proxy.__factory__.resolve()
 
     proxy = store.proxy_from_key(key=key)
-    with pytest.raises(ProxyResolveMissingKey):
+    with pytest.raises(ProxyResolveMissingKeyError):
         proxy()
 
     unregister_store(store_info.name)

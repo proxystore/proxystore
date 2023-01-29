@@ -35,7 +35,8 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v4
@@ -51,7 +52,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('setup.cfg', 'requirements-dev.txt') }}
+          key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('pyproject.toml') }}
           restore-keys: |
             ${{ matrix.os }}-pip-${{ matrix.python }}-
 

@@ -1,0 +1,146 @@
+[build-system]
+requires = ["setuptools>=64.0", "setuptools_scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proxystore"
+version = "0.4.0"
+authors = [
+    {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+]
+description = "Python lazy object proxy interface for distributed stores."
+readme = "README.md"
+requires-python = ">=3.7"
+license = {file = "LICENSE"}
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dependencies = [
+    "cloudpickle>=1.6.0",
+    "cryptography<=38.04",
+    "globus-sdk>=3.3.0",
+    "lazy-object-proxy>=1.6.0",
+    "redis>=3.4",
+    "requests>=2.27.1",
+    "typing-extensions>=4.3.0",
+    "importlib-metadata; python_version<'3.8'",
+]
+
+[project.urls]
+repository = "https://github.com/proxystore/proxystore"
+documentation = "https://proxystore.readthedocs.io"
+
+[project.optional-dependencies]
+dev = [
+    "asynctest; python_version<'3.8'",
+    "black",
+    "covdefaults>=2.2",
+    "coverage",
+    "mypy",
+    "pre-commit",
+    "pytest",
+    "pytest-asyncio",
+    "pytest-cov",
+    "pytest-timeout",
+    "ruff",
+    "tox",
+    "types-redis",
+    "types-requests",
+    "virtualenv",
+]
+endpoints = [
+    "aiortc>=1.3.2",
+    "hypercorn[uvloop]>=0.13.0",
+    "psutil",
+    "python-daemon",
+    "quart>=0.18.0",
+    "websockets>=10.0",
+]
+
+[project.scripts]
+signaling-server = "proxystore.p2p.server:main"
+proxystore-endpoint = "proxystore.endpoint.cli:main"
+proxystore-globus-auth = "proxystore.globus:main"
+
+[tool.black]
+line-length = 79
+target-version = ["py37"]
+skip-string-normalization = true
+
+[tool.codespell]
+skip = """
+.git,
+.github,
+__pycache__,
+build,
+dist,
+.*egg-info
+"""
+
+[tool.coverage.run]
+plugins = ["covdefaults"]
+concurrency = ["multiprocessing", "thread"]
+omit = ["version_check.py", "testing/scripts/*"]
+parallel = true
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "testing.*"
+allow_incomplete_defs = true
+allow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+allow_incomplete_defs = true
+allow_untyped_defs = true
+
+[tool.pytest]
+asyncio_mode = "auto"
+timeout = 30
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::cryptography.utils.CryptographyDeprecationWarning",
+]
+markers = [
+    "integration: mark a test as an integration test.",
+]
+
+[tool.ruff]
+# pycodestyle, pyflakes, flake8-builtins, flake8-bugbear, isort, pep8-naming,
+# pydocstyle, flake8-debugger, flake8-commas
+select = ["E", "F", "A", "B", "I", "N", "D", "T10", "COM"]
+extend-ignore = ["A003"]
+target-version = "py37"
+
+[tool.ruff.isort]
+force-single-line = true
+known-first-party = ["proxystore", "test", "testing"]
+order-by-type = false
+required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.per-file-ignores]
+"*/__init__.py" = ["F401"]
+"*/*_test.py" = ["D10"]
+"proxystore/store/*.py" = ["D102"]
+"tests/conftest.py" = ["F401"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "testing*"]
+namespaces = false

@@ -62,7 +62,7 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialization of a Websocket client.
+        """Initialize a Websocket client.
 
         This client will initialize a local Websocket
         server (Peer service) that it will store data to.
@@ -228,12 +228,12 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         while True:
             try:
                 websocket = await connect(self.addr)
-            except OSError:
+            except OSError as e:
                 if time_waited >= timeout:
                     raise RuntimeError(
                         'Failed to connect to server within timeout '
                         f'({timeout} seconds).',
-                    )
+                    ) from e
                 await asyncio.sleep(sleep_time)
                 time_waited += sleep_time
             else:
@@ -316,7 +316,7 @@ class WebsocketServer:
         return Status(success=True, error=None)
 
     def exists(self, key: str) -> bool:
-        """Verifies whether key exists within local dictionary.
+        """Check if a key exists within local dictionary.
 
         Args:
             key (str): the object's key
@@ -327,7 +327,7 @@ class WebsocketServer:
         return key in self.data
 
     async def handler(self, websocket: WebSocketServerProtocol) -> None:
-        """The handler implementation for the websocket server.
+        """Handle websocket connection requests.
 
         Args:
             websocket (WebSocketServerProtocol): the websocket server

@@ -91,19 +91,19 @@ async def connect(
             message = messages.decode(message_str)
         else:
             raise AssertionError('Received non-bytes type on websocket.')
-    except websockets.exceptions.ConnectionClosed:
+    except websockets.exceptions.ConnectionClosed as e:
         raise PeerRegistrationError(
             'Connection to signaling server closed before peer '
             'registration completed.',
-        )
-    except messages.MessageDecodeError:
+        ) from e
+    except messages.MessageDecodeError as e:
         raise PeerRegistrationError(
             'Unable to decode response message from signaling server.',
-        )
-    except asyncio.TimeoutError:
+        ) from e
+    except asyncio.TimeoutError as e:
         raise PeerRegistrationError(
             'Signaling server did not reply to registration within timeout.',
-        )
+        ) from e
 
     if isinstance(message, messages.ServerResponse):
         if message.success:

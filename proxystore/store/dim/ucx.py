@@ -17,13 +17,12 @@ except ImportError as e:  # pragma: no cover
     ucx_import_error = e
 
 import proxystore.utils as utils
-from proxystore.serialize import serialize
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
+from proxystore.serialize import serialize
 from proxystore.store.base import Store
 from proxystore.store.dim.utils import get_ip_address
 from proxystore.store.dim.utils import Status
-
 
 ENCODING = 'UTF-8'
 
@@ -61,7 +60,7 @@ class UCXStore(Store[UCXStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialization of a UCX client to issue RPCs to the UCX server.
+        """Initialize a UCX client to issue RPCs to the UCX server.
 
         This client will initialize a local UCX server (Peer service) to
         store data to.
@@ -253,7 +252,7 @@ class UCXServer:
         return Status(success=True, error=None)
 
     def exists(self, key: str) -> bool:
-        """Verifies whether key exists within local dictionary.
+        """Check if a key exists within local dictionary.
 
         Args:
             key (str): the object's key
@@ -265,7 +264,7 @@ class UCXServer:
         return key in self.data
 
     async def handler(self, ep: ucp.Endpoint) -> None:
-        """Function handler implementation.
+        """Handle endpoint requests.
 
         Args:
             ep (ucp.Endpoint): the endpoint to communicate with.
@@ -439,12 +438,12 @@ async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
     while True:
         try:
             ep = await ucp.create_endpoint(host, port)
-        except ucp._libs.exceptions.UCXNotConnected:  # pragma: no cover
+        except ucp._libs.exceptions.UCXNotConnected as e:  # pragma: no cover
             if time_waited >= timeout:
                 raise RuntimeError(
                     'Failed to connect to server within timeout '
                     f'({timeout} seconds).',
-                )
+                ) from e
             await asyncio.sleep(sleep_time)
             time_waited += sleep_time
         else:

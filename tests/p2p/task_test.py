@@ -5,7 +5,7 @@ import contextlib
 
 import pytest
 
-from proxystore.p2p.task import SafeTaskExit
+from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
 
 
@@ -14,7 +14,7 @@ def test_background_task_exits_on_error() -> None:
         return
 
     async def safe_task() -> None:
-        raise SafeTaskExit()
+        raise SafeTaskExitError()
 
     async def bad_task() -> None:
         raise RuntimeError()
@@ -26,7 +26,7 @@ def test_background_task_exits_on_error() -> None:
         None,
     ), contextlib.redirect_stderr(None):
         asyncio.run(run(okay_task))
-        with pytest.raises(SafeTaskExit):
+        with pytest.raises(SafeTaskExitError):
             asyncio.run(run(safe_task))
         with pytest.raises(SystemExit):
             asyncio.run(run(bad_task))

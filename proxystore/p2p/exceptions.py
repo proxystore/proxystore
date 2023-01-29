@@ -8,7 +8,7 @@ class PeerConnectionError(Exception):
     pass
 
 
-class PeerConnectionTimeout(PeerConnectionError):
+class PeerConnectionTimeoutError(PeerConnectionError):
     """Timeout waiting on peer to peer connection to establish."""
 
     pass

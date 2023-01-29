@@ -23,7 +23,7 @@ from proxystore.proxy import ProxyLocker
 from proxystore.serialize import deserialize as default_deserializer
 from proxystore.serialize import serialize as default_serializer
 from proxystore.store.cache import LRUCache
-from proxystore.store.exceptions import ProxyResolveMissingKey
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
@@ -123,7 +123,7 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         obj = store.get(self.key, deserializer=self.deserializer)
 
         if obj is None:
-            raise ProxyResolveMissingKey(
+            raise ProxyResolveMissingKeyError(
                 self.key,
                 self.store_type,
                 self.store_name,
@@ -164,7 +164,7 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         """Get object associated with key from store.
 
         Raises:
-            ProxyResolveMissingKey:
+            ProxyResolveMissingKeyError:
                 if the key associated with this factory does not exist
                 in the store.
         """
@@ -653,8 +653,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             with the statistics for calls to the corresponding method with the
             specified key.
 
-            Example:
-
+        Example:
             .. code-block:: python
 
                {

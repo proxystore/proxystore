@@ -20,10 +20,10 @@ except ImportError as e:  # pragma: no cover
     raise ImportError(
         f'{e}. To enable endpoint serving, install proxystore with '
         '"pip install proxystore[endpoints]".',
-    )
+    ) from e
 
-from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.utils import chunk_bytes
@@ -38,7 +38,7 @@ def create_app(
     max_content_length: int | None = None,
     body_timeout: int = 300,
 ) -> quart.Quart:
-    """Creates quart app for endpoint and registers routes.
+    """Create quart app for endpoint and registers routes.
 
     Args:
         endpoint (Endpoint): initialized endpoint to forward quart routes to.

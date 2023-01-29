@@ -14,9 +14,9 @@ if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
 else:  # pragma: <3.9 cover
     from typing import MutableMapping
 
-from proxystore.utils import bytes_to_readable
 from proxystore.endpoint.exceptions import FileDumpNotAvailableError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.utils import bytes_to_readable
 
 
 class BlobLocation(enum.Enum):
@@ -210,7 +210,7 @@ class EndpointStorage(MutableMapping[str, bytes]):
         yield from self._blobs
 
     def __len__(self) -> int:
-        """Number of keys in the storage."""
+        """Return number of keys in the storage."""
         return len(self._blobs)
 
     def __contains__(self, key: object) -> bool:

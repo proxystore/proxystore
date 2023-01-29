@@ -47,7 +47,9 @@ class EndpointConfig:
             try:
                 self.uuid = uuid.UUID(self.uuid, version=4)
             except ValueError:
-                raise ValueError(f'{self.uuid} is not a valid UUID4 string.')
+                raise ValueError(
+                    f'{self.uuid} is not a valid UUID4 string.',
+                ) from None
         if self.port < 1 or self.port > 65535:
             raise ValueError('Port must be in range [1, 65535].')
         if self.server is not None and not (
@@ -97,7 +99,7 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
 
 
 def get_log_filepath(endpoint_dir: str) -> str:
-    """Returns path to log file for endpoint.
+    """Return path to log file for endpoint.
 
     Args:
         endpoint_dir (str): directory for the endpoint.
@@ -109,7 +111,7 @@ def get_log_filepath(endpoint_dir: str) -> str:
 
 
 def get_pid_filepath(endpoint_dir: str) -> str:
-    """Returns path to PID file for endpoint.
+    """Return path to PID file for endpoint.
 
     Args:
         endpoint_dir (str): directory for the endpoint.
@@ -142,13 +144,15 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
             try:
                 cfg_json = json.load(f)
             except json.decoder.JSONDecodeError as e:
-                raise ValueError(f'Unable to parse ({path}): {str(e)}.')
+                raise ValueError(
+                    f'Unable to parse ({path}): {str(e)}.',
+                ) from None
         try:
             cfg = EndpointConfig(**cfg_json)
         except TypeError as e:
             raise ValueError(
                 f'Keys in config ({path}) do not match expected: {str(e)}.',
-            )
+            ) from None
         return cfg
     else:
         raise FileNotFoundError(

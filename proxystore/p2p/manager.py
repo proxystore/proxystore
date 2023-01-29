@@ -22,12 +22,12 @@ except ImportError as e:  # pragma: no cover
 
 from proxystore import utils
 from proxystore.p2p import messages
+from proxystore.p2p.client import connect
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerRegistrationError
-from proxystore.p2p.client import connect
-from proxystore.p2p.task import SafeTaskExit
+from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -227,7 +227,7 @@ class PeerManager:
             peers = frozenset({self._uuid, peer_uuid})
             async with self._peers_lock:
                 self._peers.pop(peers, None)
-            raise SafeTaskExit()
+            raise SafeTaskExitError() from None
 
     async def _handle_peer_messages(
         self,
@@ -317,13 +317,13 @@ class PeerManager:
             self._server_task.cancel()
             try:
                 await self._server_task
-            except (asyncio.CancelledError, SafeTaskExit):
+            except (asyncio.CancelledError, SafeTaskExitError):
                 pass
         for task in self._tasks.values():
             task.cancel()
             try:
                 await task
-            except (asyncio.CancelledError, SafeTaskExit):
+            except (asyncio.CancelledError, SafeTaskExitError):
                 pass
         async with self._peers_lock:
             for connection in self._peers.values():
@@ -355,7 +355,7 @@ class PeerManager:
             timeout (float): timeout to wait on peer connection to be ready.
 
         Raises:
-            PeerConnectionTimeout:
+            PeerConnectionTimeoutError:
                 if the peer connection is not established within the timeout.
         """
         connection = await self.get_connection(peer_uuid)

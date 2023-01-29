@@ -39,9 +39,9 @@ from testing.stores import globus_store
 from testing.stores import local_store
 from testing.stores import margo_store
 from testing.stores import redis_store
+from testing.stores import store_implementation
 from testing.stores import ucx_store
 from testing.stores import websocket_store
-from testing.stores import store_implementation
 
 
 def pytest_addoption(parser):

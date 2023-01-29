@@ -11,12 +11,12 @@ from typing import NamedTuple
 try:
     import pymargo
     import pymargo.bulk as bulk
+    from pymargo.bulk import Bulk
     from pymargo.core import Address
     from pymargo.core import Engine
     from pymargo.core import Handle
     from pymargo.core import MargoException
     from pymargo.core import RemoteFunction
-    from pymargo.bulk import Bulk
 
     pymargo_import_error = None
 except ImportError as e:  # pragma: no cover
@@ -89,7 +89,7 @@ class MargoStore(Store[MargoStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialization of a Margo client to issue RPCs to the Margo server.
+        """Initialize a Margo client to issue RPCs to the Margo server.
 
         This client will initialize a local Margo server (Peer service) that
         it will store data to.
@@ -282,7 +282,7 @@ class MargoStore(Store[MargoStoreKey]):
         key: str,
         size: int,
     ) -> Status:
-        """Initiates the desired RPC call on the specified provider.
+        """Initiate the desired RPC call on the specified provider.
 
         Arguments:
             engine (Engine): The client-side engine
@@ -424,7 +424,7 @@ class MargoServer:
         bulk_size: int,
         key: str,
     ) -> None:
-        """Verifies whether key exists within local dictionary.
+        """Check if key exists within local dictionary.
 
         Args:
             handle (Handle): the client issuing the requests' handle
@@ -457,5 +457,5 @@ class MargoServer:
 
 
 def when_finalize() -> None:
-    """Prints a statement advising that engine finalization was triggered."""
+    """Print a statement advising that engine finalization was triggered."""
     logger.info('Finalize was called. Cleaning up.')
