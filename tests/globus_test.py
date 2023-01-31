@@ -10,6 +10,7 @@ from unittest import mock
 import globus_sdk
 import pytest
 
+from proxystore.globus import _get_proxystore_scopes
 from proxystore.globus import _TOKENS_FILE
 from proxystore.globus import authenticate
 from proxystore.globus import get_authorizer
@@ -69,6 +70,50 @@ def test_get_authorizer_missing_file(tmp_path: pathlib.Path) -> None:
         get_authorizer('client id', filepath, 'redirect uri')
 
 
+@pytest.mark.parametrize(
+    'collections,additional_scopes,expected',
+    (
+        (
+            None,
+            None,
+            {'openid', 'urn:globus:auth:scope:transfer.api.globus.org:all'},
+        ),
+        (
+            ['ABCD'],
+            ['XYZ'],
+            {
+                'openid',
+                (
+                    'urn:globus:auth:scope:transfer.api.globus.org:all'
+                    '[*https://auth.globus.org/scopes/ABCD/data_access]'
+                ),
+                'XYZ',
+            },
+        ),
+        (
+            ['ABCD', 'WXYZ'],
+            None,
+            {
+                'openid',
+                (
+                    'urn:globus:auth:scope:transfer.api.globus.org:all'
+                    '[*https://auth.globus.org/scopes/ABCD/data_access '
+                    '*https://auth.globus.org/scopes/WXYZ/data_access]'
+                ),
+            },
+        ),
+    ),
+)
+def test_get_proxystore_scopes(
+    collections: list[str] | None,
+    additional_scopes: list[str] | None,
+    expected: set[str],
+) -> None:
+    assert (
+        set(_get_proxystore_scopes(collections, additional_scopes)) == expected
+    )
+
+
 def test_proxystore_authenticate(tmp_path: pathlib.Path) -> None:
     data = {'tokens': {'token': '123456789'}}
     with mock.patch('globus_sdk.OAuthTokenResponse'):
@@ -90,6 +135,17 @@ def test_main(tmp_path: pathlib.Path) -> None:
         side_effect=[GlobusAuthFileError(), None, None],
     ), contextlib.redirect_stdout(None):
         # First will raise auth file missing error and trigger auth flow
-        main()
-        # Second will find auth file and just exit
-        main()
+        assert main([]) == 0
+        # Second will find auth file and already exits and exists
+        assert main([]) != 0
+
+
+def test_main_delete(tmp_path: pathlib.Path) -> None:
+    with mock.patch('proxystore.globus.home_dir', return_value=str(tmp_path)):
+        assert main(['--delete']) != 0
+
+        token_file = tmp_path / _TOKENS_FILE
+        token_file.touch()
+
+        assert main(['--delete']) == 0
+        assert not token_file.exists()

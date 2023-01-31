@@ -491,13 +491,7 @@ class GlobusStore(Store[GlobusStoreKey]):
             else:
                 raise AssertionError('Unreachable.')
 
-        if isinstance(transfer_task, globus_sdk.DeleteData):
-            tdata = self._transfer_client.submit_delete(transfer_task)
-        elif isinstance(transfer_task, globus_sdk.TransferData):
-            tdata = self._transfer_client.submit_transfer(transfer_task)
-        else:
-            raise AssertionError('Unreachable.')
-
+        tdata = _submit_transfer_action(self._transfer_client, transfer_task)
         return tdata['task_id']
 
     def close(self) -> None:
@@ -521,7 +515,7 @@ class GlobusStore(Store[GlobusStoreKey]):
             delete_task['notify_on_failed'] = False
             delete_task['notify_on_inactive'] = False
             delete_task.add_item(endpoint.endpoint_path)
-            tdata = self._transfer_client.submit_delete(delete_task)
+            tdata = _submit_transfer_action(self._transfer_client, delete_task)
             self._wait_on_tasks(tdata['task_id'])
 
     def evict(self, key: GlobusStoreKey) -> None:
@@ -613,3 +607,33 @@ class GlobusStore(Store[GlobusStoreKey]):
         )
 
         return keys
+
+
+def _submit_transfer_action(
+    client: globus_sdk.TransferClient,
+    task: globus_sdk.DeleteData | globus_sdk.TransferData,
+) -> globus_sdk.response.GlobusHTTPResponse:
+    """Submit Globus transfer task via the client.
+
+    This helper function primarily adds some additional feedback on raised
+    exceptions.
+
+    Args:
+        client: Globus transfer client.
+        task: Globus transfer task.
+
+    Returns:
+        ``GlobusHTTPResponse``
+    """
+    try:
+        if isinstance(task, globus_sdk.DeleteData):
+            return client.submit_delete(task)
+        elif isinstance(task, globus_sdk.TransferData):
+            return client.submit_transfer(task)
+        else:
+            raise AssertionError('Unreachable.')
+    except globus_sdk.TransferAPIError as e:  # pragma: no cover
+        # https://github.com/globus/globus-sdk-python/blob/054a29167c86f66b77bb99beca45ce317b02a5a7/src/globus_sdk/exc/err_info.py#L93  # noqa: E501
+        raise Exception(
+            f'Failure initiating Globus Transfer. Error info: {e.info}',
+        ) from e
