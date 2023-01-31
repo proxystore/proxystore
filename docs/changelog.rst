@@ -1,6 +1,13 @@
 Changelog
 #########
 
+Version 0.4.1a1
+---------------
+
+`Released 30 January 2023`
+
+Pre-release for the upcoming 0.4.1 release.
+
 Version 0.4.0
 -------------
 
