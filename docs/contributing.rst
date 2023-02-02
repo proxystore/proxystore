@@ -190,9 +190,6 @@ Release Instructions
    pre-release/post-release/dev-release segments. Major/minor/patch numbers
    start at 0 and pre-release/post-release/dev-release segments start at 1.
 #. Update the version in :code:`pyproject.toml` to :code:`{VERSION}`.
-#. Add a changelog entry to :code:`docs/changelog.rst`. Pre/post/dev-releases
-   can keep the changelog simple (e.g., Pre-release for upcoming vX.X.X
-   release).
 #. Commit and merge the version updates/changelogs into main.
 #. Tag the release commit and push (typically this is the commit updating the
    version numbers).
@@ -205,6 +202,17 @@ Release Instructions
    Note the version number is prepended by "v" for the tags so we can
    distinguish release tags from non-release tags.
 #. Create a new release on GitHub using the tag. The title should be
-   ``ProxyStore v{VERSION}``. The ReadTheDocs changelog is typically copied
-   into the body. After releasing, a GitHub workflow will be triggered to
-   verify the versions, build the package, and upload to PyPI.
+   ``ProxyStore v{VERSION}``.
+
+   **Official release:**
+
+   a. Use the "Generate release notes" option and set the previous tag as the previous official release tag. E.g., for ``v0.4.1``, the previous release tag should be ``v0.4.0`` and NOT ``v0.4.1a1``.
+   b. Add an "Upgrade Steps" section at the top (see previous releases for examples).
+   c. Review the generated notes and edit as needed. PRs are organized by tag, but some PRs will be missing tags and need to be moved from the "Other Changes" section to the correct section.
+   d. Select "Set as the latest release."
+
+   **Unnofficial release:** (alpha/dev builds)
+
+   a. Do NOT generate release notes. The body can be along the lines of "Development pre-prelease for ``V{VERSION}``."
+   c. Leave the previous tag as "auto."
+   d. Select "Set as a pre-release."
