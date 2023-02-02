@@ -3,7 +3,7 @@ changelog:
     labels:
       - ignore-for-release
     authors:
-      - pre-commit-ci
+      - pre-commit-ci[bot]
   categories:
     # Provide steps for upgrading the package and adjusting for
     # breaking changes. No PRs included here.
