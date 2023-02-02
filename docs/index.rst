@@ -32,4 +32,4 @@ ProxyStore can be found on `GitHub <https://github.com/proxystore/proxystore>`_.
    guides
    contributing
    api
-   changelog
+   Changelog <https://github.com/proxystore/proxystore/releases>
