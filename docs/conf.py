@@ -62,13 +62,13 @@ def process_signature(
     if signature is not None:
         signature = re.sub(
             PROXY_PROPERTY_RE,
-            'proxystore.proxy._Proxy',
+            'proxystore.proxy.Proxy',
             signature,
         )
     if return_annotations is not None:
         return_annotations = re.sub(
             PROXY_PROPERTY_RE,
-            'proxystore.proxy._Proxy',
+            'proxystore.proxy.Proxy',
             return_annotations,
         )
     return (signature, return_annotations)
@@ -98,7 +98,7 @@ def setup(app: Any) -> None:
 # -- Project information -----------------------------------------------------
 
 project = 'ProxyStore'
-copyright = '2021, Greg Pauloski'  # noqa: A001
+copyright = '2021-Present, Greg Pauloski'  # noqa: A001
 author = 'Greg Pauloski'
 
 # The full version, including alpha/beta/rc tags
