@@ -6,12 +6,17 @@ build-backend = "setuptools.build_meta"
 name = "proxystore"
 version = "0.4.1a1"
 authors = [
+    {name = "Globus Labs"},
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+]
+maintainers = [
+    {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+    {name = "Valerie Hayot-Sasson", email = "vhayot@uchicago.edu"},
 ]
 description = "Python lazy object proxy interface for distributed stores."
 readme = "README.md"
 requires-python = ">=3.7"
-license = {file = "LICENSE"}
+license = {text = "FILE"}
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -30,8 +35,9 @@ dependencies = [
 ]
 
 [project.urls]
-repository = "https://github.com/proxystore/proxystore"
+homepage = "https://github.com/proxystore/proxystore"
 documentation = "https://proxystore.readthedocs.io"
+repository = "https://github.com/proxystore/proxystore"
 
 [project.optional-dependencies]
 dev = [
