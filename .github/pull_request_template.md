@@ -30,6 +30,7 @@
 ## Pull Request Checklist
 
 Please confirm the PR meets the following requirements.
+- [ ] Tags added to PR (e.g., breaking, bug, dependencies, documentation, enhancement, refactor).
 - [ ] Code changes pass `pre-commit` (e.g., black, mypy, ruff, etc.).
 - [ ] Tests have been added to show the fix is effective or that the new feature works.
 - [ ] New and existing unit tests pass locally with the changes.
