@@ -4,6 +4,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import sys
+import warnings
 from typing import Any
 from typing import Callable
 from typing import Iterable
@@ -22,9 +23,15 @@ from proxystore.serialize import serialize as default_serializer
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
+from proxystore.warnings import ExperimentalWarning
+
+warnings.warn(
+    'MultiStore is an experimental feature and may change in the future.',
+    category=ExperimentalWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
-
 SerializerT = Callable[[Any], bytes]
 DeserializerT = Callable[[bytes], Any]
 T = TypeVar('T')
