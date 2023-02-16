@@ -25,7 +25,7 @@ classifiers = [
 ]
 dependencies = [
     "cloudpickle>=1.6.0",
-    "cryptography<=38.04",
+    "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
     "lazy-object-proxy>=1.6.0",
     "redis>=3.4",
