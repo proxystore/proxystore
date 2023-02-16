@@ -183,6 +183,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             server=args.server,
             max_memory=args.max_memory,
             dump_dir=args.dump_dir,
+            peer_channels=args.peer_channels,
         )
     elif args.command == 'list':
         return list_endpoints()
