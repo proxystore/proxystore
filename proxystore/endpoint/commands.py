@@ -13,6 +13,7 @@ import logging
 import os
 import shutil
 import signal
+import socket
 import uuid
 from typing import Generator
 
@@ -264,7 +265,8 @@ def start_endpoint(
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     cfg = read_config(endpoint_dir)
-    hostname = utils.hostname()
+    # Use IP address here which is generally more reliable
+    hostname = socket.gethostbyname(utils.hostname())
 
     pid_file = get_pid_filepath(endpoint_dir)
 
