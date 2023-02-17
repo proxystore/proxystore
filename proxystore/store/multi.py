@@ -20,6 +20,7 @@ else:  # pragma: <3.8 cover
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.serialize import serialize as default_serializer
+from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
@@ -117,8 +118,8 @@ class Policy:
         )
 
 
-class StorePolicyArgs(TypedDict):
-    """TypedDict representation of args for the :py:class:`~MultiStore`."""
+class _StorePolicyArgs(TypedDict):
+    """Internal dictionary used by MultiStore.kwargs for reconstrction."""
 
     name: str
     kind: type[Store[Any]]
@@ -145,16 +146,13 @@ class MultiStore(Store[MultiStoreKey]):
         self,
         name: str,
         *,
-        stores: list[StorePolicyArgs],
+        stores: dict[str, Policy]
+        | dict[Store[Any], Policy]
+        | Sequence[_StorePolicyArgs],
         cache_size: int = 0,
         stats: bool = False,
     ) -> None:
         """Init MultiStore.
-
-        Warning:
-            Store names must be unique and not already registered because the
-            :py:class:`~MultiStore` will initialize all of its substores,
-            register the substores, and register itself.
 
         Note:
             This store does not implement
@@ -163,46 +161,103 @@ class MultiStore(Store[MultiStoreKey]):
             :py:meth:`~MultiStore.get` and :py:meth:`~MultiStore.set` forward
             operations to the corresponding store.
 
+        Warning:
+            :py:meth:`~MultiStore.close` will call
+            :py:meth:`~proxystore.store.base.Store.close` on all the stores
+            managed by the instance and unregister them.
+
         Args:
             name (str): name of this store instance.
-            stores (list[StorePolicyArgs]): list of dictionaries matching
-                :py:class:`~StorePolicyArgs` that defines the parameters of each
-                store and it's associated :py:class:`~Policy`.
+            stores (dict[Store, Policy]): mapping of stores (either
+                :py:class:`~proxystore.store.base.Store` instances or string
+                names of registered stores) to the corresponding
+                :py:class:`~Policy`. If
+                :py:class:`~proxystore.store.base.Store` instances are passed,
+                the instances will be registered.
             cache_size (int): size of LRU cache (in # of objects). If 0,
                 the cache is disabled. The cache is local to the Python
                 process (default: 16).
             stats (bool): collect stats on store operations (default: False).
         """
-        # Cache and stats are controlled by `stores` kwargs
+        # Cache and stats are controlled by the wrapped Stores.
         super().__init__(
             name,
             cache_size=0,
             stats=False,
-            kwargs={'stores': stores},
+            # We override the kwargs property so no need to pass here
+            kwargs={},
         )
 
         self._stores: dict[str, _StorePolicy] = {}
-        for args in stores:
-            store = args['kind'](args['name'], **args['kwargs'])
-            register_store(store)
-            self._stores[args['name']] = _StorePolicy(
-                store=store,
-                policy=args['policy'],
-            )
+
+        if isinstance(stores, dict):
+            for store, policy in stores.items():
+                if isinstance(store, str):
+                    possible_store = get_store(store)
+                    if possible_store is None:
+                        raise RuntimeError(
+                            f'A store named "{store}" is not registered.',
+                        )
+                    actual_store = possible_store
+                else:
+                    actual_store = store
+
+                self._stores[actual_store.name] = _StorePolicy(
+                    store=actual_store,
+                    policy=policy,
+                )
+        elif isinstance(stores, Sequence):
+            for store_args in stores:
+                possible_store = get_store(store_args['name'])
+                if possible_store is None:
+                    actual_store = store_args['kind'](
+                        store_args['name'],
+                        **store_args['kwargs'],
+                    )
+                else:
+                    actual_store = possible_store
+                policy = store_args['policy']
+
+                self._stores[actual_store.name] = _StorePolicy(
+                    store=actual_store,
+                    policy=policy,
+                )
+        else:
+            raise AssertionError('Unreachable.')
+
+        # Register so multiple instances of `MultiStore` in a process
+        # use the same underlying stores for caching/efficiency.
+        for store, _ in self._stores.values():
+            register_store(store, exist_ok=True)
+
         self._stores_by_priority = sorted(
             [store_name for store_name in self._stores],
             key=lambda name: self._stores[name].policy.priority,
             reverse=True,
         )
-        # Need to register self so proxies do not reinitialize a new MultiStore
-        # instance when get_store() return None.
-        register_store(self)
+
+    @property
+    def kwargs(self) -> dict[str, Any]:
+        _kwargs = super().kwargs
+
+        store_policy_args: list[_StorePolicyArgs] = []
+        for name, (store, policy) in self._stores.items():
+            store_policy_args.append(
+                _StorePolicyArgs(
+                    name=name,
+                    kind=type(store),
+                    kwargs=store.kwargs,
+                    policy=policy,
+                ),
+            )
+
+        _kwargs['stores'] = store_policy_args
+        return _kwargs
 
     def close(self) -> None:
         for store, _ in self._stores.values():
             store.close()
             unregister_store(store.name)
-        unregister_store(self.name)
 
     def evict(self, key: MultiStoreKey) -> None:
         store = self._stores[key.store_name].store
