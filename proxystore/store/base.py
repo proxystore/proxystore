@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import sys
 from abc import ABCMeta
 from abc import abstractmethod
 from concurrent.futures import Future
@@ -15,6 +16,11 @@ from typing import Generic
 from typing import NamedTuple
 from typing import Sequence
 from typing import TypeVar
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 import proxystore as ps
 from proxystore.factory import Factory
@@ -262,7 +268,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Whether the store keeps track of performance stats."""
         return self._stats is not None
 
-    def __enter__(self) -> Store[KeyT]:
+    def __enter__(self) -> Self:
         """Enter context manager."""
         return self
 
