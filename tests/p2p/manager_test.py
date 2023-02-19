@@ -20,7 +20,7 @@ else:  # pragma: <3.8 cover
     from asynctest import CoroutineMock as AsyncMock
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_awaitable(signaling_server) -> None:
     manager = await PeerManager(uuid.uuid4(), signaling_server.address)
     # Calling async_init again should do nothing
@@ -28,7 +28,7 @@ async def test_awaitable(signaling_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_not_awaited(signaling_server) -> None:
     manager = PeerManager(uuid.uuid4(), signaling_server.address)
     with pytest.raises(RuntimeError, match='await'):
@@ -36,7 +36,7 @@ async def test_not_awaited(signaling_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_uuid_name_properties(signaling_server) -> None:
     uuid_ = uuid.uuid4()
     name = 'pm'
@@ -49,7 +49,7 @@ async def test_uuid_name_properties(signaling_server) -> None:
         assert manager.name == name
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_address_validation() -> None:
     PeerManager(uuid.uuid4(), 'ws://example.com')
     PeerManager(uuid.uuid4(), 'wss://example.com')
@@ -57,7 +57,7 @@ async def test_address_validation() -> None:
         PeerManager(uuid.uuid4(), 'http://example.com')
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_uuid_mismatch(signaling_server) -> None:
     amock = AsyncMock(return_value=('wrong-uuid', None, None))
     with mock.patch('proxystore.p2p.manager.connect', side_effect=amock):
@@ -65,7 +65,7 @@ async def test_uuid_mismatch(signaling_server) -> None:
             await PeerManager(uuid.uuid4(), signaling_server.address)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection(signaling_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
@@ -84,7 +84,7 @@ async def test_p2p_connection(signaling_server) -> None:
         assert connection2.state == 'connected'
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
@@ -94,7 +94,7 @@ async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
             await manager1.send(uuid.uuid4(), 'hello', timeout=0.2)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 @pytest.mark.skipif(
     sys.version_info < (3, 8),
     reason='aiortc in py37 raises InvalidStateError for unknown reason',
@@ -148,7 +148,7 @@ async def test_p2p_connection_error_from_server(
                 pass
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_messaging(signaling_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
@@ -164,7 +164,7 @@ async def test_p2p_messaging(signaling_server) -> None:
         assert message == 'hello hello'
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_expected_server_disconnect(signaling_server) -> None:
     manager = await PeerManager(uuid.uuid4(), signaling_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
@@ -174,7 +174,7 @@ async def test_expected_server_disconnect(signaling_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unexpected_server_disconnect(signaling_server) -> None:
     manager = await PeerManager(uuid.uuid4(), signaling_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
@@ -184,7 +184,7 @@ async def test_unexpected_server_disconnect(signaling_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_serialization_error(signaling_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
@@ -208,7 +208,7 @@ async def test_serialization_error(signaling_server, caplog) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unexpected_server_response(signaling_server, caplog) -> None:
     # PeerManager should log an exception and skip the message but
     # not raise an exception.
@@ -233,7 +233,7 @@ async def test_unexpected_server_response(signaling_server, caplog) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unknown_message_type(signaling_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.

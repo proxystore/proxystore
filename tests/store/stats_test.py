@@ -5,7 +5,7 @@ import sys
 import time
 from typing import NamedTuple
 
-from pytest import raises
+import pytest
 
 from proxystore.store.stats import Event
 from proxystore.store.stats import FunctionEventStats
@@ -178,16 +178,16 @@ def test_enforces_types() -> None:
     stats = FunctionEventStats()
     key = _TestKey('key')
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         stats[key]  # type: ignore
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         stats[Event(function='function', key=key)] = 'value'  # type: ignore
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         stats[key] = TimeStats()  # type: ignore
 
-    with raises(TypeError):
+    with pytest.raises(TypeError):
         stats.update([(key, 'value')])
 
 

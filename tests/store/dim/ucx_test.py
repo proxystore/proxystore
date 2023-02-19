@@ -26,7 +26,7 @@ ENCODING = 'UTF-8'
 UCP_SPEC = importlib.util.find_spec('ucp')
 
 
-@pytest.fixture
+@pytest.fixture()
 def ucx_server(ucx_store):
     # We use the ucx_store fixture for its cleanup
     server = UCXServer('localhost', open_port())
@@ -132,6 +132,6 @@ def test_ucx_server(ucx_server) -> None:
     ret = ucx_server.evict('test')
     assert ret.success
 
+    obj = serialize({'key': key, 'data': '', 'op': 'sum'})
     with pytest.raises(AssertionError):
-        obj = serialize({'key': key, 'data': '', 'op': 'sum'})
         ret = asyncio.run(execute_handler(obj, ucx_server))

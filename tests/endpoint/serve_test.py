@@ -31,7 +31,7 @@ else:  # pragma: <3.8 cover
 
 
 @pytest_asyncio.fixture
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
     async with Endpoint(
         name='my-endpoint',
@@ -43,7 +43,7 @@ async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
             yield test_app
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_running(quart_app) -> None:
     client = quart_app.test_client()
     response = await client.get('/')
@@ -53,7 +53,7 @@ async def test_running(quart_app) -> None:
     assert len((await response.get_json())['uuid']) > 0
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_set_request(quart_app) -> None:
     client = quart_app.test_client()
     data = randbytes(100)
@@ -76,7 +76,7 @@ async def test_set_request(quart_app) -> None:
     assert set_response.status_code == 200
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get_request(quart_app) -> None:
     client = quart_app.test_client()
     data = randbytes(100)
@@ -99,7 +99,7 @@ async def test_get_request(quart_app) -> None:
     assert get_response.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_chunked_data(quart_app) -> None:
     client = quart_app.test_client()
     # Data needs to be larger than MAX_CHUNK_LENGTH
@@ -124,7 +124,7 @@ async def test_chunked_data(quart_app) -> None:
     assert (await get_response.get_data()) == data
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_empty_chunked_data(quart_app) -> None:
     client = quart_app.test_client()
 
@@ -139,7 +139,7 @@ async def test_empty_chunked_data(quart_app) -> None:
     assert set_response.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_exists_request(quart_app) -> None:
     client = quart_app.test_client()
     exists_response = await client.get(
@@ -166,7 +166,7 @@ async def test_exists_request(quart_app) -> None:
     assert (await exists_response.get_json())['exists']
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_evict_request(quart_app) -> None:
     client = quart_app.test_client()
     evict_response = await client.post('evict', query_string={'key': 'my-key'})
@@ -200,7 +200,7 @@ async def test_evict_request(quart_app) -> None:
     assert not (await exists_response.get_json())['exists']
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_payload_too_big() -> None:
     async with Endpoint(
         name='my-endpoint',
@@ -219,7 +219,7 @@ async def test_payload_too_big() -> None:
             assert set_response.status_code == 413
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_bad_endpoint_uuid(quart_app) -> None:
     client = quart_app.test_client()
     bad_uuid = 'not a uuid'
@@ -252,7 +252,7 @@ async def test_bad_endpoint_uuid(quart_app) -> None:
     assert set_response.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unknown_endpoint_uuid(quart_app) -> None:
     client = quart_app.test_client()
     unknown_uuid = uuid.uuid4()
@@ -295,7 +295,7 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
         assert set_response.status_code == 400
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_missing_key(quart_app) -> None:
     client = quart_app.test_client()
 

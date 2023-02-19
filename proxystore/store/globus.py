@@ -426,7 +426,7 @@ class GlobusStore(Store[GlobusStoreKey]):
             )
             if not done:
                 raise RuntimeError(
-                    f'Task {task} did not complete within the ' 'timeout',
+                    f'Task {task} did not complete within the timeout',
                 )
 
     def _transfer_files(

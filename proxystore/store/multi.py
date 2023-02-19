@@ -231,7 +231,7 @@ class MultiStore(Store[MultiStoreKey]):
             register_store(store, exist_ok=True)
 
         self._stores_by_priority = sorted(
-            [store_name for store_name in self._stores],
+            self._stores,
             key=lambda name: self._stores[name].policy.priority,
             reverse=True,
         )

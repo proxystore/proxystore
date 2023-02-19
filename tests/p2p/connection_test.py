@@ -14,7 +14,7 @@ from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection(signaling_server) -> None:
     uuid1, name1, websocket1 = await connect(signaling_server.address)
     connection1 = PeerConnection(uuid1, name1, websocket1)
@@ -56,7 +56,7 @@ async def test_p2p_connection(signaling_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection_multichannel(signaling_server) -> None:
     uuid1, name1, websocket1 = await connect(signaling_server.address)
     # Set channels as different to verify the answerer respects the
@@ -86,7 +86,7 @@ async def test_p2p_connection_multichannel(signaling_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection_timeout(signaling_server) -> None:
     uuid1, name1, websocket1 = await connect(signaling_server.address)
     connection1 = PeerConnection(uuid1, name1, websocket1)
@@ -106,7 +106,7 @@ async def test_p2p_connection_timeout(signaling_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_connection_error(signaling_server) -> None:
     uuid, name, websocket = await connect(signaling_server.address)
     connection = PeerConnection(uuid, name, websocket)

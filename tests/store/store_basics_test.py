@@ -37,7 +37,8 @@ def test_store_base(store_implementation: StoreFixtureType) -> None:
     assert store.get(key_bytes) == str.encode(value)
     assert store.get(key_str) == value
     c = store.get(key_callable)
-    assert c is not None and c.__call__() == value
+    assert c is not None
+    assert c.__call__() == value
     assert store.get(key_fake) is None
     assert store.get(key_fake, default='alt_value') == 'alt_value'
     assert store.get(key_array) == [1, 2, 3]

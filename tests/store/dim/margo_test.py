@@ -15,14 +15,14 @@ from testing.utils import open_port
 ENCODING = 'UTF-8'
 
 
-@pytest.fixture
+@pytest.fixture()
 def margo_server():
     """Margo server fixture."""
     host = '127.0.0.1'
     port = open_port()
     margo_addr = f'tcp://{host}:{port}'
     e = Engine(margo_addr)
-    yield MargoServer(e)
+    return MargoServer(e)
 
 
 def test_margo_store(margo_store) -> None:

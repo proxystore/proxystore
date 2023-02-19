@@ -64,7 +64,7 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.timeout(5)
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_server_with_mock_ssl() -> None:
     host = 'localhost'
     port = open_port()
@@ -98,7 +98,7 @@ async def test_server_with_mock_ssl() -> None:
 
 
 @pytest.mark.timeout(5)
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_start_server_cli() -> None:
     host = 'localhost'
     port = str(open_port())

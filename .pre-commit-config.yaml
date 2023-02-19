@@ -14,7 +14,6 @@ repos:
       - id: check-yaml
       - id: check-merge-conflict
       - id: name-tests-test
-      - id: double-quote-string-fixer
   - repo: 'https://github.com/psf/black'
     rev: 23.1.0
     hooks:

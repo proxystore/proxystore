@@ -15,7 +15,7 @@ from proxystore.utils import readable_to_bytes
 
 
 @pytest.mark.parametrize(
-    'data_size,chunk_size',
+    ('data_size', 'chunk_size'),
     ((100, 1), (1000, 100), (1000, 128)),
 )
 def test_chunk_bytes(data_size: int, chunk_size: int) -> None:
@@ -42,7 +42,7 @@ def test_fullname() -> None:
 
 
 @pytest.mark.parametrize(
-    'env,expected',
+    ('env', 'expected'),
     (
         ({}, '~/.local/share/proxystore'),
         ({'PROXYSTORE_HOME': '/path/to/home'}, '/path/to/home'),
@@ -66,7 +66,7 @@ def test_home_dir(env: dict[str, str], expected: str) -> None:
 
 
 @pytest.mark.parametrize(
-    'value,precision,expected',
+    ('value', 'precision', 'expected'),
     (
         (0, 3, '0 B'),
         (1, 3, '1 B'),
@@ -92,7 +92,7 @@ def test_bytes_to_readable_exceptions() -> None:
 
 
 @pytest.mark.parametrize(
-    'value,expected',
+    ('value', 'expected'),
     (
         ('0 B', 0),
         ('1 B', 1),

@@ -42,7 +42,7 @@ def test_proxy() -> None:
     assert not isinstance(x_, Proxy)
     assert x == x_
 
-    p = p + [1]
+    p = p + [1]  # noqa
     assert not isinstance(p, Proxy)
     assert p == [1, 2, 3, 1]
     assert len(p) == 4

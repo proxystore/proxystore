@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-import proxystore  # noqa: F401
+import proxystore
 
 PROXY_PROPERTY_RE = r'<property object at 0x.*>.Proxy'
 PROXY_DOCSTRING = 'proxy.txt'

@@ -31,7 +31,7 @@ async def endpoints(
         yield (endpoint1, endpoint2)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_init(signaling_server) -> None:
     endpoint = await Endpoint(
         name='test-init-endpoint',
@@ -44,7 +44,7 @@ async def test_init(signaling_server) -> None:
     await endpoint.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_set(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     key = str(uuid.uuid4())
@@ -53,7 +53,7 @@ async def test_set(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint2.get(key)) == data
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data1 = randbytes(100)
@@ -70,7 +70,7 @@ async def test_get(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint2.get('missingkey', endpoint=endpoint1.uuid)) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_evict(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data = randbytes(100)
@@ -84,7 +84,7 @@ async def test_evict(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint1.get(key)) is None
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_exists(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data = randbytes(100)
@@ -94,18 +94,17 @@ async def test_exists(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert await endpoint2.exists(key)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_remote_error_propogation(
     endpoints: tuple[Endpoint, Endpoint],
 ) -> None:
     endpoint1, endpoint2 = endpoints
     key = str(uuid.uuid4())
     with pytest.raises(AssertionError):
-        ep = endpoint2.uuid
-        await endpoint1.set(key, None, endpoint=ep)  # type: ignore
+        await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_peering_not_available(signaling_server) -> None:
     endpoint = Endpoint(
         name='test',
@@ -118,7 +117,7 @@ async def test_peering_not_available(signaling_server) -> None:
         await endpoint.get('key', endpoint=uuid.uuid4())
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unknown_peer(signaling_server) -> None:
     async with Endpoint(
         name='test',
@@ -129,7 +128,7 @@ async def test_unknown_peer(signaling_server) -> None:
             await endpoint.get('key', endpoint=uuid.uuid4())
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unsupported_peer_message(
     endpoints: tuple[Endpoint, Endpoint],
     caplog,
@@ -154,7 +153,7 @@ async def test_unsupported_peer_message(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unexpected_response(
     endpoints: tuple[Endpoint, Endpoint],
     caplog,

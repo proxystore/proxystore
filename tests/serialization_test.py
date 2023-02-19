@@ -1,7 +1,7 @@
 """Serialization Unit Tests."""
 from __future__ import annotations
 
-from pytest import raises
+import pytest
 
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
@@ -26,14 +26,14 @@ def test_serialization() -> None:
     f = deserialize(b)
     assert f() == [1, 2, 3]
 
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         # deserialize raises ValueError on non-bytes inputs
         deserialize('xxx')  # type: ignore
 
-    with raises(SerializationError):
+    with pytest.raises(SerializationError):
         # No identifier
         deserialize(b'xxx')
 
-    with raises(SerializationError):
+    with pytest.raises(SerializationError):
         # Fake identifier 'xxx'
         deserialize(b'99\nxxx')
