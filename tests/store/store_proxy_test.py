@@ -106,18 +106,21 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
 
     # Check that we can get the associated store back
     s = get_store(p)
-    assert s is not None and s.name == store.name
+    assert s is not None
+    assert s.name == store.name
 
     assert p == [1, 2, 3]
     key = get_key(p)
-    assert key is not None and store.get(key) == [1, 2, 3]
+    assert key is not None
+    assert store.get(key) == [1, 2, 3]
 
     p = store.proxy_from_key(key)
     assert p == [1, 2, 3]
 
     p = store.proxy([2, 3, 4])
     key = get_key(p)
-    assert key is not None and store.get(key) == [2, 3, 4]
+    assert key is not None
+    assert store.get(key) == [2, 3, 4]
 
     with pytest.raises(TypeError):
         # String will not be serialized and should raise error when putting
@@ -149,7 +152,8 @@ def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
     # store should also have cache_size=0.
     s = get_store(store_info.name)
     assert store._cache.maxsize == 0
-    assert s is not None and not s.is_cached(key)
+    assert s is not None
+    assert not s.is_cached(key)
 
     unregister_store(store_info.name)
 

@@ -1,14 +1,14 @@
 """Cache Unit Tests."""
 from __future__ import annotations
 
-from pytest import raises
+import pytest
 
 from proxystore.store.cache import LRUCache
 
 
 def test_lru_raises() -> None:
     """Test LRU Error Handling."""
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         LRUCache(-1)
 
 

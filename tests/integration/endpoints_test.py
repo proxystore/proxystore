@@ -41,7 +41,7 @@ def serve_signaling_server(host: str, port: int) -> None:
     asyncio.run(serve(host, port))
 
 
-@pytest.fixture
+@pytest.fixture()
 def endpoints(
     signaling_server,
     tmp_path: pathlib.Path,
@@ -98,7 +98,7 @@ def endpoints(
     ss.join()
 
 
-@pytest.mark.integration
+@pytest.mark.integration()
 def test_endpoint_transfer(endpoints) -> None:
     """Test transferring data between two endpoints."""
     endpoints, proxystore_dirs = endpoints
@@ -142,7 +142,7 @@ def _consume_local(queue: Queue[Any]) -> None:
     assert obj == [1, 2, 3]
 
 
-@pytest.mark.integration
+@pytest.mark.integration()
 def test_endpoint_proxy_transfer(endpoints) -> None:
     """Test transferring data via proxy between processes sharing endpoint."""
     endpoints, proxystore_dirs = endpoints
@@ -200,7 +200,7 @@ def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
         assert store.endpoint_port != port
 
 
-@pytest.mark.integration
+@pytest.mark.integration()
 def test_proxy_detects_endpoint(endpoints) -> None:
     """Test transferring data via proxy between two process and endpoints."""
     endpoints, proxystore_dirs = endpoints

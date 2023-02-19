@@ -14,7 +14,7 @@ from proxystore.p2p.client import connect
 _WAIT_FOR = 0.2
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_connect_twice(signaling_server) -> None:
     uuid, _, websocket = await connect(signaling_server.address)
     pong_waiter = await websocket.ping()
@@ -35,7 +35,7 @@ async def test_connect_twice(signaling_server) -> None:
     assert not message.error
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_connect_reconnect_new_socket(signaling_server) -> None:
     uuid1, name, websocket1 = await connect(signaling_server.address)
     pong_waiter = await websocket1.ping()
@@ -53,7 +53,7 @@ async def test_connect_reconnect_new_socket(signaling_server) -> None:
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_expected_client_disconnect(signaling_server) -> None:
     uuid, _, websocket = await connect(signaling_server.address)
     client = signaling_server.signaling_server._uuid_to_client[uuid]
@@ -74,7 +74,7 @@ async def test_expected_client_disconnect(signaling_server) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_unexpected_client_disconnect(signaling_server) -> None:
     uuid, _, websocket = await connect(signaling_server.address)
     client = signaling_server.signaling_server._uuid_to_client[uuid]
@@ -95,7 +95,7 @@ async def test_unexpected_client_disconnect(signaling_server) -> None:
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_server_deserialization_fails_silently(signaling_server) -> None:
     _, _, websocket = await connect(signaling_server.address)
     # This message should cause deserialization error on server but
@@ -105,7 +105,7 @@ async def test_server_deserialization_fails_silently(signaling_server) -> None:
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_endpoint_not_registered_error(signaling_server) -> None:
     # _, _, websocket = await connect(signaling_server.address)
     websocket = await websockets.client.connect(signaling_server.address)
@@ -129,7 +129,7 @@ async def test_endpoint_not_registered_error(signaling_server) -> None:
     assert 'not registered' in message.message
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_message_passing(signaling_server) -> None:
     peer1_uuid, peer1_name, peer1 = await connect(signaling_server.address)
     peer2_uuid, peer2_name, peer2 = await connect(signaling_server.address)
@@ -186,7 +186,7 @@ async def test_p2p_message_passing(signaling_server) -> None:
     assert isinstance(message, messages.PeerConnection)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
     peer1_uuid, peer1_name, peer1 = await connect(signaling_server.address)
     peer2_uuid = uuid4()
@@ -207,10 +207,11 @@ async def test_p2p_message_passing_unknown_peer(signaling_server) -> None:
     message = messages.decode(message_)
     assert isinstance(message, messages.PeerConnection)
     assert message.error is not None
-    assert str(peer2_uuid) in message.error and 'unknown' in message.error
+    assert str(peer2_uuid) in message.error
+    assert 'unknown' in message.error
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_signaling_server_send_encode_error(
     signaling_server,
     caplog,
@@ -230,7 +231,7 @@ async def test_signaling_server_send_encode_error(
     )
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_signaling_server_send_connection_closed(
     signaling_server,
     caplog,

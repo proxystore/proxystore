@@ -60,9 +60,11 @@ def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
     assert stats['get'].calls == 1
     assert stats['set'].calls == 1
     size = stats['get_bytes'].size_bytes
-    assert size is not None and size > 0
+    assert size is not None
+    assert size > 0
     size = stats['set_bytes'].size_bytes
-    assert size is not None and size > 0
+    assert size is not None
+    assert size > 0
 
     # stats should return a copy of the stats, not the internal data
     # structures so calling get again should not effect anything.

@@ -127,11 +127,52 @@ markers = [
 ]
 
 [tool.ruff]
-# pycodestyle, pyflakes, flake8-builtins, flake8-bugbear, isort, pep8-naming,
-# pydocstyle, flake8-debugger, flake8-commas
-select = ["E", "F", "A", "B", "I", "N", "D", "T10", "COM"]
-extend-ignore = ["A003"]
+# See all rules here: https://beta.ruff.rs/docs/rules
+select = [
+    # pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    # isort
+    "I",
+    # pep8-naming
+    "N",
+    # pydocstyle
+    "D",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-builtins
+    "A",
+    # flake8-commas
+    "COM",
+    # flake8-comprehensions
+    "C4",
+    # flake8-implicit-str-concat
+    "ISC",
+    # flake8-pytest-style
+    "PT",
+    # flake8-quotes
+    "Q",
+    # flake8-debugger
+    "T10",
+    # ruff-specific
+    "RUF",
+]
+extend-ignore = [
+    # Allow builtin attribute shadowing
+    "A003",
+    # Allow pytest.raises() without match
+    "PT011",
+]
 target-version = "py37"
+
+[tool.ruff.flake8-pytest-style]
+parametrize-values-type = "tuple"
+
+[tool.ruff.flake8-quotes]
+inline-quotes = "single"
 
 [tool.ruff.isort]
 force-single-line = true

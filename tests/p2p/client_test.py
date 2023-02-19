@@ -22,7 +22,7 @@ else:  # pragma: <3.8 cover
 _WAIT_FOR = 0.1
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_connect_and_ping_server(signaling_server) -> None:
     uuid, name, websocket = await connect(signaling_server.address)
     assert isinstance(uuid, UUID)
@@ -31,13 +31,13 @@ async def test_connect_and_ping_server(signaling_server) -> None:
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_invalid_address_protocol() -> None:
     with pytest.raises(ValueError, match='wss://'):
         await connect('myserver.com', name='test', uuid=uuid4())
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_connect_exceptions(signaling_server) -> None:
     async def sleep(*args, **kwargs) -> None:
         await asyncio.sleep(10)

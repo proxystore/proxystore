@@ -32,7 +32,7 @@ async def get_endpoint(
 
     print(f'Endpoint uuid: {endpoint.uuid}')
     if actor == 'local':
-        remote_uuid = uuid.UUID(input('Enter the remote\'s uuid: ').strip())
+        remote_uuid = uuid.UUID(input("Enter the remote's uuid: ").strip())
     else:
         remote_uuid = None
 

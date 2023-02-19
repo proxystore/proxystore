@@ -24,7 +24,7 @@ class SignalingServerInfo(NamedTuple):
 
 
 @pytest_asyncio.fixture(scope='session')
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def signaling_server(
     event_loop,
 ) -> AsyncGenerator[SignalingServerInfo, None]:

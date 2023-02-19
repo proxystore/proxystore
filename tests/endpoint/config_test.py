@@ -87,7 +87,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.parametrize(
-    'name,valid',
+    ('name', 'valid'),
     (
         ('abc', True),
         ('ABC', True),
@@ -106,7 +106,7 @@ def test_validate_name(name: str, valid: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    'bad_cfg,valid',
+    ('bad_cfg', 'valid'),
     (
         ({}, True),
         ({'name': 'bad name'}, False),
@@ -126,13 +126,13 @@ def test_validate_name(name: str, valid: bool) -> None:
     ),
 )
 def test_validate_config(bad_cfg: Any, valid: bool) -> None:
-    options = dict(
-        name='name',
-        uuid=uuid.uuid4(),
-        host='host',
-        port=1234,
-        server='wss://myserver.com',
-    )
+    options = {
+        'name': 'name',
+        'uuid': uuid.uuid4(),
+        'host': 'host',
+        'port': 1234,
+        'server': 'wss://myserver.com',
+    }
     options.update(bad_cfg)
 
     if valid:

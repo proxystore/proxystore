@@ -71,7 +71,7 @@ def test_get_authorizer_missing_file(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.parametrize(
-    'collections,additional_scopes,expected',
+    ('collections', 'additional_scopes', 'expected'),
     (
         (
             None,

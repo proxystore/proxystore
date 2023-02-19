@@ -42,7 +42,7 @@ def test_chunk_validation() -> None:
 def test_chunk_and_reconstruct(dtype: bytes | str) -> None:
     data: bytes | str = randbytes(1000) if dtype is bytes else 'x' * 1000
 
-    chunks = [c for c in chunkify(data, 100, 1)]
+    chunks = list(chunkify(data, 100, 1))
     new_data = reconstruct(chunks)
 
     assert data == new_data

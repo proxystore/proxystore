@@ -85,10 +85,10 @@ StoreFixtureType = Tuple[Store[Any], StoreInfo]
 
 
 @pytest.fixture(scope='session')
-def local_store() -> Generator[StoreInfo, None, None]:
+def local_store() -> StoreInfo:
     """Local Store fixture."""
     store_dict: dict[str, bytes] = {}
-    yield StoreInfo(
+    return StoreInfo(
         LocalStore,
         'local',
         {'store_dict': store_dict},
@@ -180,14 +180,14 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 def endpoint_store(
     endpoint: EndpointConfig,
     tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[StoreInfo, None, None]:
+) -> StoreInfo:
     """Endpoint Store fixture."""
     tmp_path = tmp_path_factory.mktemp('endpoint-store-fixture')
     tmp_dir = str(tmp_path)
     endpoint_dir = os.path.join(tmp_dir, endpoint.name)
     write_config(endpoint, endpoint_dir)
 
-    yield StoreInfo(
+    return StoreInfo(
         EndpointStore,
         'endpoint',
         {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
@@ -220,7 +220,7 @@ def ucx_store() -> Generator[StoreInfo, None, None]:
 
 
 @pytest.fixture(scope='session')
-def margo_store() -> Generator[StoreInfo, None, None]:
+def margo_store() -> StoreInfo:
     """Margo Store fixture."""
     host = '127.0.0.1'
     port = open_port()
@@ -234,7 +234,7 @@ def margo_store() -> Generator[StoreInfo, None, None]:
     ):
         ctx = mock_multiprocessing
 
-    yield StoreInfo(
+    return StoreInfo(
         MargoStore,
         'margo',
         {'protocol': protocol, 'interface': host, 'port': port},
@@ -243,11 +243,11 @@ def margo_store() -> Generator[StoreInfo, None, None]:
 
 
 @pytest.fixture(scope='session')
-def websocket_store() -> Generator[StoreInfo, None, None]:
+def websocket_store() -> StoreInfo:
     """Websocket store fixture."""
     port = open_port()
 
-    yield StoreInfo(
+    return StoreInfo(
         WebsocketStore,
         'websocket',
         {'interface': 'localhost', 'port': port},

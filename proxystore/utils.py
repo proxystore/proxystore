@@ -151,17 +151,17 @@ def readable_to_bytes(size: str) -> int:
         ValueError:
             if the value cannot be cast to a float.
     """
-    units_to_bytes = dict(
-        b=1,
-        kb=int(1e3),
-        mb=int(1e6),
-        gb=int(1e9),
-        tb=int(1e12),
-        kib=int(2**10),
-        mib=int(2**20),
-        gib=int(2**30),
-        tib=int(2**40),
-    )
+    units_to_bytes = {
+        'b': 1,
+        'kb': int(1e3),
+        'mb': int(1e6),
+        'gb': int(1e9),
+        'tb': int(1e12),
+        'kib': int(2**10),
+        'mib': int(2**20),
+        'gib': int(2**30),
+        'tib': int(2**40),
+    }
 
     # Try casting size to value (will only work if no units)
     try:

@@ -13,7 +13,7 @@ _TEST_UUID = uuid.uuid4()
 
 
 @pytest.mark.parametrize(
-    'data,result',
+    ('data', 'result'),
     (
         # Normal conversions
         ({'source_uuid': _TEST_UUID}, {'source_uuid': str(_TEST_UUID)}),
@@ -38,7 +38,7 @@ def test_uuid_to_str_conversion(
 
 
 @pytest.mark.parametrize(
-    'data,result,exception',
+    ('data', 'result', 'exception'),
     (
         # Normal conversions
         ({'source_uuid': str(_TEST_UUID)}, {'source_uuid': _TEST_UUID}, False),

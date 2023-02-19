@@ -12,7 +12,7 @@ _NAME = 'test-endpoint'
 _UUID = uuid.uuid4()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_init() -> None:
     endpoint = Endpoint(name=_NAME, uuid=_UUID)
     # Should not do anything
@@ -23,7 +23,7 @@ async def test_init() -> None:
     await endpoint.close()
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_set() -> None:
     async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
@@ -36,7 +36,7 @@ async def test_set() -> None:
         assert (await endpoint.get('key')) == data
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_set_exceeds_size() -> None:
     async with Endpoint(
         name=_NAME,
@@ -48,7 +48,7 @@ async def test_set_exceeds_size() -> None:
             await endpoint.set('key', data)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_get() -> None:
     async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
@@ -57,7 +57,7 @@ async def test_get() -> None:
         assert (await endpoint.get('key', endpoint=uuid.uuid4())) == data
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_evict() -> None:
     async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)
@@ -69,7 +69,7 @@ async def test_evict() -> None:
         await endpoint.evict('key')
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio()
 async def test_exists() -> None:
     async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)

@@ -94,9 +94,7 @@ if __name__ == '__main__':
         '--ps-redis-port',
         type=int,
         required='--ps-redis' in sys.argv,
-        help=(
-            'Redis server running on the localhost ' 'to use with ProxyStore '
-        ),
+        help='Redis server running on the localhost to use with ProxyStore',
     )
     args = parser.parse_args()
 
