@@ -43,7 +43,7 @@ def _identity(x: T) -> T:
 
 
 class PolicyDict(TypedDict):
-    """JSON compatible representation of a :py:class:`~Policy`."""
+    """JSON compatible representation of a [`Policy`][proxystore.store.multi.Policy]."""  # noqa: E501
 
     priority: int
     min_size: int
@@ -73,15 +73,15 @@ class Policy:
 
         Note:
             All arguments are optional keyword arguments that default to
-            ``None``. If left as the default, that constraint will not be
+            `None`. If left as the default, that constraint will not be
             checked against the policy.
 
         Args:
             size: Object size.
             subset_tags: Set of tags that must be a subset
-                of the Policy's ``subset_tags`` to be valid.
+                of the Policy's `subset_tags` to be valid.
             superset_tags: Set of tags that must be a superset
-                of the Policy's ``superset_tags`` to be valid.
+                of the Policy's `superset_tags` to be valid.
 
         Returns:
             If the provided constraints are valid for the policy.
@@ -140,32 +140,32 @@ class MultiStoreKey(NamedTuple):
 
 
 class MultiStore(Store[MultiStoreKey]):
-    """Policy based manager for a collection of :py:class:`~proxystore.store.base.Store`.
+    """Policy based manager for a collection of [`Store`][proxystore.store.base.Store].
 
     Note:
         This store does not implement
-        :py:meth:`~proxystore.store.base.Store.get_bytes` or
-        :py:meth:`~proxystore.store.base.Store.set_bytes` because
-        :py:meth:`~MultiStore.get` and :py:meth:`~MultiStore.set` forward
-        operations to the corresponding store.
+        [`get_bytes()`][proxystore.store.base.Store.get_bytes] or
+        [`set_bytes()`][proxystore.store.base.Store.set_bytes] because
+        `MultiStore.get()` and `MultiStore.set()` forward operations to the
+        corresponding store.
 
     Warning:
-        :py:meth:`~MultiStore.close` will call
-        :py:meth:`~proxystore.store.base.Store.close` on all the stores
-        managed by the instance and unregister them.
+        `MultiStore.close()` will call
+        [`Store.close()`][proxystore.store.base.Store.close]
+        on all the stores managed by the instance and unregister them.
 
     Args:
         name: Name of this store instance.
         stores: Mapping of stores (either
-            :py:class:`~proxystore.store.base.Store` instances or string
+            [`Store`][proxystore.store.base.Store] instances or string
             names of registered stores) to the corresponding
-            :py:class:`~Policy`. If
-            :py:class:`~proxystore.store.base.Store` instances are passed,
+            [`Policy`][proxystore.store.multi.Policy]. If
+            [`Store`][proxystore.store.base.Store] instances are passed,
             the instances will be registered.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         stats: collect stats on store operations.
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -297,26 +297,28 @@ class MultiStore(Store[MultiStoreKey]):
             If the factory requires reinstantiating the store to correctly
             resolve the object, the factory should reinstantiate the store
             with the same arguments used to instantiate the store that
-            created the proxy/factory. I.e. the :func:`proxy()` function
-            should pass any arguments given to :func:`Store.__init__()`
+            created the proxy/factory. I.e. the
+            [`proxy()`][proxystore.store.multi.MultiStore.proxy] method
+            should pass any arguments given to
+            [`Store`][proxystore.store.base.Store]
             along to the factory so the factory can correctly recreate the
             store if the factory is resolved in a different Python process.
 
         Args:
             obj: Object to place in store and return proxy for.
             serializer: optional callable which serializes the
-                object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used.
+                object. If `None`, the default serializer
+                ([`serialize()`][proxystore.serialize.serialize]) will be used.
             deserializer: Optional callable used by the factory
-                to deserialize the byte string. If ``None``, the default
-                deserializer (:py:func:`~proxystore.serialize.deserialize`)
+                to deserialize the byte string. If `None`, the default
+                deserializer ([`deserialize()`][proxystore.serialize.deserialize])
                 will be used.
             subset_tags: Iterable of tags that must be a subset
-                of a store policy's ``subset_tags`` to match that store.
+                of a store policy's `subset_tags` to match that store.
             superset_tags: Iterable of tags that must be a
-                superset of a store policy's ``superset_tags`` to match that
+                superset of a store policy's `superset_tags` to match that
                 store.
-            kwargs: Additional arguments to pass to the Factory.
+            kwargs: Additional arguments to pass to the factory.
 
         Returns:
             A proxy of the object.
@@ -340,23 +342,24 @@ class MultiStore(Store[MultiStoreKey]):
     ) -> list[Proxy[T]]:
         """Create proxies for batch of objects in the store.
 
-        See :any:`proxy() <proxystore.store.base.Store.proxy>` for more
+        See [`Store.proxy()`][proxystore.store.base.Store.proxy] for more
         details.
 
         Args:
             objs (Sequence[object]): Objects to place in store and return
                 proxies for.
             serializer: Optional callable which serializes the
-                object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used.
+                object. If `None`, the default serializer
+                ([`serialize()`][proxystore.serialize.serialize]) will be used.
             deserializer: Optional callable used by the factory
-                to deserialize the byte string. If ``None``, the default
-                deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used.
+                to deserialize the byte string. If `None`, the default
+                deserializer
+                ([`deserialize()`][proxystore.serialize.deserialize]) will be
+                used.
             subset_tags: Iterable of tags that must be a subset
-                of a store policy's ``subset_tags`` to match that store.
+                of a store policy's `subset_tags` to match that store.
             superset_tags: Iterable of tags that must be a
-                superset of a store policy's ``superset_tags`` to match that
+                superset of a store policy's `superset_tags` to match that
                 store.
             kwargs: Additional arguments to pass to the Factory.
 
@@ -388,21 +391,22 @@ class MultiStore(Store[MultiStoreKey]):
         Args:
             obj: Object to place in store and create proxy of.
             serializer: Optional callable which serializes the
-                object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used.
+                object. If `None`, the default serializer
+                ([`serialize()`][proxystore.serialize.serialize]) will be used.
             deserializer: Optional callable used by the factory
-                to deserialize the byte string. If ``None``, the default
-                deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used.
+                to deserialize the byte string. If `None`, the default
+                deserializer
+                ([`deserialize()`][proxystore.serialize.deserialize]) will be
+                used.
             subset_tags: Iterable of tags that must be a subset
-                of a store policy's ``subset_tags`` to match that store.
+                of a store policy's `subset_tags` to match that store.
             superset_tags: Iterable of tags that must be a
-                superset of a store policy's ``superset_tags`` to match that
+                superset of a store policy's `superset_tags` to match that
                 store.
             kwargs: Additional arguments to pass to the Factory.
 
         Returns:
-            A proxy wrapped in a :class:`~proxystore.proxy.ProxyLocker`.
+            A proxy wrapped in a [`ProxyLocker`][proxystore.proxy.ProxyLocker].
         """
         return ProxyLocker(
             self.proxy(
@@ -428,12 +432,12 @@ class MultiStore(Store[MultiStoreKey]):
         Args:
             obj: Object to be placed in the store.
             serializer: Optional callable which serializes the
-                object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used.
+                object. If `None`, the default serializer
+                ([`serialize()`][proxystore.serialize.serialize]) will be used.
             subset_tags: Iterable of tags that must be a subset
-                of a store policy's ``subset_tags`` to match that store.
+                of a store policy's `subset_tags` to match that store.
             superset_tags: Iterable of tags that must be a
-                superset of a store policy's ``superset_tags`` to match that
+                superset of a store policy's `superset_tags` to match that
                 store.
 
         Returns:
@@ -483,12 +487,12 @@ class MultiStore(Store[MultiStoreKey]):
         Args:
             objs: An iterable of objects to be placed in the store.
             serializer: Optional callable which serializes the
-                object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used.
+                object. If `None`, the default serializer
+                ([`serialize()`][proxystore.serialize.serialize]) will be used.
             subset_tags: Iterable of tags that must be a subset
-                of a store policy's ``subset_tags`` to match that store.
+                of a store policy's `subset_tags` to match that store.
             superset_tags: Iterable of tags that must be a
-                superset of a store policy's ``superset_tags`` to match that
+                superset of a store policy's `superset_tags` to match that
                 store.
 
         Returns:

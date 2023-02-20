@@ -37,65 +37,74 @@ class EndpointMode(enum.Enum):
 class Endpoint:
     """ProxyStore Endpoint.
 
-    An endpoint is an object store with
-    :func:`get() <Endpoint.get()>`/:func:`set() <Endpoint.set()>`
-    functionality.
+    An endpoint is an object store with `get`/`set` functionality.
 
-    By default, an endpoint operates in :py:attr:`SOLO <.EndpointMode.SOLO>`
+    By default, an endpoint operates in
+    [`EndpointMode.SOLO`][proxystore.endpoint.endpoint.EndpointMode.SOLO]
     mode where the endpoint acts just as an isolated object store. Endpoints
-    can also be configured in :py:attr:`PEERING <.EndpointMode.PEERING>` mode
-    by initializing the endpoint with a signaling server address.
+    can also be configured in
+    [`EndpointMode.PEERING`][proxystore.endpoint.endpoint.EndpointMode.PEERING]
+    mode by initializing the endpoint with a signaling server address.
     The signaling server is used to establish peer-to-peer connections with
     other endpoints after which endpoints can forward operations between each
     other. Peering is available even when endpoints are being separate
-    NATs. See the :py:mod:`proxystore.p2p <proxystore.p2p>` module to learn
-    more about peering.
+    NATs. See the [proxystore.p2p][] module to learn more about peering.
 
     Warning:
         Requests made to remote endpoints will only invoke the request on
         the remote and return the result. I.e., invoking GET on a remote
         will return the value but will not store it on the local endpoint.
 
-    **Solo Mode Usage**
+    Example:
+        Solo Mode Usage
 
-        >>> async with Endpoint('ep1', uuid.uuid4()) as endpoint:
-        >>>     serialized_data = b'data string'
-        >>>     endpoint.set('key', serialized_data)
-        >>>     assert endpoint.get('key') == serialized_data
-        >>>     endpoint.evict('key')
-        >>>     assert not endpoint.exists('key')
+        ```python
+        async with Endpoint('ep1', uuid.uuid4()) as endpoint:
+            serialized_data = b'data string'
+            endpoint.set('key', serialized_data)
+            assert endpoint.get('key') == serialized_data
+            endpoint.evict('key')
+            assert not endpoint.exists('key')
+        ```
 
-    **Peering Mode Usage**
+    Example:
+        Peering Mode Usage
 
-        >>> ep1 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
-        >>> ep2 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
-        >>>
-        >>> serialized_data = b'data string'
-        >>> ep1.set('key', serialized_data)
-        >>> assert ep2.get('key', endpoint=ep1.uuid) == serialized_data
-        >>> assert ep1.exists('key')
-        >>> assert not ep1.exists('key', endpoint=ep2.uuid)
-        >>>
-        >>> ep1.close()
-        >>> ep2.close()
+        ```python
+        ep1 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
+        ep2 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
+
+        serialized_data = b'data string'
+        ep1.set('key', serialized_data)
+        assert ep2.get('key', endpoint=ep1.uuid) == serialized_data
+        assert ep1.exists('key')
+        assert not ep1.exists('key', endpoint=ep2.uuid)
+
+        ep1.close()
+        ep2.close()
+        ```
 
     Note:
         Endpoints can be configured and started via the
-        :code:`proxystore-endpoint` command-line interface.
+        `proxystore-endpoint` command-line interface.
 
 
     Note:
-        If the endpoint is being used in peering mode, the endpoint should
-        be used as a context manager or initialized with await. This will
-        ensure :func:`async_init <Endpoint.async_init>` is executed which
-        connects to the signaling server and established a listener for
-        incoming messages.
+        If the endpoint is being used in peering mode, the endpoint should be
+        used as a context manager or initialized with await. This will ensure
+        [`Endpoint.async_init()`][proxystore.endpoint.endpoint.Endpoint.async_init]
+        is executed which connects to the signaling server and established a
+        listener for incoming messages.
 
-        >>> endpoint = await Endpoint(...)
-        >>> endpoint.close()
-        >>>
-        >>> async with Endpoint(...) as endpoint:
-        >>>     ...
+        ```python
+        endpoint = await Endpoint(...)
+        endpoint.close()
+        ```
+
+        ```python
+        async with Endpoint(...) as endpoint:
+            ...
+        ```
 
     Args:
         name: Readable name of endpoint.
@@ -172,12 +181,12 @@ class Endpoint:
 
     @property
     def uuid(self) -> UUID:
-        """Get UUID of this endpoint."""
+        """UUID of this endpoint."""
         return self._uuid
 
     @property
     def name(self) -> str:
-        """Get name of this endpoint."""
+        """Name of this endpoint."""
         return self._name
 
     async def __aenter__(self) -> Endpoint:

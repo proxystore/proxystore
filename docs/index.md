@@ -1,10 +1,4 @@
-.. ProxyStore documentation master file, created by
-   sphinx-quickstart on Tue Apr 20 23:25:40 2021.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to ProxyStore's documentation!
-======================================
+# Welcome to ProxyStore's documentation!
 
 ProxyStore provides a unique interface to object stores through transparent
 object proxies that is designed to simplify the use of object stores for
@@ -21,15 +15,4 @@ ProxyStore's goals are to:
   at runtime to optimal choices for the given data without the consumers
   being aware of the change.
 
-ProxyStore can be found on `GitHub <https://github.com/proxystore/proxystore>`_.
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents
-
-   getstarted
-   advanced
-   guides
-   contributing
-   api
-   Changelog <https://github.com/proxystore/proxystore/releases>
+ProxyStore can be found on [GitHub](https://github.com/proxystore/proxystore).

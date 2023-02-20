@@ -97,11 +97,12 @@ class GlobusEndpoints:
     """A collection of Globus endpoints.
 
     Args:
-        endpoints: Iterable of :class:`GlobusEndpoint <.GlobusEndpoint>`
+        endpoints: Iterable of
+            [`GlobusEndpoints`][proxystore.store.globus.GlobusEndpoints]
             instances.
 
     Raises:
-        ValueError: If `endpoints` has length 0 or if multiple endpoints with\
+        ValueError: If `endpoints` has length 0 or if multiple endpoints with \
             the same UUID are provided.
     """
 
@@ -148,24 +149,24 @@ class GlobusEndpoints:
         cls: type[GlobusEndpoints],
         json_object: dict[str, dict[str, str]],
     ) -> GlobusEndpoints:
-        """Construct a GlobusEndpoints object from a dictionary.
+        """Construct an endpoints collection from a dictionary.
 
         Example:
 
-        .. code-block:: text
-
-           {
-             "endpoint-uuid-1": {
-               "host_regex": "host1-regex",
-               "endpoint_path": "/path/to/endpoint/dir",
-               "local_path": "/path/to/local/dir"
-             },
-             "endpoint-uuid-2": {
-               "host_regex": "host2-regex",
-               "endpoint_path": "/path/to/endpoint/dir",
-               "local_path": "/path/to/local/dir"
-             }
-           }
+            ```python
+            {
+              "endpoint-uuid-1": {
+                "host_regex": "host1-regex",
+                "endpoint_path": "/path/to/endpoint/dir",
+                "local_path": "/path/to/local/dir"
+              },
+              "endpoint-uuid-2": {
+                "host_regex": "host2-regex",
+                "endpoint_path": "/path/to/endpoint/dir",
+                "local_path": "/path/to/local/dir"
+              }
+            }
+            ```
         """  # noqa: D412
         endpoints = []
         for uuid, params in json_object.items():
@@ -184,8 +185,9 @@ class GlobusEndpoints:
         """Construct a GlobusEndpoints object from a json file.
 
         The `dict` read from the JSON file will be passed to
-        :func:`from_dict()` and should match the format expected by
-        :func:`from_dict()`.
+        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict] and
+        should match the format expected by
+        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
         """
         with open(json_file) as f:
             data = f.read()
@@ -194,8 +196,10 @@ class GlobusEndpoints:
     def dict(self) -> dict[str, dict[str, str]]:
         """Convert the GlobusEndpoints to a dict.
 
-        Note that the :class:`.GlobusEndpoints` object can be reconstructed by
-        passing the `dict` to :func:`from_dict()`.
+        Note that the
+        [`GlobusEndpoints`][proxystore.store.globus.GlobusEndpoints]
+        object can be reconstructed by passing the `dict` to.
+        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
         """
         data = {}
         for endpoint in self:
@@ -249,39 +253,35 @@ class GlobusStoreKey(NamedTuple):
         return False
 
     def __ne__(self, other: Any) -> bool:
-        """Match keys by filename only."""
+        # Match keys by filename only.
         return not self == other
 
 
 class GlobusStore(Store[GlobusStoreKey]):
     """Globus backend class.
 
-    The :class:`GlobusStore <.GlobusStore>` is similar to a
-    :class:`FileStore <proxystore.store.file.FileStore>` in that objects in the
+    The [`GlobusStore`][proxystore.store.globus.GlobusStore] is similar to a
+    [`FileStore`][proxystore.store.file.FileStore] in that objects in the
     store are saved to disk but allows for the transfer of objects between two
     remote file systems. The two directories on the separate file systems are
-    kept in sync via Globus transfers. The :class:`GlobusStore <.GlobusStore>`
+    kept in sync via Globus transfers. The
+    [`GlobusStore`][proxystore.store.globus.GlobusStore]
     is useful when moving data between hosts that have a Globus endpoint but
     may have restrictions that prevent the use of other store backends
     (e.g., ports cannot be opened for using a
-    :class:`RedisStore <proxystore.store.redis.RedisStore>`).
+    [`RedisStore`][proxystore.store.redis.RedisStore].
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
         performed otherwise an error will be raised. Authentication can be
-        performed on the command line with :code:`$ proxystore-globus-auth`.
+        performed on the command line with `#!bash proxystore-globus-auth`.
         Authentication only needs to be performed once per system.
-
-    Warning:
-        The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
-        IDs into the keys, thus the keys returned by functions such
-        as :func:`set() <set>` will be different.
 
     Args:
         name: Name of the store instance.
         endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
             the dictionary must match the format expected by
-            :func:`GlobusEndpoints.from_dict()`.
+            [`GlobusEndpoints.from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
         polling_interval: Interval in seconds to check if Globus
             tasks have finished.
         sync_level: Globus transfer sync level.
@@ -292,12 +292,9 @@ class GlobusStore(Store[GlobusStoreKey]):
 
     Raise:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
-        ValueError: If `endpoints` is not a list of
-            :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
-            :class:`GlobusEndpoints <.GlobusEndpoints>`, or dict.
-        ValueError: If the :code:`len(endpoints) != 2` because
-            :class:`GlobusStore <.GlobusStore>` can currently only keep
-            two endpoints in sync.
+        ValueError: If `endpoints` is of an incorrect type.
+        ValueError: If the :code:`len(endpoints) != 2` because this
+            implementation can currently only keep two endpoints in sync.
     """
 
     def __init__(
@@ -604,7 +601,7 @@ def _submit_transfer_action(
         task: Globus transfer task.
 
     Returns:
-        A ``GlobusHTTPResponse``.
+        A `GlobusHTTPResponse`.
     """
     try:
         if isinstance(task, globus_sdk.DeleteData):

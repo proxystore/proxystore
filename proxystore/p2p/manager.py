@@ -37,42 +37,48 @@ class PeerManager:
     """Peer Connections Manager.
 
     Handles establishing peer connections via
-    `aiortc <https://aiortc.readthedocs.io/>`_, responding to requests for
+    [aiortc](https://aiortc.readthedocs.io/), responding to requests for
     new peer connections from the signaling server, and sending and
     receiving data to/from existing peer connections.
 
-    .. code-block:: python
 
-       from proxystore.p2p.manager import PeerManager
+    Example:
+        ```python
+        from proxystore.p2p.manager import PeerManager
 
-       pm1 = await PeerManager(uuid.uuid4(), signaling_server_address)
-       pm2 = await PeerManager(uuid.uuid4(), signaling_server_address)
+        pm1 = await PeerManager(uuid.uuid4(), signaling_server_address)
+        pm2 = await PeerManager(uuid.uuid4(), signaling_server_address)
 
-       await pm1.send(pm2.uuid, 'hello hello')
-       source_uuid, message = await pm2.recv()
-       assert source_uuid == pm1.uuid
-       assert message == 'hello hello'
+        await pm1.send(pm2.uuid, 'hello hello')
+        source_uuid, message = await pm2.recv()
+        assert source_uuid == pm1.uuid
+        assert message == 'hello hello'
 
-       pm1.close()
-       pm2.close()
+        pm1.close()
+        pm2.close()
+        ```
 
     Note:
-        The :class:`PeerManager <.PeerManager>` can also be used as a context
-        manager.
+        The class can also be used as a context manager.
 
-        >>> async with PeerManager(..) as manager:
-        >>>     ...
+        ```python
+        async with PeerManager(..) as manager:
+            ...
+        ```
 
     Warning:
-        The :class:`PeerManager <.PeerManager>` must be initialized
-        with await or inside an async with statement to correctly
-        configure all async tasks and connections.
+        The class must be initialized with await or inside an async with
+        statement to correctly configure all async tasks and connections.
 
-        >>> manager = await PeerManager(...)
-        >>> manager.close()
-        >>>
-        >>> async with PeerManager(...) as manager:
-        >>>     ...
+        ```python
+        manager = await PeerManager(...)
+        manager.close()
+        ```
+
+        ```python
+        async with PeerManager(...) as manager:
+            ...
+        ```
 
     Args:
         uuid: UUID of the client.
@@ -87,8 +93,8 @@ class PeerManager:
         verify_certificate: Verify the signaling server's SSL certificate,
 
     Raises:
-        ValueError: If the signaling server address does not start with ws://
-            or wss://.
+        ValueError: If the signaling server address does not start with "ws://"
+            or "wss://".
     """
 
     def __init__(
@@ -142,12 +148,12 @@ class PeerManager:
 
     @property
     def uuid(self) -> UUID:
-        """Get UUID of the peer manager."""
+        """UUID of the peer manager."""
         return self._uuid
 
     @property
     def name(self) -> str:
-        """Get name of the peer manager."""
+        """Name of the peer manager."""
         return self._name
 
     async def async_init(self) -> None:
@@ -206,7 +212,7 @@ class PeerManager:
     ) -> None:
         """Wait on connection to be ready and handle errors.
 
-        If an error is raised, catch it and remove this PeerConnection.
+        If an error is raised, catch it and remove this `PeerConnection`.
 
         Warning:
             This method will cancel the task that is handling the peer

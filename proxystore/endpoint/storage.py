@@ -29,13 +29,13 @@ class BlobLocation(enum.Enum):
 
 
 class Blob:
-    """Representation of entry in :class:`.EndpointStorage`.
+    """Representation of entry in [`EndpointStorage`][proxystore.endpoint.storage.EndpointStorage].
 
     Args:
         key: Key associated with the blob.
         value: The blob being stored.
         filepath: Optional filepath for dumping the blob.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -50,14 +50,14 @@ class Blob:
 
     @property
     def location(self) -> BlobLocation:
-        """Get the location of the blob."""
+        """Location of the blob."""
         return (
             BlobLocation.FILE if self._value is None else BlobLocation.MEMORY
         )
 
     @property
     def value(self) -> bytes:
-        """Get the blob bytes."""
+        """Blob bytes."""
         if self._value is None:
             self.load()
         assert self._value is not None
@@ -94,17 +94,16 @@ class Blob:
 class EndpointStorage(MutableMapping[str, bytes]):
     """Endpoint in-memory blob storage with filesystem fallback.
 
-    The :class:`.EndpointStorage` provides a dict-like storage of key-bytes
-    pairs. Optionally, a maximum in-memory size for the data structure can
-    be specified and least-recently used key-bytes pairs will be dumped
-    to a file in a specified directory.
+    Provides a dict-like storage of key-bytes pairs. Optionally, a maximum
+    in-memory size for the data structure can be specified and least-recently
+    used key-bytes pairs will be dumped to a file in a specified directory.
 
     Args:
         max_size: Optional maximum size in bytes for in-memory
             storage of blobs. If the memory limit is exceeded, least
             recently used blobs will be dumped to disk (if configured).
-        max_object_size: optional maximum size in bytes for any single blob.
-        dump_dir : optional directory to dump blobs to when `max_object_size`
+        max_object_size: Optional maximum size in bytes for any single blob.
+        dump_dir: Optional directory to dump blobs to when `max_object_size`
             is reached.
     """
 

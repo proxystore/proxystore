@@ -1,10 +1,10 @@
 """Endpoints for direct, cross-site communication.
 
 Note:
-   Please refer to the :ref:`endpoints-guide` for an introduction to
-   endpoints in ProxyStore.
+   Please refer to the [Endpoints Guide](../../guides/endpoints.md) for an
+   introduction to endpoints in ProxyStore.
 
-:any:`Endponts <proxystore.endpoint.endpoint.Endpoint>` are in-memory object
+[`Endponts`][proxystore.endpoint.endpoint.Endpoint] are in-memory object
 stores with peering capabilities. Endpoints enable data transfer between
 multiple sites using NAT traversal.
 """

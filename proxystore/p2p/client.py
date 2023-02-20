@@ -49,15 +49,15 @@ async def connect(
             SSLContext (useful if the server uses self-signed certificates).
 
     Returns:
-        Tuple of the UUID of this client returned by the signaling server,
-        the name used to register the client, and the websocket connection to
+        Tuple of the UUID of this client returned by the signaling server, \
+        the name used to register the client, and the websocket connection to \
         the signaling server.
 
     Raises:
         EndpointRegistrationError: If the connection to the signaling server
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
-        ValueError: If address does not start with ws:// or wss://.
+        ValueError: If address does not start with "ws://" or "wss://".
     """
     if name is None:
         name = gethostname()

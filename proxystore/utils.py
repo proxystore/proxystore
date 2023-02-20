@@ -31,11 +31,6 @@ def chunk_bytes(
 def create_key(obj: Any) -> str:
     """Generate key for the object.
 
-    .. todo::
-
-       * generate key based on object hash (Re: Issue #4)
-       * consider how to deal with key collisions
-
     Args:
         obj: Object to create key for.
 
@@ -130,10 +125,12 @@ def readable_to_bytes(size: str) -> int:
     """Convert string with bytes units to the integer value of bytes.
 
     Example:
+        ```python
         >>> readable_to_bytes('1.2 KB')
         1200
         >>> readable_to_bytes('0.6 MiB')
         629146
+        ```
 
     Args:
         size: String to parse for bytes size.

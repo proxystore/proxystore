@@ -46,46 +46,47 @@ class PeerConnection:
     """Peer-to-peer connection.
 
     Interface for establishing a peer-to-peer connection via WebRTC
-    (`aiortc <https://aiortc.readthedocs.io/en/latest/>`_) and
+    [aiortc](https://aiortc.readthedocs.io/en/latest/) and
     sending/receiving messages between the two peers. The peer-to-peer
     connection is established using a central and publicly accessible
     signaling server.
 
     Warning:
         Applications should prefer using the
-        :any:`PeerManager <proxystore.p2p.manager.PeerManager>` rather than
-        using the :class:`PeerConnection <PeerConnection>` class.
+        [`PeerManager`][proxystore.p2p.manager.PeerManager] rather than using
+        the [`PeerConnection`][proxystore.p2p.connection.PeerConnection] class.
 
-    .. code-block:: python
+    Example:
+        ```python
+        from proxystore.p2p.connection import PeerConnection
+        from proxystore.p2p.messages import decode
+        from proxystore.p2p.server import connect
 
-       from proxystore.p2p.connection import PeerConnection
-       from proxystore.p2p.messages import decode
-       from proxystore.p2p.server import connect
+        uuid1, name1, websocket1 = await connect(signaling_server_address)
+        connection1 = PeerConnection(uuid1, name1, websocket1)
 
-       uuid1, name1, websocket1 = await connect(signaling_server_address)
-       connection1 = PeerConnection(uuid1, name1, websocket1)
+        uuid2, name2, websocket2 = await connect(signaling_server_address)
+        connection2 = PeerConnection(uuid2, name2, websocket2)
 
-       uuid2, name2, websocket2 = await connect(signaling_server_address)
-       connection2 = PeerConnection(uuid2, name2, websocket2)
+        await connection1.send_offer(uuid2)
+        offer = decode(await websocket2.recv())
+        await connection2.handle_server_message(offer)
+        answer = decode(await websocket1.recv())
+        await connection1.handle_server_message(answer)
 
-       await connection1.send_offer(uuid2)
-       offer = decode(await websocket2.recv())
-       await connection2.handle_server_message(offer)
-       answer = decode(await websocket1.recv())
-       await connection1.handle_server_message(answer)
+        await connection1.ready()
+        await connection2.ready()
 
-       await connection1.ready()
-       await connection2.ready()
+        await connection1.send('hello')
+        assert await connection2.recv() == 'hello'
+        await connection2.send('hello hello')
+        assert await connection1.recv() == 'hello hello'
 
-       await connection1.send('hello')
-       assert await connection2.recv() == 'hello'
-       await connection2.send('hello hello')
-       assert await connection1.recv() == 'hello hello'
-
-       await websocket1.close()
-       await websocket2.close()
-       await connection1.close()
-       await connection2.close()
+        await websocket1.close()
+        await websocket2.close()
+        await connection1.close()
+        await connection2.close()
+        ```
 
     Args:
         uuid: UUID of this client.
@@ -163,7 +164,7 @@ class PeerConnection:
             timeout: Timeout to wait on peer connection to be ready.
 
         Raises:
-            PeerConnectionTimeoutError: if the peer connection is not
+            PeerConnectionTimeoutError: If the peer connection is not
                 established within the timeout.
         """
         await self.ready(timeout)
@@ -356,6 +357,6 @@ class PeerConnection:
 
 
 def log_name(uuid: UUID, name: str) -> str:
-    """Return str formatted as `name(uuid-prefix)`."""
+    """Return string formatted as `#!python 'name(uuid-prefix)'`."""
     uuid_ = str(uuid)
     return f'{name}({uuid_[:min(8,len(uuid_))]})'

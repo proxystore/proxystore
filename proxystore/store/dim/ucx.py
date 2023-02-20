@@ -346,9 +346,9 @@ def launch_server(host: str, port: int) -> None:
 def reset_ucp() -> None:  # pragma: no cover
     """Hard reset all of UCP.
 
-    UCP provides :code:`ucp.reset()`; however, this function does not correctly
+    UCP provides `ucp.reset()`; however, this function does not correctly
     shutdown all asyncio tasks and readers. This function wraps
-    :code:`ucp.reset()` and additionally removes all readers on the event loop
+    `ucp.reset()` and additionally removes all readers on the event loop
     and cancels/awaits all asyncio tasks.
     """
 
@@ -382,9 +382,9 @@ def reset_ucp() -> None:  # pragma: no cover
 async def reset_ucp_async() -> None:  # pragma: no cover
     """Hard reset all of UCP.
 
-    UCP provides :code:`ucp.reset()`; however, this function does not correctly
+    UCP provides `ucp.reset()`; however, this function does not correctly
     shutdown all asyncio tasks and readers. This function wraps
-    :code:`ucp.reset()` and additionally removes all readers on the event loop
+    `ucp.reset()` and additionally removes all readers on the event loop
     and cancels/awaits all asyncio tasks.
     """
 

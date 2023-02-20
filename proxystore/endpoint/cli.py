@@ -1,4 +1,4 @@
-""":code:`proxystore-endpoint` command-line interface."""
+"""`proxystore-endpoint` command-line interface."""
 from __future__ import annotations
 
 import argparse
@@ -47,12 +47,11 @@ class _CLIFormatter(logging.Formatter):
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI for managing endpoints on the local system.
 
-    Usage:
-
-    .. code-block:: console
-
-       $ proxystore-endpoint [command] {options}
-       $ proxystore-endpoint --help
+    !!! note "Usage"
+        ```bash
+        $ proxystore-endpoint [command] {options}
+        $ proxystore-endpoint --help
+        ```
     """
     argv = argv if argv is not None else sys.argv[1:]
     parser = argparse.ArgumentParser(

@@ -18,6 +18,20 @@ _ENDPOINT_PID_FILE = 'daemon.pid'
 class EndpointConfig:
     """Endpoint configuration.
 
+    Attributes:
+        name: Endpoint name.
+        uuid: Endpoint UUID.
+        host: Host endpoint is running on.
+        port: Port endpoint is running on.
+        server: Optional signaling server the endpoint should register with.
+        max_memory: Optional memory limit before demoting objects to disk.
+        max_object_size: Optional maximum object size.
+        dump_dir: Optional directory to put objects in when `max_memory` is
+            exceeded.
+        peer_channels: Number of peer channels to multiplex communications
+            over.
+        verify_certificates: Validate the SSL certificates of `server`.
+
     Raises:
         ValueError: If the name does not contain only alphanumeric, dash, or
             underscore characters, if the UUID cannot be parsed, or if the
@@ -74,7 +88,7 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
             configurations.
 
     Returns:
-        List of :class:`~proxystore.endpoint.config.EndpointConfig`.
+        List of found configs.
     """
     endpoints: list[EndpointConfig] = []
 
@@ -127,7 +141,7 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
         endpoint_dir: Directory containing endpoint configuration file.
 
     Returns:
-        :class:`<.EndpointConfig>`
+        Config found in `endpoint_dir`.
 
     Raises:
         FileNotFoundError: If a config files does not exist in the directory.

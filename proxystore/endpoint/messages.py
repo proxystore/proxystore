@@ -12,7 +12,18 @@ else:  # pragma: <3.8 cover
 
 @dataclass
 class EndpointRequest:
-    """Message type for requests between endpoints."""
+    """Message type for requests between endpoints.
+
+    Attributes:
+        kind: One of `#!python 'request'` or `#!python 'response'`.
+        op: One of `#!python 'evict'`, `#!python 'exists'`, `#!python 'get'`,
+            or `#!python 'set'`.
+        uuid: UUID of sender.
+        key: Key to operate on.
+        data: Optional data to operate on.
+        exists: Result of `exists` operation.
+        error: Error raised by operation.
+    """
 
     kind: Literal['request', 'response']
     op: Literal['evict', 'exists', 'get', 'set']

@@ -1,23 +1,21 @@
 """Globus OAuth tools.
 
-ProxyStore provides the ``proxystore-globus-auth`` CLI tool to give consent
+ProxyStore provides the `proxystore-globus-auth` CLI tool to give consent
 to the ProxyStore Globus Application.
 
-.. code-block:: bash
+```bash
+# basic authentication
+proxystore-globus-auth
+# delete old tokens
+proxystore-globus-auth --delete
+# give consent for specific collections
+proxystore-globus-auth --collections COLLECTION_UUID COLLECTION_UUID ...
+# specify additional scopes
+proxystore-globus-auth --scopes SCOPE SCOPE ...
+```
 
-   # basic authentication
-   proxystore-globus-auth
-   # delete old tokens
-   proxystore-globus-auth --delete
-   # give consent for specific collections
-   proxystore-globus-auth --collections [COLLECTION_UUID] [COLLECTION_UUID] ...
-   # specify additional scopes
-   proxystore-globus-auth --scopes [SCOPE] [SCOPE] ...
-
-Based on
-`Parsl's implementation <https://github.com/Parsl/parsl/blob/1.2.0/parsl/data_provider/globus.py>`_
-and the
-`Globus examples <https://github.com/globus/native-app-examples/blob/064569e103f7d328f3d6c4b1242234011c81dffb/example_copy_paste_refresh_token.py>`_.
+Based on [Parsl's implementation](https://github.com/Parsl/parsl/blob/1.2.0/parsl/data_provider/globus.py)
+and the [Globus examples](https://github.com/globus/native-app-examples/blob/064569e103f7d328f3d6c4b1242234011c81dffb/example_copy_paste_refresh_token.py).
 """  # noqa: E501
 from __future__ import annotations
 
@@ -170,7 +168,10 @@ def get_proxystore_authorizer(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Perform Globus authentication."""
+    """Perform Globus authentication.
+
+    This function is the entrypoint for the `proxystore-globus-auth` CLI tool.
+    """
     parser = argparse.ArgumentParser(
         'ProxyStore Globus Auth Tool',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

@@ -32,7 +32,13 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Client:
-    """Representation of client connection."""
+    """Representation of client connection.
+
+    Attributes:
+        name: Name of client.
+        uuid: UUID of client.
+        websocket: WebSocket connection to the client.
+    """
 
     name: str
     uuid: UUID
@@ -51,21 +57,23 @@ class SignalingServer:
     longer need the signaling server.
 
     To learn more about the WebRTC peer connection process, check out
-    `<https://webrtc.org/getting-started/peer-connections>`_.
+    https://webrtc.org/getting-started/peer-connections.
 
     The signaling server is built on websockets and designed to be
-    served using :code:`websockets.serve`.
+    served using `#!python websockets.serve()`.
 
-    .. code-block:: python
 
-       import websockets
-       from proxystore.p2p.server import SignalingServer
+    Example:
+        ```python
+        import websockets
+        from proxystore.p2p.server import SignalingServer
 
-       signaling_server = SignalingServer()
-       async with websockets.serve(
-            signaling_server.handler, host='localhost', port=1234
-       ) as websocket_server:
-           ...
+        signaling_server = SignalingServer()
+        async with websockets.serve(
+             signaling_server.handler, host='localhost', port=1234
+        ) as websocket_server:
+            ...
+        ```
     """
 
     def __init__(self) -> None:
@@ -257,9 +265,9 @@ async def serve(
 ) -> None:
     """Run the signaling server.
 
-    Initializes a :class:`SignalingServer <.SignalingServer>` and starts a
-    websocket server listening on `host:port` for new connections and
-    incoming messages.
+    Initializes a [`SignalingServer`][proxystore.p2p.server.SignalingServer]
+    and starts a websocket server listening on `host:port` for new connections
+    and incoming messages.
 
     Args:
         host: Host to listen on.
@@ -299,12 +307,12 @@ async def serve(
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI for starting the signaling server.
 
-    Usage:
+    !!! note "Usage"
 
-    .. code-block:: console
-
-       $ signaling-server {options}
-       $ signaling-server --help
+        ```bash
+        $ signaling-server {options}
+        $ signaling-server --help
+        ```
     """
     parser = argparse.ArgumentParser(
         'Websocket-based Signaling Server',

@@ -17,16 +17,17 @@ def serialize(obj: Any) -> bytes:
     """Serialize object.
 
     Objects are serialized using
-    `pickle <https://docs.python.org/3/library/pickle.html>`_ (protocol 4)
-    except for ``bytes`` or ``str`` objects.
-    If pickle fails, `cloudpickle <https://github.com/cloudpipe/cloudpickle>`_
+    [pickle](https://docs.python.org/3/library/pickle.html) (protocol 4)
+    except for [bytes][] or [str][] objects.
+    If pickle fails, [cloudpickle](https://github.com/cloudpipe/cloudpickle)
     is used as a fallback.
 
     Args:
         obj: Object to serialize.
 
     Returns:
-        ``bytes`` that can be passed to :py:func:`~deserialize`.
+        Bytes that can be passed to \
+        [`deserialize()`][proxystore.serialize.deserialize].
     """
     if isinstance(obj, bytes):
         identifier = b'01\n'
@@ -54,17 +55,19 @@ def deserialize(data: bytes) -> Any:
     """Deserialize object.
 
     Args:
-        data: Bytes produced by :py:func:`~serialize`.
+        data: Bytes produced by
+            [`serialize()`][proxystore.serialize.serialize].
 
     Returns:
         The deserialized object.
 
     Raises:
-        ValueError: If ``data`` is not of type ``bytes``.
-        SerializationError: If the identifier of ``data`` is missing or
+        ValueError: If `data` is not of type `bytes`.
+        SerializationError: If the identifier of `data` is missing or
             invalid. The identifier is prepended to the string in
-            :py:func:`~serialize` to indicate which serialization method was
-            used (e.g., no serialization, pickle, etc.).
+            [`serialize()`][proxystore.serialize.serialize] to indicate which
+            serialization method was used (e.g., no serialization, pickle,
+            etc.).
     """
     if not isinstance(data, bytes):
         raise ValueError(

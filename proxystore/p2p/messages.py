@@ -18,8 +18,11 @@ class MessageType(enum.Enum):
     """Types of messages supported."""
 
     server_response = 'ServerResponse'
+    """Server response message."""
     server_registration = 'ServerRegistration'
+    """Server registration message."""
     peer_connection = 'PeerConnection'
+    """Peer connection message."""
 
 
 @dataclasses.dataclass
@@ -31,7 +34,12 @@ class Message:
 
 @dataclasses.dataclass
 class ServerRegistration(Message):
-    """Register with signaling server as peer."""
+    """Register with signaling server as peer.
+
+    Attributes:
+        name: Name of peer requesting to register.
+        uuid: UUID of peer requesting to register.
+    """
 
     name: str
     uuid: uuid.UUID
@@ -40,7 +48,13 @@ class ServerRegistration(Message):
 
 @dataclasses.dataclass
 class ServerResponse(Message):
-    """Message returned by signaling server on success or error."""
+    """Message returned by signaling server on success or error.
+
+    Attributes:
+        success: If the registration was successful.
+        message: Message from server.
+        error: If `message` is an error message.
+    """
 
     success: bool = True
     message: str | None = None
@@ -50,7 +64,17 @@ class ServerResponse(Message):
 
 @dataclasses.dataclass
 class PeerConnection(Message):
-    """Message used in establishing a peer-to-peer connection."""
+    """Message used in establishing a peer-to-peer connection.
+
+    Attributes:
+        source_uuid: UUID of sending peer.
+        source_name: Name of sending peer.
+        peer_uuid: UUID of destination peer.
+        description_type: One of `#!python 'answer'` or `#!python 'offer'`
+            indicating the type of message being sent.
+        description: Session description protocol message.
+        error: Error string if a problem occurs.
+    """
 
     source_uuid: uuid.UUID
     source_name: str
@@ -81,7 +105,7 @@ def uuid_to_str(data: dict[str, Any]) -> dict[str, Any]:
     string for jsonification.
 
     Returns:
-        Shallow copy of the input dictionary with values cast from UUID
+        Shallow copy of the input dictionary with values cast from UUID \
         to str if their key also contains UUID.
     """
     data = data.copy()
@@ -94,10 +118,11 @@ def uuid_to_str(data: dict[str, Any]) -> dict[str, Any]:
 def str_to_uuid(data: dict[str, Any]) -> dict[str, Any]:
     """Cast any possible UUID strings to UUID objects.
 
-    The inverse operation of :func:`<._uuid_to_str>`.
+    The inverse operation of
+    [uuid_to_str()][proxystore.p2p.messages.uuid_to_str].
 
     Returns:
-        Shallow copy of the input dictionary with values cast from
+        Shallow copy of the input dictionary with values cast from \
         str to UUID if the key also contains UUID.
 
     Raises:
@@ -123,12 +148,10 @@ def decode(message: str) -> Message:
         message: JSON string to decode.
 
     Returns:
-        Instance of a subtype of
-        :any:`Message <proxystore.p2p.messages.Message>`.
+        Parsed message.
 
     Raises:
-        MessageDecodeError: If the message cannot be decoded into a
-            :any:`Message <proxystore.p2p.messages.Message>`.
+        MessageDecodeError: If the message cannot be decoded.
     """
     try:
         data = json.loads(message)

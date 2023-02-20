@@ -20,11 +20,11 @@ def get_key(proxy: Proxy[T]) -> NamedTuple:
 
     Returns:
         The key, a NamedTuple unique to the
-        :class:`~proxystore.store.base.Store` that created the proxy..
+        [`Store`][proxystore.store.base.Store] that created the proxy..
 
     Raises:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
-            :class:`~proxystore.store.base.StoreFactory`.
+            [`StoreFactory`][proxystore.store.base.StoreFactory].
     """
     factory = proxy.__factory__
     if isinstance(factory, base.StoreFactory):
@@ -43,15 +43,19 @@ def resolve_async(proxy: Proxy[T]) -> None:
     Useful if the user knows a proxy will be needed soon and wants to
     resolve the proxy concurrently with other computation.
 
-    >>> ps.proxy.resolve_async(my_proxy)
-    >>> computation_without_proxy(...)
-    >>> # p is hopefully resolved
-    >>> computation_with_proxy(my_proxy, ...)
+    ```python
+    from proxystore.store.utils import resolve_async
+
+    resolve_async(my_proxy)
+    computation_without_proxy(...)
+    # p is hopefully resolved
+    computation_with_proxy(my_proxy, ...)
+    ```
 
     Note:
         The asynchronous resolving functionality is implemented
-        by :class:`~proxystore.store.base.StoreFactory`. Factories that are not
-        of this type will error when used with this function.
+        by [`StoreFactory`][proxystore.store.base.StoreFactory]. Factories that
+        are not of this type will error when used with this function.
 
     Args:
         proxy: Proxy instance to begin asynchronously resolving.

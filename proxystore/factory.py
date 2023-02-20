@@ -19,28 +19,23 @@ class Factory(Generic[T]):
     """Abstract Factory Class.
 
     A factory is a callable object that when called, returns an object.
-    The :any:`Proxy <proxystore.proxy.Proxy>` constructor takes an instance of
+    The [`Proxy`][proxystore.proxy.Proxy] constructor takes an instance of
     a factory and calls the factory when the proxy does its just-in-time
     resolution.
 
     Note:
-        All factory implementations must be subclasses of
-        :class:`Factory <.Factory>`.
-
-    Note:
-        If a custom factory is not-pickleable,
-        :func:`__getnewargs_ex__` may need to be implemented.
-        Writing custom pickling functions is also beneifical to ensure that
-        a pickled factory does not contain the object itself, just what is
-        needed to resolve the object to keep the final pickled factory as
-        small as possible.
+        If a custom factory is not-pickleable, `__getnewargs_ex__` may need to
+        be implemented. Writing custom pickling functions is also beneifical
+        to ensure that a pickled factory does not contain the object itself,
+        just what is needed to resolve the object to keep the final pickled
+        factory as small as possible.
     """
 
     def __init__(self) -> None:
         raise NotImplementedError
 
     def __call__(self) -> T:
-        """Aliases :func:`resolve()`."""
+        """Alias [`Factory.resolve()`][proxystore.factory.Factory.resolve]."""
         return self.resolve()
 
     def resolve(self) -> T:
