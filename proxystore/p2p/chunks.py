@@ -21,7 +21,18 @@ class ChunkDType(enum.Enum):
 
 
 class Chunk:
-    """Representation of a chunk of a message."""
+    """Representation of a chunk of a message.
+
+    Args:
+        stream_id: Unique ID for the stream of chunks.
+        seq_id: Sequence number for this chunk in the stream.
+        seq_len: Length of the stream.
+        data: Data for this chunk.
+        dtype: Optionally specify data type otherwise inferred from data.
+
+    Raises:
+        ValueError: if the sequence ID is not less than the sequence length.
+    """
 
     def __init__(
         self,
@@ -31,20 +42,6 @@ class Chunk:
         data: bytes | str,
         dtype: ChunkDType | None = None,
     ) -> None:
-        """Init Chunk.
-
-        Args:
-            stream_id (int): unique ID for the stream of chunks.
-            seq_id (int): sequence number for this chunk in the stream.
-            seq_len (int): length of the stream.
-            data (bytes, str): data for this chunk.
-            dtype (ChunkDType): optionally specify data type otherwise inferred
-                from data (default: None).
-
-        Raises:
-            ValueError:
-                if the sequence ID is not less than the sequence length.
-        """
         if seq_len <= seq_id:
             raise ValueError(
                 f'seq_id ({seq_id}) must be less than seq_len ({seq_len}).',
@@ -114,12 +111,12 @@ def chunkify(
     """Generate chunks from data.
 
     Args:
-        data (bytes, str): data to chunk.
-        size (int): size of each chunk.
-        stream_id: unique ID for the stream of chunks.
+        data: Data to chunk.
+        size: Size of each chunk.
+        stream_id: Unique ID for the stream of chunks.
 
     Yields:
-        :class:`~proxystore.p2p.chunks.Chunk`
+        Chunks of data.
     """
     seq_len = math.ceil(len(data) / size)
 
@@ -137,10 +134,10 @@ def reconstruct(chunks: list[Chunk]) -> bytes | str:
     """Reconstructs data from list of chunks.
 
     Args:
-        chunks: (list[Chunk]): list of chunks to order and join.
+        chunks: List of chunks to order and join.
 
     Returns:
-        reconstructed bytes or string.
+        Reconstructed bytes or string.
     """
     if len(chunks) == 0:
         raise ValueError('Chunks list cannot be empty.')

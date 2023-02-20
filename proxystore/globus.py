@@ -94,8 +94,7 @@ def get_authorizer(
     """Get an authorizer for the Globus SDK.
 
     Raises:
-        GlobusAuthFileError:
-            if `tokens_file` cannot be parsed.
+        GlobusAuthFileError: If `tokens_file` cannot be parsed.
     """
     try:
         tokens = load_tokens_from_file(tokens_file)

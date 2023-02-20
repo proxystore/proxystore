@@ -42,7 +42,19 @@ class UCXStoreKey(NamedTuple):
 
 
 class UCXStore(Store[UCXStoreKey]):
-    """Implementation for the client-facing component of UCXStore."""
+    """Implementation for the client-facing component of UCXStore.
+
+    This client will initialize a local UCX server (Peer service) to
+    store data to.
+
+    Args:
+        name: Name of the store instance.
+        interface: The network interface to use.
+        port: The desired port for the UCX server.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+    """
 
     addr: str
     host: str
@@ -60,20 +72,6 @@ class UCXStore(Store[UCXStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialize a UCX client to issue RPCs to the UCX server.
-
-        This client will initialize a local UCX server (Peer service) to
-        store data to.
-
-        Args:
-            name (str): name of the store instance.
-            interface (str): The network interface to use
-            port (int): the desired port for the UCX server
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-        """
         global server_process
 
         if ucx_import_error is not None:  # pragma: no cover
@@ -190,7 +188,12 @@ class UCXStore(Store[UCXStoreKey]):
 
 
 class UCXServer:
-    """UCXServer implementation."""
+    """UCXServer implementation.
+
+    Args:
+        host: The server host.
+        port: The server port.
+    """
 
     host: str
     port: int
@@ -198,13 +201,6 @@ class UCXServer:
     data: dict[str, bytes]
 
     def __init__(self, host: str, port: int) -> None:
-        """Initialize the server and register all RPC calls.
-
-        Args:
-            host (str): the server host
-            port (int): the server port
-
-        """
         self.host = host
         self.port = port
         self.data = {}
@@ -214,11 +210,11 @@ class UCXServer:
         """Obtain data from the client and store it in local dictionary.
 
         Args:
-            key (str): object key to use
-            data (bytes): data to store
+            key: The object key to use.
+            data: The data to store.
 
-        Returns (bytes):
-            That the operation has successfully completed
+        Returns:
+            Operation status.
         """
         self.data[key] = data
         return Status(success=True, error=None)
@@ -227,11 +223,10 @@ class UCXServer:
         """Return data at a given key back to the client.
 
         Args:
-            key (str): the object key
+            key: The object key.
 
-        Returns (bytes):
-            The data associated with provided key
-
+        Returns:
+            Operation status.
         """
         try:
             return self.data[key]
@@ -242,11 +237,10 @@ class UCXServer:
         """Remove key from local dictionary.
 
         Args:
-            key (str): the object to evict's key
+            key: The object to evict's key.
 
-        Returns (bytes):
-            That the evict operation has been successful
-
+        Returns:
+            Operation status.
         """
         self.data.pop(key, None)
         return Status(success=True, error=None)
@@ -255,11 +249,10 @@ class UCXServer:
         """Check if a key exists within local dictionary.
 
         Args:
-            key (str): the object's key
+            key: The object's key.
 
-        Returns (bytes):
-            whether key exists
-
+        Returns:
+            If the object exists.
         """
         return key in self.data
 
@@ -267,8 +260,7 @@ class UCXServer:
         """Handle endpoint requests.
 
         Args:
-            ep (ucp.Endpoint): the endpoint to communicate with.
-
+            ep: The endpoint to communicate with.
         """
         json_kv = await ep.recv_obj()
 
@@ -337,8 +329,8 @@ def launch_server(host: str, port: int) -> None:
     """Launch the UCXServer in asyncio.
 
     Args:
-        host (str): host for server to listen on.
-        port (int): port for server to listen on.
+        host: The host for server to listen on.
+        port: The port for server to listen on.
     """
     logger.info(f'starting server on host {host} with port {port}')
 
@@ -427,10 +419,9 @@ async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
     """Wait until the UCXServer responds.
 
     Args:
-        host (str): host of UCXServer to ping.
-        port (int): port of UCXServer to ping.
-        timeout (float): max time in seconds to wait for server response
-            (default: 5.0).
+        host: The host of UCXServer to ping.
+        port: Theport of UCXServer to ping.
+        timeout: The max time in seconds to wait for server response.
     """
     sleep_time = 0.01
     time_waited = 0.0

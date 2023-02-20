@@ -101,8 +101,8 @@ def str_to_uuid(data: dict[str, Any]) -> dict[str, Any]:
         str to UUID if the key also contains UUID.
 
     Raises:
-        MessageDecodeError:
-            if a key contains 'uuid' but the value cannot be cast to a UUID.
+        MessageDecodeError: If a key contains 'uuid' but the value cannot be
+            cast to a UUID.
     """
     data = data.copy()
     for key in data:
@@ -120,15 +120,14 @@ def decode(message: str) -> Message:
     """Decode JSON string into correct Message type.
 
     Args:
-        message (str): JSON string to decode.
+        message: JSON string to decode.
 
     Returns:
         Instance of a subtype of
         :any:`Message <proxystore.p2p.messages.Message>`.
 
     Raises:
-        MessageDecodeError:
-            if the message cannot be decoded into a
+        MessageDecodeError: If the message cannot be decoded into a
             :any:`Message <proxystore.p2p.messages.Message>`.
     """
     try:
@@ -168,11 +167,10 @@ def encode(message: Message) -> str:
     """Encode message as JSON string.
 
     Args:
-        message (Message): message to JSON encode.
+        message: Message to JSON encode.
 
     Raises:
-        MessageEncodeError:
-            if the message cannot be JSON encoded.
+        MessageEncodeError: If the message cannot be JSON encoded.
     """
     if not isinstance(message, Message):
         raise MessageEncodeError(

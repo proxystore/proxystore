@@ -13,10 +13,10 @@ def randbytes(size: int) -> bytes:
     `os.urandom()` in Python 3.8 and older.
 
     Args:
-        size (int): size of byte string to return.
+        size: The size of byte string to return.
 
     Returns:
-        random byte string.
+        A random byte string.
     """
     if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
         return random.randbytes(size)

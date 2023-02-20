@@ -82,9 +82,7 @@ def skip(
     would_skip: bool,
     options: Any,
 ) -> bool:
-    """Prevent docs skipping __init__ docstrings."""
-    if name == '__init__':
-        return False
+    """Prevent docs skipping types."""
     return would_skip
 
 

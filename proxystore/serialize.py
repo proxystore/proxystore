@@ -23,7 +23,7 @@ def serialize(obj: Any) -> bytes:
     is used as a fallback.
 
     Args:
-        obj: object to serialize.
+        obj: Object to serialize.
 
     Returns:
         ``bytes`` that can be passed to :py:func:`~deserialize`.
@@ -54,17 +54,15 @@ def deserialize(data: bytes) -> Any:
     """Deserialize object.
 
     Args:
-        data (bytes): bytes produced by :py:func:`~serialize`.
+        data: Bytes produced by :py:func:`~serialize`.
 
     Returns:
-        deserialized object.
+        The deserialized object.
 
     Raises:
-        ValueError:
-            if ``data`` is not of type ``bytes``.
-        SerializationError:
-            if the identifier of ``data`` is missing or invalid.
-            The identifier is prepended to the string in
+        ValueError: If ``data`` is not of type ``bytes``.
+        SerializationError: If the identifier of ``data`` is missing or
+            invalid. The identifier is prepended to the string in
             :py:func:`~serialize` to indicate which serialization method was
             used (e.g., no serialization, pickle, etc.).
     """

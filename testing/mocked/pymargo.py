@@ -17,7 +17,6 @@ class MargoException(Exception):  # pragma: no cover  # noqa: N818
     """Mock Exception implementation."""
 
     def __init__(self):
-        """Exception init implementation."""
         pass
 
 
@@ -25,7 +24,6 @@ class Address:  # pragma: no cover
     """Mock Address implementation."""
 
     def __init__(self) -> None:
-        """Mock Address initialization."""
         pass
 
     def shutdown(self) -> None:
@@ -42,7 +40,6 @@ class Engine:
         mode: str = server,
         use_progress_thread: bool = False,
     ) -> None:
-        """Mock Engine initialization."""
         self.url = url
 
     def addr(self) -> str:
@@ -103,9 +100,8 @@ class Engine:
         """Mock register.
 
         Args:
-            funcname (str): the function name.
-            args (Any): additional positional arguments.
-
+            funcname: The function name.
+            args: Additional positional arguments.
         """
         return RPC(funcname)
 
@@ -114,7 +110,6 @@ class RPC:
     """Mock RPC implementation."""
 
     def __init__(self, name: str) -> None:
-        """Mock RPC initialization."""
         self.name = name
 
     def on(self, addr: str) -> Any:
@@ -182,7 +177,6 @@ class Bulk:
     data: bytearray | bytes
 
     def __init__(self, data: bytearray | bytes) -> None:
-        """Mock Bulk initialization."""
         self.data = data
 
 
@@ -192,7 +186,6 @@ class Handle:
     response: Any
 
     def __init__(self) -> None:
-        """Mock handle initialization."""
         from proxystore.store.dim.utils import Status
 
         self.response = Status(True, None)

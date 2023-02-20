@@ -44,7 +44,21 @@ class WebsocketStoreKey(NamedTuple):
 
 
 class WebsocketStore(Store[WebsocketStoreKey]):
-    """Distributed in-memory store using websockets."""
+    """Distributed in-memory store using websockets.
+
+    This client will initialize a local Websocket server (Peer service) that it
+    will store data to.
+
+    Args:
+        name: Name of the store instance.
+        interface: The network interface to use.
+        port: The desired port for communication.
+        max_size: The maximum size to be communicated via websockets.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python
+            process.
+        stats: Collect stats on store operations.
+    """
 
     addr: str
     provider_id: int
@@ -62,23 +76,6 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialize a Websocket client.
-
-        This client will initialize a local Websocket
-        server (Peer service) that it will store data to.
-
-        Args:
-            name (str): name of the store instance.
-            interface (str): the network interface to use
-            port (int): the desired port for communication
-            max_size (int): the maximum size to be
-                communicated via websockets (default: 1G)
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-
-        """
         global server_process
 
         # Websockets is not a default dependency so we don't want to raise
@@ -189,12 +186,12 @@ class WebsocketStore(Store[WebsocketStoreKey]):
         """Websocket handler function implementation.
 
         Args:
-            event (bytes): a pickled dictionary consisting of the data,
+            event: A pickled dictionary consisting of the data,
                 its key and the operation to perform on the data
-            addr (str): the address of the server to connect to
+            addr: The address of the server to connect to
 
-        Returns (bytes):
-            the result of the operation on the data
+        Returns:
+            The result of the operation on the data.
 
         """
         async with connect(
@@ -245,7 +242,13 @@ class WebsocketStore(Store[WebsocketStoreKey]):
 
 
 class WebsocketServer:
-    """WebsocketServer implementation."""
+    """WebsocketServer implementation.
+
+    Args:
+        host: IP address of the location to start the server.
+        port: The port to initiate communication on.
+        max_size: The maximum size allowed for websocket communication.
+    """
 
     host: str
     port: int
@@ -259,16 +262,6 @@ class WebsocketServer:
         port: int,
         max_size: int,
     ) -> None:
-        """Initialize the server and register all RPC calls.
-
-        Args:
-            host (str): IP address of the location to start the server.
-            port (int): the port to initiate communication on.
-            max_size (int): the maximum size allowed for
-                websocket communication.
-            chunk_size (int): the chunk size for the data (default: 64MB)
-
-        """
         self.host = host
         self.port = port
         self.max_size = max_size
@@ -280,11 +273,11 @@ class WebsocketServer:
         """Obtain and store locally data from client.
 
         Args:
-            key (str): object key to use
-            data (bytes): data to store
+            key: Object key to use.
+            data: Data to store.
 
-        Returns (bytes):
-            That the operation has successfully completed
+        Returns:
+            Operation status.
         """
         self.data[key] = data
         return Status(success=True, error=None)
@@ -293,10 +286,10 @@ class WebsocketServer:
         """Return data at a given key back to the client.
 
         Args:
-            key (str): the object key
+            key: The object key,
 
-        Returns (bytes):
-            The data associated with provided key
+        Returns:
+            Operation status.
         """
         try:
             return self.data[key]
@@ -307,10 +300,10 @@ class WebsocketServer:
         """Remove key from local dictionary.
 
         Args:
-            key (str): the object to evict's key
+            key: The object to evict's key.
 
-        Returns (bytes):
-            That the evict operation has been successful
+        Returns:
+            Operation status.
         """
         self.data.pop(key, None)
         return Status(success=True, error=None)
@@ -319,10 +312,10 @@ class WebsocketServer:
         """Check if a key exists within local dictionary.
 
         Args:
-            key (str): the object's key
+            key: The object's key.
 
-        Returns (bytes):
-            whether key exists
+        Returns:
+            Operations status.
         """
         return key in self.data
 
@@ -330,8 +323,7 @@ class WebsocketServer:
         """Handle websocket connection requests.
 
         Args:
-            websocket (WebSocketServerProtocol): the websocket server
-
+            websocket: The websocket server.
         """
         async for pkv in websocket:
             assert isinstance(pkv, bytes)

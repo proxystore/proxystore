@@ -35,7 +35,19 @@ SerializerT = Callable[[Any], bytes]
 
 
 class GlobusEndpoint:
-    """GlobusEndpoint Class."""
+    """Globus endpoint representation.
+
+    Args:
+        uuid: UUID of Globus endpoint.
+        endpoint_path: Path within endpoint to directory to use
+            for storing objects.
+        local_path: Local path (as seen by the host filesystem) that
+            corresponds to the directory specified by `endpoint_path`.
+        host_regex: String that matches the host where
+            the Globus endpoint exists or regex pattern than can be used
+            to match the host. The host pattern is needed so that proxies
+            can figure out what the local endpoint is when they are resolved.
+    """
 
     def __init__(
         self,
@@ -44,20 +56,6 @@ class GlobusEndpoint:
         local_path: str | None,
         host_regex: str | Pattern[str],
     ) -> None:
-        """Init GlobusEndpoint.
-
-        Args:
-            uuid (str): UUID of Globus endpoint.
-            endpoint_path (str): path within endpoint to directory to use
-                for storing objects.
-            local_path (str): local path (as seen by the host filesystem) that
-                corresponds to the directory specified by `endpoint_path`.
-            host_regex (str, Pattern): `str` that matches the host where
-                the Globus endpoint exists or regex pattern than can be used
-                to match the host. The host pattern is needed so that proxies
-                can figure out what the local endpoint is when they are
-                resolved.
-        """
         if not isinstance(uuid, str):
             raise TypeError('uuid must be a str.')
         if not isinstance(endpoint_path, str):
@@ -75,7 +73,6 @@ class GlobusEndpoint:
         self.host_regex = host_regex
 
     def __eq__(self, endpoint: object) -> bool:
-        """Endpoints are equal if attributes match."""
         if not isinstance(endpoint, GlobusEndpoint):
             raise NotImplementedError
         if (
@@ -88,7 +85,6 @@ class GlobusEndpoint:
         return False
 
     def __repr__(self) -> str:
-        """Represent GlobusEndpoint as string."""
         return (
             f"{self.__class__.__name__}(uuid='{self.uuid}', "
             f"endpoint_path='{self.endpoint_path}', "
@@ -98,20 +94,18 @@ class GlobusEndpoint:
 
 
 class GlobusEndpoints:
-    """GlobusEndpoints Class."""
+    """A collection of Globus endpoints.
+
+    Args:
+        endpoints: Iterable of :class:`GlobusEndpoint <.GlobusEndpoint>`
+            instances.
+
+    Raises:
+        ValueError: If `endpoints` has length 0 or if multiple endpoints with\
+            the same UUID are provided.
+    """
 
     def __init__(self, endpoints: Collection[GlobusEndpoint]) -> None:
-        """Init GlobusEndpoints.
-
-        Args:
-            endpoints: iterable of
-                :class:`GlobusEndpoint <.GlobusEndpoint>` instances.
-
-        Raises:
-            ValueError:
-                if `endpoints` has length 0 or if multiple endpoints with the
-                same UUID are provided.
-        """
         if len(endpoints) == 0:
             raise ValueError(
                 'GlobusEndpoints must be passed at least one GlobusEndpoint '
@@ -127,7 +121,6 @@ class GlobusEndpoints:
             self._endpoints[endpoint.uuid] = endpoint
 
     def __getitem__(self, uuid: str) -> GlobusEndpoint:
-        """Index GlobusEndpoints with UUID."""
         try:
             return self._endpoints[uuid]
         except KeyError:
@@ -136,19 +129,15 @@ class GlobusEndpoints:
             ) from None
 
     def __iter__(self) -> Iterator[GlobusEndpoint]:
-        """Iterate over GlobusEndpoints."""
-
         def _iterator() -> Generator[GlobusEndpoint, None, None]:
             yield from self._endpoints.values()
 
         return _iterator()
 
     def __len__(self) -> int:
-        """Length of GlobusEndpoints."""
         return len(self._endpoints)
 
     def __repr__(self) -> str:
-        """Represent GlobusEndpoints as string."""
         s = f'{self.__class__.__name__}(['
         s += ', '.join(str(ep) for ep in self._endpoints.values())
         s += '])'
@@ -226,14 +215,13 @@ class GlobusEndpoints:
         `host`.
 
         Args:
-            host (str): host to match/
+            host: Host to match.
 
         Returns:
-            :class:`GlobusEndpoint <.GlobusEndpoint>`
+            Globus endpoint.
 
         Raises:
-            ValueError:
-                if `host` does not match any of the endpoints.
+            ValueError: If `host` does not match any of the endpoints.
         """
         for endpoint in self._endpoints.values():
             if re.fullmatch(endpoint.host_regex, host) is not None:
@@ -288,6 +276,28 @@ class GlobusStore(Store[GlobusStoreKey]):
         The :class:`GlobusStore <.GlobusStore>` encodes the Globus transfer
         IDs into the keys, thus the keys returned by functions such
         as :func:`set() <set>` will be different.
+
+    Args:
+        name: Name of the store instance.
+        endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
+            the dictionary must match the format expected by
+            :func:`GlobusEndpoints.from_dict()`.
+        polling_interval: Interval in seconds to check if Globus
+            tasks have finished.
+        sync_level: Globus transfer sync level.
+        timeout: Timeout in seconds for waiting on Globus tasks.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+
+    Raise:
+        GlobusAuthFileError: If the Globus authentication file cannot be found.
+        ValueError: If `endpoints` is not a list of
+            :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
+            :class:`GlobusEndpoints <.GlobusEndpoints>`, or dict.
+        ValueError: If the :code:`len(endpoints) != 2` because
+            :class:`GlobusStore <.GlobusStore>` can currently only keep
+            two endpoints in sync.
     """
 
     def __init__(
@@ -304,34 +314,6 @@ class GlobusStore(Store[GlobusStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Init GlobusStore.
-
-        Args:
-            name (str): name of the store instance.
-            endpoints (GlobusEndpoints): Globus endpoints to keep
-                in sync. If passed as a `dict`, the dictionary must match the
-                format expected by :func:`GlobusEndpoints.from_dict()`.
-            polling_interval (int): interval in seconds to check if Globus
-                tasks have finished.
-            sync_level (str, int): Globus transfer sync level.
-            timeout (int): timeout in seconds for waiting on Globus tasks.
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-
-        Raise:
-            GlobusAuthFileError:
-                if the Globus authentication file cannot be found.
-            ValueError:
-                if `endpoints` is not a list of
-                :class:`GlobusEndpoint <.GlobusEndpoint>`, instance of
-                :class:`GlobusEndpoints <.GlobusEndpoints>`, or dict.
-            ValueError:
-                if the :code:`len(endpoints) != 2` because
-                :class:`GlobusStore <.GlobusStore>` can currently only keep
-                two endpoints in sync.
-        """
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
         elif isinstance(endpoints, list):
@@ -389,13 +371,13 @@ class GlobusStore(Store[GlobusStoreKey]):
         """Get filepath from filename.
 
         Args:
-            filename (str): name of file in Globus
-            endpoint (GlobusEndpoint): optionally specify a GlobusEndpoint
+            filename: Name of file in Globus.
+            endpoint: Optionally specify a GlobusEndpoint
                 to get the filepath relative to. If not specified, the endpoint
                 associated with the local host will be used.
 
         Returns:
-            full local path to file.
+            Full local path to file.
         """
         if endpoint is None:
             endpoint = self._get_local_endpoint()
@@ -437,10 +419,9 @@ class GlobusStore(Store[GlobusStoreKey]):
         """Launch Globus Transfer to sync endpoints.
 
         Args:
-            filenames (str, list): filename or list of filenames to transfer.
+            filenames: Filename or list of filenames to transfer.
                 Note must be filenames, not filepaths.
-            delete (bool): if `True`, delete the filenames rather than syncing
-                them.
+            delete: If `True`, delete the filenames rather than syncing them.
 
         Returns:
             Globus Task UUID that can be used to check the status of the
@@ -623,7 +604,7 @@ def _submit_transfer_action(
         task: Globus transfer task.
 
     Returns:
-        ``GlobusHTTPResponse``
+        A ``GlobusHTTPResponse``.
     """
     try:
         if isinstance(task, globus_sdk.DeleteData):

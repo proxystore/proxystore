@@ -37,7 +37,6 @@ class Factory(Generic[T]):
     """
 
     def __init__(self) -> None:
-        """Init Factory."""
         raise NotImplementedError
 
     def __call__(self) -> T:
@@ -50,23 +49,29 @@ class Factory(Generic[T]):
 
 
 class SimpleFactory(Factory[T]):
-    """Simple Factory that stores object as class attribute."""
+    """Simple Factory that stores object as class attribute.
+
+    Args:
+        obj: Object to produce when factory is called.
+    """
 
     def __init__(self, obj: T) -> None:
-        """Init Factory.
-
-        Args:
-            obj (object): object to produce when factory is called.
-        """
         self._obj = obj
 
     def resolve(self) -> T:
-        """Return object."""
+        """Return the object."""
         return self._obj
 
 
 class LambdaFactory(Factory[T]):
-    """Factory that takes any callable object."""
+    """Factory that takes any callable object.
+
+    Args:
+        target: Callable object (function, class, lambda) to be
+            invoked when the factory is resolved.
+        args: Argument tuple for target invocation.
+        kwargs: Dictionary of keyword arguments for target invocation.
+    """
 
     def __init__(
         self,
@@ -74,19 +79,10 @@ class LambdaFactory(Factory[T]):
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        """Init LambdaFactory.
-
-        Args:
-            target (callable): callable object (function, class, lambda) to be
-                invoked when the factory is resolved.
-            args (tuple): argument tuple for target invocation (default: ()).
-            kwargs (dict): dictionary of keyword arguments for target
-                invocation (default: {}).
-        """
         self._target = target
         self._args = args
         self._kwargs = kwargs
 
     def resolve(self) -> T:
-        """Return target object."""
+        """Return the target object."""
         return self._target(*self._args, **self._kwargs)

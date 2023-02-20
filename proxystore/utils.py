@@ -17,8 +17,8 @@ def chunk_bytes(
     """Yield chunks of binary data.
 
     Args:
-        data (bytes): data to be chunked.
-        chunk_size (int): chunk size in bytes.
+        data: Data to be chunked.
+        chunk_size: Chunk size in bytes.
 
     Returns:
         Generator that yields chunks of bytes.
@@ -37,10 +37,10 @@ def create_key(obj: Any) -> str:
        * consider how to deal with key collisions
 
     Args:
-        obj: object to create key for
+        obj: Object to create key for.
 
     Returns:
-        random 128 bit string.
+        A random 128 bit string.
     """
     return str(random.getrandbits(128))
 
@@ -89,15 +89,14 @@ def bytes_to_readable(size: int, precision: int = 3) -> str:
         base-2 values (i.e., KiB, MiB, GiB, etc.).
 
     Args:
-        size (int): byte count to make readable.
-        precision (int): number of decimal places (default: 3).
+        size: Byte value to make readable.
+        precision: Number of decimal places.
 
     Returns:
-        string with human readable number of bytes.
+        String with human readable number of bytes.
 
     Raises:
-        ValueError:
-            if size is negative.
+        ValueError: If size is negative.
     """
     kb = int(1e3)
     mb = int(1e6)
@@ -137,19 +136,17 @@ def readable_to_bytes(size: str) -> int:
         629146
 
     Args:
-        size (str): string to parse for bytes size.
+        size: String to parse for bytes size.
 
     Returns:
-        integer number of bytes parsed from the string.
+        Integer number of bytes parsed from the string.
 
     Raises:
-        ValueError:
-            if the input string contains more than two parts (i.e., a value
-            and a unit).
-        ValueError:
-            if the unit is not one of KB, MB, GB, TB, KiB, MiB, GiB, or TiB.
-        ValueError:
-            if the value cannot be cast to a float.
+        ValueError: If the input string contains more than two parts (i.e., a
+            value and a unit).
+        ValueError: If the unit is not one of KB, MB, GB, TB, KiB, MiB, GiB,
+            or TiB.
+        ValueError: If the value cannot be cast to a float.
     """
     units_to_bytes = {
         'b': 1,

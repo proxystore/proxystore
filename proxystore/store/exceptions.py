@@ -36,11 +36,10 @@ class ProxyResolveMissingKeyError(Exception):
         """Init ProxyResolveMissingKeyError.
 
         Args:
-            key (tuple): key associated with target object that could not be
-                found in the store.
-            store_type (Store): type of store that the key could not be found
-                in.
-            store_name (str): name of store that the key could not be found in.
+            key: Key associated with target object that could not be found in
+                the store.
+            store_type: Type of store that the key could not be found in.
+            store_name: Name of store that the key could not be found in.
         """
         self.key = key
         self.store_type = store_type

@@ -9,18 +9,16 @@ ValueT = TypeVar('ValueT')
 
 
 class LRUCache(Generic[KeyT, ValueT]):
-    """Simple LRU Cache."""
+    """Simple LRU Cache.
+
+    Args:
+        maxsize: Maximum number of value to cache.
+
+    Raises:
+        ValueError: If `maxsize <= 0`.
+    """
 
     def __init__(self, maxsize: int = 16) -> None:
-        """Init LRUCache.
-
-        Args:
-            maxsize (int): maximum number of value to cache (default: 16).
-
-        Raises:
-            ValueError:
-                if `maxsize <= 0`.
-        """
         if maxsize < 0:
             raise ValueError('Cache size must by >= 0')
         self.maxsize = maxsize

@@ -54,8 +54,8 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     """Check status of endpoint.
 
     Args:
-        name (str): name of endpoint to check.
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        name: Name of endpoint to check.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
@@ -108,19 +108,18 @@ def configure_endpoint(
     """Configure a new endpoint.
 
     Args:
-        name (str): name of endpoint.
-        port (int): port for endpoint to listen on.
-        server (str): optional address of signaling server for P2P endpoint
+        name: Name of endpoint.
+        port: Port for endpoint to listen on.
+        server: Optional address of signaling server for P2P endpoint
             connections.
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
-        max_memory (int): optional max memory in bytes to use for storing
-            objects. If exceeded, LRU objects will be dumped to `dump_dir`
-            (default: None).
-        dump_dir (str): optional directory to dump objects to if the
-            memory limit is exceeded (default: None).
-        peer_channels (int): number of datachannels per peer connection
-            to another endpoint to communicate over (default: 1).
+        max_memory: Optional max memory in bytes to use for storing
+            objects. If exceeded, LRU objects will be dumped to `dump_dir`.
+        dump_dir: Optional directory to dump objects to if the
+            memory limit is exceeded.
+        peer_channels: Number of datachannels per peer connection
+            to another endpoint to communicate over.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages
@@ -165,7 +164,7 @@ def list_endpoints(
     """List available endpoints.
 
     Args:
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
@@ -202,8 +201,8 @@ def remove_endpoint(
     """Remove endpoint.
 
     Args:
-        name (str): name of endpoint to remove.
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        name: Name of endpoint to remove.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
@@ -241,10 +240,10 @@ def start_endpoint(
     """Start endpoint.
 
     Args:
-        name (str): name of endpoint to start.
-        detach (bool): start the endpoint as a daemon process.
-        log_level (str): set logging level of endpoint.
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        name: Name of endpoint to start.
+        detach: Start the endpoint as a daemon process.
+        log_level: Logging level of the endpoint.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:
@@ -317,8 +316,8 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     """Stop endpoint.
 
     Args:
-        name (str): name of endpoint to start.
-        proxystore_dir (str): optionally specify the proxystore home directory.
+        name: Name of endpoint to start.
+        proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to :py:func:`~proxystore.utils.home_dir`.
 
     Returns:

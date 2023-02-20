@@ -8,7 +8,6 @@ class MockStrictRedis:
     """Mock StrictRedis."""
 
     def __init__(self, data: dict[str, Any], *args, **kwargs):
-        """Init MockStrictRedis."""
         self.data = data
 
     def delete(self, key: str) -> None:

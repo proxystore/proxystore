@@ -62,6 +62,33 @@ class PeerManager:
 
         >>> async with PeerManager(..) as manager:
         >>>     ...
+
+    Warning:
+        The :class:`PeerManager <.PeerManager>` must be initialized
+        with await or inside an async with statement to correctly
+        configure all async tasks and connections.
+
+        >>> manager = await PeerManager(...)
+        >>> manager.close()
+        >>>
+        >>> async with PeerManager(...) as manager:
+        >>>     ...
+
+    Args:
+        uuid: UUID of the client.
+        signaling_server: Address of signaling server to use for establishing
+            peer-to-peer connections.
+        name: Readable name of the client to use in logging. If unspecified,
+            the hostname will be used.
+        timeout: Timeout in seconds when waiting for a peer or signaling server
+            connection to be established.
+        peer_channels: number of datachannels to split message sending over
+            between each peer.
+        verify_certificate: Verify the signaling server's SSL certificate,
+
+    Raises:
+        ValueError: If the signaling server address does not start with ws://
+            or wss://.
     """
 
     def __init__(
@@ -74,37 +101,6 @@ class PeerManager:
         peer_channels: int = 1,
         verify_certificate: bool = True,
     ) -> None:
-        """Init PeerManager.
-
-        Warning:
-            The :class:`PeerManager <.PeerManager>` must be initialized
-            with await or inside an async with statement to correctly
-            configure all async tasks and connections.
-
-            >>> manager = await PeerManager(...)
-            >>> manager.close()
-            >>>
-            >>> async with PeerManager(...) as manager:
-            >>>     ...
-
-        Args:
-            uuid (str, UUID): uuid of the client.
-            signaling_server (str): address of signaling server to use for
-                establishing peer-to-peer connections.
-            name (str, optional): readable name of the client to use in
-                logging. If unspecified, the hostname will be used.
-            timeout (int): timeout in seconds when waiting for a peer
-                or signaling server connection to be established (default: 30).
-            peer_channels (int): number of datachannels to split message
-                sending over between each peer (default: 1).
-            verify_certificate (bool): verify the signaling server's SSL
-                certificate (default: True).
-
-        Raises:
-            ValueError:
-                if the signaling server address does not start with ws://
-                or wss://.
-        """
         if not (
             signaling_server.startswith('ws://')
             or signaling_server.startswith('wss://')
@@ -189,7 +185,6 @@ class PeerManager:
             )
 
     async def __aenter__(self) -> PeerManager:
-        """Enter async context manager."""
         await self.async_init()
         return self
 
@@ -199,11 +194,9 @@ class PeerManager:
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> None:
-        """Leave async context manager and close manager."""
         await self.close()
 
     def __await__(self) -> Generator[Any, None, PeerManager]:
-        """Awaitable constructor."""
         return self.__aenter__().__await__()
 
     async def _check_connection(
@@ -336,7 +329,7 @@ class PeerManager:
         """Receive next message from a peer.
 
         Returns:
-            tuple containing the UUID of the peer that sent the message
+            Tuple containing the UUID of the peer that sent the message
             and the message itself.
         """
         return await self._message_queue.get()
@@ -350,13 +343,13 @@ class PeerManager:
         """Send message to peer.
 
         Args:
-            peer_uuid (str): UUID of peer to send message to.
-            message (bytes, str): message to send to peer.
-            timeout (float): timeout to wait on peer connection to be ready.
+            peer_uuid: UUID of peer to send message to.
+            message: Message to send to peer.
+            timeout: Timeout to wait on peer connection to be ready.
 
         Raises:
-            PeerConnectionTimeoutError:
-                if the peer connection is not established within the timeout.
+            PeerConnectionTimeoutError: If the peer connection is not
+                established within the timeout.
         """
         connection = await self.get_connection(peer_uuid)
         await connection.send(message, timeout)
@@ -365,10 +358,10 @@ class PeerManager:
         """Get connection to the peer.
 
         Args:
-            peer_uuid (str, UUID): uuid of peer to make connection with.
+            peer_uuid: UUID of peer to make connection with.
 
         Returns:
-            :any:`PeerConnection <proxystore.p2p.connection.PeerConnection>`
+            The peer connection object.
         """
         peers = frozenset({self._uuid, peer_uuid})
 

@@ -46,7 +46,7 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
     """Get the backend store with name.
 
     Args:
-        val: name (str) of the store to get or a
+        val: name of the store to get or a
             :any:`Proxy <proxystore.proxy.Proxy>` instance.
 
     Returns:
@@ -55,9 +55,9 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
         returns `None`.
 
     Raises:
-        ProxyStoreFactoryError:
-            if the value is a proxy but does not contain a factory
-            of type :any:`StoreFactory <proxystore.store.base.StoreFactory>`.
+        ProxyStoreFactoryError: If the value is a proxy but does not contain a
+            factory of type
+            :any:`StoreFactory <proxystore.store.base.StoreFactory>`.
     """
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
@@ -85,13 +85,12 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
         Global means globally accessible within the Python process.
 
     Args:
-        store (Store): store instance to register.
-        exist_ok (bool): if a store with the same name exists, overwrite it.
+        store: Store instance to register.
+        exist_ok: If a store with the same name exists, overwrite it.
 
     Raises:
-        StoreExistsError:
-            if a store with the same name is already registered and
-            exist_ok is false.
+        StoreExistsError: If a store with the same name is already registered
+            and `exist_ok` is false.
     """
     if store.name in _stores and not exist_ok:
         raise StoreExistsError(f'A store named {store.name} already exists.')
@@ -108,7 +107,7 @@ def unregister_store(name: str) -> None:
         exists (i.e., no exception will be raised).
 
     Args:
-        name (str): name of the store to unregister.
+        name: Name of the store to unregister.
     """
     if name in _stores:
         del _stores[name]

@@ -69,7 +69,6 @@ class SignalingServer:
     """
 
     def __init__(self) -> None:
-        """Init SignalingServer."""
         self._websocket_to_client: dict[WebSocketServerProtocol, Client] = {}
         self._uuid_to_client: dict[UUID, Client] = {}
 
@@ -81,8 +80,8 @@ class SignalingServer:
         """Send message on the socket.
 
         Args:
-            websocket (WebSocketServerProtocol): websocket to send message on.
-            message (Message): message to json encode and send.
+            websocket: Websocket to send message on.
+            message: Message to json encode and send.
         """
         try:
             message_str = messages.encode(message)
@@ -103,9 +102,8 @@ class SignalingServer:
         """Register peer with Signaling Server.
 
         Args:
-            websocket (WebSocketServerProtocol): websocket connection with
-                client wanting to register.
-            request (ServerRegistration): registration request message.
+            websocket: Websocket connection with client wanting to register.
+            request: Registration request message.
         """
         if websocket not in self._websocket_to_client:
             # Check if previous client reconnected on new socket so unregister
@@ -147,10 +145,9 @@ class SignalingServer:
         """Unregister the endpoint.
 
         Args:
-            websocket (WebSocketServerProtocol): websocket connection that
-                was closed.
-            expected (bool): if the connection was closed intentionally or
-                due to an error.
+            websocket: Websocket connection that was closed.
+            expected: If the connection was closed intentionally or due to an
+                error.
         """
         client = self._websocket_to_client.pop(websocket, None)
         if client is None:
@@ -172,9 +169,9 @@ class SignalingServer:
         """Pass peer connection messages between clients.
 
         Args:
-            websocket (WebSocketServerProtocol): websocket connection with
-                client that sent the peer connection message.
-            message (PeerConnectionMessage): message to forward to peer client.
+            websocket: Websocket connection with client that sent the peer
+                connection message.
+            message: Message to forward to peer client.
         """
         client = self._websocket_to_client[websocket]
         if message.peer_uuid not in self._uuid_to_client:
@@ -203,9 +200,8 @@ class SignalingServer:
         """Websocket server message handler.
 
         Args:
-            websocket (WebSocketServerProtocol): websocket message was
-                received on.
-            uri (str): uri message was sent to.
+            websocket: Websocket message was received on.
+            uri: URI message was sent to.
         """
         logger.info('signaling server listening for incoming connections')
         while True:
@@ -266,12 +262,12 @@ async def serve(
     incoming messages.
 
     Args:
-        host (str): host to listen on.
-        port (int): port to listen on.
-        certfile (str): optional certificate file (PEM format) to enable
-            TLS while serving.
-        keyfile (str): optional private key file. If not specified, the key
-            will be taken from the certfile.
+        host: Host to listen on.
+        port: Port to listen on.
+        certfile: Optional certificate file (PEM format) to enable TLS while
+            serving.
+        keyfile: Optional private key file. If not specified, the key will be
+            taken from the certfile.
     """
     server = SignalingServer()
 

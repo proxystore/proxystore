@@ -53,6 +53,17 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
     The factory takes the `store_type` and `store_kwargs` parameters that are
     used to reinitialize the store if the factory is sent to a remote
     process where the store has not already been initialized.
+
+    Args:
+        key: Key corresponding to object in store.
+        store_type: Type of store this factory will resolve an object from.
+        store_name: Name of store.
+        store_kwargs: Optional keyword arguments used to reinitialize store.
+        evict: If True, evict the object from the store once :func:`resolve()`
+            is called.
+        deserializer: Optional callable used to deserialize the byte string.
+            If ``None``, the default deserializer
+            (:py:func:`~proxystore.serialize.deserialize`) will be used.
     """
 
     def __init__(
@@ -65,22 +76,6 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         evict: bool = False,
         deserializer: DeserializerT | None = None,
     ) -> None:
-        """Init StoreFactory.
-
-        Args:
-            key (KeyT): key corresponding to object in store.
-            store_type (Store[KeyT]): type of store this factory will resolve
-                an object from.
-            store_name (str): name of store
-            store_kwargs (dict): optional keyword arguments used to
-                reinitialize store.
-            evict (bool): If True, evict the object from the store once
-                :func:`resolve()` is called (default: False).
-            deserializer (callable): optional callable used to deserialize the
-                byte string. If ``None``, the default deserializer
-                (:py:func:`~proxystore.serialize.deserialize`) will be used
-                (default: None).
-        """
         self.key = key
         self.store_type = store_type
         self.store_name = store_name
@@ -148,9 +143,8 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         """Get store and reinitialize if necessary.
 
         Raises:
-            ValueError:
-                if the type of the returned store does not match the expected
-                store type passed to the factory constructor.
+            ValueError: If the type of the returned store does not match the
+                expected store type passed to the factory constructor.
         """
         store = ps.store.get_store(self.store_name)
         if store is None:
@@ -170,9 +164,8 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         """Get object associated with key from store.
 
         Raises:
-            ProxyResolveMissingKeyError:
-                if the key associated with this factory does not exist
-                in the store.
+            ProxyResolveMissingKeyError: If the key associated with this
+                factory does not exist in the store.
         """
         if self._obj_future is not None:
             obj = self._obj_future.result()
@@ -203,6 +196,18 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
     pairs, i.e., objects passed to :func:`get()` or :func:`set()` will be
     appropriately (de)serialized before being passed to :func:`get_bytes()`
     and :func:`set_bytes()`, respectively.
+
+    Args:
+        name: Name of the store instance.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+        kwargs: Additional keyword arguments to return from
+            :func:`kwargs <.Store.kwargs>`. I.e., the additional keyword
+            arguments needed to reinitialize this store.
+
+    Raises:
+        ValueError: If `cache_size` is less than zero.
     """
 
     def __init__(
@@ -213,22 +218,6 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         stats: bool = False,
         kwargs: dict[str, Any] | None,
     ) -> None:
-        """Init Store.
-
-        Args:
-            name (str): name of the store instance.
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-            kwargs (dict): additional keyword arguments to return from
-                :func:`kwargs <.Store.kwargs>`. I.e., the additional keyword
-                arguments needed to reinitialize this store (default: None).
-
-        Raises:
-            ValueError:
-                if `cache_size` is less than zero.
-        """
         if cache_size < 0:
             raise ValueError(
                 f'Cache size cannot be negative. Got {cache_size}.',
@@ -269,7 +258,6 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         return self._stats is not None
 
     def __enter__(self) -> Self:
-        """Enter context manager."""
         return self
 
     def __exit__(
@@ -278,11 +266,9 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> None:
-        """Exit context manager."""
         self.close()
 
     def __repr__(self) -> str:
-        """Represent Store instance as string."""
         s = f'{ps.utils.fullname(self.__class__)}('
         attributes = [
             f'{key}={value}'
@@ -317,10 +303,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Create key for the object.
 
         Args:
-            obj: object to be placed in store.
+            obj: Object to be placed in store.
 
         Returns:
-            key (KeyT)
+            A key.
         """
         raise NotImplementedError
 
@@ -329,7 +315,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Evict object associated with key.
 
         Args:
-            key (KeyT): key corresponding to object in store to evict.
+            key: The key corresponding to object in store to evict.
         """
         raise NotImplementedError
 
@@ -338,10 +324,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Check if key exists.
 
         Args:
-            key (KeyT): key to check.
+            key: The key to check.
 
         Returns:
-            if the key exists in the store.
+            If the key exists in the store.
         """
         raise NotImplementedError
 
@@ -355,16 +341,15 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Return object associated with key.
 
         Args:
-            key (KeyT): key corresponding to object.
-            deserializer (callable): optional callable used to deserialize the
+            key: The key corresponding to object.
+            deserializer: Optional callable used to deserialize the
                 byte string. If ``None``, the default deserializer
-                (:py:func:`~proxystore.serialize.deserialize`) will be used
-                (default: None).
-            default: optionally provide value to be returned if an object
-                associated with the key does not exist (default: None).
+                (:py:func:`~proxystore.serialize.deserialize`) will be used.
+            default: Optionally provide value to be returned if an object
+                associated with the key does not exist.
 
         Returns:
-            object associated with key or `default` if key does not exist.
+            The object associated with key or `default` if key does not exist.
         """
         if self.is_cached(key):
             value = self._cache.get(key)
@@ -398,10 +383,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Get serialized object from remote store.
 
         Args:
-            key (KeyT): key corresponding to object.
+            key: The key corresponding to the object.
 
         Returns:
-            serialized object or `None` if it does not exist.
+            The serialized object or `None` if it does not exist.
         """
         raise NotImplementedError
 
@@ -409,10 +394,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Check if object is cached locally.
 
         Args:
-            key (KeyT): key corresponding to object.
+            key: The key corresponding to the object.
 
         Returns:
-            if the object associated with the key is cached.
+            If the object associated with the key is cached.
         """
         return self._cache.exists(key)
 
@@ -435,19 +420,18 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             store if the factory is resolved in a different Python process.
 
         Args:
-            obj (object): object to place in store and return proxy for.
-            serializer (callable): optional callable which serializes the
+            obj: The object to place in store and return proxy for.
+            serializer: Optional callable which serializes the
                 object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used
-                (default: None).
-            deserializer (callable): optional callable used by the factory
+                (:py:func:`~proxystore.serialize.serialize`) will be used.
+            deserializer: Optional callable used by the factory
                 to deserialize the byte string. If ``None``, the default
                 deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used (default: None).
-            kwargs (dict): additional arguments to pass to the Factory.
+                will be used.
+            kwargs: Additional arguments to pass to the Factory.
 
         Returns:
-            :any:`Proxy[T] <proxystore.proxy.Proxy>`
+            A proxy of the object.
         """
         key = self.set(obj, serializer=serializer)
         logger.debug(
@@ -477,20 +461,18 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         details.
 
         Args:
-            objs (Sequence[object]): objects to place in store and return
-                proxies for.
-            serializer (callable): optional callable which serializes the
+            objs: The objects to place in store and return proxies for.
+            serializer: Optional callable which serializes the
                 object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used
-                (default: None).
-            deserializer (callable): optional callable used by the factory
+                (:py:func:`~proxystore.serialize.serialize`) will be used.
+            deserializer: Optional callable used by the factory
                 to deserialize the byte string. If ``None``, the default
                 deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used (default: None).
-            kwargs (dict): additional arguments to pass to the Factory.
+                will be used.
+            kwargs: additional arguments to pass to the Factory.
 
         Returns:
-            List of :any:`Proxy[T] <proxystore.proxy.Proxy>`
+            A list of proxies of the objects.
         """
         keys = self.set_batch(objs, serializer=serializer)
         return [
@@ -511,16 +493,16 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             will not be raised until the returned proxy is resolved.
 
         Args:
-            key (KeyT): key corresponding to an object already in the store
+            key: The key corresponding to an object already in the store
                 that will be the target object of the returned proxy.
-            deserializer (callable): optional callable used by the factory
+            deserializer: Optional callable used by the factory
                 to deserialize the byte string. If ``None``, the default
                 deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used (default: None).
-            kwargs (dict): additional arguments to pass to the Factory.
+                will be used.
+            kwargs: Additional arguments to pass to the Factory.
 
         Returns:
-            :any:`Proxy[T] <proxystore.proxy.Proxy>`
+            A proxy.
         """
         logger.debug(
             f"PROXY key='{key}' FROM {self.__class__.__name__}"
@@ -546,19 +528,18 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Create a proxy locker that will prevent resolution.
 
         Args:
-            obj (object): object to place in store and create proxy of.
-            serializer (callable): optional callable which serializes the
+            obj: The object to place in store and create proxy of.
+            serializer: Optional callable which serializes the
                 object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used
-                (default: None).
-            deserializer (callable): optional callable used by the factory
+                (:py:func:`~proxystore.serialize.serialize`) will be used.
+            deserializer: Optional callable used by the factory
                 to deserialize the byte string. If ``None``, the default
                 deserializer (:py:func:`~proxystore.serialize.deserialize`)
-                will be used (default: None).
-            kwargs (dict): additional arguments to pass to the Factory.
+                will be used.
+            kwargs: Additional arguments to pass to the Factory.
 
         Returns:
-            :class:`~proxystore.proxy.ProxyLocker`
+            A proxy wrapped in a :class:`~proxystore.proxy.ProxyLocker`
         """
         return ProxyLocker(
             self.proxy(
@@ -578,18 +559,16 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Set key-object pair in store.
 
         Args:
-            obj (object): object to be placed in the store.
-            serializer (callable): optional callable which serializes the
+            obj: The object to be placed in the store.
+            serializer: Optional callable which serializes the
                 object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used
-                (default: None).
+                (:py:func:`~proxystore.serialize.serialize`) will be used.
 
         Returns:
-            key that can be used to retrieve the object.
+            A key that can be used to retrieve the object.
 
         Raises:
-            TypeError:
-                if the output of `serializer` is not bytes.
+            TypeError: If the output of `serializer` is not bytes.
         """
         if serializer is not None:
             obj = serializer(obj)
@@ -617,19 +596,16 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Set objects in store.
 
         Args:
-            objs (Sequence[object]): iterable of objects to be placed in the
-                store.
-            serializer (callable): optional callable which serializes the
+            objs: Iterable of objects to be placed in the store.
+            serializer: Optional callable which serializes the
                 object. If ``None``, the default serializer
-                (:py:func:`~proxystore.serialize.serialize`) will be used
-                (default: None).
+                (:py:func:`~proxystore.serialize.serialize`) will be used.
 
         Returns:
             List of keys that can be used to retrieve the objects.
 
         Raises:
-            TypeError:
-                if the output of `serializer` is not bytes.
+            TypeError: If the output of `serializer` is not bytes.
         """
         return [self.set(obj, serializer=serializer) for obj in objs]
 
@@ -638,8 +614,8 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Set serialized object in remote store with key.
 
         Args:
-            key (KeyT): key corresponding to object.
-            data (bytes): serialized object.
+            key: The key corresponding to the object.
+            data: The serialized object.
         """
         raise NotImplementedError
 
@@ -650,11 +626,11 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         """Get stats on the store.
 
         Args:
-            key_or_proxy (KeyT, Proxy): key to get stats for or a proxy to
-                extract the key from.
+            key_or_proxy: A key to get stats for or a proxy to extract the key
+                from.
 
         Returns:
-            dict with keys corresponding to method names and values which are
+            A dict with keys corresponding to method names and values which are
             :class:`TimeStats <proxystore.store.stats.TimeStats>` instances
             with the statistics for calls to the corresponding method with the
             specified key.
@@ -675,8 +651,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
                }
 
         Raises:
-            ValueError:
-                if `self` was initialized with :code:`stats=False`.
+            ValueError: If `self` was initialized with :code:`stats=False`.
         """
         if self._stats is None:
             raise ValueError(

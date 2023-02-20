@@ -47,12 +47,12 @@ def spawn_guarded_background_task(
     Source: `<https://stackoverflow.com/questions/62588076>`_
 
     Args:
-        coro (Coroutine): coroutine to run as task.
-        args (list): positional arguments for the coroutine.
-        kwargs (dict): keyword arguments for the coroutine.
+        coro: Coroutine to run as task.
+        args: Positional arguments for the coroutine.
+        kwargs: Keyword arguments for the coroutine.
 
     Returns:
-        asyncio task handle.
+        Asyncio task handle.
     """
     task = asyncio.create_task(coro(*args, **kwargs))
     task.add_done_callback(exit_on_error)

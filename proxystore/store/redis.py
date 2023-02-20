@@ -21,7 +21,16 @@ class RedisStoreKey(NamedTuple):
 
 
 class RedisStore(Store[RedisStoreKey]):
-    """Redis backend class."""
+    """Redis backend class.
+
+    Args:
+        name: Name of the store instance.
+        hostname: Redis server hostname.
+        port: Redis server port.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+    """
 
     def __init__(
         self,
@@ -32,17 +41,6 @@ class RedisStore(Store[RedisStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Init RedisStore.
-
-        Args:
-            name (str): name of the store instance.
-            hostname (str): Redis server hostname.
-            port (int): Redis server port.
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-        """
         self.hostname = hostname
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)

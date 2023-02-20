@@ -19,7 +19,22 @@ class LocalStoreKey(NamedTuple):
 
 
 class LocalStore(Store[LocalStoreKey]):
-    """Local Memory Key-Object Store."""
+    """Local Memory Key-Object Store.
+
+    Warning:
+        :class:`LocalStore <.LocalStore>` should typically be used for
+        testing proxystore locally as using proxy store within the same
+        Python process is unnecessary.
+
+    Args:
+        name: Name of this store instance.
+        store_dict: Dictionary to store data in. If not specified,
+            a new empty dict will be generated.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python
+            process.
+        stats: Collect stats on store operations.
+    """
 
     def __init__(
         self,
@@ -29,22 +44,6 @@ class LocalStore(Store[LocalStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Init LocalStore.
-
-        Warning:
-            :class:`LocalStore <.LocalStore>` should typically be used for
-            testing proxystore locally as using proxy store within the same
-            Python process is unnecessary.
-
-        Args:
-            name (str): name of this store instance.
-            store_dict (dict): dictionary to store data in. If not specified,
-                a new empty dict will be generated (default: None).
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-        """
         self._store: dict[LocalStoreKey, bytes] = {}
         if store_dict is not None:
             self._store = store_dict

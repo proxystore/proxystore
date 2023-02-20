@@ -34,10 +34,10 @@ def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     a top-level function so pickle can correctly find it in this module.
 
     Args:
-        factory (FactoryType): factory to pass to ``Proxy`` constructor.
+        factory: Factory to pass to ``Proxy`` constructor.
 
     Returns:
-        ``Proxy`` instance
+        ``Proxy`` instance.
     """
     return Proxy(factory)
 
@@ -99,19 +99,16 @@ class Proxy(slots.Proxy, Generic[T]):
              File "<stdin>", line 1, in <module>
            TypeError: initial_value must be str or None, not Proxy
            >>> io.StringIO(str(p))  # succeeds
+
+    Args:
+        factory: Callable object that returns the underlying object when
+            called.
+
+    Raises:
+        TypeError: If `factory` is not callable.
     """
 
     def __init__(self, factory: FactoryType[T]) -> None:
-        """Init Proxy.
-
-        Args:
-            factory (Factory): callable object that returns the
-                underlying object when called.
-
-        Raises:
-            TypeError:
-                if `factory` is not callable.
-        """
         if not callable(factory):
             raise TypeError('factory must be callable')
         super().__init__(factory)
@@ -132,7 +129,6 @@ class Proxy(slots.Proxy, Generic[T]):
         self,
         protocol: SupportsIndex,
     ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
-        """See `__reduce__`."""
         return self.__reduce__()
 
 
@@ -146,10 +142,10 @@ def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
     the proxy to be resolved prior.
 
     Args:
-        proxy (Proxy): proxy instance to extract from.
+        proxy: Proxy instance to extract from.
 
     Returns:
-        object wrapped by proxy.
+        Object wrapped by proxy.
     """
     return proxy.__wrapped__
 
@@ -158,7 +154,7 @@ def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
     """Check if a proxy is resolved.
 
     Args:
-        proxy (Proxy): proxy instance to check.
+        proxy: Proxy instance to check.
 
     Returns:
         `True` if `proxy` is resolved (i.e., the `factory` has been called) and
@@ -171,7 +167,7 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
     """Force a proxy to resolve itself.
 
     Args:
-        proxy (Proxy): proxy instance to force resolve.
+        proxy: Proxy instance to force resolve.
     """
     proxy.__wrapped__
 
@@ -182,14 +178,12 @@ class ProxyLocker(Generic[T]):
     The :class:`~proxystore.proxy.ProxyLocker` unintended access to a wrapped
     proxy to ensure a proxy is not resolved. The wrapped proxy can
     be retrieved with :func:`~proxystore.proxy.ProxyLocker.unlock`.
+
+    Args:
+        proxy: Proxy to lock.
     """
 
     def __init__(self, proxy: Proxy[T]) -> None:
-        """Init ProxyLocker.
-
-        Args:
-            proxy (Proxy[T]): proxy to lock.
-        """
         self._proxy = proxy
 
     def __getattribute__(self, attr: str) -> Any:
@@ -202,6 +196,6 @@ class ProxyLocker(Generic[T]):
         """Retrieve the locked proxy.
 
         Returns:
-            proxy object.
+            Proxy object.
         """
         return super().__getattribute__('_proxy')

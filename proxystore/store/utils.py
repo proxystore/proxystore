@@ -16,15 +16,14 @@ def get_key(proxy: Proxy[T]) -> NamedTuple:
     """Extract the key from the proxy's factory.
 
     Args:
-        proxy (Proxy): proxy instance to get key from.
+        proxy: Proxy instance to get key from.
 
     Returns:
         The key, a NamedTuple unique to the
         :class:`~proxystore.store.base.Store` that created the proxy..
 
     Raises:
-        ProxyStoreFactoryError:
-            if the proxy's factory is not an instance of
+        ProxyStoreFactoryError: If the proxy's factory is not an instance of
             :class:`~proxystore.store.base.StoreFactory`.
     """
     factory = proxy.__factory__
@@ -55,7 +54,7 @@ def resolve_async(proxy: Proxy[T]) -> None:
         of this type will error when used with this function.
 
     Args:
-        proxy (Proxy): proxy instance to begin asynchronously resolving.
+        proxy: Proxy instance to begin asynchronously resolving.
     """
     if not is_resolved(proxy):
         proxy.__factory__.resolve_async()

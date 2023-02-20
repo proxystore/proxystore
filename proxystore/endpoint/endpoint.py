@@ -82,6 +82,40 @@ class Endpoint:
     Note:
         Endpoints can be configured and started via the
         :code:`proxystore-endpoint` command-line interface.
+
+
+    Note:
+        If the endpoint is being used in peering mode, the endpoint should
+        be used as a context manager or initialized with await. This will
+        ensure :func:`async_init <Endpoint.async_init>` is executed which
+        connects to the signaling server and established a listener for
+        incoming messages.
+
+        >>> endpoint = await Endpoint(...)
+        >>> endpoint.close()
+        >>>
+        >>> async with Endpoint(...) as endpoint:
+        >>>     ...
+
+    Args:
+        name: Readable name of endpoint.
+        uuid: UUID of the endpoint.
+        signaling_server: Address of signaling server used for peer-to-peer
+            connections between endpoints. If None, endpoint will not be able
+            to communicate with other endpoints.
+        peer_timeout: Timeout for establishing p2p connection with
+            another endpoint.
+        max_memory: Optional max memory in bytes to use for storing
+            objects. If exceeded, LRU objects will be dumped to `dump_dir`.
+        max_object_size: Optional max size in bytes for any single
+            object stored by the endpoint. If exceeded, an error is raised.
+        dump_dir: Optional directory to dump objects to if the
+            memory limit is exceeded.
+        peer_channels: Number of datachannels per peer connection
+            to another endpoint to communicate over.
+        verify_certificate: Verify the signaling server's SSL
+            certificate. This should almost never be disabled except for
+            testing with self-signed certificates.
     """
 
     def __init__(
@@ -96,44 +130,6 @@ class Endpoint:
         peer_channels: int = 1,
         verify_certificate: bool = True,
     ) -> None:
-        """Init Endpoint.
-
-        Note:
-            If the endpoint is being used in peering mode, the endpoint should
-            be used as a context manager or initialized with await. This will
-            ensure :func:`async_init <Endpoint.async_init>` is executed which
-            connects to the signaling server and established a listener for
-            incoming messages.
-
-            >>> endpoint = await Endpoint(...)
-            >>> endpoint.close()
-            >>>
-            >>> async with Endpoint(...) as endpoint:
-            >>>     ...
-
-        Args:
-            name (str): readable name of endpoint.
-            uuid (str): uuid of the endpoint.
-            signaling_server (str, optional): address of signaling
-                server used for peer-to-peer connections between endpoints. If
-                None, endpoint will not be able to communicate with other
-                endpoints (default: None).
-            peer_timeout (int): timeout for establishing p2p connection with
-                another endpoint (default: 30).
-            max_memory (int): optional max memory in bytes to use for storing
-                objects. If exceeded, LRU objects will be dumped to `dump_dir`
-                (default: None).
-            max_object_size (int): optional max size in bytes for any single
-                object stored by the endpoint. If exceeded, an error is
-                raised (default: 1 GB).
-            dump_dir (str): optional directory to dump objects to if the
-                memory limit is exceeded (default: None).
-            peer_channels (int): number of datachannels per peer connection
-                to another endpoint to communicate over (default: 1).
-            verify_certificate (bool): verify the signaling server's SSL
-                certificate. This should almost never be disabled except for
-                testing with self-signed certificates (default: True).
-        """
         # TODO(gpauloski): need to consider semantics of operations
         #   - can all ops be triggered on remote?
         #   - or just get? do we move data permanently on get? etc...
@@ -185,7 +181,6 @@ class Endpoint:
         return self._name
 
     async def __aenter__(self) -> Endpoint:
-        """Enter async context manager."""
         await self.async_init()
         return self
 
@@ -195,11 +190,9 @@ class Endpoint:
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> None:
-        """Exit async context manager."""
         await self.close()
 
     def __await__(self) -> Generator[Any, None, Endpoint]:
-        """Initialize endpoint awaitables."""
         return self.__aenter__().__await__()
 
     async def async_init(self) -> None:
@@ -332,14 +325,13 @@ class Endpoint:
         """Evict key from endpoint.
 
         Args:
-            key (str): key to evict.
-            endpoint (optional, UUID): endpoint to perform operation on. If
+            key: Key to evict.
+            endpoint: Endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Raises:
-            PeerRequestError:
-                if request to a peer endpoint fails.
+            PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EVICT key={key} on endpoint={endpoint}',
@@ -362,17 +354,16 @@ class Endpoint:
         """Check if key exists on endpoint.
 
         Args:
-            key (str): key to check.
-            endpoint (optional, UUID): endpoint to perform operation on. If
+            key: Key to check.
+            endpoint: Endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Returns:
-            True if key exists.
+            If the key exists.
 
         Raises:
-            PeerRequestError:
-                if request to a peer endpoint fails.
+            PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: EXISTS key={key} on endpoint={endpoint}',
@@ -400,17 +391,16 @@ class Endpoint:
         """Get value associated with key on endpoint.
 
         Args:
-            key (str): key to get value for.
-            endpoint (optional, UUID): endpoint to perform operation on. If
+            key: Key to get value for.
+            endpoint: Endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Returns:
-            value (bytes) associated with key.
+            Value associated with key.
 
         Raises:
-            PeerRequestError:
-                if request to a peer endpoint fails.
+            PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: GET key={key} on endpoint={endpoint}',
@@ -441,18 +431,16 @@ class Endpoint:
         """Set key with data on endpoint.
 
         Args:
-            key (str): key to associate with value.
-            data (bytes): value to associate with key.
-            endpoint (optional, UUID): endpoint to perform operation on. If
+            key: Key to associate with value.
+            data: Value to associate with key.
+            endpoint: Endpoint to perform operation on. If
                 unspecified or if the endpoint is on solo mode, the operation
                 will be performed on the local endpoint.
 
         Raises:
-            ObjectSizeExceededError:
-                if the max object size is configured and the data exceeds that
-                size.
-            PeerRequestError:
-                if request to a peer endpoint fails.
+            ObjectSizeExceededError: If the max object size is configured and
+                the data exceeds that size.
+            PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
             f'{self._log_prefix}: SET key={key} on endpoint={endpoint}',

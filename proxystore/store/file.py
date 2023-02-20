@@ -21,7 +21,16 @@ class FileStoreKey(NamedTuple):
 
 
 class FileStore(Store[FileStoreKey]):
-    """File backend class."""
+    """File backend class.
+
+    Args:
+        name: name of the store instance.
+        store_dir: Path to directory to store data in. Note this
+            directory will be deleted upon closing the store.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+    """
 
     def __init__(
         self,
@@ -31,17 +40,6 @@ class FileStore(Store[FileStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Init FileStore.
-
-        Args:
-            name (str): name of the store instance.
-            store_dir (str): path to directory to store data in. Note this
-                directory will be deleted upon closing the store.
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-        """
         self.store_dir = os.path.abspath(store_dir)
 
         if not os.path.exists(self.store_dir):

@@ -11,11 +11,10 @@ def get_ip_address(ifname: str) -> str:
     """Get ip address provided an interface name.
 
     Args:
-        ifname (str): interface name
+        ifname: The interface name.
 
     Returns:
-        the IP address (str)
-
+        The IP address.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:

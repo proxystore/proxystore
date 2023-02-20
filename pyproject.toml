@@ -161,6 +161,10 @@ select = [
     "RUF",
 ]
 extend-ignore = [
+    # Do not require docstrings for magic methods
+    "D105",
+    # Do not require docstrings for __init__ methods
+    "D107",
     # Allow builtin attribute shadowing
     "A003",
     # Allow pytest.raises() without match
