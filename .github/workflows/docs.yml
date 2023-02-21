@@ -38,6 +38,11 @@ jobs:
           pip install --upgrade setuptools pip
           pip install .[docs]
 
+      - name: Configure git
+        run: |
+          git config --local user.name "GitHub Actions Bot"
+          git config --local user.email "<>"
+
       - name: Deploy docs for main:latest to gh-pages branch
         run: |
           mike deploy --push --update-aliases main latest

@@ -1,8 +1,8 @@
 # ProxyStore
 
+[![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml)
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
-[![pages-build-deployment](https://github.com/proxystore/proxystore/actions/workflows/pages/pages-build-deployment/badge.svg?branch=gh-pages)](https://github.com/proxystore/proxystore/actions/workflows/pages/pages-build-deployment)
 
 ProxyStore provides a unique interface to object stores through transparent
 object proxies that is designed to simplify the use of object stores for
