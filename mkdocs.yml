@@ -20,6 +20,7 @@ theme:
     - navigation.sections
     - navigation.tabs
     - navigation.top
+    - navigation.tracking
     - search.highlight
     - search.share
     - search.suggest
@@ -28,20 +29,32 @@ theme:
     text: Open Sans
     code: Roboto Mono
   palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: deep purple
+      accent: lime
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
     # Palette toggle for light mode
-    - scheme: default
-      primary: indigo
-      accent: indigo
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: lime
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
+
     # Palette toggle for dark mode
-    - scheme: slate
-      primary: indigo
-      accent: indigo
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: lime
       toggle:
         icon: material/brightness-4
-        name: Switch to light mode
+        name: Switch to system preference
   # favicon: static/favicon.png
   # icon:
   #   logo: logo
