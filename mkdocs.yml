@@ -55,14 +55,21 @@ theme:
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
+  overrides: docs/_overrides
   # favicon: static/favicon.png
   # icon:
   #   logo: logo
 
 watch:
   - mkdocs.yml
+  - README.md
   - docs/
   - proxystore/
+
+extra:
+  version:
+    default: latest
+    provider: mike
 
 markdown_extensions:
   - admonition
