@@ -41,7 +41,7 @@ jobs:
       - name: Configure git
         run: |
           git config --local user.name "GitHub Actions Bot"
-          git config --local user.email "<>"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy docs for main:latest to gh-pages branch
         run: |
