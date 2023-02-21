@@ -63,6 +63,11 @@ jobs:
         with:
           password: ${{ secrets.PYPI_TOKEN }}
 
+      - name: Configure git
+        run: |
+          git config --local user.name "GitHub Actions Bot"
+          git config --local user.email "<>"
+
       - name: Deploy docs for release version to gh-pages branch
         if: startsWith(github.ref, 'refs/tags/')
         run: |
