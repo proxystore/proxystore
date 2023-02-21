@@ -41,11 +41,10 @@ def create_app(
     """Create quart app for endpoint and registers routes.
 
     Args:
-        endpoint (Endpoint): initialized endpoint to forward quart routes to.
-        max_content_length (int): max request body size in bytes
-            (default: None).
-        body_timeout (int): number of seconds to wait for the body to be
-            completely received (default: 300)
+        endpoint: Initialized endpoint to forward quart routes to.
+        max_content_length: Max request body size in bytes.
+        body_timeout: Number of seconds to wait for the body to be
+            completely received.
 
     Returns:
         Quart app.
@@ -80,11 +79,10 @@ def serve(
         This function does not return until the Quart app is terminated.
 
     Args:
-        config (EndpointConfig): configuration object.
-        log_level (int): logging level of endpoint (default: INFO).
-        log_file (str): optional file path to append log to.
-        use_uvloop (bool): install uvloop as the default event loop
-            implementation (default: True).
+        config: Configuration object.
+        log_level: Logging level of endpoint.
+        log_file: Optional file path to append log to.
+        use_uvloop: Install uvloop as the default event loop implementation.
     """
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')

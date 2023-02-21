@@ -14,7 +14,6 @@ class Lib:
     """Mock ucp Lib implementation."""
 
     def __init__(self):
-        """Mock lib init implementation."""
         pass
 
     class exceptions:  # noqa: N801
@@ -40,7 +39,6 @@ class MockEndpoint:
     is_closed: bool
 
     def __init__(self, server=False):
-        """Initialize a MockEndpoint."""
         self.key = ''
         self.last_event = ''
         self.response = ''
@@ -52,8 +50,7 @@ class MockEndpoint:
         """Mock the `ucp.send_obj` function.
 
         Args:
-            req (Any): the object to communicate
-
+            req: The object to communicate.
         """
         self.req = None
         if self.server:
@@ -111,7 +108,6 @@ class Listener:
     called: bool
 
     def __init__(self) -> None:
-        """Mock listener init implementation."""
         self.called = False
 
     def close(self) -> None:
@@ -130,8 +126,8 @@ def create_listener(handler: Any, port: int) -> Any:
     """Create_listener mock implementation.
 
     Args:
-        handler (Any): the communication handler
-        port (int): the communication port
+        handler: The communication handler.
+        port: The communication port.
 
     """
     return Listener()

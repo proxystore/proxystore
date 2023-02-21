@@ -29,7 +29,13 @@ class BlobLocation(enum.Enum):
 
 
 class Blob:
-    """Representation of entry in :class:`.EndpointStorage`."""
+    """Representation of entry in [`EndpointStorage`][proxystore.endpoint.storage.EndpointStorage].
+
+    Args:
+        key: Key associated with the blob.
+        value: The blob being stored.
+        filepath: Optional filepath for dumping the blob.
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -37,13 +43,6 @@ class Blob:
         value: bytes,
         filepath: str | None = None,
     ) -> None:
-        """Init Blob.
-
-        Args:
-            key (str): key associated with the blob.
-            value (bytes): the blob being stored.
-            filepath (str): optional filepath for dumping the blob.
-        """
         self.key = key
         self.size = len(value)
         self._value: bytes | None = value
@@ -51,14 +50,14 @@ class Blob:
 
     @property
     def location(self) -> BlobLocation:
-        """Get the location of the blob."""
+        """Location of the blob."""
         return (
             BlobLocation.FILE if self._value is None else BlobLocation.MEMORY
         )
 
     @property
     def value(self) -> bytes:
-        """Get the blob bytes."""
+        """Blob bytes."""
         if self._value is None:
             self.load()
         assert self._value is not None
@@ -95,10 +94,17 @@ class Blob:
 class EndpointStorage(MutableMapping[str, bytes]):
     """Endpoint in-memory blob storage with filesystem fallback.
 
-    The :class:`.EndpointStorage` provides a dict-like storage of key-bytes
-    pairs. Optionally, a maximum in-memory size for the data structure can
-    be specified and least-recently used key-bytes pairs will be dumped
-    to a file in a specified directory.
+    Provides a dict-like storage of key-bytes pairs. Optionally, a maximum
+    in-memory size for the data structure can be specified and least-recently
+    used key-bytes pairs will be dumped to a file in a specified directory.
+
+    Args:
+        max_size: Optional maximum size in bytes for in-memory
+            storage of blobs. If the memory limit is exceeded, least
+            recently used blobs will be dumped to disk (if configured).
+        max_object_size: Optional maximum size in bytes for any single blob.
+        dump_dir: Optional directory to dump blobs to when `max_object_size`
+            is reached.
     """
 
     def __init__(
@@ -107,17 +113,6 @@ class EndpointStorage(MutableMapping[str, bytes]):
         max_object_size: int | None = None,
         dump_dir: str | None = None,
     ) -> None:
-        """Init EndpointStorage.
-
-        Args:
-            max_size (int): optional maximum size in bytes for in-memory
-                storage of blobs. If the memory limit is exceeded, least
-                recently used blobs will be dumped to disk (if configured).
-            max_object_size (int): optional maximum size in bytes for any
-                single blob.
-            dump_dir (str): optional directory to dump blobs to when
-                `max_size` is reached.
-        """
         if (max_size is not None or dump_dir is not None) and (
             max_size is None or dump_dir is None
         ):
@@ -163,11 +158,10 @@ class EndpointStorage(MutableMapping[str, bytes]):
         return blob.value
 
     def __setitem__(self, key: str, value: bytes) -> None:
-        """Set key to value (bytes).
+        """Set key to value.
 
         Raises:
-            ValueError:
-                if `value` is larger than `max_size`.
+            ValueError: If `value` is larger than `max_size`.
         """
         if (
             self.max_object_size is not None

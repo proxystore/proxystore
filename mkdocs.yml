@@ -1,0 +1,149 @@
+site_name: ProxyStore
+site_url: https://proxystore.dev
+site_author: Globus Labs
+site_description: Documentation for ProxyStore.
+
+repo_name: proxystore/proxystore
+repo_url: https://github.com/proxystore/proxystore
+
+edit_uri: blob/main/docs/
+
+copyright: Copyright &copy; 2021—Present Greg Pauloski
+
+
+theme:
+  name: material
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  font:
+    text: Open Sans
+    code: Roboto Mono
+  palette:
+    # Palette toggle for automatic mode
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: deep purple
+      accent: lime
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+
+    # Palette toggle for light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: lime
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: lime
+      toggle:
+        icon: material/brightness-4
+        name: Switch to system preference
+  overrides: docs/_overrides
+  # favicon: static/favicon.png
+  # icon:
+  #   logo: logo
+
+watch:
+  - mkdocs.yml
+  - README.md
+  - docs/
+  - proxystore/
+
+extra:
+  version:
+    default: latest
+    provider: mike
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: proxystore
+      repo: proxystore
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+nav:
+  - Home:
+      - Overview: index.md
+      - Get Started: getstarted.md
+      - Advanced: advanced.md
+      - Contributing: contributing.md
+  - Guides:
+      - guides/index.md
+      - Endpoints: guides/endpoints.md
+      - Performance: guides/performance.md
+  - API Reference:
+      - ProxyStore: reference/
+      - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
+      - Legacy Docs: legacy-docs.md
+
+plugins:
+  - gen-files:
+      scripts:
+        - docs/gen_ref_pages.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - mkdocstrings:
+      handlers:
+        python:
+          setup_commands:
+            - import pytkdocs_tweaks
+            - pytkdocs_tweaks.main()
+          import:
+            - https://docs.python.org/3/objects.inv
+          options:
+            docstring_section_style: list
+            docstring_style: google
+            inherited_members: yes
+            line_length: 60
+            members_order: source
+            merge_init_into_class: yes
+            separate_signature: yes
+            # Mutually exclusive with separate_signature
+            # show_root_members_full_path: yes
+            # show_object_full_path: yes
+            show_root_full_path: yes
+            show_signature_annotations: yes
+            show_submodules: no
+  - search
+  - section-index

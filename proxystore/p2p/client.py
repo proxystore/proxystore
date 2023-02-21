@@ -36,33 +36,28 @@ async def connect(
     """Establish client connection to a Signaling Server.
 
     Args:
-        address (str): address of the Signaling Server. Should start with
-            ws:// or wss://.
-        uuid (str, optional): optional uuid of client to use when registering
-            with signaling server (default: None).
-        name (str, optional): readable name of the client to use when
-            registering with the signaling server. By default the
-            hostname will be used (default: None).
-        timeout (float): time to wait in seconds on server connections
-            (default: 10).
-        ssl (SSLContext, optional): by default when None, the correct value to
-            pass to :code:`websockets.connect` is inferred from `address`.
-            If `address` starts with "wss://" the value is True, otherwise is
-            False. Optionally provide a custom SSLContext (useful
-            if the server uses self-signed certificates) (default: None).
+        address: Address of the Signaling Server. Should start with ws:// or
+            wss://.
+        uuid: Optional uuid of client to use when registering with signaling
+            server.
+        name: Readable name of the client to use when registering with the
+            signaling server. By default the hostname will be used.
+        timeout: Time to wait in seconds on server connections.
+        ssl: When None, the correct value to pass to :code:`websockets.connect`
+            is inferred from `address`. If `address` starts with "wss://" the
+            value is True, otherwise is False. Optionally provide a custom
+            SSLContext (useful if the server uses self-signed certificates).
 
     Returns:
-        tuple of the UUID of this client returned by the signaling server,
-        the name used to register the client, and the websocket connection to
+        Tuple of the UUID of this client returned by the signaling server, \
+        the name used to register the client, and the websocket connection to \
         the signaling server.
 
     Raises:
-        EndpointRegistrationError:
-            if the connection to the signaling server is closed, does not reply
-            to the registration request within the timeout, or replies with an
-            error.
-        ValueError:
-            if address does not start with ws:// or wss://.
+        EndpointRegistrationError: If the connection to the signaling server
+            is closed, does not reply to the registration request within the
+            timeout, or replies with an error.
+        ValueError: If address does not start with "ws://" or "wss://".
     """
     if name is None:
         name = gethostname()

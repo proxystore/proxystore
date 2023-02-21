@@ -16,7 +16,27 @@ _ENDPOINT_PID_FILE = 'daemon.pid'
 
 @dataclasses.dataclass
 class EndpointConfig:
-    """Endpoint configuration."""
+    """Endpoint configuration.
+
+    Attributes:
+        name: Endpoint name.
+        uuid: Endpoint UUID.
+        host: Host endpoint is running on.
+        port: Port endpoint is running on.
+        server: Optional signaling server the endpoint should register with.
+        max_memory: Optional memory limit before demoting objects to disk.
+        max_object_size: Optional maximum object size.
+        dump_dir: Optional directory to put objects in when `max_memory` is
+            exceeded.
+        peer_channels: Number of peer channels to multiplex communications
+            over.
+        verify_certificates: Validate the SSL certificates of `server`.
+
+    Raises:
+        ValueError: If the name does not contain only alphanumeric, dash, or
+            underscore characters, if the UUID cannot be parsed, or if the
+            port is not in the range [1, 65535].
+    """
 
     name: str
     uuid: uuid.UUID
@@ -30,14 +50,6 @@ class EndpointConfig:
     verify_certificate: bool = True
 
     def __post_init__(self) -> None:
-        """Validate config contains reasonable values.
-
-        Raises:
-            ValueError:
-                if the name does not contain only alphanumeric, dash, or
-                underscore characters, if the UUID cannot be parsed, or if the
-                port is not in the range [1, 65535].
-        """
         if not validate_name(self.name):
             raise ValueError(
                 'Name must only contain alphanumeric characters, dashes, and '
@@ -72,11 +84,11 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
     """Get all valid endpoint configurations in parent directory.
 
     Args:
-        proxystore_dir (str): parent directory containing possible endpoint
+        proxystore_dir: Parent directory containing possible endpoint
             configurations.
 
     Returns:
-        list of :class:`~proxystore.endpoint.config.EndpointConfig`.
+        List of found configs.
     """
     endpoints: list[EndpointConfig] = []
 
@@ -102,10 +114,10 @@ def get_log_filepath(endpoint_dir: str) -> str:
     """Return path to log file for endpoint.
 
     Args:
-        endpoint_dir (str): directory for the endpoint.
+        endpoint_dir: Directory for the endpoint.
 
     Returns:
-        path to log file.
+        Path to log file.
     """
     return os.path.join(endpoint_dir, _ENDPOINT_LOG_FILE)
 
@@ -114,10 +126,10 @@ def get_pid_filepath(endpoint_dir: str) -> str:
     """Return path to PID file for endpoint.
 
     Args:
-        endpoint_dir (str): directory for the endpoint.
+        endpoint_dir: Directory for the endpoint.
 
     Returns:
-        path to PID file.
+        Path to PID file.
     """
     return os.path.join(endpoint_dir, _ENDPOINT_PID_FILE)
 
@@ -126,16 +138,14 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
     """Read endpoint config file.
 
     Args:
-        endpoint_dir (str): directory containing endpoint configuration file.
+        endpoint_dir: Directory containing endpoint configuration file.
 
     Returns:
-        :class:`<.EndpointConfig>`
+        Config found in `endpoint_dir`.
 
     Raises:
-        FileNotFoundError:
-            if a config files does not exist in the directory.
-        ValueError:
-            if config contains an invalid value or cannot be parsed.
+        FileNotFoundError: If a config files does not exist in the directory.
+        ValueError: If config contains an invalid value or cannot be parsed.
     """
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
 
@@ -170,8 +180,8 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
     """Write config to endpoint directory.
 
     Args:
-        cfg (EndpointConfig): configuration to write.
-        endpoint_dir (str): directory to write config to.
+        cfg: Configuration to write.
+        endpoint_dir: Directory to write config to.
     """
     os.makedirs(endpoint_dir, exist_ok=True)
     path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)

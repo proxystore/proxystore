@@ -29,15 +29,17 @@ FactoryType: TypeAlias = Callable[[], T]
 def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     """Trampoline for helping Proxy pickling.
 
-    `slots.Proxy` defines a property for ``__modules__`` which confuses
-    pickle when trying to locate the class in the module. The trampoline is
-    a top-level function so pickle can correctly find it in this module.
+    `#!python lazy_object_proxy.slots.Proxy` defines a property for
+    `__modules__` which confuses pickle when trying to locate the class in the
+    module. The trampoline is a top-level function so pickle can correctly
+    find it in this module.
 
     Args:
-        factory (FactoryType): factory to pass to ``Proxy`` constructor.
+        factory: Factory to pass to the [`Proxy`][proxystore.proxy.Proxy]
+            constructor.
 
     Returns:
-        ``Proxy`` instance
+        Proxy initialized with `factory`.
     """
     return Proxy(factory)
 
@@ -46,8 +48,8 @@ class Proxy(slots.Proxy, Generic[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from
-    https://github.com/ionelmc/python-lazy-object-proxy with modified pickling
-    behavior.
+    [lazy-object-proxy](https://github.com/ionelmc/python-lazy-object-proxy)
+    with modified pickling behavior.
 
     An object proxy acts as a thin wrapper around a Python object, i.e.
     the proxy behaves identically to the underlying object. The proxy is
@@ -61,17 +63,13 @@ class Proxy(slots.Proxy, Generic[T]):
     e.g., which in the case for ProxyStore means requesting the correct
     object from the backend store.
 
-    >>> x = np.array([1, 2, 3])
-    >>> f = ps.factory.SimpleFactory(x)
-    >>> p = ps.proxy.Proxy(f)
-    >>> assert isinstance(p, np.ndarray)
-    >>> assert np.array_equal(p, [1, 2, 3])
-
-    Note:
-        Due to ``Proxy`` modifying the ``__module__`` and ``__doc__``
-        attributes, Sphinx cannot create autodocumentation for this
-        class so any changes to the documentation here must be copied
-        to ``docs/source/proxystore.proxy.rst``.
+    ```python
+    x = np.array([1, 2, 3])
+    f = ps.factory.SimpleFactory(x)
+    p = ps.proxy.Proxy(f)
+    assert isinstance(p, np.ndarray)
+    assert np.array_equal(p, [1, 2, 3])
+    ```
 
     Note:
         The `factory`, by default, is only ever called once during the
@@ -85,33 +83,30 @@ class Proxy(slots.Proxy, Generic[T]):
 
     Warning:
         Python bindings to other languages (e.g., C, C++) may throw type
-        errors when receiving a :class:`~proxystore.proxy.Proxy`.
+        errors when receiving a [`Proxy`][proxystore.proxy.Proxy] instance.
         Casting the proxy or extracting the target object may be needed.
 
-        .. code-block:: python
+        ```python
+        >>> import io
+        >>> from proxystore.proxy import Proxy
+        >>> s = 'mystring'
+        >>> p = Proxy(lambda: s)
+        >>> io.StringIO(p)
+        Traceback (most recent call last):
+          File "<stdin>", line 1, in <module>
+        TypeError: initial_value must be str or None, not Proxy
+        >>> io.StringIO(str(p))  # succeeds
+        ```
 
-           >>> import io
-           >>> from proxystore.proxy import Proxy
-           >>> s = 'mystring'
-           >>> p = Proxy(lambda: s)
-           >>> io.StringIO(p)
-           Traceback (most recent call last):
-             File "<stdin>", line 1, in <module>
-           TypeError: initial_value must be str or None, not Proxy
-           >>> io.StringIO(str(p))  # succeeds
+    Args:
+        factory: Callable object that returns the underlying object when
+            called.
+
+    Raises:
+        TypeError: If `factory` is not callable.
     """
 
     def __init__(self, factory: FactoryType[T]) -> None:
-        """Init Proxy.
-
-        Args:
-            factory (Factory): callable object that returns the
-                underlying object when called.
-
-        Raises:
-            TypeError:
-                if `factory` is not callable.
-        """
         if not callable(factory):
             raise TypeError('factory must be callable')
         super().__init__(factory)
@@ -119,11 +114,9 @@ class Proxy(slots.Proxy, Generic[T]):
     def __reduce__(
         self,
     ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
-        """Use trampoline function for pickling.
-
-        Override `Proxy.__reduce__` so that we only pickle the Factory
-        and not the object itself to reduce size of the pickle.
-        """
+        # Use trampoline function for pickling and
+        # override `Proxy.__reduce__` so that we only pickle the Factory
+        # and not the object itself to reduce size of the pickle.
         return _proxy_trampoline, (
             object.__getattribute__(self, '__factory__'),
         )
@@ -132,7 +125,6 @@ class Proxy(slots.Proxy, Generic[T]):
         self,
         protocol: SupportsIndex,
     ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
-        """See `__reduce__`."""
         return self.__reduce__()
 
 
@@ -146,10 +138,10 @@ def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
     the proxy to be resolved prior.
 
     Args:
-        proxy (Proxy): proxy instance to extract from.
+        proxy: Proxy instance to extract from.
 
     Returns:
-        object wrapped by proxy.
+        Object wrapped by proxy.
     """
     return proxy.__wrapped__
 
@@ -158,11 +150,11 @@ def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
     """Check if a proxy is resolved.
 
     Args:
-        proxy (Proxy): proxy instance to check.
+        proxy: Proxy instance to check.
 
     Returns:
-        `True` if `proxy` is resolved (i.e., the `factory` has been called) and
-        `False` otherwise.
+        `True` if `proxy` is resolved (i.e., the `factory` has been called) \
+        and `False` otherwise.
     """
     return proxy.__resolved__
 
@@ -171,7 +163,7 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
     """Force a proxy to resolve itself.
 
     Args:
-        proxy (Proxy): proxy instance to force resolve.
+        proxy: Proxy instance to force resolve.
     """
     proxy.__wrapped__
 
@@ -179,21 +171,19 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
 class ProxyLocker(Generic[T]):
     """Proxy locker that prevents resolution of wrapped proxies.
 
-    The :class:`~proxystore.proxy.ProxyLocker` unintended access to a wrapped
-    proxy to ensure a proxy is not resolved. The wrapped proxy can
-    be retrieved with :func:`~proxystore.proxy.ProxyLocker.unlock`.
+    The class prevents unintended access to a wrapped proxy to ensure a proxy
+    is not resolved. The wrapped proxy can be retrieved with
+    `#!python proxy = ProxyLocker(proxy).unlock()`.
+
+    Args:
+        proxy: Proxy to lock.
     """
 
     def __init__(self, proxy: Proxy[T]) -> None:
-        """Init ProxyLocker.
-
-        Args:
-            proxy (Proxy[T]): proxy to lock.
-        """
         self._proxy = proxy
 
     def __getattribute__(self, attr: str) -> Any:
-        """Override to raise an error if the proxy is accessed."""
+        # Override to raise an error if the proxy is accessed.
         if attr == '_proxy':
             raise AttributeError('Cannot access proxy attribute of a Locker')
         return super().__getattribute__(attr)
@@ -202,6 +192,6 @@ class ProxyLocker(Generic[T]):
         """Retrieve the locked proxy.
 
         Returns:
-            proxy object.
+            Proxy object.
         """
         return super().__getattribute__('_proxy')

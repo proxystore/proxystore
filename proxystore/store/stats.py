@@ -49,7 +49,6 @@ class TimeStats:
     size_bytes: int | None = None
 
     def __add__(self, other: TimeStats) -> TimeStats:
-        """Add two instances together."""
         return TimeStats(
             calls=self.calls + other.calls,
             avg_time_ms=self._weighted_avg(
@@ -66,8 +65,8 @@ class TimeStats:
         """Add a new time to the stats.
 
         Args:
-            time_ms (float): time (milliseconds) of a method execution.
-            size_bytes (int): optionally note the data size associated with
+            time_ms: Time (milliseconds) of a method execution.
+            size_bytes: Optionally note the data size associated with
                 the operation that produced these statistics.
         """
         self.avg_time_ms = self._weighted_avg(
@@ -85,13 +84,13 @@ class TimeStats:
         """Compute weighted average between two separate averages.
 
         Args:
-            a1 (float): first average.
-            n1 (float): number of samples in `a1`.
-            a2 (float): second average.
-            n2 (float): number of samples in `a2`.
+            a1: The first average.
+            n1: The number of samples in `a1`.
+            a2: The second average.
+            n2: The number of samples in `a2`.
 
         Returns:
-            weighted average between `a1` and `a2`.
+            The weighted average between `a1` and `a2`.
         """
         return ((a1 * n1) + (a2 * n2)) / (n1 + n2)
 
@@ -100,15 +99,12 @@ class FunctionEventStats(MutableMapping):  # type: ignore
     """Class for tracking stats of calls of functions that take a key."""
 
     def __init__(self) -> None:
-        """Init FunctionEventStats."""
         self._events: dict[Event, TimeStats] = {}
 
     def __delitem__(self, event: Event) -> None:
-        """Remove event from self."""
         del self._events[event]
 
     def __getitem__(self, event: Event) -> TimeStats:
-        """Get item corresponding to event."""
         if not isinstance(event, Event):
             raise TypeError(
                 f'key (event) must be of type {Event.__name__}. '
@@ -119,15 +115,12 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         return self._events[event]
 
     def __iter__(self) -> Iterator[Event]:
-        """Get an iterator of events."""
         return iter(self._events)
 
     def __len__(self) -> int:
-        """Get number of tracked events."""
         return len(self._events)
 
     def __setitem__(self, event: Event, stats: TimeStats) -> None:
-        """Set stats for event."""
         if not isinstance(event, Event):
             raise TypeError(
                 f'key (event) must be of type {Event.__name__}. '
@@ -159,16 +152,16 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         """Execute a wrapped function and store execution stats.
 
         Args:
-            function (callable): function to wrap.
-            key_is_result (bool): if `True`, the key is the return value of
-                `function` rather than the first argument. (default: False).
-            preset_key (NamedTuple): optionally preset the key associated
+            function: Function to wrap.
+            key_is_result: If `True`, the key is the return value of
+                `function` rather than the first argument.
+            preset_key: Optionally preset the key associated
                 with any calls to `function`. This overrides `key_is_returned`.
             args: Arguments passed to `function`
             kwargs: Keywords arguments passed to `function`.
 
         Returns:
-            Output of the function
+            Output of the function.
         """
         start_ns = perf_counter_ns()
         result = function(*args, **kwargs)
@@ -207,14 +200,14 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         """Wrap a method to log stats on calls to the function.
 
         Args:
-            function (callable): function to wrap.
-            key_is_result (bool): if `True`, the key is the return value of
-                `function` rather than the first argument. (default: False).
-            preset_key (NamedTuple): optionally preset the key associated
-                with any calls to `function`. This overrides `key_is_returned`.
+            function: Function to wrap.
+            key_is_result: If `True`, the key is the return value of
+                `function` rather than the first argument.
+            preset_key: Optionally preset the key associated with any calls to
+                `function`. This overrides `key_is_returned`.
 
         Returns:
-            callable with same interface as `function`.
+            Callable with same interface as `function`.
         """
         out_fun = partial(self._function, function, key_is_result, preset_key)
 

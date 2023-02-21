@@ -11,11 +11,9 @@ class MockTransferData(globus_sdk.TransferData):
     """Mock the Globus TransferData."""
 
     def __init__(self, *args, **kwargs):
-        """Init MockTransferData."""
         pass
 
     def __setitem__(self, key, item):
-        """Set item."""
         self.__dict__[key] = item
 
     def add_item(
@@ -33,15 +31,13 @@ class MockDeleteData(globus_sdk.DeleteData):
     """Mock the Globus DeleteData."""
 
     def __init__(self, *args, **kwargs):
-        """Init MockDeleteData."""
         pass
 
     def __setitem__(self, key, item):
-        """Set item."""
         self.__dict__[key] = item
 
     def add_item(self, path: str, **kwargs: Any) -> None:
-        """Add item."""
+        """Add an item to the object."""
         assert isinstance(path, str)
 
 
@@ -49,7 +45,6 @@ class MockTransferClient:
     """Mock the Globus TransferClient."""
 
     def __init__(self, *args, **kwargs):
-        """Init MockTransferClient."""
         pass
 
     def get_task(self, task_id: str) -> Any:

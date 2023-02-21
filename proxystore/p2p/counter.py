@@ -5,15 +5,13 @@ import threading
 
 
 class AtomicCounter:
-    """Thread-safe counter."""
+    """Thread-safe counter.
+
+    Args:
+        size: Optional max count upon which an exception will be raised.
+    """
 
     def __init__(self, size: int | None = None) -> None:
-        """Init AtomicCounter.
-
-        Args:
-            size (int): optional max count upon which an exception will be
-                raised (default: None).
-        """
         self._size = size
         self._value = 0
         self._lock = threading.Lock()
@@ -22,11 +20,10 @@ class AtomicCounter:
         """Get current count and increment value.
 
         Returns:
-            current count (int).
+            Current count.
 
         Raises:
-            ValueError:
-                if current count is equal to or greater than size.
+            ValueError: If current count is equal to or greater than size.
         """
         with self._lock:
             value = self._value

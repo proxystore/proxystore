@@ -68,7 +68,20 @@ class MargoStoreKey(NamedTuple):
 
 
 class MargoStore(Store[MargoStoreKey]):
-    """MargoStore implementation for intrasite communication."""
+    """MargoStore implementation for intrasite communication.
+
+    This client will initialize a local Margo server (Peer service) that
+    it will store data to.
+
+    Args:
+        name: Name of the store instance.
+        interface: The network interface to use.
+        port: The desired port for the Margo server.
+        protocol: The communication protocol to use.
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+    """
 
     host: str
     addr: str
@@ -89,22 +102,6 @@ class MargoStore(Store[MargoStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Initialize a Margo client to issue RPCs to the Margo server.
-
-        This client will initialize a local Margo server (Peer service) that
-        it will store data to.
-
-        Args:
-            name (str): name of the store instance.
-            interface (str): The network interface to use
-            port (int): the desired port for the Margo server
-            protocol (str): The communication protocol to use
-                            (e.g., tcp, sockets, verbs). default = "verbs"
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-        """
         global server_process
         global client_pids
         global engine
@@ -285,37 +282,32 @@ class MargoStore(Store[MargoStoreKey]):
         """Initiate the desired RPC call on the specified provider.
 
         Arguments:
-            engine (Engine): The client-side engine
-            addr (str): The address of Margo provider to access
-                        (e.g. tcp://172.21.2.203:6367)
-            rpc (RemoteFunction): the rpc to issue to the server
-            array_str (Bulk): the serialized data/buffer to send
-                             to the server.
-            key (str): the identifier of the data stored on the server
-            size (int): the size of the the data
+            engine: The client-side engine.
+            addr: The address of Margo provider to access
+                (e.g. tcp://172.21.2.203:6367).
+            rpc: The rpc to issue to the server.
+            array_str: The serialized data/buffer to send to the server.
+            key: The identifier of the data stored on the server.
+            size: The size of the the data.
 
         Returns:
             A string denoting whether the communication was successful
-
         """
         server_addr = engine.lookup(addr)
         return deserialize(rpc.on(server_addr)(array_str, size, key))
 
 
 class MargoServer:
-    """MargoServer implementation."""
+    """MargoServer implementation.
+
+    Args:
+        engine: The server engine created at the specified network address.
+    """
 
     data: dict[str, bytes]
     engine: Engine
 
     def __init__(self, engine: Engine) -> None:
-        """Initialize the server and register all RPC calls.
-
-        Args:
-            engine (Engine): the server engine created at the
-                      specified network address
-
-        """
         self.data = {}
 
         self.engine = engine
@@ -332,10 +324,10 @@ class MargoServer:
         """Obtain data from the client and store it in local dictionary.
 
         Args:
-            handle (Handle): the client handle
-            bulk_str (Bulk): the buffer containing the data to be shared
-            bulk_size (int): the size of the data being transferred
-            key (str): the data key
+            handle: The client handle.
+            bulk_str: The buffer containing the data to be shared.
+            bulk_size: The size of the data being transferred.
+            key: The data key.
         """
         logger.debug(f'Received set RPC for key {key}.')
 
@@ -366,11 +358,10 @@ class MargoServer:
         """Return data at a given key back to the client.
 
         Args:
-            handle (Handle): The client handle
-            bulk_str (Bulk): the buffer that will store shared data
-            bulk_size (int): the size of the data to be received
-            key (str): the data's key
-
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
         """
         logger.debug(f'Received get RPC for key {key}.')
 
@@ -404,11 +395,10 @@ class MargoServer:
         """Remove key from local dictionary.
 
         Args:
-            handle (Handle): the client issuing the requests' handle
-            bulk_str (str): the buffer containing any data to be shared
-            bulk_size (int): the size of the data to share
-            key (str): the identifier of the data
-
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
         """
         logger.debug(f'Received exists RPC for key {key}')
 
@@ -427,11 +417,10 @@ class MargoServer:
         """Check if key exists within local dictionary.
 
         Args:
-            handle (Handle): the client issuing the requests' handle
-            bulk_str (str): the shared buffer
-            bulk_size (int): the size of the shared buffer
-            key (str): the identifier of the data
-
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
         """
         logger.debug(f'Received exists RPC for key {key}')
 

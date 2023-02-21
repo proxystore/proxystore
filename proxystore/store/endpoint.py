@@ -36,7 +36,31 @@ class EndpointStoreKey(NamedTuple):
 
 
 class EndpointStore(Store[EndpointStoreKey]):
-    """EndpointStore backend class."""
+    """EndpointStore backend class.
+
+    Warning:
+        Specifying a custom `proxystore_dir` can cause problems if the
+        `proxystore_dir` is not the same on all systems that a proxy
+        created by this store could end up on. It is recommended to leave
+        the `proxystore_dir` unspecified so the correct default directory
+        will be used.
+
+    Args:
+        name: Name of the store instance (default: None).
+        endpoints: Sequence of valid and running endpoint
+            UUIDs to use. At least one of these endpoints must be
+            accessible by this process.
+        proxystore_dir: Optionally specify the proxystore home
+            directory. Defaults to [`home_dir()`[proxystore.utils.home_dir].
+        cache_size: Size of LRU cache (in # of objects). If 0,
+            the cache is disabled. The cache is local to the Python process.
+        stats: Collect stats on store operations.
+
+    Raises:
+        ValueError: If endpoints is an empty list.
+        EndpointStoreError: If unable to connect to one of the endpoints
+            provided.
+    """
 
     def __init__(
         self,
@@ -47,33 +71,6 @@ class EndpointStore(Store[EndpointStoreKey]):
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        """Init EndpointStore.
-
-        Warning:
-            Specifying a custom `proxystore_dir` can cause problems if the
-            `proxystore_dir` is not the same on all systems that a proxy
-            created by this store could end up on. It is recommended to leave
-            the `proxystore_dir` unspecified so the correct default directory
-            will be used.
-
-        Args:
-            name (str): name of the store instance (default: None).
-            endpoints (sequence): sequence of valid and running endpoint
-                UUIDs to use. At least one of these endpoints must be
-                accessible by this process.
-            proxystore_dir (str): optionally specify the proxystore home
-                directory. Defaults to :py:func:`~proxystore.utils.home_dir`.
-            cache_size (int): size of LRU cache (in # of objects). If 0,
-                the cache is disabled. The cache is local to the Python
-                process (default: 16).
-            stats (bool): collect stats on store operations (default: False).
-
-        Raises:
-            ValueError:
-                if endpoints is an empty list.
-            EndpointStoreError:
-                if unable to connect to one of the endpoints provided.
-        """
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
         self.endpoints: list[UUID] = [
@@ -141,12 +138,10 @@ class EndpointStore(Store[EndpointStoreKey]):
         """Evict object associated with key.
 
         Args:
-            key (EndpointStoreKey): key corresponding to object in store to
-                evict.
+            key: Key corresponding to object in store to evict.
 
         Raises:
-            EndpointStoreError:
-                if the Endpoint returns a non-200 status code.
+            EndpointStoreError: If the Endpoint returns a non-200 status code.
         """
         response = requests.post(
             f'{self.address}/evict',
@@ -165,11 +160,10 @@ class EndpointStore(Store[EndpointStoreKey]):
         """Check if key exists.
 
         Args:
-            key (EndpointStoreKey): key to check.
+            key: Key to check.
 
         Raises:
-            EndpointStoreError:
-                if the Endpoint returns a non-200 status code.
+            EndpointStoreError: If the Endpoint returns a non-200 status code.
         """
         response = requests.get(
             f'{self.address}/exists',
@@ -184,15 +178,14 @@ class EndpointStore(Store[EndpointStoreKey]):
         """Get serialized object from remote store.
 
         Args:
-            key (EndpointStoreError): key corresponding to object.
+            key: Key corresponding to object.
 
         Returns:
-            serialized object or `None` if it does not exist on the endpoint.
+            Serialized object or `None` if it does not exist on the endpoint.
 
         Raises:
-            EndpointStoreError:
-                if the Endpoint returns a status code other than 200 (success)
-                or 400 (missing key).
+            EndpointStoreError: If the Endpoint returns a status code other
+                than 200 (success) or 400 (missing key).
         """
         response = requests.get(
             f'{self.address}/get',
@@ -213,12 +206,12 @@ class EndpointStore(Store[EndpointStoreKey]):
         """Set serialized object in remote store with key.
 
         Args:
-            key (EndpointStoreKey): key corresponding to object.
-            data (bytes): serialized object.
+            key: Key corresponding to object.
+            data: Serialized object.
 
         Raises:
-            EndpointStoreError:
-                if the endpoint does not return a 200 status code for success.
+            EndpointStoreError: If the endpoint does not return a 200 status
+                code for success.
         """
         response = requests.post(
             f'{self.address}/set',
