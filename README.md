@@ -29,8 +29,8 @@ pip install proxystore
 pip install proxystore[endpoints]
 ```
 
-More details are available on the [Get Started](https://proxystore.dev/getstarted) guide.
-For local development, see the [Contributing](https://proxystore.dev/contributing) guide.
+More details are available on the [Get Started](https://docs.proxystore.dev/getstarted) guide.
+For local development, see the [Contributing](https://docs.proxystore.dev/contributing) guide.
 
 ## Documentation
 
