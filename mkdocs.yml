@@ -108,6 +108,7 @@ nav:
   - API Reference:
       - ProxyStore: reference/
       - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
+      - Legacy Docs: legacy-docs.md
 
 plugins:
   - gen-files:
