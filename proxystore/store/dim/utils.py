@@ -31,6 +31,9 @@ def get_ip_address(ifname: str) -> str:
     except OSError:
         # Not a solution, but the above doesn't work with Macs
         # need to provide IP rather than the interface name for the time being
+
+        if ifname == 'localhost':
+            ifname = '127.0.0.1'
         return ifname
 
 

@@ -73,6 +73,7 @@ endpoints = [
     "python-daemon",
     "quart>=0.18.0",
     "websockets>=10.0",
+    "pyzmq",
 ]
 
 [project.scripts]
