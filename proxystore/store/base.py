@@ -680,7 +680,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         else:
             key = key_or_proxy
 
-        for event in self._stats:
+        for event in list(self._stats.keys()):
             if event.key == key:
                 stats[event.function] = copy.copy(self._stats[event])
         return stats
