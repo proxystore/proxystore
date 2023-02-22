@@ -28,7 +28,6 @@ except ImportError:
 
     sys.modules['ucp'] = ucx
 
-
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
 from testing.endpoint import endpoint
@@ -42,6 +41,7 @@ from testing.stores import redis_store
 from testing.stores import store_implementation
 from testing.stores import ucx_store
 from testing.stores import websocket_store
+from testing.stores import zmq_store
 
 
 def pytest_addoption(parser):

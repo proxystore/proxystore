@@ -29,6 +29,8 @@ from proxystore.store.dim.ucx import UCXStore
 from proxystore.store.dim.ucx import UCXStoreKey
 from proxystore.store.dim.websockets import WebsocketStore
 from proxystore.store.dim.websockets import WebsocketStoreKey
+from proxystore.store.dim.zmq import ZeroMQStore
+from proxystore.store.dim.zmq import ZeroMQStoreKey
 from proxystore.store.endpoint import EndpointStore
 from proxystore.store.endpoint import EndpointStoreKey
 from proxystore.store.file import FileStore
@@ -57,6 +59,7 @@ FIXTURE_LIST = [
     'margo_store',
     'ucx_store',
     'websocket_store',
+    'zmq_store',
 ]
 
 MOCK_REDIS_CACHE: dict[str, Any] = {}
@@ -255,6 +258,19 @@ def websocket_store() -> StoreInfo:
     )
 
 
+@pytest.fixture(scope='session')
+def zmq_store() -> StoreInfo:
+    """ZeroMQ store fixture."""
+    port = open_port()
+
+    return StoreInfo(
+        ZeroMQStore,
+        'zmq',
+        {'interface': 'localhost', 'port': port},
+        contextlib.nullcontext,
+    )
+
+
 @pytest.fixture(scope='session', params=FIXTURE_LIST)
 def store_implementation(
     request,
@@ -312,6 +328,12 @@ def missing_key(store: Store[Any]) -> NamedTuple:
             str(uuid.uuid4()),
             1,
             f'ws://localhost:{store.kwargs["port"]}',
+        )
+    elif isinstance(store, ZeroMQStore):
+        return ZeroMQStoreKey(
+            str(uuid.uuid4()),
+            1,
+            f'tcp://localhost:{store.kwargs["port"]}',
         )
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')
