@@ -30,6 +30,13 @@ except ImportError:
 
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
+from testing.connectors import connectors
+from testing.connectors import endpoint_connector
+from testing.connectors import file_connector
+from testing.connectors import globus_connector
+from testing.connectors import local_connector
+from testing.connectors import multi_connector
+from testing.connectors import redis_connector
 from testing.endpoint import endpoint
 from testing.signaling_server import signaling_server
 from testing.stores import endpoint_store

@@ -19,12 +19,21 @@ class MockStrictRedis:
         """Check if key exists."""
         return key in self.data
 
-    def get(self, key: str) -> Any:
+    def get(self, key: str) -> bytes | None:
         """Get value with key."""
         if key in self.data:
             return self.data[key]
         return None
 
-    def set(self, key: str, value: str | bytes | int | float) -> None:
+    def mget(self, keys: list[str]) -> list[bytes | None]:
+        """Get list of values from keys."""
+        return [self.data.get(key, None) for key in keys]
+
+    def mset(self, values: dict[str, bytes]) -> None:
+        """Set list of values."""
+        for key, value in values.items():
+            self.set(key, value)
+
+    def set(self, key: str, value: bytes) -> None:
         """Set value in MockStrictRedis."""
         self.data[key] = value
