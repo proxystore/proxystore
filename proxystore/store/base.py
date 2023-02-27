@@ -34,6 +34,7 @@ from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
 from proxystore.store.utils import get_key
+from proxystore.utils import fullname
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
@@ -277,7 +278,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         self.close()
 
     def __repr__(self) -> str:
-        s = f'{ps.utils.fullname(self.__class__)}('
+        s = f'{fullname(self.__class__)}('
         attributes = [
             f'{key}={value}'
             for key, value in self.__dict__.items()
@@ -680,7 +681,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         else:
             key = key_or_proxy
 
-        for event in self._stats:
+        for event in list(self._stats.keys()):
             if event.key == key:
                 stats[event.function] = copy.copy(self._stats[event])
         return stats
