@@ -1,7 +1,8 @@
 """Store utilities."""
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import Any
+from typing import Tuple
 from typing import TypeVar
 
 from proxystore.proxy import is_resolved
@@ -10,9 +11,10 @@ from proxystore.store import base
 from proxystore.store.exceptions import ProxyStoreFactoryError
 
 T = TypeVar('T')
+ConnectorKeyT = Tuple[Any, ...]
 
 
-def get_key(proxy: Proxy[T]) -> NamedTuple:
+def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
     """Extract the key from the proxy's factory.
 
     Args:

@@ -12,13 +12,14 @@ from unittest import mock
 
 import pytest
 
+from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.p2p.client import connect
 from proxystore.p2p.server import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
-from proxystore.store.endpoint import EndpointStore
+from proxystore.store.base import Store
 from testing.endpoint import serve_endpoint_silent
 from testing.endpoint import wait_for_endpoint
 from testing.utils import open_port
@@ -103,15 +104,19 @@ def test_endpoint_transfer(endpoints) -> None:
     """Test transferring data between two endpoints."""
     endpoints, proxystore_dirs = endpoints
 
-    store1 = EndpointStore(
+    store1 = Store(
         'store1',
-        endpoints=endpoints,
-        proxystore_dir=proxystore_dirs[0],
+        connector=EndpointConnector(
+            endpoints=endpoints,
+            proxystore_dir=proxystore_dirs[0],
+        ),
     )
-    store2 = EndpointStore(
+    store2 = Store(
         'store2',
-        endpoints=endpoints,
-        proxystore_dir=proxystore_dirs[1],
+        connector=EndpointConnector(
+            endpoints=endpoints,
+            proxystore_dir=proxystore_dirs[1],
+        ),
     )
 
     obj = [1, 2, 3]
@@ -126,10 +131,12 @@ def _produce_local(
     endpoints: list[uuid.UUID],
     home_dir: str,
 ) -> None:
-    store = EndpointStore(
+    store = Store(
         'store',
-        endpoints=endpoints,
-        proxystore_dir=home_dir,
+        connector=EndpointConnector(
+            endpoints=endpoints,
+            proxystore_dir=home_dir,
+        ),
     )
     obj = [1, 2, 3]
     proxy: Proxy[Any] = store.proxy(obj)
@@ -175,19 +182,19 @@ def _produce_remote(
 ) -> None:
     # Mock home_dir to simulate different systems
     with mock.patch(
-        'proxystore.store.endpoint.home_dir',
+        'proxystore.connectors.endpoint.home_dir',
         return_value=home_dir,
     ):
-        store = EndpointStore('store', endpoints=endpoints)
+        store = Store('store', EndpointConnector(endpoints))
         # Send port to other process to compare
-        proxy: Proxy[Any] = store.proxy(store.endpoint_port)
+        proxy: Proxy[Any] = store.proxy(store.connector.endpoint_port)
         queue.put(proxy)
 
 
 def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
     # Mock home_dir to simulate different systems
     with mock.patch(
-        'proxystore.store.endpoint.home_dir',
+        'proxystore.connectors.endpoint.home_dir',
         return_value=home_dir,
     ):
         port = queue.get()
@@ -196,8 +203,8 @@ def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
 
         # Make sure consumer is using different port
         store = get_store('store')
-        assert isinstance(store, EndpointStore)
-        assert store.endpoint_port != port
+        assert isinstance(store, Store)
+        assert store.connector.endpoint_port != port
 
 
 @pytest.mark.integration()

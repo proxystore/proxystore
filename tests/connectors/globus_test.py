@@ -1,4 +1,4 @@
-"""Globus Store Functionality Tests."""
+"""GlobusConnector Unit Tests."""
 from __future__ import annotations
 
 import json
@@ -10,11 +10,11 @@ from unittest import mock
 import globus_sdk
 import pytest
 
+from proxystore.connectors.globus import GlobusConnector
+from proxystore.connectors.globus import GlobusEndpoint
+from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.globus import GlobusKey
 from proxystore.globus import GlobusAuthFileError
-from proxystore.store.globus import GlobusEndpoint
-from proxystore.store.globus import GlobusEndpoints
-from proxystore.store.globus import GlobusStore
-from proxystore.store.globus import GlobusStoreKey
 
 EP1 = GlobusEndpoint(
     uuid='1',
@@ -46,6 +46,11 @@ EP5 = GlobusEndpoint(
     local_path='/path',
     host_regex='localhost',
 )
+
+
+def test_reprs() -> None:
+    assert isinstance(str(EP1), str)
+    assert isinstance(str(GlobusEndpoints([EP1, EP2])), str)
 
 
 def test_globus_endpoint_objects() -> None:
@@ -163,33 +168,31 @@ def test_globus_endpoints_from_dict() -> None:
     assert isinstance(endpoints.dict()['UUID1']['host_regex'], str)
 
 
-def test_globus_store_init(globus_store) -> None:
-    """Test GlobusStore Initialization."""
+def test_globus_connector_init(globus_connector) -> None:
+    """Test GlobusConnector Initialization."""
     eps = GlobusEndpoints([EP1, EP2])
 
-    GlobusStore('globus', endpoints=[EP1, EP2])
-
-    s1 = GlobusStore('globus1', endpoints=[EP1, EP2])
-    s2 = GlobusStore('globus2', endpoints=eps)
-    s3 = GlobusStore('globus3', endpoints=eps.dict())
-    assert s1.kwargs == s2.kwargs == s3.kwargs
+    s1 = GlobusConnector(endpoints=[EP1, EP2])
+    s2 = GlobusConnector(endpoints=eps)
+    s3 = GlobusConnector(endpoints=eps.dict())
+    assert s1.config() == s2.config() == s3.config()
 
     with pytest.raises(ValueError):
         # Invalid endpoint type
-        GlobusStore('globus', endpoints=None)  # type: ignore[arg-type]
+        GlobusConnector(endpoints=None)  # type: ignore[arg-type]
 
     with pytest.raises(ValueError):
         # Too many endpoints
-        GlobusStore('globus', endpoints=[EP1, EP2, EP3])
+        GlobusConnector(endpoints=[EP1, EP2, EP3])
 
     with pytest.raises(ValueError):
         # Not enough endpoints
-        GlobusStore('globus', endpoints=[EP1])
+        GlobusConnector(endpoints=[EP1])
 
 
-def test_globus_store_internals(globus_store) -> None:
-    """Test GlobusStore internal mechanisms."""
-    store = GlobusStore('globus', **globus_store.kwargs)
+def test_globus_connector_internals(globus_connector) -> None:
+    """Test GlobusConnector internal mechanisms."""
+    connector = GlobusConnector(**globus_connector.kwargs)
 
     class PatchedError(globus_sdk.TransferAPIError):
         def __init__(self, status: int):
@@ -201,33 +204,24 @@ def test_globus_store_internals(globus_store) -> None:
 
         return _error
 
-    store._transfer_client.get_task = _http_error(400)  # type: ignore
-    assert not store._validate_task_id('uuid')
-    assert not store.exists(GlobusStoreKey('fake', 'fake'))
+    connector._transfer_client.get_task = _http_error(400)  # type: ignore
+    assert not connector._validate_task_id('uuid')
+    assert not connector.exists(GlobusKey('fake', 'fake'))
 
-    store._transfer_client.get_task = _http_error(401)  # type: ignore
+    connector._transfer_client.get_task = _http_error(401)  # type: ignore
     with pytest.raises(globus_sdk.TransferAPIError):
-        store._validate_task_id('uuid')
+        connector._validate_task_id('uuid')
 
     def _fail_wait(*args, **kwargs) -> bool:
         return False
 
-    store._transfer_client.task_wait = _fail_wait  # type: ignore
+    connector._transfer_client.task_wait = _fail_wait  # type: ignore
     with pytest.raises(RuntimeError):
-        store._wait_on_tasks('1234')
+        connector._wait_on_tasks('1234')
 
 
-def test_globus_store_set_batch_type_error(globus_store) -> None:
-    """Test GlobusStore internal mechanisms."""
-    store = GlobusStore('globus', **globus_store.kwargs)
-
-    objs = [1, 2, 3]
-    with pytest.raises(TypeError):
-        store.set_batch(objs, serializer=lambda s: s)
-
-
-def test_get_filepath(globus_store) -> None:
-    """Test GlobusStore filepath building."""
+def test_get_filepath(globus_connector) -> None:
+    """Test GlobusConnector filepath building."""
     endpoints = GlobusEndpoints(
         [
             GlobusEndpoint(
@@ -245,16 +239,16 @@ def test_get_filepath(globus_store) -> None:
         ],
     )
 
-    store = GlobusStore(globus_store.name, endpoints=endpoints)
+    connector = GlobusConnector(endpoints=endpoints)
 
     filename = 'test_file'
     for endpoint in endpoints:
         expected_path = os.path.join(endpoint.local_path, filename)
-        assert store._get_filepath(filename, endpoint) == expected_path
+        assert connector._get_filepath(filename, endpoint) == expected_path
 
 
-def test_expand_user_path(globus_store) -> None:
-    """Test GlobusStore expands user path."""
+def test_expand_user_path(globus_connector) -> None:
+    """Test GlobusConnector expands user path."""
     store_dir = '.cache/proxystore_cache'
     short_path = os.path.join('~', store_dir)
     full_path = os.path.join(os.path.expanduser('~'), store_dir)
@@ -272,11 +266,11 @@ def test_expand_user_path(globus_store) -> None:
         host_regex='localhost',
     )
 
-    store = GlobusStore('globus', endpoints=[ep1, ep2])
+    connector = GlobusConnector(endpoints=[ep1, ep2])
 
     filename = 'test_file'
-    assert '~' not in store._get_filepath(filename, ep1)
-    assert store._get_filepath(filename, ep1) == store._get_filepath(
+    assert '~' not in connector._get_filepath(filename, ep1)
+    assert connector._get_filepath(filename, ep1) == connector._get_filepath(
         filename,
         ep2,
     )
@@ -285,17 +279,17 @@ def test_expand_user_path(globus_store) -> None:
 def test_globus_auth_not_done() -> None:
     """Test Globus auth missing during Store init."""
     with mock.patch(
-        'proxystore.store.globus.get_proxystore_authorizer',
+        'proxystore.connectors.globus.get_proxystore_authorizer',
         side_effect=GlobusAuthFileError,
     ):
         with pytest.raises(GlobusAuthFileError, match='Complete the'):
-            GlobusStore('store', endpoints=[EP1, EP2])
+            GlobusConnector(endpoints=[EP1, EP2])
 
 
-def test_globus_store_key_equality() -> None:
-    """Test GlobusStoreKey custom equality."""
-    key = GlobusStoreKey('a', 'b')
-    assert key == GlobusStoreKey('a', 'b')
+def test_globus_connector_key_equality() -> None:
+    """Test GlobusKey custom equality."""
+    key = GlobusKey('a', 'b')
+    assert key == GlobusKey('a', 'b')
     assert key == ('a', 'b')
     assert key != ('b', 'b')
     assert key == ('a', 'c')

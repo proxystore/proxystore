@@ -1,7 +1,7 @@
 """Store Factory and Proxy Tests for Store Subclasses."""
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import Any
 
 import pytest
 
@@ -14,7 +14,6 @@ from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
-from proxystore.store.local import LocalStore
 from proxystore.store.utils import get_key
 from testing.stores import StoreFixtureType
 
@@ -35,19 +34,15 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     # Clear store to see if factory can reinitialize it
     unregister_store(store_info.name)
 
-    f: StoreFactory[NamedTuple, list[int]] = StoreFactory(
+    f: StoreFactory[Any, list[int]] = StoreFactory(
         key,
-        store_info.type,
-        store_info.name,
-        store_kwargs=store_info.kwargs,
+        store_config=store.config(),
     )
     assert f() == [1, 2, 3]
 
-    f2: StoreFactory[NamedTuple, list[int]] = StoreFactory(
+    f2: StoreFactory[Any, list[int]] = StoreFactory(
         key,
-        store_info.type,
-        store_info.name,
-        store_kwargs=store_info.kwargs,
+        store_config=store.config(),
         evict=True,
     )
     assert store.exists(key)
@@ -60,9 +55,7 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
 
     f = StoreFactory(
         key,
-        store_info.type,
-        store_info.name,
-        store_kwargs=store_info.kwargs,
+        store_config=store.config(),
     )
     f.resolve_async()
     assert f._obj_future is not None
@@ -77,20 +70,6 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     f_str = serialize(f)
     f = deserialize(f_str)
     assert f() == [1, 2, 3]
-
-    class _MyStore(LocalStore):
-        pass
-
-    # Test raise error if store_name corresponds to store that does not
-    # match the type specified in the StoreFactory
-    f = StoreFactory(
-        key,
-        _MyStore,
-        store_info.name,
-        store_kwargs=store_info.kwargs,
-    )
-    with pytest.raises(ValueError, match='store of type'):
-        f()
 
     unregister_store(store_info.name)
 
@@ -151,7 +130,7 @@ def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
     # The store that created the proxy had cache_size=0 so the restored
     # store should also have cache_size=0.
     s = get_store(store_info.name)
-    assert store._cache.maxsize == 0
+    assert store.cache.maxsize == 0
     assert s is not None
     assert not s.is_cached(key)
 

@@ -1,15 +1,24 @@
 """Testing fixtures for connector implementations."""
 from __future__ import annotations
 
+import contextlib
+import importlib.util
 import os
 import random
 from typing import Any
+from typing import Callable
+from typing import ContextManager
 from typing import Generator
+from typing import NamedTuple
 from unittest import mock
 
 import pytest
 
 from proxystore.connectors.connector import Connector
+from proxystore.connectors.dim.margo import MargoConnector
+from proxystore.connectors.dim.ucx import reset_ucp
+from proxystore.connectors.dim.ucx import UCXConnector
+from proxystore.connectors.dim.zmq import ZeroMQConnector
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
@@ -27,6 +36,8 @@ from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
+from testing.mocking import mock_multiprocessing
+from testing.utils import open_port
 
 FIXTURE_LIST = [
     'endpoint_connector',
@@ -35,32 +46,51 @@ FIXTURE_LIST = [
     'local_connector',
     'multi_connector',
     'redis_connector',
+    'margo_connector',
+    'ucx_connector',
+    'zmq_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
+
+
+class ConnectorInfo(NamedTuple):
+    """Info needed to initialize an arbitrary Connector."""
+
+    type: type[Connector[Any]]
+    kwargs: dict[str, Any]
+    # ctx is a callable that takes no arguments and returns a context
+    # manager designed for enabling easy mocking without
+    # having to mock at the session level. I.e., all of the store fixtures
+    # here are session scoped so mocking in the fixture would have the mock
+    # affect ALL tests. Instead, tests/fixtures can invoke the context as
+    # needed when creating an instance of the store. Not all mocks need to be
+    # in context, just the ones that effect objects that may be needed in
+    # unmocked form by other tests.
+    ctx: Callable[[], ContextManager[None]]
 
 
 @pytest.fixture(scope='session')
 def endpoint_connector(
     endpoint: EndpointConfig,
     tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[EndpointConnector, None, None]:
+) -> ConnectorInfo:
     """EndpointConnector fixture."""
     tmp_path = tmp_path_factory.mktemp('endpoint-connector-fixture')
     tmp_dir = str(tmp_path)
     endpoint_dir = os.path.join(tmp_dir, endpoint.name)
     write_config(endpoint, endpoint_dir)
-    connector = EndpointConnector(
-        endpoints=[endpoint.uuid],
-        proxystore_dir=tmp_dir,
+
+    return ConnectorInfo(
+        EndpointConnector,
+        {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
+        contextlib.nullcontext,
     )
-    yield connector
-    connector.close()
 
 
 @pytest.fixture(scope='session')
 def globus_connector(
     tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[GlobusConnector, None, None]:
+) -> Generator[ConnectorInfo, None, None]:
     """GlobusConnector fixture."""
     tmp_path = tmp_path_factory.mktemp('globus-connector-fixture')
     endpoints = GlobusEndpoints(
@@ -81,7 +111,7 @@ def globus_connector(
     )
 
     with mock.patch(
-        'proxystore.store.globus.get_proxystore_authorizer',
+        'proxystore.connectors.globus.get_proxystore_authorizer',
     ), mock.patch(
         'globus_sdk.TransferClient',
         MockTransferClient,
@@ -92,45 +122,53 @@ def globus_connector(
         'globus_sdk.TransferData',
         MockTransferData,
     ):
-        connector = GlobusConnector(endpoints=endpoints)
-        yield connector
-        connector.close()
+        yield ConnectorInfo(
+            GlobusConnector,
+            {'endpoints': endpoints},
+            contextlib.nullcontext,
+        )
 
 
 @pytest.fixture(scope='session')
 def file_connector(
     tmp_path_factory: pytest.TempPathFactory,
-) -> Generator[FileConnector, None, None]:
+) -> ConnectorInfo:
     """FileConnector fixture."""
     tmp_path = tmp_path_factory.mktemp('file-connector-fixture')
-    connector = FileConnector(str(tmp_path))
-    yield connector
-    connector.close()
+    return ConnectorInfo(
+        FileConnector,
+        {'store_dir': str(tmp_path)},
+        contextlib.nullcontext,
+    )
 
 
 @pytest.fixture(scope='session')
-def local_connector() -> Generator[LocalConnector, None, None]:
+def local_connector() -> ConnectorInfo:
     """LocalConnector fixture."""
     store_dict: dict[LocalKey, bytes] = {}
-    connector = LocalConnector(store_dict)
-    yield connector
-    connector.close()
+    return ConnectorInfo(
+        LocalConnector,
+        {'store_dict': store_dict},
+        contextlib.nullcontext,
+    )
 
 
 @pytest.fixture(scope='session')
-def multi_connector() -> Generator[MultiConnector, None, None]:
+def multi_connector() -> ConnectorInfo:
     """MultiConnector fixture."""
     store_dict: dict[LocalKey, bytes] = {}
     local = LocalConnector(store_dict)
     policy = Policy(priority=0)
     connectors = {'local': (local, policy)}
-    connector = MultiConnector(connectors=connectors)  # type: ignore[arg-type]
-    yield connector
-    connector.close()
+    return ConnectorInfo(
+        MultiConnector,
+        {'connectors': connectors},
+        contextlib.nullcontext,
+    )
 
 
 @pytest.fixture(scope='session')
-def redis_connector() -> Generator[RedisConnector, None, None]:
+def redis_connector() -> Generator[ConnectorInfo, None, None]:
     """RedisConnector fixture."""
     redis_host = 'localhost'
     redis_port = random.randint(5500, 5999)
@@ -143,12 +181,75 @@ def redis_connector() -> Generator[RedisConnector, None, None]:
         return MockStrictRedis(MOCK_REDIS_CACHE, *args, **kwargs)
 
     with mock.patch('redis.StrictRedis', side_effect=create_mocked_redis):
-        connector = RedisConnector(hostname=redis_host, port=redis_port)
-        yield connector
-        connector.close()
+        yield ConnectorInfo(
+            RedisConnector,
+            {'hostname': redis_host, 'port': redis_port},
+            contextlib.nullcontext,
+        )
+
+
+@pytest.fixture(scope='session')
+def margo_connector() -> ConnectorInfo:
+    """MargoConnector fixture."""
+    host = '127.0.0.1'
+    port = open_port()
+    protocol = 'tcp'
+
+    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
+    margo_spec = importlib.util.find_spec('pymargo')
+
+    if (  # pragma: no branch
+        margo_spec is not None and 'mocked' in margo_spec.name
+    ):
+        ctx = mock_multiprocessing
+
+    return ConnectorInfo(
+        MargoConnector,
+        {'protocol': protocol, 'interface': host, 'port': port},
+        ctx,
+    )
+
+
+@pytest.fixture(scope='session')
+def ucx_connector() -> Generator[ConnectorInfo, None, None]:
+    """UCXConnector fixture."""
+    port = open_port()
+
+    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
+    ucp_spec = importlib.util.find_spec('ucp')
+
+    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no branch
+        ctx = mock_multiprocessing
+
+    yield ConnectorInfo(
+        UCXConnector,
+        {'interface': '127.0.0.1', 'port': port},
+        ctx,
+    )
+
+    if (
+        ucp_spec is not None and 'mocked' not in ucp_spec.name
+    ):  # pragma: no cover
+        reset_ucp()
+
+
+@pytest.fixture(scope='session')
+def zmq_connector() -> ConnectorInfo:
+    """ZeroMQ store fixture."""
+    port = open_port()
+
+    return ConnectorInfo(
+        ZeroMQConnector,
+        {'interface': 'localhost', 'port': port},
+        contextlib.nullcontext,
+    )
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)
-def connectors(request) -> Connector[Any]:
+def connectors(request) -> Generator[Connector[Any], None, None]:
     """Parameterized fixture that yields all Connector implementations."""
-    return request.getfixturevalue(request.param)
+    connector_info = request.getfixturevalue(request.param)
+
+    connector = connector_info.type(**connector_info.kwargs)
+    yield connector
+    connector.close()

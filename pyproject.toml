@@ -131,6 +131,7 @@ timeout = 30
 filterwarnings = [
     "ignore::cryptography.utils.CryptographyDeprecationWarning",
     "ignore::proxystore.warnings.ExperimentalWarning",
+    "ignore::DeprecationWarning:proxystore.*",
 ]
 markers = [
     "integration: mark a test as an integration test.",

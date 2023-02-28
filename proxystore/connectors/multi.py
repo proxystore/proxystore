@@ -8,6 +8,7 @@ from typing import Any
 from typing import Iterable
 from typing import NamedTuple
 from typing import Sequence
+from typing import TypeVar
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
     from typing import TypedDict
@@ -22,6 +23,8 @@ warnings.warn(
     category=ExperimentalWarning,
     stacklevel=2,
 )
+
+KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 class PolicyDict(TypedDict):
@@ -109,7 +112,13 @@ class MultiKey(NamedTuple):
     """Key to objects in [`MultiConnector`][proxystore.connectors.multi.MultiConnector]."""  # noqa: E501
 
     connector_name: str
-    connector_key: NamedTuple
+    """Name of connector that the associated object is stored in."""
+    # Type this as Any because mypy has no way to tell statically what type
+    # of key this is. In reality it is a NamedTuple. Otherwise you end up with
+    # something like: Argument 1 to "exists" of "LocalConnector" has
+    # incompatible type "NamedTuple"; expected "LocalKey"  [arg-type]
+    connector_key: Any
+    """Key associated with the object."""
 
 
 class MultiConnector:

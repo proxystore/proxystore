@@ -1,12 +1,13 @@
-"""MargoStore Unit Tests."""
+"""MargoConnector Unit Tests."""
 from __future__ import annotations
 
 import pytest
 
+from proxystore.connectors.dim.margo import MargoConnector
+from proxystore.connectors.dim.margo import MargoServer
+from proxystore.connectors.dim.margo import when_finalize
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.store.dim.margo import MargoServer
-from proxystore.store.dim.margo import when_finalize
 from testing.mocked.pymargo import Bulk
 from testing.mocked.pymargo import Engine
 from testing.mocked.pymargo import Handle
@@ -25,24 +26,15 @@ def margo_server():
     return MargoServer(e)
 
 
-def test_margo_store(margo_store) -> None:
-    """Test MargoStore.
+def test_margo_connector(margo_connector) -> None:
+    with margo_connector.ctx():
+        connector = MargoConnector(**margo_connector.kwargs)
+        connector.close()
+        connector.close()  # check that nothing happens
 
-    All MargoStore functionality should be covered in
-    tests/store/store_*_test.py.
-    """
-    with margo_store.ctx():
-        store = margo_store.type(
-            margo_store.name,
-            cache_size=16,
-            **margo_store.kwargs,
-        )
-        store.close()
-        store.close()  # check that nothing happens
-
-        if 'mock' in margo_store.ctx.__name__:  # pragma: no branch
-            store._start_server()
-            store.close()
+        if 'mock' in margo_connector.ctx.__name__:  # pragma: no branch
+            connector._start_server()
+            connector.close()
 
 
 def test_margo_server(margo_server) -> None:

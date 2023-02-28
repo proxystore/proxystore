@@ -1,16 +1,4 @@
-"""Module containing all [`Store`][proxystore.store.base.Store] implementations.
-
-| Type | Use Case |
-| ---- | -------- |
-| [`LocalStore`][proxystore.store.local.LocalStore] | In-memory object store local to the process. Useful for development. |
-| [`RedisStore`][proxystore.store.redis.RedisStore] | Store objects in a preconfigured Redis server. |
-| [`FileStore`][proxystore.store.file.FileStore] | Use a globally accessible file system for string objects. |
-| [`GlobusStore`][proxystore.store.globus.GlobusStore] | Transfer objects between two Globus endpoints. |
-| [`EndpointStore`][proxystore.store.endpoint.EndpointStore] | *Experimental:* P2P object stores for multi-site applications. |
-| [`MargoStore`][proxystore.store.dim.margo.MargoStore] | *Experimental:* Distributed in-memory storage across nodes with Margo communication. |
-| [`UCXStore`][proxystore.store.dim.ucx.UCXStore] | *Experimental:* Distributed in-memory storage across nodes with UCX communication. |
-| [`WebsocketStore`][proxystore.store.dim.websockets.WebsocketStore] | *Experimental:* Distributed in-memory storage across nodes with Websocket communication. |
-"""  # noqa: E501
+"""The ProxyStore [`Store`][proxystore.store.base.Store] interface."""
 from __future__ import annotations
 
 import logging

@@ -3,20 +3,20 @@ from __future__ import annotations
 
 import pytest
 
+from proxystore.connectors.local import LocalConnector
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
+from proxystore.store.base import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
-from proxystore.store.local import LocalStore
-from proxystore.store.redis import RedisStore
 
 
 def test_store_registration() -> None:
     """Test registering and unregistering stores directly."""
-    store = LocalStore(name='test')
+    store = Store('test', connector=LocalConnector())
 
     register_store(store)
     assert get_store('test') == store
@@ -32,25 +32,24 @@ def test_store_registration() -> None:
     unregister_store('not a valid store name')
 
 
-def test_lookup_by_proxy(local_store, redis_store) -> None:
+def test_lookup_by_proxy(local_connector, redis_connector) -> None:
     """Make sure get_store works with a proxy."""
-    # Init by enum
-    local = LocalStore('local', **local_store.kwargs)
-    redis = RedisStore('redis', **redis_store.kwargs)
-    register_store(local)
-    register_store(redis)
+    local1 = Store('local1', connector=LocalConnector())
+    local2 = Store('local2', connector=LocalConnector())
+    register_store(local1)
+    register_store(local2)
 
     # Make a proxy with both
-    local_proxy: Proxy[list[int]] = local.proxy([1, 2, 3])
-    redis_proxy: Proxy[list[int]] = redis.proxy([1, 2, 3])
+    local1_proxy: Proxy[list[int]] = local1.proxy([1, 2, 3])
+    local2_proxy: Proxy[list[int]] = local2.proxy([1, 2, 3])
 
     # Make sure both look up correctly
-    sr = get_store(redis_proxy)
-    assert sr is not None
-    assert sr.name == redis.name
-    sl = get_store(local_proxy)
-    assert sl is not None
-    assert sl.name == local.name
+    sl1 = get_store(local1_proxy)
+    assert sl1 is not None
+    assert sl1.name == local1.name
+    sl2 = get_store(local2_proxy)
+    assert sl2 is not None
+    assert sl2.name == local2.name
 
     # Make a proxy without an associated store
     f = SimpleFactory([1, 2, 3])
@@ -58,5 +57,5 @@ def test_lookup_by_proxy(local_store, redis_store) -> None:
     with pytest.raises(ProxyStoreFactoryError):
         get_store(p)
 
-    unregister_store('local')
-    unregister_store('redis')
+    unregister_store('local1')
+    unregister_store('local2')

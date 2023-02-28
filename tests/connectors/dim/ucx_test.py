@@ -1,4 +1,4 @@
-"""UCXStore Unit Tests."""
+"""UCXConnector Unit Tests."""
 from __future__ import annotations
 
 import asyncio
@@ -14,10 +14,11 @@ else:  # pragma: <3.8 cover
 
 import pytest
 
+from proxystore.connectors.dim.ucx import launch_server
+from proxystore.connectors.dim.ucx import UCXConnector
+from proxystore.connectors.dim.ucx import UCXServer
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.store.dim.ucx import launch_server
-from proxystore.store.dim.ucx import UCXServer
 from testing.mocked.ucx import MockEndpoint
 from testing.utils import open_port
 
@@ -27,8 +28,8 @@ UCP_SPEC = importlib.util.find_spec('ucp')
 
 
 @pytest.fixture()
-def ucx_server(ucx_store):
-    # We use the ucx_store fixture for its cleanup
+def ucx_server(ucx_connector):
+    # We use the ucx_connector fixture for its cleanup
     server = UCXServer('localhost', open_port())
     yield server
     server.close()
@@ -42,25 +43,19 @@ async def execute_handler(obj: Any, server: UCXServer) -> Any:
     return ret
 
 
-def test_ucx_store(ucx_store) -> None:
-    """Test UCXStore.
-
-    All UCXStore functionality should be covered in
-    tests/store/store_*_test.py.
-    """
-    ucx_store.kwargs['port'] = open_port()
-    with ucx_store.ctx():
-        store = ucx_store.type(
-            ucx_store.name,
-            cache_size=16,
-            **ucx_store.kwargs,
-        )
-        store.close()
-        store.close()  # check that nothing happens
+def test_ucx_connector(ucx_connector) -> None:
+    ucx_connector.kwargs['port'] = open_port()
+    with ucx_connector.ctx():
+        connector = UCXConnector(**ucx_connector.kwargs)
+        connector.close()
+        connector.close()  # check that nothing happens
 
 
 def test_launched_mocked_server() -> None:
-    with mock.patch('proxystore.store.dim.ucx.UCXServer.run', AsyncMock()):
+    with mock.patch(
+        'proxystore.connectors.dim.ucx.UCXServer.run',
+        AsyncMock(),
+    ):
         launch_server(host='localhost', port=open_port())
 
 
@@ -88,7 +83,10 @@ def test_run_mocked_server() -> None:
     with mock.patch(
         'asyncio.get_running_loop',
         return_value=mock_loop,
-    ), mock.patch('proxystore.store.dim.ucx.reset_ucp_async', AsyncMock()):
+    ), mock.patch(
+        'proxystore.connectors.dim.ucx.reset_ucp_async',
+        AsyncMock(),
+    ):
         asyncio.run(server.run())
 
 

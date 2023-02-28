@@ -1,32 +1,32 @@
 """FileStore Implementation."""
 from __future__ import annotations
 
-import logging
-import os
-import shutil
-from typing import Any
-from typing import NamedTuple
+import warnings
 
-import proxystore.utils as utils
+from proxystore.connectors.file import FileConnector
+from proxystore.store.base import DeserializerT
+from proxystore.store.base import SerializerT
 from proxystore.store.base import Store
 
-logger = logging.getLogger(__name__)
 
+class FileStore(Store[FileConnector]):
+    """Store wrapper for shared filesystems.
 
-class FileStoreKey(NamedTuple):
-    """Key to objects in a FileStore."""
-
-    filename: str
-    """Unique object filename."""
-
-
-class FileStore(Store[FileStoreKey]):
-    """File backend class.
+    Warning:
+        This wrapper exists for backwards compatibility with ProxyStore
+        <=0.4.* and will be deprecated in version 0.6.0.
 
     Args:
-        name: name of the store instance.
+        name: Name of the store instance.
         store_dir: Path to directory to store data in. Note this
             directory will be deleted upon closing the store.
+        serializer: Optional callable which serializes the object. If `None`,
+            the default serializer
+            ([`serialize()`][proxystore.serialize.serialize]) will be used.
+        deserializer: Optional callable used by the factory to deserialize the
+            byte string. If `None`, the default deserializer
+            ([`deserialize()`][proxystore.serialize.deserialize]) will be
+            used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         stats: Collect stats on store operations.
@@ -35,62 +35,25 @@ class FileStore(Store[FileStoreKey]):
     def __init__(
         self,
         name: str,
-        *,
         store_dir: str,
+        *,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        self.store_dir = os.path.abspath(store_dir)
-
-        if not os.path.exists(self.store_dir):
-            os.makedirs(self.store_dir, exist_ok=True)
-
+        warnings.warn(
+            'The FileStore will be deprecated in v0.6.0. Initializing a '
+            'Store with a Connector is preferred. See '
+            'https://github.com/proxystore/proxystore/issues/214 for details.',
+            DeprecationWarning,
+        )
+        connector = FileConnector(store_dir)
         super().__init__(
             name,
+            connector,
+            serializer=serializer,
+            deserializer=deserializer,
             cache_size=cache_size,
             stats=stats,
-            kwargs={'store_dir': self.store_dir},
         )
-
-    def close(self) -> None:
-        """Cleanup all files associated with the file system store.
-
-        Warning:
-            Will delete the `store_dir` directory.
-
-        Warning:
-            This method should only be called at the end of the program
-            when the store will no longer be used, for example once all
-            proxies have been resolved.
-        """
-        shutil.rmtree(self.store_dir)
-
-    def create_key(self, obj: Any) -> FileStoreKey:
-        return FileStoreKey(filename=utils.create_key(obj))
-
-    def evict(self, key: FileStoreKey) -> None:
-        path = os.path.join(self.store_dir, key.filename)
-        if os.path.exists(path):
-            os.remove(path)
-        self._cache.evict(key)
-        logger.debug(
-            f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')",
-        )
-
-    def exists(self, key: FileStoreKey) -> bool:
-        path = os.path.join(self.store_dir, key.filename)
-        return os.path.exists(path)
-
-    def get_bytes(self, key: FileStoreKey) -> bytes | None:
-        path = os.path.join(self.store_dir, key.filename)
-        if os.path.exists(path):
-            with open(path, 'rb') as f:
-                data = f.read()
-                return data
-        return None
-
-    def set_bytes(self, key: FileStoreKey, data: bytes) -> None:
-        path = os.path.join(self.store_dir, key.filename)
-        with open(path, 'wb', buffering=0) as f:
-            f.write(data)

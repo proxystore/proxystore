@@ -268,7 +268,7 @@ class GlobusConnector:
     is useful when moving data between hosts that have a Globus endpoint but
     may have restrictions that prevent the use of other store backends
     (e.g., ports cannot be opened for using a
-    [`RedisConnector`][proxystore.connectors.redis.RedisConnectr].
+    [`RedisConnector`][proxystore.connectors.redis.RedisConnector].
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
@@ -562,8 +562,7 @@ class GlobusConnector:
         filename = str(uuid.uuid4())
 
         path = self._get_filepath(filename)
-        if not os.path.isdir(os.path.dirname(path)):
-            os.makedirs(os.path.dirname(path), exist_ok=True)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
 
         with open(path, 'wb', buffering=0) as f:
             f.write(obj)
@@ -586,8 +585,7 @@ class GlobusConnector:
 
         for filename, obj in zip(filenames, objs):
             path = self._get_filepath(filename)
-            if not os.path.isdir(os.path.dirname(path)):
-                os.makedirs(os.path.dirname(path), exist_ok=True)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
 
             with open(path, 'wb', buffering=0) as f:
                 f.write(obj)

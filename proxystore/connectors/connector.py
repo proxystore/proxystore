@@ -14,7 +14,7 @@ else:  # pragma: <3.8 cover
     from typing_extensions import Protocol
     from typing_extensions import runtime_checkable
 
-KeyT = TypeVar('KeyT')
+KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 @runtime_checkable
@@ -41,7 +41,7 @@ class Connector(Protocol[KeyT]):
         ...
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Connector[KeyT]:
+    def from_config(cls, config: dict[str, Any]) -> Connector[Any]:
         """Create a new connector instance from a configuration.
 
         Args:

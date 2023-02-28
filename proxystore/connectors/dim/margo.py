@@ -1,12 +1,14 @@
-"""MargoStore implementation."""
+"""Margo RPC-based distributed in-memory connector implementation."""
 from __future__ import annotations
 
 import logging
+import uuid
 from enum import Enum
 from multiprocessing import Process
 from os import getpid
 from typing import Any
 from typing import NamedTuple
+from typing import Sequence
 
 try:
     import pymargo
@@ -23,12 +25,10 @@ except ImportError as e:  # pragma: no cover
     pymargo_import_error = e
 
 
-import proxystore.utils as utils
+from proxystore.connectors.dim.utils import get_ip_address
+from proxystore.connectors.dim.utils import Status
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.store.base import Store
-from proxystore.store.dim.utils import get_ip_address
-from proxystore.store.dim.utils import Status
 
 server_process: Process | None = None
 client_pids: set[int] = set()
@@ -56,8 +56,8 @@ class Protocol(Enum):
     """BMI tcp module (TCP/IP)"""
 
 
-class MargoStoreKey(NamedTuple):
-    """Key to objects in a MargoStore."""
+class MargoKey(NamedTuple):
+    """Key to objects stored across `MargoConnector`s."""
 
     margo_key: str
     """Unique object key."""
@@ -67,20 +67,19 @@ class MargoStoreKey(NamedTuple):
     """Peer where object is located."""
 
 
-class MargoStore(Store[MargoStoreKey]):
-    """MargoStore implementation for intrasite communication.
+class MargoConnector:
+    """Margo RPC-based distributed in-memory connector.
 
-    This client will initialize a local Margo server (Peer service) that
-    it will store data to.
+    Note:
+        The first instance of this connector created on a process will
+        spawn a [`MargoServer`][proxystore.connectors.dim.margo.MargoServer]
+        that will store data. Hence, this connector just acts as an interface
+        to that server.
 
     Args:
-        name: Name of the store instance.
         interface: The network interface to use.
-        port: The desired port for the Margo server.
+        port: The desired port for the spawned server.
         protocol: The communication protocol to use.
-        cache_size: Size of LRU cache (in # of objects). If 0,
-            the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
     """
 
     host: str
@@ -94,13 +93,9 @@ class MargoStore(Store[MargoStoreKey]):
     # TODO : make host optional and try to get infiniband path automatically
     def __init__(
         self,
-        name: str,
-        *,
         interface: str,
         port: int,
         protocol: Protocol = Protocol.OFI_VERBS,
-        cache_size: int = 16,
-        stats: bool = False,
     ) -> None:
         global server_process
         global client_pids
@@ -113,6 +108,7 @@ class MargoStore(Store[MargoStoreKey]):
 
         self.protocol = protocol
 
+        self.interface = interface
         self.host = get_ip_address(interface)
         self.port = port
 
@@ -145,17 +141,6 @@ class MargoStore(Store[MargoStoreKey]):
         self._pid = getpid()
         client_pids.add(self._pid)
 
-        super().__init__(
-            name,
-            cache_size=cache_size,
-            stats=stats,
-            kwargs={
-                'interface': interface,
-                'port': self.port,
-                'protocol': self.protocol,
-            },
-        )
-
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""
         logger.info(f'starting server {self.addr}')
@@ -185,91 +170,6 @@ class MargoStore(Store[MargoStoreKey]):
             except MargoException:
                 pass
 
-    def create_key(self, obj: Any) -> MargoStoreKey:
-        return MargoStoreKey(
-            margo_key=utils.create_key(obj),
-            obj_size=len(obj),
-            peer=self.addr,
-        )
-
-    def evict(self, key: MargoStoreKey) -> None:
-        logger.debug(f'Client issuing an evict request on key {key}')
-        self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['evict'],
-            '',
-            key.margo_key,
-            0,
-        )
-
-        self._cache.evict(key)
-
-    def exists(self, key: MargoStoreKey) -> bool:
-        logger.debug(f'Client issuing an exists request on key {key}')
-        buff = bytearray(4)  # equivalent to malloc
-
-        blk = self.engine.create_bulk(buff, bulk.write_only)
-
-        self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['exists'],
-            blk,
-            key.margo_key,
-            len(buff),
-        )
-
-        return bool(int(deserialize(bytes(buff))))
-
-    def get_bytes(self, key: MargoStoreKey) -> bytes | None:
-        logger.debug(f'Client issuing get request on key {key}')
-
-        buff = bytearray(key.obj_size)
-        blk = self.engine.create_bulk(buff, bulk.read_write)
-        s = self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['get'],
-            blk,
-            key.margo_key,
-            key.obj_size,
-        )
-
-        if not s.success:
-            logger.error(f'{s.error}')
-            return None
-        return bytes(buff)
-
-    def set_bytes(self, key: MargoStoreKey, data: bytes) -> None:
-        logger.debug(f'Client {self.addr} issuing set request on key {key}')
-        blk = self.engine.create_bulk(data, bulk.read_only)
-        self.call_rpc_on(
-            self.engine,
-            self.addr,
-            self._rpcs['set'],
-            blk,
-            key.margo_key,
-            key.obj_size,
-        )
-
-    def close(self) -> None:
-        """Terminate Peer server process."""
-        global server_process
-        global client_pids
-        global engine
-
-        client_pids.discard(self._pid)
-
-        logger.info('Clean up requested')
-
-        if len(client_pids) == 0 and server_process is not None:
-            engine = None
-            self._mochi_addr.shutdown()
-            self.engine.finalize()
-            server_process.join()
-            server_process = None
-
     @staticmethod
     def call_rpc_on(
         engine: Engine,
@@ -295,6 +195,171 @@ class MargoStore(Store[MargoStoreKey]):
         """
         server_addr = engine.lookup(addr)
         return deserialize(rpc.on(server_addr)(array_str, size, key))
+
+    def close(self) -> None:
+        """Close the connector and clean up.
+
+        Warning:
+            This will terminate the server is no clients are still connected.
+
+        Warning:
+            This method should only be called at the end of the program
+            when the connector will no longer be used, for example once all
+            proxies have been resolved.
+        """
+        global server_process
+        global client_pids
+        global engine
+
+        client_pids.discard(self._pid)
+
+        logger.info('Clean up requested')
+
+        if len(client_pids) == 0 and server_process is not None:
+            engine = None
+            self._mochi_addr.shutdown()
+            self.engine.finalize()
+            server_process.join()
+            server_process = None
+
+    def config(self) -> dict[str, Any]:
+        """Get the connector configuration.
+
+        The configuration contains all the information needed to reconstruct
+        the connector object.
+        """
+        return {
+            'interface': self.interface,
+            'port': self.port,
+            'protocol': self.protocol,
+        }
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> MargoConnector:
+        """Create a new connector instance from a configuration.
+
+        Args:
+            config: Configuration returned by `#!python .config()`.
+        """
+        return cls(**config)
+
+    def evict(self, key: MargoKey) -> None:
+        """Evict the object associated with the key.
+
+        Args:
+            key: Key associated with object to evict.
+        """
+        logger.debug(f'Client issuing an evict request on key {key}')
+        self.call_rpc_on(
+            self.engine,
+            key.peer,
+            self._rpcs['evict'],
+            '',
+            key.margo_key,
+            0,
+        )
+
+    def exists(self, key: MargoKey) -> bool:
+        """Check if an object associated with the key exists.
+
+        Args:
+            key: Key potentially associated with stored object.
+
+        Returns:
+            If an object associated with the key exists.
+        """
+        logger.debug(f'Client issuing an exists request on key {key}')
+        buff = bytearray(4)  # equivalent to malloc
+
+        blk = self.engine.create_bulk(buff, bulk.write_only)
+
+        self.call_rpc_on(
+            self.engine,
+            key.peer,
+            self._rpcs['exists'],
+            blk,
+            key.margo_key,
+            len(buff),
+        )
+
+        return bool(int(deserialize(bytes(buff))))
+
+    def get(self, key: MargoKey) -> bytes | None:
+        """Get the serialized object associated with the key.
+
+        Args:
+            key: Key associated with the object to retrieve.
+
+        Returns:
+            Serialized object or `None` if the object does not exist.
+        """
+        logger.debug(f'Client issuing get request on key {key}')
+
+        buff = bytearray(key.obj_size)
+        blk = self.engine.create_bulk(buff, bulk.read_write)
+        s = self.call_rpc_on(
+            self.engine,
+            key.peer,
+            self._rpcs['get'],
+            blk,
+            key.margo_key,
+            key.obj_size,
+        )
+
+        if not s.success:
+            logger.error(f'{s.error}')
+            return None
+        return bytes(buff)
+
+    def get_batch(self, keys: Sequence[MargoKey]) -> list[bytes | None]:
+        """Get a batch of serialized objects associated with the keys.
+
+        Args:
+            keys: Sequence of keys associated with objects to retrieve.
+
+        Returns:
+            List with same order as `keys` with the serialized objects or
+            `None` if the corresponding key does not have an associated object.
+        """
+        return [self.get(key) for key in keys]
+
+    def put(self, obj: bytes) -> MargoKey:
+        """Put a serialized object in the store.
+
+        Args:
+            obj: Serialized object to put in the store.
+
+        Returns:
+            Key which can be used to retrieve the object.
+        """
+        key = MargoKey(
+            margo_key=str(uuid.uuid4()),
+            obj_size=len(obj),
+            peer=self.addr,
+        )
+        logger.debug(f'Client {self.addr} issuing set request on key {key}')
+        blk = self.engine.create_bulk(obj, bulk.read_only)
+        self.call_rpc_on(
+            self.engine,
+            self.addr,
+            self._rpcs['set'],
+            blk,
+            key.margo_key,
+            key.obj_size,
+        )
+        return key
+
+    def put_batch(self, objs: Sequence[bytes]) -> list[MargoKey]:
+        """Put a batch of serialized objects in the store.
+
+        Args:
+            objs: Sequence of serialized objects to put in the store.
+
+        Returns:
+            List of keys with the same order as `objs` which can be used to
+            retrieve the objects.
+        """
+        return [self.put(obj) for obj in objs]
 
 
 class MargoServer:

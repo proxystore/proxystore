@@ -12,22 +12,22 @@ from typing import cast
 from typing import Iterator
 from typing import KeysView
 from typing import NamedTuple
+from typing import Tuple
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
 from proxystore.store.utils import get_key
 
+ConnectorKeyT = Tuple[Any, ...]
 GenericCallable = TypeVar('GenericCallable', bound=Callable[..., Any])
 
 STORE_METHOD_KEY_IS_RESULT = {
     'evict': False,
     'exists': False,
     'get': False,
-    'get_bytes': False,
     'is_cached': False,
     'proxy': True,
     'set': True,
-    'set_bytes': False,
 }
 
 
@@ -35,7 +35,7 @@ class Event(NamedTuple):
     """Event corresponding to a function called with a specific key."""
 
     function: str
-    key: NamedTuple | None
+    key: ConnectorKeyT | None
 
 
 @dataclass
@@ -145,7 +145,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         self,
         function: GenericCallable,
         key_is_result: bool,
-        preset_key: NamedTuple | None,
+        preset_key: ConnectorKeyT | None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -180,10 +180,6 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             key = None
 
         size_bytes: int | None = None
-        if function.__name__ == 'get_bytes':
-            size_bytes = len(result)
-        elif function.__name__ == 'set_bytes':
-            size_bytes = len(args[1])
 
         event = Event(function=function.__name__, key=key)
         self[event].add_time(time_ns / 1e6, size_bytes=size_bytes)
@@ -195,7 +191,7 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         function: GenericCallable,
         *,
         key_is_result: bool = False,
-        preset_key: NamedTuple | None = None,
+        preset_key: ConnectorKeyT | None = None,
     ) -> GenericCallable:
         """Wrap a method to log stats on calls to the function.
 

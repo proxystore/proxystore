@@ -15,6 +15,8 @@ def test_connector_basic_ops(connectors: Connector[Any]) -> None:
     connector.evict(key)
     assert not connector.exists(key)
     assert connector.get(key) is None
+    # Evicting missing key should not raise an error
+    connector.evict(key)
 
 
 def test_connector_batch_ops(connectors: Connector[Any]) -> None:

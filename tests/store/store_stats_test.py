@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import NamedTuple
+from typing import Tuple
 
 import pytest
 
@@ -16,6 +16,8 @@ from proxystore.store.base import StoreFactory
 from proxystore.store.utils import get_key
 from testing.stores import StoreFixtureType
 
+ConnectorKeyT = Tuple[Any, ...]
+
 
 def test_init_stats(store_implementation: StoreFixtureType) -> None:
     """Test Initializing Stat tracking."""
@@ -23,7 +25,7 @@ def test_init_stats(store_implementation: StoreFixtureType) -> None:
 
     with pytest.raises(ValueError):
         # Check raises an error because stats are not tracked by default
-        store.stats('key')
+        store.stats(('key',))
 
     store = store_info.type(
         store_info.name,
@@ -31,7 +33,7 @@ def test_init_stats(store_implementation: StoreFixtureType) -> None:
         stats=True,
     )
 
-    assert isinstance(store.stats('key'), dict)
+    assert isinstance(store.stats(('key',)), dict)
 
 
 def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
@@ -54,17 +56,10 @@ def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
 
     assert 'get' in stats
     assert 'set' in stats
-    assert 'get_bytes' in stats
-    assert 'set_bytes' in stats
+    assert 'evict' not in stats
 
     assert stats['get'].calls == 1
     assert stats['set'].calls == 1
-    size = stats['get_bytes'].size_bytes
-    assert size is not None
-    assert size > 0
-    size = stats['set_bytes'].size_bytes
-    assert size is not None
-    assert size > 0
 
     # stats should return a copy of the stats, not the internal data
     # structures so calling get again should not effect anything.
@@ -72,7 +67,7 @@ def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
 
     assert stats['get'].calls == 1
 
-    stats = store.stats('missing_key')
+    stats = store.stats(('missing_key',))
 
     assert len(stats) == 0
 
@@ -115,7 +110,7 @@ def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
     # special cases of Factories without the _stats attr or the _stats attr
     # is None.
     class FactoryMissingStats(StoreFactory[Any, Any]):
-        def __init__(self, key: NamedTuple):
+        def __init__(self, key: ConnectorKeyT):
             self.key = key
 
         def resolve(self):
@@ -127,7 +122,7 @@ def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
     assert 'resolve' not in stats
 
     class FactoryNoneStats(StoreFactory[Any, Any]):
-        def __init__(self, key: NamedTuple):
+        def __init__(self, key: ConnectorKeyT):
             self.key = key
             self.stats = None
 
