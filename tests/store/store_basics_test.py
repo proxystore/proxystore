@@ -60,7 +60,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
     """Test Store Caching Functionality."""
     store, _ = store_implementation
 
-    assert store._cache.maxsize == 0
+    assert store.cache.maxsize == 0
     value = 'test_value'
 
     # Test cache size 0
@@ -70,7 +70,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
 
     # Manually change cache size to size 1
     new_cache: LRUCache[str, Any] = LRUCache(1)
-    with mock.patch.object(store, '_cache', new_cache):
+    with mock.patch.object(store, 'cache', new_cache):
         # Add our test value
         key1 = store.set(value)
 
@@ -104,6 +104,10 @@ def test_store_custom_serialization(
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the array is not already serialized
         store.set([1, 2, 3], serializer=lambda s: s)
+
+    with pytest.raises(TypeError, match='bytes'):
+        # Should fail because the array is not already serialized
+        store.set_batch([[1, 2, 3]], serializer=lambda s: s)
 
 
 def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:

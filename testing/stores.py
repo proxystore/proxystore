@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import contextlib
-import importlib.util
 import os
 import random
 import shutil
@@ -19,47 +18,37 @@ from unittest import mock
 import pytest
 
 from proxystore import utils
+from proxystore.connectors.endpoint import EndpointKey
+from proxystore.connectors.file import FileKey
+from proxystore.connectors.globus import GlobusEndpoint
+from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.globus import GlobusKey
+from proxystore.connectors.local import LocalConnector
+from proxystore.connectors.local import LocalKey
+from proxystore.connectors.multi import MultiKey
+from proxystore.connectors.multi import Policy
+from proxystore.connectors.redis import RedisKey
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.store.base import Store
-from proxystore.store.dim.margo import MargoStore
-from proxystore.store.dim.margo import MargoStoreKey
-from proxystore.store.dim.ucx import reset_ucp
-from proxystore.store.dim.ucx import UCXStore
-from proxystore.store.dim.ucx import UCXStoreKey
-from proxystore.store.dim.websockets import WebsocketStore
-from proxystore.store.dim.websockets import WebsocketStoreKey
-from proxystore.store.dim.zmq import ZeroMQStore
-from proxystore.store.dim.zmq import ZeroMQStoreKey
 from proxystore.store.endpoint import EndpointStore
-from proxystore.store.endpoint import EndpointStoreKey
 from proxystore.store.file import FileStore
-from proxystore.store.file import FileStoreKey
-from proxystore.store.globus import GlobusEndpoint
-from proxystore.store.globus import GlobusEndpoints
 from proxystore.store.globus import GlobusStore
-from proxystore.store.globus import GlobusStoreKey
 from proxystore.store.local import LocalStore
-from proxystore.store.local import LocalStoreKey
+from proxystore.store.multi import MultiStore
 from proxystore.store.redis import RedisStore
-from proxystore.store.redis import RedisStoreKey
 from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
-from testing.mocking import mock_multiprocessing
-from testing.utils import open_port
 
 FIXTURE_LIST = [
-    'local_store',
-    'file_store',
-    'redis_store',
-    'globus_store',
     'endpoint_store',
-    'margo_store',
-    'ucx_store',
-    'websocket_store',
-    'zmq_store',
+    'file_store',
+    'globus_store',
+    'local_store',
+    'multi_store',
+    'redis_store',
 ]
 
 MOCK_REDIS_CACHE: dict[str, Any] = {}
@@ -88,13 +77,20 @@ StoreFixtureType = Tuple[Store[Any], StoreInfo]
 
 
 @pytest.fixture(scope='session')
-def local_store() -> StoreInfo:
-    """Local Store fixture."""
-    store_dict: dict[str, bytes] = {}
+def endpoint_store(
+    endpoint: EndpointConfig,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> StoreInfo:
+    """Endpoint Store fixture."""
+    tmp_path = tmp_path_factory.mktemp('endpoint-store-fixture')
+    tmp_dir = str(tmp_path)
+    endpoint_dir = os.path.join(tmp_dir, endpoint.name)
+    write_config(endpoint, endpoint_dir)
+
     return StoreInfo(
-        LocalStore,
-        'local',
-        {'store_dict': store_dict},
+        EndpointStore,
+        'endpoint',
+        {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
         contextlib.nullcontext,
     )
 
@@ -111,6 +107,31 @@ def file_store() -> Generator[StoreInfo, None, None]:
     )
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
+
+
+@pytest.fixture(scope='session')
+def local_store() -> StoreInfo:
+    """Local Store fixture."""
+    store_dict: dict[str, bytes] = {}
+    return StoreInfo(
+        LocalStore,
+        'local',
+        {'store_dict': store_dict},
+        contextlib.nullcontext,
+    )
+
+
+@pytest.fixture(scope='session')
+def multi_store() -> StoreInfo:
+    """Multi Store fixture."""
+    store_dict: dict[LocalKey, bytes] = {}
+    connector = LocalConnector(store_dict)
+    return StoreInfo(
+        MultiStore,
+        'multi',
+        {'connectors': {'local': (connector, Policy())}},
+        contextlib.nullcontext,
+    )
 
 
 @pytest.fixture(scope='session')
@@ -157,7 +178,7 @@ def globus_store() -> Generator[StoreInfo, None, None]:
     )
 
     with mock.patch(
-        'proxystore.store.globus.get_proxystore_authorizer',
+        'proxystore.connectors.globus.get_proxystore_authorizer',
     ), mock.patch(
         'globus_sdk.TransferClient',
         MockTransferClient,
@@ -177,98 +198,6 @@ def globus_store() -> Generator[StoreInfo, None, None]:
 
     if os.path.exists(file_dir):  # pragma: no cover
         shutil.rmtree(file_dir)
-
-
-@pytest.fixture(scope='session')
-def endpoint_store(
-    endpoint: EndpointConfig,
-    tmp_path_factory: pytest.TempPathFactory,
-) -> StoreInfo:
-    """Endpoint Store fixture."""
-    tmp_path = tmp_path_factory.mktemp('endpoint-store-fixture')
-    tmp_dir = str(tmp_path)
-    endpoint_dir = os.path.join(tmp_dir, endpoint.name)
-    write_config(endpoint, endpoint_dir)
-
-    return StoreInfo(
-        EndpointStore,
-        'endpoint',
-        {'endpoints': [endpoint.uuid], 'proxystore_dir': tmp_dir},
-        contextlib.nullcontext,
-    )
-
-
-@pytest.fixture(scope='session')
-def ucx_store() -> Generator[StoreInfo, None, None]:
-    """UCX Store fixture."""
-    port = open_port()
-
-    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
-    ucp_spec = importlib.util.find_spec('ucp')
-
-    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no branch
-        ctx = mock_multiprocessing
-
-    yield StoreInfo(
-        UCXStore,
-        'ucx',
-        {'interface': '127.0.0.1', 'port': port},
-        ctx,
-    )
-
-    if (
-        ucp_spec is not None and 'mocked' not in ucp_spec.name
-    ):  # pragma: no cover
-        reset_ucp()
-
-
-@pytest.fixture(scope='session')
-def margo_store() -> StoreInfo:
-    """Margo Store fixture."""
-    host = '127.0.0.1'
-    port = open_port()
-    protocol = 'tcp'
-
-    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
-    margo_spec = importlib.util.find_spec('pymargo')
-
-    if (  # pragma: no branch
-        margo_spec is not None and 'mocked' in margo_spec.name
-    ):
-        ctx = mock_multiprocessing
-
-    return StoreInfo(
-        MargoStore,
-        'margo',
-        {'protocol': protocol, 'interface': host, 'port': port},
-        ctx,
-    )
-
-
-@pytest.fixture(scope='session')
-def websocket_store() -> StoreInfo:
-    """Websocket store fixture."""
-    port = open_port()
-
-    return StoreInfo(
-        WebsocketStore,
-        'websocket',
-        {'interface': 'localhost', 'port': port},
-        contextlib.nullcontext,
-    )
-
-
-@pytest.fixture(scope='session')
-def zmq_store() -> StoreInfo:
-    """ZeroMQ store fixture."""
-    port = open_port()
-
-    return StoreInfo(
-        ZeroMQStore,
-        'zmq',
-        {'interface': 'localhost', 'port': port},
-        contextlib.nullcontext,
-    )
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)
@@ -302,38 +231,16 @@ def store_implementation(
 def missing_key(store: Store[Any]) -> NamedTuple:
     """Generate a random key that is valid for the store type."""
     if isinstance(store, EndpointStore):
-        return EndpointStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
+        return EndpointKey(str(uuid.uuid4()), str(uuid.uuid4()))
     elif isinstance(store, FileStore):
-        return FileStoreKey(str(uuid.uuid4()))
+        return FileKey(str(uuid.uuid4()))
     elif isinstance(store, GlobusStore):
-        return GlobusStoreKey(str(uuid.uuid4()), str(uuid.uuid4()))
+        return GlobusKey(str(uuid.uuid4()), str(uuid.uuid4()))
     elif isinstance(store, LocalStore):
-        return LocalStoreKey(str(uuid.uuid4()))
+        return LocalKey(str(uuid.uuid4()))
+    elif isinstance(store, MultiStore):
+        return MultiKey('local', LocalKey(str(uuid.uuid4())))
     elif isinstance(store, RedisStore):
-        return RedisStoreKey(str(uuid.uuid4()))
-    elif isinstance(store, MargoStore):
-        return MargoStoreKey(
-            str(uuid.uuid4()),
-            1,
-            f'tcp://{store.kwargs["interface"]}:{store.kwargs["port"]}',
-        )
-    elif isinstance(store, UCXStore):
-        return UCXStoreKey(
-            str(uuid.uuid4()),
-            1,
-            f'localhost:{store.kwargs["port"]}',
-        )
-    elif isinstance(store, WebsocketStore):
-        return WebsocketStoreKey(
-            str(uuid.uuid4()),
-            1,
-            f'ws://localhost:{store.kwargs["port"]}',
-        )
-    elif isinstance(store, ZeroMQStore):
-        return ZeroMQStoreKey(
-            str(uuid.uuid4()),
-            1,
-            f'tcp://localhost:{store.kwargs["port"]}',
-        )
+        return RedisKey(str(uuid.uuid4()))
     else:
         raise AssertionError(f'Unsupported store type {type(store).__name__}')

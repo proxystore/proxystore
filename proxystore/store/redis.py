@@ -1,32 +1,32 @@
 """RedisStore Implementation."""
 from __future__ import annotations
 
-import logging
-from typing import Any
-from typing import NamedTuple
+import warnings
 
-import redis
-
-import proxystore.utils as utils
+from proxystore.connectors.redis import RedisConnector
+from proxystore.store.base import DeserializerT
+from proxystore.store.base import SerializerT
 from proxystore.store.base import Store
 
-logger = logging.getLogger(__name__)
 
+class RedisStore(Store[RedisConnector]):
+    """Store wrapper for Redis servers.
 
-class RedisStoreKey(NamedTuple):
-    """Key to objects in a RedisStore."""
-
-    redis_key: str
-    """Unique object ID."""
-
-
-class RedisStore(Store[RedisStoreKey]):
-    """Redis backend class.
+    Warning:
+        This wrapper exists for backwards compatibility with ProxyStore
+        <=0.4.* and will be deprecated in version 0.6.0.
 
     Args:
         name: Name of the store instance.
         hostname: Redis server hostname.
         port: Redis server port.
+        serializer: Optional callable which serializes the object. If `None`,
+            the default serializer
+            ([`serialize()`][proxystore.serialize.serialize]) will be used.
+        deserializer: Optional callable used by the factory to deserialize the
+            byte string. If `None`, the default deserializer
+            ([`deserialize()`][proxystore.serialize.deserialize]) will be
+            used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         stats: Collect stats on store operations.
@@ -35,38 +35,26 @@ class RedisStore(Store[RedisStoreKey]):
     def __init__(
         self,
         name: str,
-        *,
         hostname: str,
         port: int,
+        *,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         stats: bool = False,
     ) -> None:
-        self.hostname = hostname
-        self.port = port
-        self._redis_client = redis.StrictRedis(host=hostname, port=port)
+        warnings.warn(
+            'The RedisStore will be deprecated in v0.6.0. Initializing a '
+            'Store with a Connector is preferred. See '
+            'https://github.com/proxystore/proxystore/issues/214 for details.',
+            DeprecationWarning,
+        )
+        connector = RedisConnector(hostname, port)
         super().__init__(
             name,
+            connector,
+            serializer=serializer,
+            deserializer=deserializer,
             cache_size=cache_size,
             stats=stats,
-            kwargs={'hostname': self.hostname, 'port': self.port},
         )
-
-    def create_key(self, obj: Any) -> RedisStoreKey:
-        return RedisStoreKey(redis_key=utils.create_key(obj))
-
-    def evict(self, key: RedisStoreKey) -> None:
-        self._redis_client.delete(key.redis_key)
-        self._cache.evict(key)
-        logger.debug(
-            f"EVICT key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')",
-        )
-
-    def exists(self, key: RedisStoreKey) -> bool:
-        return bool(self._redis_client.exists(key.redis_key))
-
-    def get_bytes(self, key: RedisStoreKey) -> bytes | None:
-        return self._redis_client.get(key.redis_key)
-
-    def set_bytes(self, key: RedisStoreKey, data: bytes) -> None:
-        self._redis_client.set(key.redis_key, data)

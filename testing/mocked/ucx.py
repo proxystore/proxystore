@@ -73,7 +73,7 @@ class MockEndpoint:
 
     async def recv_obj(self) -> Any:
         """Mock the `ucp.recv_obj` function."""
-        from proxystore.store.dim.utils import Status
+        from proxystore.connectors.dim.utils import Status
 
         if self.req is not None:
             return self.req

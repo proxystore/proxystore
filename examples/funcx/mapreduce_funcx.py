@@ -9,12 +9,12 @@ from typing import Any
 import numpy as np
 from funcx.sdk.executor import FuncXExecutor
 
+from proxystore.connectors.file import FileConnector
+from proxystore.connectors.globus import GlobusConnector
+from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.redis import RedisConnector
 from proxystore.store import register_store
 from proxystore.store.base import Store
-from proxystore.store.file import FileStore
-from proxystore.store.globus import GlobusEndpoints
-from proxystore.store.globus import GlobusStore
-from proxystore.store.redis import RedisStore
 
 # Note: types on function are not provided because FuncX has trouble
 # serializing them sometimes
@@ -100,16 +100,12 @@ if __name__ == '__main__':
 
     store: Store[Any] | None = None
     if args.ps_file:
-        store = FileStore('file', store_dir=args.ps_file_dir)
+        store = Store('file', FileConnector(store_dir=args.ps_file_dir))
     elif args.ps_globus:
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-        store = GlobusStore('globus', endpoints=endpoints)
+        store = Store('globus', GlobusConnector(endpoints=endpoints))
     elif args.ps_redis:
-        store = RedisStore(
-            'redis',
-            hostname='localhost',
-            port=args.ps_redis_port,
-        )
+        store = Store('redis', RedisConnector('localhost', args.ps_redis_port))
 
     if store is not None:
         register_store(store)

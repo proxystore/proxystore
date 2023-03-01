@@ -115,10 +115,10 @@ Caches are local to the Python process but will speed up the resolution when
 multiple proxies refer to the same object.
 
 ```python
-from proxystore.store.file import FileStore
+from proxystore.store import Store
 
 # Cache size of 16 is the default
-FileStore('mystore', store_dir='/tmp/proxystore', cache_size=16)
+Store('mystore', connector=..., cache_size=16)
 ```
 
 ### Transactional Guarantees
@@ -151,7 +151,7 @@ import torch
 import io
 
 from proxystore.serialize import serialize
-from proxystore.store.redis import RedisStore
+from proxystore.store import Store
 
 def serialize_torch_model(obj: Any) -> bytes:
    if isinstance(obj, torch.nn.Module):
@@ -164,8 +164,12 @@ def serialize_torch_model(obj: Any) -> bytes:
 
 mymodel = torch.nn.Module()
 
-store = RedisStore(...)
+store = Store(...)
 key = store.set(mymodel, serializer=serialize_torch_model)
 ```
 
-See Issue #146 for further discussion.
+Rather than providing a custom serializer or deserializer to each method
+invocation, a default serializer and deserializer can be provided when
+initializing a new [`Store`][proxystore.store.base.Store].
+See Issue #146 for further discussion on where custom serializers can be
+helpful.

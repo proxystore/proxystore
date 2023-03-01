@@ -141,7 +141,10 @@ def test_main(tmp_path: pathlib.Path) -> None:
 
 
 def test_main_delete(tmp_path: pathlib.Path) -> None:
-    with mock.patch('proxystore.globus.home_dir', return_value=str(tmp_path)):
+    with mock.patch(
+        'proxystore.globus.home_dir',
+        return_value=str(tmp_path),
+    ), contextlib.redirect_stdout(None):
         assert main(['--delete']) != 0
 
         token_file = tmp_path / _TOKENS_FILE

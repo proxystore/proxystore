@@ -8,10 +8,10 @@ import numpy as np
 import parsl
 from parsl import python_app
 
+from proxystore.connectors.local import LocalConnector
+from proxystore.connectors.redis import RedisConnector
 from proxystore.store import register_store
 from proxystore.store.base import Store
-from proxystore.store.local import LocalStore
-from proxystore.store.redis import RedisStore
 
 
 @python_app
@@ -65,12 +65,11 @@ if __name__ == '__main__':
     if args.proxy:
         store: Store[Any]
         if args.redis_port is None:
-            store = LocalStore('local')
+            store = Store('local', LocalConnector())
         else:
-            store = RedisStore(
+            store = Store(
                 'redis',
-                hostname='localhost',
-                port=args.redis_port,
+                RedisConnector('localhost', args.redis_port),
             )
         register_store(store)
 

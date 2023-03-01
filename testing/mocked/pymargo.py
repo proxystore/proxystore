@@ -123,7 +123,7 @@ class RPC:
         key: str,
     ) -> Any:
         """Mockfunc implementation."""
-        from proxystore.store.dim.utils import Status
+        from proxystore.connectors.dim.utils import Status
 
         if self.name == 'set':
             data_dict[key] = array_str.data
@@ -186,7 +186,7 @@ class Handle:
     response: Any
 
     def __init__(self) -> None:
-        from proxystore.store.dim.utils import Status
+        from proxystore.connectors.dim.utils import Status
 
         self.response = Status(True, None)
 

@@ -12,22 +12,23 @@ from typing import cast
 from typing import Iterator
 from typing import KeysView
 from typing import NamedTuple
+from typing import Tuple
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
 from proxystore.store.utils import get_key
 
+ConnectorKeyT = Tuple[Any, ...]
 GenericCallable = TypeVar('GenericCallable', bound=Callable[..., Any])
 
 STORE_METHOD_KEY_IS_RESULT = {
     'evict': False,
     'exists': False,
     'get': False,
-    'get_bytes': False,
     'is_cached': False,
     'proxy': True,
     'set': True,
-    'set_bytes': False,
+    'put': True,
 }
 
 
@@ -35,7 +36,7 @@ class Event(NamedTuple):
     """Event corresponding to a function called with a specific key."""
 
     function: str
-    key: NamedTuple | None
+    key: ConnectorKeyT | None
 
 
 @dataclass
@@ -145,7 +146,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         self,
         function: GenericCallable,
         key_is_result: bool,
-        preset_key: NamedTuple | None,
+        preset_key: ConnectorKeyT | None,
+        function_name: str | None,
         *args: Any,
         **kwargs: Any,
     ) -> Any:
@@ -157,6 +159,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
                 `function` rather than the first argument.
             preset_key: Optionally preset the key associated
                 with any calls to `function`. This overrides `key_is_returned`.
+            function_name: Optionally override the function name used to
+                keep track of the stats.
             args: Arguments passed to `function`
             kwargs: Keywords arguments passed to `function`.
 
@@ -180,12 +184,15 @@ class FunctionEventStats(MutableMapping):  # type: ignore
             key = None
 
         size_bytes: int | None = None
-        if function.__name__ == 'get_bytes':
+        if function.__name__ == 'put' and isinstance(args[0], bytes):
+            size_bytes = len(args[0])
+        elif function.__name__ == 'get' and isinstance(result, bytes):
             size_bytes = len(result)
-        elif function.__name__ == 'set_bytes':
-            size_bytes = len(args[1])
 
-        event = Event(function=function.__name__, key=key)
+        function_name = (
+            function_name if function_name is not None else function.__name__
+        )
+        event = Event(function=function_name, key=key)
         self[event].add_time(time_ns / 1e6, size_bytes=size_bytes)
 
         return result
@@ -195,7 +202,8 @@ class FunctionEventStats(MutableMapping):  # type: ignore
         function: GenericCallable,
         *,
         key_is_result: bool = False,
-        preset_key: NamedTuple | None = None,
+        preset_key: ConnectorKeyT | None = None,
+        function_name: str | None = None,
     ) -> GenericCallable:
         """Wrap a method to log stats on calls to the function.
 
@@ -205,10 +213,18 @@ class FunctionEventStats(MutableMapping):  # type: ignore
                 `function` rather than the first argument.
             preset_key: Optionally preset the key associated with any calls to
                 `function`. This overrides `key_is_returned`.
+            function_name: Optionally override the function name used to
+                keep track of the stats.
 
         Returns:
             Callable with same interface as `function`.
         """
-        out_fun = partial(self._function, function, key_is_result, preset_key)
+        out_fun = partial(
+            self._function,
+            function,
+            key_is_result,
+            preset_key,
+            function_name,
+        )
 
         return cast(GenericCallable, out_fun)

@@ -7,6 +7,8 @@ from typing import NamedTuple
 
 import pytest
 
+from proxystore.connectors.local import LocalConnector
+from proxystore.store.base import Store
 from proxystore.store.stats import Event
 from proxystore.store.stats import FunctionEventStats
 from proxystore.store.stats import TimeStats
@@ -141,27 +143,62 @@ def test_get_set_bytes() -> None:
     """Test get_bytes and set_bytes."""
     stats = FunctionEventStats()
 
-    def set_bytes(key: _TestKey, data: bytes) -> None:
-        return
+    def get(key: _TestKey, size: int) -> bytes:
+        return randbytes(size)
 
-    def get_bytes(key: _TestKey, size: int) -> bytes:
+    def put(data: bytes) -> _TestKey:
+        return _TestKey('key')
+
+    wrapped_get = stats.wrap(get, key_is_result=False)
+    wrapped_put = stats.wrap(put, key_is_result=True)
+
+    get_key = _TestKey('key')
+    wrapped_get(get_key, 120)
+    put_key = wrapped_put(randbytes(100))
+    get_event = Event(function='get', key=get_key)
+    put_event = Event(function='put', key=put_key)
+
+    assert get_event in stats
+    assert put_event in stats
+    assert stats[get_event].calls == 1
+    assert stats[put_event].calls == 1
+    assert stats[get_event].size_bytes == 120
+    assert stats[put_event].size_bytes == 100
+
+
+def test_custom_function_name() -> None:
+    """Test custom function name."""
+    stats = FunctionEventStats()
+
+    def get(key: _TestKey, size: int) -> bytes:
         return randbytes(size)
 
     key = _TestKey('key')
-    wrapped_get = stats.wrap(get_bytes)
-    wrapped_set = stats.wrap(set_bytes)
+    wrapped_get = stats.wrap(get, function_name='other-name')
 
-    get_event = Event(function='get_bytes', key=key)
-    set_event = Event(function='set_bytes', key=key)
+    get_event = Event(function='other-name', key=key)
     wrapped_get(key, 120)
-    wrapped_set(key, randbytes(100))
 
     assert get_event in stats
-    assert set_event in stats
     assert stats[get_event].calls == 1
-    assert stats[set_event].calls == 1
-    assert stats[get_event].size_bytes == 120
-    assert stats[set_event].size_bytes == 100
+
+
+def test_preset_key() -> None:
+    """Test preset key."""
+    stats = FunctionEventStats()
+
+    def get(key: _TestKey, size: int) -> bytes:
+        return randbytes(size)
+
+    key = _TestKey('key')
+    other_key = _TestKey('other')
+    wrapped_get = stats.wrap(get, preset_key=other_key)
+
+    get_event = Event(function='get', key=other_key)
+    wrapped_get(key, 120)
+
+    assert get_event in stats
+    assert stats[get_event].calls == 1
 
 
 def test_default_times() -> None:
@@ -221,3 +258,13 @@ def test_update() -> None:
         [(Event(function='f', key=_TestKey('k')), TimeStats(calls=2))],
     )
     assert stats[Event(function='f', key=_TestKey('k'))].calls == 3
+
+
+def test_stats_if_get_returns_none() -> None:
+    # https://github.com/proxystore/proxystore/issues/212
+    store = Store('local', LocalConnector(), stats=True)
+
+    key = store.set('value')
+    store.evict(key)
+
+    assert store.get(key) is None

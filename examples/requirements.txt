@@ -1,5 +1,5 @@
-funcx==1.0.6
-funcx-endpoint==1.0.6
+funcx==1.0.10
+funcx-endpoint==1.0.10
 numpy==1.24.*
-parsl==2023.1.16
-proxystore==0.4.0
+parsl==2023.1.23
+proxystore==0.5.0

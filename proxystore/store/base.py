@@ -4,8 +4,6 @@ from __future__ import annotations
 import copy
 import logging
 import sys
-from abc import ABCMeta
-from abc import abstractmethod
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
@@ -13,8 +11,8 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Generic
-from typing import NamedTuple
 from typing import Sequence
+from typing import Tuple
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -23,6 +21,7 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 import proxystore as ps
+from proxystore.connectors.connector import Connector
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
@@ -35,33 +34,37 @@ from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
 from proxystore.store.stats import TimeStats
 from proxystore.store.utils import get_key
 from proxystore.utils import fullname
+from proxystore.utils import get_class_path
+from proxystore.utils import import_class
 
 _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
-KeyT = TypeVar('KeyT', bound=NamedTuple)
+ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
+"""Connector type variable."""
+ConnectorKeyT = Tuple[Any, ...]
+"""Connector key type alias."""
 SerializerT = Callable[[Any], bytes]
 """Serializer type alias."""
 DeserializerT = Callable[[bytes], Any]
 """Deserializer type alias."""
 
 
-class StoreFactory(Factory[T], Generic[KeyT, T]):
-    """Base Factory for Stores.
+class StoreFactory(Factory[T], Generic[ConnectorT, T]):
+    """Factory that resolves an object from a store.
 
     Adds support for asynchronously retrieving objects from a
-    [`Store`][proxystore.store.base.Store].
+    [`Store`][proxystore.store.base.Store] instance.
 
-    The factory takes the `store_type` and `store_kwargs` parameters that are
+    The factory takes the `store_config` parameter that is
     used to reinitialize the store if the factory is sent to a remote
     process where the store has not already been initialized.
 
     Args:
         key: Key corresponding to object in store.
-        store_type: Type of store this factory will resolve an object from.
-        store_name: Name of store.
-        store_kwargs: Optional keyword arguments used to reinitialize store.
+        store_config: Store configuration used to reinitialize the store if
+            needed.
         evict: If True, evict the object from the store once
             [`resolve()`][proxystore.store.base.StoreFactory.resolve]
             is called.
@@ -72,18 +75,14 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
 
     def __init__(
         self,
-        key: KeyT,
-        store_type: type[Store[KeyT]],
-        store_name: str,
-        store_kwargs: dict[str, Any] | None = None,
+        key: ConnectorKeyT,
+        store_config: dict[str, Any],
         *,
         evict: bool = False,
         deserializer: DeserializerT | None = None,
     ) -> None:
         self.key = key
-        self.store_type = store_type
-        self.store_name = store_name
-        self.store_kwargs = {} if store_kwargs is None else store_kwargs
+        self.store_config = store_config
         self.evict = evict
         self.deserializer = deserializer
 
@@ -91,32 +90,35 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         # because they are specific to that instance of the factory
         self._obj_future: Future[T] | None = None
         self.stats: FunctionEventStats | None = None
-        if 'stats' in self.store_kwargs and self.store_kwargs['stats'] is True:
+        if 'stats' in self.store_config and self.store_config['stats']:
             self.stats = FunctionEventStats()
             # Monkeypatch methods with wrappers to track their stats
             setattr(  # noqa: B010
                 self,
                 'resolve',
-                self.stats.wrap(self.resolve, preset_key=self.key),
+                self.stats.wrap(
+                    self.resolve,
+                    preset_key=self.key,
+                    function_name='factory_resolve',
+                ),
             )
             setattr(  # noqa: B010
                 self,
                 'resolve_async',
-                self.stats.wrap(self.resolve_async, preset_key=self.key),
+                self.stats.wrap(
+                    self.resolve_async,
+                    preset_key=self.key,
+                    function_name='factory_resolve_async',
+                ),
             )
 
     def __getnewargs_ex__(
         self,
-    ) -> tuple[
-        tuple[KeyT, type[Store[KeyT]], str, dict[str, Any]],
-        dict[str, Any],
-    ]:
+    ) -> tuple[tuple[ConnectorKeyT, dict[str, Any]], dict[str, Any]]:
         # Pickle without possible futures.
         return (
             self.key,
-            self.store_type,
-            self.store_name,
-            self.store_kwargs,
+            self.store_config,
         ), {
             'evict': self.evict,
             'deserializer': self.deserializer,
@@ -124,14 +126,14 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
 
     def _get_value(self) -> T:
         """Get the value associated with the key from the store."""
-        store: Store[KeyT] = self.get_store()
+        store = self.get_store()
         obj = store.get(self.key, deserializer=self.deserializer)
 
         if obj is None:
             raise ProxyResolveMissingKeyError(
                 self.key,
-                self.store_type,
-                self.store_name,
+                type(store),
+                store.name,
             )
 
         if self.evict:
@@ -143,25 +145,17 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
         """Check if it makes sense to do asynchronous resolution."""
         return not self.get_store().is_cached(self.key)
 
-    def get_store(self) -> Store[KeyT]:
+    def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.
 
         Raises:
             ValueError: If the type of the returned store does not match the
                 expected store type passed to the factory constructor.
         """
-        store = ps.store.get_store(self.store_name)
+        store = ps.store.get_store(self.store_config['name'])
         if store is None:
-            store = self.store_type(self.store_name, **self.store_kwargs)
+            store = Store.from_config(self.store_config)
             ps.store.register_store(store)
-
-        if not isinstance(store, self.store_type):
-            raise ValueError(
-                f'store_name={self.store_name} passed to '
-                f'{type(self).__name__} does not correspond to store of '
-                f'type {self.store_type.__name__}',
-            )
-
         return store
 
     def resolve(self) -> T:
@@ -184,36 +178,22 @@ class StoreFactory(Factory[T], Generic[KeyT, T]):
             self._obj_future = _default_pool.submit(self._get_value)
 
 
-class Store(Generic[KeyT], metaclass=ABCMeta):
-    """Key-value store interface.
-
-    Provides base functionality for interaction with an object store including
-    serialization and caching.
-
-    Subclasses of [`Store`][proxystore.store.base.Store] must implement
-    [`create_key()`][proxystore.store.base.Store.create_key],
-    [`evict()`][proxystore.store.base.Store.evict],
-    [`exists()`][proxystore.store.base.Store.exists],
-    [`get_bytes()`][proxystore.store.base.Store.get_bytes], and
-    [`set_bytes()`][proxystore.store.base.Store.set_bytes]. Subclasses may
-    implement [`close()`][proxystore.store.base.Store.close] if needed.
-
-    The [`Store`][proxystore.store.base.Store] handles caching and stores all
-    objects as key-bytestring pairs, i.e., objects passed to
-    [`get()`][proxystore.store.base.Store.get] or
-    [`set()`][proxystore.store.base.Store.set] will be
-    appropriately (de)serialized before being passed to
-    [`get_bytes()`][proxystore.store.base.Store.get_bytes] or
-    [`set_bytes()`][proxystore.store.base.Store.set_bytes], respectively.
+class Store(Generic[ConnectorT]):
+    """Key-value store interface for proxies.
 
     Args:
         name: Name of the store instance.
+        connector: Connector instance to use for object storage.
+        serializer: Optional callable which serializes the object. If `None`,
+            the default serializer
+            ([`serialize()`][proxystore.serialize.serialize]) will be used.
+        deserializer: Optional callable used by the factory to deserialize the
+            byte string. If `None`, the default deserializer
+            ([`deserialize()`][proxystore.serialize.deserialize]) will be
+            used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         stats: Collect stats on store operations.
-        kwargs: Additional keyword arguments to return from
-            [`Store.kwargs`][proxystore.store.base.Store.kwargs]. I.e., the
-            additional keyword arguments needed to reinitialize this store.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
@@ -222,10 +202,12 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
     def __init__(
         self,
         name: str,
+        connector: ConnectorT,
         *,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         stats: bool = False,
-        kwargs: dict[str, Any] | None,
     ) -> None:
         if cache_size < 0:
             raise ValueError(
@@ -233,11 +215,11 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
             )
 
         self.name = name
-
-        self._cache: LRUCache[KeyT, Any] = LRUCache(cache_size)
-        self._kwargs = {'stats': stats, 'cache_size': cache_size}
-        if kwargs is not None:  # pragma: no branch
-            self._kwargs.update(kwargs)
+        self.connector = connector
+        self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
+        self._cache_size = cache_size
+        self._serializer = serializer
+        self._deserializer = deserializer
 
         self._stats: FunctionEventStats | None = None
         if stats:
@@ -256,15 +238,25 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
                     wrapped = self._stats.wrap(
                         method,
                         key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                        function_name=f'store_{method.__name__}',
                     )
                     setattr(self, attr, wrapped)
+            # Monkeypatch connector methods with wrappers
+            for attr in dir(self.connector):
+                if (
+                    callable(getattr(self.connector, attr))
+                    and not attr.startswith('_')
+                    and attr in STORE_METHOD_KEY_IS_RESULT
+                ):
+                    method = getattr(self.connector, attr)
+                    wrapped = self._stats.wrap(
+                        method,
+                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                        function_name=f'connector_{method.__name__}',
+                    )
+                    setattr(self.connector, attr, wrapped)
 
         logger.debug(f'initialized {self}')
-
-    @property
-    def has_stats(self) -> bool:
-        """Whether the store keeps track of performance stats."""
-        return self._stats is not None
 
     def __enter__(self) -> Self:
         return self
@@ -290,267 +282,277 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         return s
 
     @property
-    def kwargs(self) -> dict[str, Any]:
-        """Kwargs for this store instance."""
-        return self._kwargs.copy()
+    def has_stats(self) -> bool:
+        """Whether the store keeps track of performance stats."""
+        return self._stats is not None
+
+    @property
+    def serializer(self) -> SerializerT:
+        """Serializer for this instance."""
+        return (
+            self._serializer
+            if self._serializer is not None
+            else default_serializer
+        )
+
+    @property
+    def deserializer(self) -> DeserializerT:
+        """Deserializer for this instance."""
+        return (
+            self._deserializer
+            if self._deserializer is not None
+            else default_deserializer
+        )
 
     def close(self) -> None:
-        """Cleanup any objects associated with the store.
-
-        Many [`Store`][proxystore.store.base.Store] types do not have any
-        objects that requiring cleaning up so this method a no-op by default
-        unless overridden.
+        """Close the connector associated with the store.
 
         Warning:
             This method should only be called at the end of the program
             when the store will no longer be used, for example once all
             proxies have been resolved.
         """
-        pass
+        self.connector.close()
 
-    def create_key(self, obj: Any) -> KeyT:
-        """Create key for the object.
+    def config(self) -> dict[str, Any]:
+        """Get the store configuration.
 
-        Args:
-            obj: Object to be placed in store.
-
-        Returns:
-            A key.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def evict(self, key: KeyT) -> None:
-        """Evict object associated with key.
-
-        Args:
-            key: The key corresponding to object in store to evict.
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def exists(self, key: KeyT) -> bool:
-        """Check if key exists.
-
-        Args:
-            key: The key to check.
+        Example:
+            ```python
+            >>> store = Store(...)
+            >>> config = store.config()
+            >>> store = Store.from_config(config)
+            ```
 
         Returns:
-            If the key exists in the store.
+            Store configuration.
         """
-        raise NotImplementedError
+        return {
+            'name': self.name,
+            'connector_type': get_class_path(type(self.connector)),
+            'connector_config': self.connector.config(),
+            'serializer': self._serializer,
+            'deserializer': self._deserializer,
+            'cache_size': self._cache_size,
+            'stats': self._stats is not None,
+        }
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> Store[Any]:
+        """Create a new store instance from a configuration.
+
+        Args:
+            config: Configuration returned by `#!python .config()`.
+
+        Returns:
+            Store instance.
+        """
+        connector_type = config.pop('connector_type')
+        connector_config = config.pop('connector_config')
+        connector = import_class(connector_type)
+        config['connector'] = connector.from_config(connector_config)
+        return cls(**config)
+
+    def evict(self, key: ConnectorKeyT) -> None:
+        """Evict the object associated with the key.
+
+        Args:
+            key: Key associated with object to evict.
+        """
+        self.connector.evict(key)
+        self.cache.evict(key)
+        logger.debug(
+            f'evict called for key={key} and Store(name={self.name})',
+        )
+
+    def exists(self, key: ConnectorKeyT) -> bool:
+        """Check if an object associated with the key exists.
+
+        Args:
+            key: Key potentially associated with stored object.
+
+        Returns:
+            If an object associated with the key exists.
+        """
+        res = self.connector.exists(key)
+        logger.debug(
+            f'exists called for key={key} and Store(name={self.name}): '
+            f'result={res}',
+        )
+        return res
 
     def get(
         self,
-        key: KeyT,
+        key: ConnectorKeyT,
         *,
         deserializer: DeserializerT | None = None,
         default: object | None = None,
     ) -> Any | None:
-        """Return object associated with key.
+        """Get the object associated with the key.
 
         Args:
-            key: The key corresponding to object.
-            deserializer: Optional callable used to deserialize the
-                byte string. If `None`, the default deserializer
-                ([`deserialize()`][proxystore.serialize.deserialize]) will be
-                used.
-            default: Optionally provide value to be returned if an object
+            key: Key associated with the object to retrieve.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            default: An optional value to be returned if an object
                 associated with the key does not exist.
 
         Returns:
-            The object associated with key or `default` if key does not exist.
+            Object or `None` if the object does not exist.
         """
         if self.is_cached(key):
-            value = self._cache.get(key)
+            value = self.cache.get(key)
             logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=True",
+                f'get called for key={key} and Store(name={self.name}): '
+                'was_cached=True',
             )
             return value
 
-        value = self.get_bytes(key)
+        value = self.connector.get(key)
         if value is not None:
             if deserializer is not None:
                 value = deserializer(value)
             else:
-                value = default_deserializer(value)
-            self._cache.set(key, value)
+                value = self.deserializer(value)
+            self.cache.set(key, value)
             logger.debug(
-                f"GET key='{key}' FROM {self.__class__.__name__}"
-                f"(name='{self.name}'): was_cached=False",
+                f'get called for key={key} and Store(name={self.name}): '
+                'was_cached=False',
             )
             return value
 
         logger.debug(
-            f"GET key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}'): key did not exist, returned default",
+            f'get called for key={key} and Store(name={self.name}): '
+            'key did not exist',
         )
         return default
 
-    @abstractmethod
-    def get_bytes(self, key: KeyT) -> bytes | None:
-        """Get serialized object from remote store.
+    def is_cached(self, key: ConnectorKeyT) -> bool:
+        """Check if an object associated with the key is cached locally.
 
         Args:
-            key: The key corresponding to the object.
+            key: Key potentially associated with stored object.
 
         Returns:
-            The serialized object or `None` if it does not exist.
+            If the object is cached.
         """
-        raise NotImplementedError
-
-    def is_cached(self, key: KeyT) -> bool:
-        """Check if object is cached locally.
-
-        Args:
-            key: The key corresponding to the object.
-
-        Returns:
-            If the object associated with the key is cached.
-        """
-        return self._cache.exists(key)
+        return self.cache.exists(key)
 
     def proxy(
         self,
         obj: T,
+        *,
+        evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         **kwargs: Any,
     ) -> Proxy[T]:
         """Create a proxy that will resolve to an object in the store.
 
-        Warning:
-            If the factory requires reinstantiating the store to correctly
-            resolve the object, the factory should reinstantiate the store
-            with the same arguments used to instantiate the store that
-            created the proxy/factory. I.e. the :func:`proxy()` function
-            should pass any arguments given to :func:`Store.__init__()`
-            along to the factory so the factory can correctly recreate the
-            store if the factory is resolved in a different Python process.
-
         Args:
-            obj: The object to place in store and return proxy for.
-            serializer: Optional callable which serializes the
-                object. If `None`, the default serializer
-                ([`serialize()`][proxystore.serialize.serialize]) will be used.
-            deserializer: Optional callable used by the factory
-                to deserialize the byte string. If `None`, the default
-                deserializer
-                ([`deserialize()`][proxystore.serialize.deserialize]) will be
-                used.
-            kwargs: Additional arguments to pass to the Factory.
+            obj: The object to place in store and return a proxy for.
+            evict: If the proxy should evict the object once resolved.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
 
         Returns:
             A proxy of the object.
         """
-        key = self.set(obj, serializer=serializer)
-        logger.debug(
-            f"PROXY key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')",
-        )
-        factory: StoreFactory[KeyT, T] = StoreFactory(
+        key = self.set(obj, serializer=serializer, **kwargs)
+        factory: StoreFactory[ConnectorT, T] = StoreFactory(
             key,
-            store_type=type(self),
-            store_name=self.name,
-            store_kwargs=self.kwargs,
+            store_config=self.config(),
             deserializer=deserializer,
-            **kwargs,
+            evict=evict,
+        )
+        logger.debug(
+            f'proxy called for key={key} and Store(name={self.name})',
         )
         return Proxy(factory)
 
     def proxy_batch(
         self,
         objs: Sequence[T],
+        *,
+        evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         **kwargs: Any,
     ) -> list[Proxy[T]]:
-        """Create proxies for batch of objects in the store.
-
-        See [`Store.proxy()`][proxystore.store.base.Store.proxy] for more
-        details.
+        """Create proxies that will resolve to an object in the store.
 
         Args:
-            objs: The objects to place in store and return proxies for.
-            serializer: Optional callable which serializes the
-                object. If `None`, the default serializer
-                ([`serialize()`][proxystore.serialize.serialize]) will be used.
-            deserializer: Optional callable used by the factory
-                to deserialize the byte string. If `None`, the default
-                deserializer
-                ([`deserialize()`][proxystore.serialize.deserialize]) will be
-                used.
-            kwargs: additional arguments to pass to the Factory.
+            objs: The objects to place in store and return a proxies for.
+            evict: If a proxy should evict its object once resolved.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put_batch()`][proxystore.connectors.connector.Connector.put_batch].
 
         Returns:
             A list of proxies of the objects.
         """
-        keys = self.set_batch(objs, serializer=serializer)
+        keys = self.set_batch(objs, serializer=serializer, **kwargs)
         return [
-            self.proxy_from_key(key, deserializer=deserializer, **kwargs)
+            self.proxy_from_key(key, evict=evict, deserializer=deserializer)
             for key in keys
         ]
 
     def proxy_from_key(
         self,
-        key: KeyT,
+        key: ConnectorKeyT,
+        *,
+        evict: bool = False,
         deserializer: DeserializerT | None = None,
-        **kwargs: Any,
     ) -> Proxy[T]:
-        """Create a proxy to an object already in the store.
-
-        Note:
-            This method will not verify that the key is valid so an error
-            will not be raised until the returned proxy is resolved.
+        """Create a proxy that will resolve to an object already in the store.
 
         Args:
-            key: The key corresponding to an object already in the store
-                that will be the target object of the returned proxy.
-            deserializer: Optional callable used by the factory
-                to deserialize the byte string. If `None`, the default
-                deserializer
-                ([`deserialize()`][proxystore.serialize.deserialize]) will be
-                used.
-            kwargs: Additional arguments to pass to the Factory.
+            key: The key associated with an object already in the store.
+            evict: If the proxy should evict the object once resolved.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
 
         Returns:
-            A proxy.
+            A proxy of the object.
         """
         logger.debug(
-            f"PROXY key='{key}' FROM {self.__class__.__name__}"
-            f"(name='{self.name}')",
+            f'proxy called for key={key} and Store(name={self.name})',
         )
-        factory: StoreFactory[KeyT, T] = StoreFactory(
+        factory: StoreFactory[ConnectorT, T] = StoreFactory(
             key,
-            store_type=type(self),
-            store_name=self.name,
-            store_kwargs=self.kwargs,
+            store_config=self.config(),
             deserializer=deserializer,
-            **kwargs,
+            evict=evict,
         )
         return Proxy(factory)
 
     def locked_proxy(
         self,
         obj: T,
+        *,
+        evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         **kwargs: Any,
     ) -> ProxyLocker[T]:
-        """Create a proxy locker that will prevent resolution.
+        """Proxy an object and return [`ProxyLocker`][proxystore.proxy.ProxyLocker].
 
         Args:
-            obj: The object to place in store and create proxy of.
-            serializer: Optional callable which serializes the
-                object. If `None`, the default serializer
-                ([`serialize()`][proxystore.serialize.serialize]) will be used.
-            deserializer: Optional callable used by the factory
-                to deserialize the byte string. If `None`, the default
-                deserializer
-                ([`deserialize()`][proxystore.serialize.deserialize]) will be
-                used.
-            kwargs: Additional arguments to pass to the Factory.
+            obj: The object to place in store and return a proxy for.
+            evict: If the proxy should evict the object once resolved.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
 
         Returns:
             A proxy wrapped in a [`ProxyLocker`][proxystore.proxy.ProxyLocker].
@@ -558,6 +560,7 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         return ProxyLocker(
             self.proxy(
                 obj,
+                evict=evict,
                 serializer=serializer,
                 deserializer=deserializer,
                 **kwargs,
@@ -569,17 +572,19 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         obj: Any,
         *,
         serializer: SerializerT | None = None,
-    ) -> KeyT:
-        """Set key-object pair in store.
+        **kwargs: Any,
+    ) -> ConnectorKeyT:
+        """Put an object in the store.
 
         Args:
-            obj: The object to be placed in the store.
-            serializer: Optional callable which serializes the
-                object. If `None`, the default serializer
-                ([`serialize()`][proxystore.serialize.serialize]) will be used.
+            obj: Object to put in the store.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
 
         Returns:
-            A key that can be used to retrieve the object.
+            A key which can be used to retrieve the object.
 
         Raises:
             TypeError: If the output of `serializer` is not bytes.
@@ -592,12 +597,10 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         if not isinstance(obj, bytes):
             raise TypeError('Serializer must produce bytes.')
 
-        key = self.create_key(obj)
-        self.set_bytes(key, obj)
+        key = self.connector.put(obj, **kwargs)
 
         logger.debug(
-            f"SET key='{key}' IN {self.__class__.__name__}"
-            f"(name='{self.name}')",
+            f'set called for key={key} and Store(name={self.name})',
         )
         return key
 
@@ -606,34 +609,47 @@ class Store(Generic[KeyT], metaclass=ABCMeta):
         objs: Sequence[Any],
         *,
         serializer: SerializerT | None = None,
-    ) -> list[KeyT]:
-        """Set objects in store.
+        **kwargs: Any,
+    ) -> list[ConnectorKeyT]:
+        """Put multiple objects in the store.
 
         Args:
-            objs: Iterable of objects to be placed in the store.
-            serializer: Optional callable which serializes the
-                object. If `None`, the default serializer
-                ([`serialize()`][proxystore.serialize.serialize]) will be used.
+            objs: Sequence of objects to put in the store.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put_batch()`][proxystore.connectors.connector.Connector.put_batch].
 
         Returns:
-            List of keys that can be used to retrieve the objects.
+            A list of keys which can be used to retrieve the objects.
 
         Raises:
             TypeError: If the output of `serializer` is not bytes.
         """
-        return [self.set(obj, serializer=serializer) for obj in objs]
+        _objs: list[bytes] = []
 
-    @abstractmethod
-    def set_bytes(self, key: KeyT, data: bytes) -> None:
-        """Set serialized object in remote store with key.
+        for obj in objs:
+            if serializer is not None:
+                obj = serializer(obj)
+            else:
+                obj = default_serializer(obj)
 
-        Args:
-            key: The key corresponding to the object.
-            data: The serialized object.
-        """
-        raise NotImplementedError
+            if not isinstance(obj, bytes):
+                raise TypeError('Serializer must produce bytes.')
 
-    def stats(self, key_or_proxy: KeyT | Proxy[T]) -> dict[str, TimeStats]:
+            _objs.append(obj)
+
+        keys = self.connector.put_batch(_objs, **kwargs)
+
+        logger.debug(
+            f'set called for keys={keys} and Store(name={self.name})',
+        )
+        return keys
+
+    def stats(
+        self,
+        key_or_proxy: ConnectorKeyT | Proxy[T],
+    ) -> dict[str, TimeStats]:
         """Get stats on the store.
 
         Args:

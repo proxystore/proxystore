@@ -1,7 +1,7 @@
 """Exceptions for Stores."""
 from __future__ import annotations
 
-from typing import NamedTuple
+from typing import Any
 
 from proxystore.store import base
 
@@ -29,8 +29,8 @@ class ProxyResolveMissingKeyError(Exception):
 
     def __init__(
         self,
-        key: NamedTuple,
-        store_type: type[base.Store[base.KeyT]],
+        key: base.ConnectorKeyT,
+        store_type: type[base.Store[Any]],
         store_name: str,
     ) -> None:
         """Init ProxyResolveMissingKeyError.

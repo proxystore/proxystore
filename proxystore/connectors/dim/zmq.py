@@ -1,13 +1,15 @@
-"""ZeroMQ implementation."""
+"""ZeroMQ-based distributed in-memory connector implementation."""
 from __future__ import annotations
 
 import asyncio
 import logging
 import signal
 import time
+import uuid
 from multiprocessing import Process
 from typing import Any
 from typing import NamedTuple
+from typing import Sequence
 
 try:
     import zmq
@@ -18,12 +20,11 @@ except ImportError as e:  # pragma: no cover
     zmq_import_error = e
 
 import proxystore.utils as utils
+from proxystore.connectors.dim.utils import get_ip_address
+from proxystore.connectors.dim.utils import Status
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
-from proxystore.store.base import Store
-from proxystore.store.dim.utils import get_ip_address
-from proxystore.store.dim.utils import Status
 
 MAX_CHUNK_LENGTH = 64 * 1024
 MAX_SIZE_DEFAULT = 1024**3
@@ -32,8 +33,8 @@ logger = logging.getLogger(__name__)
 server_process = None
 
 
-class ZeroMQStoreKey(NamedTuple):
-    """Key to objects in a ZeroMQStore."""
+class ZeroMQKey(NamedTuple):
+    """Key to objects stored across `ZeroMQConnector`s."""
 
     zmq_key: str
     """Unique object key."""
@@ -43,20 +44,19 @@ class ZeroMQStoreKey(NamedTuple):
     """Peer where object is located."""
 
 
-class ZeroMQStore(Store[ZeroMQStoreKey]):
-    """Distributed in-memory store using Zero MQ.
+class ZeroMQConnector:
+    """ZeroMQ-based distributed in-memory connector.
 
-    This client will initialize a local ZeroMQ server (Peer service) that it
-    will store data to.
+    Note:
+        The first instance of this connector created on a process will
+        spawn a [`ZeroMQServer`][proxystore.connectors.dim.zmq.ZeroMQServer]
+        that will store data. Hence, this connector just acts as an interface
+        to that server.
 
     Args:
-        name: Name of the store instance.
         interface: The network interface to use.
-        port: The desired port for communication.
-        max_size: The maximum size to be communicated via zmq.
-        cache_size: Size of LRU cache (in # of objects). If 0, the cache is
-            disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
+        port: The desired port for the spawned server.
+        max_size: The maximum message chunk size.
     """
 
     addr: str
@@ -69,13 +69,9 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
 
     def __init__(
         self,
-        name: str,
-        *,
         interface: str,
         port: int,
         max_size: int = MAX_SIZE_DEFAULT,
-        cache_size: int = 16,
-        stats: bool = False,
     ) -> None:
         global server_process
 
@@ -89,6 +85,7 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
         self.max_size = max_size
         self.chunk_size = MAX_CHUNK_LENGTH
 
+        self.interface = interface
         self.host = get_ip_address(interface)
         self.port = port
 
@@ -107,17 +104,6 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
             self._loop = asyncio.new_event_loop()
         self._loop.run_until_complete(wait_for_server(self.host, self.port))
 
-        super().__init__(
-            name,
-            cache_size=cache_size,
-            stats=stats,
-            kwargs={
-                'interface': interface,
-                'port': self.port,
-                'max_size': self.max_size,
-            },
-        )
-
     def __del__(self) -> None:
         # https://github.com/zeromq/pyzmq/issues/1512
         self.socket.close()
@@ -132,59 +118,6 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
         ps = ZeroMQServer(self.host, self.port, self.max_size)
         asyncio.run(ps.launch())
 
-    def create_key(self, obj: Any) -> ZeroMQStoreKey:
-        return ZeroMQStoreKey(
-            zmq_key=utils.create_key(obj),
-            obj_size=len(obj),
-            peer=self.addr,
-        )
-
-    def evict(self, key: ZeroMQStoreKey) -> None:
-        logger.debug(f'Client issuing an evict request on key {key}.')
-
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'evict'},
-        )
-        self._loop.run_until_complete(self.handler(event, key.peer))
-        self._cache.evict(key)
-
-    def exists(self, key: ZeroMQStoreKey) -> bool:
-        logger.debug(f'Client issuing an exists request on key {key}.')
-
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'exists'},
-        )
-        return deserialize(
-            self._loop.run_until_complete(self.handler(event, key.peer)),
-        )
-
-    def get_bytes(self, key: ZeroMQStoreKey) -> bytes | None:
-        logger.debug(f'Client issuing get request on key {key}')
-
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'get'},
-        )
-        res = self._loop.run_until_complete(self.handler(event, key.peer))
-
-        try:
-            s = deserialize(res)
-
-            if isinstance(s, Status) and not s.success:
-                return None
-            return res
-        except SerializationError:
-            return res
-
-    def set_bytes(self, key: ZeroMQStoreKey, data: bytes) -> None:
-        logger.debug(
-            f'Client issuing set request on key {key} with addr {self.addr}',
-        )
-
-        event = serialize(
-            {'key': key.zmq_key, 'data': data, 'op': 'set'},
-        )
-        self._loop.run_until_complete(self.handler(event, self.addr))
-
     async def handler(self, event: bytes, addr: str) -> bytes:
         """ZeroMQ handler function implementation.
 
@@ -195,7 +128,6 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
 
         Returns:
             The serialized result of the operation on the data.
-
         """
         with self.socket.connect(addr):
             await self.socket.send_multipart(
@@ -208,7 +140,11 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
         return res
 
     def close(self) -> None:
-        """Terminate Peer server process."""
+        """Get the connector configuration.
+
+        The configuration contains all the information needed to reconstruct
+        the connector object.
+        """
         global server_process
 
         logger.info('Clean up requested')
@@ -219,6 +155,131 @@ class ZeroMQStore(Store[ZeroMQStoreKey]):
             server_process = None
 
         logger.debug('Clean up completed')
+
+    def config(self) -> dict[str, Any]:
+        """Get the connector configuration.
+
+        The configuration contains all the information needed to reconstruct
+        the connector object.
+        """
+        return {
+            'interface': self.interface,
+            'port': self.port,
+            'max_size': self.max_size,
+        }
+
+    @classmethod
+    def from_config(cls, config: dict[str, Any]) -> ZeroMQConnector:
+        """Create a new connector instance from a configuration.
+
+        Args:
+            config: Configuration returned by `#!python .config()`.
+        """
+        return cls(**config)
+
+    def evict(self, key: ZeroMQKey) -> None:
+        """Evict the object associated with the key.
+
+        Args:
+            key: Key associated with object to evict.
+        """
+        logger.debug(f'Client issuing an evict request on key {key}.')
+
+        event = serialize(
+            {'key': key.zmq_key, 'data': None, 'op': 'evict'},
+        )
+        self._loop.run_until_complete(self.handler(event, key.peer))
+
+    def exists(self, key: ZeroMQKey) -> bool:
+        """Check if an object associated with the key exists.
+
+        Args:
+            key: Key potentially associated with stored object.
+
+        Returns:
+            If an object associated with the key exists.
+        """
+        logger.debug(f'Client issuing an exists request on key {key}.')
+
+        event = serialize(
+            {'key': key.zmq_key, 'data': None, 'op': 'exists'},
+        )
+        return deserialize(
+            self._loop.run_until_complete(self.handler(event, key.peer)),
+        )
+
+    def get(self, key: ZeroMQKey) -> bytes | None:
+        """Get the serialized object associated with the key.
+
+        Args:
+            key: Key associated with the object to retrieve.
+
+        Returns:
+            Serialized object or `None` if the object does not exist.
+        """
+        logger.debug(f'Client issuing get request on key {key}')
+
+        event = serialize(
+            {'key': key.zmq_key, 'data': None, 'op': 'get'},
+        )
+        res = self._loop.run_until_complete(self.handler(event, key.peer))
+
+        try:
+            s = deserialize(res)
+
+            assert isinstance(s, Status)
+            assert not s.success
+            return None
+        except SerializationError:
+            return res
+
+    def get_batch(self, keys: Sequence[ZeroMQKey]) -> list[bytes | None]:
+        """Get a batch of serialized objects associated with the keys.
+
+        Args:
+            keys: Sequence of keys associated with objects to retrieve.
+
+        Returns:
+            List with same order as `keys` with the serialized objects or
+            `None` if the corresponding key does not have an associated object.
+        """
+        return [self.get(key) for key in keys]
+
+    def put(self, obj: bytes) -> ZeroMQKey:
+        """Put a serialized object in the store.
+
+        Args:
+            obj: Serialized object to put in the store.
+
+        Returns:
+            Key which can be used to retrieve the object.
+        """
+        key = ZeroMQKey(
+            zmq_key=str(uuid.uuid4()),
+            obj_size=len(obj),
+            peer=self.addr,
+        )
+        logger.debug(
+            f'Client issuing set request on key {key} with addr {self.addr}',
+        )
+
+        event = serialize(
+            {'key': key.zmq_key, 'data': obj, 'op': 'set'},
+        )
+        self._loop.run_until_complete(self.handler(event, self.addr))
+        return key
+
+    def put_batch(self, objs: Sequence[bytes]) -> list[ZeroMQKey]:
+        """Put a batch of serialized objects in the store.
+
+        Args:
+            objs: Sequence of serialized objects to put in the store.
+
+        Returns:
+            List of keys with the same order as `objs` which can be used to
+            retrieve the objects.
+        """
+        return [self.put(obj) for obj in objs]
 
 
 class ZeroMQServer:
