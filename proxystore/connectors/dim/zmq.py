@@ -362,42 +362,42 @@ class ZeroMQServer:
         """Handle zmq connection requests."""
         while not self.socket.closed:  # pragma: no branch
             try:
-                for pkv in await self.socket.recv_multipart():
-                    assert isinstance(pkv, bytes)
+                pkv = await self.socket.recv_multipart()
+                kvb = b''.join(pkv)
 
-                    if pkv == b'ping':
-                        self.socket.send(b'pong')
-                        continue
+                if kvb == b'ping':
+                    self.socket.send(b'pong')
+                    continue
 
-                    kv = deserialize(pkv)
+                kv = deserialize(kvb)
 
-                    key = kv['key']
-                    data = kv['data']
-                    func = kv['op']
+                key = kv['key']
+                data = kv['data']
+                func = kv['op']
 
-                    if func == 'set':
-                        res = self.set(key, data)
+                if func == 'set':
+                    res = self.set(key, data)
+                else:
+                    if func == 'get':
+                        func = self.get
+                    elif func == 'exists':
+                        func = self.exists
+                    elif func == 'evict':
+                        func = self.evict
                     else:
-                        if func == 'get':
-                            func = self.get
-                        elif func == 'exists':
-                            func = self.exists
-                        elif func == 'evict':
-                            func = self.evict
-                        else:
-                            raise AssertionError('Unreachable.')
-                        res = func(key)
+                        raise AssertionError('Unreachable.')
+                    res = func(key)
 
-                    if isinstance(res, Status) or isinstance(res, bool):
-                        serialized_res = serialize(res)
-                    else:
-                        serialized_res = res
+                if isinstance(res, Status) or isinstance(res, bool):
+                    serialized_res = serialize(res)
+                else:
+                    serialized_res = res
 
-                    await self.socket.send_multipart(
-                        list(
-                            utils.chunk_bytes(serialized_res, self.chunk_size),
-                        ),
-                    )
+                await self.socket.send_multipart(
+                    list(
+                        utils.chunk_bytes(serialized_res, self.chunk_size),
+                    ),
+                )
             except zmq.ZMQError as e:  # pragma: no cover
                 logger.exception(e)
                 await asyncio.sleep(0.01)
