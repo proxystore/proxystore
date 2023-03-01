@@ -96,12 +96,20 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             setattr(  # noqa: B010
                 self,
                 'resolve',
-                self.stats.wrap(self.resolve, preset_key=self.key),
+                self.stats.wrap(
+                    self.resolve,
+                    preset_key=self.key,
+                    function_name='factory_resolve',
+                ),
             )
             setattr(  # noqa: B010
                 self,
                 'resolve_async',
-                self.stats.wrap(self.resolve_async, preset_key=self.key),
+                self.stats.wrap(
+                    self.resolve_async,
+                    preset_key=self.key,
+                    function_name='factory_resolve_async',
+                ),
             )
 
     def __getnewargs_ex__(
@@ -230,8 +238,23 @@ class Store(Generic[ConnectorT]):
                     wrapped = self._stats.wrap(
                         method,
                         key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                        function_name=f'store_{method.__name__}',
                     )
                     setattr(self, attr, wrapped)
+            # Monkeypatch connector methods with wrappers
+            for attr in dir(self.connector):
+                if (
+                    callable(getattr(self.connector, attr))
+                    and not attr.startswith('_')
+                    and attr in STORE_METHOD_KEY_IS_RESULT
+                ):
+                    method = getattr(self.connector, attr)
+                    wrapped = self._stats.wrap(
+                        method,
+                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
+                        function_name=f'connector_{method.__name__}',
+                    )
+                    setattr(self.connector, attr, wrapped)
 
         logger.debug(f'initialized {self}')
 

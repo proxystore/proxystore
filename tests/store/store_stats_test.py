@@ -54,18 +54,27 @@ def test_stat_tracking(store_implementation: StoreFixtureType) -> None:
 
     stats = store.stats(key)
 
-    assert 'get' in stats
-    assert 'set' in stats
-    assert 'evict' not in stats
+    assert 'store_get' in stats
+    assert 'store_set' in stats
+    assert 'store_evict' not in stats
+    assert 'connector_get' in stats
+    assert 'connector_put' in stats
+    assert 'connector_evict' not in stats
 
-    assert stats['get'].calls == 1
-    assert stats['set'].calls == 1
+    assert stats['store_get'].calls == 1
+    assert stats['store_set'].calls == 1
+    size = stats['connector_get'].size_bytes
+    assert size is not None
+    assert size > 0
+    size = stats['connector_put'].size_bytes
+    assert size is not None
+    assert size > 0
 
     # stats should return a copy of the stats, not the internal data
     # structures so calling get again should not effect anything.
     store.get(key)
 
-    assert stats['get'].calls == 1
+    assert stats['store_get'].calls == 1
 
     stats = store.stats(('missing_key',))
 
@@ -89,22 +98,22 @@ def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
 
     # Proxy has not been resolved yet so get/resolve should not exist
     stats = store.stats(p)
-    assert 'get' not in stats
-    assert 'set' in stats
-    assert 'resolve' not in stats
+    assert 'store_get' not in stats
+    assert 'store_set' in stats
+    assert 'factory_resolve' not in stats
 
     # Resolve proxy and verify get/resolve exist
     resolve(p)
     stats = store.stats(p)
-    assert 'get' in stats
-    assert 'resolve' in stats
+    assert 'store_get' in stats
+    assert 'factory_resolve' in stats
 
     # Check that resolve stats are unique to that proxy and not merged into
     # the store's stats
     key = get_key(p)
     assert key is not None
     stats = store.stats(key)
-    assert 'resolve' not in stats
+    assert 'factory_resolve' not in stats
 
     # Since we monkeypatch the stats into the factory, we need to handle
     # special cases of Factories without the _stats attr or the _stats attr
@@ -119,7 +128,7 @@ def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
     p = Proxy(FactoryMissingStats(key))
     resolve(p)
     stats = store.stats(p)
-    assert 'resolve' not in stats
+    assert 'factory_resolve' not in stats
 
     class FactoryNoneStats(StoreFactory[Any, Any]):
         def __init__(self, key: ConnectorKeyT):
@@ -132,7 +141,7 @@ def test_get_stats_with_proxy(store_implementation: StoreFixtureType) -> None:
     p = Proxy(FactoryNoneStats(key))
     resolve(p)
     stats = store.stats(p)
-    assert 'resolve' not in stats
+    assert 'factory_resolve' not in stats
 
     unregister_store(store_info.name)
 
@@ -164,6 +173,6 @@ def test_factory_preserves_tracking(
     assert store is not None
 
     assert isinstance(store.stats(key), dict)
-    assert store.stats(key)['get'].calls == 1
+    assert store.stats(key)['store_get'].calls == 1
 
     unregister_store(store_info.name)
