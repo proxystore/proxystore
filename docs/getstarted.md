@@ -67,20 +67,26 @@ ProxyStore is intended to be used via the
 in stores and creating proxies that will resolve to the associated object in
 the store.
 
-ProxyStore provides many [`Store`][proxystore.store.base.Store]
-implementations and more can be
-added by extending the [`Store`][proxystore.store.base.Store] class.
+A [`Store`][proxystore.store.base.Store] is initialized with a
+[`Connector`][proxystore.connectors.connector.Connector] which serves as the
+low-level interface to an byte-level object store.
+ProxyStore provides many
+[`Connector`][proxystore.connectors.connector.Connector] implementations and
+third-party code can provide custom implementations provided they meet the
+[`Connector`][proxystore.connectors.connector.Connector] protocol
+specification.
 
 The following example uses the
-[`RedisStore`][proxystore.store.redis.RedisStore] to interface with a
-running Redis server using proxies.
+[`RedisConnector`][proxystore.connectors.redis.RedisConnector] to interface
+with an already running Redis server using proxies.
 
 ```python
+from proxystore.connectors.redis import RedisConnector
 from proxystore.store import get_store
 from proxystore.store import register_store
-from proxystore.store.redis import RedisStore
+from proxystore.store import Store
 
-store = RedisStore(name='my-store', hostname='localhost', port=1234)
+store = Store(name='my-store', RedisConnector(hostname='localhost', port=1234))
 register_store(store)
 
 # A registered store can be retrieved by name

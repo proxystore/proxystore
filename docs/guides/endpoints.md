@@ -15,9 +15,9 @@ between multiple sites using NAT traversal.
 ## Overview
 
 At its core, the [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] is
-an in-memory data store built on asyncio. Endpoints provide a REST
-API, served using [`Quart`](https://pgjones.gitlab.io/quart/), and ProxyStore
-provides the [`EndpointStore`][proxystore.store.endpoint.EndpointStore] as
+an in-memory data store built on asyncio. Endpoints provide a REST API, served
+using [`Quart`](https://pgjones.gitlab.io/quart/), and ProxyStore provides the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as
 the primary interface for clients to interact with endpoints.
 
 <figure markdown>
@@ -100,9 +100,10 @@ port.
 $ proxystore-endpoint start my-endpoint
 ```
 
-## EndpointStore
+## EndpointConnector
 
-The primary interface to endpoints is the [`EndpointStore`][proxystore.store.endpoint.EndpointStore].
+The primary interface to endpoints is the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
 
 !!! note
     This section assumes familiarity with proxies and the
@@ -110,29 +111,30 @@ The primary interface to endpoints is the [`EndpointStore`][proxystore.store.end
     [Get Started](../getstarted.md) guide before getting started with endpoints.
 
 ```python
-from proxystore.store.endpoint import EndpointStore
+from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.store import Store
 
-store = EndpointStore(
-   name='default',
+connector = EndpointConnector(
    endpoints=[
        '5349ffce-edeb-4a8b-94a6-ab16ade1c1a1',
        'd62910f6-0d29-452e-80b7-e0cd601949db',
        ...
    ],
 )
+store = Store(name='default', connector=connector)
 
 p = store.proxy(my_object)
 ```
 
-The [`EndpointStore`][proxystore.store.endpoint.EndpointStore] takes
+The [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] takes
 a list of endpoint UUIDs. This list represents any endpoint that proxies
 created by this store may interact with to resolve themselves. The
-[`EndpointStore`][proxystore.store.endpoint.EndpointStore] will use this
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will use this
 list to find its *home* endpoint, the endpoint that will be used to issue
 operations to. To find the *home* endpoint, the ProxyStore home directory
 will be scanned for any endpoint configurations matching
 the one of the UUIDs. If a match is found, the
-[`EndpointStore`][proxystore.store.endpoint.EndpointStore] will attempt
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will attempt
 to connect to the endpoint using the host and port in the configuration. This
 process is repeated until a reachable endpoint is found. While the user could
 specify the home endpoint directly, the home endpoint may change when a proxy
@@ -149,7 +151,7 @@ travels to a different machine.
 </figure>
 
 In distributed systems, proxies created from an
-[`EndpointStore`][proxystore.store.endpoint.EndpointStore] can be used
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] can be used
 to facilitate simple and fast data communication.
 The flow of data and their associated proxies are shown in **Fig. 2**.
 
@@ -158,7 +160,7 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
    The proxy contains the key referencing the *target*, the endpoint UUID with
    the *target* data (Endpoint 1's UUID), and the list of
    all endpoint UUIDs configured with the
-   [`EndpointStore`][proxystore.store.endpoint.EndpointStore]
+   [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
    (the UUIDs of Endpoints 1 and 2).
 2. Host A communicates the proxy object to Host B. This communication is
    cheap because the proxy is just a thin reference to the object.
