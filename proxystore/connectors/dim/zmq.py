@@ -27,7 +27,6 @@ from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
 MAX_CHUNK_LENGTH = 64 * 1024
-MAX_SIZE_DEFAULT = 1024**3
 
 logger = logging.getLogger(__name__)
 server_process = None
@@ -56,23 +55,16 @@ class ZeroMQConnector:
     Args:
         interface: The network interface to use.
         port: The desired port for the spawned server.
-        max_size: The maximum message chunk size.
     """
 
     addr: str
     provider_id: int
     context: zmq.asyncio.Context
     socket: zmq.asyncio.Socket
-    max_size: int
     chunk_size: int
     _loop: asyncio.events.AbstractEventLoop
 
-    def __init__(
-        self,
-        interface: str,
-        port: int,
-        max_size: int = MAX_SIZE_DEFAULT,
-    ) -> None:
+    def __init__(self, interface: str, port: int) -> None:
         global server_process
 
         # ZMQ is not a default dependency so we don't want to raise
@@ -82,7 +74,6 @@ class ZeroMQConnector:
 
         logger.debug('Instantiating client and server')
 
-        self.max_size = max_size
         self.chunk_size = MAX_CHUNK_LENGTH
 
         self.interface = interface
@@ -115,7 +106,7 @@ class ZeroMQConnector:
             f'starting server on host {self.host} with port {self.port}',
         )
 
-        ps = ZeroMQServer(self.host, self.port, self.max_size)
+        ps = ZeroMQServer(self.host, self.port)
         asyncio.run(ps.launch())
 
     async def handler(self, event: bytes, addr: str) -> bytes:
@@ -162,11 +153,7 @@ class ZeroMQConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {
-            'interface': self.interface,
-            'port': self.port,
-            'max_size': self.max_size,
-        }
+        return {'interface': self.interface, 'port': self.port}
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> ZeroMQConnector:
@@ -288,19 +275,16 @@ class ZeroMQServer:
     Args:
         host: IP address of the location to start the server.
         port: The port to initiate communication on.
-        max_size: The maximum size allowed for zmq communication.
     """
 
     host: str
     port: int
-    max_size: int
     chunk_size: int
     data: dict[str, bytes]
 
-    def __init__(self, host: str, port: int, max_size: int) -> None:
+    def __init__(self, host: str, port: int) -> None:
         self.host = host
         self.port = port
-        self.max_size = max_size
         self.chunk_size = MAX_CHUNK_LENGTH
         self.data = {}
 
@@ -362,42 +346,42 @@ class ZeroMQServer:
         """Handle zmq connection requests."""
         while not self.socket.closed:  # pragma: no branch
             try:
-                for pkv in await self.socket.recv_multipart():
-                    assert isinstance(pkv, bytes)
+                pkv = await self.socket.recv_multipart()
+                kvb = b''.join(pkv)
 
-                    if pkv == b'ping':
-                        self.socket.send(b'pong')
-                        continue
+                if kvb == b'ping':
+                    self.socket.send(b'pong')
+                    continue
 
-                    kv = deserialize(pkv)
+                kv = deserialize(kvb)
 
-                    key = kv['key']
-                    data = kv['data']
-                    func = kv['op']
+                key = kv['key']
+                data = kv['data']
+                func = kv['op']
 
-                    if func == 'set':
-                        res = self.set(key, data)
+                if func == 'set':
+                    res = self.set(key, data)
+                else:
+                    if func == 'get':
+                        func = self.get
+                    elif func == 'exists':
+                        func = self.exists
+                    elif func == 'evict':
+                        func = self.evict
                     else:
-                        if func == 'get':
-                            func = self.get
-                        elif func == 'exists':
-                            func = self.exists
-                        elif func == 'evict':
-                            func = self.evict
-                        else:
-                            raise AssertionError('Unreachable.')
-                        res = func(key)
+                        raise AssertionError('Unreachable.')
+                    res = func(key)
 
-                    if isinstance(res, Status) or isinstance(res, bool):
-                        serialized_res = serialize(res)
-                    else:
-                        serialized_res = res
+                if isinstance(res, Status) or isinstance(res, bool):
+                    serialized_res = serialize(res)
+                else:
+                    serialized_res = res
 
-                    await self.socket.send_multipart(
-                        list(
-                            utils.chunk_bytes(serialized_res, self.chunk_size),
-                        ),
-                    )
+                await self.socket.send_multipart(
+                    list(
+                        utils.chunk_bytes(serialized_res, self.chunk_size),
+                    ),
+                )
             except zmq.ZMQError as e:  # pragma: no cover
                 logger.exception(e)
                 await asyncio.sleep(0.01)
