@@ -105,23 +105,32 @@ markdown_extensions:
 
 nav:
   - Home:
-      - Overview: index.md
-      - Get Started: get-started.md
-      - Advanced: advanced.md
-      - Contributing: contributing.md
+      - home/index.md
+      - Installation: home/installation.md
+      - Get Started: home/get-started.md
+      - Examples: home/examples.md
+      - Known Issues: home/known-issues.md
+      - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
+  - Concepts:
+      - concepts/index.md
+      - Proxy: concepts/proxy.md
+      - Connector: concepts/connector.md
+      - Store: concepts/store.md
   - Guides:
       - guides/index.md
       - Endpoints: guides/endpoints.md
       - Performance: guides/performance.md
-  - API Reference:
-      - ProxyStore: reference/
-      - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
-      - Legacy Docs: legacy-docs.md
+  - API Reference: api/
+  - Contributing:
+      - contributing/index.md
+      - Style Guide: contributing/style-guide.md
+      - Issues and Pull Requests: contributing/issues-pull-requests.md
+      - Releases: contributing/releases.md
 
 plugins:
   - gen-files:
       scripts:
-        - docs/gen_ref_pages.py
+        - docs/generate_api.py
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:

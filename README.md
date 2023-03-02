@@ -19,20 +19,19 @@ ProxyStore's goals are to:
   at runtime to optimal choices for the given data without the consumers
   being aware of the change.
 
+Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/concepts/).
+
 ## Installation
 
 ```bash
-# Base install
-pip install proxystore
-# Include any extras you may need
-pip install proxystore[endpoints]
+$ pip install proxystore
 ```
 
-More details are available on the [Get Started](https://docs.proxystore.dev/get-started) guide.
+See the [Installation](https://docs.proxystore.dev/home/installation) guide for more information about the available extra install options.
 For local development, see the [Contributing](https://docs.proxystore.dev/contributing) guide.
 
 Additional features are available in the [`proxystore-extensions`](https://github.com/proxystore/extensions) package.
 
 ## Documentation
 
-Complete documentation for ProxyStore is available at https://docs.proxystore.dev.
+Complete documentation for ProxyStore is available at [docs.proxystore.dev](https://docs.proxystore.dev).
