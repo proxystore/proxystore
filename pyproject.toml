@@ -13,7 +13,7 @@ maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
     {name = "Valerie Hayot-Sasson", email = "vhayot@uchicago.edu"},
 ]
-description = "Python lazy object proxy interface for distributed stores."
+description = "Lazy object proxy interface for distributed stores."
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "FILE"}
@@ -35,8 +35,8 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://github.com/proxystore/proxystore"
-documentation = "https://proxystore.readthedocs.io"
+homepage = "https://proxystore.dev"
+documentation = "https://docs.proxystore.dev"
 repository = "https://github.com/proxystore/proxystore"
 
 [project.optional-dependencies]
