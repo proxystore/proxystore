@@ -1,3 +1,3 @@
 # Legacy Documentation
 
-Documentation for ProxyStore version older than 0.4.1 are hosted at https://proxystore.readthedocs.io/.
+Documentation for ProxyStore versions older than v0.4.1 are hosted at https://proxystore.readthedocs.io/.

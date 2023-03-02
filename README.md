@@ -34,4 +34,4 @@ For local development, see the [Contributing](https://docs.proxystore.dev/contri
 
 ## Documentation
 
-Complete documentation for ProxyStore at https://proxystore.dev.
+Complete documentation for ProxyStore is available at https://docs.proxystore.dev.

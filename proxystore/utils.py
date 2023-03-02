@@ -63,7 +63,7 @@ def get_class_path(cls: type[Any]) -> str:
         ```python
         >>> from proxystore.connectors.connector import Connector
         >>> get_class_path(Connector)
-        'proxystore.connectors.connector.Connector
+        'proxystore.connectors.connector.Connector'
         ```
 
     Args:
@@ -105,9 +105,9 @@ def import_class(path: str) -> type[Any]:
 def home_dir() -> str:
     """Return the absolute path to the proxystore home directory.
 
-    If set, ``$PROXYSTORE_HOME`` is preferred. Otherwise,
-    ``$XDG_DATA_HOME/proxystore`` is returned where ``$XDG_DATA_HOME`` defaults
-    to ``$HOME/.local/share`` if unset.
+    If set, `$PROXYSTORE_HOME` is preferred. Otherwise,
+    `$XDG_DATA_HOME/proxystore` is returned where `$XDG_DATA_HOME` defaults
+    to `$HOME/.local/share` if unset.
     """
     path = os.environ.get('PROXYSTORE_HOME')
     if path is None:
