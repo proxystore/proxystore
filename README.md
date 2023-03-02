@@ -21,16 +21,17 @@ ProxyStore's goals are to:
 
 ## Installation
 
-Install via pip:
 ```bash
 # Base install
 pip install proxystore
-# Extras install for serving Endpoints
+# Include any extras you may need
 pip install proxystore[endpoints]
 ```
 
 More details are available on the [Get Started](https://docs.proxystore.dev/getstarted) guide.
 For local development, see the [Contributing](https://docs.proxystore.dev/contributing) guide.
+
+Additional features are available in the [`proxystore-extensions`](https://github.com/proxystore/extensions) package.
 
 ## Documentation
 
