@@ -49,7 +49,7 @@ class EndpointConnector:
             UUIDs to use. At least one of these endpoints must be
             accessible by this process.
         proxystore_dir: Optionally specify the proxystore home
-            directory. Defaults to [`home_dir()`[proxystore.utils.home_dir].
+            directory. Defaults to [`home_dir()`][proxystore.utils.home_dir].
 
     Raises:
         ValueError: If endpoints is an empty list.

@@ -1,8 +1,8 @@
 # Get Started
 
 <figure markdown>
-  ![ProxyStore Overview](static/overview.png){ width="100%" }
-  <figcaption>
+  ![ProxyStore Overview](../static/overview.png){ width="100%" }
+  <figcaption width=100%>
   ProxyStore allows developers to communicate objects via *proxies*. Proxies
   act as lightweight references that resolve to a *target* object upon use.
   Communication via proxies gives applications the illusion that objects
@@ -42,22 +42,6 @@ ProxyStore provides the proxy interface to a number of commonly used object
 stores as well as the [`Proxy`][proxystore.proxy.Proxy] and
 [`Factory`][proxystore.factory.Factory] building blocks to allow developers
 to create powerful just-in-time resolution functionality for Python objects.
-
-## Installation
-
-```bash
-$ pip install proxystore
-```
-
-Serving [ProxyStore Endpoints](guides/endpoints.md) requires installing
-using the extras install.
-
-```bash
-$ pip install proxystore[endpoints]
-```
-
-See [Contributing](contributing.md) if you are installing for local
-development.
 
 ## Usage
 
@@ -161,27 +145,6 @@ The ProxyStore model can improve application performance in many ways:
    which have a proxy but do not use it.
 3. Different backends can be used that are optimized for specific usage
    patterns.
-4. Proxies have built-in caching for frequently used objects
-   ([Caching](advanced.md#caching)).
+4. Proxies have built-in caching for frequently used objects.
 
-See [Advanced Usage](advanced.md) to learn more!
-
-Related
--------
-
-**Examples:**
-Examples of integrating ProxyStore into distributed applications built on
-[FuncX](https://funcx.org/) and [Parsl](https://parsl-project.org/) are
-[here](https://github.com/proxystore/proxystore/tree/main/examples).
-
-**Benchmarks:**
-ProxyStore benchmarks are maintained at https://github.com/proxystore/benchmarks.
-
-Known Issues
-------------
-
-* [ProxyStore Endpoints](guides/endpoints.md) are not supported for
-  Python 3.7 on ARM-based Macs because
-  [aiortc](https://aiortc.readthedocs.io) does not have the corresponding
-  wheels. The base ProxyStore package can still be installed on this
-  software/hardware configurations---just not with the `endpoints` extras.
+See the [Concepts](../concepts/index.md) to learn more!

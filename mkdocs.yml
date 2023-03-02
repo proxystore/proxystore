@@ -6,9 +6,7 @@ site_description: Documentation for ProxyStore.
 repo_name: proxystore/proxystore
 repo_url: https://github.com/proxystore/proxystore
 
-edit_uri: blob/main/docs/
-
-copyright: Copyright &copy; 2021—Present Greg Pauloski
+copyright: Copyright &copy; 2021—Present by <a target="_blank" href="https://gregpauloski.com">Greg Pauloski</a> and <a target="_blank" href="https://labs.globus.org">Globus Labs</a>
 
 
 theme:
@@ -71,6 +69,9 @@ extra:
     default: latest
     provider: mike
 
+extra_css:
+  - css/mkdocstrings.css
+
 markdown_extensions:
   - admonition
   - attr_list
@@ -104,26 +105,37 @@ markdown_extensions:
 
 nav:
   - Home:
-      - Overview: index.md
-      - Get Started: getstarted.md
-      - Advanced: advanced.md
-      - Contributing: contributing.md
+      - home/index.md
+      - Installation: home/installation.md
+      - Get Started: home/get-started.md
+      - Examples: home/examples.md
+      - Known Issues: home/known-issues.md
+      - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
+  - Concepts:
+      - concepts/index.md
+      - Proxy: concepts/proxy.md
+      - Connector: concepts/connector.md
+      - Store: concepts/store.md
   - Guides:
       - guides/index.md
       - Endpoints: guides/endpoints.md
       - Performance: guides/performance.md
-  - API Reference:
-      - ProxyStore: reference/
-      - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
-      - Legacy Docs: legacy-docs.md
+  - API Reference: api/
+  - Contributing:
+      - contributing/index.md
+      - Style Guide: contributing/style-guide.md
+      - Issues and Pull Requests: contributing/issues-pull-requests.md
+      - Releases: contributing/releases.md
 
 plugins:
   - gen-files:
       scripts:
-        - docs/gen_ref_pages.py
+        - docs/generate_api.py
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:
+      custom_templates: docs/_templates
+      enable_inventory: true
       handlers:
         python:
           setup_commands:
@@ -141,6 +153,7 @@ plugins:
             separate_signature: yes
             # Mutually exclusive with separate_signature
             # show_root_members_full_path: yes
+            # Causes black error with show_root_full_path
             # show_object_full_path: yes
             show_root_full_path: yes
             show_signature_annotations: yes

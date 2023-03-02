@@ -37,9 +37,9 @@ class PeerManager:
     """Peer Connections Manager.
 
     Handles establishing peer connections via
-    [aiortc](https://aiortc.readthedocs.io/), responding to requests for
-    new peer connections from the signaling server, and sending and
-    receiving data to/from existing peer connections.
+    [aiortc](https://aiortc.readthedocs.io/){target=_blank}, responding to
+    requests for new peer connections from the signaling server, and sending
+    and receiving data to/from existing peer connections.
 
 
     Example:

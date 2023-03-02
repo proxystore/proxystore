@@ -17,9 +17,10 @@ def serialize(obj: Any) -> bytes:
     """Serialize object.
 
     Objects are serialized using
-    [pickle](https://docs.python.org/3/library/pickle.html) (protocol 4)
-    except for [bytes][] or [str][] objects.
-    If pickle fails, [cloudpickle](https://github.com/cloudpipe/cloudpickle)
+    [pickle](https://docs.python.org/3/library/pickle.html){target=_blank}
+    (protocol 4) except for [bytes][] or [str][] objects.
+    If pickle fails,
+    [cloudpickle](https://github.com/cloudpipe/cloudpickle){target=_blank}
     is used as a fallback.
 
     Args:

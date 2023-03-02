@@ -48,7 +48,7 @@ class Proxy(slots.Proxy, Generic[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from
-    [lazy-object-proxy](https://github.com/ionelmc/python-lazy-object-proxy)
+    [lazy-object-proxy](https://github.com/ionelmc/python-lazy-object-proxy){target=_blank}
     with modified pickling behavior.
 
     An object proxy acts as a thin wrapper around a Python object, i.e.

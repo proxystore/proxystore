@@ -46,7 +46,7 @@ class PeerConnection:
     """Peer-to-peer connection.
 
     Interface for establishing a peer-to-peer connection via WebRTC
-    [aiortc](https://aiortc.readthedocs.io/en/latest/) and
+    [aiortc](https://aiortc.readthedocs.io/en/latest/){target=_blank} and
     sending/receiving messages between the two peers. The peer-to-peer
     connection is established using a central and publicly accessible
     signaling server.
