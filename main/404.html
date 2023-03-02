@@ -15,7 +15,7 @@
       
       
       <link rel="icon" href="/main/assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.15">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.0">
     
     
       
@@ -23,7 +23,7 @@
       
     
     
-      <link rel="stylesheet" href="/main/assets/stylesheets/main.113286f1.min.css">
+      <link rel="stylesheet" href="/main/assets/stylesheets/main.402914a4.min.css">
       
         
         <link rel="stylesheet" href="/main/assets/stylesheets/palette.a0c5b2b5.min.css">
@@ -43,6 +43,8 @@
     
     
       <link rel="stylesheet" href="/main/assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="/main/css/mkdocstrings.css">
     
     <script>__md_scope=new URL("/main",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
@@ -213,15 +215,23 @@
   
 
 
+  <li class="md-tabs__item">
+    <a href="/main/home/" class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
   
   
-  
-    <li class="md-tabs__item">
-      <a href="/main/." class="md-tabs__link">
-        Home
-      </a>
-    </li>
-  
+
+
+  <li class="md-tabs__item">
+    <a href="/main/concepts/" class="md-tabs__link">
+      Concepts
+    </a>
+  </li>
 
       
         
@@ -244,19 +254,24 @@
   
   
   
-    
-
-  
-  
-  
     <li class="md-tabs__item">
-      <a href="/main/reference/" class="md-tabs__link">
+      <a href="/main/api/" class="md-tabs__link">
         API Reference
       </a>
     </li>
   
 
+      
+        
   
+  
+
+
+  <li class="md-tabs__item">
+    <a href="/main/contributing/" class="md-tabs__link">
+      Contributing
+    </a>
+  </li>
 
       
     </ul>
@@ -320,10 +335,16 @@
       
       
       
-        <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
-          Home
-          <span class="md-nav__icon md-icon"></span>
-        </label>
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="/main/home/">Home</a>
+          
+            <label for="__nav_1">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
       
       <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_1">
@@ -338,8 +359,8 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/." class="md-nav__link">
-        Overview
+      <a href="/main/home/installation/" class="md-nav__link">
+        Installation
       </a>
     </li>
   
@@ -352,7 +373,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/getstarted/" class="md-nav__link">
+      <a href="/main/home/get-started/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -366,8 +387,8 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/advanced/" class="md-nav__link">
-        Advanced
+      <a href="/main/home/examples/" class="md-nav__link">
+        Examples
       </a>
     </li>
   
@@ -380,8 +401,22 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/contributing/" class="md-nav__link">
-        Contributing
+      <a href="/main/home/known-issues/" class="md-nav__link">
+        Known Issues
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/releases" class="md-nav__link">
+        Changelog (GitHub)
       </a>
     </li>
   
@@ -414,7 +449,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/guides/">Guides</a>
+          <a href="/main/concepts/">Concepts</a>
           
             <label for="__nav_2">
               <span class="md-nav__icon md-icon"></span>
@@ -424,6 +459,89 @@
       
       <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Concepts
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/main/concepts/proxy/" class="md-nav__link">
+        Proxy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/main/concepts/connector/" class="md-nav__link">
+        Connector
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/main/concepts/store/" class="md-nav__link">
+        Store
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="/main/guides/">Guides</a>
+          
+            <label for="__nav_3">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Guides
         </label>
@@ -476,17 +594,17 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
       
       
       
-        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
           API Reference
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
           <span class="md-nav__icon md-icon"></span>
           API Reference
         </label>
@@ -505,50 +623,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1" >
-      
-      
-      
-        <label class="md-nav__link" for="__nav_3_1" id="__nav_3_1_label" tabindex="0">
-          ProxyStore
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1">
-          <span class="md-nav__icon md-icon"></span>
-          ProxyStore
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-      
-      
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/">proxystore</a>
+          <a href="/main/api/">proxystore</a>
           
-            <label for="__nav_3_1_1">
+            <label for="__nav_4_1">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_1_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1">
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1">
           <span class="md-nav__icon md-icon"></span>
           proxystore
         </label>
@@ -565,23 +656,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1_1" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/connectors/">proxystore.connectors</a>
+          <a href="/main/api/connectors/">proxystore.connectors</a>
           
-            <label for="__nav_3_1_1_1">
+            <label for="__nav_4_1_1">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_1_1_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1_1">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1_1">
           <span class="md-nav__icon md-icon"></span>
           proxystore.connectors
         </label>
@@ -593,7 +684,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/connector/" class="md-nav__link">
+      <a href="/main/api/connectors/connector/" class="md-nav__link">
         proxystore.connectors.connector
       </a>
     </li>
@@ -612,23 +703,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1_1_2" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1_2" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/connectors/dim/">proxystore.connectors.dim</a>
+          <a href="/main/api/connectors/dim/">proxystore.connectors.dim</a>
           
-            <label for="__nav_3_1_1_1_2">
+            <label for="__nav_4_1_1_2">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_3_1_1_1_2_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1_1_2">
+      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_1_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1_1_2">
           <span class="md-nav__icon md-icon"></span>
           proxystore.connectors.dim
         </label>
@@ -640,7 +731,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/dim/margo/" class="md-nav__link">
+      <a href="/main/api/connectors/dim/margo/" class="md-nav__link">
         proxystore.connectors.dim.margo
       </a>
     </li>
@@ -654,7 +745,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/dim/ucx/" class="md-nav__link">
+      <a href="/main/api/connectors/dim/ucx/" class="md-nav__link">
         proxystore.connectors.dim.ucx
       </a>
     </li>
@@ -668,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/dim/utils/" class="md-nav__link">
+      <a href="/main/api/connectors/dim/utils/" class="md-nav__link">
         proxystore.connectors.dim.utils
       </a>
     </li>
@@ -682,7 +773,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/dim/zmq/" class="md-nav__link">
+      <a href="/main/api/connectors/dim/zmq/" class="md-nav__link">
         proxystore.connectors.dim.zmq
       </a>
     </li>
@@ -703,7 +794,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/endpoint/" class="md-nav__link">
+      <a href="/main/api/connectors/endpoint/" class="md-nav__link">
         proxystore.connectors.endpoint
       </a>
     </li>
@@ -717,7 +808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/file/" class="md-nav__link">
+      <a href="/main/api/connectors/file/" class="md-nav__link">
         proxystore.connectors.file
       </a>
     </li>
@@ -731,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/globus/" class="md-nav__link">
+      <a href="/main/api/connectors/globus/" class="md-nav__link">
         proxystore.connectors.globus
       </a>
     </li>
@@ -745,7 +836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/local/" class="md-nav__link">
+      <a href="/main/api/connectors/local/" class="md-nav__link">
         proxystore.connectors.local
       </a>
     </li>
@@ -759,7 +850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/multi/" class="md-nav__link">
+      <a href="/main/api/connectors/multi/" class="md-nav__link">
         proxystore.connectors.multi
       </a>
     </li>
@@ -773,7 +864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/connectors/redis/" class="md-nav__link">
+      <a href="/main/api/connectors/redis/" class="md-nav__link">
         proxystore.connectors.redis
       </a>
     </li>
@@ -799,23 +890,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1_2" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/endpoint/">proxystore.endpoint</a>
+          <a href="/main/api/endpoint/">proxystore.endpoint</a>
           
-            <label for="__nav_3_1_1_2">
+            <label for="__nav_4_1_2">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_1_2_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1_2">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1_2">
           <span class="md-nav__icon md-icon"></span>
           proxystore.endpoint
         </label>
@@ -827,7 +918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/cli/" class="md-nav__link">
+      <a href="/main/api/endpoint/cli/" class="md-nav__link">
         proxystore.endpoint.cli
       </a>
     </li>
@@ -841,7 +932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/commands/" class="md-nav__link">
+      <a href="/main/api/endpoint/commands/" class="md-nav__link">
         proxystore.endpoint.commands
       </a>
     </li>
@@ -855,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/config/" class="md-nav__link">
+      <a href="/main/api/endpoint/config/" class="md-nav__link">
         proxystore.endpoint.config
       </a>
     </li>
@@ -869,7 +960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/constants/" class="md-nav__link">
+      <a href="/main/api/endpoint/constants/" class="md-nav__link">
         proxystore.endpoint.constants
       </a>
     </li>
@@ -883,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/endpoint/" class="md-nav__link">
+      <a href="/main/api/endpoint/endpoint/" class="md-nav__link">
         proxystore.endpoint.endpoint
       </a>
     </li>
@@ -897,7 +988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/exceptions/" class="md-nav__link">
+      <a href="/main/api/endpoint/exceptions/" class="md-nav__link">
         proxystore.endpoint.exceptions
       </a>
     </li>
@@ -911,7 +1002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/messages/" class="md-nav__link">
+      <a href="/main/api/endpoint/messages/" class="md-nav__link">
         proxystore.endpoint.messages
       </a>
     </li>
@@ -925,7 +1016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/serve/" class="md-nav__link">
+      <a href="/main/api/endpoint/serve/" class="md-nav__link">
         proxystore.endpoint.serve
       </a>
     </li>
@@ -939,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/endpoint/storage/" class="md-nav__link">
+      <a href="/main/api/endpoint/storage/" class="md-nav__link">
         proxystore.endpoint.storage
       </a>
     </li>
@@ -960,7 +1051,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/factory/" class="md-nav__link">
+      <a href="/main/api/factory/" class="md-nav__link">
         proxystore.factory
       </a>
     </li>
@@ -974,7 +1065,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/globus/" class="md-nav__link">
+      <a href="/main/api/globus/" class="md-nav__link">
         proxystore.globus
       </a>
     </li>
@@ -993,23 +1084,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1_5" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_5" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/p2p/">proxystore.p2p</a>
+          <a href="/main/api/p2p/">proxystore.p2p</a>
           
-            <label for="__nav_3_1_1_5">
+            <label for="__nav_4_1_5">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_1_5_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1_5">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1_5">
           <span class="md-nav__icon md-icon"></span>
           proxystore.p2p
         </label>
@@ -1021,7 +1112,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/chunks/" class="md-nav__link">
+      <a href="/main/api/p2p/chunks/" class="md-nav__link">
         proxystore.p2p.chunks
       </a>
     </li>
@@ -1035,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/client/" class="md-nav__link">
+      <a href="/main/api/p2p/client/" class="md-nav__link">
         proxystore.p2p.client
       </a>
     </li>
@@ -1049,7 +1140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/connection/" class="md-nav__link">
+      <a href="/main/api/p2p/connection/" class="md-nav__link">
         proxystore.p2p.connection
       </a>
     </li>
@@ -1063,7 +1154,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/counter/" class="md-nav__link">
+      <a href="/main/api/p2p/counter/" class="md-nav__link">
         proxystore.p2p.counter
       </a>
     </li>
@@ -1077,7 +1168,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/exceptions/" class="md-nav__link">
+      <a href="/main/api/p2p/exceptions/" class="md-nav__link">
         proxystore.p2p.exceptions
       </a>
     </li>
@@ -1091,7 +1182,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/manager/" class="md-nav__link">
+      <a href="/main/api/p2p/manager/" class="md-nav__link">
         proxystore.p2p.manager
       </a>
     </li>
@@ -1105,7 +1196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/messages/" class="md-nav__link">
+      <a href="/main/api/p2p/messages/" class="md-nav__link">
         proxystore.p2p.messages
       </a>
     </li>
@@ -1119,7 +1210,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/server/" class="md-nav__link">
+      <a href="/main/api/p2p/server/" class="md-nav__link">
         proxystore.p2p.server
       </a>
     </li>
@@ -1133,7 +1224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/p2p/task/" class="md-nav__link">
+      <a href="/main/api/p2p/task/" class="md-nav__link">
         proxystore.p2p.task
       </a>
     </li>
@@ -1154,7 +1245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/proxy/" class="md-nav__link">
+      <a href="/main/api/proxy/" class="md-nav__link">
         proxystore.proxy
       </a>
     </li>
@@ -1168,7 +1259,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/serialize/" class="md-nav__link">
+      <a href="/main/api/serialize/" class="md-nav__link">
         proxystore.serialize
       </a>
     </li>
@@ -1187,23 +1278,23 @@
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_1_1_8" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_8" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="/main/reference/store/">proxystore.store</a>
+          <a href="/main/api/store/">proxystore.store</a>
           
-            <label for="__nav_3_1_1_8">
+            <label for="__nav_4_1_8">
               <span class="md-nav__icon md-icon"></span>
             </label>
           
         </div>
       
-      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_3_1_1_8_label" aria-expanded="false">
-        <label class="md-nav__title" for="__nav_3_1_1_8">
+      <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_8_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4_1_8">
           <span class="md-nav__icon md-icon"></span>
           proxystore.store
         </label>
@@ -1215,7 +1306,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/base/" class="md-nav__link">
+      <a href="/main/api/store/base/" class="md-nav__link">
         proxystore.store.base
       </a>
     </li>
@@ -1229,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/cache/" class="md-nav__link">
+      <a href="/main/api/store/cache/" class="md-nav__link">
         proxystore.store.cache
       </a>
     </li>
@@ -1243,7 +1334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/endpoint/" class="md-nav__link">
+      <a href="/main/api/store/endpoint/" class="md-nav__link">
         proxystore.store.endpoint
       </a>
     </li>
@@ -1257,7 +1348,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/exceptions/" class="md-nav__link">
+      <a href="/main/api/store/exceptions/" class="md-nav__link">
         proxystore.store.exceptions
       </a>
     </li>
@@ -1271,7 +1362,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/file/" class="md-nav__link">
+      <a href="/main/api/store/file/" class="md-nav__link">
         proxystore.store.file
       </a>
     </li>
@@ -1285,7 +1376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/globus/" class="md-nav__link">
+      <a href="/main/api/store/globus/" class="md-nav__link">
         proxystore.store.globus
       </a>
     </li>
@@ -1299,7 +1390,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/local/" class="md-nav__link">
+      <a href="/main/api/store/local/" class="md-nav__link">
         proxystore.store.local
       </a>
     </li>
@@ -1313,7 +1404,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/multi/" class="md-nav__link">
+      <a href="/main/api/store/multi/" class="md-nav__link">
         proxystore.store.multi
       </a>
     </li>
@@ -1327,7 +1418,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/redis/" class="md-nav__link">
+      <a href="/main/api/store/redis/" class="md-nav__link">
         proxystore.store.redis
       </a>
     </li>
@@ -1341,7 +1432,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/stats/" class="md-nav__link">
+      <a href="/main/api/store/stats/" class="md-nav__link">
         proxystore.store.stats
       </a>
     </li>
@@ -1355,7 +1446,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/store/utils/" class="md-nav__link">
+      <a href="/main/api/store/utils/" class="md-nav__link">
         proxystore.store.utils
       </a>
     </li>
@@ -1376,7 +1467,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/utils/" class="md-nav__link">
+      <a href="/main/api/utils/" class="md-nav__link">
         proxystore.utils
       </a>
     </li>
@@ -1390,7 +1481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/reference/warnings/" class="md-nav__link">
+      <a href="/main/api/warnings/" class="md-nav__link">
         proxystore.warnings
       </a>
     </li>
@@ -1410,7 +1501,41 @@
     </li>
   
 
-            
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="/main/contributing/">Contributing</a>
+          
+            <label for="__nav_5">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_5">
+          <span class="md-nav__icon md-icon"></span>
+          Contributing
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
           
             
               
@@ -1418,8 +1543,8 @@
   
   
     <li class="md-nav__item">
-      <a href="https://github.com/proxystore/proxystore/releases" class="md-nav__link">
-        Changelog (GitHub)
+      <a href="/main/contributing/style-guide/" class="md-nav__link">
+        Style Guide
       </a>
     </li>
   
@@ -1432,8 +1557,22 @@
   
   
     <li class="md-nav__item">
-      <a href="/main/legacy-docs/" class="md-nav__link">
-        Legacy Docs
+      <a href="/main/contributing/issues-pull-requests/" class="md-nav__link">
+        Issues and Pull Requests
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="/main/contributing/releases/" class="md-nav__link">
+        Releases
       </a>
     </li>
   
@@ -1496,7 +1635,7 @@
       <div class="md-copyright">
   
     <div class="md-copyright__highlight">
-      Copyright &copy; 2021—Present Greg Pauloski
+      Copyright &copy; 2021—Present by <a target="_blank" href="https://gregpauloski.com">Greg Pauloski</a> and <a target="_blank" href="https://labs.globus.org">Globus Labs</a>
     </div>
   
   
@@ -1519,7 +1658,7 @@
     <script id="__config" type="application/json">{"base": "/main", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "/main/assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="/main/assets/javascripts/bundle.2a6f1dda.min.js"></script>
+      <script src="/main/assets/javascripts/bundle.ce72ebac.min.js"></script>
       
     
   </body>
