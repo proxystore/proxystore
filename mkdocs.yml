@@ -122,6 +122,7 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:
+      custom_templates: docs/_templates
       handlers:
         python:
           setup_commands:
