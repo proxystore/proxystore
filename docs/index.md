@@ -1,0 +1,1 @@
+--8<-- "docs/home/index.md"
