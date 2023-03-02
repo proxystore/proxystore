@@ -28,8 +28,6 @@ dependencies = [
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
     "lazy-object-proxy>=1.6.0",
-    "redis>=3.4",
-    "requests>=2.27.1",
     "typing-extensions>=4.3.0",
     "importlib-metadata; python_version<'3.8'",
 ]
@@ -72,7 +70,13 @@ endpoints = [
     "psutil",
     "python-daemon",
     "quart>=0.18.0",
+    "requests>=2.27.1",
     "websockets>=10.0",
+]
+redis = [
+    "redis>=3.4",
+]
+zmq = [
     "pyzmq",
 ]
 
