@@ -105,11 +105,11 @@ markdown_extensions:
 
 nav:
   - Home:
-      - home/index.md
-      - Installation: home/installation.md
-      - Get Started: home/get-started.md
-      - Examples: home/examples.md
-      - Known Issues: home/known-issues.md
+      - Overview: index.md
+      - Installation: installation.md
+      - Get Started: get-started.md
+      - Examples: examples.md
+      - Known Issues: known-issues.md
       - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
   - Concepts:
       - concepts/index.md

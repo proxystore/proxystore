@@ -1,1 +1,1 @@
---8<-- "docs/home/index.md"
+--8<-- "README.md"
