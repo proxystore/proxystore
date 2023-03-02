@@ -171,17 +171,17 @@ Related
 
 **Examples:**
 Examples of integrating ProxyStore into distributed applications built on
-[FuncX](https://funcx.org/) and [Parsl](https://parsl-project.org/) are
-[here](https://github.com/proxystore/proxystore/tree/main/examples).
+[FuncX](https://funcx.org/){target=_blank} and [Parsl](https://parsl-project.org/){target=_blank} are
+[here](https://github.com/proxystore/proxystore/tree/main/examples){target=_blank}.
 
 **Benchmarks:**
-ProxyStore benchmarks are maintained at https://github.com/proxystore/benchmarks.
+ProxyStore benchmarks are maintained at [github.com/proxystore/benchmarks](https://github.com/proxystore/benchmarks){target=_blank}.
 
 Known Issues
 ------------
 
 * [ProxyStore Endpoints](guides/endpoints.md) are not supported for
   Python 3.7 on ARM-based Macs because
-  [aiortc](https://aiortc.readthedocs.io) does not have the corresponding
+  [aiortc](https://aiortc.readthedocs.io){target=_blank} does not have the corresponding
   wheels. The base ProxyStore package can still be installed on this
   software/hardware configurations---just not with the `endpoints` extras.

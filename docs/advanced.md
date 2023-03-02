@@ -171,5 +171,5 @@ key = store.set(mymodel, serializer=serialize_torch_model)
 Rather than providing a custom serializer or deserializer to each method
 invocation, a default serializer and deserializer can be provided when
 initializing a new [`Store`][proxystore.store.base.Store].
-See Issue #146 for further discussion on where custom serializers can be
-helpful.
+See Issue [#146](https://github.com/proxystore/proxystore/issues/146){target=_blank}
+for further discussion on where custom serializers can be helpful.

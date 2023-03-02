@@ -22,8 +22,8 @@ $ . venv/bin/activate
 
 ## Continuous Integration
 
-ProxyStore uses [pre-commit](https://pre-commit.com/) and
-[Tox](https://tox.wiki/en/latest/index.html) for continuous integration
+ProxyStore uses [pre-commit](https://pre-commit.com/){target=_blank} and
+[Tox](https://tox.wiki/en/latest/index.html){target=_blank} for continuous integration
 (test, linting, etc.).
 
 ### Linting and Type Checking (pre-commit)
@@ -67,7 +67,7 @@ instead by passing `--use-uvloop` to pytest.
 The test suite mocks certain third-party programs that cannot be installed via
 pip (e.g., Margo, UCX, Redis). For Margo and UCX, a Docker image is provided
 at
-[proxystore/images](https://github.com/proxystore/images)
+[proxystore/images](https://github.com/proxystore/images){target=_blank}
 with the software pre-built and Python installed. The tox environments
 `py{version}-dim` can be run in the container to validate changes against
 the un-mocked software.
@@ -101,7 +101,7 @@ generated docstrings to make sure details/links/etc. are correct.
 ## Style Guide
 
 The Python code and docstring format mostly follows Google's
-[Python Style Guide](https://google.github.io/styleguide/pyguide.html),
+[Python Style Guide](https://google.github.io/styleguide/pyguide.html){target=_blank},
 but the pre-commit config is the authoritative source for code format
 compliance.
 
@@ -138,7 +138,7 @@ made via pull requests (including code owners!).
 2. Create local changes.
     - Changes should conform to the style and testing guidelines, referenced
       above.
-    - Preferred commit message format ([source](https://cbea.ms/git-commit/)):
+    - Preferred commit message format ([source](https://cbea.ms/git-commit/){target=_blank}):
         * separate subject from body with a blank line,
         * limit subject line to 50 characters,
         * capitalize first word of subject line,
@@ -163,7 +163,7 @@ made via pull requests (including code owners!).
 
 1. Choose the next version number, referred to as `{VERSION}` for the
    rest of the instructions. ProxyStore versioning follows semver
-   (`major.minor.patch`) with optional [PEP-440](https://peps.python.org/pep-0440)
+   (`major.minor.patch`) with optional [PEP-440](https://peps.python.org/pep-0440){target=_blank}
    pre-release/post-release/dev-release segments. Major/minor/patch numbers
    start at 0 and pre-release/post-release/dev-release segments start at 1.
 2. Update the version in `pyproject.toml` to `{VERSION}`.
