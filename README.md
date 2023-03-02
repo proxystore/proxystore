@@ -19,7 +19,7 @@ ProxyStore's goals are to:
   at runtime to optimal choices for the given data without the consumers
   being aware of the change.
 
-Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/concepts/).
+Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/main/concepts/).
 
 ## Installation
 
@@ -27,8 +27,8 @@ Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/concept
 $ pip install proxystore
 ```
 
-See the [Installation](https://docs.proxystore.dev/home/installation) guide for more information about the available extra install options.
-For local development, see the [Contributing](https://docs.proxystore.dev/contributing) guide.
+See the [Installation](https://docs.proxystore.dev/main/installation) guide for more information about the available extra install options.
+For local development, see the [Contributing](https://docs.proxystore.dev/main/contributing) guide.
 
 Additional features are available in the [`proxystore-extensions`](https://github.com/proxystore/extensions) package.
 

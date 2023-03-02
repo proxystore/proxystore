@@ -1,4 +1,4 @@
-* [ProxyStore Endpoints](../guides/endpoints.md) are not supported for
+* [ProxyStore Endpoints](guides/endpoints.md) are not supported for
   Python 3.7 on ARM-based Macs because
   [aiortc](https://aiortc.readthedocs.io){target=_blank} does not have the corresponding
   wheels. The base ProxyStore package can still be installed on this

@@ -1,7 +1,7 @@
 # Get Started
 
 <figure markdown>
-  ![ProxyStore Overview](../static/overview.png){ width="100%" }
+  ![ProxyStore Overview](static/overview.png){ width="100%" }
   <figcaption width=100%>
   ProxyStore allows developers to communicate objects via *proxies*. Proxies
   act as lightweight references that resolve to a *target* object upon use.
@@ -147,4 +147,4 @@ The ProxyStore model can improve application performance in many ways:
    patterns.
 4. Proxies have built-in caching for frequently used objects.
 
-See the [Concepts](../concepts/index.md) to learn more!
+See the [Concepts](concepts/index.md) to learn more!
