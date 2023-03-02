@@ -108,7 +108,7 @@ The primary interface to endpoints is the
 !!! note
     This section assumes familiarity with proxies and the
     [`Store`][proxystore.store.base.Store] interface. See the
-    [Get Started](../getstarted.md) guide before getting started with endpoints.
+    [Get Started](../get-started.md) guide before getting started with endpoints.
 
 ```python
 from proxystore.connectors.endpoint import EndpointConnector

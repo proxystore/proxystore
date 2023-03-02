@@ -6,8 +6,6 @@ site_description: Documentation for ProxyStore.
 repo_name: proxystore/proxystore
 repo_url: https://github.com/proxystore/proxystore
 
-edit_uri: blob/main/docs/
-
 copyright: Copyright &copy; 2021—Present by <a target="_blank" href="https://gregpauloski.com">Greg Pauloski</a> and <a target="_blank" href="https://labs.globus.org">Globus Labs</a>
 
 
@@ -105,7 +103,7 @@ markdown_extensions:
 nav:
   - Home:
       - Overview: index.md
-      - Get Started: getstarted.md
+      - Get Started: get-started.md
       - Advanced: advanced.md
       - Contributing: contributing.md
   - Guides:
