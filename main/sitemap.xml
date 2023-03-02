@@ -6,6 +6,26 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/examples/</loc>
+         <lastmod>2023-03-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/get-started/</loc>
+         <lastmod>2023-03-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/installation/</loc>
+         <lastmod>2023-03-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/known-issues/</loc>
+         <lastmod>2023-03-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/api/</loc>
          <lastmod>2023-03-02</lastmod>
          <changefreq>daily</changefreq>
@@ -322,31 +342,6 @@
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/performance/</loc>
-         <lastmod>2023-03-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/home/</loc>
-         <lastmod>2023-03-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/home/examples/</loc>
-         <lastmod>2023-03-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/home/get-started/</loc>
-         <lastmod>2023-03-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/home/installation/</loc>
-         <lastmod>2023-03-02</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/home/known-issues/</loc>
          <lastmod>2023-03-02</lastmod>
          <changefreq>daily</changefreq>
     </url>

@@ -12,7 +12,7 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://proxystore.dev/main/home/get-started/">
+        <link rel="canonical" href="https://proxystore.dev/main/get-started/">
       
       
         <link rel="prev" href="../installation/">
@@ -20,7 +20,7 @@
       
         <link rel="next" href="../examples/">
       
-      <link rel="icon" href="../../assets/images/favicon.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.0">
     
     
@@ -29,10 +29,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.402914a4.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.402914a4.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.a0c5b2b5.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.a0c5b2b5.min.css">
       
       
 
@@ -48,11 +48,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/mkdocstrings.css">
+      <link rel="stylesheet" href="../css/mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -99,7 +99,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href=".." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -228,11 +228,15 @@
   
 
 
-  <li class="md-tabs__item">
-    <a href="../" class="md-tabs__link md-tabs__link--active">
-      Home
-    </a>
-  </li>
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link md-tabs__link--active">
+        Home
+      </a>
+    </li>
+  
 
       
         
@@ -241,7 +245,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../concepts/" class="md-tabs__link">
+    <a href="../concepts/" class="md-tabs__link">
       Concepts
     </a>
   </li>
@@ -253,7 +257,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../guides/" class="md-tabs__link">
+    <a href="../guides/" class="md-tabs__link">
       Guides
     </a>
   </li>
@@ -268,7 +272,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../api/" class="md-tabs__link">
+      <a href="../api/" class="md-tabs__link">
         API Reference
       </a>
     </li>
@@ -281,7 +285,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../contributing/" class="md-tabs__link">
+    <a href="../contributing/" class="md-tabs__link">
       Contributing
     </a>
   </li>
@@ -308,7 +312,7 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href=".." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -350,16 +354,10 @@
       
       
       
-        
-        
-        <div class="md-nav__link md-nav__link--index ">
-          <a href="../">Home</a>
-          
-            <label for="__nav_1">
-              <span class="md-nav__icon md-icon"></span>
-            </label>
-          
-        </div>
+        <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          Home
+          <span class="md-nav__icon md-icon"></span>
+        </label>
       
       <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_1">
@@ -367,6 +365,20 @@
           Home
         </label>
         <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
           
             
               
@@ -512,7 +524,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../concepts/">Concepts</a>
+          <a href="../concepts/">Concepts</a>
           
             <label for="__nav_2">
               <span class="md-nav__icon md-icon"></span>
@@ -533,7 +545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/proxy/" class="md-nav__link">
+      <a href="../concepts/proxy/" class="md-nav__link">
         Proxy
       </a>
     </li>
@@ -547,7 +559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/connector/" class="md-nav__link">
+      <a href="../concepts/connector/" class="md-nav__link">
         Connector
       </a>
     </li>
@@ -561,7 +573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/store/" class="md-nav__link">
+      <a href="../concepts/store/" class="md-nav__link">
         Store
       </a>
     </li>
@@ -595,7 +607,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../guides/">Guides</a>
+          <a href="../guides/">Guides</a>
           
             <label for="__nav_3">
               <span class="md-nav__icon md-icon"></span>
@@ -616,7 +628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/endpoints/" class="md-nav__link">
+      <a href="../guides/endpoints/" class="md-nav__link">
         Endpoints
       </a>
     </li>
@@ -630,7 +642,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/performance/" class="md-nav__link">
+      <a href="../guides/performance/" class="md-nav__link">
         Performance
       </a>
     </li>
@@ -693,7 +705,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/">proxystore</a>
+          <a href="../api/">proxystore</a>
           
             <label for="__nav_4_1">
               <span class="md-nav__icon md-icon"></span>
@@ -726,7 +738,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/connectors/">proxystore.connectors</a>
+          <a href="../api/connectors/">proxystore.connectors</a>
           
             <label for="__nav_4_1_1">
               <span class="md-nav__icon md-icon"></span>
@@ -747,7 +759,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/connector/" class="md-nav__link">
+      <a href="../api/connectors/connector/" class="md-nav__link">
         proxystore.connectors.connector
       </a>
     </li>
@@ -773,7 +785,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/connectors/dim/">proxystore.connectors.dim</a>
+          <a href="../api/connectors/dim/">proxystore.connectors.dim</a>
           
             <label for="__nav_4_1_1_2">
               <span class="md-nav__icon md-icon"></span>
@@ -794,7 +806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/dim/margo/" class="md-nav__link">
+      <a href="../api/connectors/dim/margo/" class="md-nav__link">
         proxystore.connectors.dim.margo
       </a>
     </li>
@@ -808,7 +820,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/dim/ucx/" class="md-nav__link">
+      <a href="../api/connectors/dim/ucx/" class="md-nav__link">
         proxystore.connectors.dim.ucx
       </a>
     </li>
@@ -822,7 +834,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/dim/utils/" class="md-nav__link">
+      <a href="../api/connectors/dim/utils/" class="md-nav__link">
         proxystore.connectors.dim.utils
       </a>
     </li>
@@ -836,7 +848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/dim/zmq/" class="md-nav__link">
+      <a href="../api/connectors/dim/zmq/" class="md-nav__link">
         proxystore.connectors.dim.zmq
       </a>
     </li>
@@ -857,7 +869,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/endpoint/" class="md-nav__link">
+      <a href="../api/connectors/endpoint/" class="md-nav__link">
         proxystore.connectors.endpoint
       </a>
     </li>
@@ -871,7 +883,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/file/" class="md-nav__link">
+      <a href="../api/connectors/file/" class="md-nav__link">
         proxystore.connectors.file
       </a>
     </li>
@@ -885,7 +897,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/globus/" class="md-nav__link">
+      <a href="../api/connectors/globus/" class="md-nav__link">
         proxystore.connectors.globus
       </a>
     </li>
@@ -899,7 +911,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/local/" class="md-nav__link">
+      <a href="../api/connectors/local/" class="md-nav__link">
         proxystore.connectors.local
       </a>
     </li>
@@ -913,7 +925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/multi/" class="md-nav__link">
+      <a href="../api/connectors/multi/" class="md-nav__link">
         proxystore.connectors.multi
       </a>
     </li>
@@ -927,7 +939,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/redis/" class="md-nav__link">
+      <a href="../api/connectors/redis/" class="md-nav__link">
         proxystore.connectors.redis
       </a>
     </li>
@@ -960,7 +972,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/endpoint/">proxystore.endpoint</a>
+          <a href="../api/endpoint/">proxystore.endpoint</a>
           
             <label for="__nav_4_1_2">
               <span class="md-nav__icon md-icon"></span>
@@ -981,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/cli/" class="md-nav__link">
+      <a href="../api/endpoint/cli/" class="md-nav__link">
         proxystore.endpoint.cli
       </a>
     </li>
@@ -995,7 +1007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/commands/" class="md-nav__link">
+      <a href="../api/endpoint/commands/" class="md-nav__link">
         proxystore.endpoint.commands
       </a>
     </li>
@@ -1009,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/config/" class="md-nav__link">
+      <a href="../api/endpoint/config/" class="md-nav__link">
         proxystore.endpoint.config
       </a>
     </li>
@@ -1023,7 +1035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/constants/" class="md-nav__link">
+      <a href="../api/endpoint/constants/" class="md-nav__link">
         proxystore.endpoint.constants
       </a>
     </li>
@@ -1037,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/endpoint/" class="md-nav__link">
+      <a href="../api/endpoint/endpoint/" class="md-nav__link">
         proxystore.endpoint.endpoint
       </a>
     </li>
@@ -1051,7 +1063,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/exceptions/" class="md-nav__link">
+      <a href="../api/endpoint/exceptions/" class="md-nav__link">
         proxystore.endpoint.exceptions
       </a>
     </li>
@@ -1065,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/messages/" class="md-nav__link">
+      <a href="../api/endpoint/messages/" class="md-nav__link">
         proxystore.endpoint.messages
       </a>
     </li>
@@ -1079,7 +1091,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/serve/" class="md-nav__link">
+      <a href="../api/endpoint/serve/" class="md-nav__link">
         proxystore.endpoint.serve
       </a>
     </li>
@@ -1093,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/storage/" class="md-nav__link">
+      <a href="../api/endpoint/storage/" class="md-nav__link">
         proxystore.endpoint.storage
       </a>
     </li>
@@ -1114,7 +1126,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/factory/" class="md-nav__link">
+      <a href="../api/factory/" class="md-nav__link">
         proxystore.factory
       </a>
     </li>
@@ -1128,7 +1140,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/globus/" class="md-nav__link">
+      <a href="../api/globus/" class="md-nav__link">
         proxystore.globus
       </a>
     </li>
@@ -1154,7 +1166,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/p2p/">proxystore.p2p</a>
+          <a href="../api/p2p/">proxystore.p2p</a>
           
             <label for="__nav_4_1_5">
               <span class="md-nav__icon md-icon"></span>
@@ -1175,7 +1187,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/chunks/" class="md-nav__link">
+      <a href="../api/p2p/chunks/" class="md-nav__link">
         proxystore.p2p.chunks
       </a>
     </li>
@@ -1189,7 +1201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/client/" class="md-nav__link">
+      <a href="../api/p2p/client/" class="md-nav__link">
         proxystore.p2p.client
       </a>
     </li>
@@ -1203,7 +1215,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/connection/" class="md-nav__link">
+      <a href="../api/p2p/connection/" class="md-nav__link">
         proxystore.p2p.connection
       </a>
     </li>
@@ -1217,7 +1229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/counter/" class="md-nav__link">
+      <a href="../api/p2p/counter/" class="md-nav__link">
         proxystore.p2p.counter
       </a>
     </li>
@@ -1231,7 +1243,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/exceptions/" class="md-nav__link">
+      <a href="../api/p2p/exceptions/" class="md-nav__link">
         proxystore.p2p.exceptions
       </a>
     </li>
@@ -1245,7 +1257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/manager/" class="md-nav__link">
+      <a href="../api/p2p/manager/" class="md-nav__link">
         proxystore.p2p.manager
       </a>
     </li>
@@ -1259,7 +1271,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/messages/" class="md-nav__link">
+      <a href="../api/p2p/messages/" class="md-nav__link">
         proxystore.p2p.messages
       </a>
     </li>
@@ -1273,7 +1285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/server/" class="md-nav__link">
+      <a href="../api/p2p/server/" class="md-nav__link">
         proxystore.p2p.server
       </a>
     </li>
@@ -1287,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/task/" class="md-nav__link">
+      <a href="../api/p2p/task/" class="md-nav__link">
         proxystore.p2p.task
       </a>
     </li>
@@ -1308,7 +1320,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/proxy/" class="md-nav__link">
+      <a href="../api/proxy/" class="md-nav__link">
         proxystore.proxy
       </a>
     </li>
@@ -1322,7 +1334,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/serialize/" class="md-nav__link">
+      <a href="../api/serialize/" class="md-nav__link">
         proxystore.serialize
       </a>
     </li>
@@ -1348,7 +1360,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../api/store/">proxystore.store</a>
+          <a href="../api/store/">proxystore.store</a>
           
             <label for="__nav_4_1_8">
               <span class="md-nav__icon md-icon"></span>
@@ -1369,7 +1381,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/base/" class="md-nav__link">
+      <a href="../api/store/base/" class="md-nav__link">
         proxystore.store.base
       </a>
     </li>
@@ -1383,7 +1395,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/cache/" class="md-nav__link">
+      <a href="../api/store/cache/" class="md-nav__link">
         proxystore.store.cache
       </a>
     </li>
@@ -1397,7 +1409,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/endpoint/" class="md-nav__link">
+      <a href="../api/store/endpoint/" class="md-nav__link">
         proxystore.store.endpoint
       </a>
     </li>
@@ -1411,7 +1423,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/exceptions/" class="md-nav__link">
+      <a href="../api/store/exceptions/" class="md-nav__link">
         proxystore.store.exceptions
       </a>
     </li>
@@ -1425,7 +1437,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/file/" class="md-nav__link">
+      <a href="../api/store/file/" class="md-nav__link">
         proxystore.store.file
       </a>
     </li>
@@ -1439,7 +1451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/globus/" class="md-nav__link">
+      <a href="../api/store/globus/" class="md-nav__link">
         proxystore.store.globus
       </a>
     </li>
@@ -1453,7 +1465,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/local/" class="md-nav__link">
+      <a href="../api/store/local/" class="md-nav__link">
         proxystore.store.local
       </a>
     </li>
@@ -1467,7 +1479,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/multi/" class="md-nav__link">
+      <a href="../api/store/multi/" class="md-nav__link">
         proxystore.store.multi
       </a>
     </li>
@@ -1481,7 +1493,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/redis/" class="md-nav__link">
+      <a href="../api/store/redis/" class="md-nav__link">
         proxystore.store.redis
       </a>
     </li>
@@ -1495,7 +1507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/stats/" class="md-nav__link">
+      <a href="../api/store/stats/" class="md-nav__link">
         proxystore.store.stats
       </a>
     </li>
@@ -1509,7 +1521,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/utils/" class="md-nav__link">
+      <a href="../api/store/utils/" class="md-nav__link">
         proxystore.store.utils
       </a>
     </li>
@@ -1530,7 +1542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/" class="md-nav__link">
+      <a href="../api/utils/" class="md-nav__link">
         proxystore.utils
       </a>
     </li>
@@ -1544,7 +1556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/warnings/" class="md-nav__link">
+      <a href="../api/warnings/" class="md-nav__link">
         proxystore.warnings
       </a>
     </li>
@@ -1585,7 +1597,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../contributing/">Contributing</a>
+          <a href="../contributing/">Contributing</a>
           
             <label for="__nav_5">
               <span class="md-nav__icon md-icon"></span>
@@ -1606,7 +1618,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/style-guide/" class="md-nav__link">
+      <a href="../contributing/style-guide/" class="md-nav__link">
         Style Guide
       </a>
     </li>
@@ -1620,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/issues-pull-requests/" class="md-nav__link">
+      <a href="../contributing/issues-pull-requests/" class="md-nav__link">
         Issues and Pull Requests
       </a>
     </li>
@@ -1634,7 +1646,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/releases/" class="md-nav__link">
+      <a href="../contributing/releases/" class="md-nav__link">
         Releases
       </a>
     </li>
@@ -1708,7 +1720,7 @@
 
 <h1 id="get-started">Get Started<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h1>
 <figure>
-<p><img alt="ProxyStore Overview" src="../../static/overview.png" width="100%" />
+<p><img alt="ProxyStore Overview" src="../static/overview.png" width="100%" />
   </p>
 <figcaption width="100%">
   ProxyStore allows developers to communicate objects via *proxies*. Proxies
@@ -1742,25 +1754,25 @@ is first used.
 Thus, proxies can be used anywhere in-place of the true object and will
 resolve themselves without the program being aware.</p>
 <p>ProxyStore provides the proxy interface to a number of commonly used object
-stores as well as the <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> and
-<a class="autorefs autorefs-internal" href="../../api/factory/#proxystore.factory.Factory"><code>Factory</code></a> building blocks to allow developers
+stores as well as the <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> and
+<a class="autorefs autorefs-internal" href="../api/factory/#proxystore.factory.Factory"><code>Factory</code></a> building blocks to allow developers
 to create powerful just-in-time resolution functionality for Python objects.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>ProxyStore is intended to be used via the
-<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface which provide the
-<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> method for placing objects
+<a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface which provide the
+<a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> method for placing objects
 in stores and creating proxies that will resolve to the associated object in
 the store.</p>
-<p>A <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with a
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> which serves as the
+<p>A <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with a
+<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> which serves as the
 low-level interface to an byte-level object store.
 ProxyStore provides many
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> implementations and
+<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> implementations and
 third-party code can provide custom implementations provided they meet the
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol
+<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol
 specification.</p>
 <p>The following example uses the
-<a class="autorefs autorefs-internal" href="../../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a> to interface
+<a class="autorefs autorefs-internal" href="../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a> to interface
 with an already running Redis server using proxies.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.redis</span> <span class="kn">import</span> <span class="n">RedisConnector</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">get_store</span>
@@ -1787,7 +1799,7 @@ with an already running Redis server using proxies.</p>
 arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.</p>
-<p>Using the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> store interface allows
+<p>Using the <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> store interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.</p>
@@ -1833,7 +1845,7 @@ required.</p>
    patterns.</li>
 <li>Proxies have built-in caching for frequently used objects.</li>
 </ol>
-<p>See the <a href="../../concepts/">Concepts</a> to learn more!</p>
+<p>See the <a href="../concepts/">Concepts</a> to learn more!</p>
 
 
 
@@ -1880,10 +1892,10 @@ required.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.ce72ebac.min.js"></script>
+      <script src="../assets/javascripts/bundle.ce72ebac.min.js"></script>
       
     
   </body>
