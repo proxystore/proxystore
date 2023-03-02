@@ -19,8 +19,9 @@ ProxyStore provides many features with extra dependencies that can be installed 
 
 | Install | Purpose |
 | :------ | :------ |
+| `#!bash pip install proxystore[dev]` | Development dependencies |
+| `#!bash pip install proxystore[docs]` | Documentation dependencies |
 | `#!bash pip install proxystore[endpoints]` | Use [ProxyStore Endpoints](guides/endpoints.md) |
-| `#!bash pip install proxystore[globus]` | Use the [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector] |
 | `#!bash pip install proxystore[redis]` | Use the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
 | `#!bash pip install proxystore[zmq]` | Use the [`ZeroMQConnector`][proxystore.connectors.dim.zmq.ZeroMQConnector] |
 
