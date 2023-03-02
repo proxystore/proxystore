@@ -126,6 +126,7 @@ plugins:
       nav_file: SUMMARY.md
   - mkdocstrings:
       custom_templates: docs/_templates
+      enable_inventory: true
       handlers:
         python:
           setup_commands:
