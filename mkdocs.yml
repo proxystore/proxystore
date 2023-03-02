@@ -140,6 +140,7 @@ plugins:
             separate_signature: yes
             # Mutually exclusive with separate_signature
             # show_root_members_full_path: yes
+            # Causes black error with show_root_full_path
             # show_object_full_path: yes
             show_root_full_path: yes
             show_signature_annotations: yes
