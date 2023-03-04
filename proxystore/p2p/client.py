@@ -43,7 +43,8 @@ async def connect(
         name: Readable name of the client to use when registering with the
             signaling server. By default the hostname will be used.
         timeout: Time to wait in seconds on server connections.
-        ssl: When None, the correct value to pass to :code:`websockets.connect`
+        ssl: When None, the correct value to pass to
+            [`websockets.connect()`][websockets.client.connect]
             is inferred from `address`. If `address` starts with "wss://" the
             value is True, otherwise is False. Optionally provide a custom
             SSLContext (useful if the server uses self-signed certificates).
@@ -54,7 +55,7 @@ async def connect(
         the signaling server.
 
     Raises:
-        EndpointRegistrationError: If the connection to the signaling server
+        PeerRegistrationError: If the connection to the signaling server
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with "ws://" or "wss://".

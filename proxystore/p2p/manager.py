@@ -26,6 +26,7 @@ from proxystore.p2p.client import connect
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
+from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
 from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
