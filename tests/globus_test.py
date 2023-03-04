@@ -7,17 +7,18 @@ import os
 import pathlib
 from unittest import mock
 
+import click
 import globus_sdk
 import pytest
 
 from proxystore.globus import _get_proxystore_scopes
 from proxystore.globus import _TOKENS_FILE
 from proxystore.globus import authenticate
+from proxystore.globus import cli
 from proxystore.globus import get_authorizer
 from proxystore.globus import get_proxystore_authorizer
 from proxystore.globus import GlobusAuthFileError
 from proxystore.globus import load_tokens_from_file
-from proxystore.globus import main
 from proxystore.globus import proxystore_authenticate
 from proxystore.globus import save_tokens_to_file
 
@@ -61,13 +62,13 @@ def test_get_authorizer(tmp_path: pathlib.Path) -> None:
     with mock.patch('globus_sdk.NativeAppAuthClient'), mock.patch(
         'globus_sdk.RefreshTokenAuthorizer',
     ):
-        get_authorizer('client id', filepath, 'redirect uri')
+        get_authorizer('client id', filepath)
 
 
 def test_get_authorizer_missing_file(tmp_path: pathlib.Path) -> None:
     filepath = os.path.join(tmp_path, 'missing_file')
     with pytest.raises(GlobusAuthFileError):
-        get_authorizer('client id', filepath, 'redirect uri')
+        get_authorizer('client id', filepath)
 
 
 @pytest.mark.parametrize(
@@ -121,7 +122,9 @@ def test_proxystore_authenticate(tmp_path: pathlib.Path) -> None:
         tokens.by_resource_server = data  # type: ignore
 
     with mock.patch('proxystore.globus.authenticate', return_value=tokens):
-        proxystore_authenticate(str(tmp_path))
+        path = proxystore_authenticate(str(tmp_path))
+        assert isinstance(path, str)
+        assert len(path) > 0
 
     assert load_tokens_from_file(os.path.join(tmp_path, _TOKENS_FILE)) == data
 
@@ -129,26 +132,35 @@ def test_proxystore_authenticate(tmp_path: pathlib.Path) -> None:
         get_proxystore_authorizer(str(tmp_path))
 
 
-def test_main(tmp_path: pathlib.Path) -> None:
-    with mock.patch('proxystore.globus.proxystore_authenticate'), mock.patch(
+def test_cli(tmp_path: pathlib.Path) -> None:
+    with mock.patch(
+        'proxystore.globus.proxystore_authenticate',
+        return_value='/path/to/file',
+    ), mock.patch(
         'proxystore.globus.get_proxystore_authorizer',
         side_effect=[GlobusAuthFileError(), None, None],
-    ), contextlib.redirect_stdout(None):
+    ):
+        runner = click.testing.CliRunner()
         # First will raise auth file missing error and trigger auth flow
-        assert main([]) == 0
-        # Second will find auth file and already exits and exists
-        assert main([]) != 0
+        result = runner.invoke(cli)
+        assert result.exit_code == 0
+        # Second will find auth file and already exists and exits
+        result = runner.invoke(cli)
+        assert result.exit_code == 0
 
 
-def test_main_delete(tmp_path: pathlib.Path) -> None:
+def test_cli_delete(tmp_path: pathlib.Path) -> None:
     with mock.patch(
         'proxystore.globus.home_dir',
         return_value=str(tmp_path),
-    ), contextlib.redirect_stdout(None):
-        assert main(['--delete']) != 0
+    ):
+        runner = click.testing.CliRunner()
+        result = runner.invoke(cli, ['--delete'])
+        assert result.exit_code != 0
 
         token_file = tmp_path / _TOKENS_FILE
         token_file.touch()
 
-        assert main(['--delete']) == 0
+        result = runner.invoke(cli, ['--delete'])
+        assert result.exit_code == 0
         assert not token_file.exists()

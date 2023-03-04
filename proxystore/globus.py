@@ -19,14 +19,13 @@ and the [Globus examples](https://github.com/globus/native-app-examples/blob/064
 """  # noqa: E501
 from __future__ import annotations
 
-import argparse
 import functools
 import json
 import os
 from typing import Any
 from typing import Iterable
-from typing import Sequence
 
+import click
 import globus_sdk
 
 from proxystore.utils import home_dir
@@ -48,28 +47,51 @@ class GlobusAuthFileError(Exception):
 
 
 def load_tokens_from_file(filepath: str) -> dict[str, dict[str, Any]]:
-    """Load a set of saved tokens."""
-    with open(filepath) as f:
-        tokens = json.load(f)
+    """Load a set of saved tokens.
 
-    return tokens
+    Args:
+        filepath: Filepath containing JSON tokens to load.
+
+    Returns:
+        JSON data from tokens file.
+    """
+    with open(filepath) as f:
+        return json.load(f)
 
 
 def save_tokens_to_file(
     filepath: str,
     tokens: globus_sdk.OAuthTokenResponse,
 ) -> None:
-    """Save a set of tokens for later use."""
+    """Save a set of tokens for later use.
+
+    Args:
+        filepath: Filepath to write tokens to.
+        tokens: Tokens returned by the Globus API.
+    """
     with open(filepath, 'w') as f:
         json.dump(tokens.by_resource_server, f, indent=4)
 
 
 def authenticate(
     client_id: str,
-    redirect_uri: str,
+    redirect_uri: str | None = None,
     requested_scopes: Iterable[str] | None = None,
 ) -> globus_sdk.OAuthTokenResponse:
-    """Perform Native App auth flow."""
+    """Perform Native App auth flow.
+
+    This will print a link to `auth.globus.org` where the user will
+    continue the authentication process. Then the function will wait on
+    the user to input the authorization code.
+
+    Args:
+        client_id: Globus app ID.
+        redirect_uri: The page to direct users to after authentication.
+        requested_scopes: Iterable of scopes on the token being requested.
+
+    Returns:
+        Tokens returned by the Globus API.
+    """
     client = globus_sdk.NativeAppAuthClient(client_id=client_id)
     client.oauth2_start_flow(
         redirect_uri=redirect_uri,
@@ -87,9 +109,15 @@ def authenticate(
 def get_authorizer(
     client_id: str,
     tokens_file: str,
-    redirect_uri: str,
 ) -> globus_sdk.RefreshTokenAuthorizer:
     """Get an authorizer for the Globus SDK.
+
+    Args:
+        client_id: Globus app ID.
+        tokens_file: Filepath to saved Globus Auth tokens.
+
+    Returns:
+        Authorizer than can be used with other parts of the Globus SDK.
 
     Raises:
         GlobusAuthFileError: If `tokens_file` cannot be parsed.
@@ -137,8 +165,29 @@ def proxystore_authenticate(
     proxystore_dir: str | None = None,
     collections: list[str] | None = None,
     additional_scopes: list[str] | None = None,
-) -> None:
-    """Perform auth flow for ProxyStore native app."""
+) -> str:
+    """Perform auth flow for ProxyStore native app.
+
+    This is a wrapper around [`authenticate()`][proxystore.globus.authenticate]
+    which stores tokens in the ProxyStore home directory and requests the
+    appropriate scopes for ProxyStore.
+
+    Alert:
+        Globus Connect Server v5 uses consents rather than activations so
+        users need to consent to the Transfer service accessing the
+        specific mapped collection on behalf of the user. Read more
+        [here](https://docs.globus.org/globus-connect-server/migrating-to-v5.4/application-migration/#activation_is_replaced_by_consent){target=_blank}.
+
+    Args:
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+        collections: Globus Collection UUIDs to request transfer scopes for.
+        additional_scopes: Extra scopes to include in the authorization
+            request.
+
+    Returns:
+        Path to saved tokens file.
+    """
     proxystore_dir = home_dir() if proxystore_dir is None else proxystore_dir
     tokens_file = os.path.join(proxystore_dir, _TOKENS_FILE)
     os.makedirs(proxystore_dir, exist_ok=True)
@@ -151,79 +200,83 @@ def proxystore_authenticate(
         requested_scopes=scopes,
     )
     save_tokens_to_file(tokens_file, tokens)
+    return tokens_file
 
 
 def get_proxystore_authorizer(
     proxystore_dir: str | None = None,
 ) -> globus_sdk.RefreshTokenAuthorizer:
-    """Get an authorizer for the ProxyStore native app."""
+    """Get an authorizer for the ProxyStore native app.
+
+    [`proxystore_authenticate()`][proxystore.globus.proxystore_authenticate]
+    or the CLI `#!bash proxystore-globus-auth` should be performed prior to
+    calling this function to ensure tokens have been acquired.
+
+    Args:
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+
+    Returns:
+        Authorizer than can be used with other parts of the Globus SDK.
+    """
     proxystore_dir = home_dir() if proxystore_dir is None else proxystore_dir
     tokens_file = os.path.join(proxystore_dir, _TOKENS_FILE)
 
-    return get_authorizer(
-        client_id=_APPLICATION_ID,
-        tokens_file=tokens_file,
-        redirect_uri=_REDIRECT_URI,
-    )
+    return get_authorizer(client_id=_APPLICATION_ID, tokens_file=tokens_file)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Perform Globus authentication.
+@click.command()
+@click.option(
+    '--collection',
+    '-c',
+    metavar='UUID',
+    multiple=True,
+    help='Globus Collection UUID to request transfer scopes for.',
+)
+@click.option(
+    '--scope',
+    '-s',
+    metavar='SCOPE',
+    multiple=True,
+    help='Additional scope to request.',
+)
+@click.option(
+    '--delete',
+    is_flag=True,
+    default=False,
+    help='Delete existing tokens.',
+)
+def cli(collection: list[str], scope: list[str], delete: bool) -> None:
+    """Perform Globus authentication for the Transfer service.
 
-    This function is the entrypoint for the `proxystore-globus-auth` CLI tool.
+    Collections or scopes options can be strung together. E.g.,
+    request transfer scope for multiple collections with:
+
+    $ proxystore-globus-auth -c UUID -c UUID -c UUID
     """
-    parser = argparse.ArgumentParser(
-        'ProxyStore Globus Auth Tool',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        '--collections',
-        nargs='+',
-        help='Collection UUIDs to request scopes for.',
-    )
-    parser.add_argument(
-        '--scopes',
-        nargs='+',
-        help='Additional scopes to request.',
-    )
-    parser.add_argument(
-        '--delete',
-        action='store_true',
-        help='Delete existing authentication tokens.',
-    )
-    args = parser.parse_args(argv)
-
-    if args.delete:
+    if delete:
         tokens_file = os.path.join(home_dir(), _TOKENS_FILE)
+        fp = click.format_filename(tokens_file)
         if os.path.exists(tokens_file):
             os.remove(tokens_file)
-            print('Deleted tokens file.')
-            return 0
+            click.echo(f'Deleted tokens file: {fp}')
+            return
         else:
-            print('No tokens file found.')
-            return 1
+            click.echo(f'Tokens file does not exist: {fp}')
+            raise SystemExit(1)
 
     try:
         get_proxystore_authorizer()
     except GlobusAuthFileError:
-        print(
-            'Performing authentication for the ProxyStore Globus Native app.',
-        )
-        proxystore_authenticate(
-            collections=args.collections,
-            additional_scopes=args.scopes,
+        tokens_file = proxystore_authenticate(
+            collections=collection,
+            additional_scopes=scope,
         )
         get_proxystore_authorizer()
-        print('Globus authorization complete.')
-        return 0
+        click.echo(f'Tokens saved to: {click.format_filename(tokens_file)}')
     else:
-        print(
-            'Globus authorization is already completed. To re-authenticate, '
-            'delete your tokens (proxystore-globus-auth --delete) and try '
-            'again.',
+        click.echo(
+            'Globus authorization is already completed.\n\n'
+            'To re-authenticate, delete your tokens and try again.\n'
+            '  $ proxystore-globus-auth --delete',
         )
-        return 1
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())

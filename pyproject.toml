@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
+    "click",
     "cloudpickle>=1.6.0",
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
@@ -83,7 +84,7 @@ zmq = [
 [project.scripts]
 signaling-server = "proxystore.p2p.server:main"
 proxystore-endpoint = "proxystore.endpoint.cli:main"
-proxystore-globus-auth = "proxystore.globus:main"
+proxystore-globus-auth = "proxystore.globus:cli"
 
 [tool.black]
 line-length = 79
