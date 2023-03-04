@@ -1844,12 +1844,8 @@ ProxyStore provides many features with extra dependencies that can be installed 
 </thead>
 <tbody>
 <tr>
-<td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>dev<span class="o">]</span></code></td>
-<td align="left">Development dependencies</td>
-</tr>
-<tr>
-<td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>docs<span class="o">]</span></code></td>
-<td align="left">Documentation dependencies</td>
+<td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span></code></td>
+<td align="left">Install all extras except <code>dev</code> and <code>docs</code></td>
 </tr>
 <tr>
 <td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>endpoints<span class="o">]</span></code></td>
@@ -1863,10 +1859,21 @@ ProxyStore provides many features with extra dependencies that can be installed 
 <td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>zmq<span class="o">]</span></code></td>
 <td align="left">Use the <a class="autorefs autorefs-internal" href="../api/connectors/dim/zmq/#proxystore.connectors.dim.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a></td>
 </tr>
+<tr>
+<td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>dev<span class="o">]</span></code></td>
+<td align="left">Development dependencies</td>
+</tr>
+<tr>
+<td align="left"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>docs<span class="o">]</span></code></td>
+<td align="left">Documentation dependencies</td>
+</tr>
 </tbody>
 </table>
 <p>Multiple extras options can be install at the same time.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>endpoints,globus,redis<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>endpoints,redis<span class="o">]</span>
+</span></code></pre></div>
+<p>Or everything can be installed at once (this does not install the development packages).</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span>
 </span></code></pre></div>
 <h3 id="distributed-in-memory-connectors">Distributed In-Memory Connectors<a class="headerlink" href="#distributed-in-memory-connectors" title="Permanent link">&para;</a></h3>
 <p>The <a class="autorefs autorefs-internal" href="../api/connectors/dim/margo/#proxystore.connectors.dim.margo.MargoConnector"><code>MargoConnector</code></a> and
@@ -1889,7 +1896,7 @@ manual installation steps to be completed before they can be used.</p>
 (<a href="https://github.com/proxystore/extensions" target="_blank">Repository</a> and
 <a href="https://extensions.proxystore.dev" target="_blank">Docs</a>).
 Features in the extensions package tend to be more experimental or have heavier dependencies.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore-extensions
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore-extensions
 </span></code></pre></div></p>
 
 
