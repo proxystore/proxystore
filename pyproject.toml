@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
+    "click",
     "cloudpickle>=1.6.0",
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
@@ -56,7 +57,10 @@ dev = [
     "virtualenv",
 ]
 docs = [
+    # Needed for generating CLI docs
+    "proxystore[endpoints]",
     "black",
+    "mkdocs-click",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-material",
@@ -81,9 +85,9 @@ zmq = [
 ]
 
 [project.scripts]
-signaling-server = "proxystore.p2p.server:main"
-proxystore-endpoint = "proxystore.endpoint.cli:main"
-proxystore-globus-auth = "proxystore.globus:main"
+signaling-server = "proxystore.p2p.server:cli"
+proxystore-endpoint = "proxystore.endpoint.cli:cli"
+proxystore-globus-auth = "proxystore.globus:cli"
 
 [tool.black]
 line-length = 79
