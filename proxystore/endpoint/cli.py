@@ -91,10 +91,10 @@ def version() -> None:
     help='Port to listen on.',
 )
 @click.option(
-    '--server',
+    '--relay-server',
     default=None,
     metavar='ADDR',
-    help='Optional signaling server address.',
+    help='Optional relay server address.',
 )
 @click.option(
     '--max-memory',
@@ -119,7 +119,7 @@ def version() -> None:
 def configure(
     name: str,
     port: int,
-    server: str,
+    relay_server: str,
     max_memory: int | None,
     dump_dir: str | None,
     peer_channels: int,
@@ -129,7 +129,7 @@ def configure(
         configure_endpoint(
             name,
             port=port,
-            server=server,
+            relay_server=relay_server,
             max_memory=max_memory,
             dump_dir=dump_dir,
             peer_channels=peer_channels,

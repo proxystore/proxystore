@@ -49,7 +49,7 @@ class PeerConnection:
     [aiortc](https://aiortc.readthedocs.io/en/latest/){target=_blank} and
     sending/receiving messages between the two peers. The peer-to-peer
     connection is established using a central and publicly accessible
-    signaling server.
+    relay server.
 
     Warning:
         Applications should prefer using the
@@ -60,12 +60,12 @@ class PeerConnection:
         ```python
         from proxystore.p2p.connection import PeerConnection
         from proxystore.p2p.messages import decode
-        from proxystore.p2p.server import connect
+        from proxystore.p2p.client import connect
 
-        uuid1, name1, websocket1 = await connect(signaling_server_address)
+        uuid1, name1, websocket1 = await connect(relay_server_address)
         connection1 = PeerConnection(uuid1, name1, websocket1)
 
-        uuid2, name2, websocket2 = await connect(signaling_server_address)
+        uuid2, name2, websocket2 = await connect(relay_server_address)
         connection2 = PeerConnection(uuid2, name2, websocket2)
 
         await connection1.send_offer(uuid2)
@@ -91,7 +91,7 @@ class PeerConnection:
     Args:
         uuid: UUID of this client.
         name: Readable name of this client for logging.
-        websocket: Websocket connection to the signaling server.
+        websocket: Websocket connection to the relay server.
         channels: Number of datachannels to open with peer.
     """
 
@@ -198,7 +198,7 @@ class PeerConnection:
         return await self._incoming_queue.get()
 
     async def send_offer(self, peer_uuid: UUID) -> None:
-        """Send offer for peering via signaling server.
+        """Send offer for peering via relay server.
 
         Args:
             peer_uuid: UUID of peer client to establish connection with.
@@ -226,7 +226,7 @@ class PeerConnection:
         await self._websocket.send(message_str)
 
     async def send_answer(self, peer_uuid: UUID) -> None:
-        """Send answer to peering request via signaling server.
+        """Send answer to peering request via relay server.
 
         Args:
             peer_uuid: UUID of peer client that sent the initial offer.
@@ -285,15 +285,15 @@ class PeerConnection:
         self,
         message: messages.PeerConnection,
     ) -> None:
-        """Handle message from the signaling server.
+        """Handle message from the relay server.
 
         Args:
-            message: Message received from the signaling server.
+            message: Message received from the relay server.
         """
         if message.error is not None:
             self._handshake_success.set_exception(
                 PeerConnectionError(
-                    'Received error message from signaling server: '
+                    'Received error message from relay server: '
                     f'{str(message.error)}',
                 ),
             )
@@ -325,7 +325,7 @@ class PeerConnection:
                 await self.send_answer(message.source_uuid)
         elif isinstance(obj, RTCIceCandidate):  # pragma: no cover
             # We should not receive an RTCIceCandidate message via the
-            # signaling server but this is here following the aiortc example.
+            # relay server but this is here following the aiortc example.
             # https://github.com/aiortc/aiortc/blob/713fb644b95328f8ec1ac2cbb54def0424cc6645/examples/datachannel-cli/cli.py#L30  # noqa: E501
             await self._pc.addIceCandidate(obj)
         elif obj is BYE:  # pragma: no cover

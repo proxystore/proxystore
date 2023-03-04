@@ -23,14 +23,15 @@ class EndpointConfig:
         uuid: Endpoint UUID.
         host: Host endpoint is running on.
         port: Port endpoint is running on.
-        server: Optional signaling server the endpoint should register with.
+        relay_server: Optional relay server the endpoint should register with.
         max_memory: Optional memory limit before demoting objects to disk.
         max_object_size: Optional maximum object size.
         dump_dir: Optional directory to put objects in when `max_memory` is
             exceeded.
         peer_channels: Number of peer channels to multiplex communications
             over.
-        verify_certificates: Validate the SSL certificates of `server`.
+        verify_certificates: Validate the SSL certificates of the `relay`
+            server.
 
     Raises:
         ValueError: If the name does not contain only alphanumeric, dash, or
@@ -42,7 +43,7 @@ class EndpointConfig:
     uuid: uuid.UUID
     host: str | None
     port: int
-    server: str | None = None
+    relay_server: str | None = None
     max_memory: int | None = None
     max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT
     dump_dir: str | None = None
@@ -64,8 +65,9 @@ class EndpointConfig:
                 ) from None
         if self.port < 1 or self.port > 65535:
             raise ValueError('Port must be in range [1, 65535].')
-        if self.server is not None and not (
-            self.server.startswith('ws://') or self.server.startswith('wss://')
+        if self.relay_server is not None and not (
+            self.relay_server.startswith('ws://')
+            or self.relay_server.startswith('wss://')
         ):
             raise ValueError(
                 'Server must start with ws:// or wss://.',

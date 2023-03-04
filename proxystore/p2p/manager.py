@@ -39,7 +39,7 @@ class PeerManager:
 
     Handles establishing peer connections via
     [aiortc](https://aiortc.readthedocs.io/){target=_blank}, responding to
-    requests for new peer connections from the signaling server, and sending
+    requests for new peer connections from the relay server, and sending
     and receiving data to/from existing peer connections.
 
 
@@ -47,8 +47,8 @@ class PeerManager:
         ```python
         from proxystore.p2p.manager import PeerManager
 
-        pm1 = await PeerManager(uuid.uuid4(), signaling_server_address)
-        pm2 = await PeerManager(uuid.uuid4(), signaling_server_address)
+        pm1 = await PeerManager(uuid.uuid4(), relay_server_address)
+        pm2 = await PeerManager(uuid.uuid4(), relay_server_address)
 
         await pm1.send(pm2.uuid, 'hello hello')
         source_uuid, message = await pm2.recv()
@@ -83,25 +83,25 @@ class PeerManager:
 
     Args:
         uuid: UUID of the client.
-        signaling_server: Address of signaling server to use for establishing
+        relay_server: Address of relay server to use for establishing
             peer-to-peer connections.
         name: Readable name of the client to use in logging. If unspecified,
             the hostname will be used.
-        timeout: Timeout in seconds when waiting for a peer or signaling server
+        timeout: Timeout in seconds when waiting for a peer or relay server
             connection to be established.
         peer_channels: number of datachannels to split message sending over
             between each peer.
-        verify_certificate: Verify the signaling server's SSL certificate,
+        verify_certificate: Verify the relay server's SSL certificate,
 
     Raises:
-        ValueError: If the signaling server address does not start with "ws://"
+        ValueError: If the relay server address does not start with "ws://"
             or "wss://".
     """
 
     def __init__(
         self,
         uuid: UUID,
-        signaling_server: str,
+        relay_server: str,
         name: str | None = None,
         *,
         timeout: int = 30,
@@ -109,15 +109,15 @@ class PeerManager:
         verify_certificate: bool = True,
     ) -> None:
         if not (
-            signaling_server.startswith('ws://')
-            or signaling_server.startswith('wss://')
+            relay_server.startswith('ws://')
+            or relay_server.startswith('wss://')
         ):
             raise ValueError(
-                'Signaling server address must start with ws:// or wss://'
-                f'Got {signaling_server}.',
+                'Relay server address must start with ws:// or wss://'
+                f'Got {relay_server}.',
             )
         self._uuid = uuid
-        self._signaling_server = signaling_server
+        self._relay_server = relay_server
         self._name = name if name is not None else utils.hostname()
         self._timeout = timeout
         self._peer_channels = peer_channels
@@ -143,7 +143,7 @@ class PeerManager:
             return self._websocket_or_none
         raise RuntimeError(
             f'{self.__class__.__name__} has not established a connection '
-            'to the signaling server because async_init() has not been '
+            'to the relay server because async_init() has not been '
             'called yet. Is the manager being initialized with await?',
         )
 
@@ -158,7 +158,7 @@ class PeerManager:
         return self._name
 
     async def async_init(self) -> None:
-        """Connect to signaling server."""
+        """Connect to relay server."""
         if self._websocket_or_none is None:
             ssl_context = ssl.create_default_context()
             if not self._verify_certificate:
@@ -166,25 +166,25 @@ class PeerManager:
                 ssl_context.verify_mode = ssl.CERT_NONE
 
             uuid, _, socket = await connect(
-                address=self._signaling_server,
+                address=self._relay_server,
                 uuid=self._uuid,
                 name=self._name,
                 timeout=self._timeout,
                 ssl=ssl_context
-                if self._signaling_server.startswith('wss://')
+                if self._relay_server.startswith('wss://')
                 else None,
             )
 
             if uuid != self._uuid:
                 raise PeerRegistrationError(
-                    'Signaling server responded to registration request '
+                    'Relay server responded to registration request '
                     f'with non-matching UUID. Received {uuid} but expected '
                     f'{self._uuid}.',
                 )
             self._websocket_or_none = socket
             logger.info(
-                f'{self._log_prefix}: registered as peer with signaling '
-                f'server at {self._signaling_server}',
+                f'{self._log_prefix}: registered as peer with relay '
+                f'server at {self._relay_server}',
             )
         if self._server_task is None:
             self._server_task = spawn_guarded_background_task(
@@ -250,13 +250,12 @@ class PeerManager:
             )
 
     async def _handle_server_messages(self) -> None:
-        """Handle messages from the signaling server.
+        """Handle messages from the relay server.
 
         Forwards the message to the correct P2PConnection instance.
         """
         logger.info(
-            f'{self._log_prefix}: listening for messages from signaling '
-            'server',
+            f'{self._log_prefix}: listening for messages from relay server',
         )
         while True:
             try:
@@ -272,13 +271,13 @@ class PeerManager:
             except messages.MessageDecodeError as e:
                 logger.error(
                     f'{self._log_prefix}: error deserializing message from '
-                    f'signaling server: {e} ...skipping message',
+                    f'relay server: {e} ...skipping message',
                 )
                 continue
 
             if isinstance(message, messages.PeerConnection):
                 logger.debug(
-                    f'{self._log_prefix}: signaling server forwarded peer '
+                    f'{self._log_prefix}: relay server forwarded peer '
                     'connection message from '
                     f'{log_name(message.source_uuid, message.source_name)}',
                 )
@@ -300,15 +299,15 @@ class PeerManager:
                 await self._peers[peers].handle_server_message(message)
             elif isinstance(message, messages.ServerResponse):
                 # The peer manager should never send something to the
-                # signaling server that warrants a ServerResponse
+                # relay server that warrants a ServerResponse
                 logger.exception(
                     f'{self._log_prefix}: got unexpected ServerResponse '
-                    f'from signaling server: {message}',
+                    f'from relay server: {message}',
                 )
             else:
                 logger.error(
                     f'{self._log_prefix}: received unknown message type '
-                    f'{type(message).__name__} from signaling server',
+                    f'{type(message).__name__} from relay server',
                 )
 
     async def close(self) -> None:

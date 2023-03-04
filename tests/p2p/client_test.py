@@ -23,8 +23,8 @@ _WAIT_FOR = 0.1
 
 
 @pytest.mark.asyncio()
-async def test_connect_and_ping_server(signaling_server) -> None:
-    uuid, name, websocket = await connect(signaling_server.address)
+async def test_connect_and_ping_server(relay_server) -> None:
+    uuid, name, websocket = await connect(relay_server.address)
     assert isinstance(uuid, UUID)
     assert isinstance(name, str)
     pong_waiter = await websocket.ping()
@@ -38,14 +38,14 @@ async def test_invalid_address_protocol() -> None:
 
 
 @pytest.mark.asyncio()
-async def test_connect_exceptions(signaling_server) -> None:
+async def test_connect_exceptions(relay_server) -> None:
     async def sleep(*args, **kwargs) -> None:
         await asyncio.sleep(10)
 
     # Check timeout on receiving EndpointRegistationSuccess
     with mock.patch('websockets.WebSocketClientProtocol.recv', sleep):
         with pytest.raises(PeerRegistrationError, match='timeout'):
-            await connect(signaling_server.address, timeout=_WAIT_FOR)
+            await connect(relay_server.address, timeout=_WAIT_FOR)
 
     # Check error if server returns error
     with mock.patch(
@@ -61,15 +61,15 @@ async def test_connect_exceptions(signaling_server) -> None:
         ),
     ):
         with pytest.raises(PeerRegistrationError, match='test error'):
-            await connect(signaling_server.address)
+            await connect(relay_server.address)
 
-    # Check error if return message from signaling server is unknown type
+    # Check error if return message from relay server is unknown type
     with mock.patch(
         'websockets.WebSocketClientProtocol.recv',
         AsyncMock(return_value='nonsense message'),
     ):
         with pytest.raises(PeerRegistrationError, match='Unable to decode'):
-            await connect(signaling_server.address)
+            await connect(relay_server.address)
 
     async def close(*args, **kwargs) -> None:
         raise websockets.exceptions.ConnectionClosedError(None, None)
@@ -77,7 +77,7 @@ async def test_connect_exceptions(signaling_server) -> None:
     # Check connection closed
     with mock.patch('websockets.WebSocketClientProtocol.recv', close):
         with pytest.raises(PeerRegistrationError, match='closed'):
-            await connect(signaling_server.address)
+            await connect(relay_server.address)
 
     # Unknown response from server
     with mock.patch(
@@ -92,4 +92,4 @@ async def test_connect_exceptions(signaling_server) -> None:
             PeerRegistrationError,
             match='unknown message type',
         ):
-            await connect(signaling_server.address)
+            await connect(relay_server.address)

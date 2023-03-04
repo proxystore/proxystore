@@ -13,6 +13,6 @@ This page provides documentation for our command line tools.
     :prog_name: proxystore-endpoint
 
 ::: mkdocs-click
-    :module: proxystore.p2p.server
+    :module: proxystore.p2p.relay
     :command: cli
-    :prog_name: signaling-server
+    :prog_name: proxystore-relay

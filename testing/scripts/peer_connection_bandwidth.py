@@ -22,11 +22,11 @@ from testing.compat import randbytes
 
 async def get_connection(
     actor: Literal['producer', 'consumer'],
-    server: str,
+    relay: str,
     channels: int = 1,
 ) -> PeerConnection:
     """Return a ready PeerConnection."""
-    local_uuid, name, websocket = await connect(server)
+    local_uuid, name, websocket = await connect(relay)
     connection = PeerConnection(local_uuid, name, websocket, channels=channels)
 
     print(f'{actor} uuid: {local_uuid}')
@@ -50,11 +50,11 @@ async def get_connection(
 async def amain(
     actor: Literal['producer', 'consumer'],
     size: int,
-    server: str,
+    relay: str,
     channels: int = 1,
 ) -> None:
     """Measure transfer speed between producer and consumer."""
-    connection = await get_connection(actor, server, channels)
+    connection = await get_connection(actor, relay, channels)
 
     data: str | bytes
     if actor == 'producer':
@@ -96,8 +96,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='message length in bytes',
     )
     parser.add_argument(
-        '--server',
-        help='signaling server address',
+        '--relay',
+        help='relay server address',
     )
     parser.add_argument(
         '--channels',
@@ -129,7 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     logging.basicConfig()
 
     asyncio.run(
-        amain(args.actor, args.size, args.server, args.channels),
+        amain(args.actor, args.size, args.relay, args.channels),
         debug=args.debug,
     )
 

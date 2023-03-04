@@ -1,4 +1,9 @@
-"""Signaling server implementation for WebRTC peer connections."""
+"""Relay server implementation for WebRTC peer connections.
+
+The relay server (or signaling server) is a lightweight server accessible by
+all peers (e.g., has a public IP address) that facilitates the establishment
+of peer WebRTC connections.
+"""
 from __future__ import annotations
 
 import asyncio
@@ -45,32 +50,31 @@ class Client:
     websocket: WebSocketServerProtocol
 
 
-class SignalingServer:
-    """Signaling Server implementation.
+class RelayServer:
+    """WebRTC relay server.
 
-    The Signaling Server acts as a public third-party that helps two peers
+    The relay server acts as a public third-party that helps two peers
     (endpoints) establish a peer-to-peer connection during the WebRTC
-    peer connection initiation process. The signaling server's responsibility
+    peer connection initiation process. The relay server's responsibility
     is just to forward session descriptions between two peers, so the
     server can be relatively lightweight and typically only needs to transfer
     two messages to establish a peer connection, after which the peers no
-    longer need the signaling server.
+    longer need the relay server.
 
     To learn more about the WebRTC peer connection process, check out
     https://webrtc.org/getting-started/peer-connections.
 
-    The signaling server is built on websockets and designed to be
-    served using `#!python websockets.serve()`.
-
+    The relay server is built on websockets and designed to be
+    served using [`websockets.serve()`][websockets.server.serve].
 
     Example:
         ```python
         import websockets
-        from proxystore.p2p.server import SignalingServer
+        from proxystore.p2p.relay import RelayServer
 
-        signaling_server = SignalingServer()
+        relay_server = RelayServer()
         async with websockets.serve(
-             signaling_server.handler, host='localhost', port=1234
+             relay_server.handler, host='localhost', port=1234
         ) as websocket_server:
             ...
         ```
@@ -107,7 +111,7 @@ class SignalingServer:
         websocket: WebSocketServerProtocol,
         request: messages.ServerRegistration,
     ) -> None:
-        """Register peer with Signaling Server.
+        """Register peer with relay server.
 
         Args:
             websocket: Websocket connection with client wanting to register.
@@ -211,7 +215,7 @@ class SignalingServer:
             websocket: Websocket message was received on.
             uri: URI message was sent to.
         """
-        logger.info('signaling server listening for incoming connections')
+        logger.info('relay server listening for incoming connections')
         while True:
             try:
                 message_str = await websocket.recv()
@@ -263,9 +267,9 @@ async def serve(
     certfile: str | None = None,
     keyfile: str | None = None,
 ) -> None:
-    """Run the signaling server.
+    """Run the relay server.
 
-    Initializes a [`SignalingServer`][proxystore.p2p.server.SignalingServer]
+    Initializes a [`RelayServer`][proxystore.p2p.relay.RelayServer]
     and starts a websocket server listening on `host:port` for new connections
     and incoming messages.
 
@@ -277,7 +281,7 @@ async def serve(
         keyfile: Optional private key file. If not specified, the key will be
             taken from the certfile.
     """
-    server = SignalingServer()
+    server = RelayServer()
 
     # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
     loop = asyncio.get_running_loop()
@@ -297,7 +301,7 @@ async def serve(
         logger=logger,
         ssl=ssl_context,
     ):
-        logger.info(f'serving signaling server on {host}:{port}')
+        logger.info(f'serving relay server on {host}:{port}')
         logger.info('use ctrl-C to stop')
         await stop
 
@@ -353,9 +357,9 @@ def cli(
     log_dir: str | None,
     log_level: str,
 ) -> None:
-    """Run a signaling server instance.
+    """Run a relay server instance.
 
-    The signaling server is used by clients to establish peer-to-peer
+    The relay server is used by clients to establish peer-to-peer
     WebRTC connections.
     """
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]

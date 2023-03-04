@@ -26,7 +26,7 @@ the primary interface for clients to interact with endpoints.
   <b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
   any endpoint and those request will be forwarded to the correct endpoint.
   Endpoints establish peer-to-peer connections using UDP hole-punching and a
-  publicly accessible signaling server.
+  publicly accessible relay server.
   </figcaption>
 </figure>
 
@@ -36,14 +36,14 @@ to open ports or SSH tunnels. To achieve direct data transfer between peers,
 endpoints use the [WebRTC](https://webrtc.org/) standard to determine
 how the peers can connect.
 
-As shown in **Fig. 1**, endpoints use a commonly accessible *signaling server*
+As shown in **Fig. 1**, endpoints use a commonly accessible *relay server*
 to facilitate peer connections. When an endpoint is started, the Endpoint
-registers with the signaling server. Then, when an endpoint needs to make a
+registers with the relay server. Then, when an endpoint needs to make a
 request from a peer, (1) the endpoint creates an *offer* and asks the
-signaling server to forward the offer to the peer endpoint. The signaling
+relay server to forward the offer to the peer endpoint. The relay
 server forwards the offer (2) and the peer endpoint creates an *answer* to the
 received offer. The peer endpoint returns the *answer* to the original
-endpoint via the signaling server (3, 4).
+endpoint via the relay server (3, 4).
 
 The offer and answer contain information about the local and remote sessions
 of the endpoints which can be used to complete the peer-to-peer connection (5).
@@ -78,7 +78,7 @@ host address, port, and singaling server address.
 
 1. **Name:** readable name of the endpoint. Used for management in the CLI and
    to improve log readability.
-2. **UUID:** primary identifier of the endpoint. The signaling server will
+2. **UUID:** primary identifier of the endpoint. The relay server will
    use this UUID to keep track of endpoints.
 3. **Host address:** host address of the Quart app for the endpoint.
    Defaults to the IP address of host the endpoint is configured on.
@@ -87,9 +87,9 @@ host address, port, and singaling server address.
    host.
 4. **Port:** port the Quart app for the endpoint will listening on. Defaults to
    9753.
-5. **Signaling server address**: address of signaling server to use for peer
+5. **Relay server address**: address of relay server to use for peer
    connections. All endpoints that may peer with each other must use the same
-   signaling server. Signaling servers are optional, and if unspecified, the
+   relay server. Relay servers are optional, and if unspecified, the
    endpoint will operate without peering functionalities.
 
 Starting the endpoint will load the configuration from the ProxyStore home
@@ -175,14 +175,14 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
    from Endpoint 2. Host B deserializes the target object and the proxy
    is resolved.
 
-## Hosting a Signaling Server
+## Hosting a Relay Server
 
-Currently, ProxyStore does not provided any publicly host signaling servers,
-though we hope to in the future! Hosting your own signaling server is simple
+Currently, ProxyStore does not provided any publicly host relay servers,
+though we hope to in the future! Hosting your own relay server is simple
 if you have a host accessible from the internet (e.g., a compute instance from
 a cloud provider or a machine behind a NAT with an open port) and the
 ProxyStore package installed.
 
 ```bash
-$ signaling-server --port 3579
+$ proxystore-relay --port 3579
 ```

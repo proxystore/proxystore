@@ -44,8 +44,8 @@ class Endpoint:
     mode where the endpoint acts just as an isolated object store. Endpoints
     can also be configured in
     [`EndpointMode.PEERING`][proxystore.endpoint.endpoint.EndpointMode.PEERING]
-    mode by initializing the endpoint with a signaling server address.
-    The signaling server is used to establish peer-to-peer connections with
+    mode by initializing the endpoint with a relay server address.
+    The relay server is used to establish peer-to-peer connections with
     other endpoints after which endpoints can forward operations between each
     other. Peering is available even when endpoints are being separate
     NATs. See the [proxystore.p2p][] module to learn more about peering.
@@ -71,8 +71,8 @@ class Endpoint:
         Peering Mode Usage
 
         ```python
-        ep1 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
-        ep2 = await Endpoint('ep1', uuid.uuid4(), signaling_server)
+        ep1 = await Endpoint('ep1', uuid.uuid4(), relay_server)
+        ep2 = await Endpoint('ep1', uuid.uuid4(), relay_server)
 
         serialized_data = b'data string'
         ep1.set('key', serialized_data)
@@ -93,7 +93,7 @@ class Endpoint:
         If the endpoint is being used in peering mode, the endpoint should be
         used as a context manager or initialized with await. This will ensure
         [`Endpoint.async_init()`][proxystore.endpoint.endpoint.Endpoint.async_init]
-        is executed which connects to the signaling server and established a
+        is executed which connects to the relay server and established a
         listener for incoming messages.
 
         ```python
@@ -109,7 +109,7 @@ class Endpoint:
     Args:
         name: Readable name of endpoint.
         uuid: UUID of the endpoint.
-        signaling_server: Address of signaling server used for peer-to-peer
+        relay_server: Address of relay server used for peer-to-peer
             connections between endpoints. If None, endpoint will not be able
             to communicate with other endpoints.
         peer_timeout: Timeout for establishing p2p connection with
@@ -122,7 +122,7 @@ class Endpoint:
             memory limit is exceeded.
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
-        verify_certificate: Verify the signaling server's SSL
+        verify_certificate: Verify the relay server's SSL
             certificate. This should almost never be disabled except for
             testing with self-signed certificates.
     """
@@ -131,7 +131,7 @@ class Endpoint:
         self,
         name: str,
         uuid: UUID,
-        signaling_server: str | None = None,
+        relay_server: str | None = None,
         peer_timeout: int = 30,
         max_memory: int | None = None,
         max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
@@ -144,15 +144,13 @@ class Endpoint:
         #   - or just get? do we move data permanently on get? etc...
         self._name = name
         self._uuid = uuid
-        self._signaling_server = signaling_server
+        self._relay_server = relay_server
         self._peer_timeout = peer_timeout
         self._peer_channels = peer_channels
         self._verify_certificate = verify_certificate
 
         self._mode = (
-            EndpointMode.SOLO
-            if signaling_server is None
-            else EndpointMode.PEERING
+            EndpointMode.SOLO if relay_server is None else EndpointMode.PEERING
         )
 
         self._peer_manager: PeerManager | None = None
@@ -206,10 +204,10 @@ class Endpoint:
 
     async def async_init(self) -> None:
         """Initialize connections and tasks necessary for peering."""
-        if self._signaling_server is not None and not self._async_init_done:
+        if self._relay_server is not None and not self._async_init_done:
             self._peer_manager = await PeerManager(
                 uuid=self.uuid,
-                signaling_server=self._signaling_server,
+                relay_server=self._relay_server,
                 name=self.name,
                 timeout=self._peer_timeout,
                 peer_channels=self._peer_channels,

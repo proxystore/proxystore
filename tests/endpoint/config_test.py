@@ -26,7 +26,7 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
         uuid=uuid.uuid4(),
         host='host',
         port=1234,
-        server=None,
+        relay_server=None,
     )
     write_config(cfg, tmp_dir)
     assert os.path.exists(tmp_dir)
@@ -113,10 +113,10 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'uuid': 'abc-abc-abc'}, False),
         ({'port': 0}, False),
         ({'port': 1000000}, False),
-        ({'server': 'ws://'}, True),
-        ({'server': 'wss://'}, True),
-        ({'server': ''}, False),
-        ({'server': 'https://'}, False),
+        ({'relay_server': 'ws://'}, True),
+        ({'relay_server': 'wss://'}, True),
+        ({'relay_server': ''}, False),
+        ({'relay_server': 'https://'}, False),
         ({'max_memory': -1}, False),
         ({'peer_channels': 1}, True),
         ({'peer_channels': 0}, False),
@@ -131,7 +131,7 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
         'uuid': uuid.uuid4(),
         'host': 'host',
         'port': 1234,
-        'server': 'wss://myserver.com',
+        'relay_server': 'wss://myserver.com',
     }
     options.update(bad_cfg)
 

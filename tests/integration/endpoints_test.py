@@ -16,7 +16,7 @@ from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.p2p.client import connect
-from proxystore.p2p.server import serve
+from proxystore.p2p.relay import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.base import Store
@@ -37,22 +37,22 @@ async def wait_for_server(host: str, port: int) -> None:
             break
 
 
-def serve_signaling_server(host: str, port: int) -> None:
-    """Run signaling server."""
+def serve_relay_server(host: str, port: int) -> None:
+    """Run relay server."""
     asyncio.run(serve(host, port))
 
 
 @pytest.fixture()
 def endpoints(
-    signaling_server,
+    relay_server,
     tmp_path: pathlib.Path,
 ) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
-    """Launch the signaling server and two endpoints."""
+    """Launch the relay server and two endpoints."""
     ss_host = 'localhost'
     ss_port = open_port()
 
     ss = Process(
-        target=serve_signaling_server,
+        target=serve_relay_server,
         kwargs={'host': ss_host, 'port': ss_port},
     )
     ss.start()
@@ -68,7 +68,7 @@ def endpoints(
             uuid=uuid.uuid4(),
             host='localhost',
             port=port,
-            server=f'ws://{ss_host}:{ss_port}',
+            relay_server=f'ws://{ss_host}:{ss_port}',
         )
         assert cfg.host is not None
 
@@ -87,7 +87,7 @@ def endpoints(
         wait_for_endpoint(cfg.host, cfg.port)
 
     if not ss.is_alive():  # pragma: no cover
-        raise RuntimeError('Signaling server died.')
+        raise RuntimeError('Relay server died.')
 
     yield uuids, dirs
 

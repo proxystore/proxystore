@@ -99,7 +99,7 @@ def configure_endpoint(
     name: str,
     *,
     port: int,
-    server: str | None,
+    relay_server: str | None,
     proxystore_dir: str | None = None,
     max_memory: int | None = None,
     dump_dir: str | None = None,
@@ -110,8 +110,7 @@ def configure_endpoint(
     Args:
         name: Name of endpoint.
         port: Port for endpoint to listen on.
-        server: Optional address of signaling server for P2P endpoint
-            connections.
+        relay_server: Optional relay server address for P2P endpoint connections.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.home_dir].
         max_memory: Optional max memory in bytes to use for storing
@@ -131,7 +130,7 @@ def configure_endpoint(
             uuid=uuid.uuid4(),
             host=None,
             port=port,
-            server=server,
+            relay_server=relay_server,
             max_memory=max_memory,
             dump_dir=dump_dir,
             peer_channels=peer_channels,

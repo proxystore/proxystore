@@ -34,7 +34,7 @@ class Message:
 
 @dataclasses.dataclass
 class ServerRegistration(Message):
-    """Register with signaling server as peer.
+    """Register with relay server as peer.
 
     Attributes:
         name: Name of peer requesting to register.
@@ -48,7 +48,7 @@ class ServerRegistration(Message):
 
 @dataclasses.dataclass
 class ServerResponse(Message):
-    """Message returned by signaling server on success or error.
+    """Message returned by relay server on success or error.
 
     Attributes:
         success: If the registration was successful.
