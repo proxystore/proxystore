@@ -50,8 +50,8 @@ def test_version_command() -> None:
 def test_configure_command(home_dir) -> None:
     name = 'my-endpoint'
     port = 4321
-    server = 'ws://server:1234'
-    args = [name, '--port', str(port), '--server', server]
+    relay_server = 'ws://server:1234'
+    args = [name, '--port', str(port), '--relay-server', relay_server]
 
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['configure', *args])
@@ -62,7 +62,7 @@ def test_configure_command(home_dir) -> None:
     cfg = read_config(endpoint_dir)
     assert cfg.name == name
     assert cfg.port == port
-    assert cfg.server == server
+    assert cfg.relay_server == relay_server
 
 
 def test_list_command(home_dir, caplog) -> None:

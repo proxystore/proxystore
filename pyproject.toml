@@ -82,9 +82,9 @@ docs = [
 ]
 
 [project.scripts]
-signaling-server = "proxystore.p2p.server:cli"
 proxystore-endpoint = "proxystore.endpoint.cli:cli"
 proxystore-globus-auth = "proxystore.globus:cli"
+proxystore-relay = "proxystore.p2p.relay:cli"
 
 [tool.black]
 line-length = 79

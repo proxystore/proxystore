@@ -1,4 +1,4 @@
-"""Exception types for the Signaling Server."""
+"""Exception types for the relay server."""
 from __future__ import annotations
 
 

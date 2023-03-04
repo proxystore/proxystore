@@ -1,4 +1,4 @@
-"""Functions for connecting to the Signaling Server."""
+"""Functions for connecting to a relay server."""
 from __future__ import annotations
 
 import asyncio
@@ -33,15 +33,15 @@ async def connect(
     timeout: float = 10,
     ssl: ssl.SSLContext | None = None,
 ) -> tuple[UUID, str, WebSocketClientProtocol]:
-    """Establish client connection to a Signaling Server.
+    """Establish client connection to a relay server.
 
     Args:
-        address: Address of the Signaling Server. Should start with ws:// or
+        address: Address of the relay server. Should start with ws:// or
             wss://.
-        uuid: Optional uuid of client to use when registering with signaling
+        uuid: Optional uuid of client to use when registering with relay
             server.
         name: Readable name of the client to use when registering with the
-            signaling server. By default the hostname will be used.
+            relay server. By default the hostname will be used.
         timeout: Time to wait in seconds on server connections.
         ssl: When None, the correct value to pass to
             [`websockets.connect()`][websockets.client.connect]
@@ -50,12 +50,12 @@ async def connect(
             SSLContext (useful if the server uses self-signed certificates).
 
     Returns:
-        Tuple of the UUID of this client returned by the signaling server, \
+        Tuple of the UUID of this client returned by the relay server, \
         the name used to register the client, and the websocket connection to \
-        the signaling server.
+        the relay server.
 
     Raises:
-        PeerRegistrationError: If the connection to the signaling server
+        PeerRegistrationError: If the connection to the relay server
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with "ws://" or "wss://".
@@ -67,7 +67,7 @@ async def connect(
 
     if not (address.startswith('ws://') or address.startswith('wss://')):
         raise ValueError(
-            'Signaling server address must start with ws:// or wss://.'
+            'Relay server address must start with ws:// or wss://.'
             f'Got {address}.',
         )
     ssl_default = True if address.startswith('wss://') else None
@@ -89,32 +89,32 @@ async def connect(
             raise AssertionError('Received non-bytes type on websocket.')
     except websockets.exceptions.ConnectionClosed as e:
         raise PeerRegistrationError(
-            'Connection to signaling server closed before peer '
+            'Connection to relay server closed before peer '
             'registration completed.',
         ) from e
     except messages.MessageDecodeError as e:
         raise PeerRegistrationError(
-            'Unable to decode response message from signaling server.',
+            'Unable to decode response message from relay server.',
         ) from e
     except asyncio.TimeoutError as e:
         raise PeerRegistrationError(
-            'Signaling server did not reply to registration within timeout.',
+            'Relay server did not reply to registration within timeout.',
         ) from e
 
     if isinstance(message, messages.ServerResponse):
         if message.success:
             logger.info(
-                'established client connection to signaling server at '
+                'established client connection to relay server at '
                 f'{address} with uuid={uuid} and name={name}',
             )
             return uuid, name, websocket
         else:
             raise PeerRegistrationError(
-                'Failed to register as peer with signaling server. '
+                'Failed to register as peer with relay server. '
                 f'Got exception: {message.message}',
             )
     else:
         raise PeerRegistrationError(
-            'Signaling server replied with unknown message type: '
+            'Relay server replied with unknown message type: '
             f'{type(message).__name__}.',
         )

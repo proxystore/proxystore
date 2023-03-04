@@ -1,4 +1,4 @@
-"""Tools for running a local signaling server for unit tests."""
+"""Tools for running a local relay server for unit tests."""
 from __future__ import annotations
 
 from typing import AsyncGenerator
@@ -9,14 +9,14 @@ import pytest_asyncio
 import websockets
 from websockets.server import WebSocketServer
 
-from proxystore.p2p.server import SignalingServer
+from proxystore.p2p.relay import RelayServer
 from testing.utils import open_port
 
 
-class SignalingServerInfo(NamedTuple):
-    """NamedTuple returned by signaling_server fixture."""
+class RelayServerInfo(NamedTuple):
+    """NamedTuple returned by relay_server fixture."""
 
-    signaling_server: SignalingServer
+    relay_server: RelayServer
     websocket_server: WebSocketServer
     host: str
     port: int
@@ -25,30 +25,30 @@ class SignalingServerInfo(NamedTuple):
 
 @pytest_asyncio.fixture(scope='session')
 @pytest.mark.asyncio()
-async def signaling_server(
+async def relay_server(
     event_loop,
-) -> AsyncGenerator[SignalingServerInfo, None]:
-    """Fixture that runs signaling server locally.
+) -> AsyncGenerator[RelayServerInfo, None]:
+    """Fixture that runs relay server locally.
 
     Warning:
-        This fixture has session scope so the signaling server will be shared
+        This fixture has session scope so the relay server will be shared
         between many tests.
 
     Yields:
-        `SignalingServerInfo <.SignalingServerInfo>`
+        `RelayServerInfo <.RelayServerInfo>`
     """
     host = 'localhost'
     port = open_port()
     address = f'ws://{host}:{port}'
 
-    signaling_server = SignalingServer()
+    relay_server = RelayServer()
     async with websockets.server.serve(
-        signaling_server.handler,
+        relay_server.handler,
         host,
         port,
     ) as websocket_server:
-        server_info = SignalingServerInfo(
-            signaling_server=signaling_server,
+        server_info = RelayServerInfo(
+            relay_server=relay_server,
             websocket_server=websocket_server,
             host=host,
             port=port,

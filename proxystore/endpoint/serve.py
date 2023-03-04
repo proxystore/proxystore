@@ -108,9 +108,6 @@ def serve(
     # Endpoint constructor
     kwargs.pop('host', None)
     kwargs.pop('port', None)
-    # Backwards compatibility hack because EndpointConfig and Endpoint call
-    # the signaling server fields differently
-    kwargs['signaling_server'] = kwargs.pop('server')
 
     endpoint = Endpoint(**kwargs)
     app = create_app(endpoint)

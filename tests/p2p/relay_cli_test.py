@@ -13,8 +13,8 @@ import pytest
 import websockets
 
 from proxystore.p2p.client import connect
-from proxystore.p2p.server import cli
-from proxystore.p2p.server import serve
+from proxystore.p2p.relay import cli
+from proxystore.p2p.relay import serve
 from testing.utils import open_port
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
@@ -25,7 +25,7 @@ else:  # pragma: <3.8 cover
 
 def test_invoke() -> None:
     runner = click.testing.CliRunner()
-    with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
+    with mock.patch('proxystore.p2p.relay.serve', AsyncMock()):
         runner.invoke(cli)
 
 
@@ -33,7 +33,7 @@ def test_invoke_with_log_dir(tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
     assert not os.path.isdir(tmp_dir)
     runner = click.testing.CliRunner()
-    with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
+    with mock.patch('proxystore.p2p.relay.serve', AsyncMock()):
         runner.invoke(cli, ['--log-dir', str(tmp_dir)])
     assert os.path.isdir(tmp_dir)
 
@@ -41,7 +41,7 @@ def test_invoke_with_log_dir(tmp_path: pathlib.Path) -> None:
 def test_logging_config(tmp_path: pathlib.Path) -> None:
     with subprocess.Popen(
         [
-            'signaling-server',
+            'proxystore-relay',
             '--port',
             str(open_port()),
             '--log-dir',
@@ -115,7 +115,7 @@ async def test_start_server_cli() -> None:
     address = f'ws://{host}:{port}'
 
     server_handle = subprocess.Popen(
-        ['signaling-server', '--host', host, '--port', port],
+        ['proxystore-relay', '--host', host, '--port', port],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         universal_newlines=True,
@@ -124,7 +124,7 @@ async def test_start_server_cli() -> None:
     # Wait for server to log that it is listening
     assert server_handle.stdout is not None
     for line in server_handle.stdout:  # pragma: no cover
-        if 'serving signaling server' in line:
+        if 'serving relay server' in line:
             break
 
     _, _, websocket = await connect(address)

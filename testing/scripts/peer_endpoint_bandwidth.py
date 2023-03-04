@@ -21,13 +21,13 @@ from testing.compat import randbytes
 
 async def get_endpoint(
     actor: Literal['local', 'remote'],
-    server: str,
+    relay: str,
 ) -> tuple[Endpoint, uuid.UUID | None]:
     """Return a ready PeerConnection."""
     endpoint = await Endpoint(
         name=socket.gethostname(),
         uuid=uuid.uuid4(),
-        signaling_server=server,
+        relay_server=relay,
     )
 
     print(f'Endpoint uuid: {endpoint.uuid}')
@@ -42,10 +42,10 @@ async def get_endpoint(
 async def amain(
     actor: Literal['local', 'remote'],
     size: int,
-    server: str,
+    relay: str,
 ) -> None:
     """Measure transfer speed between producer and consumer."""
-    endpoint, target_uuid = await get_endpoint(actor, server)
+    endpoint, target_uuid = await get_endpoint(actor, relay)
 
     if actor == 'local':
         print('Testing connection to remote')
@@ -98,8 +98,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='size of data to move',
     )
     parser.add_argument(
-        '--server',
-        help='signaling server address',
+        '--relay',
+        help='relay server address',
     )
     parser.add_argument(
         '--no-uvloop',
@@ -129,7 +129,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     logging.basicConfig()
 
-    asyncio.run(amain(args.actor, args.size, args.server), debug=args.debug)
+    asyncio.run(amain(args.actor, args.size, args.relay), debug=args.debug)
 
     return 0
 

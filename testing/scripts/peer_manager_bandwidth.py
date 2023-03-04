@@ -20,10 +20,10 @@ from testing.compat import randbytes
 
 async def get_manager(
     actor: Literal['producer', 'consumer'],
-    server: str,
+    relay: str,
 ) -> tuple[PeerManager, uuid.UUID]:
     """Return a ready PeerManager."""
-    manager = await PeerManager(uuid.uuid4(), server)
+    manager = await PeerManager(uuid.uuid4(), relay)
 
     print(f'{actor} uuid: {manager.uuid}')
     remote_uuid = uuid.UUID(input('enter the remote uuid: ').strip())
@@ -45,10 +45,10 @@ async def get_manager(
 async def amain(
     actor: Literal['producer', 'consumer'],
     size: int,
-    server: str,
+    relay: str,
 ) -> None:
     """Measure transfer speed between producer and consumer."""
-    manager, remote_uuid = await get_manager(actor, server)
+    manager, remote_uuid = await get_manager(actor, relay)
 
     data: str | bytes
     if actor == 'producer':
@@ -91,8 +91,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='message length in bytes',
     )
     parser.add_argument(
-        '--server',
-        help='signaling server address',
+        '--relay',
+        help='relay server address',
     )
     parser.add_argument(
         '--no-uvloop',
@@ -117,7 +117,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     logging.basicConfig()
 
-    asyncio.run(amain(args.actor, args.size, args.server), debug=args.debug)
+    asyncio.run(amain(args.actor, args.size, args.relay), debug=args.debug)
 
     return 0
 

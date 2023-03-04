@@ -66,7 +66,7 @@ def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
         uuid=uuid.uuid4(),
         host='localhost',
         port=open_port(),
-        server=None,
+        relay_server=None,
     )
     server_handle = Process(
         target=serve_endpoint_silent,

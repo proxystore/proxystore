@@ -15,11 +15,11 @@ from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection(signaling_server) -> None:
-    uuid1, name1, websocket1 = await connect(signaling_server.address)
+async def test_p2p_connection(relay_server) -> None:
+    uuid1, name1, websocket1 = await connect(relay_server.address)
     connection1 = PeerConnection(uuid1, name1, websocket1)
 
-    uuid2, name2, websocket2 = await connect(signaling_server.address)
+    uuid2, name2, websocket2 = await connect(relay_server.address)
     connection2 = PeerConnection(uuid2, name2, websocket2)
 
     await connection1.send_offer(uuid2)
@@ -57,13 +57,13 @@ async def test_p2p_connection(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection_multichannel(signaling_server) -> None:
-    uuid1, name1, websocket1 = await connect(signaling_server.address)
+async def test_p2p_connection_multichannel(relay_server) -> None:
+    uuid1, name1, websocket1 = await connect(relay_server.address)
     # Set channels as different to verify the answerer respects the
     # number of channels from the offerer
     connection1 = PeerConnection(uuid1, name1, websocket1, channels=4)
 
-    uuid2, name2, websocket2 = await connect(signaling_server.address)
+    uuid2, name2, websocket2 = await connect(relay_server.address)
     connection2 = PeerConnection(uuid2, name2, websocket2, channels=1)
 
     await connection1.send_offer(uuid2)
@@ -87,11 +87,11 @@ async def test_p2p_connection_multichannel(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection_timeout(signaling_server) -> None:
-    uuid1, name1, websocket1 = await connect(signaling_server.address)
+async def test_p2p_connection_timeout(relay_server) -> None:
+    uuid1, name1, websocket1 = await connect(relay_server.address)
     connection1 = PeerConnection(uuid1, name1, websocket1)
 
-    uuid2, name2, websocket2 = await connect(signaling_server.address)
+    uuid2, name2, websocket2 = await connect(relay_server.address)
     connection2 = PeerConnection(uuid2, name2, websocket2)
 
     await connection1.send_offer(uuid2)
@@ -107,8 +107,8 @@ async def test_p2p_connection_timeout(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection_error(signaling_server) -> None:
-    uuid, name, websocket = await connect(signaling_server.address)
+async def test_p2p_connection_error(relay_server) -> None:
+    uuid, name, websocket = await connect(relay_server.address)
     connection = PeerConnection(uuid, name, websocket)
 
     class MyError(Exception):

@@ -17,26 +17,26 @@ from testing.compat import randbytes
 
 @pytest_asyncio.fixture(scope='module')
 async def endpoints(
-    signaling_server,
+    relay_server,
 ) -> AsyncGenerator[tuple[Endpoint, Endpoint], None]:
     async with Endpoint(
         name='test-endpoint-1',
         uuid=uuid.uuid4(),
-        signaling_server=signaling_server.address,
+        relay_server=relay_server.address,
     ) as endpoint1, Endpoint(
         name='test-endpoint-2',
         uuid=uuid.uuid4(),
-        signaling_server=signaling_server.address,
+        relay_server=relay_server.address,
     ) as endpoint2:
         yield (endpoint1, endpoint2)
 
 
 @pytest.mark.asyncio()
-async def test_init(signaling_server) -> None:
+async def test_init(relay_server) -> None:
     endpoint = await Endpoint(
         name='test-init-endpoint',
         uuid=uuid.uuid4(),
-        signaling_server=signaling_server.address,
+        relay_server=relay_server.address,
     )
     # Calling async_init multiple times should be no-op
     await endpoint.async_init()
@@ -105,11 +105,11 @@ async def test_remote_error_propogation(
 
 
 @pytest.mark.asyncio()
-async def test_peering_not_available(signaling_server) -> None:
+async def test_peering_not_available(relay_server) -> None:
     endpoint = Endpoint(
         name='test',
         uuid=uuid.uuid4(),
-        signaling_server=signaling_server.address,
+        relay_server=relay_server.address,
     )
     # __await__ has not been called on endpoint so connection to server
     # has not been enabled
@@ -118,11 +118,11 @@ async def test_peering_not_available(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_unknown_peer(signaling_server) -> None:
+async def test_unknown_peer(relay_server) -> None:
     async with Endpoint(
         name='test',
         uuid=uuid.uuid4(),
-        signaling_server=signaling_server.address,
+        relay_server=relay_server.address,
     ) as endpoint:
         with pytest.raises(PeerRequestError, match='unknown'):
             await endpoint.get('key', endpoint=uuid.uuid4())

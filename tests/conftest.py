@@ -41,7 +41,7 @@ from testing.connectors import redis_connector
 from testing.connectors import ucx_connector
 from testing.connectors import zmq_connector
 from testing.endpoint import endpoint
-from testing.signaling_server import signaling_server
+from testing.relay_server import relay_server
 from testing.stores import endpoint_store
 from testing.stores import file_store
 from testing.stores import globus_store

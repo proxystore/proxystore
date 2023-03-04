@@ -21,28 +21,28 @@ else:  # pragma: <3.8 cover
 
 
 @pytest.mark.asyncio()
-async def test_awaitable(signaling_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
+async def test_awaitable(relay_server) -> None:
+    manager = await PeerManager(uuid.uuid4(), relay_server.address)
     # Calling async_init again should do nothing
     await manager.async_init()
     await manager.close()
 
 
 @pytest.mark.asyncio()
-async def test_not_awaited(signaling_server) -> None:
-    manager = PeerManager(uuid.uuid4(), signaling_server.address)
+async def test_not_awaited(relay_server) -> None:
+    manager = PeerManager(uuid.uuid4(), relay_server.address)
     with pytest.raises(RuntimeError, match='await'):
         await manager.get_connection(uuid.uuid4())
     await manager.close()
 
 
 @pytest.mark.asyncio()
-async def test_uuid_name_properties(signaling_server) -> None:
+async def test_uuid_name_properties(relay_server) -> None:
     uuid_ = uuid.uuid4()
     name = 'pm'
     async with PeerManager(
         uuid_,
-        signaling_server.address,
+        relay_server.address,
         name=name,
     ) as manager:
         assert manager.uuid == uuid_
@@ -58,21 +58,21 @@ async def test_address_validation() -> None:
 
 
 @pytest.mark.asyncio()
-async def test_uuid_mismatch(signaling_server) -> None:
+async def test_uuid_mismatch(relay_server) -> None:
     amock = AsyncMock(return_value=('wrong-uuid', None, None))
     with mock.patch('proxystore.p2p.manager.connect', side_effect=amock):
         with pytest.raises(PeerRegistrationError, match='non-matching UUID'):
-            await PeerManager(uuid.uuid4(), signaling_server.address)
+            await PeerManager(uuid.uuid4(), relay_server.address)
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection(signaling_server) -> None:
+async def test_p2p_connection(relay_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager1, PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager2:
         connection1 = await manager1.get_connection(manager2.uuid)
         assert connection1 == await manager1.get_connection(manager2.uuid)
@@ -85,10 +85,10 @@ async def test_p2p_connection(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
+async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager1:
         with pytest.raises(PeerConnectionError, match='unknown'):
             await manager1.send(uuid.uuid4(), 'hello', timeout=0.2)
@@ -100,20 +100,20 @@ async def test_p2p_connection_error_unknown_peer(signaling_server) -> None:
     reason='aiortc in py37 raises InvalidStateError for unknown reason',
 )
 async def test_p2p_connection_error_from_server(
-    signaling_server,
+    relay_server,
 ) -> None:  # pragma: >=3.8 cover
     # Record current tasks so we know which not to clean up
     task_names = {task.get_name() for task in asyncio.all_tasks()}
 
     async with PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager1, PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager2:
         # Mock manager 1 to receive error peer connection from
-        # signaling server
+        # relay server
         assert manager1._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager1._websocket_or_none.recv,
@@ -149,13 +149,13 @@ async def test_p2p_connection_error_from_server(
 
 
 @pytest.mark.asyncio()
-async def test_p2p_messaging(signaling_server) -> None:
+async def test_p2p_messaging(relay_server) -> None:
     async with PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
     ) as manager1, PeerManager(
         uuid.uuid4(),
-        signaling_server.address,
+        relay_server.address,
         verify_certificate=False,
     ) as manager2:
         await manager1.send(manager2.uuid, 'hello hello')
@@ -165,31 +165,31 @@ async def test_p2p_messaging(signaling_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_expected_server_disconnect(signaling_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
+async def test_expected_server_disconnect(relay_server) -> None:
+    manager = await PeerManager(uuid.uuid4(), relay_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
-    await signaling_server.signaling_server._uuid_to_client[
+    await relay_server.relay_server._uuid_to_client[
         manager.uuid
     ].websocket.close()
     await manager.close()
 
 
 @pytest.mark.asyncio()
-async def test_unexpected_server_disconnect(signaling_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), signaling_server.address)
+async def test_unexpected_server_disconnect(relay_server) -> None:
+    manager = await PeerManager(uuid.uuid4(), relay_server.address)
     # TODO(gpauloski): should we log something or set a flag in the manager?
-    await signaling_server.signaling_server._uuid_to_client[
+    await relay_server.relay_server._uuid_to_client[
         manager.uuid
     ].websocket.close(code=1002)
     await manager.close()
 
 
 @pytest.mark.asyncio()
-async def test_serialization_error(signaling_server, caplog) -> None:
+async def test_serialization_error(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
         assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
@@ -209,11 +209,11 @@ async def test_serialization_error(signaling_server, caplog) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_unexpected_server_response(signaling_server, caplog) -> None:
+async def test_unexpected_server_response(relay_server, caplog) -> None:
     # PeerManager should log an exception and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
         assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
@@ -234,11 +234,11 @@ async def test_unexpected_server_response(signaling_server, caplog) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_unknown_message_type(signaling_server, caplog) -> None:
+async def test_unknown_message_type(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), signaling_server.address) as manager:
+    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
         assert manager._websocket_or_none is not None
         mock_recv = async_mock_once(
             manager._websocket_or_none.recv,
