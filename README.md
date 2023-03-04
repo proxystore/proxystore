@@ -25,6 +25,7 @@ Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/main/co
 
 ```bash
 $ pip install proxystore
+$ pip install proxystore[all]
 ```
 
 See the [Installation](https://docs.proxystore.dev/main/installation) guide for more information about the available extra install options.
