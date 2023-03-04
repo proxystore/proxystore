@@ -285,10 +285,10 @@ class GlobusConnector:
         sync_level: Globus transfer sync level.
         timeout: Timeout in seconds for waiting on Globus tasks.
 
-    Raise:
+    Raises:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
         ValueError: If `endpoints` is of an incorrect type.
-        ValueError: If the :code:`len(endpoints) != 2` because this
+        ValueError: If the `#!python len(endpoints) != 2` because this
             implementation can currently only keep two endpoints in sync.
     """
 

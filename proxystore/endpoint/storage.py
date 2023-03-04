@@ -105,6 +105,9 @@ class EndpointStorage(MutableMapping[str, bytes]):
         max_object_size: Optional maximum size in bytes for any single blob.
         dump_dir: Optional directory to dump blobs to when `max_object_size`
             is reached.
+
+    Raises:
+        ValueError: If only one of `max_size` or `dump_dir` is set.
     """
 
     def __init__(

@@ -147,7 +147,10 @@ plugins:
             - pytkdocs_tweaks.main()
           import:
             - https://docs.python.org/3/objects.inv
+            - https://pgjones.gitlab.io/quart/objects.inv
+            - https://aiortc.readthedocs.io/en/latest/objects.inv
             - https://globus-sdk-python.readthedocs.io/en/stable/objects.inv
+            - https://websockets.readthedocs.io/en/stable/objects.inv
           options:
             docstring_section_style: list
             docstring_style: google
