@@ -2849,13 +2849,26 @@ tasks have finished.</p>
       </li>
   </ul>
 
-<details class="raise" open>
-  <summary>Raise</summary>
-  <p>GlobusAuthFileError: If the Globus authentication file cannot be found.
-ValueError: If <code>endpoints</code> is of an incorrect type.
-ValueError: If the :code:<code>len(endpoints) != 2</code> because this
-    implementation can currently only keep two endpoints in sync.</p>
-</details>
+  <p>Raises:</p>
+  <ul>
+      <li class="field-body">
+            <code><a class="autorefs autorefs-internal" title="proxystore.globus.GlobusAuthFileError" href="../../globus/#proxystore.globus.GlobusAuthFileError">GlobusAuthFileError</a></code>
+          –
+        <p>If the Globus authentication file cannot be found.</p>
+      </li>
+      <li class="field-body">
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
+          –
+        <p>If <code>endpoints</code> is of an incorrect type.</p>
+      </li>
+      <li class="field-body">
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
+          –
+        <p>If the <code class="language-python highlight"><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span></code> because this
+implementation can currently only keep two endpoints in sync.</p>
+      </li>
+  </ul>
+
 
           <details class="quote">
             <summary>Source code in <code>proxystore/connectors/globus.py</code></summary>
