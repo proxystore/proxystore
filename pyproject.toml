@@ -57,6 +57,8 @@ dev = [
     "virtualenv",
 ]
 docs = [
+    # Needed for generating CLI docs
+    "proxystore[endpoints]",
     "black",
     "mkdocs-click",
     "mkdocs-gen-files",
@@ -83,7 +85,7 @@ zmq = [
 ]
 
 [project.scripts]
-signaling-server = "proxystore.p2p.server:main"
+signaling-server = "proxystore.p2p.server:cli"
 proxystore-endpoint = "proxystore.endpoint.cli:main"
 proxystore-globus-auth = "proxystore.globus:cli"
 

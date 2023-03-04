@@ -1,7 +1,6 @@
 """Signaling server implementation for WebRTC peer connections."""
 from __future__ import annotations
 
-import argparse
 import asyncio
 import datetime
 import logging.handlers
@@ -10,8 +9,9 @@ import signal
 import ssl
 import sys
 from dataclasses import dataclass
-from typing import Sequence
 from uuid import UUID
+
+import click
 
 try:
     import websockets.client
@@ -304,60 +304,66 @@ async def serve(
     logger.info('server closed')
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for starting the signaling server.
+@click.command()
+@click.option(
+    '--host',
+    default='0.0.0.0',
+    metavar='ADDR',
+    help='Address to listen on.',
+)
+@click.option(
+    '--port',
+    default=8765,
+    type=int,
+    metavar='PORT',
+    help='Port to listen on.',
+)
+@click.option(
+    '--certfile',
+    default=None,
+    metavar='PATH',
+    help='Certificate file for serving with TLS.',
+)
+@click.option(
+    '--keyfile',
+    default=None,
+    metavar='PATH',
+    help='Private key file associated with the certfile.',
+)
+@click.option(
+    '--log-dir',
+    default=None,
+    metavar='PATH',
+    help='Write server logs to this directory.',
+)
+@click.option(
+    '--log-level',
+    default='INFO',
+    type=click.Choice(
+        ['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        case_sensitive=False,
+    ),
+    help='Minimum logging level.',
+)
+def cli(
+    host: str,
+    port: int,
+    certfile: str | None,
+    keyfile: str | None,
+    log_dir: str | None,
+    log_level: str,
+) -> None:
+    """Run a signaling server instance.
 
-    !!! note "Usage"
-
-        ```bash
-        $ signaling-server {options}
-        $ signaling-server --help
-        ```
+    The signaling server is used by clients to establish peer-to-peer
+    WebRTC connections.
     """
-    parser = argparse.ArgumentParser(
-        'Websocket-based Signaling Server',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument(
-        '--host',
-        default='0.0.0.0',
-        help='host to listen on',
-    )
-    parser.add_argument(
-        '--port',
-        default=8765,
-        type=int,
-        help='port to listen on',
-    )
-    parser.add_argument(
-        '--certfile',
-        default=None,
-        help='certificate file for serving with TLS',
-    )
-    parser.add_argument(
-        '--keyfile',
-        default=None,
-        help='private key file associated with the certificate file',
-    )
-    parser.add_argument(
-        '--log-dir',
-        default=None,
-        help='write logs named server.log.{timestamp} to this dir',
-    )
-    parser.add_argument(
-        '--log-level',
-        choices=['CRITICAL', 'ERROR', 'WARNING', 'INFO', 'DEBUG'],
-        default='INFO',
-        help='logging level',
-    )
-    args = parser.parse_args(argv)
-
     handlers: list[logging.Handler] = [logging.StreamHandler(sys.stdout)]
-    if args.log_dir is not None:
-        os.makedirs(args.log_dir, exist_ok=True)
+    if log_dir is not None:
+        os.makedirs(log_dir, exist_ok=True)
         handlers.append(
             logging.handlers.TimedRotatingFileHandler(
-                os.path.join(args.log_dir, 'server.log'),
+                os.path.join(log_dir, 'server.log'),
                 # Rotate logs Sunday at midnight
                 when='W6',
                 atTime=datetime.time(hour=0, minute=0, second=0),
@@ -370,21 +376,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             '%(message)s'
         ),
         datefmt='%Y-%m-%d %H:%M:%S',
-        level=args.log_level,
+        level=log_level,
         handlers=handlers,
     )
 
-    asyncio.run(
-        serve(
-            args.host,
-            args.port,
-            certfile=args.certfile,
-            keyfile=args.keyfile,
-        ),
-    )
-
-    return 0
-
-
-if __name__ == '__main__':
-    raise SystemExit(main())
+    asyncio.run(serve(host, port, certfile=certfile, keyfile=keyfile))

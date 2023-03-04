@@ -8,11 +8,13 @@ import subprocess
 import sys
 from unittest import mock
 
+import click
 import pytest
 import websockets
 
 from proxystore.p2p.client import connect
-from proxystore.p2p.server import main
+from proxystore.p2p.server import cli
+from proxystore.p2p.server import serve
 from testing.utils import open_port
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
@@ -21,11 +23,18 @@ else:  # pragma: <3.8 cover
     from asynctest import CoroutineMock as AsyncMock
 
 
-def test_logging_dir(tmp_path: pathlib.Path) -> None:
+def test_invoke() -> None:
+    runner = click.testing.CliRunner()
+    with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
+        runner.invoke(cli)
+
+
+def test_invoke_with_log_dir(tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
     assert not os.path.isdir(tmp_dir)
+    runner = click.testing.CliRunner()
     with mock.patch('proxystore.p2p.server.serve', AsyncMock()):
-        main(['--log-dir', str(tmp_dir)])
+        runner.invoke(cli, ['--log-dir', str(tmp_dir)])
     assert os.path.isdir(tmp_dir)
 
 
@@ -63,19 +72,18 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
     assert len(logs) >= 1
 
 
+def _serve(host: str, port: int) -> None:
+    asyncio.run(serve(host, port))
+
+
 @pytest.mark.timeout(5)
 @pytest.mark.asyncio()
-async def test_server_with_mock_ssl() -> None:
+async def test_server_without_ssl() -> None:
     host = 'localhost'
     port = open_port()
     address = f'ws://{host}:{port}'
 
-    process = multiprocessing.Process(
-        target=main,
-        args=(
-            ['--host', host, '--port', str(port), '--log-level', 'CRITICAL'],
-        ),
-    )
+    process = multiprocessing.Process(target=_serve, args=(host, port))
     process.start()
 
     while True:
@@ -95,6 +103,8 @@ async def test_server_with_mock_ssl() -> None:
 
     with pytest.raises(websockets.exceptions.ConnectionClosedOK):
         await websocket.recv()
+
+    process.join()
 
 
 @pytest.mark.timeout(5)
