@@ -649,8 +649,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hosting-a-signaling-server" class="md-nav__link">
-    Hosting a Signaling Server
+  <a href="#hosting-a-relay-server" class="md-nav__link">
+    Hosting a Relay Server
   </a>
   
 </li>
@@ -1340,8 +1340,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/p2p/server/" class="md-nav__link">
-        proxystore.p2p.server
+      <a href="../../api/p2p/relay/" class="md-nav__link">
+        proxystore.p2p.relay
       </a>
     </li>
   
@@ -1805,8 +1805,8 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#hosting-a-signaling-server" class="md-nav__link">
-    Hosting a Signaling Server
+  <a href="#hosting-a-relay-server" class="md-nav__link">
+    Hosting a Relay Server
   </a>
   
 </li>
@@ -1856,7 +1856,7 @@ the primary interface for clients to interact with endpoints.</p>
   <b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
   any endpoint and those request will be forwarded to the correct endpoint.
   Endpoints establish peer-to-peer connections using UDP hole-punching and a
-  publicly accessible signaling server.
+  publicly accessible relay server.
   </figcaption>
 </figure>
 <p>Unlike popular in-memory data stores (Redis, Memcached, etc.), ProxyStore
@@ -1864,14 +1864,14 @@ endpoints can operate as peers even from behind different NATs without the need
 to open ports or SSH tunnels. To achieve direct data transfer between peers,
 endpoints use the <a href="https://webrtc.org/">WebRTC</a> standard to determine
 how the peers can connect.</p>
-<p>As shown in <strong>Fig. 1</strong>, endpoints use a commonly accessible <em>signaling server</em>
+<p>As shown in <strong>Fig. 1</strong>, endpoints use a commonly accessible <em>relay server</em>
 to facilitate peer connections. When an endpoint is started, the Endpoint
-registers with the signaling server. Then, when an endpoint needs to make a
+registers with the relay server. Then, when an endpoint needs to make a
 request from a peer, (1) the endpoint creates an <em>offer</em> and asks the
-signaling server to forward the offer to the peer endpoint. The signaling
+relay server to forward the offer to the peer endpoint. The relay
 server forwards the offer (2) and the peer endpoint creates an <em>answer</em> to the
 received offer. The peer endpoint returns the <em>answer</em> to the original
-endpoint via the signaling server (3, 4).</p>
+endpoint via the relay server (3, 4).</p>
 <p>The offer and answer contain information about the local and remote sessions
 of the endpoints which can be used to complete the peer-to-peer connection (5).
 (<em>Note</em>: this is a great simplification and more details can be found at
@@ -1899,7 +1899,7 @@ host address, port, and singaling server address.</p>
 <ol>
 <li><strong>Name:</strong> readable name of the endpoint. Used for management in the CLI and
    to improve log readability.</li>
-<li><strong>UUID:</strong> primary identifier of the endpoint. The signaling server will
+<li><strong>UUID:</strong> primary identifier of the endpoint. The relay server will
    use this UUID to keep track of endpoints.</li>
 <li><strong>Host address:</strong> host address of the Quart app for the endpoint.
    Defaults to the IP address of host the endpoint is configured on.
@@ -1908,9 +1908,9 @@ host address, port, and singaling server address.</p>
    host.</li>
 <li><strong>Port:</strong> port the Quart app for the endpoint will listening on. Defaults to
    9753.</li>
-<li><strong>Signaling server address</strong>: address of signaling server to use for peer
+<li><strong>Relay server address</strong>: address of relay server to use for peer
    connections. All endpoints that may peer with each other must use the same
-   signaling server. Signaling servers are optional, and if unspecified, the
+   relay server. Relay servers are optional, and if unspecified, the
    endpoint will operate without peering functionalities.</li>
 </ol>
 <p>Starting the endpoint will load the configuration from the ProxyStore home
@@ -1988,13 +1988,13 @@ The flow of data and their associated proxies are shown in <strong>Fig. 2</stron
    from Endpoint 2. Host B deserializes the target object and the proxy
    is resolved.</li>
 </ol>
-<h2 id="hosting-a-signaling-server">Hosting a Signaling Server<a class="headerlink" href="#hosting-a-signaling-server" title="Permanent link">&para;</a></h2>
-<p>Currently, ProxyStore does not provided any publicly host signaling servers,
-though we hope to in the future! Hosting your own signaling server is simple
+<h2 id="hosting-a-relay-server">Hosting a Relay Server<a class="headerlink" href="#hosting-a-relay-server" title="Permanent link">&para;</a></h2>
+<p>Currently, ProxyStore does not provided any publicly host relay servers,
+though we hope to in the future! Hosting your own relay server is simple
 if you have a host accessible from the internet (e.g., a compute instance from
 a cloud provider or a machine behind a NAT with an open port) and the
 ProxyStore package installed.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>signaling-server<span class="w"> </span>--port<span class="w"> </span><span class="m">3579</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-relay<span class="w"> </span>--port<span class="w"> </span><span class="m">3579</span>
 </span></code></pre></div>
 
 

@@ -1390,8 +1390,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../server/" class="md-nav__link">
-        proxystore.p2p.server
+      <a href="../relay/" class="md-nav__link">
+        proxystore.p2p.relay
       </a>
     </li>
   
@@ -1976,7 +1976,7 @@
 <a href="https://aiortc.readthedocs.io/en/latest/" target="_blank">aiortc</a> and
 sending/receiving messages between the two peers. The peer-to-peer
 connection is established using a central and publicly accessible
-signaling server.</p>
+relay server.</p>
 
 <details class="warning" open>
   <summary>Warning</summary>
@@ -1988,12 +1988,12 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.connection</span> <span class="kn">import</span> <span class="n">PeerConnection</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.messages</span> <span class="kn">import</span> <span class="n">decode</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.server</span> <span class="kn">import</span> <span class="n">connect</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.client</span> <span class="kn">import</span> <span class="n">connect</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">uuid1</span><span class="p">,</span> <span class="n">name1</span><span class="p">,</span> <span class="n">websocket1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">connect</span><span class="p">(</span><span class="n">signaling_server_address</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">uuid1</span><span class="p">,</span> <span class="n">name1</span><span class="p">,</span> <span class="n">websocket1</span> <span class="o">=</span> <span class="k">await</span> <span class="n">connect</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">connection1</span> <span class="o">=</span> <span class="n">PeerConnection</span><span class="p">(</span><span class="n">uuid1</span><span class="p">,</span> <span class="n">name1</span><span class="p">,</span> <span class="n">websocket1</span><span class="p">)</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">uuid2</span><span class="p">,</span> <span class="n">name2</span><span class="p">,</span> <span class="n">websocket2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">connect</span><span class="p">(</span><span class="n">signaling_server_address</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">uuid2</span><span class="p">,</span> <span class="n">name2</span><span class="p">,</span> <span class="n">websocket2</span> <span class="o">=</span> <span class="k">await</span> <span class="n">connect</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">connection2</span> <span class="o">=</span> <span class="n">PeerConnection</span><span class="p">(</span><span class="n">uuid2</span><span class="p">,</span> <span class="n">name2</span><span class="p">,</span> <span class="n">websocket2</span><span class="p">)</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="k">await</span> <span class="n">connection1</span><span class="o">.</span><span class="n">send_offer</span><span class="p">(</span><span class="n">uuid2</span><span class="p">)</span>
@@ -2031,7 +2031,7 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
       <li class="field-body">
         <b>websocket</b>
             (<code><a class="autorefs autorefs-external" title="websockets.client.WebSocketClientProtocol" href="https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.WebSocketClientProtocol">WebSocketClientProtocol</a></code>)
-        – <p>Websocket connection to the signaling server.</p>
+        – <p>Websocket connection to the relay server.</p>
       </li>
       <li class="field-body">
         <b>channels</b>
@@ -2377,7 +2377,7 @@ established within the timeout.</p>
 
   <div class="doc doc-contents ">
   
-      <p>Send offer for peering via signaling server.</p>
+      <p>Send offer for peering via relay server.</p>
 
   <p>Parameters:</p>
   <ul>
@@ -2417,7 +2417,7 @@ established within the timeout.</p>
 <span class="normal"><a href="#__codelineno-0-224">224</a></span>
 <span class="normal"><a href="#__codelineno-0-225">225</a></span>
 <span class="normal"><a href="#__codelineno-0-226">226</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">send_offer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peer_uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send offer for peering via signaling server.</span>
+</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send offer for peering via relay server.</span>
 </span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a>
 </span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a><span class="sd">        peer_uuid: UUID of peer client to establish connection with.</span>
@@ -2467,7 +2467,7 @@ established within the timeout.</p>
 
   <div class="doc doc-contents ">
   
-      <p>Send answer to peering request via signaling server.</p>
+      <p>Send answer to peering request via relay server.</p>
 
   <p>Parameters:</p>
   <ul>
@@ -2518,7 +2518,7 @@ established within the timeout.</p>
 <span class="normal"><a href="#__codelineno-0-263">263</a></span>
 <span class="normal"><a href="#__codelineno-0-264">264</a></span>
 <span class="normal"><a href="#__codelineno-0-265">265</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">send_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peer_uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send answer to peering request via signaling server.</span>
+</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send answer to peering request via relay server.</span>
 </span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a>
 </span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">        peer_uuid: UUID of peer client that sent the initial offer.</span>
@@ -2581,14 +2581,14 @@ established within the timeout.</p>
 
   <div class="doc doc-contents ">
   
-      <p>Handle message from the signaling server.</p>
+      <p>Handle message from the relay server.</p>
 
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
         <b>message</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.PeerConnection" href="../messages/#proxystore.p2p.messages.PeerConnection">PeerConnection</a></code>)
-        – <p>Message received from the signaling server.</p>
+        – <p>Message received from the relay server.</p>
       </li>
   </ul>
 
@@ -2648,15 +2648,15 @@ established within the timeout.</p>
 </span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a>    <span class="n">message</span><span class="p">:</span> <span class="n">messages</span><span class="o">.</span><span class="n">PeerConnection</span><span class="p">,</span>
 </span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle message from the signaling server.</span>
+</span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle message from the relay server.</span>
 </span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>
 </span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">        message: Message received from the signaling server.</span>
+</span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">        message: Message received from the relay server.</span>
 </span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a>    <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_handshake_success</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span>
 </span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a>            <span class="n">PeerConnectionError</span><span class="p">(</span>
-</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>                <span class="s1">&#39;Received error message from signaling server: &#39;</span>
+</span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>                <span class="s1">&#39;Received error message from relay server: &#39;</span>
 </span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a>                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">error</span><span class="p">)</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">,</span>
 </span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>            <span class="p">),</span>
 </span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>        <span class="p">)</span>
@@ -2688,7 +2688,7 @@ established within the timeout.</p>
 </span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_answer</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">source_uuid</span><span class="p">)</span>
 </span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">RTCIceCandidate</span><span class="p">):</span>  <span class="c1"># pragma: no cover</span>
 </span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>        <span class="c1"># We should not receive an RTCIceCandidate message via the</span>
-</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="c1"># signaling server but this is here following the aiortc example.</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>        <span class="c1"># relay server but this is here following the aiortc example.</span>
 </span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>        <span class="c1"># https://github.com/aiortc/aiortc/blob/713fb644b95328f8ec1ac2cbb54def0424cc6645/examples/datachannel-cli/cli.py#L30  # noqa: E501</span>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pc</span><span class="o">.</span><span class="n">addIceCandidate</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 </span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="k">elif</span> <span class="n">obj</span> <span class="ow">is</span> <span class="n">BYE</span><span class="p">:</span>  <span class="c1"># pragma: no cover</span>

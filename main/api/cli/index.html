@@ -1271,8 +1271,8 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/server/" class="md-nav__link">
-        proxystore.p2p.server
+      <a href="../p2p/relay/" class="md-nav__link">
+        proxystore.p2p.relay
       </a>
     </li>
   
@@ -1761,7 +1761,7 @@ request transfer scope for multiple collections with:</p>
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  --port PORT            Port to listen on.
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  --server ADDR          Optional signaling server address.
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  --relay-server ADDR    Optional relay server address.
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  --max-memory BYTES     Optional maximum memory to use.
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  --dump-dir PATH        Directory to dump object to if max-memory exceeded.
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  --peer-channels COUNT  Datachannels to use per peer connection
@@ -1816,12 +1816,12 @@ request transfer scope for multiple collections with:</p>
 <p><strong>Options:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>  --help  Show this message and exit.
 </span></code></pre></div>
-<h1 id="signaling-server">signaling-server<a class="headerlink" href="#signaling-server" title="Permanent link">&para;</a></h1>
-<p>Run a signaling server instance.</p>
-<p>The signaling server is used by clients to establish peer-to-peer
+<h1 id="proxystore-relay">proxystore-relay<a class="headerlink" href="#proxystore-relay" title="Permanent link">&para;</a></h1>
+<p>Run a relay server instance.</p>
+<p>The relay server is used by clients to establish peer-to-peer
 WebRTC connections.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>signaling-server [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>proxystore-relay [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>  --host ADDR                     Address to listen on.

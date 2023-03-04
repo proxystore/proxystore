@@ -1277,8 +1277,8 @@
   
   
     <li class="md-nav__item">
-      <a href="server/" class="md-nav__link">
-        proxystore.p2p.server
+      <a href="relay/" class="md-nav__link">
+        proxystore.p2p.relay
       </a>
     </li>
   
@@ -1748,17 +1748,17 @@
 
   <div class="doc doc-contents first">
   
-      <p>Peer-to-peer communication and signaling.</p>
+      <p>Peer-to-peer communication and relaying.</p>
 <p>This module provides two main functionalities: the
 <a class="autorefs autorefs-internal" href="manager/#proxystore.p2p.manager.PeerManager"><code>PeerManager</code></a> and
-<a class="autorefs autorefs-internal" href="server/#proxystore.p2p.server.SignalingServer"><code>SignalingServer</code></a>.</p>
+<a class="autorefs autorefs-internal" href="relay/#proxystore.p2p.relay.RelayServer"><code>RelayServer</code></a>.</p>
 <ul>
 <li>The <a class="autorefs autorefs-internal" href="manager/#proxystore.p2p.manager.PeerManager"><code>PeerManager</code></a> enables
   easy communication between arbitrary peers even if peers are behind separate
   NATs. Peer connections are established using
   <a href="https://aiortc.readthedocs.io/" target="_blank">aiortc</a>, an asyncio WebRTC
   implementation.</li>
-<li>The <a class="autorefs autorefs-internal" href="server/#proxystore.p2p.server.SignalingServer"><code>SignalingServer</code></a> is a
+<li>The <a class="autorefs autorefs-internal" href="relay/#proxystore.p2p.relay.RelayServer"><code>RelayServer</code></a> is a
   commonly accessible server by peers that is used to facilitate WebRTC peer
   connections.</li>
 </ul>
