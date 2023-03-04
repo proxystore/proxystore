@@ -58,6 +58,7 @@ dev = [
 ]
 docs = [
     "black",
+    "mkdocs-click",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-material",

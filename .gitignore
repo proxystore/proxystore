@@ -69,7 +69,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/api/
+# docs/api/
 docs/_build/
 docs/_autosummary/
 
