@@ -86,7 +86,7 @@ zmq = [
 
 [project.scripts]
 signaling-server = "proxystore.p2p.server:cli"
-proxystore-endpoint = "proxystore.endpoint.cli:main"
+proxystore-endpoint = "proxystore.endpoint.cli:cli"
 proxystore-globus-auth = "proxystore.globus:cli"
 
 [tool.black]

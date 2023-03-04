@@ -1,10 +1,14 @@
-"""`proxystore-endpoint` command-line interface."""
+"""`proxystore-endpoint` command-line interface.
+
+See the CLI Reference for the
+[`proxystore-endpoint`](../cli.md#proxystore-endpoint) usage instructions.
+"""
 from __future__ import annotations
 
-import argparse
 import logging
 import sys
-from typing import Sequence
+
+import click
 
 import proxystore
 from proxystore.endpoint.commands import configure_endpoint
@@ -44,166 +48,121 @@ class _CLIFormatter(logging.Formatter):
             return formatter.format(record)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """CLI for managing endpoints on the local system.
-
-    !!! note "Usage"
-        ```bash
-        $ proxystore-endpoint [command] {options}
-        $ proxystore-endpoint --help
-        ```
-    """
-    argv = argv if argv is not None else sys.argv[1:]
-    parser = argparse.ArgumentParser(
-        prog='proxystore-endpoint',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    # https://stackoverflow.com/a/8521644/812183
-    parser.add_argument(
-        '-V',
-        '--version',
-        action='version',
-        version=f'%(prog)s {proxystore.__version__}',
-    )
-    parser.add_argument(
-        '--log-level',
-        choices=['ERROR', 'WARNING', 'INFO', 'DEBUG'],
-        default='INFO',
-        help='logging level for CLI and any subprocesses',
-    )
-    subparsers = parser.add_subparsers(dest='command')
-
-    # Command: configure
-    parser_configure = subparsers.add_parser(
-        'configure',
-        help='configure a new endpoint',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser_configure.add_argument('name', help='name of endpoint')
-    parser_configure.add_argument(
-        '--port',
-        type=int,
-        default=9753,
-        help='port the endpoint should listen on',
-    )
-    parser_configure.add_argument(
-        '--server',
-        default=None,
-        help='signaling server address for P2P connections',
-    )
-    parser_configure.add_argument(
-        '--max-memory',
-        default=None,
-        type=int,
-        required='--dump-dir' in sys.argv,
-        help='optional maximum number of bytes to store in memory',
-    )
-    parser_configure.add_argument(
-        '--dump-dir',
-        default=None,
-        required='--max-memory' in sys.argv,
-        help='optional directory to dump objects to if max_memory reached',
-    )
-    parser_configure.add_argument(
-        '--peer-channels',
-        default=1,
-        type=int,
-        help='datachannels per peer connection',
-    )
-
-    # Command: list
-    subparsers.add_parser(
-        'list',
-        help='list all user endpoints',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-
-    # Command: remove
-    parser_remove = subparsers.add_parser(
-        'remove',
-        help='remove an endpoint',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser_remove.add_argument('name', help='name of endpoint')
-
-    # Command: start
-    parser_start = subparsers.add_parser(
-        'start',
-        help='start an endpoint',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser_start.add_argument('name', help='name of endpoint')
-    parser_start.add_argument(
-        '--no-detach',
-        action='store_true',
-        help='do not detach the endpoint process',
-    )
-
-    # Command: stop
-    parser_stop = subparsers.add_parser(
-        'stop',
-        help='stop an endpoint',
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser_stop.add_argument('name', help='name of endpoint')
-
-    # Source: https://github.com/pre-commit/pre-commit
-    parser_help = subparsers.add_parser(
-        'help',
-        help='show help for a specific command',
-    )
-    parser_help.add_argument(
-        'help_command',
-        nargs='?',
-        help='command to show help for',
-    )
-
-    if len(argv) == 0:
-        argv = ['--help']
-
-    # https://stackoverflow.com/questions/46962065
-    known, unknown = parser.parse_known_args(argv)
-    args = parser.parse_args(unknown, namespace=known)
-
-    if args.command == 'help' and args.help_command is not None:
-        parser.parse_args([args.help_command, '--help'])
-    elif args.command == 'help':
-        parser.parse_args(['--help'])
-
+@click.group()
+@click.option(
+    '--log-level',
+    default='INFO',
+    type=click.Choice(
+        ['ERROR', 'WARNING', 'INFO', 'DEBUG'],
+        case_sensitive=False,
+    ),
+    help='Minimum logging level.',
+)
+@click.pass_context
+def cli(ctx: click.Context, log_level: str) -> None:
+    """Manage and start ProxyStore Endpoints."""
     handler = logging.StreamHandler(sys.stdout)
     handler.setFormatter(_CLIFormatter())
-    logging.basicConfig(level=args.log_level, handlers=[handler])
-
-    if args.command == 'configure':
-        return configure_endpoint(
-            args.name,
-            port=args.port,
-            server=args.server,
-            max_memory=args.max_memory,
-            dump_dir=args.dump_dir,
-            peer_channels=args.peer_channels,
-        )
-    elif args.command == 'list':
-        return list_endpoints()
-    elif args.command == 'remove':
-        return remove_endpoint(args.name)
-    elif args.command == 'start':
-        return start_endpoint(
-            args.name,
-            detach=not args.no_detach,
-            log_level=args.log_level,
-        )
-    elif args.command == 'stop':
-        return stop_endpoint(args.name)
-    else:
-        raise NotImplementedError(
-            f'{args.command} is not a supported command. '
-            'Use --help for list of commands.',
-        )
-
-    raise AssertionError(f'{args.command} failed to exit with a return code.')
+    logging.basicConfig(level=log_level, handlers=[handler])
+    ctx.ensure_object(dict)
+    ctx.obj['LOG_LEVEL'] = log_level
 
 
-if __name__ == '__main__':
-    raise SystemExit(main())
+@cli.command(name='help')
+def show_help() -> None:
+    """Show available commands and options."""
+    with click.Context(cli) as ctx:
+        click.echo(cli.get_help(ctx))
+
+
+@cli.command()
+def version() -> None:
+    """Show the ProxyStore version."""
+    click.echo(f'ProxyStore v{proxystore.__version__}')
+
+
+@cli.command()
+@click.argument('name', metavar='NAME', required=True)
+@click.option(
+    '--port',
+    default=8765,
+    type=int,
+    metavar='PORT',
+    help='Port to listen on.',
+)
+@click.option(
+    '--server',
+    default=None,
+    metavar='ADDR',
+    help='Optional signaling server address.',
+)
+@click.option(
+    '--max-memory',
+    default=None,
+    type=int,
+    metavar='BYTES',
+    help='Optional maximum memory to use.',
+)
+@click.option(
+    '--dump-dir',
+    default=None,
+    metavar='PATH',
+    help='Directory to dump object to if max-memory exceeded.',
+)
+@click.option(
+    '--peer-channels',
+    default=1,
+    type=int,
+    metavar='COUNT',
+    help='Datachannels to use per peer connection',
+)
+def configure(
+    name: str,
+    port: int,
+    server: str,
+    max_memory: int | None,
+    dump_dir: str | None,
+    peer_channels: int,
+) -> None:
+    """Configure a new endpoint."""
+    raise SystemExit(
+        configure_endpoint(
+            name,
+            port=port,
+            server=server,
+            max_memory=max_memory,
+            dump_dir=dump_dir,
+            peer_channels=peer_channels,
+        ),
+    )
+
+
+@cli.command(name='list')
+def list_all() -> None:
+    """List all user endpoints."""
+    raise SystemExit(list_endpoints())
+
+
+@cli.command()
+@click.argument('name', metavar='NAME', required=True)
+def remove(name: str) -> None:
+    """Remove an endpoint."""
+    raise SystemExit(remove_endpoint(name))
+
+
+@cli.command()
+@click.argument('name', metavar='NAME', required=True)
+@click.option('--detach/--no-detach', default=True, help='Run as daemon.')
+@click.pass_context
+def start(ctx: click.Context, name: str, detach: bool) -> None:
+    """Start an endpoint."""
+    raise SystemExit(
+        start_endpoint(name, detach=detach, log_level=ctx.obj['LOG_LEVEL']),
+    )
+
+
+@cli.command()
+@click.argument('name', metavar='NAME', required=True)
+def stop(name: str) -> None:
+    """Stop a detached endpoint."""
+    raise SystemExit(stop_endpoint(name))
