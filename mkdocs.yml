@@ -30,8 +30,8 @@ theme:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
       scheme: default
-      primary: deep purple
-      accent: lime
+      primary: proxystore-light
+      accent: proxystore-light
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
@@ -39,8 +39,8 @@ theme:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: deep purple
-      accent: lime
+      primary: proxystore-light
+      accent: proxystore-light
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
@@ -48,15 +48,14 @@ theme:
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: deep purple
-      accent: lime
+      primary: proxystore-dark
+      accent: proxystore-dark
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
   overrides: docs/_overrides
-  # favicon: static/favicon.png
-  # icon:
-  #   logo: logo
+  favicon: static/favicon.png
+  logo: static/favicon.png
 
 watch:
   - mkdocs.yml
@@ -70,6 +69,7 @@ extra:
     provider: mike
 
 extra_css:
+  - css/extra.css
   - css/mkdocstrings.css
 
 markdown_extensions:
