@@ -76,8 +76,12 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
 
         # Test caching
         assert not store.is_cached(key1)
+        # Cache exists is false but this is still true
+        assert store.exists(key1)
         assert store.get(key1) == value
         assert store.is_cached(key1)
+        # Cache exists is true shortcut
+        assert store.exists(key1)
 
         # Add second value
         key2 = store.set(value)

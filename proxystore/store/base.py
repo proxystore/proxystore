@@ -374,7 +374,9 @@ class Store(Generic[ConnectorT]):
         Returns:
             If an object associated with the key exists.
         """
-        res = self.connector.exists(key)
+        res = self.cache.exists(key)
+        if not res:
+            res = self.connector.exists(key)
         logger.debug(
             f'exists called for key={key} and Store(name={self.name}): '
             f'result={res}',
