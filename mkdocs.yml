@@ -55,7 +55,7 @@ theme:
         name: Switch to system preference
   overrides: docs/_overrides
   favicon: static/favicon.png
-  logo: static/favicon.png
+  logo: static/icon.png
 
 watch:
   - mkdocs.yml
