@@ -21,7 +21,6 @@ else:  # pragma: <3.11 cover
 
 import proxystore
 from proxystore.connectors.connector import Connector
-from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
@@ -44,7 +43,7 @@ DeserializerT = Callable[[bytes], Any]
 """Deserializer type alias."""
 
 
-class StoreFactory(Factory[T], Generic[ConnectorT, T]):
+class StoreFactory(Generic[ConnectorT, T]):
     """Factory that resolves an object from a store.
 
     Adds support for asynchronously retrieving objects from a
@@ -83,6 +82,14 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
         # because they are specific to that instance of the factory
         self._obj_future: Future[T] | None = None
 
+    def __call__(self) -> T:
+        if self._obj_future is not None:
+            obj = self._obj_future.result()
+            self._obj_future = None
+            return obj
+
+        return self.resolve()
+
     def __getnewargs_ex__(
         self,
     ) -> tuple[tuple[ConnectorKeyT, dict[str, Any]], dict[str, Any]]:
@@ -94,27 +101,6 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             'evict': self.evict,
             'deserializer': self.deserializer,
         }
-
-    def _get_value(self) -> T:
-        """Get the value associated with the key from the store."""
-        store = self.get_store()
-        obj = store.get(self.key, deserializer=self.deserializer)
-
-        if obj is None:
-            raise ProxyResolveMissingKeyError(
-                self.key,
-                type(store),
-                store.name,
-            )
-
-        if self.evict:
-            store.evict(self.key)
-
-        return cast(T, obj)
-
-    def _should_resolve_async(self) -> bool:
-        """Check if it makes sense to do asynchronous resolution."""
-        return not self.get_store().is_cached(self.key)
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.
@@ -136,17 +122,24 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             ProxyResolveMissingKeyError: If the key associated with this
                 factory does not exist in the store.
         """
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
+        store = self.get_store()
+        obj = store.get(self.key, deserializer=self.deserializer)
 
-        return self._get_value()
+        if obj is None:
+            raise ProxyResolveMissingKeyError(
+                self.key,
+                type(store),
+                store.name,
+            )
+
+        if self.evict:
+            store.evict(self.key)
+
+        return cast(T, obj)
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
-        if self._should_resolve_async():
-            self._obj_future = _default_pool.submit(self._get_value)
+        self._obj_future = _default_pool.submit(self.resolve)
 
 
 class Store(Generic[ConnectorT]):
