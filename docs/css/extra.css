@@ -1,22 +1,33 @@
+/*
+ * Logo colors:
+ *   purple: #5B2A86
+ *   blue: #7785AC
+ *   green: #A5E6BA
+ *
+ * Alternates:
+ *   red: #D16666
+ *
+ */
 :root {
-  --md-primary-fg-color: #F0F9F2;
-  --md-primary-bg-color: #4D4D4D;
+  --md-primary-fg-color: #5B2A86;
+  --md-accent-fg-color: #D16666;
+  --md-accent-bg-color: #D16666;
 }
 
 [data-md-color-primary="proxystore-light"] {
-  --md-typeset-a-color: #552D81;
-  --md-accent-fg-color: #F39237;
-  --md-accent-bg-color: #F39237;
+  --md-typeset-a-color: #5B2A86;
 }
 
 [data-md-color-primary="proxystore-dark"] {
-  --md-typeset-a-color: #B1E1BB;
-  --md-accent-fg-color: #F39237;
-  --md-accent-bg-color: #F39237;
+  --md-typeset-a-color: #A5E6BA;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-hue: 220;
+  --md-hue: 240;
+}
+
+.md-typeset h1 {
+  font-weight: 400;
 }
 
 .md-tabs__link {
