@@ -47,9 +47,9 @@
     {% set heading_level = heading_level - 1 %}
   {% endif %}
 
-  <p>
-      Source file: <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/{{ module.filepath }}">{{ module.filepath }}</a>
-  </p>
+  <div class="doc doc-contents">
+      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/{{ module.filepath }}"><code>{{ module.filepath }}</code></a>
+  </div>
 
   <div class="doc doc-contents {% if root %}first{% endif %}">
     {% with docstring_sections = module.docstring.parsed %}
