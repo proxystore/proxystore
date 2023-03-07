@@ -19,13 +19,11 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-import proxystore as ps
+import proxystore
 from proxystore.connectors.connector import Connector
 from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
-from proxystore.serialize import deserialize as default_deserializer
-from proxystore.serialize import serialize as default_serializer
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.utils import fullname
@@ -125,10 +123,10 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             ValueError: If the type of the returned store does not match the
                 expected store type passed to the factory constructor.
         """
-        store = ps.store.get_store(self.store_config['name'])
+        store = proxystore.store.get_store(self.store_config['name'])
         if store is None:
             store = Store.from_config(self.store_config)
-            ps.store.register_store(store)
+            proxystore.store.register_store(store)
         return store
 
     def resolve(self) -> T:
@@ -223,7 +221,7 @@ class Store(Generic[ConnectorT]):
         return (
             self._serializer
             if self._serializer is not None
-            else default_serializer
+            else proxystore.serialize.serialize
         )
 
     @property
@@ -232,7 +230,7 @@ class Store(Generic[ConnectorT]):
         return (
             self._deserializer
             if self._deserializer is not None
-            else default_deserializer
+            else proxystore.serialize.deserialize
         )
 
     def close(self) -> None:
