@@ -34,7 +34,6 @@ class EndpointStore(Store[EndpointConnector]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
     """
 
     def __init__(
@@ -46,7 +45,6 @@ class EndpointStore(Store[EndpointConnector]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
-        stats: bool = False,
     ) -> None:
         warnings.warn(
             'The EndpointStore will be deprecated in v0.6.0. Initializing a '
@@ -64,5 +62,4 @@ class EndpointStore(Store[EndpointConnector]):
             serializer=serializer,
             deserializer=deserializer,
             cache_size=cache_size,
-            stats=stats,
         )

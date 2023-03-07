@@ -1,7 +1,6 @@
 """Base Store Abstract Class."""
 from __future__ import annotations
 
-import copy
 import logging
 import sys
 from concurrent.futures import Future
@@ -29,10 +28,6 @@ from proxystore.serialize import deserialize as default_deserializer
 from proxystore.serialize import serialize as default_serializer
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
-from proxystore.store.stats import FunctionEventStats
-from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
-from proxystore.store.stats import TimeStats
-from proxystore.store.utils import get_key
 from proxystore.utils import fullname
 from proxystore.utils import get_class_path
 from proxystore.utils import import_class
@@ -89,28 +84,6 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
         self._obj_future: Future[T] | None = None
-        self.stats: FunctionEventStats | None = None
-        if 'stats' in self.store_config and self.store_config['stats']:
-            self.stats = FunctionEventStats()
-            # Monkeypatch methods with wrappers to track their stats
-            setattr(  # noqa: B010
-                self,
-                'resolve',
-                self.stats.wrap(
-                    self.resolve,
-                    preset_key=self.key,
-                    function_name='factory_resolve',
-                ),
-            )
-            setattr(  # noqa: B010
-                self,
-                'resolve_async',
-                self.stats.wrap(
-                    self.resolve_async,
-                    preset_key=self.key,
-                    function_name='factory_resolve_async',
-                ),
-            )
 
     def __getnewargs_ex__(
         self,
@@ -193,7 +166,6 @@ class Store(Generic[ConnectorT]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
@@ -207,7 +179,6 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
-        stats: bool = False,
     ) -> None:
         if cache_size < 0:
             raise ValueError(
@@ -220,41 +191,6 @@ class Store(Generic[ConnectorT]):
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
-
-        self._stats: FunctionEventStats | None = None
-        if stats:
-            self._stats = FunctionEventStats()
-            # Monkeypatch methods with wrappers to track their stats
-            for attr in dir(self):
-                if (
-                    callable(getattr(self, attr))
-                    and not attr.startswith('_')
-                    and attr in STORE_METHOD_KEY_IS_RESULT
-                ):
-                    method = getattr(self, attr)
-                    # For most method, the key is the first arg which wrap()
-                    # expects by default, but there are a couple where the
-                    # key is passed as a kwarg
-                    wrapped = self._stats.wrap(
-                        method,
-                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
-                        function_name=f'store_{method.__name__}',
-                    )
-                    setattr(self, attr, wrapped)
-            # Monkeypatch connector methods with wrappers
-            for attr in dir(self.connector):
-                if (
-                    callable(getattr(self.connector, attr))
-                    and not attr.startswith('_')
-                    and attr in STORE_METHOD_KEY_IS_RESULT
-                ):
-                    method = getattr(self.connector, attr)
-                    wrapped = self._stats.wrap(
-                        method,
-                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
-                        function_name=f'connector_{method.__name__}',
-                    )
-                    setattr(self.connector, attr, wrapped)
 
         logger.debug(f'initialized {self}')
 
@@ -280,11 +216,6 @@ class Store(Generic[ConnectorT]):
         s += ', '.join(attributes)
         s += ')'
         return s
-
-    @property
-    def has_stats(self) -> bool:
-        """Whether the store keeps track of performance stats."""
-        return self._stats is not None
 
     @property
     def serializer(self) -> SerializerT:
@@ -334,7 +265,6 @@ class Store(Generic[ConnectorT]):
             'serializer': self._serializer,
             'deserializer': self._deserializer,
             'cache_size': self._cache_size,
-            'stats': self._stats is not None,
         }
 
     @classmethod
@@ -594,7 +524,7 @@ class Store(Generic[ConnectorT]):
         if serializer is not None:
             obj = serializer(obj)
         else:
-            obj = default_serializer(obj)
+            obj = self.serializer(obj)
 
         if not isinstance(obj, bytes):
             raise TypeError('Serializer must produce bytes.')
@@ -634,7 +564,7 @@ class Store(Generic[ConnectorT]):
             if serializer is not None:
                 obj = serializer(obj)
             else:
-                obj = default_serializer(obj)
+                obj = self.serializer(obj)
 
             if not isinstance(obj, bytes):
                 raise TypeError('Serializer must produce bytes.')
@@ -647,59 +577,3 @@ class Store(Generic[ConnectorT]):
             f'set called for keys={keys} and Store(name={self.name})',
         )
         return keys
-
-    def stats(
-        self,
-        key_or_proxy: ConnectorKeyT | Proxy[T],
-    ) -> dict[str, TimeStats]:
-        """Get stats on the store.
-
-        Args:
-            key_or_proxy: A key to get stats for or a proxy to extract the key
-                from.
-
-        Returns:
-            A dict with keys corresponding to method names and values which \
-            are [`TimeStats`][proxystore.store.stats.TimeStats] instances \
-            with the statistics for calls to the corresponding method with \
-            the specified key.
-
-        Example:
-            ```python
-            {
-                "get": TimeStats(
-                    calls=32,
-                    avg_time_ms=0.0123,
-                    min_time_ms=0.0012,
-                    max_time_ms=0.1234,
-                ),
-                "set": TimeStats(...),
-                "evict": TimeStats(...),
-                ...
-            }
-            ```
-
-        Raises:
-            ValueError: If `self` was initialized with `#!python stats=False`.
-        """
-        if self._stats is None:
-            raise ValueError(
-                'Stats are not being tracked because this store was '
-                'initialized with stats=False.',
-            )
-        stats = {}
-        if isinstance(key_or_proxy, ps.proxy.Proxy):
-            key = get_key(key_or_proxy)
-            # Merge stats from the proxy into self
-            if hasattr(key_or_proxy.__factory__, 'stats'):
-                proxy_stats = key_or_proxy.__factory__.stats
-                if proxy_stats is not None:
-                    for event in proxy_stats:
-                        stats[event.function] = copy.copy(proxy_stats[event])
-        else:
-            key = key_or_proxy
-
-        for event in list(self._stats.keys()):
-            if event.key == key:
-                stats[event.function] = copy.copy(self._stats[event])
-        return stats
