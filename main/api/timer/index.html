@@ -12,27 +12,27 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://proxystore.dev/main/api/store/stats/">
+        <link rel="canonical" href="https://proxystore.dev/main/api/timer/">
       
       
-        <link rel="prev" href="../redis/">
+        <link rel="prev" href="../store/utils/">
       
       
         <link rel="next" href="../utils/">
       
-      <link rel="icon" href="../../../static/favicon.png">
+      <link rel="icon" href="../../static/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.1">
     
     
       
-        <title>proxystore.store.stats - ProxyStore</title>
+        <title>proxystore.timer - ProxyStore</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.402914a4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.402914a4.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.a0c5b2b5.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.a0c5b2b5.min.css">
       
       
 
@@ -48,13 +48,13 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../css/extra.css">
+      <link rel="stylesheet" href="../../css/extra.css">
     
-      <link rel="stylesheet" href="../../../css/mkdocstrings.css">
+      <link rel="stylesheet" href="../../css/mkdocstrings.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -83,7 +83,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#proxystore.store.stats" class="md-skip">
+        <a href="#proxystore.timer" class="md-skip">
           Skip to content
         </a>
       
@@ -101,9 +101,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href="../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../../static/icon.png" alt="logo">
+  <img src="../../static/icon.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              proxystore.store.stats
+              proxystore.timer
             
           </span>
         </div>
@@ -231,7 +231,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../.." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         Home
       </a>
     </li>
@@ -244,7 +244,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../../concepts/" class="md-tabs__link">
+    <a href="../../concepts/" class="md-tabs__link">
       Concepts
     </a>
   </li>
@@ -256,7 +256,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../../guides/" class="md-tabs__link">
+    <a href="../../guides/" class="md-tabs__link">
       Guides
     </a>
   </li>
@@ -278,7 +278,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../" class="md-tabs__link md-tabs__link--active">
+      <a href="../" class="md-tabs__link md-tabs__link--active">
         API Reference
       </a>
     </li>
@@ -293,7 +293,7 @@
 
 
   <li class="md-tabs__item">
-    <a href="../../../contributing/" class="md-tabs__link">
+    <a href="../../contributing/" class="md-tabs__link">
       Contributing
     </a>
   </li>
@@ -320,9 +320,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href="../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../../static/icon.png" alt="logo">
+  <img src="../../static/icon.png" alt="logo">
 
     </a>
     ProxyStore
@@ -377,7 +377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         Overview
       </a>
     </li>
@@ -391,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -405,7 +405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../get-started/" class="md-nav__link">
+      <a href="../../get-started/" class="md-nav__link">
         Get Started
       </a>
     </li>
@@ -419,7 +419,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/" class="md-nav__link">
+      <a href="../../examples/" class="md-nav__link">
         Examples
       </a>
     </li>
@@ -433,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../known-issues/" class="md-nav__link">
+      <a href="../../known-issues/" class="md-nav__link">
         Known Issues
       </a>
     </li>
@@ -481,7 +481,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../../concepts/">Concepts</a>
+          <a href="../../concepts/">Concepts</a>
           
             <label for="__nav_2">
               <span class="md-nav__icon md-icon"></span>
@@ -502,7 +502,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/proxy/" class="md-nav__link">
+      <a href="../../concepts/proxy/" class="md-nav__link">
         Proxy
       </a>
     </li>
@@ -516,7 +516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/connector/" class="md-nav__link">
+      <a href="../../concepts/connector/" class="md-nav__link">
         Connector
       </a>
     </li>
@@ -530,7 +530,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/store/" class="md-nav__link">
+      <a href="../../concepts/store/" class="md-nav__link">
         Store
       </a>
     </li>
@@ -564,7 +564,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../../guides/">Guides</a>
+          <a href="../../guides/">Guides</a>
           
             <label for="__nav_3">
               <span class="md-nav__icon md-icon"></span>
@@ -585,7 +585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/endpoints/" class="md-nav__link">
+      <a href="../../guides/endpoints/" class="md-nav__link">
         Endpoints
       </a>
     </li>
@@ -599,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/performance/" class="md-nav__link">
+      <a href="../../guides/performance/" class="md-nav__link">
         Performance
       </a>
     </li>
@@ -695,7 +695,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../">proxystore</a>
+          <a href="../">proxystore</a>
           
             <label for="__nav_4_1_1">
               <span class="md-nav__icon md-icon"></span>
@@ -728,7 +728,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../connectors/">proxystore.connectors</a>
+          <a href="../connectors/">proxystore.connectors</a>
           
             <label for="__nav_4_1_1_1">
               <span class="md-nav__icon md-icon"></span>
@@ -749,7 +749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/connector/" class="md-nav__link">
+      <a href="../connectors/connector/" class="md-nav__link">
         proxystore.connectors.connector
       </a>
     </li>
@@ -775,7 +775,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../connectors/dim/">proxystore.connectors.dim</a>
+          <a href="../connectors/dim/">proxystore.connectors.dim</a>
           
             <label for="__nav_4_1_1_1_2">
               <span class="md-nav__icon md-icon"></span>
@@ -796,7 +796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/dim/margo/" class="md-nav__link">
+      <a href="../connectors/dim/margo/" class="md-nav__link">
         proxystore.connectors.dim.margo
       </a>
     </li>
@@ -810,7 +810,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/dim/ucx/" class="md-nav__link">
+      <a href="../connectors/dim/ucx/" class="md-nav__link">
         proxystore.connectors.dim.ucx
       </a>
     </li>
@@ -824,7 +824,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/dim/utils/" class="md-nav__link">
+      <a href="../connectors/dim/utils/" class="md-nav__link">
         proxystore.connectors.dim.utils
       </a>
     </li>
@@ -838,7 +838,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/dim/zmq/" class="md-nav__link">
+      <a href="../connectors/dim/zmq/" class="md-nav__link">
         proxystore.connectors.dim.zmq
       </a>
     </li>
@@ -859,7 +859,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/endpoint/" class="md-nav__link">
+      <a href="../connectors/endpoint/" class="md-nav__link">
         proxystore.connectors.endpoint
       </a>
     </li>
@@ -873,7 +873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/file/" class="md-nav__link">
+      <a href="../connectors/file/" class="md-nav__link">
         proxystore.connectors.file
       </a>
     </li>
@@ -887,7 +887,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/globus/" class="md-nav__link">
+      <a href="../connectors/globus/" class="md-nav__link">
         proxystore.connectors.globus
       </a>
     </li>
@@ -901,7 +901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/local/" class="md-nav__link">
+      <a href="../connectors/local/" class="md-nav__link">
         proxystore.connectors.local
       </a>
     </li>
@@ -915,7 +915,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/multi/" class="md-nav__link">
+      <a href="../connectors/multi/" class="md-nav__link">
         proxystore.connectors.multi
       </a>
     </li>
@@ -929,7 +929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../connectors/redis/" class="md-nav__link">
+      <a href="../connectors/redis/" class="md-nav__link">
         proxystore.connectors.redis
       </a>
     </li>
@@ -962,7 +962,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../endpoint/">proxystore.endpoint</a>
+          <a href="../endpoint/">proxystore.endpoint</a>
           
             <label for="__nav_4_1_1_2">
               <span class="md-nav__icon md-icon"></span>
@@ -983,7 +983,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/cli/" class="md-nav__link">
+      <a href="../endpoint/cli/" class="md-nav__link">
         proxystore.endpoint.cli
       </a>
     </li>
@@ -997,7 +997,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/commands/" class="md-nav__link">
+      <a href="../endpoint/commands/" class="md-nav__link">
         proxystore.endpoint.commands
       </a>
     </li>
@@ -1011,7 +1011,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/config/" class="md-nav__link">
+      <a href="../endpoint/config/" class="md-nav__link">
         proxystore.endpoint.config
       </a>
     </li>
@@ -1025,7 +1025,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/constants/" class="md-nav__link">
+      <a href="../endpoint/constants/" class="md-nav__link">
         proxystore.endpoint.constants
       </a>
     </li>
@@ -1039,7 +1039,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/endpoint/" class="md-nav__link">
+      <a href="../endpoint/endpoint/" class="md-nav__link">
         proxystore.endpoint.endpoint
       </a>
     </li>
@@ -1053,7 +1053,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/exceptions/" class="md-nav__link">
+      <a href="../endpoint/exceptions/" class="md-nav__link">
         proxystore.endpoint.exceptions
       </a>
     </li>
@@ -1067,7 +1067,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/messages/" class="md-nav__link">
+      <a href="../endpoint/messages/" class="md-nav__link">
         proxystore.endpoint.messages
       </a>
     </li>
@@ -1081,7 +1081,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/serve/" class="md-nav__link">
+      <a href="../endpoint/serve/" class="md-nav__link">
         proxystore.endpoint.serve
       </a>
     </li>
@@ -1095,7 +1095,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../endpoint/storage/" class="md-nav__link">
+      <a href="../endpoint/storage/" class="md-nav__link">
         proxystore.endpoint.storage
       </a>
     </li>
@@ -1116,7 +1116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../factory/" class="md-nav__link">
+      <a href="../factory/" class="md-nav__link">
         proxystore.factory
       </a>
     </li>
@@ -1130,7 +1130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../globus/" class="md-nav__link">
+      <a href="../globus/" class="md-nav__link">
         proxystore.globus
       </a>
     </li>
@@ -1156,7 +1156,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../p2p/">proxystore.p2p</a>
+          <a href="../p2p/">proxystore.p2p</a>
           
             <label for="__nav_4_1_1_5">
               <span class="md-nav__icon md-icon"></span>
@@ -1177,7 +1177,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/chunks/" class="md-nav__link">
+      <a href="../p2p/chunks/" class="md-nav__link">
         proxystore.p2p.chunks
       </a>
     </li>
@@ -1191,7 +1191,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/client/" class="md-nav__link">
+      <a href="../p2p/client/" class="md-nav__link">
         proxystore.p2p.client
       </a>
     </li>
@@ -1205,7 +1205,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/connection/" class="md-nav__link">
+      <a href="../p2p/connection/" class="md-nav__link">
         proxystore.p2p.connection
       </a>
     </li>
@@ -1219,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/counter/" class="md-nav__link">
+      <a href="../p2p/counter/" class="md-nav__link">
         proxystore.p2p.counter
       </a>
     </li>
@@ -1233,7 +1233,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/exceptions/" class="md-nav__link">
+      <a href="../p2p/exceptions/" class="md-nav__link">
         proxystore.p2p.exceptions
       </a>
     </li>
@@ -1247,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/manager/" class="md-nav__link">
+      <a href="../p2p/manager/" class="md-nav__link">
         proxystore.p2p.manager
       </a>
     </li>
@@ -1261,7 +1261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/messages/" class="md-nav__link">
+      <a href="../p2p/messages/" class="md-nav__link">
         proxystore.p2p.messages
       </a>
     </li>
@@ -1275,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/relay/" class="md-nav__link">
+      <a href="../p2p/relay/" class="md-nav__link">
         proxystore.p2p.relay
       </a>
     </li>
@@ -1289,7 +1289,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../p2p/task/" class="md-nav__link">
+      <a href="../p2p/task/" class="md-nav__link">
         proxystore.p2p.task
       </a>
     </li>
@@ -1310,7 +1310,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../proxy/" class="md-nav__link">
+      <a href="../proxy/" class="md-nav__link">
         proxystore.proxy
       </a>
     </li>
@@ -1324,7 +1324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../serialize/" class="md-nav__link">
+      <a href="../serialize/" class="md-nav__link">
         proxystore.serialize
       </a>
     </li>
@@ -1336,23 +1336,21 @@
               
   
   
-    
-  
   
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1_8" checked>
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_1_8" >
       
       
       
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../">proxystore.store</a>
+          <a href="../store/">proxystore.store</a>
           
             <label for="__nav_4_1_1_8">
               <span class="md-nav__icon md-icon"></span>
@@ -1360,7 +1358,7 @@
           
         </div>
       
-      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_1_8_label" aria-expanded="true">
+      <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_1_8_label" aria-expanded="false">
         <label class="md-nav__title" for="__nav_4_1_1_8">
           <span class="md-nav__icon md-icon"></span>
           proxystore.store
@@ -1373,7 +1371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../base/" class="md-nav__link">
+      <a href="../store/base/" class="md-nav__link">
         proxystore.store.base
       </a>
     </li>
@@ -1387,7 +1385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cache/" class="md-nav__link">
+      <a href="../store/cache/" class="md-nav__link">
         proxystore.store.cache
       </a>
     </li>
@@ -1401,7 +1399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/" class="md-nav__link">
+      <a href="../store/endpoint/" class="md-nav__link">
         proxystore.store.endpoint
       </a>
     </li>
@@ -1415,7 +1413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../exceptions/" class="md-nav__link">
+      <a href="../store/exceptions/" class="md-nav__link">
         proxystore.store.exceptions
       </a>
     </li>
@@ -1429,7 +1427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../file/" class="md-nav__link">
+      <a href="../store/file/" class="md-nav__link">
         proxystore.store.file
       </a>
     </li>
@@ -1443,7 +1441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../globus/" class="md-nav__link">
+      <a href="../store/globus/" class="md-nav__link">
         proxystore.store.globus
       </a>
     </li>
@@ -1457,7 +1455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../local/" class="md-nav__link">
+      <a href="../store/local/" class="md-nav__link">
         proxystore.store.local
       </a>
     </li>
@@ -1471,7 +1469,21 @@
   
   
     <li class="md-nav__item">
-      <a href="../multi/" class="md-nav__link">
+      <a href="../store/metrics/" class="md-nav__link">
+        proxystore.store.metrics
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../store/multi/" class="md-nav__link">
         proxystore.store.multi
       </a>
     </li>
@@ -1485,9 +1497,30 @@
   
   
     <li class="md-nav__item">
-      <a href="../redis/" class="md-nav__link">
+      <a href="../store/redis/" class="md-nav__link">
         proxystore.store.redis
       </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../store/utils/" class="md-nav__link">
+        proxystore.store.utils
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
     </li>
   
 
@@ -1507,12 +1540,12 @@
       
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          proxystore.store.stats
+          proxystore.timer
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        proxystore.store.stats
+        proxystore.timer
       </a>
       
         
@@ -1529,57 +1562,51 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#proxystore.store.stats" class="md-nav__link">
-    proxystore.store.stats
+  <a href="#proxystore.timer" class="md-nav__link">
+    proxystore.timer
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.store.stats.Event" class="md-nav__link">
-    Event
+  <a href="#proxystore.timer.Timer" class="md-nav__link">
+    Timer
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxystore.store.stats.TimeStats" class="md-nav__link">
-    TimeStats
-  </a>
-  
-    <nav class="md-nav" aria-label="TimeStats">
+    <nav class="md-nav" aria-label="Timer">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.store.stats.TimeStats.add_time" class="md-nav__link">
-    add_time()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats" class="md-nav__link">
-    FunctionEventStats
-  </a>
-  
-    <nav class="md-nav" aria-label="FunctionEventStats">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats.keys" class="md-nav__link">
-    keys()
+  <a href="#proxystore.timer.Timer.elapsed_ns" class="md-nav__link">
+    elapsed_ns
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats.wrap" class="md-nav__link">
-    wrap()
+  <a href="#proxystore.timer.Timer.elapsed_ms" class="md-nav__link">
+    elapsed_ms
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.elapsed_s" class="md-nav__link">
+    elapsed_s
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.start" class="md-nav__link">
+    start()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.stop" class="md-nav__link">
+    stop()
   </a>
   
 </li>
@@ -1605,27 +1632,6 @@
   
     <li class="md-nav__item">
       <a href="../utils/" class="md-nav__link">
-        proxystore.store.utils
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../utils/" class="md-nav__link">
         proxystore.utils
       </a>
     </li>
@@ -1639,7 +1645,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../warnings/" class="md-nav__link">
+      <a href="../warnings/" class="md-nav__link">
         proxystore.warnings
       </a>
     </li>
@@ -1667,7 +1673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         CLI Reference
       </a>
     </li>
@@ -1681,7 +1687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../legacy-docs/" class="md-nav__link">
+      <a href="../legacy-docs/" class="md-nav__link">
         Legacy Docs
       </a>
     </li>
@@ -1715,7 +1721,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../../contributing/">Contributing</a>
+          <a href="../../contributing/">Contributing</a>
           
             <label for="__nav_5">
               <span class="md-nav__icon md-icon"></span>
@@ -1736,7 +1742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/style-guide/" class="md-nav__link">
+      <a href="../../contributing/style-guide/" class="md-nav__link">
         Style Guide
       </a>
     </li>
@@ -1750,7 +1756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/issues-pull-requests/" class="md-nav__link">
+      <a href="../../contributing/issues-pull-requests/" class="md-nav__link">
         Issues and Pull Requests
       </a>
     </li>
@@ -1764,7 +1770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../contributing/releases/" class="md-nav__link">
+      <a href="../../contributing/releases/" class="md-nav__link">
         Releases
       </a>
     </li>
@@ -1803,57 +1809,51 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#proxystore.store.stats" class="md-nav__link">
-    proxystore.store.stats
+  <a href="#proxystore.timer" class="md-nav__link">
+    proxystore.timer
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.store.stats.Event" class="md-nav__link">
-    Event
+  <a href="#proxystore.timer.Timer" class="md-nav__link">
+    Timer
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxystore.store.stats.TimeStats" class="md-nav__link">
-    TimeStats
-  </a>
-  
-    <nav class="md-nav" aria-label="TimeStats">
+    <nav class="md-nav" aria-label="Timer">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.store.stats.TimeStats.add_time" class="md-nav__link">
-    add_time()
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats" class="md-nav__link">
-    FunctionEventStats
-  </a>
-  
-    <nav class="md-nav" aria-label="FunctionEventStats">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats.keys" class="md-nav__link">
-    keys()
+  <a href="#proxystore.timer.Timer.elapsed_ns" class="md-nav__link">
+    elapsed_ns
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.store.stats.FunctionEventStats.wrap" class="md-nav__link">
-    wrap()
+  <a href="#proxystore.timer.Timer.elapsed_ms" class="md-nav__link">
+    elapsed_ms
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.elapsed_s" class="md-nav__link">
+    elapsed_s
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.start" class="md-nav__link">
+    start()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.timer.Timer.stop" class="md-nav__link">
+    stop()
   </a>
   
 </li>
@@ -1881,19 +1881,19 @@
   
 
 
-  <h1>proxystore.store.stats</h1>
+  <h1>proxystore.timer</h1>
 
 <div class="doc doc-object doc-module">
 
 
-<a id="proxystore.store.stats"></a>
+<a id="proxystore.timer"></a>
   <div class="doc doc-contents">
-      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/store/stats.py"><code>proxystore/store/stats.py</code></a>
+      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/timer.py"><code>proxystore/timer.py</code></a>
   </div>
 
   <div class="doc doc-contents first">
   
-      <p>Utilities for Tracking Stats on Store Operations.</p>
+      <p>Timing utilities.</p>
 
   
 
@@ -1910,185 +1910,61 @@
 
 
 
-<h2 id="proxystore.store.stats.Event" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Event</span>
+<h2 id="proxystore.timer.Timer" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">Timer</span>
 
 
-<a href="#proxystore.store.stats.Event" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
-
-  
-      <p>Event corresponding to a function called with a specific key.</p>
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="proxystore.store.stats.TimeStats" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">TimeStats</span>
-
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
-  </span>
-
-<a href="#proxystore.store.stats.TimeStats" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-  <div class="doc doc-contents ">
-
-  
-      <p>Helper class for tracking time stats of an operation.</p>
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="proxystore.store.stats.TimeStats.add_time" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">add_time()</span>
-
-
-<a href="#proxystore.store.stats.TimeStats.add_time" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">add_time</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">time_ms</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">size_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a href="#proxystore.timer.Timer" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Timer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-  
-      <p>Add a new time to the stats.</p>
 
-  <p>Parameters:</p>
+  
+      <p>Performance timer with nanosecond precision.</p>
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">Timer</span><span class="p">()</span> <span class="k">as</span> <span class="n">timer</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">...</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">timer</span><span class="o">.</span><span class="n">elapsed_ms</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.timer</span> <span class="kn">import</span> <span class="n">Timer</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">timer</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="o">...</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">timer</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">timer</span><span class="o">.</span><span class="n">elapsed_ms</span><span class="p">)</span>
+</span></code></pre></div>
+</details>
+  <p>Raises:</p>
   <ul>
       <li class="field-body">
-        <b>time_ms</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Time (milliseconds) of a method execution.</p>
-      </li>
-      <li class="field-body">
-        <b>size_bytes</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Optionally note the data size associated with
-the operation that produced these statistics.</p>
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError">RuntimeError</a></code>
+          –
+        <p>If the elapsed time is accessed before the timer is
+stopped or the context block is exited.</p>
       </li>
   </ul>
 
-      <details class="quote">
-        <summary>Source code in <code>proxystore/store/stats.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-65">65</a></span>
-<span class="normal"><a href="#__codelineno-0-66">66</a></span>
-<span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span>
-<span class="normal"><a href="#__codelineno-0-69">69</a></span>
-<span class="normal"><a href="#__codelineno-0-70">70</a></span>
-<span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#__codelineno-0-74">74</a></span>
-<span class="normal"><a href="#__codelineno-0-75">75</a></span>
-<span class="normal"><a href="#__codelineno-0-76">76</a></span>
-<span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span>
-<span class="normal"><a href="#__codelineno-0-80">80</a></span>
-<span class="normal"><a href="#__codelineno-0-81">81</a></span>
-<span class="normal"><a href="#__codelineno-0-82">82</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="k">def</span> <span class="nf">add_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">time_ms</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">size_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a new time to the stats.</span>
-</span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>
-</span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="sd">        time_ms: Time (milliseconds) of a method execution.</span>
-</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="sd">        size_bytes: Optionally note the data size associated with</span>
-</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">            the operation that produced these statistics.</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">avg_time_ms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_weighted_avg</span><span class="p">(</span>
-</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">avg_time_ms</span><span class="p">,</span>
-</span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">calls</span><span class="p">,</span>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="n">time_ms</span><span class="p">,</span>
-</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="p">)</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">min_time_ms</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">time_ms</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_time_ms</span><span class="p">)</span>
-</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_time_ms</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">time_ms</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_time_ms</span><span class="p">)</span>
-</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">calls</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">size_bytes</span> <span class="o">=</span> <span class="n">size_bytes</span>
-</span></code></pre></div></td></tr></table></div>
-      </details>
-  </div>
-
-</div>
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="proxystore.store.stats.FunctionEventStats" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">FunctionEventStats</span>
-
-
-<a href="#proxystore.store.stats.FunctionEventStats" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FunctionEventStats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</span></code></pre></div>
-
-  <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="collections.abc.MutableMapping" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping">MutableMapping</a></code></p>
-
-  
-      <p>Class for tracking stats of calls of functions that take a key.</p>
-
 
           <details class="quote">
-            <summary>Source code in <code>proxystore/store/stats.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-102">102</a></span>
-<span class="normal"><a href="#__codelineno-0-103">103</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Event</span><span class="p">,</span> <span class="n">TimeStats</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <summary>Source code in <code>proxystore/timer.py</code></summary>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_end</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
 </span></code></pre></div></td></tr></table></div>
           </details>
 
@@ -2102,31 +1978,102 @@ the operation that produced these statistics.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="proxystore.timer.Timer.elapsed_ns" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">elapsed_ns</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#proxystore.timer.Timer.elapsed_ns" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">elapsed_ns</span><span class="p">:</span> <span class="nb">int</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Elapsed time in nanoseconds.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="proxystore.timer.Timer.elapsed_ms" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">elapsed_ms</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#proxystore.timer.Timer.elapsed_ms" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">elapsed_ms</span><span class="p">:</span> <span class="nb">float</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Elapsed time in milliseconds.</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="proxystore.timer.Timer.elapsed_s" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">elapsed_s</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#proxystore.timer.Timer.elapsed_s" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">elapsed_s</span><span class="p">:</span> <span class="nb">float</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Elapsed time in seconds.</p>
+  </div>
+
+</div>
+
 
 
 <div class="doc doc-object doc-function">
 
 
 
-<h3 id="proxystore.store.stats.FunctionEventStats.keys" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">keys()</span>
+<h3 id="proxystore.timer.Timer.start" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">start()</span>
 
 
-<a href="#proxystore.store.stats.FunctionEventStats.keys" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">keys</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">KeysView</span><span class="p">[</span><span class="n">Event</span><span class="p">]</span>
+<a href="#proxystore.timer.Timer.start" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">start</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
   
-      <p>Return list of events being tracked.</p>
+      <p>Start the timer.</p>
 
       <details class="quote">
-        <summary>Source code in <code>proxystore/store/stats.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-141">141</a></span>
-<span class="normal"><a href="#__codelineno-0-142">142</a></span>
-<span class="normal"><a href="#__codelineno-0-143">143</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeysView</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
-</span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return list of events being tracked.&quot;&quot;&quot;</span>
-</span><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <summary>Source code in <code>proxystore/timer.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span>
+<span class="normal"><a href="#__codelineno-0-80">80</a></span>
+<span class="normal"><a href="#__codelineno-0-81">81</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the timer.&quot;&quot;&quot;</span>
+</span><span id="__span-0-80"><a id="__codelineno-0-80" name="__codelineno-0-80"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_start</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter_ns</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -2137,122 +2084,27 @@ the operation that produced these statistics.</p>
 
 
 
-<h3 id="proxystore.store.stats.FunctionEventStats.wrap" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">wrap()</span>
+<h3 id="proxystore.timer.Timer.stop" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">stop()</span>
 
 
-<a href="#proxystore.store.stats.FunctionEventStats.wrap" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">wrap</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">function</span><span class="p">:</span> <span class="n">GenericCallable</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">key_is_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">preset_key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">function_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenericCallable</span>
+<a href="#proxystore.timer.Timer.stop" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">stop</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
   
-      <p>Wrap a method to log stats on calls to the function.</p>
-
-  <p>Parameters:</p>
-  <ul>
-      <li class="field-body">
-        <b>function</b>
-            (<code><span title="proxystore.store.stats.GenericCallable">GenericCallable</span></code>)
-        – <p>Function to wrap.</p>
-      </li>
-      <li class="field-body">
-        <b>key_is_result</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>If <code>True</code>, the key is the return value of
-<code>function</code> rather than the first argument.</p>
-      </li>
-      <li class="field-body">
-        <b>preset_key</b>
-            (<code><span title="proxystore.store.stats.ConnectorKeyT">ConnectorKeyT</span> | None</code>)
-        – <p>Optionally preset the key associated with any calls to
-<code>function</code>. This overrides <code>key_is_returned</code>.</p>
-      </li>
-      <li class="field-body">
-        <b>function_name</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally override the function name used to
-keep track of the stats.</p>
-      </li>
-  </ul>
-
-  <p>Returns:</p>
-  <ul>
-      <li class="field-body">
-            <code><span title="proxystore.store.stats.GenericCallable">GenericCallable</span></code>
-        – <p>Callable with same interface as <code>function</code>.</p>
-      </li>
-  </ul>
+      <p>Stop the timer.</p>
 
       <details class="quote">
-        <summary>Source code in <code>proxystore/store/stats.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-200">200</a></span>
-<span class="normal"><a href="#__codelineno-0-201">201</a></span>
-<span class="normal"><a href="#__codelineno-0-202">202</a></span>
-<span class="normal"><a href="#__codelineno-0-203">203</a></span>
-<span class="normal"><a href="#__codelineno-0-204">204</a></span>
-<span class="normal"><a href="#__codelineno-0-205">205</a></span>
-<span class="normal"><a href="#__codelineno-0-206">206</a></span>
-<span class="normal"><a href="#__codelineno-0-207">207</a></span>
-<span class="normal"><a href="#__codelineno-0-208">208</a></span>
-<span class="normal"><a href="#__codelineno-0-209">209</a></span>
-<span class="normal"><a href="#__codelineno-0-210">210</a></span>
-<span class="normal"><a href="#__codelineno-0-211">211</a></span>
-<span class="normal"><a href="#__codelineno-0-212">212</a></span>
-<span class="normal"><a href="#__codelineno-0-213">213</a></span>
-<span class="normal"><a href="#__codelineno-0-214">214</a></span>
-<span class="normal"><a href="#__codelineno-0-215">215</a></span>
-<span class="normal"><a href="#__codelineno-0-216">216</a></span>
-<span class="normal"><a href="#__codelineno-0-217">217</a></span>
-<span class="normal"><a href="#__codelineno-0-218">218</a></span>
-<span class="normal"><a href="#__codelineno-0-219">219</a></span>
-<span class="normal"><a href="#__codelineno-0-220">220</a></span>
-<span class="normal"><a href="#__codelineno-0-221">221</a></span>
-<span class="normal"><a href="#__codelineno-0-222">222</a></span>
-<span class="normal"><a href="#__codelineno-0-223">223</a></span>
-<span class="normal"><a href="#__codelineno-0-224">224</a></span>
-<span class="normal"><a href="#__codelineno-0-225">225</a></span>
-<span class="normal"><a href="#__codelineno-0-226">226</a></span>
-<span class="normal"><a href="#__codelineno-0-227">227</a></span>
-<span class="normal"><a href="#__codelineno-0-228">228</a></span>
-<span class="normal"><a href="#__codelineno-0-229">229</a></span>
-<span class="normal"><a href="#__codelineno-0-230">230</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="k">def</span> <span class="nf">wrap</span><span class="p">(</span>
-</span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a>    <span class="n">function</span><span class="p">:</span> <span class="n">GenericCallable</span><span class="p">,</span>
-</span><span id="__span-0-203"><a id="__codelineno-0-203" name="__codelineno-0-203"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-204"><a id="__codelineno-0-204" name="__codelineno-0-204"></a>    <span class="n">key_is_result</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-205"><a id="__codelineno-0-205" name="__codelineno-0-205"></a>    <span class="n">preset_key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-206"><a id="__codelineno-0-206" name="__codelineno-0-206"></a>    <span class="n">function_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-207"><a id="__codelineno-0-207" name="__codelineno-0-207"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GenericCallable</span><span class="p">:</span>
-</span><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap a method to log stats on calls to the function.</span>
-</span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a>
-</span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">        function: Function to wrap.</span>
-</span><span id="__span-0-212"><a id="__codelineno-0-212" name="__codelineno-0-212"></a><span class="sd">        key_is_result: If `True`, the key is the return value of</span>
-</span><span id="__span-0-213"><a id="__codelineno-0-213" name="__codelineno-0-213"></a><span class="sd">            `function` rather than the first argument.</span>
-</span><span id="__span-0-214"><a id="__codelineno-0-214" name="__codelineno-0-214"></a><span class="sd">        preset_key: Optionally preset the key associated with any calls to</span>
-</span><span id="__span-0-215"><a id="__codelineno-0-215" name="__codelineno-0-215"></a><span class="sd">            `function`. This overrides `key_is_returned`.</span>
-</span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a><span class="sd">        function_name: Optionally override the function name used to</span>
-</span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a><span class="sd">            keep track of the stats.</span>
-</span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a>
-</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a><span class="sd">        Callable with same interface as `function`.</span>
-</span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a>    <span class="n">out_fun</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
-</span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_function</span><span class="p">,</span>
-</span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>        <span class="n">function</span><span class="p">,</span>
-</span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a>        <span class="n">key_is_result</span><span class="p">,</span>
-</span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a>        <span class="n">preset_key</span><span class="p">,</span>
-</span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a>        <span class="n">function_name</span><span class="p">,</span>
-</span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a>    <span class="p">)</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a>
-</span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a>    <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">GenericCallable</span><span class="p">,</span> <span class="n">out_fun</span><span class="p">)</span>
+        <summary>Source code in <code>proxystore/timer.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-83">83</a></span>
+<span class="normal"><a href="#__codelineno-0-84">84</a></span>
+<span class="normal"><a href="#__codelineno-0-85">85</a></span>
+<span class="normal"><a href="#__codelineno-0-86">86</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the timer.&quot;&quot;&quot;</span>
+</span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_end</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">perf_counter_ns</span><span class="p">()</span>
+</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_running</span> <span class="o">=</span> <span class="kc">False</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -2321,10 +2173,10 @@ keep track of the stats.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.b78d2936.min.js"></script>
+      <script src="../../assets/javascripts/bundle.b78d2936.min.js"></script>
       
     
   </body>
