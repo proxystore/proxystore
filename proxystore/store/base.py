@@ -163,6 +163,17 @@ class StoreFactory(Generic[ConnectorT, T]):
 class Store(Generic[ConnectorT]):
     """Key-value store interface for proxies.
 
+    Tip:
+        A [`Store`][proxystore.store.base.Store] instance can be used as a
+        context manager which will automatically call
+        [`close()`][proxystore.store.base.Store.close] on exit.
+
+        ```python
+        with Store('my-store', connector=...) as store:
+            key = store.set('value')
+            store.get(key)
+        ```
+
     Args:
         name: Name of the store instance.
         connector: Connector instance to use for object storage.
