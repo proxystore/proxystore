@@ -1,109 +1,199 @@
 # Performance Tracking
 
-The ProxyStore [`Store`][proxystore.store.base.Store] interface provides low-level performance tracking on store operations (e.g., `get` and `set`).
-Performance tracking is disabled by default and can be enabled by passing `#!python stats=True` to a [`Store`][proxystore.store.base.Store] constructor.
+The [`Store`][proxystore.store.base.Store] can record metrics on executed operations (e.g., `get` and `set`).
+Metric collection is disabled by default and can be enabled by passing `#!python metrics=True` to a [`Store`][proxystore.store.base.Store] constructor.
+
+## Enabling Metrics
 
 ```python
+import dataclasses
 from proxystore.connectors.file import FileConnector
+from proxystore.store import register_store
 from proxystore.store.base import Store
 
 store = Store(
    name='example-store',
    connector=FileConnector('/tmp/proxystore-dump'),
-   stats=True,
+   metrics=True,
 )
+register_store(store)
+assert store.metrics is not None
 ```
 
-Performance statistics are aggregated on a per-key level and can be accessed via the [`Store.stats()`][proxystore.store.base.Store.stats] method.
-[`Store.stats()`][proxystore.store.base.Store.stats] takes a key (string) or [`Proxy`][proxystore.proxy.Proxy] and returns a dictionary mapping [`Store`][proxystore.store.base.Store] operations to [`TimeStats`][proxystore.store.stats.TimeStats] objects containing the aggregated statistics for the operation.
+Metrics are accessed via the
+[`Store.metrics`][proxystore.store.base.Store.metrics] property. This property
+will be `None` when metrics are disabled.
 
 !!! warning
-    Performance statistics are local to each [`Store`][proxystore.store.base.Store] instance.
-    In multi-process applications or applications that instantiate multiple [`Store`][proxystore.store.base.Store] instances, the statistics returned by [`Store.stats()`][proxystore.store.base.Store.stats] will only represent a partial view of the overall performance.
+    Metrics are local to each [`Store`][proxystore.store.base.Store] instance.
+    In multi-process applications or applications that instantiate multiple
+    [`Store`][proxystore.store.base.Store] instances,
+    [`Store.metrics`][proxystore.store.base.Store.metrics] will only represent
+    a partial view of the overall performance.
 
-!!! warning
-    Attempting to query [`Store.stats()`][proxystore.store.base.Store.stats] without initializing the store to track stats will raise a `#!python ValueError`.
+Three types of metrics are collected.
 
-Continuing with the above `store` object, an instance of [`Store`][proxystore.store.base.Store] configured to track performance statistics, we can perform operations on `store` and inspect the statistics.
-In the following block, we add an object to the store and see that there are now performance statistics on the [`Store.set()`][proxystore.store.base.Store.set] and [`FileConnector.put()`][proxystore.connectors.file.FileConnector.put] operations.
+* Attributes: arbitrary attributes associated with an operation.
+* Counters: scalar counters that represent the number of times an event occurs.
+* Times: durations of events.
 
+## A Simple Example
+
+Consider executing a `get` and `set` operation on `store`.
 ```python
-target = list(range(0, 100))
-key = store.set(target)
-
-stats = store.stats(key)
-stats.keys()
-# dict_keys(['connector_put', 'store_set'])
-stats['store_set']
-# TimeStats(
-#     calls=1,
-#     avg_time_ms=0.0645,
-#     min_time_ms=0.0645,
-#     max_time_ms=0.0645,
-#     size_bytes=None,
-# )
-stats['connector_put']
-# TimeStats(
-#     calls=1,
-#     avg_time_ms=0.0419,
-#     min_time_ms=0.0419,
-#     max_time_ms=0.0419,
-#     size_bytes=219,
-# )
+key = store.set([0, 1, 2, 3, 4, 5])
+store.get(key)
 ```
 
-Operations that work directly on bytes will also note the size of the byte
-array used in the operation in the `#!python TimeStats.size_bytes` attribute.
-As more operations are performed on the store, more statistics will be accumulated.
-
+We can inspect the metrics recorded for operations on `key`.
 ```python
-target = store.get(key)
-stats = store.stats(key)
+metrics = store.metrics.get_metrics(key)
 
-stats.keys()
-# dict_keys(
-#     ['connector_put', 'store_set', 'store_is_cached',
-#      'connector_get', 'store_get']
-# )
-# Attributes of `TimeStats` can be accessed directly
-stats['store_get'].calls
-# 1
-stats['store_get'].avg_time_ms
-# 0.0502
-
-# Check that the avg time of `get` decreases due to caching
-# when called twice in a row.
-target = store.get(key)
-stats = store.stats(key)
-stats['store_get'].calls
-# 2
-stats['store_get'].avg_time_ms
-# 0.03175
+tuple(field.name for field in dataclasses.fields(metrics))
+>>> ('attributes', 'counters', 'times')
 ```
 
-Performance statistics can also be accessed with a proxy.
-
+`metrics` is an instance of [`Metrics`][proxystore.store.metrics.Metrics] which
+is a [`dataclass`][dataclasses.dataclass] with three fields:
+`attributes`, `counters`, and `times`. We can further inspect these fields.
 ```python
-target_proxy = store.proxy(target)
-stats = store.stats(target_proxy)
-stats.keys()
-# dict_keys(['connector_put', 'store_set', 'store_proxy'])
-stats['store_proxy'].avg_time_ms
-# 0.0724
+metrics.attributes
+>>> {'store.get.object_size': 219, 'store.set.object_size': 219}
+metrics.counters
+>>> {'store.get.cache_misses': 1}
+metrics.times
+>>> {
+>>>     'store.set.serialize': TimeStats(
+>>>         count=1, avg_time_ms=9.9, min_time_ms=9.9, max_time_ms=9.9
+>>>     ),
+>>>     'store.set.connector': TimeStats(
+>>>         count=1, avg_time_ms=36.9, min_time_ms=36.9, max_time_ms=36.9
+>>>     ),
+>>>     'store.set': TimeStats(
+>>>         count=1, avg_time_ms=53.4, min_time_ms=53.4, max_time_ms=53.4
+>>>     ),
+>>>     'store.get.connector': TimeStats(
+>>>         count=1, avg_time_ms=16.1, min_time_ms=16.1, max_time_ms=16.1
+>>>     ),
+>>>     'store.get.deserialize': TimeStats(
+>>>         count=1, avg_time_ms=7.6, min_time_ms=7.6, max_time_ms=7.6
+>>>     ),
+>>>     'store.get': TimeStats(
+>>>         count=1, avg_time_ms=45.6, min_time_ms=45.6, max_time_ms=45.6
+>>>     ),
+>>> }
 ```
 
-Proxies produced by a store with performance tracking enabled will also track statistics on time taken to resolve itself.
-When [`Store.stats()`][proxystore.store.base.Store.stats] is passed a proxy, the method will inspect the proxy for any performance statistics and include any statistics in the result.
+Operations or events are represented by a hierarchical namespace.
+E.g., `store.get.object_size` is the serialized object size from the call to
+[`Store.get()`][proxystore.store.base.Store.get].
+In `metrics.attributes`, we see the serialized object was 219 bytes.
+In `metrics.counters`, we see we had one cache miss when getting the object.
+In `metrics.times`, we see statistics about the duration of each operation.
+For example, `store.get` is the overall time
+[`Store.get()`][proxystore.store.base.Store.get] took, `store.get.connector` is
+the time spent calling
+[`Connector.get()`][proxystore.connectors.connector.Connector.get], and
+`store.get.deserialize` is the time spent deserializing the object returned
+by [`Connector.get()`][proxystore.connectors.connector.Connector.get].
 
+If we get the object again, we'll see the metrics change.
 ```python
+store.get(key)
+
+metrics = store.metrics.get_metrics(key)
+metrics.counters
+>>> {'store.get.cache_hits': 1, 'store.get.cache_misses': 1}
+metrics.times['store.get']
+>>> TimeStats(count=2, avg_time_ms=24.4, min_time_ms=3.2, max_time_ms=45.6)
+```
+Here, we see that the second get resulted in a cache hit, and our average
+time for `store.get` dropped significantly.
+
+Attributes of a [`TimeStats`][proxystore.store.metrics.TimeStats] instance
+can be directly accessed.
+```python
+metrics.times['store.get'].avg_time_ms
+>>> 24.4
+```
+
+## Metrics with Proxies
+
+Metrics are also tracked on proxy operations.
+```python
+proxy = store.proxy(target)
+
 # Access the proxy to force it to resolve.
 assert target_proxy[0] == 0
 
-stats = store.stats(target_proxy)
-stats.keys()
-# dict_keys(['factory_resolve', 'connector_put', 'store_set', 'store_proxy'])
-stats['factory_resolve'].avg_time_ms
-# >>> 0.133
+metrics = store.metrics.get_metrics(proxy)
+metrics.times
+>>> {
+>>>     'factory.call': TimeStats(...)
+>>>     'factory.resolve': TimeStats(...),
+>>>     'store.get': TimeStats(...),
+>>>     'store.get.connector': TimeStats(...),
+>>>     'store.get.deserialize': TimeStats(...),
+>>>     'store.proxy': TimeStats(...),
+>>>     'store.set': TimeStats(...),
+>>>     'store.set.connector': TimeStats(...),
+>>>     'store.set.serialize': TimeStats(...),
+>>> }
+```
+Calling [`Store.proxy()`][proxystore.store.base.Store.proxy] internally
+called [`Store.set()`][proxystore.store.base.Store.set]. Accessing the
+proxy internally resolved the factory so we also see metrics about the
+`factory` and `store.get`.
+
+!!! warning
+
+    For metrics to appropriately be tracked when a proxy is resolved, the
+    [`Store`][proxystore.store.base.Store] needs to be registered globally
+    with [`register_store()`][proxystore.store.register_store]. Otherwise,
+    the factory will initialize a second [`Store`][proxystore.store.base.Store]
+    to register and record its metrics to the second instance.
+
+## Metrics for Batch Operations
+
+For batch [`Store`][proxystore.store.base.Store] operations, metrics are
+recorded for the entire batch. I.e., the batch of keys is treated as a single
+super key.
+
+```python
+keys = store.set_batch(['value1', 'value2', 'value3'])
+metrics = store.metrics.get_metrics(keys)
+metrics.times
+>>> {
+>>>     'store.set_batch.serialize': TimeStats(...),
+>>>     'store.set_batch.connector': TimeStats(...),
+>>>     'store.set_batch': TimeStats(...)
+>>> }
 ```
 
-Python code used to generate the above examples can be found at https://github.com/proxystore/proxystore/blob/main/examples/store_stats.py.
+## Aggregating Metrics
+
+Rather than accessing metrics associated with a specific key (or batched key),
+time statistics can be aggregated over all keys.
+
+```python
+store.metrics.aggregate_times()
+>>> {
+>>>     'factory.call': TimeStats(...),
+>>>     'factory.resolve': TimeStats(...),
+>>>     'store.get': TimeStats(...),
+>>>     'store.get.connector': TimeStats(...),
+>>>     'store.get.deserialize': TimeStats(...),
+>>>     'store.proxy': TimeStats(...),
+>>>     'store.set': TimeStats(...),
+>>>     'store.set.connector': TimeStats(...),
+>>>     'store.set.serialize': TimeStats(...),
+>>>     'store.set_batch': TimeStats(...),
+>>>     'store.set_batch.connector': TimeStats(...),
+>>>     'store.set_batch.serialize': TimeStats(...),
+>>> }
+```
+Each of these [`TimeStats`][proxystore.store.metrics.TimeStats] represents
+the aggregate over all keys.
+
+The Python code used to generate the above examples can be found at
+[github.com/proxystore/proxystore/examples/store_metrics.py](https://github.com/proxystore/proxystore/blob/main/examples/store_metrics.py){target=_blank}.
