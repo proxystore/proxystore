@@ -29,7 +29,7 @@ class FileStore(Store[FileConnector]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
+        metrics: Enable recording operation metrics.
     """
 
     def __init__(
@@ -40,7 +40,7 @@ class FileStore(Store[FileConnector]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
-        stats: bool = False,
+        metrics: bool = False,
     ) -> None:
         warnings.warn(
             'The FileStore will be deprecated in v0.6.0. Initializing a '
@@ -55,5 +55,5 @@ class FileStore(Store[FileConnector]):
             serializer=serializer,
             deserializer=deserializer,
             cache_size=cache_size,
-            stats=stats,
+            metrics=metrics,
         )

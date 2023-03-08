@@ -33,7 +33,7 @@ class MultiStore(Store[MultiConnector]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
+        metrics: Enable recording operation metrics.
     """
 
     def __init__(
@@ -44,7 +44,7 @@ class MultiStore(Store[MultiConnector]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
-        stats: bool = False,
+        metrics: bool = False,
     ) -> None:
         warnings.warn(
             'The MultiStore will be deprecated in v0.6.0. Initializing a '
@@ -59,5 +59,5 @@ class MultiStore(Store[MultiConnector]):
             serializer=serializer,
             deserializer=deserializer,
             cache_size=cache_size,
-            stats=stats,
+            metrics=metrics,
         )

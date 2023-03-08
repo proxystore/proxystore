@@ -62,11 +62,7 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     assert f() == [1, 2, 3]
     assert f._obj_future is None
 
-    # Calling resolve_async should be no-op since value cached
-    f.resolve_async()
-    assert f._obj_future is None
-    assert f() == [1, 2, 3]
-
+    # Check factory serialization
     f_str = serialize(f)
     f = deserialize(f_str)
     assert f() == [1, 2, 3]

@@ -1,7 +1,6 @@
 """Base Store Abstract Class."""
 from __future__ import annotations
 
-import copy
 import logging
 import sys
 from concurrent.futures import Future
@@ -20,19 +19,15 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-import proxystore as ps
+import proxystore
+import proxystore.serialize
 from proxystore.connectors.connector import Connector
-from proxystore.factory import Factory
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
-from proxystore.serialize import deserialize as default_deserializer
-from proxystore.serialize import serialize as default_serializer
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
-from proxystore.store.stats import FunctionEventStats
-from proxystore.store.stats import STORE_METHOD_KEY_IS_RESULT
-from proxystore.store.stats import TimeStats
-from proxystore.store.utils import get_key
+from proxystore.store.metrics import StoreMetrics
+from proxystore.timer import Timer
 from proxystore.utils import fullname
 from proxystore.utils import get_class_path
 from proxystore.utils import import_class
@@ -51,7 +46,7 @@ DeserializerT = Callable[[bytes], Any]
 """Deserializer type alias."""
 
 
-class StoreFactory(Factory[T], Generic[ConnectorT, T]):
+class StoreFactory(Generic[ConnectorT, T]):
     """Factory that resolves an object from a store.
 
     Adds support for asynchronously retrieving objects from a
@@ -71,6 +66,7 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
         deserializer: Optional callable used to deserialize the byte string.
             If `None`, the default deserializer
             ([`deserialize()`][proxystore.serialize.deserialize]) will be used.
+        metrics: Enable recording operation metrics.
     """
 
     def __init__(
@@ -80,37 +76,31 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
         *,
         evict: bool = False,
         deserializer: DeserializerT | None = None,
+        metrics: bool = False,
     ) -> None:
         self.key = key
         self.store_config = store_config
         self.evict = evict
         self.deserializer = deserializer
+        self.metrics = metrics
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
         self._obj_future: Future[T] | None = None
-        self.stats: FunctionEventStats | None = None
-        if 'stats' in self.store_config and self.store_config['stats']:
-            self.stats = FunctionEventStats()
-            # Monkeypatch methods with wrappers to track their stats
-            setattr(  # noqa: B010
-                self,
-                'resolve',
-                self.stats.wrap(
-                    self.resolve,
-                    preset_key=self.key,
-                    function_name='factory_resolve',
-                ),
-            )
-            setattr(  # noqa: B010
-                self,
-                'resolve_async',
-                self.stats.wrap(
-                    self.resolve_async,
-                    preset_key=self.key,
-                    function_name='factory_resolve_async',
-                ),
-            )
+
+    def __call__(self) -> T:
+        with Timer() as timer:
+            if self._obj_future is not None:
+                obj = self._obj_future.result()
+                self._obj_future = None
+            else:
+                obj = self.resolve()
+
+        store = self.get_store()
+        if store.metrics is not None:
+            store.metrics.add_time('factory.call', self.key, timer.elapsed_ns)
+
+        return obj
 
     def __getnewargs_ex__(
         self,
@@ -122,28 +112,8 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
         ), {
             'evict': self.evict,
             'deserializer': self.deserializer,
+            'metrics': self.metrics,
         }
-
-    def _get_value(self) -> T:
-        """Get the value associated with the key from the store."""
-        store = self.get_store()
-        obj = store.get(self.key, deserializer=self.deserializer)
-
-        if obj is None:
-            raise ProxyResolveMissingKeyError(
-                self.key,
-                type(store),
-                store.name,
-            )
-
-        if self.evict:
-            store.evict(self.key)
-
-        return cast(T, obj)
-
-    def _should_resolve_async(self) -> bool:
-        """Check if it makes sense to do asynchronous resolution."""
-        return not self.get_store().is_cached(self.key)
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.
@@ -152,10 +122,10 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             ValueError: If the type of the returned store does not match the
                 expected store type passed to the factory constructor.
         """
-        store = ps.store.get_store(self.store_config['name'])
+        store = proxystore.store.get_store(self.store_config['name'])
         if store is None:
             store = Store.from_config(self.store_config)
-            ps.store.register_store(store)
+            proxystore.store.register_store(store)
         return store
 
     def resolve(self) -> T:
@@ -165,21 +135,44 @@ class StoreFactory(Factory[T], Generic[ConnectorT, T]):
             ProxyResolveMissingKeyError: If the key associated with this
                 factory does not exist in the store.
         """
-        if self._obj_future is not None:
-            obj = self._obj_future.result()
-            self._obj_future = None
-            return obj
+        with Timer() as timer:
+            store = self.get_store()
+            obj = store.get(self.key, deserializer=self.deserializer)
 
-        return self._get_value()
+            if obj is None:
+                raise ProxyResolveMissingKeyError(
+                    self.key,
+                    type(store),
+                    store.name,
+                )
+
+            if self.evict:
+                store.evict(self.key)
+
+        if store.metrics is not None:
+            total_time = timer.elapsed_ns
+            store.metrics.add_time('factory.resolve', self.key, total_time)
+
+        return cast(T, obj)
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
-        if self._should_resolve_async():
-            self._obj_future = _default_pool.submit(self._get_value)
+        self._obj_future = _default_pool.submit(self.resolve)
 
 
 class Store(Generic[ConnectorT]):
     """Key-value store interface for proxies.
+
+    Tip:
+        A [`Store`][proxystore.store.base.Store] instance can be used as a
+        context manager which will automatically call
+        [`close()`][proxystore.store.base.Store.close] on exit.
+
+        ```python
+        with Store('my-store', connector=...) as store:
+            key = store.set('value')
+            store.get(key)
+        ```
 
     Args:
         name: Name of the store instance.
@@ -193,7 +186,7 @@ class Store(Generic[ConnectorT]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-        stats: Collect stats on store operations.
+        metrics: Enable recording operation metrics.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
@@ -207,7 +200,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
-        stats: bool = False,
+        metrics: bool = False,
     ) -> None:
         if cache_size < 0:
             raise ValueError(
@@ -217,44 +210,10 @@ class Store(Generic[ConnectorT]):
         self.name = name
         self.connector = connector
         self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
+        self._metrics = StoreMetrics() if metrics else None
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
-
-        self._stats: FunctionEventStats | None = None
-        if stats:
-            self._stats = FunctionEventStats()
-            # Monkeypatch methods with wrappers to track their stats
-            for attr in dir(self):
-                if (
-                    callable(getattr(self, attr))
-                    and not attr.startswith('_')
-                    and attr in STORE_METHOD_KEY_IS_RESULT
-                ):
-                    method = getattr(self, attr)
-                    # For most method, the key is the first arg which wrap()
-                    # expects by default, but there are a couple where the
-                    # key is passed as a kwarg
-                    wrapped = self._stats.wrap(
-                        method,
-                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
-                        function_name=f'store_{method.__name__}',
-                    )
-                    setattr(self, attr, wrapped)
-            # Monkeypatch connector methods with wrappers
-            for attr in dir(self.connector):
-                if (
-                    callable(getattr(self.connector, attr))
-                    and not attr.startswith('_')
-                    and attr in STORE_METHOD_KEY_IS_RESULT
-                ):
-                    method = getattr(self.connector, attr)
-                    wrapped = self._stats.wrap(
-                        method,
-                        key_is_result=STORE_METHOD_KEY_IS_RESULT[attr],
-                        function_name=f'connector_{method.__name__}',
-                    )
-                    setattr(self.connector, attr, wrapped)
 
         logger.debug(f'initialized {self}')
 
@@ -282,9 +241,9 @@ class Store(Generic[ConnectorT]):
         return s
 
     @property
-    def has_stats(self) -> bool:
-        """Whether the store keeps track of performance stats."""
-        return self._stats is not None
+    def metrics(self) -> StoreMetrics | None:
+        """Optional metrics for this instance."""
+        return self._metrics
 
     @property
     def serializer(self) -> SerializerT:
@@ -292,7 +251,7 @@ class Store(Generic[ConnectorT]):
         return (
             self._serializer
             if self._serializer is not None
-            else default_serializer
+            else proxystore.serialize.serialize
         )
 
     @property
@@ -301,7 +260,7 @@ class Store(Generic[ConnectorT]):
         return (
             self._deserializer
             if self._deserializer is not None
-            else default_deserializer
+            else proxystore.serialize.deserialize
         )
 
     def close(self) -> None:
@@ -334,7 +293,7 @@ class Store(Generic[ConnectorT]):
             'serializer': self._serializer,
             'deserializer': self._deserializer,
             'cache_size': self._cache_size,
-            'stats': self._stats is not None,
+            'metrics': self.metrics is not None,
         }
 
     @classmethod
@@ -359,10 +318,22 @@ class Store(Generic[ConnectorT]):
         Args:
             key: Key associated with object to evict.
         """
-        self.connector.evict(key)
-        self.cache.evict(key)
+        with Timer() as timer:
+            with Timer() as connector_timer:
+                self.connector.evict(key)
+
+            if self.metrics is not None:
+                ctime = connector_timer.elapsed_ns
+                self.metrics.add_time('store.evict.connector', key, ctime)
+
+            self.cache.evict(key)
+
+        if self.metrics is not None:
+            self.metrics.add_time('store.evict', key, timer.elapsed_ns)
+
         logger.debug(
-            f'evict called for key={key} and Store(name={self.name})',
+            f'Store(name="{self.name}"): EVICT {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
         )
 
     def exists(self, key: ConnectorKeyT) -> bool:
@@ -374,12 +345,22 @@ class Store(Generic[ConnectorT]):
         Returns:
             If an object associated with the key exists.
         """
-        res = self.cache.exists(key)
-        if not res:
-            res = self.connector.exists(key)
+        with Timer() as timer:
+            res = self.cache.exists(key)
+            if not res:
+                with Timer() as connector_timer:
+                    res = self.connector.exists(key)
+
+                if self.metrics is not None:
+                    ctime = connector_timer.elapsed_ns
+                    self.metrics.add_time('store.exists.connector', key, ctime)
+
+        if self.metrics is not None:
+            self.metrics.add_time('store.exists', key, timer.elapsed_ns)
+
         logger.debug(
-            f'exists called for key={key} and Store(name={self.name}): '
-            f'result={res}',
+            f'Store(name="{self.name}"): EXISTS {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
         )
         return res
 
@@ -402,32 +383,61 @@ class Store(Generic[ConnectorT]):
         Returns:
             Object or `None` if the object does not exist.
         """
+        timer = Timer()
+        timer.start()
+
         if self.is_cached(key):
             value = self.cache.get(key)
+
+            timer.stop()
+            if self.metrics is not None:
+                self.metrics.add_counter('store.get.cache_hits', key, 1)
+                self.metrics.add_time('store.get', key, timer.elapsed_ns)
+
             logger.debug(
-                f'get called for key={key} and Store(name={self.name}): '
-                'was_cached=True',
+                f'Store(name="{self.name}"): GET {key} in '
+                f'{timer.elapsed_ms:.3f} ms (cached=True)',
             )
             return value
 
-        value = self.connector.get(key)
+        with Timer() as connector_timer:
+            value = self.connector.get(key)
+
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            self.metrics.add_counter('store.get.cache_misses', key, 1)
+            self.metrics.add_time('store.get.connector', key, ctime)
+
         if value is not None:
-            if deserializer is not None:
-                value = deserializer(value)
-            else:
-                value = self.deserializer(value)
-            self.cache.set(key, value)
-            logger.debug(
-                f'get called for key={key} and Store(name={self.name}): '
-                'was_cached=False',
-            )
-            return value
+            with Timer() as deserializer_timer:
+                if deserializer is not None:
+                    result = deserializer(value)
+                else:
+                    result = self.deserializer(value)
+
+            if self.metrics is not None:
+                dtime = deserializer_timer.elapsed_ns
+                obj_size = len(value)
+                self.metrics.add_time('store.get.deserialize', key, dtime)
+                self.metrics.add_attribute(
+                    'store.get.object_size',
+                    key,
+                    obj_size,
+                )
+
+            self.cache.set(key, result)
+        else:
+            result = default
+
+        timer.stop()
+        if self.metrics is not None:
+            self.metrics.add_time('store.get', key, timer.elapsed_ns)
 
         logger.debug(
-            f'get called for key={key} and Store(name={self.name}): '
-            'key did not exist',
+            f'Store(name="{self.name}"): GET {key} in '
+            f'{timer.elapsed_ms:.3f} ms (cached=False)',
         )
-        return default
+        return result
 
     def is_cached(self, key: ConnectorKeyT) -> bool:
         """Check if an object associated with the key is cached locally.
@@ -464,17 +474,25 @@ class Store(Generic[ConnectorT]):
         Returns:
             A proxy of the object.
         """
-        key = self.set(obj, serializer=serializer, **kwargs)
-        factory: StoreFactory[ConnectorT, T] = StoreFactory(
-            key,
-            store_config=self.config(),
-            deserializer=deserializer,
-            evict=evict,
-        )
+        with Timer() as timer:
+            key = self.set(obj, serializer=serializer, **kwargs)
+            factory: StoreFactory[ConnectorT, T] = StoreFactory(
+                key,
+                store_config=self.config(),
+                deserializer=deserializer,
+                evict=evict,
+                metrics=self.metrics is not None,
+            )
+            proxy = Proxy(factory)
+
+        if self.metrics is not None:
+            self.metrics.add_time('store.proxy', key, timer.elapsed_ns)
+
         logger.debug(
-            f'proxy called for key={key} and Store(name={self.name})',
+            f'Store(name="{self.name}"): PROXY {key} in '
+            f'{timer.elapsed_ms:.3f}',
         )
-        return Proxy(factory)
+        return proxy
 
     def proxy_batch(
         self,
@@ -500,11 +518,25 @@ class Store(Generic[ConnectorT]):
         Returns:
             A list of proxies of the objects.
         """
-        keys = self.set_batch(objs, serializer=serializer, **kwargs)
-        return [
-            self.proxy_from_key(key, evict=evict, deserializer=deserializer)
-            for key in keys
-        ]
+        with Timer() as timer:
+            keys = self.set_batch(objs, serializer=serializer, **kwargs)
+            proxies: list[Proxy[T]] = [
+                self.proxy_from_key(
+                    key,
+                    evict=evict,
+                    deserializer=deserializer,
+                )
+                for key in keys
+            ]
+
+        if self.metrics is not None:
+            self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ns)
+
+        logger.debug(
+            f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
+            f'in {timer.elapsed_ms:.3f}',
+        )
+        return proxies
 
     def proxy_from_key(
         self,
@@ -524,15 +556,14 @@ class Store(Generic[ConnectorT]):
         Returns:
             A proxy of the object.
         """
-        logger.debug(
-            f'proxy called for key={key} and Store(name={self.name})',
-        )
         factory: StoreFactory[ConnectorT, T] = StoreFactory(
             key,
             store_config=self.config(),
             deserializer=deserializer,
             evict=evict,
+            metrics=self.metrics is not None,
         )
+        logger.debug(f'Store(name="{self.name}"): PROXY_FROM_KEY {key}')
         return Proxy(factory)
 
     def locked_proxy(
@@ -591,18 +622,32 @@ class Store(Generic[ConnectorT]):
         Raises:
             TypeError: If the output of `serializer` is not bytes.
         """
-        if serializer is not None:
-            obj = serializer(obj)
-        else:
-            obj = default_serializer(obj)
+        timer = Timer()
+        timer.start()
+
+        with Timer() as serialize_timer:
+            if serializer is not None:
+                obj = serializer(obj)
+            else:
+                obj = self.serializer(obj)
 
         if not isinstance(obj, bytes):
             raise TypeError('Serializer must produce bytes.')
 
-        key = self.connector.put(obj, **kwargs)
+        with Timer() as connector_timer:
+            key = self.connector.put(obj, **kwargs)
+
+        timer.stop()
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            stime = serialize_timer.elapsed_ns
+            self.metrics.add_attribute('store.set.object_size', key, len(obj))
+            self.metrics.add_time('store.set.serialize', key, stime)
+            self.metrics.add_time('store.set.connector', key, ctime)
+            self.metrics.add_time('store.set', key, timer.elapsed_ns)
 
         logger.debug(
-            f'set called for key={key} and Store(name={self.name})',
+            f'Store(name="{self.name}"): SET {key} in {timer.elapsed_ms:.3f}',
         )
         return key
 
@@ -628,78 +673,42 @@ class Store(Generic[ConnectorT]):
         Raises:
             TypeError: If the output of `serializer` is not bytes.
         """
-        _objs: list[bytes] = []
+        timer = Timer()
+        timer.start()
 
-        for obj in objs:
+        def _serialize(obj: Any) -> bytes:
             if serializer is not None:
                 obj = serializer(obj)
             else:
-                obj = default_serializer(obj)
+                obj = self.serializer(obj)
 
             if not isinstance(obj, bytes):
                 raise TypeError('Serializer must produce bytes.')
 
-            _objs.append(obj)
+            return obj
 
-        keys = self.connector.put_batch(_objs, **kwargs)
+        with Timer() as serialize_timer:
+            _objs = list(map(_serialize, objs))
+
+        with Timer() as connector_timer:
+            keys = self.connector.put_batch(_objs, **kwargs)
+
+        timer.stop()
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            stime = serialize_timer.elapsed_ns
+            sizes = sum(len(obj) for obj in _objs)
+            self.metrics.add_attribute(
+                'store.set_batch.object_sizes',
+                keys,
+                sizes,
+            )
+            self.metrics.add_time('store.set_batch.serialize', keys, stime)
+            self.metrics.add_time('store.set_batch.connector', keys, ctime)
+            self.metrics.add_time('store.set_batch', keys, timer.elapsed_ns)
 
         logger.debug(
-            f'set called for keys={keys} and Store(name={self.name})',
+            f'Store(name="{self.name}"): SET_BATCH ({len(keys)} items) in '
+            f'{timer.elapsed_ms:.3f}',
         )
         return keys
-
-    def stats(
-        self,
-        key_or_proxy: ConnectorKeyT | Proxy[T],
-    ) -> dict[str, TimeStats]:
-        """Get stats on the store.
-
-        Args:
-            key_or_proxy: A key to get stats for or a proxy to extract the key
-                from.
-
-        Returns:
-            A dict with keys corresponding to method names and values which \
-            are [`TimeStats`][proxystore.store.stats.TimeStats] instances \
-            with the statistics for calls to the corresponding method with \
-            the specified key.
-
-        Example:
-            ```python
-            {
-                "get": TimeStats(
-                    calls=32,
-                    avg_time_ms=0.0123,
-                    min_time_ms=0.0012,
-                    max_time_ms=0.1234,
-                ),
-                "set": TimeStats(...),
-                "evict": TimeStats(...),
-                ...
-            }
-            ```
-
-        Raises:
-            ValueError: If `self` was initialized with `#!python stats=False`.
-        """
-        if self._stats is None:
-            raise ValueError(
-                'Stats are not being tracked because this store was '
-                'initialized with stats=False.',
-            )
-        stats = {}
-        if isinstance(key_or_proxy, ps.proxy.Proxy):
-            key = get_key(key_or_proxy)
-            # Merge stats from the proxy into self
-            if hasattr(key_or_proxy.__factory__, 'stats'):
-                proxy_stats = key_or_proxy.__factory__.stats
-                if proxy_stats is not None:
-                    for event in proxy_stats:
-                        stats[event.function] = copy.copy(proxy_stats[event])
-        else:
-            key = key_or_proxy
-
-        for event in list(self._stats.keys()):
-            if event.key == key:
-                stats[event.function] = copy.copy(self._stats[event])
-        return stats
