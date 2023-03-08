@@ -29,6 +29,7 @@ class RedisStore(Store[RedisConnector]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
+        metrics: Enable recording operation metrics.
     """
 
     def __init__(
@@ -40,6 +41,7 @@ class RedisStore(Store[RedisConnector]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
+        metrics: bool = False,
     ) -> None:
         warnings.warn(
             'The RedisStore will be deprecated in v0.6.0. Initializing a '
@@ -54,4 +56,5 @@ class RedisStore(Store[RedisConnector]):
             serializer=serializer,
             deserializer=deserializer,
             cache_size=cache_size,
+            metrics=metrics,
         )
