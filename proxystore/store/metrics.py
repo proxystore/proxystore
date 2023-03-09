@@ -10,6 +10,7 @@ import copy
 import dataclasses
 import math
 import sys
+import time
 from collections import defaultdict
 from typing import Any
 from typing import Sequence
@@ -42,8 +43,17 @@ class TimeStats:
     avg_time_ms: float = 0
     min_time_ms: float = math.inf
     max_time_ms: float = 0
+    last_time_ms: float = 0
+    last_timestamp: float = 0
 
     def __add__(self, other: TimeStats) -> TimeStats:
+        if self.last_timestamp > other.last_timestamp:
+            last_time_ms = self.last_time_ms
+            last_timestamp = self.last_timestamp
+        else:
+            last_time_ms = other.last_time_ms
+            last_timestamp = other.last_timestamp
+
         return TimeStats(
             count=self.count + other.count,
             avg_time_ms=_weighted_avg(
@@ -54,6 +64,8 @@ class TimeStats:
             ),
             min_time_ms=min(self.min_time_ms, other.min_time_ms),
             max_time_ms=max(self.max_time_ms, other.max_time_ms),
+            last_time_ms=last_time_ms,
+            last_timestamp=last_timestamp,
         )
 
     def add_time(self, time_ms: float) -> None:
@@ -65,6 +77,8 @@ class TimeStats:
         )
         self.max_time_ms = max(self.max_time_ms, time_ms)
         self.min_time_ms = min(self.min_time_ms, time_ms)
+        self.last_time_ms = time_ms
+        self.last_timestamp = time.time()
         self.count += 1
 
     def as_dict(self) -> dict[str, Any]:
