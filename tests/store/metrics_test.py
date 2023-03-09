@@ -10,17 +10,26 @@ from proxystore.store.metrics import TimeStats
 
 
 def test_time_stats() -> None:
-    stats1 = TimeStats(count=1, avg_time_ms=1, min_time_ms=1, max_time_ms=1)
-    stats2 = TimeStats(count=1, avg_time_ms=3, min_time_ms=3, max_time_ms=3)
+    stats1 = TimeStats()
+    stats1.add_time(1)
+    stats2 = TimeStats()
+    stats2.add_time(3)
     stats3 = stats1 + stats2
 
     assert stats3.count == 2
     assert stats3.avg_time_ms == 2
     assert stats3.min_time_ms == 1
     assert stats3.max_time_ms == 3
+    assert stats3.last_time_ms == 3
+    assert stats3.last_timestamp == stats2.last_timestamp
+    assert stats3.last_timestamp > stats1.last_timestamp
 
-    stats1.add_time(3)
-    assert stats1 == stats3
+    stats3.add_time(6)
+    assert stats3.last_time_ms == 6
+    assert stats3.last_timestamp > stats2.last_timestamp
+
+    stats4 = stats3 + TimeStats()
+    assert stats3 == stats4
 
 
 def test_time_stats_as_dict() -> None:
