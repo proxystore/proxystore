@@ -1748,10 +1748,10 @@ compliance.</p>
 <li>Prefer f-strings (<code class="language-python highlight"><span class="sa">f</span><span class="s1">&#39;name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span></code>) over string format
   (<code class="language-python highlight"><span class="s1">&#39;name: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></code>). Never use the <code>%</code> operator.</li>
 <li>Prefer <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">typing.NamedTuple</a> over <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/collections.html#collections.namedtuple">collections.namedtuple</a>.</li>
-<li>Use lower-case and no punctuation for log messages, but use upper-case and
-  punctuation for exception values.
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;new connection opened to </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Name must contain alphanumeric characters only.&#39;</span><span class="p">)</span>
+<li>Exception messages should read as complete sentences with punctuation.
+  Logging messages can forgo trailing punctuation.
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Name must contain alphanumeric characters only.&#39;</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;New connection opened to </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 </span></code></pre></div></li>
 <li>Document all exceptions that may be raised by a function in the docstring.</li>
 </ul>
