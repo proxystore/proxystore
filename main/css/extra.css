@@ -6,6 +6,7 @@
  *
  * Alternates:
  *   red: #D16666
+ *   light-purple: #C19EE1
  *
  */
 :root {
@@ -19,11 +20,11 @@
 }
 
 [data-md-color-primary="proxystore-dark"] {
-  --md-typeset-a-color: #A5E6BA;
+  --md-typeset-a-color: #C19EE1;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-hue: 240;
+  --md-hue: 230;
 }
 
 .md-typeset h1 {
