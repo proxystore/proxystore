@@ -64,7 +64,7 @@ Endpoints can be configure and started with the `proxystore-endpoint`
 command.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --port 9732 --server remote-server.com:3574
+$ proxystore-endpoint configure my-endpoint --relay-server wss://relay-address.com
 Configured endpoint my-endpoint <12b8f3b6-6c0e-4141-b851-870895e3eb3c>.
 
 To start the endpoint:
@@ -80,17 +80,16 @@ host address, port, and singaling server address.
    to improve log readability.
 2. **UUID:** primary identifier of the endpoint. The relay server will
    use this UUID to keep track of endpoints.
-3. **Host address:** host address of the Quart app for the endpoint.
-   Defaults to the IP address of host the endpoint is configured on.
-   Note: this address is only used by clients within the local network and
-   can be set to *localhost* if the client and endpoints are on the same
-   host.
-4. **Port:** port the Quart app for the endpoint will listening on. Defaults to
-   9753.
+3. **Host address:** address of the host the endpoint was last started on.
+   Each time the endpoint is started, this address is updated.
+4. **Port:** port the endpoint will listening on. Defaults to 8765.
 5. **Relay server address**: address of relay server to use for peer
    connections. All endpoints that may peer with each other must use the same
    relay server. Relay servers are optional, and if unspecified, the
    endpoint will operate without peering functionalities.
+
+An up-to-date configuration description can found in the
+[`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.
 
 Starting the endpoint will load the configuration from the ProxyStore home
 directory, initialize the endpoint, and start a Quart app using the host and
