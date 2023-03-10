@@ -1,12 +1,15 @@
 """File system connector implementation."""
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import uuid
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+logger = logging.getLogger(__name__)
 
 
 class FileKey(NamedTuple):
@@ -29,6 +32,9 @@ class FileConnector:
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(directory={self.store_dir})'
 
     def close(self) -> None:
         """Close the connector and clean up.

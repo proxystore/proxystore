@@ -77,7 +77,7 @@ class EndpointConnector:
         found_endpoint: EndpointConfig | None = None
         for endpoint in available_endpoints:
             if endpoint.uuid in self.endpoints:
-                logger.debug(f'attempting connection to {endpoint.uuid}')
+                logger.debug(f'Attempting connection to {endpoint.uuid}')
                 response = requests.get(
                     f'http://{endpoint.host}:{endpoint.port}/endpoint',
                 )
@@ -85,15 +85,18 @@ class EndpointConnector:
                     uuid = response.json()['uuid']
                     if str(endpoint.uuid) == uuid:
                         logger.debug(
-                            f'connection to {endpoint.uuid} successful, using '
-                            'as home endpoint',
+                            f'Connection to {endpoint.uuid} successful, using '
+                            'as local endpoint',
                         )
                         found_endpoint = endpoint
                         break
                     else:
-                        logger.debug(f'{endpoint.uuid} has different UUID')
+                        logger.debug(
+                            f'Connection to {endpoint.uuid} returned '
+                            'different UUID',
+                        )
                 else:
-                    logger.debug(f'connection to {endpoint.uuid} unsuccessful')
+                    logger.debug(f'Connection to {endpoint.uuid} failed')
 
         if found_endpoint is None:
             raise EndpointConnectorError(
@@ -105,6 +108,12 @@ class EndpointConnector:
         self.endpoint_port = found_endpoint.port
 
         self.address = f'http://{self.endpoint_host}:{self.endpoint_port}'
+
+    def __repr__(self) -> str:
+        return (
+            f'{self.__class__.__name__}(connected to {self.endpoint_uuid} '
+            f'@ {self.address})'
+        )
 
     def close(self) -> None:
         """Close the connector and clean up."""
