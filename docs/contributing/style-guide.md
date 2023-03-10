@@ -13,10 +13,10 @@ compliance.
 * Prefer f-strings (`#!python f'name: {name}`) over string format
   (`#!python 'name: {}'.format(name)`). Never use the `%` operator.
 * Prefer [typing.NamedTuple][] over [collections.namedtuple][].
-* Use lower-case and no punctuation for log messages, but use upper-case and
-  punctuation for exception values.
+* Exception messages should read as complete sentences with punctuation.
+  Logging messages can forgo trailing punctuation.
   ```python
-  logger.info(f'new connection opened to {address}')
   raise ValueError('Name must contain alphanumeric characters only.')
+  logger.info(f'New connection opened to {address}')
   ```
 * Document all exceptions that may be raised by a function in the docstring.
