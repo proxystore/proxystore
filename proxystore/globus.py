@@ -100,9 +100,14 @@ def authenticate(
     )
 
     url = client.oauth2_get_authorize_url()
-    print(f'Please visit the following url to authenticate:\n{url}')
+    click.secho('Please visit the following url to authenticate:', fg='cyan')
+    click.echo(url)
 
-    auth_code = input('Enter the auth code: ').strip()
+    auth_code = click.prompt(
+        click.style('Enter the auth code:', fg='cyan'),
+        prompt_suffix=' ',
+    )
+    auth_code = auth_code.strip()
     return client.oauth2_exchange_code_for_tokens(auth_code)
 
 

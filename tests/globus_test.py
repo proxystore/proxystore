@@ -1,13 +1,13 @@
 """Globus Auth Unit Tests."""
 from __future__ import annotations
 
-import contextlib
 import json
 import os
 import pathlib
 from unittest import mock
 
 import click
+import click.testing
 import globus_sdk
 import pytest
 
@@ -38,11 +38,9 @@ def test_save_load_tokens(tmp_path: pathlib.Path) -> None:
 def test_authenticate(capsys) -> None:
     # This test is heavily mocked so most just checks for simple errors
     with mock.patch('globus_sdk.NativeAppAuthClient'), mock.patch(
-        'builtins.input',
+        'click.prompt',
         return_value='123456789',
-    ), contextlib.redirect_stdout(
-        None,
-    ):
+    ), mock.patch('click.echo'), mock.patch('click.secho'):
         authenticate('1234', 'https://redirect')
 
 
