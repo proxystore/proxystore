@@ -56,7 +56,7 @@ def create_app(
     app.register_blueprint(routes_blueprint, url_prefix='')
 
     logger.info(
-        'quart routes registered to endpoint '
+        'Quart routes registered to endpoint '
         f'{endpoint.uuid} ({endpoint.name})',
     )
 
@@ -118,14 +118,14 @@ def serve(
     serve_config.errorlog = logging.getLogger('hypercorn.error')
 
     if use_uvloop:  # pragma: no cover
-        logger.debug('installing uvloop as default event loop')
+        logger.info('Installing uvloop as default event loop')
         uvloop.install()
 
     logger.info(
-        f'serving endpoint {endpoint.uuid} ({endpoint.name}) on '
+        f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
         f'{config.host}:{config.port}',
     )
-    logger.info(f'config: {config}')
+    logger.info(f'Config: {config}')
     asyncio.run(hypercorn.asyncio.serve(app, serve_config))
 
 

@@ -477,4 +477,4 @@ class Endpoint:
         if self._peer_manager is not None:
             await self._peer_manager.close()
         self._data.cleanup()
-        logger.info(f'{self._log_prefix}: endpoint close')
+        logger.info(f'{self._log_prefix}: endpoint closed')
