@@ -216,7 +216,7 @@ async def test_relay_server_send_encode_error(
 
     assert any(
         [
-            'failed to encode' in record.message
+            'Failed to encode' in record.message
             and record.levelname == 'ERROR'
             for record in caplog.records
         ],
@@ -237,7 +237,7 @@ async def test_relay_server_send_connection_closed(
 
     assert any(
         [
-            'connection closed' in record.message
+            'Connection closed' in record.message
             and record.levelname == 'ERROR'
             for record in caplog.records
         ],

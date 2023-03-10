@@ -29,6 +29,12 @@ class RedisConnector:
         self.port = port
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
 
+    def __repr__(self) -> str:
+        return (
+            f'{self.__class__.__name__}(hostname={self.hostname}, '
+            f'port={self.port})'
+        )
+
     def close(self) -> None:
         """Close the connector and clean up."""
         pass

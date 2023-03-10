@@ -98,13 +98,13 @@ class RelayServer:
         try:
             message_str = messages.encode(message)
         except messages.MessageEncodeError as e:
-            logger.error(f'failed to encode message: {e}')
+            logger.error(f'Failed to encode message: {e}')
             return
 
         try:
             await websocket.send(message_str)
         except websockets.exceptions.ConnectionClosed:
-            logger.error('connection closed while attempting to send message')
+            logger.error('Connection closed while attempting to send message')
 
     async def register(
         self,
@@ -122,7 +122,7 @@ class RelayServer:
             # old socket. Warning: could be a client impersontating another
             if request.uuid in self._uuid_to_client:
                 logger.info(
-                    f'previously registered client {request.uuid} attempting '
+                    f'Previously registered client {request.uuid} attempting '
                     'to reregister so old registration will be removed',
                 )
                 await self.unregister(
@@ -137,13 +137,13 @@ class RelayServer:
             self._websocket_to_client[websocket] = client
             self._uuid_to_client[client.uuid] = client
             logger.info(
-                f'registered {client.uuid} ({client.name} at '
+                f'Registered {client.uuid} ({client.name} at '
                 f'{websocket.remote_address})',
             )
         else:
             client = self._websocket_to_client[websocket]
             logger.info(
-                f'previously registered client {client.uuid} attempting to '
+                f'Previously registered client {client.uuid} attempting to '
                 'reregister so previous registration will be returned',
             )
 
@@ -167,7 +167,7 @@ class RelayServer:
             return
         reason = 'ok' if expected else 'unexpected'
         logger.info(
-            f'unregistering client {client.uuid} ({client.name}) '
+            f'Unregistering client {client.uuid} ({client.name}) '
             f'for {reason} reason',
         )
         self._uuid_to_client.pop(client.uuid, None)
@@ -188,7 +188,7 @@ class RelayServer:
         client = self._websocket_to_client[websocket]
         if message.peer_uuid not in self._uuid_to_client:
             logger.warning(
-                f'client {client.uuid} ({client.name}) attempting to send '
+                f'Client {client.uuid} ({client.name}) attempting to send '
                 f'message to unknown peer {message.peer_uuid}',
             )
             message.error = (
@@ -199,7 +199,7 @@ class RelayServer:
         else:
             peer_client = self._uuid_to_client[message.peer_uuid]
             logger.info(
-                f'transmitting message from {client.uuid} ({client.name}) '
+                f'Transmitting message from {client.uuid} ({client.name}) '
                 f'to {message.peer_uuid}',
             )
             await self.send(peer_client.websocket, message)
@@ -215,7 +215,7 @@ class RelayServer:
             websocket: Websocket message was received on.
             uri: URI message was sent to.
         """
-        logger.info('relay server listening for incoming connections')
+        logger.info('Relay server listening for incoming connections')
         while True:
             try:
                 message_str = await websocket.recv()
@@ -233,7 +233,7 @@ class RelayServer:
                 break
             except messages.MessageDecodeError as e:
                 logger.error(
-                    'caught deserialization error on message received from '
+                    'Caught deserialization error on message received from '
                     f'{websocket.remote_address}: {e} ...skipping message',
                 )
                 continue
@@ -247,7 +247,7 @@ class RelayServer:
                     # If message is not a registration request but this client
                     # has not yet registered, let them know
                     logger.info(
-                        'returning server error to message received from '
+                        'Returning server error to message received from '
                         f'unregistered client {message.source_uuid} '
                         f'({message.source_name})',
                     )
@@ -301,11 +301,11 @@ async def serve(
         logger=logger,
         ssl=ssl_context,
     ):
-        logger.info(f'serving relay server on {host}:{port}')
-        logger.info('use ctrl-C to stop')
+        logger.info(f'Serving relay server on {host}:{port}')
+        logger.info('Use ctrl-C to stop')
         await stop
 
-    logger.info('server closed')
+    logger.info('Server closed')
 
 
 @click.command()

@@ -333,6 +333,9 @@ class GlobusConnector:
             authorizer=authorizer,
         )
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(endpoints={self.endpoints})'
+
     def _get_filepath(
         self,
         filename: str,
@@ -616,9 +619,19 @@ def _submit_transfer_action(
     """
     try:
         if isinstance(task, globus_sdk.DeleteData):
-            return client.submit_delete(task)
+            response = client.submit_delete(task)
+            logger.debug(
+                'Submitted DeleteData Globus task with ID '
+                f'{response["task_id"]}',
+            )
+            return response
         elif isinstance(task, globus_sdk.TransferData):
-            return client.submit_transfer(task)
+            response = client.submit_transfer(task)
+            logger.debug(
+                'Submitted TransferData Globus task with ID '
+                f'{response["task_id"]}',
+            )
+            return response
         else:
             raise AssertionError('Unreachable.')
     except globus_sdk.TransferAPIError as e:  # pragma: no cover

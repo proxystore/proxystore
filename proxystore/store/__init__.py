@@ -71,7 +71,7 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
         raise StoreExistsError(f'A store named {store.name} already exists.')
 
     _stores[store.name] = store
-    logger.debug(f'added {store.name} to global registry of stores')
+    logger.info(f'Registered a store named {store.name}')
 
 
 def unregister_store(name: str) -> None:
@@ -86,4 +86,4 @@ def unregister_store(name: str) -> None:
     """
     if name in _stores:
         del _stores[name]
-        logger.debug(f'removed {name} from global registry of stores')
+        logger.debug(f'Unregistered a store named {name}')

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 import sys
 import warnings
 from typing import Any
@@ -24,6 +25,7 @@ warnings.warn(
     stacklevel=2,
 )
 
+logger = logging.getLogger(__name__)
 KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
@@ -145,6 +147,9 @@ class MultiConnector:
             key=lambda name: self.connectors[name].policy.priority,
             reverse=True,
         )
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.connectors})'
 
     def close(self) -> None:
         """Close the connector and clean up.

@@ -1,4 +1,4 @@
-"""Base Store Abstract Class."""
+"""Store implementation."""
 from __future__ import annotations
 
 import logging
@@ -28,7 +28,6 @@ from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.metrics import StoreMetrics
 from proxystore.timer import Timer
-from proxystore.utils import fullname
 from proxystore.utils import get_class_path
 from proxystore.utils import import_class
 
@@ -157,6 +156,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
+        logger.debug(f'Starting asynchronous resolve of {self.key}')
         self._obj_future = _default_pool.submit(self.resolve)
 
 
@@ -215,7 +215,7 @@ class Store(Generic[ConnectorT]):
         self._serializer = serializer
         self._deserializer = deserializer
 
-        logger.debug(f'initialized {self}')
+        logger.info(f'Initialized {self}')
 
     def __enter__(self) -> Self:
         return self
@@ -229,16 +229,14 @@ class Store(Generic[ConnectorT]):
         self.close()
 
     def __repr__(self) -> str:
-        s = f'{fullname(self.__class__)}('
-        attributes = [
-            f'{key}={value}'
-            for key, value in self.__dict__.items()
-            if not key.startswith('_') and not callable(value)
-        ]
-        attributes.sort()
-        s += ', '.join(attributes)
-        s += ')'
-        return s
+        serializer = 'default' if self._serializer is None else 'custom'
+        deserializer = 'default' if self._deserializer is None else 'custom'
+        return (
+            f'Store("{self.name}", connector={self.connector}, '
+            f'serializer={serializer}, deserializer={deserializer}, '
+            f'cache_size={self.cache.maxsize}, '
+            f'metrics={self.metrics is not None})'
+        )
 
     @property
     def metrics(self) -> StoreMetrics | None:
@@ -490,7 +488,7 @@ class Store(Generic[ConnectorT]):
 
         logger.debug(
             f'Store(name="{self.name}"): PROXY {key} in '
-            f'{timer.elapsed_ms:.3f}',
+            f'{timer.elapsed_ms:.3f} ms',
         )
         return proxy
 
@@ -534,7 +532,7 @@ class Store(Generic[ConnectorT]):
 
         logger.debug(
             f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
-            f'in {timer.elapsed_ms:.3f}',
+            f'in {timer.elapsed_ms:.3f} ms',
         )
         return proxies
 
@@ -647,7 +645,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.set', key, timer.elapsed_ns)
 
         logger.debug(
-            f'Store(name="{self.name}"): SET {key} in {timer.elapsed_ms:.3f}',
+            f'Store(name="{self.name}"): SET {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
         )
         return key
 
@@ -709,6 +708,6 @@ class Store(Generic[ConnectorT]):
 
         logger.debug(
             f'Store(name="{self.name}"): SET_BATCH ({len(keys)} items) in '
-            f'{timer.elapsed_ms:.3f}',
+            f'{timer.elapsed_ms:.3f} ms',
         )
         return keys

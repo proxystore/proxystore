@@ -1,10 +1,13 @@
 """In-process local storage connector implementation."""
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+logger = logging.getLogger(__name__)
 
 
 class LocalKey(NamedTuple):
@@ -32,6 +35,10 @@ class LocalConnector:
         self._store: dict[LocalKey, bytes] = {}
         if store_dict is not None:
             self._store = store_dict
+        logger.info(f'Initialized {self}')
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}()'
 
     def close(self) -> None:
         """Close the connector and clean up."""
