@@ -21,7 +21,7 @@
         <link rel="next" href="../performance/">
       
       <link rel="icon" href="../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.1">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.2">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.402914a4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.7bf56d0a.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.a0c5b2b5.min.css">
@@ -1900,7 +1900,7 @@ the request along and facilitate returning the response back to the client.</p>
 <h2 id="endpoint-cli">Endpoint CLI<a class="headerlink" href="#endpoint-cli" title="Permanent link">&para;</a></h2>
 <p>Endpoints can be configure and started with the <code>proxystore-endpoint</code>
 command.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--port<span class="w"> </span><span class="m">9732</span><span class="w"> </span>--server<span class="w"> </span>remote-server.com:3574
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--relay-server<span class="w"> </span>wss://relay-address.com
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Configured<span class="w"> </span>endpoint<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;12b8f3b6-6c0e-4141-b851-870895e3eb3c&gt;.
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>To<span class="w"> </span>start<span class="w"> </span>the<span class="w"> </span>endpoint:
@@ -1915,18 +1915,16 @@ host address, port, and singaling server address.</p>
    to improve log readability.</li>
 <li><strong>UUID:</strong> primary identifier of the endpoint. The relay server will
    use this UUID to keep track of endpoints.</li>
-<li><strong>Host address:</strong> host address of the Quart app for the endpoint.
-   Defaults to the IP address of host the endpoint is configured on.
-   Note: this address is only used by clients within the local network and
-   can be set to <em>localhost</em> if the client and endpoints are on the same
-   host.</li>
-<li><strong>Port:</strong> port the Quart app for the endpoint will listening on. Defaults to
-   9753.</li>
+<li><strong>Host address:</strong> address of the host the endpoint was last started on.
+   Each time the endpoint is started, this address is updated.</li>
+<li><strong>Port:</strong> port the endpoint will listening on. Defaults to 8765.</li>
 <li><strong>Relay server address</strong>: address of relay server to use for peer
    connections. All endpoints that may peer with each other must use the same
    relay server. Relay servers are optional, and if unspecified, the
    endpoint will operate without peering functionalities.</li>
 </ol>
+<p>An up-to-date configuration description can found in the
+<a class="autorefs autorefs-internal" href="../../api/endpoint/config/#proxystore.endpoint.config.EndpointConfig"><code>EndpointConfig</code></a> docstring.</p>
 <p>Starting the endpoint will load the configuration from the ProxyStore home
 directory, initialize the endpoint, and start a Quart app using the host and
 port.</p>
@@ -2059,7 +2057,7 @@ ProxyStore package installed.</p>
     <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate", "content.code.copy", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.b78d2936.min.js"></script>
+      <script src="../../assets/javascripts/bundle.fc8c2696.min.js"></script>
       
     
   </body>
