@@ -74,7 +74,7 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
     logger.info(f'Registered a store named {store.name}')
 
 
-def unregister_store(name: str) -> None:
+def unregister_store(name_or_store: str | Store[Any]) -> None:
     """Unregisters the store instance from the global registry.
 
     Note:
@@ -82,8 +82,11 @@ def unregister_store(name: str) -> None:
         exists (i.e., no exception will be raised).
 
     Args:
-        name: Name of the store to unregister.
+        name_or_store: Name of the store to unregister or a store itself.
     """
+    name = (
+        name_or_store if isinstance(name_or_store, str) else name_or_store.name
+    )
     if name in _stores:
         del _stores[name]
         logger.debug(f'Unregistered a store named {name}')
