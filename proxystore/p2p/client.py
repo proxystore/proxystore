@@ -72,6 +72,11 @@ async def connect(
         )
     ssl_default = True if address.startswith('wss://') else None
 
+    logger.info(
+        'Attempting client connection to relay server at '
+        f'{address} with uuid={uuid} and name={name} (ssl: {ssl_default})',
+    )
+
     websocket = await websockets.client.connect(
         address,
         open_timeout=timeout,
@@ -104,7 +109,7 @@ async def connect(
     if isinstance(message, messages.ServerResponse):
         if message.success:
             logger.info(
-                'established client connection to relay server at '
+                'Established client connection to relay server at '
                 f'{address} with uuid={uuid} and name={name}',
             )
             return uuid, name, websocket

@@ -9,6 +9,7 @@ import sys
 from unittest import mock
 
 import click
+import click.testing
 import pytest
 import websockets
 
@@ -56,7 +57,7 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
         # Wait for server to log that it is listening
         assert server_handle.stdout is not None
         for line in server_handle.stdout:  # pragma: no cover
-            if 'serving' in line:
+            if 'Serving' in line:
                 break
 
         server_handle.terminate()
@@ -124,7 +125,7 @@ async def test_start_server_cli() -> None:
     # Wait for server to log that it is listening
     assert server_handle.stdout is not None
     for line in server_handle.stdout:  # pragma: no cover
-        if 'serving relay server' in line:
+        if 'Serving relay server' in line:
             break
 
     _, _, websocket = await connect(address)
