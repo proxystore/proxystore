@@ -207,9 +207,9 @@ class Store(Generic[ConnectorT]):
                 f'Cache size cannot be negative. Got {cache_size}.',
             )
 
-        self.name = name
         self.connector = connector
         self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
+        self._name = name
         self._metrics = StoreMetrics() if metrics else None
         self._cache_size = cache_size
         self._serializer = serializer
@@ -237,6 +237,11 @@ class Store(Generic[ConnectorT]):
             f'cache_size={self.cache.maxsize}, '
             f'metrics={self.metrics is not None})'
         )
+
+    @property
+    def name(self) -> str:
+        """Name of this [`Store`][proxystore.store.base.Store] instance."""
+        return self._name
 
     @property
     def metrics(self) -> StoreMetrics | None:

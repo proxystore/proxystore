@@ -32,6 +32,15 @@ def test_store_registration() -> None:
     unregister_store('not a valid store name')
 
 
+def test_unregister_with_store() -> None:
+    store = Store('test', connector=LocalConnector())
+
+    register_store(store)
+    assert get_store('test') == store
+    unregister_store(store)
+    assert get_store('test') is None
+
+
 def test_lookup_by_proxy(local_connector, redis_connector) -> None:
     """Make sure get_store works with a proxy."""
     local1 = Store('local1', connector=LocalConnector())
