@@ -2,10 +2,17 @@
 from __future__ import annotations
 
 import logging
+import sys
 import uuid
+from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +42,17 @@ class LocalConnector:
         self._store: dict[LocalKey, bytes] = {}
         if store_dict is not None:
             self._store = store_dict
-        logger.info(f'Initialized {self}')
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}()'

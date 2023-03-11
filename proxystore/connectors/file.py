@@ -4,10 +4,17 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import sys
 import uuid
+from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +39,17 @@ class FileConnector:
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(directory={self.store_dir})'

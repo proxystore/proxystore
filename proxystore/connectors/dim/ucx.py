@@ -4,12 +4,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import sys
 import uuid
 from multiprocessing import Process
 from time import sleep
+from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 try:
     import ucp
@@ -93,6 +100,17 @@ class UCXConnector:
 
         # TODO: Verify if create_endpoint error handling will successfully
         # connect to endpoint or if error handling needs to be done here
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     async def handler(self, event: bytes, addr: str) -> bytes:
         """Handler that issues requests to the server."""

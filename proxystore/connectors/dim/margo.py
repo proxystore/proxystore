@@ -2,13 +2,20 @@
 from __future__ import annotations
 
 import logging
+import sys
 import uuid
 from enum import Enum
 from multiprocessing import Process
 from os import getpid
+from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 try:
     import pymargo
@@ -140,6 +147,17 @@ class MargoConnector:
 
         self._pid = getpid()
         client_pids.add(self._pid)
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def _start_server(self) -> None:
         """Launch the local Margo server (Peer) process."""

@@ -4,12 +4,19 @@ from __future__ import annotations
 import asyncio
 import logging
 import signal
+import sys
 import time
 import uuid
 from multiprocessing import Process
+from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 try:
     import zmq
@@ -99,6 +106,17 @@ class ZeroMQConnector:
         # https://github.com/zeromq/pyzmq/issues/1512
         self.socket.close()
         self.context.term()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def _start_server(self) -> None:
         """Launch the local ZeroMQ server process."""
