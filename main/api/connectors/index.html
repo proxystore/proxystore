@@ -1763,7 +1763,45 @@
   <div class="doc doc-contents first">
   
       <p>Connector implementations.</p>
+<p>A <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is an interface
+to a mediated communication channel or object store. Connectors operate on
+low-level bytes and are used by the <a class="autorefs autorefs-internal" href="../store/base/#proxystore.store.base.Store"><code>Store</code></a>
+to store and get serialized Python objects.</p>
+<p>Third-party code can provide custom connectors by implementing the
+<a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol. (Note:
+because <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is a
+<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a>, custom connectors do not need
+to inherit from <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>.)</p>
 
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">FileConnector</span><span class="p">(</span><span class="s1">&#39;./data-store&#39;</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;hello&#39;</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">connector</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="sa">b</span><span class="s1">&#39;hello&#39;</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">connector</span><span class="o">.</span><span class="n">evict</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">connector</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="kc">False</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">connector</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span></code></pre></div>
+</details>
+<details class="tip" open>
+  <summary>Tip</summary>
+  <p>All of the <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>
+implementations in this module can be used as context managers.
+Context manager support is not a required component of the
+<a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol. It is
+simply provided for convenience with the native implementations.
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">FileConnector</span><span class="p">(</span><span class="s1">&#39;./data-store&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">connector</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># connector.close() will be automatically called when the</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="c1"># context manager is exited</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">...</span>
+</span></code></pre></div></p>
+</details>
   
 
   <div class="doc doc-children">
