@@ -7,6 +7,7 @@ import os
 import re
 import sys
 import uuid
+from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Collection
@@ -15,6 +16,11 @@ from typing import Iterator
 from typing import NamedTuple
 from typing import Pattern
 from typing import Sequence
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
     from typing import Literal
@@ -332,6 +338,17 @@ class GlobusConnector:
         self._transfer_client = globus_sdk.TransferClient(
             authorizer=authorizer,
         )
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
 
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(endpoints={self.endpoints})'

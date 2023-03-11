@@ -250,6 +250,5 @@ def connectors(request) -> Generator[Connector[Any], None, None]:
     """Parameterized fixture that yields all Connector implementations."""
     connector_info = request.getfixturevalue(request.param)
 
-    connector = connector_info.type(**connector_info.kwargs)
-    yield connector
-    connector.close()
+    with connector_info.type(**connector_info.kwargs) as connector:
+        yield connector
