@@ -6,16 +6,26 @@ See the CLI Reference for the
 from __future__ import annotations
 
 import logging
+import os
 import sys
+import uuid
 
 import click
+import requests
 
 import proxystore
+from proxystore.endpoint import client
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
+from proxystore.endpoint.config import read_config
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
+from proxystore.utils import home_dir
+
+logger = logging.getLogger(__name__)
 
 
 class _CLIFormatter(logging.Formatter):
@@ -114,7 +124,7 @@ def version() -> None:
     default=1,
     type=int,
     metavar='COUNT',
-    help='Datachannels to use per peer connection',
+    help='Datachannels to use per peer connection.',
 )
 def configure(
     name: str,
@@ -166,3 +176,117 @@ def start(ctx: click.Context, name: str, detach: bool) -> None:
 def stop(name: str) -> None:
     """Stop a detached endpoint."""
     raise SystemExit(stop_endpoint(name))
+
+
+@cli.group()
+@click.argument('name', metavar='NAME', required=True)
+@click.option(
+    '--remote',
+    metavar='UUID',
+    help='Optional UUID of remote endpoint to use.',
+)
+@click.pass_context
+def test(
+    ctx: click.Context,
+    name: str,
+    remote: str | None,
+) -> None:
+    """Execute test commands on an endpoint."""
+    ctx.ensure_object(dict)
+
+    proxystore_dir = home_dir()
+    endpoint_dir = os.path.join(proxystore_dir, name)
+    if os.path.isdir(endpoint_dir):
+        cfg = read_config(endpoint_dir)
+    else:
+        logger.error(f'An endpoint named {name} does not exist.')
+        raise SystemExit(1)
+
+    ctx.obj['ENDPOINT_ADDRESS'] = f'http://{cfg.host}:{cfg.port}'
+    ctx.obj['REMOTE_ENDPOINT_UUID'] = remote
+
+
+@test.command()
+@click.argument('key', metavar='KEY', required=True)
+@click.pass_context
+def evict(ctx: click.Context, key: str) -> None:
+    """Evict object from an endpoint."""
+    address = ctx.obj['ENDPOINT_ADDRESS']
+    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
+    try:
+        client.evict(address, key, remote)
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.debug(e)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        logger.exception(e)
+        sys.exit(1)
+    else:
+        logger.info('Evicted object from endpoint.')
+
+
+@test.command()
+@click.argument('key', metavar='KEY', required=True)
+@click.pass_context
+def exists(ctx: click.Context, key: str) -> None:
+    """Check if object exists in an endpoint."""
+    address = ctx.obj['ENDPOINT_ADDRESS']
+    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
+    try:
+        res = client.exists(address, key, remote)
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.debug(e)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        logger.exception(e)
+        sys.exit(1)
+    else:
+        logger.info(f'Object exists: {res}')
+
+
+@test.command()
+@click.argument('key', metavar='KEY', required=True)
+@click.pass_context
+def get(ctx: click.Context, key: str) -> None:
+    """Get an object from an endpoint."""
+    address = ctx.obj['ENDPOINT_ADDRESS']
+    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
+    try:
+        res = client.get(address, key, remote)
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.debug(e)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        logger.exception(e)
+        sys.exit(1)
+
+    if res is None:
+        logger.info('Object does not exist.')
+    else:
+        obj = deserialize(res)
+        logger.info(f'Result: {obj}')
+
+
+@test.command()
+@click.argument('data', required=True)
+@click.pass_context
+def put(ctx: click.Context, data: str) -> None:
+    """Put an object in an endpoint."""
+    address = ctx.obj['ENDPOINT_ADDRESS']
+    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
+    key = str(uuid.uuid4())
+    data_ = serialize(data)
+    try:
+        client.put(address, key, data_, remote)
+    except requests.exceptions.ConnectionError as e:
+        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.debug(e)
+        sys.exit(1)
+    except requests.exceptions.RequestException as e:
+        logger.exception(e)
+        sys.exit(1)
+    else:
+        logger.info(f'Put object in endpoint with key {key}')

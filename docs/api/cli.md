@@ -1,5 +1,5 @@
 <style>
-.md-typeset h2, h3 {
+.md-typeset h2, h3, h4 {
   font-weight: 400;
   font-family: var(--md-code-font-family);
 }
@@ -10,7 +10,7 @@
   border-width: 2px;
 }
 
-.md-typeset h3 {
+.md-typeset h3, h4 {
   border-bottom-style: dashed;
   border-color: var(--md-default-fg-color--lighter);
   border-width: 1px;
