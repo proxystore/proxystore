@@ -17,10 +17,9 @@ else:  # pragma: <3.11 cover
 
 import requests
 
+from proxystore.endpoint import client
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
-from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
-from proxystore.utils import chunk_bytes
 from proxystore.utils import home_dir
 
 logger = logging.getLogger(__name__)
@@ -163,12 +162,12 @@ class EndpointConnector:
         Args:
             key: Key associated with object to evict.
         """
-        response = requests.post(
-            f'{self.address}/evict',
-            params={'key': key.object_id, 'endpoint': key.endpoint_id},
-        )
-        if response.status_code != 200:
-            raise EndpointConnectorError(f'EVICT returned {response}')
+        try:
+            client.evict(self.address, key.object_id, key.endpoint_id)
+        except requests.exceptions.RequestException as e:
+            raise EndpointConnectorError(
+                f'Evict failed with error code {e.response.status_code}.',
+            ) from e
 
     def exists(self, key: EndpointKey) -> bool:
         """Check if an object associated with the key exists.
@@ -179,14 +178,12 @@ class EndpointConnector:
         Returns:
             If an object associated with the key exists.
         """
-        response = requests.get(
-            f'{self.address}/exists',
-            params={'key': key.object_id, 'endpoint': key.endpoint_id},
-        )
-        if response.status_code == 200:
-            return response.json()['exists']
-        else:
-            raise EndpointConnectorError(f'EXISTS returned {response}')
+        try:
+            return client.exists(self.address, key.object_id, key.endpoint_id)
+        except requests.exceptions.RequestException as e:
+            raise EndpointConnectorError(
+                f'Exists failed with error code {e.response.status_code}.',
+            ) from e
 
     def get(self, key: EndpointKey) -> bytes | None:
         """Get the serialized object associated with the key.
@@ -197,20 +194,12 @@ class EndpointConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        response = requests.get(
-            f'{self.address}/get',
-            params={'key': key.object_id, 'endpoint': key.endpoint_id},
-            stream=True,
-        )
-        if response.status_code == 200:
-            data = bytearray()
-            for chunk in response.iter_content(chunk_size=None):
-                data += chunk
-            return bytes(data)
-        elif response.status_code == 400:
-            return None
-        else:
-            raise EndpointConnectorError(f'GET returned {response}')
+        try:
+            return client.get(self.address, key.object_id, key.endpoint_id)
+        except requests.exceptions.RequestException as e:
+            raise EndpointConnectorError(
+                f'Get failed with error code {e.response.status_code}.',
+            ) from e
 
     def get_batch(self, keys: Sequence[EndpointKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -237,16 +226,12 @@ class EndpointConnector:
             object_id=str(uuid.uuid4()),
             endpoint_id=str(self.endpoint_uuid),
         )
-
-        response = requests.post(
-            f'{self.address}/set',
-            headers={'Content-Type': 'application/octet-stream'},
-            params={'key': key.object_id, 'endpoint': key.endpoint_id},
-            data=chunk_bytes(obj, MAX_CHUNK_LENGTH),
-            stream=True,
-        )
-        if response.status_code != 200:
-            raise EndpointConnectorError(f'SET returned {response}')
+        try:
+            client.put(self.address, key.object_id, obj, key.endpoint_id)
+        except requests.exceptions.RequestException as e:
+            raise EndpointConnectorError(
+                f'Put failed with error code {e.response.status_code}.',
+            ) from e
 
         return key
 
