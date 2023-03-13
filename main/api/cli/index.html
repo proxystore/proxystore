@@ -993,6 +993,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../endpoint/client/" class="md-nav__link">
+        proxystore.endpoint.client
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../endpoint/commands/" class="md-nav__link">
         proxystore.endpoint.commands
       </a>
@@ -1593,9 +1607,150 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          CLI Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         CLI Reference
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-globus-auth" class="md-nav__link">
+    proxystore-globus-auth
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-endpoint" class="md-nav__link">
+    proxystore-endpoint
+  </a>
+  
+    <nav class="md-nav" aria-label="proxystore-endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-configure" class="md-nav__link">
+    configure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-help" class="md-nav__link">
+    help
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-list" class="md-nav__link">
+    list
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-remove" class="md-nav__link">
+    remove
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-start" class="md-nav__link">
+    start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-stop" class="md-nav__link">
+    stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test" class="md-nav__link">
+    test
+  </a>
+  
+    <nav class="md-nav" aria-label="test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-evict" class="md-nav__link">
+    evict
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-exists" class="md-nav__link">
+    exists
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-get" class="md-nav__link">
+    get
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-put" class="md-nav__link">
+    put
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-version" class="md-nav__link">
+    version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-relay" class="md-nav__link">
+    proxystore-relay
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1725,6 +1880,131 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-globus-auth" class="md-nav__link">
+    proxystore-globus-auth
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-endpoint" class="md-nav__link">
+    proxystore-endpoint
+  </a>
+  
+    <nav class="md-nav" aria-label="proxystore-endpoint">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-configure" class="md-nav__link">
+    configure
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-help" class="md-nav__link">
+    help
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-list" class="md-nav__link">
+    list
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-remove" class="md-nav__link">
+    remove
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-start" class="md-nav__link">
+    start
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-stop" class="md-nav__link">
+    stop
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test" class="md-nav__link">
+    test
+  </a>
+  
+    <nav class="md-nav" aria-label="test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-evict" class="md-nav__link">
+    evict
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-exists" class="md-nav__link">
+    exists
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-get" class="md-nav__link">
+    get
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-test-name-put" class="md-nav__link">
+    put
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-endpoint-version" class="md-nav__link">
+    version
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-relay" class="md-nav__link">
+    proxystore-relay
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1741,9 +2021,28 @@
   
 
 
+<style>
+.md-typeset h2, h3, h4 {
+  font-weight: 400;
+  font-family: var(--md-code-font-family);
+}
+
+.md-typeset h2 {
+  border-bottom-style: solid;
+  border-color: var(--md-default-fg-color--lighter);
+  border-width: 2px;
+}
+
+.md-typeset h3, h4 {
+  border-bottom-style: dashed;
+  border-color: var(--md-default-fg-color--lighter);
+  border-width: 1px;
+}
+</style>
+
 <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
 <p>This page provides documentation for our command line tools.</p>
-<h1 id="proxystore-globus-auth">proxystore-globus-auth<a class="headerlink" href="#proxystore-globus-auth" title="Permanent link">&para;</a></h1>
+<h2 id="proxystore-globus-auth">proxystore-globus-auth<a class="headerlink" href="#proxystore-globus-auth" title="Permanent link">&para;</a></h2>
 <p>Perform Globus authentication for the Transfer service.</p>
 <p>Collections or scopes options can be strung together. E.g.,
 request transfer scope for multiple collections with:</p>
@@ -1752,102 +2051,482 @@ request transfer scope for multiple collections with:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>proxystore-globus-auth [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>  -c, --collection UUID  Globus Collection UUID to request transfer scopes
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>                         for.
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>  -s, --scope SCOPE      Additional scope to request.
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>  --delete               Delete existing tokens.
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>  --help                 Show this message and exit.
-</span></code></pre></div>
-<h1 id="proxystore-endpoint">proxystore-endpoint<a class="headerlink" href="#proxystore-endpoint" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--collection</code>, <code>-c</code></td>
+<td>text</td>
+<td>Globus Collection UUID to request transfer scopes for.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--scope</code>, <code>-s</code></td>
+<td>text</td>
+<td>Additional scope to request.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--delete</code></td>
+<td>boolean</td>
+<td>Delete existing tokens.</td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="proxystore-endpoint">proxystore-endpoint<a class="headerlink" href="#proxystore-endpoint" title="Permanent link">&para;</a></h2>
 <p>Manage and start ProxyStore Endpoints.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>proxystore-endpoint [OPTIONS] COMMAND [ARGS]...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>proxystore-endpoint [OPTIONS] COMMAND [ARGS]...
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>  --log-level [ERROR|WARNING|INFO|DEBUG]
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>                                  Minimum logging level.
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  --help                          Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-configure">proxystore-endpoint configure<a class="headerlink" href="#proxystore-endpoint-configure" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--log-level</code></td>
+<td>choice (<code>ERROR</code> &#x7C; <code>WARNING</code> &#x7C; <code>INFO</code> &#x7C; <code>DEBUG</code>)</td>
+<td>Minimum logging level.</td>
+<td><code>INFO</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Subcommands</strong></p>
+<ul>
+<li><em><a href="#proxystore-endpoint-configure">configure</a></em>: Configure a new endpoint.</li>
+<li><em><a href="#proxystore-endpoint-help">help</a></em>: Show available commands and options.</li>
+<li><em><a href="#proxystore-endpoint-list">list</a></em>: List all user endpoints.</li>
+<li><em><a href="#proxystore-endpoint-remove">remove</a></em>: Remove an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-start">start</a></em>: Start an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-stop">stop</a></em>: Stop a detached endpoint.</li>
+<li><em><a href="#proxystore-endpoint-test">test</a></em>: Execute test commands on an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-version">version</a></em>: Show the ProxyStore version.</li>
+</ul>
+<h3 id="proxystore-endpoint-configure">proxystore-endpoint configure<a class="headerlink" href="#proxystore-endpoint-configure" title="Permanent link">&para;</a></h3>
 <p>Configure a new endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint configure [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>proxystore-endpoint configure [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>  --port PORT            Port to listen on.
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>  --relay-server ADDR    Optional relay server address.
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>  --max-memory BYTES     Optional maximum memory to use.
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>  --dump-dir PATH        Directory to dump object to if max-memory exceeded.
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>  --peer-channels COUNT  Datachannels to use per peer connection
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>  --help                 Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-help">proxystore-endpoint help<a class="headerlink" href="#proxystore-endpoint-help" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--port</code></td>
+<td>integer</td>
+<td>Port to listen on.</td>
+<td><code>8765</code></td>
+</tr>
+<tr>
+<td><code>--relay-server</code></td>
+<td>text</td>
+<td>Optional relay server address.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--max-memory</code></td>
+<td>integer</td>
+<td>Optional maximum memory to use.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--dump-dir</code></td>
+<td>text</td>
+<td>Directory to dump object to if max-memory exceeded.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--peer-channels</code></td>
+<td>integer</td>
+<td>Datachannels to use per peer connection.</td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-help">proxystore-endpoint help<a class="headerlink" href="#proxystore-endpoint-help" title="Permanent link">&para;</a></h3>
 <p>Show available commands and options.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint help [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>proxystore-endpoint help [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-list">proxystore-endpoint list<a class="headerlink" href="#proxystore-endpoint-list" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-list">proxystore-endpoint list<a class="headerlink" href="#proxystore-endpoint-list" title="Permanent link">&para;</a></h3>
 <p>List all user endpoints.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint list [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint list [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-remove">proxystore-endpoint remove<a class="headerlink" href="#proxystore-endpoint-remove" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-remove">proxystore-endpoint remove<a class="headerlink" href="#proxystore-endpoint-remove" title="Permanent link">&para;</a></h3>
 <p>Remove an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint remove [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>proxystore-endpoint remove [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-start">proxystore-endpoint start<a class="headerlink" href="#proxystore-endpoint-start" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-start">proxystore-endpoint start<a class="headerlink" href="#proxystore-endpoint-start" title="Permanent link">&para;</a></h3>
 <p>Start an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint start [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint start [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>  --detach / --no-detach  Run as daemon.
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>  --help                  Show this message and exit.
-</span></code></pre></div>
-<h2 id="proxystore-endpoint-stop">proxystore-endpoint stop<a class="headerlink" href="#proxystore-endpoint-stop" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--detach</code> / <code>--no-detach</code></td>
+<td>boolean</td>
+<td>Run as daemon.</td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-stop">proxystore-endpoint stop<a class="headerlink" href="#proxystore-endpoint-stop" title="Permanent link">&para;</a></h3>
 <p>Stop a detached endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-endpoint stop [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proxystore-endpoint stop [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>  --help  Show this message and exit.
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-test">proxystore-endpoint test<a class="headerlink" href="#proxystore-endpoint-test" title="Permanent link">&para;</a></h3>
+<p>Execute test commands on an endpoint.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint test [OPTIONS] NAME COMMAND [ARGS]...
 </span></code></pre></div>
-<h2 id="proxystore-endpoint-version">proxystore-endpoint version<a class="headerlink" href="#proxystore-endpoint-version" title="Permanent link">&para;</a></h2>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--remote</code></td>
+<td>text</td>
+<td>Optional UUID of remote endpoint to use.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Subcommands</strong></p>
+<ul>
+<li><em><a href="#proxystore-endpoint-test-name-evict">evict</a></em>: Evict object from an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-test-name-exists">exists</a></em>: Check if object exists in an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-test-name-get">get</a></em>: Get an object from an endpoint.</li>
+<li><em><a href="#proxystore-endpoint-test-name-put">put</a></em>: Put an object in an endpoint.</li>
+</ul>
+<h4 id="proxystore-endpoint-test-name-evict">proxystore-endpoint test NAME evict<a class="headerlink" href="#proxystore-endpoint-test-name-evict" title="Permanent link">&para;</a></h4>
+<p>Evict object from an endpoint.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>proxystore-endpoint test NAME evict [OPTIONS] KEY
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="proxystore-endpoint-test-name-exists">proxystore-endpoint test NAME exists<a class="headerlink" href="#proxystore-endpoint-test-name-exists" title="Permanent link">&para;</a></h4>
+<p>Check if object exists in an endpoint.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint test NAME exists [OPTIONS] KEY
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="proxystore-endpoint-test-name-get">proxystore-endpoint test NAME get<a class="headerlink" href="#proxystore-endpoint-test-name-get" title="Permanent link">&para;</a></h4>
+<p>Get an object from an endpoint.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>proxystore-endpoint test NAME get [OPTIONS] KEY
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h4 id="proxystore-endpoint-test-name-put">proxystore-endpoint test NAME put<a class="headerlink" href="#proxystore-endpoint-test-name-put" title="Permanent link">&para;</a></h4>
+<p>Put an object in an endpoint.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint test NAME put [OPTIONS] DATA
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="proxystore-endpoint-version">proxystore-endpoint version<a class="headerlink" href="#proxystore-endpoint-version" title="Permanent link">&para;</a></h3>
 <p>Show the ProxyStore version.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>proxystore-endpoint version [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>proxystore-endpoint version [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>  --help  Show this message and exit.
-</span></code></pre></div>
-<h1 id="proxystore-relay">proxystore-relay<a class="headerlink" href="#proxystore-relay" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="proxystore-relay">proxystore-relay<a class="headerlink" href="#proxystore-relay" title="Permanent link">&para;</a></h2>
 <p>Run a relay server instance.</p>
 <p>The relay server is used by clients to establish peer-to-peer
 WebRTC connections.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>proxystore-relay [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-relay [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>  --host ADDR                     Address to listen on.
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>  --port PORT                     Port to listen on.
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>  --certfile PATH                 Certificate file for serving with TLS.
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>  --keyfile PATH                  Private key file associated with the
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>                                  certfile.
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>  --log-dir PATH                  Write server logs to this directory.
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>  --log-level [CRITICAL|ERROR|WARNING|INFO|DEBUG]
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>                                  Minimum logging level.
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>  --help                          Show this message and exit.
-</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--host</code></td>
+<td>text</td>
+<td>Address to listen on.</td>
+<td><code>0.0.0.0</code></td>
+</tr>
+<tr>
+<td><code>--port</code></td>
+<td>integer</td>
+<td>Port to listen on.</td>
+<td><code>8765</code></td>
+</tr>
+<tr>
+<td><code>--certfile</code></td>
+<td>text</td>
+<td>Certificate file for serving with TLS.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--keyfile</code></td>
+<td>text</td>
+<td>Private key file associated with the certfile.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--log-dir</code></td>
+<td>text</td>
+<td>Write server logs to this directory.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--log-level</code></td>
+<td>choice (<code>CRITICAL</code> &#x7C; <code>ERROR</code> &#x7C; <code>WARNING</code> &#x7C; <code>INFO</code> &#x7C; <code>DEBUG</code>)</td>
+<td>Minimum logging level.</td>
+<td><code>INFO</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
 
 
 
