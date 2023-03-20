@@ -7,6 +7,7 @@ import ssl
 from types import TracebackType
 from typing import Any
 from typing import Generator
+from typing import Iterable
 from uuid import UUID
 
 try:
@@ -221,13 +222,9 @@ class PeerManager:
         """
         try:
             await connection.ready(timeout=self._timeout)
-        except PeerConnectionError as e:  # pragma: >=3.8 cover
+        except PeerConnectionError as e:
             logger.error(str(e))
-            await connection.close()
-            peers = frozenset({self._uuid, peer_uuid})
-            async with self._peers_lock:
-                self._peers.pop(peers, None)
-            raise SafeTaskExitError() from None
+            await self.close_connection((self._uuid, peer_uuid))
 
     async def _handle_peer_messages(
         self,
@@ -296,6 +293,7 @@ class PeerManager:
                         message.source_uuid,
                         connection,
                     )
+                    connection.on_close_callback(self.close_connection, peers)
                 await self._peers[peers].handle_server_message(message)
             elif isinstance(message, messages.ServerResponse):
                 # The peer manager should never send something to the
@@ -330,6 +328,37 @@ class PeerManager:
         if self._websocket_or_none is not None:
             await self._websocket_or_none.close()
         logger.info(f'{self._log_prefix}: peer manager closed')
+
+    async def close_connection(self, peers: Iterable[UUID]) -> None:
+        """Close a peer connection if it exists.
+
+        This will close the associated
+        [`PeerConnection`][proxystore.p2p.connection.PeerConnection] and
+        cancel the asyncio task handling peer messages. If the
+        [`PeerManager`][proxystore.p2p.manager.PeerManager] is used to
+        send a message from the peer again, a new connection will be
+        established.
+
+        Args:
+            peers: Iterable containing the two peer UUIDs taking part in the
+                connection that should be closed.
+        """
+        peers = frozenset(peers)
+        async with self._peers_lock:
+            connection = self._peers.pop(peers, None)
+        if connection is not None:
+            logger.info(
+                f'{self._log_prefix} Closing connection between peers: '
+                f'{", ".join(str(peer) for peer in peers)}',
+            )
+            await connection.close()
+        task = self._tasks.pop(peers, None)
+        if task is not None:
+            task.cancel()
+            try:
+                await task
+            except (asyncio.CancelledError, SafeTaskExitError):
+                pass
 
     async def recv(self) -> tuple[UUID, bytes | str]:
         """Receive next message from a peer.
@@ -394,4 +423,5 @@ class PeerManager:
             peer_uuid,
             connection,
         )
+        connection.on_close_callback(self.close_connection, peers)
         return connection
