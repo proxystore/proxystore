@@ -27,6 +27,7 @@ except ImportError as e:  # pragma: no cover
     warnings.warn(
         f'{e}. To enable endpoint serving, install proxystore with '
         '"pip install proxystore[endpoints]".',
+        stacklevel=2,
     )
 
 from proxystore.p2p import messages

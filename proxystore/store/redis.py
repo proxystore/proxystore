@@ -48,6 +48,7 @@ class RedisStore(Store[RedisConnector]):
             'Store with a Connector is preferred. See '
             'https://github.com/proxystore/proxystore/issues/214 for details.',
             DeprecationWarning,
+            stacklevel=2,
         )
         connector = RedisConnector(hostname, port)
         super().__init__(
