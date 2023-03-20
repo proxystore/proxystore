@@ -48,6 +48,7 @@ class LocalStore(Store[LocalConnector]):
             'Store with a Connector is preferred. See '
             'https://github.com/proxystore/proxystore/issues/214 for details.',
             DeprecationWarning,
+            stacklevel=2,
         )
         connector = LocalConnector(store_dict)
         super().__init__(
