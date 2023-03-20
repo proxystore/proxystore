@@ -6,6 +6,9 @@ import logging
 import re
 import warnings
 from collections import defaultdict
+from typing import Any
+from typing import Awaitable
+from typing import Callable
 from uuid import UUID
 
 try:
@@ -154,7 +157,33 @@ class PeerConnection:
             transport = channel._RTCDataChannel__transport
             await transport._data_channel_flush()
             await transport._transmit()
+            channel.close()
         await self._pc.close()
+
+    def on_close_callback(
+        self,
+        callback: Callable[..., Awaitable[None]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        """Configure a callback for when the connection fails or closes.
+
+        Args:
+            callback: Callable to invoke when the peer connection state
+                changes to closed or failed.
+            args: Positional arguments to pass to the callback.
+            kwargs: Keyword arguments to pass to the callback.
+        """
+
+        async def _on_close() -> None:
+            if self.state in ('closed', 'failed'):
+                logger.info(
+                    f'{self._log_prefix}: connection entered {self.state} '
+                    'state, invoking callback',
+                )
+                await callback(*args, **kwargs)
+
+        self._pc.on('connectionstatechange', _on_close)
 
     async def send(self, message: bytes | str, timeout: float = 30) -> None:
         """Send message to peer.
@@ -203,15 +232,28 @@ class PeerConnection:
         Args:
             peer_uuid: UUID of peer client to establish connection with.
         """
+
+        def _on_close(label: str) -> Any:
+            # We use this factory method to avoid Flake8-BugBear B023
+            async def on_close() -> None:
+                if self._channels[label].readyState in ('closed', 'failed'):
+                    await self.close()
+
+            return on_close
+
         for i in range(self._max_channels):
             label = f'p2p-{i}-{self._max_channels}'
             channel = self._pc.createDataChannel(label, ordered=False)
             buffer_low = asyncio.Event()
-            channel.on('open', self._on_open)
+            channel.on('open', self._on_datachannel_open)
             channel.on('bufferedamountlow', buffer_low.set)
             channel.on('message', self._on_message)
+
             self._channels[label] = channel
             self._channel_buffer_low[label] = buffer_low
+
+            # We use the underlying RTCDtlsTransport as the channel status.
+            channel.transport.transport.on('statechange', _on_close(label))
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
         message = messages.PeerConnection(
@@ -249,6 +291,15 @@ class PeerConnection:
             channel.on('bufferedamountlow', buffer_low.set)
             channel.on('message', self._on_message)
 
+            async def _on_close() -> None:
+                if channel.readyState in ('closed', 'failed'):
+                    await self.close()
+                else:
+                    pass  # pragma: no cover
+
+            # We use the underlying RTCDtlsTransport as the channel status
+            channel.transport.transport.on('statechange', _on_close)
+
             if len(self._channels) >= total:
                 self._handshake_success.set_result(True)
 
@@ -274,7 +325,7 @@ class PeerConnection:
             await self._incoming_queue.put(message)
             logger.debug(f'{self._log_prefix}: received message from peer')
 
-    def _on_open(self) -> None:
+    def _on_datachannel_open(self) -> None:
         # Note: this callback is only used on the offerer/initiators side
         logger.info(f'{self._log_prefix}: peer channels established')
         self._ready += 1

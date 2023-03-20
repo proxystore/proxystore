@@ -254,3 +254,39 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
             for record in caplog.records
         ],
     )
+
+
+@pytest.mark.asyncio()
+async def test_close_connection(relay_server) -> None:
+    async with PeerManager(
+        uuid.uuid4(),
+        relay_server.address,
+    ) as manager1, PeerManager(
+        uuid.uuid4(),
+        relay_server.address,
+        verify_certificate=False,
+    ) as manager2:
+        # Send message to make sure connection is open
+        await manager1.send(manager2.uuid, 'hello hello')
+        source_uuid, message = await manager2.recv()
+        assert source_uuid == manager1.uuid
+        assert message == 'hello hello'
+
+        await manager1.get_connection(manager2.uuid)
+        await manager2.get_connection(manager1.uuid)
+
+        await manager1.close_connection((manager1.uuid, manager2.uuid))
+        # Should be idempotent
+        await manager1.close_connection((manager1.uuid, manager2.uuid))
+
+        # Yield event loop to make sure peer connection closed callbacks fire
+        await asyncio.sleep(0.001)
+
+        assert len(manager1._peers) == 0
+        assert len(manager2._peers) == 0
+
+        # Send another message to make sure connection is reopened
+        await manager1.send(manager2.uuid, 'hello hello again')
+        source_uuid, message = await manager2.recv()
+        assert source_uuid == manager1.uuid
+        assert message == 'hello hello again'

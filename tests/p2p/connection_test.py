@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import asyncio
 from typing import cast
 from uuid import uuid4
 
+import aiortc
 import pytest
 
 from proxystore.p2p import messages
@@ -129,3 +131,101 @@ async def test_p2p_connection_error(relay_server) -> None:
         await connection.ready()
 
     await websocket.close()
+
+
+@pytest.mark.asyncio()
+async def test_p2p_closed_by_offerer_callback(relay_server) -> None:
+    closed_event_1 = asyncio.Event()
+    closed_event_2 = asyncio.Event()
+
+    async def closed_callback_1() -> None:
+        closed_event_1.set()
+
+    async def closed_callback_2(a: int, *, b: int) -> None:
+        assert a == 1
+        assert b == 2
+        closed_event_2.set()
+
+    uuid1, name1, websocket1 = await connect(relay_server.address)
+    connection1 = PeerConnection(uuid1, name1, websocket1)
+    connection1.on_close_callback(closed_callback_1)
+
+    uuid2, name2, websocket2 = await connect(relay_server.address)
+    connection2 = PeerConnection(uuid2, name2, websocket2)
+    connection2.on_close_callback(closed_callback_2, 1, b=2)
+
+    await connection1.send_offer(uuid2)
+    offer = messages.decode(cast(str, await websocket2.recv()))
+    assert isinstance(offer, messages.PeerConnection)
+    await connection2.handle_server_message(offer)
+    answer = messages.decode(cast(str, await websocket1.recv()))
+    assert isinstance(answer, messages.PeerConnection)
+    await connection1.handle_server_message(answer)
+
+    await connection1.ready()
+    await connection2.ready()
+
+    assert connection1.state == 'connected'
+    assert connection2.state == 'connected'
+
+    assert not closed_event_1.is_set()
+    assert not closed_event_2.is_set()
+
+    await connection1.close()
+
+    assert connection1.state == 'closed'
+    assert closed_event_1.is_set()
+
+    with pytest.raises(aiortc.exceptions.InvalidStateError):
+        await connection2.send(b'message')
+
+    assert connection2.state == 'closed'
+    assert closed_event_2.is_set()
+
+
+@pytest.mark.asyncio()
+async def test_p2p_closed_by_answerer_callback(relay_server) -> None:
+    closed_event_1 = asyncio.Event()
+    closed_event_2 = asyncio.Event()
+
+    async def closed_callback_1() -> None:
+        closed_event_1.set()
+
+    async def closed_callback_2() -> None:
+        closed_event_2.set()
+
+    uuid1, name1, websocket1 = await connect(relay_server.address)
+    connection1 = PeerConnection(uuid1, name1, websocket1)
+    connection1.on_close_callback(closed_callback_1)
+
+    uuid2, name2, websocket2 = await connect(relay_server.address)
+    connection2 = PeerConnection(uuid2, name2, websocket2)
+    connection2.on_close_callback(closed_callback_2)
+
+    await connection1.send_offer(uuid2)
+    offer = messages.decode(cast(str, await websocket2.recv()))
+    assert isinstance(offer, messages.PeerConnection)
+    await connection2.handle_server_message(offer)
+    answer = messages.decode(cast(str, await websocket1.recv()))
+    assert isinstance(answer, messages.PeerConnection)
+    await connection1.handle_server_message(answer)
+
+    await connection1.ready()
+    await connection2.ready()
+
+    assert connection1.state == 'connected'
+    assert connection2.state == 'connected'
+
+    assert not closed_event_1.is_set()
+    assert not closed_event_2.is_set()
+
+    await connection2.close()
+
+    assert connection2.state == 'closed'
+    assert closed_event_2.is_set()
+
+    with pytest.raises(aiortc.exceptions.InvalidStateError):
+        await connection1.send(b'message')
+
+    assert connection1.state == 'closed'
+    assert closed_event_1.is_set()
