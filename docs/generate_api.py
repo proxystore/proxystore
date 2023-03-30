@@ -22,10 +22,16 @@ for path in sorted(Path('proxystore').rglob('**/*.py')):
     elif parts[-1].endswith('__main__'):
         continue
 
-    nav[parts] = doc_path.as_posix()
+    if len(parts) == 1:
+        nav_parts = parts
+    elif len(parts) == 2:
+        nav_parts = (parts[1],)
+    else:
+        nav_parts = tuple([parts[1]] + [p.split('.')[-1] for p in parts[2:]])
+    nav[nav_parts] = doc_path.as_posix()
 
     with mkdocs_gen_files.open(full_doc_path, 'w') as fd:
-        fd.write(f'::: {parts[-1]}')
+        fd.write(f'# {parts[-1]}\n\n::: {parts[-1]}')
 
     mkdocs_gen_files.set_edit_path(full_doc_path, path)
 
