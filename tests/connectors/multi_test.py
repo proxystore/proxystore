@@ -135,3 +135,12 @@ def test_multi_connector_policy_no_valid() -> None:
     with pytest.raises(RuntimeError, match='policy'):
         connector.put(b'value')
     connector.close()
+
+
+def test_multi_connector_from_config() -> None:
+    with multi_connector_from_policies(
+        Policy(priority=1, subset_tags=['a', 'b']),
+        Policy(priority=2, superset_tags=['x', 'y']),
+    ) as (multi_connector, connector1, connector2):
+        config = multi_connector.config()
+        MultiConnector.from_config(config)

@@ -23,6 +23,8 @@ else:  # pragma: <3.8 cover
     from typing_extensions import TypedDict
 
 from proxystore.connectors.connector import Connector
+from proxystore.utils import get_class_path
+from proxystore.utils import import_class
 from proxystore.warnings import ExperimentalWarning
 
 warnings.warn(
@@ -184,7 +186,11 @@ class MultiConnector:
         the connector object.
         """
         return {
-            name: (connector, policy.as_dict())
+            name: (
+                get_class_path(type(connector)),
+                connector.config(),
+                policy.as_dict(),
+            )
             for name, (connector, policy) in self.connectors.items()
         }
 
@@ -195,10 +201,12 @@ class MultiConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        connectors = {
-            name: (connector, Policy(**policy))
-            for name, (connector, policy) in config.items()
-        }
+        connectors: dict[str, tuple[Connector[Any], Policy]] = {}
+        for name, (connector_path, connector_config, policy) in config.items():
+            connector_type = import_class(connector_path)
+            connector = connector_type.from_config(connector_config)
+            policy = Policy(**policy)
+            connectors[name] = (connector, policy)
         return cls(connectors=connectors)
 
     def evict(self, key: MultiKey) -> None:
