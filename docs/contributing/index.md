@@ -82,7 +82,8 @@ the un-mocked software.
 
 ```bash
 $ docker pull ghcr.io/proxystore/proxystore-dim:nightly
-$ docker run --rm -it --network host -v /path/to/proxystore:/proxystore proxystore-dim
+# Be sure to change the path to your proxystore repo directory
+$ docker run --rm -it --network host -v /path/to/proxystore:/proxystore ghcr.io/proxystore/proxystore-dim:nightly
 # Inside container
 $ tox -e py310-dim
 ```
