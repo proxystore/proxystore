@@ -165,7 +165,7 @@ def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
     Args:
         proxy: Proxy instance to force resolve.
     """
-    proxy.__wrapped__
+    proxy.__wrapped__  # noqa: B018
 
 
 class ProxyLocker(Generic[T]):

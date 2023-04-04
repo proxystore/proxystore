@@ -47,7 +47,7 @@ def test_blob_filedump(tmp_path: pathlib.Path) -> None:
     assert blob._value is None
 
     # Accessing value should force a load
-    blob.value
+    assert isinstance(blob.value, bytes)
     assert blob.location == BlobLocation.MEMORY
     assert blob.value is not None
     assert not os.path.exists(filepath)
