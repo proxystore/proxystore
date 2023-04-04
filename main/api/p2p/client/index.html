@@ -1875,7 +1875,7 @@ relay server. By default the hostname will be used.</p>
         <b>ssl</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/ssl.html#module-ssl">ssl</a>.<a class="autorefs autorefs-external" title="ssl.SSLContext" href="https://docs.python.org/3/library/ssl.html#ssl.SSLContext">SSLContext</a> | None</code>)
         – <p>When None, the correct value to pass to
-<a class="autorefs autorefs-external" href="https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.connect"><code>websockets.connect()</code></a>
+<a class="autorefs autorefs-external" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.client.connect"><code>websockets.connect()</code></a>
 is inferred from <code>address</code>. If <code>address</code> starts with "wss://" the
 value is True, otherwise is False. Optionally provide a custom
 SSLContext (useful if the server uses self-signed certificates).</p>
@@ -1885,7 +1885,7 @@ SSLContext (useful if the server uses self-signed certificates).</p>
   <p>Returns:</p>
   <ul>
       <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="websockets.client.WebSocketClientProtocol" href="https://websockets.readthedocs.io/en/stable/reference/client.html#websockets.client.WebSocketClientProtocol">WebSocketClientProtocol</a>]</code>
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="websockets.client.WebSocketClientProtocol" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.client.WebSocketClientProtocol">WebSocketClientProtocol</a>]</code>
         – <p>Tuple of the UUID of this client returned by the relay server,         the name used to register the client, and the websocket connection to         the relay server.</p>
       </li>
   </ul>
