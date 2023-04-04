@@ -30,10 +30,10 @@ def test_timer_context_manger() -> None:
 def test_timer_still_running() -> None:
     with Timer() as timer:
         with pytest.raises(RuntimeError, match='Timer is still running!'):
-            timer.elapsed_ns
+            timer.elapsed_ns  # noqa: B018
 
         with pytest.raises(RuntimeError, match='Timer is still running!'):
-            timer.elapsed_ms
+            timer.elapsed_ms  # noqa: B018
 
         with pytest.raises(RuntimeError, match='Timer is still running!'):
-            timer.elapsed_s
+            timer.elapsed_s  # noqa: B018
