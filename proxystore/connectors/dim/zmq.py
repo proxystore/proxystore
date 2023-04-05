@@ -7,6 +7,7 @@ import signal
 import sys
 import time
 import uuid
+import atexit
 from multiprocessing import Process
 from types import TracebackType
 from typing import Any
@@ -71,8 +72,7 @@ class ZeroMQConnector:
     chunk_size: int
     _loop: asyncio.events.AbstractEventLoop
 
-    def __init__(self, interface: str, port: int) -> None:
-        global server_process
+    async def __init__(self, interface: str, port: int) -> None:
 
         # ZMQ is not a default dependency so we don't want to raise
         # an error unless the user actually tries to use this code
@@ -89,18 +89,14 @@ class ZeroMQConnector:
 
         self.addr = f'tcp://{self.host}:{self.port}'
 
-        if server_process is None:
-            server_process = Process(target=self._start_server)
-            server_process.start()
+        try:
+            wait_for_server(self.host, self.port)
+        except RuntimeError:
+            self.server = spawn_server(self.host, self.port)
+
 
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REQ)
-
-        try:
-            self._loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self._loop = asyncio.new_event_loop()
-        self._loop.run_until_complete(wait_for_server(self.host, self.port))
 
     def __del__(self) -> None:
         # https://github.com/zeromq/pyzmq/issues/1512
@@ -118,14 +114,37 @@ class ZeroMQConnector:
     ) -> None:
         self.close()
 
-    def _start_server(self) -> None:
-        """Launch the local ZeroMQ server process."""
-        logger.info(
-            f'starting server on host {self.host} with port {self.port}',
-        )
+    # def _start_server(self) -> None:
+    #     """Launch the local ZeroMQ server process."""
+    #     logger.info(
+    #         f'starting server on host {self.host} with port {self.port}',
+    #     )
 
-        ps = ZeroMQServer(self.host, self.port)
-        asyncio.run(ps.launch())
+    #     ps = ZeroMQServer(self.host, self.port)
+    #     asyncio.run(ps.launch())
+
+    def _send_rpc(self, rpc: Sequence[RPC]) -> list[RPCResponse]:
+        """Send an RPC request to the server.
+
+        Args:
+            rpc: List of RPC requests.
+
+        Returns:
+            List of RPC responses.
+        """
+
+        event = serialize(rpc)
+        res = self._loop.run_until_complete(self.handler(event, self.addr))
+
+        assert isinstance(res, bytes)
+
+        try:
+            res = deserialize(res)
+        except SerializationError:
+            logger.exception('Deserialization error')
+            raise
+
+        return res
 
     async def handler(self, event: bytes, addr: str) -> bytes:
         """ZeroMQ handler function implementation.
@@ -148,22 +167,19 @@ class ZeroMQConnector:
 
         return res
 
-    def close(self) -> None:
-        """Get the connector configuration.
+    def close(self, kill_server : bool = True) -> None:
+        """Close the connector.
 
-        The configuration contains all the information needed to reconstruct
-        the connector object.
+        Args:
+            kill_server: Whether to kill the server process.
         """
-        global server_process
+        if kill_server and self.server is not None:
+            self.server.terminate()
+            self.server.join()
+            self.server = None
 
-        logger.info('Clean up requested')
-
-        if server_process is not None:  # pragma: no cover
-            server_process.terminate()
-            server_process.join()
-            server_process = None
-
-        logger.debug('Clean up completed')
+        self.socket.close()
+        self.context.term()
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -309,6 +325,11 @@ class ZeroMQServer:
         self.context = zmq.asyncio.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind(f'tcp://{self.host}:{self.port}')
+    
+    def close(self) -> None:
+        """Close the server socket."""
+        self.socket.close()
+        self.context.term()
 
     def set(self, key: str, data: bytes) -> Status:
         """Obtain and store locally data from client.
@@ -406,18 +427,17 @@ class ZeroMQServer:
             except asyncio.CancelledError:  # pragma: no cover
                 logger.debug('loop terminated')
 
-    async def launch(self) -> None:
-        """Launch the server."""
-        loop = asyncio.get_running_loop()
-        loop.create_future()
 
-        loop.add_signal_handler(signal.SIGINT, self.socket.close, None)
-        loop.add_signal_handler(signal.SIGTERM, self.socket.close, None)
+def start_server(host, port) -> None:
+    """Start a ZeroMQServer."""
+    server = ZeroMQServer(host, port)
+    loop = asyncio.get_running_loop()
+    loop.add_signal_handler(signal.SIGINT, server.close)
+    loop.add_signal_handler(signal.SIGTERM, server.close)
+    loop.run_until_complete(server.handler())
 
-        await self.handler()
 
-
-async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
+async def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
     """Wait until the ZeroMQServer responds.
 
     Args:
@@ -452,3 +472,21 @@ async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
     raise RuntimeError(
         'Failed to connect to server within timeout ({timeout} seconds).',
     )
+
+
+def spawn_server(host: str, port: int, timeout: float) -> Process:
+    server_process = Process(target=start_server, args=(host, port))
+    server_process.start()
+
+    def _kill_on_exit() -> None:
+        server_process.terminate()
+        server_process.join(timeout=timeout)
+        if server_process.is_alive():
+            server_process.kill()
+            server_process.join()
+        
+    atexit.register(_kill_on_exit)
+
+    wait_for_server(host, port, timeout=timeout)
+
+    return server_process
