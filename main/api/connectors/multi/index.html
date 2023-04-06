@@ -2890,11 +2890,7 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p><code>None</code> if the corresponding key does not have an associated object.</p>
+        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
       </li>
   </ul>
 
@@ -2917,7 +2913,7 @@ the connector object.</p>
 </span><span id="__span-0-249"><a id="__codelineno-0-249" name="__codelineno-0-249"></a><span class="sd">        keys: Sequence of keys associated with objects to retrieve.</span>
 </span><span id="__span-0-250"><a id="__codelineno-0-250" name="__codelineno-0-250"></a>
 </span><span id="__span-0-251"><a id="__codelineno-0-251" name="__codelineno-0-251"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">        List with same order as `keys` with the serialized objects or</span>
+</span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a><span class="sd">        List with same order as `keys` with the serialized objects or \</span>
 </span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a><span class="sd">        `None` if the corresponding key does not have an associated object.</span>
 </span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
@@ -3113,11 +3109,7 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a>]</code>
-        – <p>retrieve the objects.</p>
+        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
       </li>
   </ul>
 
@@ -3157,8 +3149,7 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
 <span class="normal"><a href="#__codelineno-0-318">318</a></span>
 <span class="normal"><a href="#__codelineno-0-319">319</a></span>
 <span class="normal"><a href="#__codelineno-0-320">320</a></span>
-<span class="normal"><a href="#__codelineno-0-321">321</a></span>
-<span class="normal"><a href="#__codelineno-0-322">322</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="k">def</span> <span class="nf">put_batch</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="k">def</span> <span class="nf">put_batch</span><span class="p">(</span>
 </span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a>    <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
 </span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>    <span class="n">subset_tags</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
@@ -3174,17 +3165,16 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a><span class="sd">            of a connectors&#39;s policy `superset_tags` to match.</span>
 </span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>
 </span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        List of keys with the same order as `objs` which can be used to</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a><span class="sd">        List of keys with the same order as `objs` which can be used to \</span>
 </span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="sd">        retrieve the objects.</span>
 </span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>
-</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">        RuntimeError: If no connector policy matches the arguments.</span>
-</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="k">return</span> <span class="p">[</span>
-</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">subset_tags</span><span class="o">=</span><span class="n">subset_tags</span><span class="p">,</span> <span class="n">superset_tags</span><span class="o">=</span><span class="n">superset_tags</span><span class="p">)</span>
-</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span>
-</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="p">]</span>
+</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="sd">    Raises:</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="sd">        RuntimeError: If no connector policy matches the arguments.</span>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>    <span class="k">return</span> <span class="p">[</span>
+</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">subset_tags</span><span class="o">=</span><span class="n">subset_tags</span><span class="p">,</span> <span class="n">superset_tags</span><span class="o">=</span><span class="n">superset_tags</span><span class="p">)</span>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>        <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>

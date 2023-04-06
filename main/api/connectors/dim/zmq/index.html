@@ -3026,11 +3026,7 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.zmq.ZeroMQKey" href="#proxystore.connectors.dim.zmq.ZeroMQKey">ZeroMQKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.zmq.ZeroMQKey" href="#proxystore.connectors.dim.zmq.ZeroMQKey">ZeroMQKey</a>]</code>
-        – <p>retrieve the objects.</p>
+        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
       </li>
   </ul>
 
@@ -3053,7 +3049,7 @@ the connector object.</p>
 </span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="sd">        objs: Sequence of serialized objects to put in the store.</span>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a>
 </span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">        List of keys with the same order as `objs` which can be used to</span>
+</span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">        List of keys with the same order as `objs` which can be used to \</span>
 </span><span id="__span-0-285"><a id="__codelineno-0-285" name="__codelineno-0-285"></a><span class="sd">        retrieve the objects.</span>
 </span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">]</span>

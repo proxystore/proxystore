@@ -2453,11 +2453,7 @@ interacting with metrics recorded for
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.store.metrics.TimeStats" href="#proxystore.store.metrics.TimeStats">TimeStats</a>]</code>
-        – <p>Dictionary mapping event names to the time statistics aggregated</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.store.metrics.TimeStats" href="#proxystore.store.metrics.TimeStats">TimeStats</a>]</code>
-        – <p>for that event.</p>
+        – <p>Dictionary mapping event names to the time statistics aggregated             for that event.</p>
       </li>
   </ul>
 
@@ -2478,7 +2474,7 @@ interacting with metrics recorded for
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Aggregate time statistics over all keys.</span>
 </span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a>
 </span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        Dictionary mapping event names to the time statistics aggregated</span>
+</span><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="sd">        Dictionary mapping event names to the time statistics aggregated \</span>
 </span><span id="__span-0-150"><a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="sd">        for that event.</span>
 </span><span id="__span-0-151"><a id="__codelineno-0-151" name="__codelineno-0-151"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-152"><a id="__codelineno-0-152" name="__codelineno-0-152"></a>    <span class="n">times</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TimeStats</span><span class="p">]</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="n">TimeStats</span><span class="p">)</span>
@@ -2522,11 +2518,7 @@ sequence of proxies, the key(s) will be extracted.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.Metrics" href="#proxystore.store.metrics.Metrics">Metrics</a> | None</code>
-        – <p>Metrics associated with the key or <code>None</code> if the key does not</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.Metrics" href="#proxystore.store.metrics.Metrics">Metrics</a> | None</code>
-        – <p>exist.</p>
+        – <p>Metrics associated with the key or <code>None</code> if the key does not             exist.</p>
       </li>
   </ul>
 
@@ -2554,7 +2546,7 @@ sequence of proxies, the key(s) will be extracted.</p>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">            sequence of proxies, the key(s) will be extracted.</span>
 </span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a>
 </span><span id="__span-0-165"><a id="__codelineno-0-165" name="__codelineno-0-165"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">        Metrics associated with the key or `None` if the key does not</span>
+</span><span id="__span-0-166"><a id="__codelineno-0-166" name="__codelineno-0-166"></a><span class="sd">        Metrics associated with the key or `None` if the key does not \</span>
 </span><span id="__span-0-167"><a id="__codelineno-0-167" name="__codelineno-0-167"></a><span class="sd">        exist.</span>
 </span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>    <span class="n">key_hash</span> <span class="o">=</span> <span class="n">_hash_key</span><span class="p">(</span><span class="n">key_or_proxy</span><span class="p">)</span>

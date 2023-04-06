@@ -3387,11 +3387,7 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p><code>None</code> if the corresponding key does not have an associated object.</p>
+        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
       </li>
   </ul>
 
@@ -3414,7 +3410,7 @@ method will wait to make sure the transfers is successful.</p>
 </span><span id="__span-0-565"><a id="__codelineno-0-565" name="__codelineno-0-565"></a><span class="sd">        keys: Sequence of keys associated with objects to retrieve.</span>
 </span><span id="__span-0-566"><a id="__codelineno-0-566" name="__codelineno-0-566"></a>
 </span><span id="__span-0-567"><a id="__codelineno-0-567" name="__codelineno-0-567"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-568"><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        List with same order as `keys` with the serialized objects or</span>
+</span><span id="__span-0-568"><a id="__codelineno-0-568" name="__codelineno-0-568"></a><span class="sd">        List with same order as `keys` with the serialized objects or \</span>
 </span><span id="__span-0-569"><a id="__codelineno-0-569" name="__codelineno-0-569"></a><span class="sd">        `None` if the corresponding key does not have an associated object.</span>
 </span><span id="__span-0-570"><a id="__codelineno-0-570" name="__codelineno-0-570"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-571"><a id="__codelineno-0-571" name="__codelineno-0-571"></a>    <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
@@ -3533,11 +3529,7 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a>]</code>
-        – <p>retrieve the objects.</p>
+        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
       </li>
   </ul>
 
@@ -3574,7 +3566,7 @@ method will wait to make sure the transfers is successful.</p>
 </span><span id="__span-0-598"><a id="__codelineno-0-598" name="__codelineno-0-598"></a><span class="sd">        objs: Sequence of serialized objects to put in the store.</span>
 </span><span id="__span-0-599"><a id="__codelineno-0-599" name="__codelineno-0-599"></a>
 </span><span id="__span-0-600"><a id="__codelineno-0-600" name="__codelineno-0-600"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-601"><a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">        List of keys with the same order as `objs` which can be used to</span>
+</span><span id="__span-0-601"><a id="__codelineno-0-601" name="__codelineno-0-601"></a><span class="sd">        List of keys with the same order as `objs` which can be used to \</span>
 </span><span id="__span-0-602"><a id="__codelineno-0-602" name="__codelineno-0-602"></a><span class="sd">        retrieve the objects.</span>
 </span><span id="__span-0-603"><a id="__codelineno-0-603" name="__codelineno-0-603"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-604"><a id="__codelineno-0-604" name="__codelineno-0-604"></a>    <span class="n">filenames</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">]</span>

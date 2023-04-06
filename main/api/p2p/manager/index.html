@@ -2471,12 +2471,8 @@ connection that should be closed.</p>
   <p>Returns:</p>
   <ul>
       <li class="field-body">
-            <code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>
-        – <p>Tuple containing the UUID of the peer that sent the message</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-        – <p>and the message itself.</p>
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+        – <p>Tuple containing the UUID of the peer that sent the message             and the message itself.</p>
       </li>
   </ul>
 
@@ -2493,7 +2489,7 @@ connection that should be closed.</p>
 </span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Receive next message from a peer.</span>
 </span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>
 </span><span id="__span-0-367"><a id="__codelineno-0-367" name="__codelineno-0-367"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">        Tuple containing the UUID of the peer that sent the message</span>
+</span><span id="__span-0-368"><a id="__codelineno-0-368" name="__codelineno-0-368"></a><span class="sd">        Tuple containing the UUID of the peer that sent the message \</span>
 </span><span id="__span-0-369"><a id="__codelineno-0-369" name="__codelineno-0-369"></a><span class="sd">        and the message itself.</span>
 </span><span id="__span-0-370"><a id="__codelineno-0-370" name="__codelineno-0-370"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-371"><a id="__codelineno-0-371" name="__codelineno-0-371"></a>    <span class="k">return</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>

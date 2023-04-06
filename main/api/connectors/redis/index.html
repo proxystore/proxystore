@@ -2431,11 +2431,7 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p><code>None</code> if the corresponding key does not have an associated object.</p>
+        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
       </li>
   </ul>
 
@@ -2458,7 +2454,7 @@ the connector object.</p>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        keys: Sequence of keys associated with objects to retrieve.</span>
 </span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>
 </span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        List with same order as `keys` with the serialized objects or</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a><span class="sd">        List with same order as `keys` with the serialized objects or \</span>
 </span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a><span class="sd">        `None` if the corresponding key does not have an associated object.</span>
 </span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis_client</span><span class="o">.</span><span class="n">mget</span><span class="p">([</span><span class="n">key</span><span class="o">.</span><span class="n">redis_key</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">])</span>
@@ -2561,11 +2557,7 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to</p>
-      </li>
-      <li class="field-body">
-            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a>]</code>
-        – <p>retrieve the objects.</p>
+        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
       </li>
   </ul>
 
@@ -2592,7 +2584,7 @@ the connector object.</p>
 </span><span id="__span-0-136"><a id="__codelineno-0-136" name="__codelineno-0-136"></a><span class="sd">        objs: Sequence of serialized objects to put in the store.</span>
 </span><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a>
 </span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a><span class="sd">    Returns:</span>
-</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">        List of keys with the same order as `objs` which can be used to</span>
+</span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a><span class="sd">        List of keys with the same order as `objs` which can be used to \</span>
 </span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a><span class="sd">        retrieve the objects.</span>
 </span><span id="__span-0-141"><a id="__codelineno-0-141" name="__codelineno-0-141"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-142"><a id="__codelineno-0-142" name="__codelineno-0-142"></a>    <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">RedisKey</span><span class="p">(</span><span class="n">redis_key</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()))</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">objs</span><span class="p">]</span>
