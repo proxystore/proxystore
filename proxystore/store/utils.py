@@ -12,6 +12,7 @@ from proxystore.store.exceptions import ProxyStoreFactoryError
 
 T = TypeVar('T')
 ConnectorKeyT = Tuple[Any, ...]
+"""Connector key type alias."""
 
 
 def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
@@ -21,7 +22,7 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
         proxy: Proxy instance to get key from.
 
     Returns:
-        The key, a NamedTuple unique to the
+        The key, a NamedTuple unique to the \
         [`Store`][proxystore.store.base.Store] that created the proxy..
 
     Raises:

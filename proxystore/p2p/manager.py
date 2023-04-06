@@ -365,7 +365,7 @@ class PeerManager:
         """Receive next message from a peer.
 
         Returns:
-            Tuple containing the UUID of the peer that sent the message
+            Tuple containing the UUID of the peer that sent the message \
             and the message itself.
         """
         return await self._message_queue.get()

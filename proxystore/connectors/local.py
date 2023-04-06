@@ -116,7 +116,7 @@ class LocalConnector:
             keys: Sequence of keys associated with objects to retrieve.
 
         Returns:
-            List with same order as `keys` with the serialized objects or
+            List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
         return [self.get(key) for key in keys]
@@ -141,7 +141,7 @@ class LocalConnector:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
         return [self.put(obj) for obj in objs]
