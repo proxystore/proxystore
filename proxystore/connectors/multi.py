@@ -249,7 +249,7 @@ class MultiConnector:
             keys: Sequence of keys associated with objects to retrieve.
 
         Returns:
-            List with same order as `keys` with the serialized objects or
+            List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
         return [self.get(key) for key in keys]
@@ -309,9 +309,8 @@ class MultiConnector:
                 of a connectors's policy `superset_tags` to match.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
-
 
         Raises:
             RuntimeError: If no connector policy matches the arguments.

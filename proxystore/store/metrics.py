@@ -146,7 +146,7 @@ class StoreMetrics:
         """Aggregate time statistics over all keys.
 
         Returns:
-            Dictionary mapping event names to the time statistics aggregated
+            Dictionary mapping event names to the time statistics aggregated \
             for that event.
         """
         times: dict[str, TimeStats] = defaultdict(TimeStats)
@@ -163,7 +163,7 @@ class StoreMetrics:
                 sequence of proxies, the key(s) will be extracted.
 
         Returns:
-            Metrics associated with the key or `None` if the key does not
+            Metrics associated with the key or `None` if the key does not \
             exist.
         """
         key_hash = _hash_key(key_or_proxy)

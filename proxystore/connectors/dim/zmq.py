@@ -281,7 +281,7 @@ class ZeroMQConnector:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
         return [self.put(obj) for obj in objs]

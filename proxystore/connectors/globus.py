@@ -414,7 +414,7 @@ class GlobusConnector:
             delete: If `True`, delete the filenames rather than syncing them.
 
         Returns:
-            Globus Task UUID that can be used to check the status of the
+            Globus Task UUID that can be used to check the status of the \
             transfer.
         """
         src_endpoint = self._get_local_endpoint()
@@ -565,7 +565,7 @@ class GlobusConnector:
             keys: Sequence of keys associated with objects to retrieve.
 
         Returns:
-            List with same order as `keys` with the serialized objects or
+            List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
         return [self.get(key) for key in keys]
@@ -598,7 +598,7 @@ class GlobusConnector:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
         filenames = [str(uuid.uuid4()) for _ in objs]

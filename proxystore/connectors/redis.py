@@ -111,7 +111,7 @@ class RedisConnector:
             keys: Sequence of keys associated with objects to retrieve.
 
         Returns:
-            List with same order as `keys` with the serialized objects or
+            List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
         return self._redis_client.mget([key.redis_key for key in keys])
@@ -136,7 +136,7 @@ class RedisConnector:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
         keys = [RedisKey(redis_key=str(uuid.uuid4())) for _ in objs]
