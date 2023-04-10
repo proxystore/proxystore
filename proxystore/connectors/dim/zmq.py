@@ -1,13 +1,12 @@
 """ZeroMQ-based distributed in-memory connector implementation."""
 from __future__ import annotations
 
-import asyncio
+import atexit
 import logging
 import signal
 import sys
 import time
 import uuid
-import atexit
 from multiprocessing import Process
 from types import TracebackType
 from typing import Any
@@ -21,13 +20,14 @@ else:  # pragma: <3.11 cover
 
 try:
     import zmq
-    import zmq.asyncio
 
     zmq_import_error = None
 except ImportError as e:  # pragma: no cover
     zmq_import_error = e
 
 import proxystore.utils as utils
+from proxystore.connectors.dim.rpc import RPC
+from proxystore.connectors.dim.rpc import RPCResponse
 from proxystore.connectors.dim.utils import get_ip_address
 from proxystore.connectors.dim.utils import Status
 from proxystore.serialize import deserialize
@@ -67,13 +67,11 @@ class ZeroMQConnector:
 
     addr: str
     provider_id: int
-    context: zmq.asyncio.Context
-    socket: zmq.asyncio.Socket
+    context: zmq.sugar.context.Context[zmq.sugar.socket.Socket[Any]]
+    socket: zmq.sugar.socket.Socket[Any]
     chunk_size: int
-    _loop: asyncio.events.AbstractEventLoop
 
-    async def __init__(self, interface: str, port: int) -> None:
-
+    def __init__(self, interface: str, port: int) -> None:
         # ZMQ is not a default dependency so we don't want to raise
         # an error unless the user actually tries to use this code
         if zmq_import_error is not None:  # pragma: no cover
@@ -92,10 +90,9 @@ class ZeroMQConnector:
         try:
             wait_for_server(self.host, self.port)
         except RuntimeError:
-            self.server = spawn_server(self.host, self.port)
+            self.server = spawn_server(self.host, self.port, timeout=0.1)
 
-
-        self.context = zmq.asyncio.Context()
+        self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REQ)
 
     def __del__(self) -> None:
@@ -114,15 +111,6 @@ class ZeroMQConnector:
     ) -> None:
         self.close()
 
-    # def _start_server(self) -> None:
-    #     """Launch the local ZeroMQ server process."""
-    #     logger.info(
-    #         f'starting server on host {self.host} with port {self.port}',
-    #     )
-
-    #     ps = ZeroMQServer(self.host, self.port)
-    #     asyncio.run(ps.launch())
-
     def _send_rpc(self, rpc: Sequence[RPC]) -> list[RPCResponse]:
         """Send an RPC request to the server.
 
@@ -132,42 +120,34 @@ class ZeroMQConnector:
         Returns:
             List of RPC responses.
         """
+        responses = []
 
-        event = serialize(rpc)
-        res = self._loop.run_until_complete(self.handler(event, self.addr))
+        for r in rpc:
+            assert isinstance(r, RPC)
+            event = serialize(rpc)
+            with self.socket.connect(self.addr):
+                self.socket.send_multipart(
+                    list(utils.chunk_bytes(event, self.chunk_size)),
+                )
+                res = b''.join(self.socket.recv_multipart())
 
-        assert isinstance(res, bytes)
+            assert isinstance(res, bytes)
 
-        try:
-            res = deserialize(res)
-        except SerializationError:
-            logger.exception('Deserialization error')
-            raise
+            try:
+                rpc_res = RPCResponse(
+                    **deserialize(res),
+                    operation=r.operation,
+                    key=r.key,
+                    exists=True,
+                )
+            except SerializationError:
+                logger.exception('Deserialization error')
+                raise
+            responses.append(rpc_res)
 
-        return res
+        return responses
 
-    async def handler(self, event: bytes, addr: str) -> bytes:
-        """ZeroMQ handler function implementation.
-
-        Args:
-            event: A pickled dictionary consisting of the data,
-                its key, and the operation to perform on the data.
-            addr: The address of the server to connect to.
-
-        Returns:
-            The serialized result of the operation on the data.
-        """
-        with self.socket.connect(addr):
-            await self.socket.send_multipart(
-                list(utils.chunk_bytes(event, self.chunk_size)),
-            )
-            res = b''.join(await self.socket.recv_multipart())
-
-        assert isinstance(res, bytes)
-
-        return res
-
-    def close(self, kill_server : bool = True) -> None:
+    def close(self, kill_server: bool = True) -> None:
         """Close the connector.
 
         Args:
@@ -176,7 +156,6 @@ class ZeroMQConnector:
         if kill_server and self.server is not None:
             self.server.terminate()
             self.server.join()
-            self.server = None
 
         self.socket.close()
         self.context.term()
@@ -206,10 +185,9 @@ class ZeroMQConnector:
         """
         logger.debug(f'Client issuing an evict request on key {key}.')
 
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'evict'},
-        )
-        self._loop.run_until_complete(self.handler(event, key.peer))
+        rpc = RPC(operation='evict', key=key.zmq_key, payload=None)
+
+        self._send_rpc([rpc])
 
     def exists(self, key: ZeroMQKey) -> bool:
         """Check if an object associated with the key exists.
@@ -222,12 +200,14 @@ class ZeroMQConnector:
         """
         logger.debug(f'Client issuing an exists request on key {key}.')
 
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'exists'},
-        )
-        return deserialize(
-            self._loop.run_until_complete(self.handler(event, key.peer)),
-        )
+        rpc = RPC(operation='exists', key=key.zmq_key, payload=None)
+
+        response = self._send_rpc([rpc])
+
+        if response[0].exists is not None:
+            return response[0].exists
+        else:
+            return False
 
     def get(self, key: ZeroMQKey) -> bytes | None:
         """Get the serialized object associated with the key.
@@ -240,19 +220,11 @@ class ZeroMQConnector:
         """
         logger.debug(f'Client issuing get request on key {key}')
 
-        event = serialize(
-            {'key': key.zmq_key, 'data': None, 'op': 'get'},
-        )
-        res = self._loop.run_until_complete(self.handler(event, key.peer))
+        rpc = RPC(operation='get', key=key.zmq_key, payload=None)
 
-        try:
-            s = deserialize(res)
+        res = self._send_rpc([rpc])
 
-            assert isinstance(s, Status)
-            assert not s.success
-            return None
-        except SerializationError:
-            return res
+        return res[0].result
 
     def get_batch(self, keys: Sequence[ZeroMQKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -283,11 +255,10 @@ class ZeroMQConnector:
         logger.debug(
             f'Client issuing set request on key {key} with addr {self.addr}',
         )
+        rpc = RPC(operation='set', key=key.zmq_key, payload=obj)
 
-        event = serialize(
-            {'key': key.zmq_key, 'data': obj, 'op': 'set'},
-        )
-        self._loop.run_until_complete(self.handler(event, self.addr))
+        self._send_rpc([rpc])
+
         return key
 
     def put_batch(self, objs: Sequence[bytes]) -> list[ZeroMQKey]:
@@ -322,10 +293,10 @@ class ZeroMQServer:
         self.chunk_size = MAX_CHUNK_LENGTH
         self.data = {}
 
-        self.context = zmq.asyncio.Context()
+        self.context = zmq.Context()
         self.socket = self.context.socket(zmq.REP)
         self.socket.bind(f'tcp://{self.host}:{self.port}')
-    
+
     def close(self) -> None:
         """Close the server socket."""
         self.socket.close()
@@ -381,11 +352,11 @@ class ZeroMQServer:
         """
         return key in self.data
 
-    async def handler(self) -> None:
+    def handler(self) -> None:
         """Handle zmq connection requests."""
         while not self.socket.closed:  # pragma: no branch
             try:
-                pkv = await self.socket.recv_multipart()
+                pkv = self.socket.recv_multipart()
                 kvb = b''.join(pkv)
 
                 if kvb == b'ping':
@@ -416,28 +387,26 @@ class ZeroMQServer:
                 else:
                     serialized_res = res
 
-                await self.socket.send_multipart(
+                self.socket.send_multipart(
                     list(
                         utils.chunk_bytes(serialized_res, self.chunk_size),
                     ),
                 )
             except zmq.ZMQError as e:  # pragma: no cover
                 logger.exception(e)
-                await asyncio.sleep(0.01)
-            except asyncio.CancelledError:  # pragma: no cover
-                logger.debug('loop terminated')
 
 
-def start_server(host, port) -> None:
+def start_server(host: str, port: int) -> None:
     """Start a ZeroMQServer."""
     server = ZeroMQServer(host, port)
-    loop = asyncio.get_running_loop()
-    loop.add_signal_handler(signal.SIGINT, server.close)
-    loop.add_signal_handler(signal.SIGTERM, server.close)
-    loop.run_until_complete(server.handler())
+
+    signal.signal(signal.SIGINT, lambda *args: server.close())
+    signal.signal(signal.SIGTERM, lambda *args: server.close())
+
+    server.handler()
 
 
-async def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
+def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
     """Wait until the ZeroMQServer responds.
 
     Args:
@@ -449,23 +418,23 @@ async def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
         RuntimeError: if the server does not respond within the timeout.
     """
     start = time.time()
-    context = zmq.asyncio.Context()
+    context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.LINGER, 0)
 
-    with socket.connect(f'tcp://{host}:{port}'):
-        await socket.send(b'ping')
+    socket.connect(f'tcp://{host}:{port}')
+    socket.send(b'ping')
 
-        poller = zmq.asyncio.Poller()
-        poller.register(socket, zmq.POLLIN)
+    poller = zmq.Poller()
+    poller.register(socket, zmq.POLLIN)
 
-        while time.time() - start < timeout:
-            event = await poller.poll(timeout)
-            if len(event) != 0:
-                response = await socket.recv()
-                assert response == b'pong'
-                socket.close()
-                return
+    while time.time() - start < timeout:
+        event = poller.poll(int(timeout * 1000))
+        if len(event) != 0:
+            response = socket.recv()
+            assert response == b'pong'
+            socket.close()
+            return
 
     socket.close()
 
@@ -475,6 +444,16 @@ async def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
 
 
 def spawn_server(host: str, port: int, timeout: float) -> Process:
+    """Spawn a ZeroMQServer in a separate process.
+
+    Args:
+        host: The host of the server to ping.
+        port: The port of the server to ping.
+        timeout: The max time in seconds to wait for server response.
+
+    Returns:
+        The process that the server is running in.
+    """
     server_process = Process(target=start_server, args=(host, port))
     server_process.start()
 
@@ -484,7 +463,7 @@ def spawn_server(host: str, port: int, timeout: float) -> Process:
         if server_process.is_alive():
             server_process.kill()
             server_process.join()
-        
+
     atexit.register(_kill_on_exit)
 
     wait_for_server(host, port, timeout=timeout)
