@@ -20,6 +20,7 @@ from proxystore.connectors.dim.ucx import UCXServer
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from testing.mocked.ucx import MockEndpoint
+from testing.mocking import mock_multiprocessing
 from testing.utils import open_port
 
 ENCODING = 'UTF-8'
@@ -44,11 +45,12 @@ async def execute_handler(obj: Any, server: UCXServer) -> Any:
 
 
 def test_ucx_connector(ucx_connector) -> None:
-    ucx_connector.kwargs['port'] = open_port()
-    with ucx_connector.ctx():
-        connector = UCXConnector(**ucx_connector.kwargs)
-        connector.close()
-        connector.close()  # check that nothing happens
+    config = ucx_connector.config()
+    config['port'] = open_port()
+    with mock_multiprocessing():
+        with UCXConnector.from_config(config) as connector:
+            connector.close()
+            connector.close()  # check that nothing happens
 
 
 def test_launched_mocked_server() -> None:
