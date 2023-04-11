@@ -192,7 +192,7 @@ def test_globus_connector_init(globus_connector) -> None:
 
 def test_globus_connector_internals(globus_connector) -> None:
     """Test GlobusConnector internal mechanisms."""
-    connector = GlobusConnector(**globus_connector.kwargs)
+    connector = GlobusConnector.from_config(globus_connector.config())
 
     class PatchedError(globus_sdk.TransferAPIError):
         def __init__(self, status: int):
