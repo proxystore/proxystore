@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import platform
 import sys
 from typing import Any
 from typing import ContextManager
@@ -49,6 +50,11 @@ from testing.stores import local_store
 from testing.stores import multi_store
 from testing.stores import redis_store
 from testing.stores import store_implementation
+
+if platform.system() == 'Darwin':  # pragma: no cover
+    import multiprocessing
+
+    multiprocessing.set_start_method('fork')
 
 
 def pytest_addoption(parser):
