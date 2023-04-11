@@ -32,7 +32,7 @@ def get_ip_address(ifname: str) -> str:
         # Not a solution, but the above doesn't work with Macs
         # need to provide IP rather than the interface name for the time being
 
-        if ifname == 'localhost':
+        if ifname == 'localhost':  # pragma: no cover
             ifname = '127.0.0.1'
         return ifname
 

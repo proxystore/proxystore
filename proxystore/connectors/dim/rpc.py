@@ -1,4 +1,4 @@
-"""RPC and RPCResponse are the data structures used to communicate with a DIM server."""
+"""Message types for communication with DIM servers."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -7,19 +7,37 @@ from typing import Literal
 
 @dataclass
 class RPC:
-    """RPC is a request or response to/from a DIM server."""
+    """Client request to a DIM server.
 
-    operation: Literal['exists', 'evict', 'get', 'set']
+    Attributes:
+        operation: Operation type requested.
+        key: Key to operate on.
+        size: Size of data associated with key.
+        data: Data associated with `set` operation.
+    """
+
+    operation: Literal['exists', 'evict', 'get', 'put']
     key: str
-    payload: bytes | None
+    size: int
+    data: bytes | None = None
 
 
 @dataclass
 class RPCResponse:
-    """RPCResponse is a response from a DIM server."""
+    """Server response to a client request.
 
-    operation: Literal['exists', 'evict', 'get', 'set']
+    Attributes:
+        operation: Operation type performed.
+        key: Key that was operated on.
+        size: Size of data associated with key.
+        data: Data returned by `get` operation.
+        exists: Return value for `exists` operation.
+        exception: Optional exception raised by the operation.
+    """
+
+    operation: Literal['exists', 'evict', 'get', 'put']
     key: str
-    result: bytes | None
-    exception: Exception | None
-    exists: bool | None
+    size: int
+    data: bytes | None = None
+    exists: bool | None = None
+    exception: Exception | None = None
