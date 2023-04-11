@@ -11,6 +11,7 @@ from proxystore.serialize import serialize
 from testing.mocked.pymargo import Bulk
 from testing.mocked.pymargo import Engine
 from testing.mocked.pymargo import Handle
+from testing.mocking import mock_multiprocessing
 from testing.utils import open_port
 
 ENCODING = 'UTF-8'
@@ -27,12 +28,11 @@ def margo_server():
 
 
 def test_margo_connector(margo_connector) -> None:
-    with margo_connector.ctx():
-        connector = MargoConnector(**margo_connector.kwargs)
-        connector.close()
-        connector.close()  # check that nothing happens
+    with mock_multiprocessing():
+        with MargoConnector.from_config(margo_connector.config()) as connector:
+            connector.close()
+            connector.close()  # check that nothing happens
 
-        if 'mock' in margo_connector.ctx.__name__:  # pragma: no branch
             connector._start_server()
             connector.close()
 
