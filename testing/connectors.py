@@ -236,11 +236,9 @@ def ucx_connector() -> Generator[ConnectorInfo, None, None]:
 @pytest.fixture(scope='session')
 def zmq_connector() -> ConnectorInfo:
     """ZeroMQ store fixture."""
-    port = open_port()
-
     return ConnectorInfo(
         ZeroMQConnector,
-        {'interface': 'localhost', 'port': port},
+        {'interface': '127.0.0.1', 'port': open_port(), 'timeout': 0.2},
         contextlib.nullcontext,
     )
 
