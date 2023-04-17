@@ -36,12 +36,12 @@ def multi_connector_from_policies(
 
 
 def test_policy_size_validation() -> None:
-    policy = Policy(min_size=1, max_size=100)
+    policy = Policy(min_size_bytes=1, max_size_bytes=100)
     assert policy.is_valid()
-    assert policy.is_valid(size=1)
-    assert policy.is_valid(size=100)
-    assert not policy.is_valid(size=0)
-    assert not policy.is_valid(size=101)
+    assert policy.is_valid(size_bytes=1)
+    assert policy.is_valid(size_bytes=100)
+    assert not policy.is_valid(size_bytes=0)
+    assert not policy.is_valid(size_bytes=101)
 
 
 def test_policy_subset_tags_validation() -> None:
@@ -68,7 +68,7 @@ def test_policy_superset_tags_validation() -> None:
     'policy',
     (
         Policy(priority=42),
-        Policy(min_size=1, max_size=2),
+        Policy(min_size_bytes=1, max_size_bytes=2),
         Policy(subset_tags=['a', 'b'], superset_tags=['c']),
     ),
 )
@@ -80,7 +80,7 @@ def test_policy_dict_jsonable(policy: Policy) -> None:
     'policy',
     (
         Policy(priority=42),
-        Policy(min_size=1, max_size=2),
+        Policy(min_size_bytes=1, max_size_bytes=2),
         Policy(subset_tags=['a', 'b'], superset_tags=['c']),
     ),
 )
@@ -101,8 +101,8 @@ def test_multi_connector_priority() -> None:
 
 def test_multi_connector_policy_size() -> None:
     with multi_connector_from_policies(
-        Policy(max_size=1),
-        Policy(min_size=2),
+        Policy(max_size_bytes=1),
+        Policy(min_size_bytes=2),
     ) as (multi_connector, connector1, connector2):
         value = b'value'
         key = multi_connector.put(value)
@@ -128,7 +128,7 @@ def test_multi_connector_policy_tags() -> None:
 
 def test_multi_connector_policy_no_valid() -> None:
     connectors: dict[str, tuple[Connector[Any], Policy]] = {
-        'connector': (LocalConnector(), Policy(max_size=1)),
+        'connector': (LocalConnector(), Policy(max_size_bytes=1)),
     }
 
     connector = MultiConnector(connectors)

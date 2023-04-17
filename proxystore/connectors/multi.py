@@ -41,8 +41,8 @@ class PolicyDict(TypedDict):
     """JSON compatible representation of a [`Policy`][proxystore.store.multi.Policy]."""  # noqa: E501
 
     priority: int
-    min_size: int
-    max_size: int
+    min_size_bytes: int
+    max_size_bytes: int
     subset_tags: list[str]
     superset_tags: list[str]
 
@@ -52,15 +52,20 @@ class Policy:
     """Policy that allows validating a set of constraints."""
 
     priority: int = 0
-    min_size: int = 0
-    max_size: int = sys.maxsize
+    """Priority for breaking ties between policies (higher is preferred)."""
+    min_size_bytes: int = 0
+    """Minimum size in bytes allowed."""
+    max_size_bytes: int = sys.maxsize
+    """Maximum size in bytes allowed."""
     subset_tags: list[str] = dataclasses.field(default_factory=list)
+    """Subset tags."""
     superset_tags: list[str] = dataclasses.field(default_factory=list)
+    """Superset tags."""
 
     def is_valid(
         self,
         *,
-        size: int | None = None,
+        size_bytes: int | None = None,
         subset_tags: Iterable[str] | None = None,
         superset_tags: Iterable[str] | None = None,
     ) -> bool:
@@ -72,7 +77,7 @@ class Policy:
             checked against the policy.
 
         Args:
-            size: Object size.
+            size_bytes: Object size in bytes.
             subset_tags: Set of tags that must be a subset
                 of the Policy's `subset_tags` to be valid.
             superset_tags: Set of tags that must be a superset
@@ -81,7 +86,10 @@ class Policy:
         Returns:
             If the provided constraints are valid for the policy.
         """
-        if size is not None and (size < self.min_size or size > self.max_size):
+        if size_bytes is not None and (
+            size_bytes < self.min_size_bytes
+            or size_bytes > self.max_size_bytes
+        ):
             return False
         if subset_tags is not None and not set(subset_tags).issubset(
             self.subset_tags,
@@ -96,18 +104,20 @@ class Policy:
     def as_dict(self) -> PolicyDict:
         """Convert the Policy to a JSON compatible dict.
 
-        Usage:
+        Example:
+            ```python
             >>> policy = Policy(...)
             >>> policy_dict = policy.as_dict()
             >>> Policy(**policy_dict) == policy
             True
+            ```
         """
         # We could use dataclasses.asdict(self) but this gives us the benefit
         # of typing on the return dict.
         return PolicyDict(
             priority=self.priority,
-            min_size=self.min_size,
-            max_size=self.max_size,
+            min_size_bytes=self.min_size_bytes,
+            max_size_bytes=self.max_size_bytes,
             subset_tags=self.subset_tags,
             superset_tags=self.superset_tags,
         )
@@ -133,6 +143,23 @@ class MultiKey(NamedTuple):
 
 class MultiConnector:
     """Policy based manager for a [`Connector`][proxystore.connectors.connector.Connector] collection.
+
+    Example:
+        ```python
+        from proxystore.connectors.file import FileConnector
+        from proxystore.connectors.multi import Policy
+        from proxystore.connectors.multi import MultiConnector
+        from proxystore.connectors.redis import RedisConnector
+
+        file_connector = FileConnector(...)
+        redis_connector = RedisConnector(...)
+
+        connectors = {
+            'small': (file_connector, Policy(max_size_bytes=1000000)),
+            'large': (redis_connector, Policy(min_size_bytes=1000000)),
+        }
+        connector = MultiConnector(connector)
+        ```
 
     Args:
         connectors: Mapping of names to tuples of a
@@ -278,7 +305,7 @@ class MultiConnector:
         for connector_name in self.connectors_by_priority:
             connector, policy = self.connectors[connector_name]
             if policy.is_valid(
-                size=len(obj),
+                size_bytes=len(obj),
                 subset_tags=subset_tags,
                 superset_tags=superset_tags,
             ):
