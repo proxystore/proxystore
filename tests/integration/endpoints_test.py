@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import os
 import pathlib
+import tempfile
 import uuid
 from multiprocessing import Process
 from multiprocessing import Queue
@@ -42,12 +43,14 @@ def serve_relay_server(host: str, port: int) -> None:
     asyncio.run(serve(host, port))
 
 
-@pytest.fixture()
+@pytest.fixture(scope='module')
 def endpoints(
     relay_server,
-    tmp_path: pathlib.Path,
 ) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     """Launch the relay server and two endpoints."""
+    tmp_dir = tempfile.TemporaryDirectory()
+    tmp_path = pathlib.Path(tmp_dir.name)
+
     ss_host = 'localhost'
     ss_port = open_port()
 
@@ -97,6 +100,8 @@ def endpoints(
 
     ss.terminate()
     ss.join()
+
+    tmp_dir.cleanup()
 
 
 @pytest.mark.integration()
