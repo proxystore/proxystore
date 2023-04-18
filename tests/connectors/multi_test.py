@@ -4,6 +4,7 @@ import contextlib
 import json
 from typing import Any
 from typing import Generator
+from unittest import mock
 
 import pytest
 
@@ -33,6 +34,24 @@ def multi_connector_from_policies(
     connector = MultiConnector(connectors)
     yield (connector, connector1, connector2)
     connector.close()
+
+
+def test_policy_host_validation() -> None:
+    # Default policy ignores host
+    assert Policy().is_valid()
+    assert Policy().is_valid_on_host()
+
+    with mock.patch('proxystore.utils.hostname') as mock_hostname:
+        mock_hostname.return_value = 'testhost'
+        policy = Policy(host_pattern='(testhost|otherhost)')
+        assert policy.is_valid()
+        assert policy.is_valid_on_host()
+        mock_hostname.return_value = 'thirdhost'
+        assert not policy.is_valid()
+        assert not policy.is_valid_on_host()
+        policy = Policy(host_pattern=['(texthost|otherhost)', 'thirdhost'])
+        assert policy.is_valid()
+        assert policy.is_valid_on_host()
 
 
 def test_policy_size_validation() -> None:

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import re
 import sys
 import warnings
 from types import TracebackType
@@ -22,6 +23,7 @@ if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
 else:  # pragma: <3.8 cover
     from typing_extensions import TypedDict
 
+from proxystore import utils
 from proxystore.connectors.connector import Connector
 from proxystore.utils import get_class_path
 from proxystore.utils import import_class
@@ -41,6 +43,7 @@ class PolicyDict(TypedDict):
     """JSON compatible representation of a [`Policy`][proxystore.store.multi.Policy]."""  # noqa: E501
 
     priority: int
+    host_pattern: list[str] | str | None
     min_size_bytes: int
     max_size_bytes: int
     subset_tags: list[str]
@@ -53,6 +56,14 @@ class Policy:
 
     priority: int = 0
     """Priority for breaking ties between policies (higher is preferred)."""
+    host_pattern: Iterable[str] | str | None = None
+    """Pattern or iterable of patterns of valid hostnames.
+
+    The hostname returned by [`hostname()`][proxystore.utils.hostname] is
+    matched against `host_pattern` using [`re.fullmatch()`][re.fullmatch]. If
+    `host_pattern` is an iterable, at least one of the patterns must match
+    the hostname.
+    """
     min_size_bytes: int = 0
     """Minimum size in bytes allowed."""
     max_size_bytes: int = sys.maxsize
@@ -99,7 +110,20 @@ class Policy:
             self.superset_tags,
         ):
             return False
-        return True
+        return self.is_valid_on_host()
+
+    def is_valid_on_host(self) -> bool:
+        """Check if this policy is valid on the current host."""
+        if self.host_pattern is None:
+            return True
+
+        patterns: Iterable[str]
+        if isinstance(self.host_pattern, str):
+            patterns = [self.host_pattern]
+        else:
+            patterns = self.host_pattern
+        hostname = utils.hostname()
+        return any(re.fullmatch(p, hostname) for p in patterns)
 
     def as_dict(self) -> PolicyDict:
         """Convert the Policy to a JSON compatible dict.
@@ -116,6 +140,11 @@ class Policy:
         # of typing on the return dict.
         return PolicyDict(
             priority=self.priority,
+            host_pattern=(
+                list(self.host_pattern)
+                if isinstance(self.host_pattern, Iterable)
+                else self.host_pattern
+            ),
             min_size_bytes=self.min_size_bytes,
             max_size_bytes=self.max_size_bytes,
             subset_tags=self.subset_tags,
