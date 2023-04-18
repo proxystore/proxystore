@@ -8,9 +8,11 @@ import sys
 import warnings
 from types import TracebackType
 from typing import Any
+from typing import Dict
 from typing import Iterable
 from typing import NamedTuple
 from typing import Sequence
+from typing import Tuple
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -138,13 +140,14 @@ class Policy:
         """
         # We could use dataclasses.asdict(self) but this gives us the benefit
         # of typing on the return dict.
+        host_pattern = (
+            self.host_pattern
+            if isinstance(self.host_pattern, str) or self.host_pattern is None
+            else list(self.host_pattern)
+        )
         return PolicyDict(
             priority=self.priority,
-            host_pattern=(
-                list(self.host_pattern)
-                if isinstance(self.host_pattern, Iterable)
-                else self.host_pattern
-            ),
+            host_pattern=host_pattern,
             min_size_bytes=self.min_size_bytes,
             max_size_bytes=self.max_size_bytes,
             subset_tags=self.subset_tags,
@@ -155,6 +158,15 @@ class Policy:
 class _ConnectorPolicy(NamedTuple):
     connector: Connector[Any]
     policy: Policy
+
+
+ConnectorPolicyConfig = Tuple[str, Dict[str, Any], PolicyDict]
+"""Type of the configuration for a connector and policy pair.
+
+Element zero is the fully qualified path of the connector type,
+element one is the connector's configuration dictionary, and
+element two is the policy in dictionary form.
+"""
 
 
 class MultiKey(NamedTuple):
@@ -194,16 +206,27 @@ class MultiConnector:
         connectors: Mapping of names to tuples of a
             [`Connector`][proxystore.connectors.connector.Connector] and
             [`Policy`][proxystore.store.multi.Policy].
+        dormant_connectors: Mapping of names to tuples containing the
+            configuration of a dormant connector. A dormant connector is
+            a connector that is unused in this process, but could potentially
+            be initialized and used on another process. For example,
+            because the `host_pattern` of the policy does not match the
+            current host. It is not recommended to create dormant connector
+            configurations yourself. Rather, create your connectors and
+            use the `host_pattern` of the policy to determine when a connector
+            should be dormant.
     """  # noqa: E501
 
     def __init__(
         self,
         connectors: dict[str, tuple[Connector[Any], Policy]],
+        dormant_connectors: dict[str, ConnectorPolicyConfig] | None = None,
     ) -> None:
         self.connectors = {
             name: _ConnectorPolicy(connector, policy)
             for name, (connector, policy) in connectors.items()
         }
+        self.dormant_connectors = dormant_connectors
 
         names = list(self.connectors.keys())
         self.connectors_by_priority = sorted(
@@ -226,6 +249,21 @@ class MultiConnector:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}({self.connectors})'
 
+    def _connector_from_key(self, key: MultiKey) -> Connector[Any]:
+        if key.connector_name in self.connectors:
+            return self.connectors[key.connector_name].connector
+        elif (
+            self.dormant_connectors is not None
+            and key.connector_name in self.dormant_connectors
+        ):
+            raise RuntimeError(
+                f'The connector associated with {key} is dormant.',
+            )
+        else:
+            raise RuntimeError(
+                f'The connector which created {key} does not exist.',
+            )
+
     def close(self) -> None:
         """Close the connector and clean up.
 
@@ -235,35 +273,53 @@ class MultiConnector:
         for connector, _ in self.connectors.values():
             connector.close()
 
-    def config(self) -> dict[str, Any]:
+    def config(self) -> dict[str, ConnectorPolicyConfig]:
         """Get the connector configuration.
 
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {
-            name: (
-                get_class_path(type(connector)),
-                connector.config(),
-                policy.as_dict(),
-            )
-            for name, (connector, policy) in self.connectors.items()
-        }
+        configs: dict[str, ConnectorPolicyConfig] = (
+            self.dormant_connectors
+            if self.dormant_connectors is not None
+            else {}
+        )
+        configs.update(
+            {
+                name: (
+                    get_class_path(type(connector)),
+                    connector.config(),
+                    policy.as_dict(),
+                )
+                for name, (connector, policy) in self.connectors.items()
+            },
+        )
+        return configs
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> MultiConnector:
+    def from_config(
+        cls,
+        config: dict[str, ConnectorPolicyConfig],
+    ) -> MultiConnector:
         """Create a new connector instance from a configuration.
 
         Args:
             config: Configuration returned by `#!python .config()`.
         """
         connectors: dict[str, tuple[Connector[Any], Policy]] = {}
-        for name, (connector_path, connector_config, policy) in config.items():
-            connector_type = import_class(connector_path)
-            connector = connector_type.from_config(connector_config)
-            policy = Policy(**policy)
-            connectors[name] = (connector, policy)
-        return cls(connectors=connectors)
+        dormant_connectors: dict[str, ConnectorPolicyConfig] = {}
+        for name, (conn_path, conn_config, policy_dict) in config.items():
+            policy = Policy(**policy_dict)
+            if policy.is_valid_on_host():
+                connector_type = import_class(conn_path)
+                connector = connector_type.from_config(conn_config)
+                connectors[name] = (connector, policy)
+            else:
+                dormant_connectors[name] = config[name]
+        return cls(
+            connectors=connectors,
+            dormant_connectors=dormant_connectors,
+        )
 
     def evict(self, key: MultiKey) -> None:
         """Evict the object associated with the key.
@@ -271,7 +327,7 @@ class MultiConnector:
         Args:
             key: Key associated with object to evict.
         """
-        connector = self.connectors[key.connector_name].connector
+        connector = self._connector_from_key(key)
         connector.evict(key.connector_key)
 
     def exists(self, key: MultiKey) -> bool:
@@ -283,7 +339,7 @@ class MultiConnector:
         Returns:
             If an object associated with the key exists.
         """
-        connector = self.connectors[key.connector_name].connector
+        connector = self._connector_from_key(key)
         return connector.exists(key.connector_key)
 
     def get(self, key: MultiKey) -> bytes | None:
@@ -295,7 +351,7 @@ class MultiConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        connector = self.connectors[key.connector_name].connector
+        connector = self._connector_from_key(key)
         return connector.get(key.connector_key)
 
     def get_batch(self, keys: Sequence[MultiKey]) -> list[bytes | None]:

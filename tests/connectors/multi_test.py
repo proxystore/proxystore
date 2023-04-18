@@ -156,6 +156,14 @@ def test_multi_connector_policy_no_valid() -> None:
     connector.close()
 
 
+def test_multi_connector_bad_key() -> None:
+    connector = MultiConnector({'connector': (LocalConnector(), Policy())})
+    key = connector.put(b'value')
+    key = key._replace(connector_name='missing')
+    with pytest.raises(RuntimeError, match='does not exist'):
+        connector.exists(key)
+
+
 def test_multi_connector_from_config() -> None:
     with multi_connector_from_policies(
         Policy(priority=1, subset_tags=['a', 'b']),
@@ -163,3 +171,30 @@ def test_multi_connector_from_config() -> None:
     ) as (multi_connector, connector1, connector2):
         config = multi_connector.config()
         MultiConnector.from_config(config)
+
+
+def test_dormant_connectors() -> None:
+    with mock.patch('proxystore.utils.hostname') as mock_hostname:
+        with multi_connector_from_policies(
+            Policy(host_pattern='testhost', subset_tags=['a']),
+            Policy(host_pattern='otherhost', subset_tags=['b']),
+        ) as (multi_connector, connector1, connector2):
+            mock_hostname.return_value = 'otherhost'
+            key2 = multi_connector.put(b'data', subset_tags=['b'])
+            mock_hostname.return_value = 'testhost'
+            key1 = multi_connector.put(b'data', subset_tags=['a'])
+
+            config = multi_connector.config()
+            # Reinitalizing the connector from a config will result in
+            # the second connector being dormant because it's host pattern
+            # did not match the hostname.
+            remote_connector = MultiConnector.from_config(config)
+            assert remote_connector.exists(key1)
+
+            assert remote_connector.dormant_connectors is not None
+            assert len(remote_connector.dormant_connectors) == 1
+
+            with pytest.raises(RuntimeError, match='constraints'):
+                remote_connector.put(b'data', subset_tags=['b'])
+            with pytest.raises(RuntimeError, match='dormant'):
+                remote_connector.get(key2)
