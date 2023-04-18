@@ -49,7 +49,8 @@ def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
         except requests.exceptions.ConnectionError as e:
             if waited_s >= max_time_s:  # pragma: no cover
                 raise RuntimeError(
-                    'Unable to connect to endpoint with {max_time_s} seconds.',
+                    'Unable to connect to endpoint within the timeout '
+                    f'({max_time_s} seconds).',
                 ) from e
             time.sleep(sleep_s)
             waited_s += sleep_s
