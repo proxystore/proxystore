@@ -169,6 +169,10 @@ element two is the policy in dictionary form.
 """
 
 
+class MultiConnectorError(Exception):
+    """Exceptions raised by the [`MultiConnector`][proxystore.connectors.multi.MultiConnector]."""  # noqa: E501
+
+
 class MultiKey(NamedTuple):
     """Key to objects in [`MultiConnector`][proxystore.connectors.multi.MultiConnector]."""  # noqa: E501
 
@@ -201,6 +205,13 @@ class MultiConnector:
         }
         connector = MultiConnector(connector)
         ```
+
+    Note:
+        Methods of this class will raise
+        [`MultiConnectorError`][proxystore.connectors.multi.MultiConnectorError]
+        if they are passed an invalid key where a key could be invalid
+        because the connector which created the key is not known by this class
+        instance or because the corresponding connector is dormant.
 
     Args:
         connectors: Mapping of names to tuples of a
@@ -256,11 +267,11 @@ class MultiConnector:
             self.dormant_connectors is not None
             and key.connector_name in self.dormant_connectors
         ):
-            raise RuntimeError(
+            raise MultiConnectorError(
                 f'The connector associated with {key} is dormant.',
             )
         else:
-            raise RuntimeError(
+            raise MultiConnectorError(
                 f'The connector which created {key} does not exist.',
             )
 
@@ -385,7 +396,7 @@ class MultiConnector:
             Key which can be used to retrieve the object.
 
         Raises:
-            RuntimeError: If no connector policy matches the arguments.
+            MultiConnectorError: If no connector policy matches the arguments.
         """
         for connector_name in self.connectors_by_priority:
             connector, policy = self.connectors[connector_name]
@@ -400,7 +411,7 @@ class MultiConnector:
                     connector_key=key,
                 )
         else:
-            raise RuntimeError(
+            raise MultiConnectorError(
                 'No connector policy was suitable for the constraints: '
                 f'subset_tags={subset_tags}, superset_tags={superset_tags}.',
             )
@@ -412,6 +423,12 @@ class MultiConnector:
         superset_tags: Iterable[str] = (),
     ) -> list[MultiKey]:
         """Put a batch of serialized objects in the store.
+
+        Warning:
+            This method calls
+            [`put()`][proxystore.connectors.multi.MultiConnector] individually
+            for each item in the batch so items in the batch can potentially
+            be placed in different connectors.
 
         Args:
             objs: Sequence of serialized objects to put in the store.
@@ -425,7 +442,7 @@ class MultiConnector:
             retrieve the objects.
 
         Raises:
-            RuntimeError: If no connector policy matches the arguments.
+            MultiConnectorError: If no connector policy matches the arguments.
         """
         return [
             self.put(obj, subset_tags=subset_tags, superset_tags=superset_tags)

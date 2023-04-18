@@ -11,6 +11,7 @@ import pytest
 from proxystore.connectors.connector import Connector
 from proxystore.connectors.local import LocalConnector
 from proxystore.connectors.multi import MultiConnector
+from proxystore.connectors.multi import MultiConnectorError
 from proxystore.connectors.multi import Policy
 
 
@@ -151,7 +152,7 @@ def test_multi_connector_policy_no_valid() -> None:
     }
 
     connector = MultiConnector(connectors)
-    with pytest.raises(RuntimeError, match='policy'):
+    with pytest.raises(MultiConnectorError, match='policy'):
         connector.put(b'value')
     connector.close()
 
@@ -160,7 +161,7 @@ def test_multi_connector_bad_key() -> None:
     connector = MultiConnector({'connector': (LocalConnector(), Policy())})
     key = connector.put(b'value')
     key = key._replace(connector_name='missing')
-    with pytest.raises(RuntimeError, match='does not exist'):
+    with pytest.raises(MultiConnectorError, match='does not exist'):
         connector.exists(key)
 
 
@@ -194,7 +195,7 @@ def test_dormant_connectors() -> None:
             assert remote_connector.dormant_connectors is not None
             assert len(remote_connector.dormant_connectors) == 1
 
-            with pytest.raises(RuntimeError, match='constraints'):
+            with pytest.raises(MultiConnectorError, match='constraints'):
                 remote_connector.put(b'data', subset_tags=['b'])
-            with pytest.raises(RuntimeError, match='dormant'):
+            with pytest.raises(MultiConnectorError, match='dormant'):
                 remote_connector.get(key2)
