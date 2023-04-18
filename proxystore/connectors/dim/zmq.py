@@ -403,7 +403,7 @@ class ZeroMQServer:
             except zmq.ZMQError as e:  # pragma: no cover
                 logger.exception(e)
                 await asyncio.sleep(0.01)
-            except asyncio.exceptions.CancelledError:  # pragma: no cover
+            except asyncio.CancelledError:  # pragma: no cover
                 logger.debug('loop terminated')
 
     async def launch(self) -> None:

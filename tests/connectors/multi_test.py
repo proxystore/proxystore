@@ -4,12 +4,14 @@ import contextlib
 import json
 from typing import Any
 from typing import Generator
+from unittest import mock
 
 import pytest
 
 from proxystore.connectors.connector import Connector
 from proxystore.connectors.local import LocalConnector
 from proxystore.connectors.multi import MultiConnector
+from proxystore.connectors.multi import MultiConnectorError
 from proxystore.connectors.multi import Policy
 
 
@@ -33,6 +35,24 @@ def multi_connector_from_policies(
     connector = MultiConnector(connectors)
     yield (connector, connector1, connector2)
     connector.close()
+
+
+def test_policy_host_validation() -> None:
+    # Default policy ignores host
+    assert Policy().is_valid()
+    assert Policy().is_valid_on_host()
+
+    with mock.patch('proxystore.utils.hostname') as mock_hostname:
+        mock_hostname.return_value = 'testhost'
+        policy = Policy(host_pattern='(testhost|otherhost)')
+        assert policy.is_valid()
+        assert policy.is_valid_on_host()
+        mock_hostname.return_value = 'thirdhost'
+        assert not policy.is_valid()
+        assert not policy.is_valid_on_host()
+        policy = Policy(host_pattern=['(texthost|otherhost)', 'thirdhost'])
+        assert policy.is_valid()
+        assert policy.is_valid_on_host()
 
 
 def test_policy_size_validation() -> None:
@@ -132,9 +152,17 @@ def test_multi_connector_policy_no_valid() -> None:
     }
 
     connector = MultiConnector(connectors)
-    with pytest.raises(RuntimeError, match='policy'):
+    with pytest.raises(MultiConnectorError, match='policy'):
         connector.put(b'value')
     connector.close()
+
+
+def test_multi_connector_bad_key() -> None:
+    connector = MultiConnector({'connector': (LocalConnector(), Policy())})
+    key = connector.put(b'value')
+    key = key._replace(connector_name='missing')
+    with pytest.raises(MultiConnectorError, match='does not exist'):
+        connector.exists(key)
 
 
 def test_multi_connector_from_config() -> None:
@@ -144,3 +172,30 @@ def test_multi_connector_from_config() -> None:
     ) as (multi_connector, connector1, connector2):
         config = multi_connector.config()
         MultiConnector.from_config(config)
+
+
+def test_dormant_connectors() -> None:
+    with mock.patch('proxystore.utils.hostname') as mock_hostname:
+        with multi_connector_from_policies(
+            Policy(host_pattern='testhost', subset_tags=['a']),
+            Policy(host_pattern='otherhost', subset_tags=['b']),
+        ) as (multi_connector, connector1, connector2):
+            mock_hostname.return_value = 'otherhost'
+            key2 = multi_connector.put(b'data', subset_tags=['b'])
+            mock_hostname.return_value = 'testhost'
+            key1 = multi_connector.put(b'data', subset_tags=['a'])
+
+            config = multi_connector.config()
+            # Reinitalizing the connector from a config will result in
+            # the second connector being dormant because it's host pattern
+            # did not match the hostname.
+            remote_connector = MultiConnector.from_config(config)
+            assert remote_connector.exists(key1)
+
+            assert remote_connector.dormant_connectors is not None
+            assert len(remote_connector.dormant_connectors) == 1
+
+            with pytest.raises(MultiConnectorError, match='constraints'):
+                remote_connector.put(b'data', subset_tags=['b'])
+            with pytest.raises(MultiConnectorError, match='dormant'):
+                remote_connector.get(key2)

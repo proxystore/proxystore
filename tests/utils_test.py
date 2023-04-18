@@ -7,10 +7,8 @@ from unittest import mock
 
 import pytest
 
-from proxystore import utils
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
-from proxystore.factory import SimpleFactory
 from proxystore.utils import bytes_to_readable
 from proxystore.utils import chunk_bytes
 from proxystore.utils import get_class_path
@@ -29,21 +27,6 @@ def test_chunk_bytes(data_size: int, chunk_size: int) -> None:
     for chunk in chunk_bytes(data, chunk_size):
         result += chunk
     assert data == result
-
-
-def test_create_key() -> None:
-    """Test create_key()."""
-    assert isinstance(utils.create_key(42), str)
-
-
-def test_fullname() -> None:
-    """Test fullname()."""
-    assert utils.fullname(SimpleFactory) == 'proxystore.factory.SimpleFactory'
-    assert (
-        utils.fullname(SimpleFactory('string'))
-        == 'proxystore.factory.SimpleFactory'
-    )
-    assert utils.fullname('string') == 'str'
 
 
 @pytest.mark.parametrize(

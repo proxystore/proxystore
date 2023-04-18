@@ -4,7 +4,6 @@ from __future__ import annotations
 import decimal
 import importlib
 import os
-import random
 import re
 import socket
 from typing import Any
@@ -27,33 +26,6 @@ def chunk_bytes(
     length = len(data)
     for index in range(0, length, chunk_size):
         yield data[index : min(index + chunk_size, length)]
-
-
-def create_key(obj: Any) -> str:
-    """Generate key for the object.
-
-    Args:
-        obj: Object to create key for.
-
-    Returns:
-        A random 128 bit string.
-    """
-    return str(random.getrandbits(128))
-
-
-def fullname(obj: Any) -> str:
-    """Return full name of object."""
-    if hasattr(obj, '__module__'):
-        module = obj.__module__
-    else:
-        module = obj.__class__.__module__
-    if hasattr(obj, '__name__'):
-        name = obj.__name__
-    else:
-        name = obj.__class__.__name__
-    if module is None or module == str.__module__:
-        return name
-    return f'{module}.{name}'
 
 
 def get_class_path(cls: type[Any]) -> str:
