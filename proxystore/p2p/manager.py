@@ -12,7 +12,6 @@ from uuid import UUID
 
 try:
     import websockets
-    from websockets.client import WebSocketClientProtocol
 except ImportError as e:  # pragma: no cover
     import warnings
 
@@ -24,12 +23,11 @@ except ImportError as e:  # pragma: no cover
 
 from proxystore import utils
 from proxystore.p2p import messages
-from proxystore.p2p.client import connect
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
-from proxystore.p2p.exceptions import PeerRegistrationError
+from proxystore.p2p.relay_client import RelayServerClient
 from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
 
@@ -133,16 +131,16 @@ class PeerManager:
         ] = asyncio.Queue()
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
-        self._websocket_or_none: WebSocketClientProtocol | None = None
+        self._relay_server_client_or_none: RelayServerClient | None = None
 
     @property
     def _log_prefix(self) -> str:
         return f'{self.__class__.__name__}[{log_name(self._uuid, self._name)}]'
 
     @property
-    def _websocket(self) -> WebSocketClientProtocol:
-        if self._websocket_or_none is not None:
-            return self._websocket_or_none
+    def _relay_server_client(self) -> RelayServerClient:
+        if self._relay_server_client_or_none is not None:
+            return self._relay_server_client_or_none
         raise RuntimeError(
             f'{self.__class__.__name__} has not established a connection '
             'to the relay server because async_init() has not been '
@@ -161,29 +159,24 @@ class PeerManager:
 
     async def async_init(self) -> None:
         """Connect to relay server."""
-        if self._websocket_or_none is None:
+        if self._relay_server_client_or_none is None:
             ssl_context = ssl.create_default_context()
             if not self._verify_certificate:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
 
-            uuid, _, socket = await connect(
+            client = RelayServerClient(
                 address=self._relay_server,
-                uuid=self._uuid,
-                name=self._name,
+                client_uuid=self._uuid,
+                client_name=self._name,
                 timeout=self._timeout,
                 ssl=ssl_context
                 if self._relay_server.startswith('wss://')
                 else None,
             )
+            await client.connect()
 
-            if uuid != self._uuid:
-                raise PeerRegistrationError(
-                    'Relay server responded to registration request '
-                    f'with non-matching UUID. Received {uuid} but expected '
-                    f'{self._uuid}.',
-                )
-            self._websocket_or_none = socket
+            self._relay_server_client_or_none = client
             logger.info(
                 f'{self._log_prefix}: registered as peer with relay '
                 f'server at {self._relay_server}',
@@ -257,11 +250,7 @@ class PeerManager:
         )
         while True:
             try:
-                message_str = await self._websocket.recv()
-                if isinstance(message_str, str):
-                    message = messages.decode(message_str)
-                else:
-                    raise AssertionError('Received non-str on websocket.')
+                message = await self._relay_server_client.recv()
             except websockets.exceptions.ConnectionClosedOK:
                 break
             except websockets.exceptions.ConnectionClosedError:
@@ -282,9 +271,7 @@ class PeerManager:
                 peers = frozenset({message.source_uuid, message.peer_uuid})
                 if peers not in self._peers:
                     connection = PeerConnection(
-                        uuid=self._uuid,
-                        name=self._name,
-                        websocket=self._websocket,
+                        relay_client=self._relay_server_client,
                         channels=self._peer_channels,
                     )
                     async with self._peers_lock:
@@ -326,8 +313,8 @@ class PeerManager:
         async with self._peers_lock:
             for connection in self._peers.values():
                 await connection.close()
-        if self._websocket_or_none is not None:
-            await self._websocket_or_none.close()
+        if self._relay_server_client_or_none is not None:
+            await self._relay_server_client_or_none.close()
         logger.info(f'{self._log_prefix}: peer manager closed')
 
     async def close_connection(self, peers: Iterable[UUID]) -> None:
@@ -406,9 +393,7 @@ class PeerManager:
                 return self._peers[peers]
 
             connection = PeerConnection(
-                self._uuid,
-                self._name,
-                self._websocket,
+                self._relay_server_client,
                 channels=self._peer_channels,
             )
             self._peers[peers] = connection

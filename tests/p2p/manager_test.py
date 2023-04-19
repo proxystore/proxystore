@@ -4,20 +4,18 @@ import asyncio
 import logging
 import sys
 import uuid
-from unittest import mock
 
 import pytest
 
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
-from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.manager import PeerManager
 from testing.mocking import async_mock_once
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
+    pass
 else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
+    pass
 
 
 @pytest.mark.asyncio()
@@ -55,14 +53,6 @@ async def test_address_validation() -> None:
     PeerManager(uuid.uuid4(), 'wss://example.com')
     with pytest.raises(ValueError, match='wss://'):
         PeerManager(uuid.uuid4(), 'http://example.com')
-
-
-@pytest.mark.asyncio()
-async def test_uuid_mismatch(relay_server) -> None:
-    amock = AsyncMock(return_value=('wrong-uuid', None, None))
-    with mock.patch('proxystore.p2p.manager.connect', side_effect=amock):
-        with pytest.raises(PeerRegistrationError, match='non-matching UUID'):
-            await PeerManager(uuid.uuid4(), relay_server.address)
 
 
 @pytest.mark.asyncio()
@@ -114,21 +104,19 @@ async def test_p2p_connection_error_from_server(
     ) as manager2:
         # Mock manager 1 to receive error peer connection from
         # relay server
-        assert manager1._websocket_or_none is not None
+        assert manager1._relay_server_client_or_none is not None
         mock_recv = async_mock_once(
-            manager1._websocket_or_none.recv,
-            messages.encode(
-                messages.PeerConnection(
-                    source_uuid=manager2.uuid,
-                    source_name=manager2.name,
-                    peer_uuid=manager1.uuid,
-                    description_type='offer',
-                    description='',
-                    error='test error',
-                ),
+            manager1._relay_server_client_or_none.recv,
+            messages.PeerConnection(
+                source_uuid=manager2.uuid,
+                source_name=manager2.name,
+                peer_uuid=manager1.uuid,
+                description_type='offer',
+                description='',
+                error='test error',
             ),
         )
-        manager1._websocket_or_none.recv = mock_recv  # type: ignore
+        manager1._relay_server_client_or_none.recv = mock_recv  # type: ignore
 
         connection1 = await manager1.get_connection(manager2.uuid)
 
@@ -190,12 +178,13 @@ async def test_serialization_error(relay_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._websocket_or_none is not None
+        assert manager._relay_server_client_or_none is not None
+        assert manager._relay_server_client_or_none._websocket is not None
         mock_recv = async_mock_once(
-            manager._websocket_or_none.recv,
+            manager._relay_server_client_or_none._websocket.recv,
             'nonsense_string',
         )
-        manager._websocket_or_none.recv = mock_recv  # type: ignore
+        manager._relay_server_client_or_none._websocket.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -214,14 +203,17 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._websocket_or_none is not None
-        mock_recv = async_mock_once(
-            manager._websocket_or_none.recv,
-            messages.encode(
-                messages.ServerResponse(success=True, message='', error=False),
-            ),
+        assert manager._relay_server_client_or_none is not None
+        message = messages.ServerResponse(
+            success=True,
+            message='',
+            error=False,
         )
-        manager._websocket_or_none.recv = mock_recv  # type: ignore
+        mock_recv = async_mock_once(
+            manager._relay_server_client_or_none.recv,
+            message,
+        )
+        manager._relay_server_client_or_none.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -239,12 +231,13 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._websocket_or_none is not None
+        assert manager._relay_server_client_or_none is not None
+        message = messages.ServerRegistration('name', uuid.uuid4())
         mock_recv = async_mock_once(
-            manager._websocket_or_none.recv,
-            messages.encode(messages.ServerRegistration('name', uuid.uuid4())),
+            manager._relay_server_client_or_none.recv,
+            message,
         )
-        manager._websocket_or_none.recv = mock_recv  # type: ignore
+        manager._relay_server_client_or_none.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 

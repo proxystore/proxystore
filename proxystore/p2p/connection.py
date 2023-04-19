@@ -20,7 +20,6 @@ try:
     from aiortc.contrib.signaling import object_from_string
     from aiortc.contrib.signaling import object_to_string
     from cryptography.utils import CryptographyDeprecationWarning
-    from websockets.client import WebSocketClientProtocol
 
     warnings.simplefilter('ignore', CryptographyDeprecationWarning)
 except ImportError as e:  # pragma: no cover
@@ -37,6 +36,7 @@ from proxystore.p2p.chunks import reconstruct
 from proxystore.p2p.counter import AtomicCounter
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
+from proxystore.p2p.relay_client import RelayServerClient
 
 logger = logging.getLogger(__name__)
 
@@ -63,19 +63,20 @@ class PeerConnection:
     Example:
         ```python
         from proxystore.p2p.connection import PeerConnection
-        from proxystore.p2p.messages import decode
-        from proxystore.p2p.client import connect
+        from proxystore.p2p.relay_client import RelayServerClient
 
-        uuid1, name1, websocket1 = await connect(relay_server_address)
-        connection1 = PeerConnection(uuid1, name1, websocket1)
+        client1 = RelayServerClient(relay_server_address)
+        await client1.connect()
+        connection1 = PeerConnection(client1)
 
-        uuid2, name2, websocket2 = await connect(relay_server_address)
-        connection2 = PeerConnection(uuid2, name2, websocket2)
+        client2 = RelayServerClient(relay_server_address)
+        await client2.connect()
+        connection2 = PeerConnection(client2)
 
-        await connection1.send_offer(uuid2)
-        offer = decode(await websocket2.recv())
+        await connection1.send_offer(client2.uuid)
+        offer = await client2.recv()
         await connection2.handle_server_message(offer)
-        answer = decode(await websocket1.recv())
+        answer = await client1.recv()
         await connection1.handle_server_message(answer)
 
         await connection1.ready()
@@ -86,30 +87,26 @@ class PeerConnection:
         await connection2.send('hello hello')
         assert await connection1.recv() == 'hello hello'
 
-        await websocket1.close()
-        await websocket2.close()
+        await client1.close()
+        await client2.close()
         await connection1.close()
         await connection2.close()
         ```
 
     Args:
-        uuid: UUID of this client.
-        name: Readable name of this client for logging.
-        websocket: Websocket connection to the relay server.
+        relay_client: Client connection to the relay server.
         channels: Number of datachannels to open with peer.
     """
 
     def __init__(
         self,
-        uuid: UUID,
-        name: str,
-        websocket: WebSocketClientProtocol,
+        relay_client: RelayServerClient,
         *,
         channels: int = 1,
     ) -> None:
-        self._uuid = uuid
-        self._name = name
-        self._websocket = websocket
+        self._uuid = relay_client.uuid
+        self._name = relay_client.name
+        self._relay_client = relay_client
         self._max_channels = channels
 
         self._handshake_success: asyncio.Future[
@@ -264,9 +261,8 @@ class PeerConnection:
             description_type='offer',
             description=object_to_string(self._pc.localDescription),
         )
-        message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending offer to {peer_uuid}')
-        await self._websocket.send(message_str)
+        await self._relay_client.send(message)
 
     async def send_answer(self, peer_uuid: UUID) -> None:
         """Send answer to peering request via relay server.
@@ -312,9 +308,8 @@ class PeerConnection:
             description_type='answer',
             description=object_to_string(self._pc.localDescription),
         )
-        message_str = messages.encode(message)
         logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
-        await self._websocket.send(message_str)
+        await self._relay_client.send(message)
 
     async def _on_message(self, data: bytes) -> None:
         chunk = Chunk.from_bytes(data)
