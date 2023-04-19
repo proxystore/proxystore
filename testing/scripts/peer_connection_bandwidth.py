@@ -14,9 +14,8 @@ if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
 else:  # pragma: <3.8 cover
     from typing_extensions import Literal
 
-from proxystore.p2p import messages
-from proxystore.p2p.client import connect
 from proxystore.p2p.connection import PeerConnection
+from proxystore.p2p.relay_client import RelayServerClient
 from testing.compat import randbytes
 
 
@@ -26,18 +25,19 @@ async def get_connection(
     channels: int = 1,
 ) -> PeerConnection:
     """Return a ready PeerConnection."""
-    local_uuid, name, websocket = await connect(relay)
-    connection = PeerConnection(local_uuid, name, websocket, channels=channels)
+    client = RelayServerClient(relay)
+    local_uuid = client.uuid
+    connection = PeerConnection(client, channels=channels)
 
     print(f'{actor} uuid: {local_uuid}')
     remote_uuid = uuid.UUID(input('enter the remote uuid: ').strip())
 
     if actor == 'producer':
         await connection.send_offer(remote_uuid)
-        answer = messages.decode(await websocket.recv())  # type: ignore
+        answer = await client.recv()
         await connection.handle_server_message(answer)  # type: ignore
     elif actor == 'consumer':
-        offer = messages.decode(await websocket.recv())  # type: ignore
+        offer = await client.recv()
         await connection.handle_server_message(offer)  # type: ignore
 
     await connection.ready()

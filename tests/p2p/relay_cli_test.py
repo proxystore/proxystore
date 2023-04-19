@@ -13,9 +13,9 @@ import click.testing
 import pytest
 import websockets
 
-from proxystore.p2p.client import connect
 from proxystore.p2p.relay import cli
 from proxystore.p2p.relay import serve
+from proxystore.p2p.relay_client import RelayServerClient
 from testing.utils import open_port
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
@@ -89,8 +89,10 @@ async def test_server_without_ssl() -> None:
 
     while True:
         try:
-            _, _, websocket = await connect(address)
-        except OSError:
+            client = RelayServerClient(address)
+            client.initial_backoff_seconds = 0.01
+            websocket = await client.connect()
+        except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)
         else:
             # Coverage doesn't detect the singular break but it does
@@ -128,7 +130,8 @@ async def test_start_server_cli() -> None:
         if 'Serving relay server' in line:
             break
 
-    _, _, websocket = await connect(address)
+    client = RelayServerClient(address)
+    websocket = await client.connect()
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)
 
