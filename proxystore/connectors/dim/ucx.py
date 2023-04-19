@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import asyncio
+import atexit
 import logging
+import multiprocessing
 import signal
 import sys
 import uuid
-from multiprocessing import Process
 from time import sleep
 from types import TracebackType
 from typing import Any
@@ -25,24 +26,22 @@ try:
 except ImportError as e:  # pragma: no cover
     ucx_import_error = e
 
+from proxystore.connectors.dim.exceptions import ServerTimeoutError
+from proxystore.connectors.dim.rpc import RPC
+from proxystore.connectors.dim.rpc import RPCResponse
 from proxystore.connectors.dim.utils import get_ip_address
-from proxystore.connectors.dim.utils import Status
 from proxystore.serialize import deserialize
-from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
-ENCODING = 'UTF-8'
-
-server_process = None
 logger = logging.getLogger(__name__)
 
 
 class UCXKey(NamedTuple):
     """Key to objects stored across `UCXConnector`s."""
 
-    ucx_key: str
+    key: str
     """Unique object key."""
-    obj_size: int
+    size: int
     """Object size in bytes."""
     peer: str
     """Peer where object is located."""
@@ -60,27 +59,29 @@ class UCXConnector:
     Args:
         interface: The network interface to use.
         port: The desired port for the spawned server.
+        timeout: Timeout in seconds to try connecting to local server before
+            spawning one.
+
+    Raises:
+        ServerTimeoutError: If a local server cannot be connected to within
+            `timeout` seconds, and a new local server does not response within
+            `timeout` seconds after being started.
     """
 
-    addr: str
-    host: str
-    port: int
-    server: Process
-    _loop: asyncio.events.AbstractEventLoop
-
-    # TODO : make host optional and try to get infiniband path automatically
-    def __init__(self, interface: str, port: int) -> None:
-        global server_process
-
+    def __init__(
+        self,
+        interface: str,
+        port: int,
+        timeout: float = 1,
+    ) -> None:
         if ucx_import_error is not None:  # pragma: no cover
             raise ucx_import_error
 
-        logger.debug('Instantiating client and server')
-
         self.interface = interface
-        self.host = get_ip_address(interface)
         self.port = port
+        self.timeout = timeout
 
+        self.host = get_ip_address(interface)
         self.addr = f'{self.host}:{self.port}'
 
         try:
@@ -88,18 +89,28 @@ class UCXConnector:
         except RuntimeError:
             self._loop = asyncio.new_event_loop()
 
-        if server_process is None:
-            server_process = Process(
-                target=launch_server,
-                args=(self.host, self.port),
+        self.server: multiprocessing.Process | None
+        try:
+            logger.info(
+                f'Connecting to local server (address={self.addr})...',
             )
-            server_process.start()
-            self._loop.run_until_complete(
-                wait_for_server(self.host, self.port),
+            wait_for_server(self.host, self.port, self.timeout)
+            logger.info(
+                f'Connected to local server (address={self.addr})',
             )
-
-        # TODO: Verify if create_endpoint error handling will successfully
-        # connect to endpoint or if error handling needs to be done here
+        except ServerTimeoutError:
+            logger.info(
+                'Failed to connect to local server '
+                f'(address={self.addr}, timeout={self.timeout})',
+            )
+            self.server = spawn_server(
+                self.host,
+                self.port,
+                spawn_timeout=self.timeout,
+            )
+            logger.info(f'Spawned local server (address={self.addr})')
+        else:
+            self.server = None
 
     def __enter__(self) -> Self:
         return self
@@ -112,37 +123,69 @@ class UCXConnector:
     ) -> None:
         self.close()
 
-    async def handler(self, event: bytes, addr: str) -> bytes:
-        """Handler that issues requests to the server."""
-        host = addr.split(':')[0]  # quick fix
-        port = int(addr.split(':')[1])
+    async def _send_rpcs_async(self, rpcs: Sequence[RPC]) -> list[RPCResponse]:
+        responses = []
 
-        ep = await ucp.create_endpoint(host, port)
+        ep = await ucp.create_endpoint(self.host, self.port)
 
-        await ep.send_obj(event)
+        for rpc in rpcs:
+            message = serialize(rpc)
+            await ep.send_obj(message)
+            logger.debug(
+                f'Sent {rpc.operation.upper()} RPC '
+                f'(key={rpc.key}, server={self.addr})',
+            )
+            response = deserialize(await ep.recv_obj())
 
-        res = await ep.recv_obj()
+            logger.debug(
+                f'Received {rpc.operation.upper()} RPC response '
+                f'(key={response.key}, server={self.addr}, '
+                f'exception={response.exception is not None})',
+            )
+
+            if response.exception is not None:
+                raise response.exception
+
+            assert rpc.operation == response.operation
+            assert rpc.key == response.key
+
+            responses.append(response)
 
         await ep.close()
 
-        return bytes(res)  # returns bytearray by default
+        return responses
 
-    def close(self) -> None:
-        """Get the connector configuration.
+    def _send_rpcs(self, rpcs: Sequence[RPC]) -> list[RPCResponse]:
+        """Send an RPC request to the server.
 
-        The configuration contains all the information needed to reconstruct
-        the connector object.
+        Args:
+            rpcs: List of RPCs to invoke on local server.
+
+        Returns:
+            List of RPC responses.
+
+        Raises:
+            Exception: Any exception returned by the local server.
         """
-        global server_process
+        return self._loop.run_until_complete(self._send_rpcs_async(rpcs))
 
-        logger.info('Clean up requested')
+    def close(self, kill_server: bool = False) -> None:
+        """Close the connector.
 
-        if server_process is not None:
-            server_process.terminate()
-            server_process.join()
-            server_process = None
+        Args:
+            kill_server: Whether to kill the server process. If this instance
+                did not spawn the local node's server process, this is a
+                no-op.
+        """
+        if kill_server and self.server is not None:
+            self.server.terminate()
+            self.server.join()
+            logger.info(
+                'Terminated local server on connector close '
+                f'(pid={self.server.pid})',
+            )
 
-        logger.debug('Clean up completed')
+        logger.debug('Closed UCX connector')
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -150,7 +193,11 @@ class UCXConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'interface': self.interface, 'port': self.port}
+        return {
+            'interface': self.interface,
+            'port': self.port,
+            'timeout': self.timeout,
+        }
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> UCXConnector:
@@ -167,10 +214,8 @@ class UCXConnector:
         Args:
             key: Key associated with object to evict.
         """
-        logger.debug(f'Client issuing an evict request on key {key}.')
-
-        event = serialize({'key': key.ucx_key, 'data': None, 'op': 'evict'})
-        self._loop.run_until_complete(self.handler(event, key.peer))
+        rpc = RPC(operation='evict', key=key.key, size=key.size)
+        self._send_rpcs([rpc])
 
     def exists(self, key: UCXKey) -> bool:
         """Check if an object associated with the key exists.
@@ -181,14 +226,10 @@ class UCXConnector:
         Returns:
             If an object associated with the key exists.
         """
-        logger.debug(f'Client issuing an exists request on key {key}.')
-
-        event = serialize(
-            {'key': key.ucx_key, 'data': None, 'op': 'exists'},
-        )
-        return deserialize(
-            self._loop.run_until_complete(self.handler(event, key.peer)),
-        )
+        rpc = RPC(operation='exists', key=key.key, size=key.size)
+        (response,) = self._send_rpcs([rpc])
+        assert response.exists is not None
+        return response.exists
 
     def get(self, key: UCXKey) -> bytes | None:
         """Get the serialized object associated with the key.
@@ -199,20 +240,9 @@ class UCXConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        res: bytes | None
-        logger.debug(f'Client issuing get request on key {key}.')
-
-        event = serialize({'key': key.ucx_key, 'data': '', 'op': 'get'})
-        res = self._loop.run_until_complete(self.handler(event, key.peer))
-
-        try:
-            s = deserialize(res)
-
-            assert isinstance(s, Status)
-            assert not s.success
-            return None
-        except SerializationError:
-            return res
+        rpc = RPC(operation='get', key=key.key, size=key.size)
+        (result,) = self._send_rpcs([rpc])
+        return result.data
 
     def get_batch(self, keys: Sequence[UCXKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -224,7 +254,11 @@ class UCXConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        return [self.get(key) for key in keys]
+        rpcs = [
+            RPC(operation='get', key=key.key, size=key.size) for key in keys
+        ]
+        responses = self._send_rpcs(rpcs)
+        return [r.data for r in responses]
 
     def put(self, obj: bytes) -> UCXKey:
         """Put a serialized object in the store.
@@ -235,18 +269,9 @@ class UCXConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = UCXKey(
-            ucx_key=str(uuid.uuid4()),
-            obj_size=len(obj),
-            peer=self.addr,
-        )
-        logger.debug(
-            f'Client issuing set request on key {key} with addr {self.addr}',
-        )
-
-        event = serialize({'key': key.ucx_key, 'data': obj, 'op': 'set'})
-
-        self._loop.run_until_complete(self.handler(event, self.addr))
+        key = UCXKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
+        rpc = RPC(operation='put', key=key.key, size=key.size, data=obj)
+        self._send_rpcs([rpc])
         return key
 
     def put_batch(self, objs: Sequence[bytes]) -> list[UCXKey]:
@@ -259,164 +284,125 @@ class UCXConnector:
             List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
-        return [self.put(obj) for obj in objs]
+        keys = [
+            UCXKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
+            for obj in objs
+        ]
+        rpcs = [
+            RPC(operation='put', key=key.key, size=key.size, data=obj)
+            for key, obj in zip(keys, objs)
+        ]
+        self._send_rpcs(rpcs)
+        return keys
 
 
 class UCXServer:
-    """UCXServer implementation.
+    """UCXServer implementation."""
 
-    Args:
-        host: The server host.
-        port: The server port.
-    """
+    def __init__(self) -> None:
+        self.data: dict[str, bytes] = {}
 
-    host: str
-    port: int
-    ucp_listener: ucp.core.Listener | None
-    data: dict[str, bytes]
-
-    def __init__(self, host: str, port: int) -> None:
-        self.host = host
-        self.port = port
-        self.data = {}
-        self.ucp_listener = None
-
-    def set(self, key: str, data: bytes) -> Status:
-        """Obtain data from the client and store it in local dictionary.
+    def evict(self, key: str) -> None:
+        """Evict the object associated with the key.
 
         Args:
-            key: The object key to use.
-            data: The data to store.
-
-        Returns:
-            Operation status.
-        """
-        self.data[key] = data
-        return Status(success=True, error=None)
-
-    def get(self, key: str) -> bytes | Status:
-        """Return data at a given key back to the client.
-
-        Args:
-            key: The object key.
-
-        Returns:
-            Operation status.
-        """
-        try:
-            return self.data[key]
-        except KeyError as e:
-            return Status(success=False, error=e)
-
-    def evict(self, key: str) -> Status:
-        """Remove key from local dictionary.
-
-        Args:
-            key: The object to evict's key.
-
-        Returns:
-            Operation status.
+            key: Key associated with object to evict.
         """
         self.data.pop(key, None)
-        return Status(success=True, error=None)
 
     def exists(self, key: str) -> bool:
-        """Check if a key exists within local dictionary.
+        """Check if an object associated with the key exists.
 
         Args:
-            key: The object's key.
+            key: Key potentially associated with stored object.
 
         Returns:
-            If the object exists.
+            If an object associated with the key exists.
         """
         return key in self.data
+
+    def get(self, key: str) -> bytes | None:
+        """Get the serialized object associated with the key.
+
+        Args:
+            key: Key associated with the object to retrieve.
+
+        Returns:
+            Data or `None` if no data associated with the key exists.
+        """
+        return self.data.get(key, None)
+
+    def put(self, key: str, data: bytes) -> None:
+        """Put data in the store.
+
+        Args:
+            key: Key associated with data.
+            data: Data to put in the store.
+        """
+        self.data[key] = data
+
+    def handle_rpc(self, rpc: RPC) -> RPCResponse:
+        """Process an RPC request.
+
+        Args:
+            rpc: Client RPC to process.
+
+        Returns:
+            Response containing result or an exception if the operation failed.
+        """
+        response: RPCResponse
+        try:
+            if rpc.operation == 'exists':
+                exists = self.exists(rpc.key)
+                response = RPCResponse(
+                    'exists',
+                    key=rpc.key,
+                    size=rpc.size,
+                    exists=exists,
+                )
+            elif rpc.operation == 'evict':
+                self.evict(rpc.key)
+                response = RPCResponse('evict', key=rpc.key, size=rpc.size)
+            elif rpc.operation == 'get':
+                data = self.get(rpc.key)
+                response = RPCResponse(
+                    'get',
+                    key=rpc.key,
+                    size=rpc.size,
+                    data=data,
+                )
+            elif rpc.operation == 'put':
+                assert rpc.data is not None
+                self.put(rpc.key, rpc.data)
+                response = RPCResponse('put', key=rpc.key, size=rpc.size)
+            else:
+                raise AssertionError('Unreachable.')
+        except Exception as e:
+            response = RPCResponse(
+                rpc.operation,
+                key=rpc.key,
+                size=rpc.size,
+                exception=e,
+            )
+        return response
 
     async def handler(self, ep: ucp.Endpoint) -> None:
         """Handle endpoint requests.
 
         Args:
-            ep: The endpoint to communicate with.
+            ep: The endpoint making the request.
         """
-        json_kv = await ep.recv_obj()
+        rpc_bytes = await ep.recv_obj()
 
-        if json_kv == bytes(1):
-            await ep.send_obj(bytes(1))
+        if rpc_bytes == b'ping':
+            await ep.send_obj(b'pong')
             return
 
-        kv = deserialize(bytes(json_kv))
+        rpc: RPC = deserialize(rpc_bytes)
+        response = self.handle_rpc(rpc)
 
-        key = kv['key']
-        data = kv['data']
-        func = kv['op']
-
-        if func == 'set':
-            res = self.set(key, data)
-        else:
-            if func == 'get':
-                func = self.get
-            elif func == 'exists':
-                func = self.exists
-            elif func == 'evict':
-                func = self.evict
-            else:
-                raise AssertionError('Unreachable.')
-            res = func(key)
-
-        if isinstance(res, Status) or isinstance(res, bool):
-            serialized_res = serialize(res)
-        else:
-            serialized_res = res
-
-        await ep.send_obj(serialized_res)
-
-    async def run(self) -> None:
-        """Run this UCXServer forever.
-
-        Creates a listener for the handler method and waits on SIGINT/TERM
-        events to exit. Also handles cleaning up UCP objects.
-        """
-        self.ucp_listener = ucp.create_listener(self.handler, self.port)
-
-        # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
-        loop = asyncio.get_running_loop()
-        stop = loop.create_future()
-        loop.add_signal_handler(signal.SIGINT, stop.set_result, None)
-        loop.add_signal_handler(signal.SIGTERM, stop.set_result, None)
-
-        await stop
-        self.close()
-        await reset_ucp_async()
-
-    def close(self) -> None:
-        """Close the server."""
-        if self.ucp_listener is not None:
-            self.ucp_listener.close()
-
-            while not self.ucp_listener.closed():
-                sleep(0.001)
-
-            # Need to lose reference to Listener because UCP does reference
-            # counting
-            del self.ucp_listener
-            self.ucp_listener = None
-
-
-def launch_server(host: str, port: int) -> None:
-    """Launch the UCXServer in asyncio.
-
-    Args:
-        host: The host for server to listen on.
-        port: The port for server to listen on.
-    """
-    logger.info(f'starting server on host {host} with port {port}')
-
-    ps = UCXServer(host, port)
-    # CI occasionally timeouts when starting this server in the
-    # store_implementation session fixture. It seems to not happen when
-    # debug=True, but this is just a temporary fix.
-    asyncio.run(ps.run(), debug=True)
-
-    logger.info(f'server running at address {host}:{port}')
+        message = serialize(response)
+        await ep.send_obj(message)
 
 
 def reset_ucp() -> None:  # pragma: no cover
@@ -491,13 +477,111 @@ async def reset_ucp_async() -> None:  # pragma: no cover
         pass
 
 
-async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
-    """Wait until the UCXServer responds.
+async def run_server(port: int) -> None:
+    """Listen and reply to RPCs from clients.
+
+    Warning:
+        This function does not return until SIGINT or SIGTERM is received.
 
     Args:
-        host: The host of UCXServer to ping.
-        port: Theport of UCXServer to ping.
-        timeout: The max time in seconds to wait for server response.
+        port: Port the server should listen on.
+    """
+    loop = asyncio.get_running_loop()
+    close_future = loop.create_future()
+    loop.add_signal_handler(signal.SIGINT, close_future.set_result, None)
+    loop.add_signal_handler(signal.SIGTERM, close_future.set_result, None)
+
+    server = UCXServer()
+
+    ucp_listener = ucp.create_listener(server.handler, port)
+
+    await close_future
+    ucp_listener.close()
+
+    while not ucp_listener.closed():
+        sleep(0.001)
+    await reset_ucp_async()
+
+
+def start_server(port: int) -> None:
+    """Run a local server.
+
+    Note:
+        This function creates an event loop and executes
+        [`run_server()`][proxystore.connectors.dim.ucx.run_server] within
+        that loop.
+
+    Args:
+        port: Port the server should listen on.
+    """
+    asyncio.run(run_server(port))
+
+
+def spawn_server(
+    host: str,
+    port: int,
+    *,
+    spawn_timeout: float = 5.0,
+    kill_timeout: float | None = 1.0,
+) -> multiprocessing.Process:
+    """Spawn a local server running in a separate process.
+
+    Note:
+        An `atexit` callback is registered which will terminate the spawned
+        server process when the calling process exits.
+
+    Args:
+        host: IP address the server will listen on.
+        port: Port the server will listen on.
+        spawn_timeout: Max time in seconds to wait for the server to start.
+        kill_timeout: Max time in seconds to wait for the server to shutdown
+            on exit.
+
+    Returns:
+        The process that the server is running in.
+    """
+    server_process = multiprocessing.Process(
+        target=start_server,
+        args=(port,),
+    )
+    server_process.start()
+
+    def _kill_on_exit() -> None:  # pragma: no cover
+        server_process.terminate()
+        server_process.join(timeout=kill_timeout)
+        if server_process.is_alive():
+            server_process.kill()
+            server_process.join()
+        logger.debug(
+            'Server terminated on parent process exit '
+            f'(pid={server_process.pid})',
+        )
+
+    atexit.register(_kill_on_exit)
+    logger.debug('Registered server cleanup atexit callback')
+
+    wait_for_server(host, port, timeout=spawn_timeout)
+    logger.debug(
+        f'Server started (host={host}, port={port}, pid={server_process.pid})',
+    )
+
+    return server_process
+
+
+async def wait_for_server_async(
+    host: str,
+    port: int,
+    timeout: float = 0.1,
+) -> None:
+    """Wait until the server responds.
+
+    Args:
+        host: Host of the server to ping.
+        port: Port of the server to ping.
+        timeout: Max time in seconds to wait for server response.
+
+    Raises:
+        ServerTimeoutError: If the server does not respond within the timeout.
     """
     sleep_time = 0.01
     time_waited = 0.0
@@ -514,9 +598,27 @@ async def wait_for_server(host: str, port: int, timeout: float = 5.0) -> None:
             await asyncio.sleep(sleep_time)
             time_waited += sleep_time
         else:
-            break  # pragma: no cover
+            await ep.send_obj(b'ping')
+            assert await ep.recv_obj() == b'pong'
+            await ep.close()
+            assert ep.closed()
+            return
 
-    await ep.send_obj(bytes(1))
-    _ = await ep.recv_obj()
-    await ep.close()
-    assert ep.closed()
+
+def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
+    """Wait until the server responds.
+
+    Note:
+        This function calls
+        [`wait_for_server_async()`][proxystore.connectors.dim.uxc.wait_for_server_async]
+        using [`asyncio.run()`][asyncio.run].
+
+    Args:
+        host: The host of the server to ping.
+        port: Theport of the server to ping.
+        timeout: The max time in seconds to wait for server response.
+
+    Raises:
+        ServerTimeoutError: If the server does not respond within the timeout.
+    """
+    asyncio.run(wait_for_server_async(host, port, timeout))

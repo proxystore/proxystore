@@ -14,7 +14,7 @@ else:  # pragma: <3.8 cover
 
 import pytest
 
-from proxystore.connectors.dim.ucx import launch_server
+from proxystore.connectors.dim.ucx import run_server
 from proxystore.connectors.dim.ucx import UCXConnector
 from proxystore.connectors.dim.ucx import UCXServer
 from proxystore.serialize import deserialize
@@ -30,10 +30,8 @@ UCP_SPEC = importlib.util.find_spec('ucp')
 
 @pytest.fixture()
 def ucx_server(ucx_connector):
-    # We use the ucx_connector fixture for its cleanup
-    server = UCXServer('localhost', open_port())
-    yield server
-    server.close()
+    server = UCXServer()
+    return server
 
 
 async def execute_handler(obj: Any, server: UCXServer) -> Any:
@@ -53,20 +51,12 @@ def test_ucx_connector(ucx_connector) -> None:
             connector.close()  # check that nothing happens
 
 
-def test_launched_mocked_server() -> None:
-    with mock.patch(
-        'proxystore.connectors.dim.ucx.UCXServer.run',
-        AsyncMock(),
-    ):
-        launch_server(host='localhost', port=open_port())
-
-
 @pytest.mark.skipif(
     UCP_SPEC is not None and 'mock' not in UCP_SPEC.name,
     reason='only valid for running against the mocked ucp module',
 )
 def test_run_mocked_server() -> None:
-    server = UCXServer(host='localhost', port=-1)
+    UCXServer()
 
     # We use this fake awaitable Future because we are not running in an
     # event loop so asyncio.create_future() will error.
@@ -89,7 +79,7 @@ def test_run_mocked_server() -> None:
         'proxystore.connectors.dim.ucx.reset_ucp_async',
         AsyncMock(),
     ):
-        asyncio.run(server.run())
+        asyncio.run(run_server(open_port()))
 
 
 def test_ucx_server(ucx_server) -> None:
