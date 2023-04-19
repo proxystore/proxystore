@@ -220,7 +220,7 @@ def evict(ctx: click.Context, key: str) -> None:
         logger.debug(e)
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        logger.exception(e)
+        logger.error(e)
         sys.exit(1)
     else:
         logger.info('Evicted object from endpoint.')
@@ -240,7 +240,7 @@ def exists(ctx: click.Context, key: str) -> None:
         logger.debug(e)
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        logger.exception(e)
+        logger.error(e)
         sys.exit(1)
     else:
         logger.info(f'Object exists: {res}')
@@ -260,7 +260,7 @@ def get(ctx: click.Context, key: str) -> None:
         logger.debug(e)
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        logger.exception(e)
+        logger.error(e)
         sys.exit(1)
 
     if res is None:
@@ -286,7 +286,7 @@ def put(ctx: click.Context, data: str) -> None:
         logger.debug(e)
         sys.exit(1)
     except requests.exceptions.RequestException as e:
-        logger.exception(e)
+        logger.error(e)
         sys.exit(1)
     else:
         logger.info(f'Put object in endpoint with key {key}')
