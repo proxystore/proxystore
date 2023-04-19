@@ -33,7 +33,12 @@ def evict(
         f'{address}/evict',
         params={'key': key, 'endpoint': endpoint_str},
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.exceptions.RequestException(
+            f'Endpoint returned HTTP error code {response.status_code}. '
+            f'{response.text}',
+            response=response,
+        )
 
 
 def exists(
@@ -62,7 +67,12 @@ def exists(
         f'{address}/exists',
         params={'key': key, 'endpoint': endpoint_str},
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.exceptions.RequestException(
+            f'Endpoint returned HTTP error code {response.status_code}. '
+            f'{response.text}',
+            response=response,
+        )
     return response.json()['exists']
 
 
@@ -97,7 +107,12 @@ def get(
     if response.status_code == 400:
         return None
 
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.exceptions.RequestException(
+            f'Endpoint returned HTTP error code {response.status_code}. '
+            f'{response.text}',
+            response=response,
+        )
 
     data = bytearray()
     for chunk in response.iter_content(chunk_size=None):
@@ -133,4 +148,9 @@ def put(
         data=chunk_bytes(data, MAX_CHUNK_LENGTH),
         stream=True,
     )
-    response.raise_for_status()
+    if not response.ok:
+        raise requests.exceptions.RequestException(
+            f'Endpoint returned HTTP error code {response.status_code}. '
+            f'{response.text}',
+            response=response,
+        )
