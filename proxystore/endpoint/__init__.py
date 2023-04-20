@@ -11,13 +11,3 @@ between clients behind different NATs. See the
 to start your own endpoints.
 """
 from __future__ import annotations
-
-import warnings
-
-from proxystore.warnings import ExperimentalWarning
-
-warnings.warn(
-    'Endpoints are an experimental feature and may change in the future.',
-    category=ExperimentalWarning,
-    stacklevel=2,
-)
