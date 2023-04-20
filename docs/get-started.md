@@ -1,17 +1,13 @@
 # Get Started
 
-<figure markdown>
-  ![ProxyStore Overview](static/overview.png){ width="100%" }
-  <figcaption width=100%>
-  ProxyStore allows developers to communicate objects via *proxies*. Proxies
-  act as lightweight references that resolve to a *target* object upon use.
-  Communication via proxies gives applications the illusion that objects
-  are moving through a specified path (e.g., through a network
-  socket, cloud server, workflow engine, etc.) while the true path the data
-  takes is different. Transporting the lightweight proxies through the
-  application or systems can be far more efficient and reduce overheads.
-  </figcaption>
-</figure>
+![ProxyStore Overview](static/proxystore-overview.svg){ width="75%" style="display: block; margin: 0 auto" }
+> **Figure 1:** ProxyStore allows developers to communicate objects via *proxies*.
+> Proxies act as lightweight references that resolve to a *target* object upon use.
+> Communication via proxies gives applications the illusion that objects are
+> moving through a specified path (e.g., through a network socket, cloud
+> server, workflow engine, etc.) while the true path the data takes is
+> different. Transporting the lightweight proxies through the application or
+> systems can be far more efficient and reduce overheads.
 
 ## Overview
 

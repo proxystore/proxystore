@@ -20,15 +20,11 @@ using [`Quart`](https://pgjones.gitlab.io/quart/), and ProxyStore provides the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as
 the primary interface for clients to interact with endpoints.
 
-<figure markdown>
-  ![ProxyStore Endpoints](../static/endpoints.png){ width="100%" }
-  <figcaption>
-  <b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
-  any endpoint and those request will be forwarded to the correct endpoint.
-  Endpoints establish peer-to-peer connections using UDP hole-punching and a
-  publicly accessible relay server.
-  </figcaption>
-</figure>
+![ProxyStore Endpoints](../static/endpoint-peering.svg){ width="100%" }
+> <b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
+> any endpoint and those request will be forwarded to the correct endpoint.
+> Endpoints establish peer-to-peer connections using UDP hole-punching and a
+> publicly accessible relay server.
 
 Unlike popular in-memory data stores (Redis, Memcached, etc.), ProxyStore
 endpoints can operate as peers even from behind different NATs without the need
@@ -141,13 +137,8 @@ travels to a different machine.
 
 ## Proxy Lifecycle
 
-<figure markdown>
-  ![Dataflow with Proxies and Endpoints](../static/dataflow.png){ width="100%" }
-  <figcaption>
-  <b>Figure 2:</b> Flow of data when transferring objects via proxies and
-  endpoints.
-  </figcaption>
-</figure>
+![Dataflow with Proxies and Endpoints](../static/endpoint-overview.svg){ width="75%" style="display: block; margin: 0 auto" }
+> <b>Figure 2:</b> Flow of data when transferring objects via proxies and endpoints.
 
 In distributed systems, proxies created from an
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] can be used

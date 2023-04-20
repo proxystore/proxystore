@@ -1,3 +1,6 @@
+![ProxyStore Schematic](../static/proxystore-schematic.svg){ width="75%" style="display: block; margin: 0 auto" }
+> **Figure 1:** High-level overview of how the ProxyStore components fit together.
+
 ProxyStore is composed of three main components: the
 [`Proxy`][proxystore.proxy.Proxy],
 [`Connector`][proxystore.connectors.connector.Connector],
