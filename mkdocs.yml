@@ -119,8 +119,9 @@ nav:
       - Store: concepts/store.md
   - Guides:
       - guides/index.md
-      - Endpoints: guides/endpoints.md
-      - Performance: guides/performance.md
+      - Endpoints Overview: guides/endpoints.md
+      - Endpoints Debugging: guides/endpoints-debugging.md
+      - Performance Tracking: guides/performance.md
   - API Reference:
       - ProxyStore: api/
       - CLI Reference: api/cli.md
