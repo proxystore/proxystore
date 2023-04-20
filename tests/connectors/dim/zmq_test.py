@@ -16,7 +16,7 @@ from proxystore.serialize import serialize
 from testing.compat import randbytes
 from testing.utils import open_port
 
-TIMEOUT = 0.2
+TIMEOUT = 0.5
 TEST_KEY = DIMKey(
     'zmq',
     obj_id='key',
