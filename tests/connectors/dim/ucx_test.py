@@ -62,7 +62,10 @@ def test_connector_raises_rpc_error() -> None:
 
     with mock.patch(
         'proxystore.connectors.dim.ucx.wait_for_server',
-    ), mock.patch('ucp.create_endpoint', return_value=MockEndpoint()):
+    ), mock.patch(
+        'ucp.create_endpoint',
+        AsyncMock(return_value=MockEndpoint()),
+    ):
         with UCXConnector('eth0', 0) as connector:
             with pytest.raises(Exception, match='test'):
                 connector._send_rpcs([RPC('get', TEST_KEY)])

@@ -1,9 +1,14 @@
 """Message types for communication with DIM servers."""
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
-from typing import Literal
 from typing import NamedTuple
+
+if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+    from typing import Literal
+else:  # pragma: <3.9 cover
+    from typing_extensions import Literal
 
 
 class DIMKey(NamedTuple):
