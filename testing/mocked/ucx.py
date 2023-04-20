@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from proxystore.connectors.dim.rpc import RPC
-from proxystore.connectors.dim.rpc import RPCResponse
+from proxystore.connectors.dim.models import RPC
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
@@ -55,9 +55,9 @@ class MockEndpoint:
         rpc = deserialize(payload)
 
         if rpc.operation == 'evict':
-            data.pop(rpc.key, None)
+            data.pop(rpc.key.obj_id, None)
         elif rpc.operation == 'put':
-            data[rpc.key] = rpc.data
+            data[rpc.key.obj_id] = rpc.data
 
         self.last_rpc = rpc
 
@@ -73,12 +73,11 @@ class MockEndpoint:
         response = RPCResponse(
             operation=self.last_rpc.operation,
             key=self.last_rpc.key,
-            size=self.last_rpc.size,
         )
         if response.operation == 'exists':
-            response.exists = response.key in data
+            response.exists = response.key.obj_id in data
         elif response.operation == 'get':
-            response.data = data.get(response.key, None)
+            response.data = data.get(response.key.obj_id, None)
 
         return serialize(response)
 

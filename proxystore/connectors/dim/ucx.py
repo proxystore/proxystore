@@ -8,10 +8,8 @@ import multiprocessing
 import signal
 import sys
 import uuid
-from time import sleep
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -27,24 +25,14 @@ except ImportError as e:  # pragma: no cover
     ucx_import_error = e
 
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
-from proxystore.connectors.dim.rpc import RPC
-from proxystore.connectors.dim.rpc import RPCResponse
+from proxystore.connectors.dim.models import DIMKey
+from proxystore.connectors.dim.models import RPC
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.connectors.dim.utils import get_ip_address
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
-
-
-class UCXKey(NamedTuple):
-    """Key to objects stored across `UCXConnector`s."""
-
-    key: str
-    """Unique object key."""
-    size: int
-    """Object size in bytes."""
-    peer: str
-    """Peer where object is located."""
 
 
 class UCXConnector:
@@ -84,11 +72,6 @@ class UCXConnector:
         self.host = get_ip_address(interface)
         self.addr = f'{self.host}:{self.port}'
 
-        try:
-            self._loop = asyncio.get_running_loop()
-        except RuntimeError:
-            self._loop = asyncio.new_event_loop()
-
         self.server: multiprocessing.Process | None
         try:
             logger.info(
@@ -112,6 +95,11 @@ class UCXConnector:
         else:
             self.server = None
 
+        try:
+            self._loop = asyncio.get_running_loop()
+        except RuntimeError:
+            self._loop = asyncio.new_event_loop()
+
     def __enter__(self) -> Self:
         return self
 
@@ -126,21 +114,23 @@ class UCXConnector:
     async def _send_rpcs_async(self, rpcs: Sequence[RPC]) -> list[RPCResponse]:
         responses = []
 
-        ep = await ucp.create_endpoint(self.host, self.port)
-
         for rpc in rpcs:
+            ep = await ucp.create_endpoint(
+                rpc.key.peer_host,
+                rpc.key.peer_port,
+            )
+
             message = serialize(rpc)
             await ep.send_obj(message)
             logger.debug(
-                f'Sent {rpc.operation.upper()} RPC '
-                f'(key={rpc.key}, server={self.addr})',
+                f'Sent {rpc.operation.upper()} RPC (key={rpc.key})',
             )
-            response = deserialize(await ep.recv_obj())
+            response = deserialize(bytes(await ep.recv_obj()))
 
             logger.debug(
                 f'Received {rpc.operation.upper()} RPC response '
-                f'(key={response.key}, server={self.addr}, '
-                f'exception={response.exception is not None})',
+                f'(key={response.key}, '
+                'exception={response.exception is not None})',
             )
 
             if response.exception is not None:
@@ -151,7 +141,7 @@ class UCXConnector:
 
             responses.append(response)
 
-        await ep.close()
+            await ep.close()
 
         return responses
 
@@ -208,16 +198,16 @@ class UCXConnector:
         """
         return cls(**config)
 
-    def evict(self, key: UCXKey) -> None:
+    def evict(self, key: DIMKey) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
         """
-        rpc = RPC(operation='evict', key=key.key, size=key.size)
+        rpc = RPC(operation='evict', key=key)
         self._send_rpcs([rpc])
 
-    def exists(self, key: UCXKey) -> bool:
+    def exists(self, key: DIMKey) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
@@ -226,12 +216,12 @@ class UCXConnector:
         Returns:
             If an object associated with the key exists.
         """
-        rpc = RPC(operation='exists', key=key.key, size=key.size)
+        rpc = RPC(operation='exists', key=key)
         (response,) = self._send_rpcs([rpc])
         assert response.exists is not None
         return response.exists
 
-    def get(self, key: UCXKey) -> bytes | None:
+    def get(self, key: DIMKey) -> bytes | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -240,11 +230,11 @@ class UCXConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        rpc = RPC(operation='get', key=key.key, size=key.size)
+        rpc = RPC(operation='get', key=key)
         (result,) = self._send_rpcs([rpc])
         return result.data
 
-    def get_batch(self, keys: Sequence[UCXKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[DIMKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -254,13 +244,11 @@ class UCXConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        rpcs = [
-            RPC(operation='get', key=key.key, size=key.size) for key in keys
-        ]
+        rpcs = [RPC(operation='get', key=key) for key in keys]
         responses = self._send_rpcs(rpcs)
         return [r.data for r in responses]
 
-    def put(self, obj: bytes) -> UCXKey:
+    def put(self, obj: bytes) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -269,12 +257,18 @@ class UCXConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = UCXKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
-        rpc = RPC(operation='put', key=key.key, size=key.size, data=obj)
+        key = DIMKey(
+            dim_type='ucx',
+            obj_id=str(uuid.uuid4()),
+            size=len(obj),
+            peer_host=self.host,
+            peer_port=self.port,
+        )
+        rpc = RPC(operation='put', key=key, data=obj)
         self._send_rpcs([rpc])
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[UCXKey]:
+    def put_batch(self, objs: Sequence[bytes]) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -285,11 +279,17 @@ class UCXConnector:
             retrieve the objects.
         """
         keys = [
-            UCXKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
+            DIMKey(
+                dim_type='ucx',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.host,
+                peer_port=self.port,
+            )
             for obj in objs
         ]
         rpcs = [
-            RPC(operation='put', key=key.key, size=key.size, data=obj)
+            RPC(operation='put', key=key, data=obj)
             for key, obj in zip(keys, objs)
         ]
         self._send_rpcs(rpcs)
@@ -351,39 +351,25 @@ class UCXServer:
             Response containing result or an exception if the operation failed.
         """
         response: RPCResponse
+
         try:
             if rpc.operation == 'exists':
-                exists = self.exists(rpc.key)
-                response = RPCResponse(
-                    'exists',
-                    key=rpc.key,
-                    size=rpc.size,
-                    exists=exists,
-                )
+                exists = self.exists(rpc.key.obj_id)
+                response = RPCResponse('exists', key=rpc.key, exists=exists)
             elif rpc.operation == 'evict':
-                self.evict(rpc.key)
-                response = RPCResponse('evict', key=rpc.key, size=rpc.size)
+                self.evict(rpc.key.obj_id)
+                response = RPCResponse('evict', key=rpc.key)
             elif rpc.operation == 'get':
-                data = self.get(rpc.key)
-                response = RPCResponse(
-                    'get',
-                    key=rpc.key,
-                    size=rpc.size,
-                    data=data,
-                )
+                data = self.get(rpc.key.obj_id)
+                response = RPCResponse('get', key=rpc.key, data=data)
             elif rpc.operation == 'put':
                 assert rpc.data is not None
-                self.put(rpc.key, rpc.data)
-                response = RPCResponse('put', key=rpc.key, size=rpc.size)
+                self.put(rpc.key.obj_id, rpc.data)
+                response = RPCResponse('put', key=rpc.key)
             else:
                 raise AssertionError('Unreachable.')
         except Exception as e:
-            response = RPCResponse(
-                rpc.operation,
-                key=rpc.key,
-                size=rpc.size,
-                exception=e,
-            )
+            response = RPCResponse(rpc.operation, key=rpc.key, exception=e)
         return response
 
     async def handler(self, ep: ucp.Endpoint) -> None:
@@ -392,7 +378,7 @@ class UCXServer:
         Args:
             ep: The endpoint making the request.
         """
-        rpc_bytes = await ep.recv_obj()
+        rpc_bytes = bytes(await ep.recv_obj())
 
         if rpc_bytes == b'ping':
             await ep.send_obj(b'pong')
@@ -414,20 +400,23 @@ async def run_server(port: int) -> None:
     Args:
         port: Port the server should listen on.
     """
+    server = UCXServer()
+    ucp_listener = ucp.create_listener(server.handler, port)
+
     loop = asyncio.get_running_loop()
     close_future = loop.create_future()
     loop.add_signal_handler(signal.SIGINT, close_future.set_result, None)
     loop.add_signal_handler(signal.SIGTERM, close_future.set_result, None)
 
-    server = UCXServer()
-
-    ucp_listener = ucp.create_listener(server.handler, port)
-
     await close_future
     ucp_listener.close()
 
     while not ucp_listener.closed():
-        sleep(0.001)
+        await asyncio.sleep(0.001)
+
+    # UCP does reference counting of open resources
+    del ucp_listener
+    await reset_ucp_async()
 
 
 def start_server(port: int) -> None:  # pragma: no cover
@@ -467,7 +456,11 @@ def spawn_server(
     Returns:
         The process that the server is running in.
     """
-    server_process = multiprocessing.Process(
+    ctx = multiprocessing.get_context('spawn')
+    # UCX seems to hang if you fork a process after calling ucp.init().
+    # If discovered this via a comment in Dask's distributed communication:
+    # https://github.com/dask/distributed/blob/76bbfaf9f4a14906cbf4500ed42c442c7a5bc971/distributed/comm/ucx.py#L40  # noqa: E501
+    server_process = ctx.Process(
         target=start_server,
         args=(port,),
     )
@@ -492,7 +485,8 @@ def spawn_server(
         f'Server started (host={host}, port={port}, pid={server_process.pid})',
     )
 
-    return server_process
+    # Technically this is SpawnProcess type and not Process type
+    return server_process  # type: ignore[return-value]
 
 
 async def wait_for_server_async(
@@ -518,18 +512,20 @@ async def wait_for_server_async(
             ep = await ucp.create_endpoint(host, port)
         except ucp._libs.exceptions.UCXNotConnected as e:  # pragma: no cover
             if time_waited >= timeout:
-                raise RuntimeError(
+                raise ServerTimeoutError(
                     'Failed to connect to server within timeout '
                     f'({timeout} seconds).',
                 ) from e
             await asyncio.sleep(sleep_time)
             time_waited += sleep_time
         else:
-            await ep.send_obj(b'ping')
-            assert await ep.recv_obj() == b'pong'
-            await ep.close()
-            assert ep.closed()
-            return
+            break  # pragma: no cover
+
+    await ep.send_obj(b'ping')
+    assert bytes(await ep.recv_obj()) == b'pong'
+    await ep.close()
+    assert ep.closed()
+    del ep
 
 
 def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
@@ -537,7 +533,7 @@ def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
 
     Note:
         This function calls
-        [`wait_for_server_async()`][proxystore.connectors.dim.uxc.wait_for_server_async]
+        [`wait_for_server_async()`][proxystore.connectors.dim.ucx.wait_for_server_async]
         using [`asyncio.run()`][asyncio.run].
 
     Args:
@@ -549,3 +545,39 @@ def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
         ServerTimeoutError: If the server does not respond within the timeout.
     """
     asyncio.run(wait_for_server_async(host, port, timeout))
+
+
+async def reset_ucp_async() -> None:  # pragma: no cover
+    """Hard reset all of UCP.
+
+    UCP provides `ucp.reset()`; however, this function does not correctly
+    shutdown all asyncio tasks and readers. This function wraps
+    `ucp.reset()` and additionally removes all readers on the event loop
+    and cancels/awaits all asyncio tasks.
+    """
+
+    async def inner_context() -> None:
+        ctx = ucp.core._get_ctx()
+
+        for task in ctx.progress_tasks:
+            if task is None:
+                continue
+            task.event_loop.remove_reader(ctx.epoll_fd)
+            if task.asyncio_task is not None:
+                try:
+                    task.asyncio_task.cancel()
+                    await task.asyncio_task
+                except asyncio.CancelledError:
+                    pass
+
+    # We access ucp.core._get_ctx() inside this nested function so our local
+    # reference to the UCP context goes out of scope before calling
+    # ucp.reset(). ucp.reset() will fail if there are any weak references to
+    # to the UCP context because it assumes those may be Listeners or
+    # Endpoints that were not properly closed.
+    await inner_context()
+
+    try:
+        ucp.reset()
+    except ucp.UCXError:
+        pass

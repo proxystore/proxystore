@@ -196,6 +196,11 @@ def ucx_connector() -> Generator[Connector[Any], None, None]:
     with ctx():
         connector.close()
 
+    if (
+        ucp_spec is not None and 'mocked' not in ucp_spec.name
+    ):  # pragma: no cover
+        connector._loop.run_until_complete(ucx.reset_ucp_async())
+
 
 @pytest.fixture(scope='session')
 def zmq_connector() -> Generator[Connector[Any], None, None]:

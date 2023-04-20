@@ -11,7 +11,6 @@ import time
 import uuid
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -29,8 +28,9 @@ except ImportError as e:  # pragma: no cover
 
 import proxystore.utils as utils
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
-from proxystore.connectors.dim.rpc import RPC
-from proxystore.connectors.dim.rpc import RPCResponse
+from proxystore.connectors.dim.models import DIMKey
+from proxystore.connectors.dim.models import RPC
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.connectors.dim.utils import get_ip_address
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
@@ -38,17 +38,6 @@ from proxystore.serialize import serialize
 MAX_CHUNK_LENGTH_DEFAULT = 64 * 1024
 
 logger = logging.getLogger(__name__)
-
-
-class ZeroMQKey(NamedTuple):
-    """Key to objects stored across `ZeroMQConnector`s."""
-
-    key: str
-    """Unique object key."""
-    size: int
-    """Object size in bytes."""
-    peer: str
-    """Peer where object is located."""
 
 
 class ZeroMQConnector:
@@ -150,20 +139,20 @@ class ZeroMQConnector:
 
         for rpc in rpcs:
             message = serialize(rpc)
-            with self.socket.connect(self.addr):
+            addr = f'tcp://{rpc.key.peer_host}:{rpc.key.peer_port}'
+            with self.socket.connect(addr):
                 self.socket.send_multipart(
                     list(utils.chunk_bytes(message, self.chunk_length)),
                 )
                 logger.debug(
-                    f'Sent {rpc.operation.upper()} RPC '
-                    f'(key={rpc.key}, server={self.addr})',
+                    f'Sent {rpc.operation.upper()} RPC (key={rpc.key})',
                 )
                 result = b''.join(self.socket.recv_multipart())
 
             response = deserialize(result)
             logger.debug(
                 f'Received {rpc.operation.upper()} RPC response '
-                f'(key={response.key}, server={self.addr}, '
+                f'(key={response.key}, '
                 f'exception={response.exception is not None})',
             )
 
@@ -219,16 +208,16 @@ class ZeroMQConnector:
         """
         return cls(**config)
 
-    def evict(self, key: ZeroMQKey) -> None:
+    def evict(self, key: DIMKey) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
         """
-        rpc = RPC(operation='evict', key=key.key, size=key.size)
+        rpc = RPC(operation='evict', key=key)
         self._send_rpcs([rpc])
 
-    def exists(self, key: ZeroMQKey) -> bool:
+    def exists(self, key: DIMKey) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
@@ -237,12 +226,12 @@ class ZeroMQConnector:
         Returns:
             If an object associated with the key exists.
         """
-        rpc = RPC(operation='exists', key=key.key, size=key.size)
+        rpc = RPC(operation='exists', key=key)
         (response,) = self._send_rpcs([rpc])
         assert response.exists is not None
         return response.exists
 
-    def get(self, key: ZeroMQKey) -> bytes | None:
+    def get(self, key: DIMKey) -> bytes | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -251,11 +240,11 @@ class ZeroMQConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        rpc = RPC(operation='get', key=key.key, size=key.size)
+        rpc = RPC(operation='get', key=key)
         (result,) = self._send_rpcs([rpc])
         return result.data
 
-    def get_batch(self, keys: Sequence[ZeroMQKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[DIMKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -265,13 +254,11 @@ class ZeroMQConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        rpcs = [
-            RPC(operation='get', key=key.key, size=key.size) for key in keys
-        ]
+        rpcs = [RPC(operation='get', key=key) for key in keys]
         responses = self._send_rpcs(rpcs)
         return [r.data for r in responses]
 
-    def put(self, obj: bytes) -> ZeroMQKey:
+    def put(self, obj: bytes) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -280,12 +267,18 @@ class ZeroMQConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = ZeroMQKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
-        rpc = RPC(operation='put', key=key.key, size=key.size, data=obj)
+        key = DIMKey(
+            dim_type='zmq',
+            obj_id=str(uuid.uuid4()),
+            size=len(obj),
+            peer_host=self.host,
+            peer_port=self.port,
+        )
+        rpc = RPC(operation='put', key=key, data=obj)
         self._send_rpcs([rpc])
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[ZeroMQKey]:
+    def put_batch(self, objs: Sequence[bytes]) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -296,11 +289,17 @@ class ZeroMQConnector:
             retrieve the objects.
         """
         keys = [
-            ZeroMQKey(key=str(uuid.uuid4()), size=len(obj), peer=self.addr)
+            DIMKey(
+                dim_type='zmq',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.host,
+                peer_port=self.port,
+            )
             for obj in objs
         ]
         rpcs = [
-            RPC(operation='put', key=key.key, size=key.size, data=obj)
+            RPC(operation='put', key=key, data=obj)
             for key, obj in zip(keys, objs)
         ]
         self._send_rpcs(rpcs)
@@ -364,37 +363,22 @@ class ZeroMQServer:
         response: RPCResponse
         try:
             if rpc.operation == 'exists':
-                exists = self.exists(rpc.key)
-                response = RPCResponse(
-                    'exists',
-                    key=rpc.key,
-                    size=rpc.size,
-                    exists=exists,
-                )
+                exists = self.exists(rpc.key.obj_id)
+                response = RPCResponse('exists', key=rpc.key, exists=exists)
             elif rpc.operation == 'evict':
-                self.evict(rpc.key)
-                response = RPCResponse('evict', key=rpc.key, size=rpc.size)
+                self.evict(rpc.key.obj_id)
+                response = RPCResponse('evict', key=rpc.key)
             elif rpc.operation == 'get':
-                data = self.get(rpc.key)
-                response = RPCResponse(
-                    'get',
-                    key=rpc.key,
-                    size=rpc.size,
-                    data=data,
-                )
+                data = self.get(rpc.key.obj_id)
+                response = RPCResponse('get', key=rpc.key, data=data)
             elif rpc.operation == 'put':
                 assert rpc.data is not None
-                self.put(rpc.key, rpc.data)
-                response = RPCResponse('put', key=rpc.key, size=rpc.size)
+                self.put(rpc.key.obj_id, rpc.data)
+                response = RPCResponse('put', key=rpc.key)
             else:
                 raise AssertionError('Unreachable.')
         except Exception as e:
-            response = RPCResponse(
-                rpc.operation,
-                key=rpc.key,
-                size=rpc.size,
-                exception=e,
-            )
+            response = RPCResponse(rpc.operation, key=rpc.key, exception=e)
         return response
 
 
