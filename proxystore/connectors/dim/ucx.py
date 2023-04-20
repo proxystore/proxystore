@@ -405,78 +405,6 @@ class UCXServer:
         await ep.send_obj(message)
 
 
-def reset_ucp() -> None:  # pragma: no cover
-    """Hard reset all of UCP.
-
-    UCP provides `ucp.reset()`; however, this function does not correctly
-    shutdown all asyncio tasks and readers. This function wraps
-    `ucp.reset()` and additionally removes all readers on the event loop
-    and cancels/awaits all asyncio tasks.
-    """
-
-    def inner_context() -> None:
-        ctx = ucp.core._get_ctx()
-
-        for task in ctx.progress_tasks:
-            if task is None:
-                continue
-            task.event_loop.remove_reader(ctx.epoll_fd)
-            if task.asyncio_task is not None:
-                try:
-                    task.asyncio_task.cancel()
-                    task.event_loop.run_until_complete(task.asyncio_task)
-                except asyncio.CancelledError:
-                    pass
-
-    # We access ucp.core._get_ctx() inside this nested function so our local
-    # reference to the UCP context goes out of scope before calling
-    # ucp.reset(). ucp.reset() will fail if there are any weak references to
-    # to the UCP context because it assumes those may be Listeners or
-    # Endpoints that were not properly closed.
-    inner_context()
-
-    try:
-        ucp.reset()
-    except ucp.UCXError:
-        pass
-
-
-async def reset_ucp_async() -> None:  # pragma: no cover
-    """Hard reset all of UCP.
-
-    UCP provides `ucp.reset()`; however, this function does not correctly
-    shutdown all asyncio tasks and readers. This function wraps
-    `ucp.reset()` and additionally removes all readers on the event loop
-    and cancels/awaits all asyncio tasks.
-    """
-
-    async def inner_context() -> None:
-        ctx = ucp.core._get_ctx()
-
-        for task in ctx.progress_tasks:
-            if task is None:
-                continue
-            task.event_loop.remove_reader(ctx.epoll_fd)
-            if task.asyncio_task is not None:
-                try:
-                    task.asyncio_task.cancel()
-                    await task.asyncio_task
-                except asyncio.CancelledError:
-                    pass
-
-    # We access ucp.core._get_ctx() inside this nested function so our local
-    # reference to the UCP context goes out of scope before calling
-    # ucp.reset(). ucp.reset() will fail if there are any weak references to
-    # to the UCP context because it assumes those may be Listeners or
-    # Endpoints that were not properly closed.
-    await inner_context()
-
-    try:
-        ucp.reset()
-    except ucp.UCXError:
-        pass
-
-
 async def run_server(port: int) -> None:
     """Listen and reply to RPCs from clients.
 
@@ -500,7 +428,6 @@ async def run_server(port: int) -> None:
 
     while not ucp_listener.closed():
         sleep(0.001)
-    await reset_ucp_async()
 
 
 def start_server(port: int) -> None:

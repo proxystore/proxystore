@@ -8,9 +8,9 @@ from typing import Any
 from unittest import mock
 
 if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
+    pass
 else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
+    pass
 
 import pytest
 
@@ -72,13 +72,7 @@ def test_run_mocked_server() -> None:
     mock_loop.create_future = mock.MagicMock()
     mock_loop.create_future.return_value = _Future()
 
-    with mock.patch(
-        'asyncio.get_running_loop',
-        return_value=mock_loop,
-    ), mock.patch(
-        'proxystore.connectors.dim.ucx.reset_ucp_async',
-        AsyncMock(),
-    ):
+    with mock.patch('asyncio.get_running_loop', return_value=mock_loop):
         asyncio.run(run_server(open_port()))
 
 
