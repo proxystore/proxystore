@@ -356,6 +356,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/guides/endpoints-debugging/</loc>
+         <lastmod>2023-04-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/guides/endpoints/</loc>
          <lastmod>2023-04-20</lastmod>
          <changefreq>daily</changefreq>

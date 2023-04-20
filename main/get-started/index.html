@@ -636,7 +636,21 @@
   
     <li class="md-nav__item">
       <a href="../guides/endpoints/" class="md-nav__link">
-        Endpoints
+        Endpoints Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/endpoints-debugging/" class="md-nav__link">
+        Endpoints Debugging
       </a>
     </li>
   
@@ -650,7 +664,7 @@
   
     <li class="md-nav__item">
       <a href="../guides/performance/" class="md-nav__link">
-        Performance
+        Performance Tracking
       </a>
     </li>
   
@@ -1790,19 +1804,16 @@
 
 
 <h1 id="get-started">Get Started<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h1>
-<figure>
-<p><img alt="ProxyStore Overview" src="../static/overview.png" width="100%" />
-  </p>
-<figcaption width="100%">
-  ProxyStore allows developers to communicate objects via *proxies*. Proxies
-  act as lightweight references that resolve to a *target* object upon use.
-  Communication via proxies gives applications the illusion that objects
-  are moving through a specified path (e.g., through a network
-  socket, cloud server, workflow engine, etc.) while the true path the data
-  takes is different. Transporting the lightweight proxies through the
-  application or systems can be far more efficient and reduce overheads.
-  </figcaption>
-</figure>
+<p><img alt="ProxyStore Overview" src="../static/proxystore-overview.svg" style="display: block; margin: 0 auto" width="75%" /></p>
+<blockquote>
+<p><strong>Figure 1:</strong> ProxyStore allows developers to communicate objects via <em>proxies</em>.
+Proxies act as lightweight references that resolve to a <em>target</em> object upon use.
+Communication via proxies gives applications the illusion that objects are
+moving through a specified path (e.g., through a network socket, cloud
+server, workflow engine, etc.) while the true path the data takes is
+different. Transporting the lightweight proxies through the application or
+systems can be far more efficient and reduce overheads.</p>
+</blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>ProxyStore provides a unique interface to object stores through transparent
 object proxies that is designed to simplify the use of object stores for
