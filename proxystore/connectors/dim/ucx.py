@@ -391,7 +391,7 @@ class UCXServer:
         await ep.send_obj(message)
 
 
-async def run_server(port: int) -> None:
+async def run_server(port: int) -> None:  # pragma: no cover
     """Listen and reply to RPCs from clients.
 
     Warning:

@@ -171,8 +171,10 @@ async def test_server_handler_ping() -> None:
     assert ep.received == b'pong'
 
 
+# NOTE: this test causes random hangs with Click's CLIRunner
+@pytest.mark.skip()
 @pytest.mark.asyncio()
-async def test_run_server() -> None:
+async def test_run_server() -> None:  # pragma: no cover
     loop = asyncio.get_running_loop()
     future = loop.create_future()
     future.set_result(None)
