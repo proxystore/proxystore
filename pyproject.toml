@@ -138,6 +138,8 @@ filterwarnings = [
     "ignore::cryptography.utils.CryptographyDeprecationWarning",
     "ignore::proxystore.warnings.ExperimentalWarning",
     "ignore::DeprecationWarning:proxystore.*",
+    "ignore::DeprecationWarning:testing.*",
+    "ignore::DeprecationWarning:tests.*",
 ]
 markers = [
     "integration: mark a test as an integration test.",
