@@ -3,11 +3,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from proxystore.connectors.dim.rpc import RPC
+from proxystore.connectors.dim.rpc import RPCResponse
 from proxystore.serialize import deserialize
-from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
-data = {}
+data: dict[str, bytes] = {}
 
 
 class Lib:
@@ -29,69 +30,57 @@ _libs = Lib()
 
 
 class MockEndpoint:
-    """Mock Endpoint."""
+    """Mock Endpoint.
 
-    last_event: str
-    key: str
-    response: str | int
-    req: Any
-    server: Any
-    is_closed: bool
+    This class mocks all the expected behavior of the UCXServer
+    on the client side.
+    """
 
-    def __init__(self, server=False):
-        self.key = ''
-        self.last_event = ''
-        self.response = ''
-        self.req = None
+    def __init__(self, server: bool = False):
+        self.last_rpc: RPC | None = None
         self.server = server
         self.is_closed = False
+        self.ping = False
 
-    async def send_obj(self, req: Any) -> None:
+    async def send_obj(self, payload: bytes) -> None:
         """Mock the `ucp.send_obj` function.
 
         Args:
-            req: The object to communicate.
+            payload: The serialized object communicated.
         """
-        self.req = None
-        if self.server:
-            self.req = req
-            return self.req
+        if payload == b'ping':
+            self.ping = True
+            return
 
-        try:
-            event = deserialize(req)
-        except SerializationError:
-            event = {}
-            event['op'] = 'exists'
-            event['key'] = ''
-            self.response = 1
+        rpc = deserialize(payload)
 
-        if event['op'] == 'set':
-            data[event['key']] = event['data']
+        if rpc.operation == 'evict':
+            data.pop(rpc.key, None)
+        elif rpc.operation == 'put':
+            data[rpc.key] = rpc.data
 
-        self.key = event['key']
-        self.last_event = event['op']
+        self.last_rpc = rpc
 
-    async def recv_obj(self) -> Any:
+    async def recv_obj(self) -> bytes:
         """Mock the `ucp.recv_obj` function."""
-        from proxystore.connectors.dim.utils import Status
+        if self.ping:
+            self.ping = False
+            return b'pong'
 
-        if self.req is not None:
-            return self.req
+        if self.last_rpc is None:
+            raise AssertionError('Called recv_obj before send_obj.')
 
-        if self.last_event == 'get':
-            try:
-                return data[self.key]
-            except KeyError as e:
-                return serialize(Status(success=False, error=e))
-        elif self.last_event == 'exists':
-            if self.key != '':
-                return serialize(self.key in data)
-            else:
-                return self.response
-        elif self.last_event == 'evict':
-            data.pop(self.key, None)
-            return serialize(Status(success=True, error=None))
-        return serialize(True)
+        response = RPCResponse(
+            operation=self.last_rpc.operation,
+            key=self.last_rpc.key,
+            size=self.last_rpc.size,
+        )
+        if response.operation == 'exists':
+            response.exists = response.key in data
+        elif response.operation == 'get':
+            response.data = data.get(response.key, None)
+
+        return serialize(response)
 
     async def close(self) -> None:
         """Mock close implementation."""
@@ -128,14 +117,10 @@ def create_listener(handler: Any, port: int) -> Any:
     Args:
         handler: The communication handler.
         port: The communication port.
-
     """
     return Listener()
 
 
-async def create_endpoint(
-    host: str,
-    port: int,
-) -> MockEndpoint:
+async def create_endpoint(host: str, port: int) -> MockEndpoint:
     """Create endpoint mock implementation."""
     return MockEndpoint()

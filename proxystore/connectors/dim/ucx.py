@@ -430,7 +430,7 @@ async def run_server(port: int) -> None:
         sleep(0.001)
 
 
-def start_server(port: int) -> None:
+def start_server(port: int) -> None:  # pragma: no cover
     """Run a local server.
 
     Note:
