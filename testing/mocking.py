@@ -34,9 +34,9 @@ def async_mock_once(
 @contextlib.contextmanager
 def mock_multiprocessing() -> Generator[None, None, None]:
     """Mock `Process.{start,join,terminate}`."""
-    with mock.patch('multiprocessing.Process.start'), mock.patch(
-        'multiprocessing.Process.join',
+    with mock.patch('multiprocessing.process.BaseProcess.start'), mock.patch(
+        'multiprocessing.process.BaseProcess.join',
     ), mock.patch(
-        'multiprocessing.Process.terminate',
+        'multiprocessing.process.BaseProcess.terminate',
     ):
         yield

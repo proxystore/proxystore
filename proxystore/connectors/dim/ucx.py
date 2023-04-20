@@ -72,7 +72,7 @@ class UCXConnector:
         self.host = get_ip_address(interface)
         self.addr = f'{self.host}:{self.port}'
 
-        self.server: multiprocessing.Process | None
+        self.server: multiprocessing.context.SpawnProcess | None
         try:
             logger.info(
                 f'Connecting to local server (address={self.addr})...',
@@ -439,7 +439,7 @@ def spawn_server(
     *,
     spawn_timeout: float = 5.0,
     kill_timeout: float | None = 1.0,
-) -> multiprocessing.Process:
+) -> multiprocessing.context.SpawnProcess:
     """Spawn a local server running in a separate process.
 
     Note:
@@ -485,8 +485,7 @@ def spawn_server(
         f'Server started (host={host}, port={port}, pid={server_process.pid})',
     )
 
-    # Technically this is SpawnProcess type and not Process type
-    return server_process  # type: ignore[return-value]
+    return server_process
 
 
 async def wait_for_server_async(
