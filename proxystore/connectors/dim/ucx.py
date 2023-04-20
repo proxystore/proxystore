@@ -414,6 +414,9 @@ async def run_server(port: int) -> None:
     while not ucp_listener.closed():
         await asyncio.sleep(0.001)
 
+    loop.remove_signal_handler(signal.SIGINT)
+    loop.remove_signal_handler(signal.SIGTERM)
+
     # UCP does reference counting of open resources
     del ucp_listener
     await reset_ucp_async()

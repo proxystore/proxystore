@@ -177,7 +177,7 @@ async def test_run_server() -> None:
     future = loop.create_future()
     future.set_result(None)
 
-    with mock.patch.object(loop, 'add_signal_handler'), mock.patch.object(
+    with mock.patch.object(
         loop,
         'create_future',
         return_value=future,
