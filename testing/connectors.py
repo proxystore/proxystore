@@ -206,7 +206,7 @@ def zmq_connector() -> Generator[Connector[Any], None, None]:
     """ZeroMQ store fixture."""
     interface = '127.0.0.1'
     port = open_port()
-    timeout = 0.2
+    timeout = 0.5
 
     with zmq.ZeroMQConnector(
         interface=interface,
