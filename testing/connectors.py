@@ -41,9 +41,8 @@ FIXTURE_LIST = [
     'multi_connector',
     'redis_connector',
     'margo_connector',
-    'zmq_connector',
-    # UCX does something strange that causes it to hang if before ZMQ
     'ucx_connector',
+    'zmq_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
@@ -199,7 +198,7 @@ def ucx_connector() -> Generator[Connector[Any], None, None]:
     if (
         ucp_spec is not None and 'mocked' not in ucp_spec.name
     ):  # pragma: no cover
-        ucx.reset_ucp()
+        connector._loop.run_until_complete(ucx.reset_ucp_async())
 
 
 @pytest.fixture(scope='session')

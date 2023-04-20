@@ -6,8 +6,9 @@ from unittest import mock
 import pytest
 
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
-from proxystore.connectors.dim.rpc import RPC
-from proxystore.connectors.dim.rpc import RPCResponse
+from proxystore.connectors.dim.models import DIMKey
+from proxystore.connectors.dim.models import RPC
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.connectors.dim.zmq import wait_for_server
 from proxystore.connectors.dim.zmq import ZeroMQConnector
 from proxystore.connectors.dim.zmq import ZeroMQServer
@@ -16,6 +17,13 @@ from testing.compat import randbytes
 from testing.utils import open_port
 
 TIMEOUT = 0.2
+TEST_KEY = DIMKey(
+    'zmq',
+    obj_id='key',
+    size=0,
+    peer_host='localhost',
+    peer_port=0,
+)
 
 
 def test_wait_for_server() -> None:
@@ -60,7 +68,7 @@ def test_multiple_connectors() -> None:
 def test_server_errors() -> None:
     server = ZeroMQServer()
 
-    rpc = RPC('exists', key='key', size=1)
+    rpc = RPC('exists', key=TEST_KEY)
     with mock.patch.object(server, 'exists', side_effect=RuntimeError('xyz')):
         response = server.handle_rpc(rpc)
         assert response.exception is not None
@@ -70,11 +78,10 @@ def test_server_errors() -> None:
 def test_handle_server_error_responses(zmq_connector: ZeroMQConnector) -> None:
     connector = ZeroMQConnector.from_config(zmq_connector.config())
 
-    rpc = RPC('exists', key='key', size=1)
+    rpc = RPC('exists', TEST_KEY)
     response = RPCResponse(
         'exists',
-        key='key',
-        size=1,
+        key=TEST_KEY,
         exception=RuntimeError('xyz'),
     )
     with mock.patch.object(
