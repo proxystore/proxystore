@@ -75,22 +75,23 @@ def test_server_errors() -> None:
         assert 'xyz' in str(response.exception)
 
 
-def test_handle_server_error_responses(zmq_connector: ZeroMQConnector) -> None:
-    connector = ZeroMQConnector.from_config(zmq_connector.config())
-
+def test_handle_server_error_responses() -> None:
     rpc = RPC('exists', TEST_KEY)
     response = RPCResponse(
         'exists',
         key=TEST_KEY,
         exception=RuntimeError('xyz'),
     )
-    with mock.patch.object(
-        connector.socket,
-        'send_multipart',
-    ), mock.patch.object(
-        connector.socket,
-        'recv_multipart',
-        return_value=[serialize(response)],
-    ):
-        with pytest.raises(RuntimeError, match='xyz'):
-            connector._send_rpcs([rpc])
+
+    port = open_port()
+    with ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT) as connector:
+        with mock.patch.object(
+            connector.socket,
+            'send_multipart',
+        ), mock.patch.object(
+            connector.socket,
+            'recv_multipart',
+            return_value=[serialize(response)],
+        ):
+            with pytest.raises(RuntimeError, match='xyz'):
+                connector._send_rpcs([rpc])
