@@ -91,7 +91,7 @@ class MargoConnector:
 
     host: str
     addr: str
-    protocol: Protocol
+    protocol: str
     engine: Engine
     _mochi_addr: Address
     _rpcs: dict[str, RemoteFunction]
@@ -102,7 +102,7 @@ class MargoConnector:
         self,
         interface: str,
         port: int,
-        protocol: Protocol = Protocol.OFI_VERBS,
+        protocol: Protocol | str = Protocol.OFI_VERBS,
     ) -> None:
         global server_process
         global client_pids
@@ -113,7 +113,9 @@ class MargoConnector:
         if pymargo_import_error is not None:  # pragma: no cover
             raise pymargo_import_error
 
-        self.protocol = protocol
+        self.protocol = (
+            protocol if isinstance(protocol, str) else protocol.value
+        )
 
         self.interface = interface
         self.host = get_ip_address(interface)

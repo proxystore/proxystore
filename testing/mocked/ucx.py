@@ -90,7 +90,7 @@ class MockEndpoint:
         return self.is_closed
 
 
-class Listener:
+class Listener:  # pragma: no cover
     """Mock listener implementation."""
 
     called: bool
@@ -110,7 +110,7 @@ class Listener:
         return True
 
 
-def create_listener(handler: Any, port: int) -> Any:
+def create_listener(handler: Any, port: int) -> Any:  # pragma: no cover
     """Create_listener mock implementation.
 
     Args:

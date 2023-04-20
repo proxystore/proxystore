@@ -434,6 +434,9 @@ async def run_server(
                 list(utils.chunk_bytes(message, chunk_length)),
             )
 
+    loop.remove_signal_handler(signal.SIGINT)
+    loop.remove_signal_handler(signal.SIGTERM)
+
     socket.close()
     context.term()
 

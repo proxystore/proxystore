@@ -391,7 +391,7 @@ class UCXServer:
         await ep.send_obj(message)
 
 
-async def run_server(port: int) -> None:
+async def run_server(port: int) -> None:  # pragma: no cover
     """Listen and reply to RPCs from clients.
 
     Warning:
@@ -413,6 +413,9 @@ async def run_server(port: int) -> None:
 
     while not ucp_listener.closed():
         await asyncio.sleep(0.001)
+
+    loop.remove_signal_handler(signal.SIGINT)
+    loop.remove_signal_handler(signal.SIGTERM)
 
     # UCP does reference counting of open resources
     del ucp_listener
@@ -546,7 +549,7 @@ def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
     asyncio.run(wait_for_server_async(host, port, timeout))
 
 
-async def reset_ucp_async() -> None:  # pragma: no cover
+async def reset_ucp_async(reset_ucp: bool = True) -> None:  # pragma: no cover
     """Hard reset all of UCP.
 
     UCP provides `ucp.reset()`; however, this function does not correctly
@@ -566,7 +569,9 @@ async def reset_ucp_async() -> None:  # pragma: no cover
                 try:
                     task.asyncio_task.cancel()
                     await task.asyncio_task
-                except asyncio.CancelledError:
+                # A RuntimeError can happen if the task if from a different
+                # event loop. We'll just skip these for now
+                except (asyncio.CancelledError, RuntimeError):
                     pass
 
     # We access ucp.core._get_ctx() inside this nested function so our local
@@ -576,7 +581,8 @@ async def reset_ucp_async() -> None:  # pragma: no cover
     # Endpoints that were not properly closed.
     await inner_context()
 
-    try:
-        ucp.reset()
-    except ucp.UCXError:
-        pass
+    if reset_ucp:
+        try:
+            ucp.reset()
+        except ucp.UCXError:
+            pass

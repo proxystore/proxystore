@@ -306,6 +306,9 @@ async def serve(
         logger.info('Use ctrl-C to stop')
         await stop
 
+    loop.remove_signal_handler(signal.SIGINT)
+    loop.remove_signal_handler(signal.SIGTERM)
+
     logger.info('Server closed')
 
 
