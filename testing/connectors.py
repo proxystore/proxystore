@@ -41,9 +41,8 @@ FIXTURE_LIST = [
     'multi_connector',
     'redis_connector',
     'margo_connector',
-    'zmq_connector',
-    # UCX does something strange that causes it to hang if before ZMQ
     'ucx_connector',
+    'zmq_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
