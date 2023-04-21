@@ -203,7 +203,7 @@ def test_mocked_spawn_server() -> None:
 
 
 # This test will hang when run in the Docker image
-@pytest.mark.skip
+@pytest.mark.skip()
 @pytest.mark.skipif(
     UCP_SPEC is not None and 'mock' in UCP_SPEC.name,
     reason='Not compatible with mocked UCP module.',
