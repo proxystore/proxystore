@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import os
+import platform
 import random
 from typing import Any
 from typing import Callable
@@ -206,7 +207,12 @@ def zmq_connector() -> Generator[Connector[Any], None, None]:
     """ZeroMQ store fixture."""
     interface = '127.0.0.1'
     port = open_port()
-    timeout = 0.5
+
+    if platform.system() == 'Darwin':  # pragma: no cover
+        # MacOS GitHub Actions runners are slow
+        timeout = 1.0
+    else:  # pragma: no cover
+        timeout = 0.5
 
     with zmq.ZeroMQConnector(
         interface=interface,

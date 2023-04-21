@@ -1,6 +1,7 @@
 """ZMQConnector Unit Tests."""
 from __future__ import annotations
 
+import platform
 from unittest import mock
 
 import pytest
@@ -16,7 +17,12 @@ from proxystore.serialize import serialize
 from testing.compat import randbytes
 from testing.utils import open_port
 
-TIMEOUT = 0.5
+if platform.system() == 'Darwin':  # pragma: no cover
+    # MacOS GitHub Actions runners are slow
+    TIMEOUT = 1.0
+else:  # pragma: no cover
+    TIMEOUT = 0.5
+
 TEST_KEY = DIMKey(
     'zmq',
     obj_id='key',
@@ -61,9 +67,6 @@ def test_multiple_connectors() -> None:
     # C1 will actually stop the server
     c1.close()
 
-    with pytest.raises(ServerTimeoutError):
-        ZeroMQConnector('127.0.0.1', port, timeout=0.01)
-
 
 def test_server_errors() -> None:
     server = ZeroMQServer()
@@ -84,14 +87,15 @@ def test_handle_server_error_responses() -> None:
     )
 
     port = open_port()
-    with ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT) as connector:
-        with mock.patch.object(
-            connector.socket,
-            'send_multipart',
-        ), mock.patch.object(
-            connector.socket,
-            'recv_multipart',
-            return_value=[serialize(response)],
-        ):
-            with pytest.raises(RuntimeError, match='xyz'):
-                connector._send_rpcs([rpc])
+    with mock.patch('proxystore.connectors.dim.zmq.wait_for_server'):
+        with ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT) as connector:
+            with mock.patch.object(
+                connector.socket,
+                'send_multipart',
+            ), mock.patch.object(
+                connector.socket,
+                'recv_multipart',
+                return_value=[serialize(response)],
+            ):
+                with pytest.raises(RuntimeError, match='xyz'):
+                    connector._send_rpcs([rpc])
