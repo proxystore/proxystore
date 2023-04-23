@@ -2,7 +2,7 @@
 
 Configure a new environment to try out the example apps.
 ```
-$ virtualenv venv
+$ python -m venv venv  # or $ virtualenv venv
 $ . venv/bin/activate
 $ pip install -r examples/requirements.txt
 ```
