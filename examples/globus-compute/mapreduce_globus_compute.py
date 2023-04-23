@@ -1,4 +1,4 @@
-"""FuncX and ProxyStore example."""
+"""Globus Compute and ProxyStore example."""
 from __future__ import annotations
 
 import argparse
@@ -7,7 +7,7 @@ import time
 from typing import Any
 
 import numpy as np
-from funcx.sdk.executor import FuncXExecutor
+from globus_compute_sdk import Executor
 
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
@@ -16,16 +16,13 @@ from proxystore.connectors.redis import RedisConnector
 from proxystore.store import register_store
 from proxystore.store.base import Store
 
-# Note: types on function are not provided because FuncX has trouble
-# serializing them sometimes
 
-
-def app_double(x):  # type: ignore
+def app_double(x: np.ndarray) -> np.ndarray:
     """Doubles input array."""
     return 2 * x
 
 
-def app_sum(inputs):  # type: ignore
+def app_sum(inputs: np.ndarray) -> np.ndarray:
     """Sum all elements in list of arrays."""
     import numpy as np
 
@@ -40,13 +37,13 @@ def app_sum(inputs):  # type: ignore
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        description='MapReduce with FuncX and ProxyStore',
+        description='MapReduce with Globus Compute and ProxyStore',
     )
     parser.add_argument(
         '-e',
         '--endpoint',
         required=True,
-        help='FuncX endpoint for task execution',
+        help='Globus Compute endpoint for task execution',
     )
     parser.add_argument(
         '-n',
@@ -112,25 +109,22 @@ if __name__ == '__main__':
 
     start = time.perf_counter()
 
-    with FuncXExecutor(endpoint_id=args.endpoint) as fxe:
+    with Executor(endpoint_id=args.endpoint) as gce:
         futures = []
         for _ in range(args.num_arrays):
             x = np.random.rand(args.size, args.size)
             if store is not None:
                 x = store.proxy(x)
-            futures.append(fxe.submit(app_double, x))
+            futures.append(gce.submit(app_double, x))
 
         mapped_results = [future.result() for future in futures]
 
         if store is not None:
             mapped_results = store.proxy(mapped_results)
-        total = fxe.submit(app_sum, mapped_results).result()
+        total = gce.submit(app_sum, mapped_results).result()
 
     print(f'Sum: {total}')
     print(f'Time: {time.perf_counter() - start:.2f}')
 
     if store is not None:
-        if hasattr(store, 'cleanup'):
-            store.cleanup()
-        elif hasattr(store, 'close'):
-            store.close()
+        store.close()

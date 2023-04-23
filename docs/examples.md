@@ -1,7 +1,7 @@
 ## Integration Examples
 
 Examples of integrating ProxyStore into distributed applications built on
-[FuncX](https://funcx.org/){target=_blank} and [Parsl](https://parsl-project.org/){target=_blank} are on
+[Globus Compute](https://globus-compute.readthedocs.io){target=_blank} (formerly called funcX) and [Parsl](https://parsl-project.org/){target=_blank} are on
 [GitHub](https://github.com/proxystore/proxystore/tree/main/examples){target=_blank}.
 
 ## Benchmarks

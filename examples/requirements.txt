@@ -1,5 +1,5 @@
-funcx==1.0.10
-funcx-endpoint==1.0.10
-numpy==1.24.*
-parsl==2023.1.23
-proxystore==0.5.0
+globus-compute-sdk==2.0.1
+globus-compute-endpoint==2.0.1
+numpy
+parsl==2023.03.27
+proxystore[all]==0.5.*
