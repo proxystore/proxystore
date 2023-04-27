@@ -239,12 +239,15 @@ class GlobusEndpoints:
 
 
 class GlobusKey(NamedTuple):
-    """Key to object transferred with Globus."""
+    """Key to object transferred with Globus.
+
+    Attributes:
+        filename: Unique object filename.
+        task_id: Globus transfer task ID for the file.
+    """
 
     filename: str
-    """Unique object filename."""
     task_id: str
-    """Globus transfer task ID for the file."""
 
     def __eq__(self, other: Any) -> bool:
         """Match keys by filename only.

@@ -37,7 +37,17 @@ When a `ProxyT` is passed, the keys are extracted from the proxies.
 
 @dataclasses.dataclass
 class TimeStats:
-    """Tracks time statistics of a reoccuring event."""
+    """Tracks time statistics of a reoccuring event.
+
+    Attributes:
+        count: Number of times this event as occurred.
+        avg_time_ms: Average time in milliseconds of the event.
+        min_time_ms: Minimum time in milliseconds of all event occurrences.
+        max_time_ms: Maximum time in milliseconds of all event occurrences.
+        last_time_ms: Time in milliseconds of the most recent event occurrence.
+        last_timestamp: The UNIX timestamp (seconds) of when the last
+            event time was recorded.
+    """
 
     count: int = 0
     avg_time_ms: float = 0
@@ -88,7 +98,15 @@ class TimeStats:
 
 @dataclasses.dataclass
 class Metrics:
-    """Records metrics and attributes for events."""
+    """Records metrics and attributes for events.
+
+    Attributes:
+        attributes: A mapping of attributes to their values.
+        counters: A mapping of counter names to the integer value of the
+            counter.
+        times: A mapping of events to a summary of the statistics recorded
+            over occurrences of that event.
+    """
 
     attributes: dict[str, Any] = dataclasses.field(default_factory=dict)
     counters: dict[str, int] = dataclasses.field(default_factory=dict)

@@ -20,10 +20,13 @@ logger = logging.getLogger(__name__)
 
 
 class FileKey(NamedTuple):
-    """Key to objects in a file system directory."""
+    """Key to objects in a file system directory.
+
+    Attributes:
+        filename: Unique object filename.
+    """
 
     filename: str
-    """Unique object filename."""
 
 
 class FileConnector:
