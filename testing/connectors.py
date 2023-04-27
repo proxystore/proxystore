@@ -158,16 +158,19 @@ def margo_connector() -> Generator[Connector[Any], None, None]:
     margo_spec = importlib.util.find_spec('pymargo')
 
     ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
+    timeout = 1.0
     if (  # pragma: no branch
         margo_spec is not None and 'mocked' in margo_spec.name
     ):
         ctx = mock_multiprocessing
+        timeout = 0.01
 
     with ctx():
         connector = margo.MargoConnector(
             protocol=protocol,
             interface=host,
             port=port,
+            timeout=timeout,
         )
 
     yield connector

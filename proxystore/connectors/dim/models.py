@@ -13,7 +13,7 @@ else:  # pragma: <3.9 cover
 
 class DIMKey(NamedTuple):
     """Key to objects stored across `UCXConnector`s.
-    
+
     Attributes:
         dim_type: Type of DIM this key belongs to.
         obj_id: Unique object key.
