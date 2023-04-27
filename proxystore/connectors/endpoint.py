@@ -32,12 +32,15 @@ class EndpointConnectorError(Exception):
 
 
 class EndpointKey(NamedTuple):
-    """Key to object in an Endpoint."""
+    """Key to object in an Endpoint.
+
+    Attributes:
+        object_id: Unique object ID.
+        endpoint_id: Endpoint UUID where object is stored.
+    """
 
     object_id: str
-    """Unique object ID."""
     endpoint_id: str | None
-    """Endpoint UUID where object is stored."""
 
 
 class EndpointConnector:

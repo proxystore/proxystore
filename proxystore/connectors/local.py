@@ -18,10 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 class LocalKey(NamedTuple):
-    """Key to objects store in a `LocalConnector`."""
+    """Key to objects store in a `LocalConnector`.
+
+    Attributes:
+        id: Unique object ID.
+    """
 
     id: str
-    """Unique object ID."""
 
 
 class LocalConnector:

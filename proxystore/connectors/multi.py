@@ -54,26 +54,32 @@ class PolicyDict(TypedDict):
 
 @dataclasses.dataclass
 class Policy:
-    """Policy that allows validating a set of constraints."""
+    """Policy that allows validating a set of constraints.
+
+    Attributes:
+        priority: Priority for breaking ties between policies (higher is
+            preferred).
+        host_pattern: Pattern or iterable of patterns of valid hostnames.
+            The hostname returned by [`hostname()`][proxystore.utils.hostname]
+            is matched against `host_pattern` using
+            [`re.fullmatch()`][re.fullmatch]. If `host_pattern` is an iterable,
+            at least one of the patterns must match the hostname.
+        min_size_bytes: Minimum size in bytes allowed.
+        max_size_bytes: Maximum size in bytes allowed.
+        subset_tags: Subset tags. See
+            [`is_valid()`][proxystore.connectors.multi.Policy.is_valid] for
+            more details.
+        superset_tags: Superset tags. See
+            [`is_valid()`][proxystore.connectors.multi.Policy.is_valid] for
+            more details.
+    """
 
     priority: int = 0
-    """Priority for breaking ties between policies (higher is preferred)."""
     host_pattern: Iterable[str] | str | None = None
-    """Pattern or iterable of patterns of valid hostnames.
-
-    The hostname returned by [`hostname()`][proxystore.utils.hostname] is
-    matched against `host_pattern` using [`re.fullmatch()`][re.fullmatch]. If
-    `host_pattern` is an iterable, at least one of the patterns must match
-    the hostname.
-    """
     min_size_bytes: int = 0
-    """Minimum size in bytes allowed."""
     max_size_bytes: int = sys.maxsize
-    """Maximum size in bytes allowed."""
     subset_tags: list[str] = dataclasses.field(default_factory=list)
-    """Subset tags."""
     superset_tags: list[str] = dataclasses.field(default_factory=list)
-    """Superset tags."""
 
     def is_valid(
         self,
@@ -174,16 +180,20 @@ class MultiConnectorError(Exception):
 
 
 class MultiKey(NamedTuple):
-    """Key to objects in [`MultiConnector`][proxystore.connectors.multi.MultiConnector]."""  # noqa: E501
+    """Key to objects in [`MultiConnector`][proxystore.connectors.multi.MultiConnector].
+
+    Attributes:
+        connector_name: Name of connector that the associated object is
+            stored in.
+        connector_key: Key associated with the object.
+    """
 
     connector_name: str
-    """Name of connector that the associated object is stored in."""
     # Type this as Any because mypy has no way to tell statically what type
     # of key this is. In reality it is a NamedTuple. Otherwise you end up with
     # something like: Argument 1 to "exists" of "LocalConnector" has
     # incompatible type "NamedTuple"; expected "LocalKey"  [arg-type]
     connector_key: Any
-    """Key associated with the object."""
 
 
 class MultiConnector:

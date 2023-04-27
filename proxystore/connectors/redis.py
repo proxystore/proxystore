@@ -17,10 +17,13 @@ import redis
 
 
 class RedisKey(NamedTuple):
-    """Key to objects store in a Redis server."""
+    """Key to objects store in a Redis server.
+
+    Attributes:
+        redis_key: Unique object ID.
+    """
 
     redis_key: str
-    """Unique object ID."""
 
 
 class RedisConnector:
