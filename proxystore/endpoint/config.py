@@ -9,9 +9,9 @@ import uuid
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 
-_ENDPOINT_CONFIG_FILE = 'endpoint.json'
-_ENDPOINT_LOG_FILE = 'endpoint.log'
-_ENDPOINT_PID_FILE = 'daemon.pid'
+ENDPOINT_CONFIG_FILE = 'config.json'
+ENDPOINT_LOG_FILE = 'log.txt'
+ENDPOINT_PID_FILE = 'daemon.pid'
 
 
 @dataclasses.dataclass
@@ -121,7 +121,7 @@ def get_log_filepath(endpoint_dir: str) -> str:
     Returns:
         Path to log file.
     """
-    return os.path.join(endpoint_dir, _ENDPOINT_LOG_FILE)
+    return os.path.join(endpoint_dir, ENDPOINT_LOG_FILE)
 
 
 def get_pid_filepath(endpoint_dir: str) -> str:
@@ -133,7 +133,7 @@ def get_pid_filepath(endpoint_dir: str) -> str:
     Returns:
         Path to PID file.
     """
-    return os.path.join(endpoint_dir, _ENDPOINT_PID_FILE)
+    return os.path.join(endpoint_dir, ENDPOINT_PID_FILE)
 
 
 def read_config(endpoint_dir: str) -> EndpointConfig:
@@ -149,7 +149,7 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
         FileNotFoundError: If a config files does not exist in the directory.
         ValueError: If config contains an invalid value or cannot be parsed.
     """
-    path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
+    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
 
     if os.path.exists(path):
         with open(path) as f:
@@ -186,7 +186,7 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
         endpoint_dir: Directory to write config to.
     """
     os.makedirs(endpoint_dir, exist_ok=True)
-    path = os.path.join(endpoint_dir, _ENDPOINT_CONFIG_FILE)
+    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
     with open(path, 'w') as f:
         data = dataclasses.asdict(cfg)
         data['uuid'] = str(data['uuid'])

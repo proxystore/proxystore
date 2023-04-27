@@ -12,7 +12,7 @@ INFO: Configured endpoint myendpoint <f4dc841d-377e-4785-8d66-8eade34f63cd>. Sta
 INFO:   $ proxystore-endpoint start myendpoint
 $ proxystore-endpoint start myendpoint
 INFO: Starting endpoint process as daemon.
-INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/endpoint.log
+INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/log.txt
 ```
 
 ### Check Endpoint Logs
@@ -20,7 +20,7 @@ Endpoint logs are written to a directory in `$XDG_DATA_HOME/proxystore` which
 in this case is `~/.local/share/proxystore/myendpoint`
 (see [`home_dir()`][proxystore.utils.home_dir] for the full specification).
 ```bash
-$ tail -n 1 ~/.local/share/proxystore/myendpoint/endpoint.log
+$ tail -n 1 ~/.local/share/proxystore/myendpoint/log.txt
 INFO  (uvicorn.error) :: Uvicorn running on http://127.0.1.1:8766 (Press CTRL+C to quit)
 ```
 The logs are the first place to check for any potential issues.
@@ -65,8 +65,8 @@ with UUID `bbbbab4d-c73a-44ee-a316-58ec8857e83a`.
 Both endpoints must be connected to the same relay server to form a peer
 connection. First, check the `relay_server` value in the endpoint config is
 correct and not `null`.
-The endpoint config is found in the `endpoint.json` file in the endpoint
-directory (e.g., `~/.local/share/proxystore/myendpoint/endpoint.json`).
+The endpoint config is found in the `config.json` file in the endpoint
+directory (e.g., `~/.local/share/proxystore/myendpoint/config.json`).
 Restart your endpoints if you had to change the configuration.
 
 Second, confirm the endpoint connects to the relay server when started by

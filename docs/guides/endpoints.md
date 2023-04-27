@@ -72,6 +72,15 @@ or `$XDG_DATA_HOME/proxystore/{endpoint-name}`
 (see [`home_dir()`][proxystore.utils.home_dir]) and contain the name, UUID,
 host address, port, and singaling server address.
 
+!!! tip
+
+    By default, `$XDG_DATA_HOME/proxystore` will usually resolve to
+    `~/.local/share/proxystore`. You can change this behavior by setting
+    `$PROXYSTORE_HOME` in your `~/.bashrc` or similar configuration file.
+    ```bash
+    export PROXYSTORE_HOME="$HOME/.proxystore"
+    ```
+
 1. **Name:** readable name of the endpoint. Used for management in the CLI and
    to improve log readability.
 2. **UUID:** primary identifier of the endpoint. The relay server will
