@@ -2,7 +2,7 @@ A [`Store`][proxystore.store.base.Store] is initialized with a
 [`Connector`][proxystore.connectors.connector.Connector] instance and provides
 extra functionality. Similar to the
 [`Connector`][proxystore.connectors.connector.Connector], the
-[`Store`][proxystore.store.base.Store] exposes `evict`, `exist`, `get`, and `set`
+[`Store`][proxystore.store.base.Store] exposes `evict`, `exist`, `get`, and `put`
 operations; however, these operations act on Python objects rather than
 [`bytes`][bytes]. The [`Store`][proxystore.store.base.Store] will (de)serialize
 objects accordingly before invoking the corresponding operation on the
@@ -122,7 +122,7 @@ def serialize_torch_model(obj: Any) -> bytes:
 mymodel = torch.nn.Module()
 
 store = Store(...)
-key = store.set(mymodel, serializer=serialize_torch_model)
+key = store.put(mymodel, serializer=serialize_torch_model)
 ```
 
 Rather than providing a custom serializer or deserializer to each method

@@ -166,7 +166,7 @@ class Store(Generic[ConnectorT]):
 
         ```python
         with Store('my-store', connector=...) as store:
-            key = store.set('value')
+            key = store.put('value')
             store.get(key)
         ```
 
@@ -475,7 +475,7 @@ class Store(Generic[ConnectorT]):
             A proxy of the object.
         """
         with Timer() as timer:
-            key = self.set(obj, serializer=serializer, **kwargs)
+            key = self.put(obj, serializer=serializer, **kwargs)
             factory: StoreFactory[ConnectorT, T] = StoreFactory(
                 key,
                 store_config=self.config(),
@@ -519,7 +519,7 @@ class Store(Generic[ConnectorT]):
             A list of proxies of the objects.
         """
         with Timer() as timer:
-            keys = self.set_batch(objs, serializer=serializer, **kwargs)
+            keys = self.put_batch(objs, serializer=serializer, **kwargs)
             proxies: list[Proxy[T]] = [
                 self.proxy_from_key(
                     key,
@@ -600,7 +600,7 @@ class Store(Generic[ConnectorT]):
             ),
         )
 
-    def set(
+    def put(
         self,
         obj: Any,
         *,
@@ -641,18 +641,18 @@ class Store(Generic[ConnectorT]):
         if self.metrics is not None:
             ctime = connector_timer.elapsed_ns
             stime = serialize_timer.elapsed_ns
-            self.metrics.add_attribute('store.set.object_size', key, len(obj))
-            self.metrics.add_time('store.set.serialize', key, stime)
-            self.metrics.add_time('store.set.connector', key, ctime)
-            self.metrics.add_time('store.set', key, timer.elapsed_ns)
+            self.metrics.add_attribute('store.put.object_size', key, len(obj))
+            self.metrics.add_time('store.put.serialize', key, stime)
+            self.metrics.add_time('store.put.connector', key, ctime)
+            self.metrics.add_time('store.put', key, timer.elapsed_ns)
 
         logger.debug(
-            f'Store(name="{self.name}"): SET {key} in '
+            f'Store(name="{self.name}"): PUT {key} in '
             f'{timer.elapsed_ms:.3f} ms',
         )
         return key
 
-    def set_batch(
+    def put_batch(
         self,
         objs: Sequence[Any],
         *,
@@ -700,16 +700,16 @@ class Store(Generic[ConnectorT]):
             stime = serialize_timer.elapsed_ns
             sizes = sum(len(obj) for obj in _objs)
             self.metrics.add_attribute(
-                'store.set_batch.object_sizes',
+                'store.put_batch.object_sizes',
                 keys,
                 sizes,
             )
-            self.metrics.add_time('store.set_batch.serialize', keys, stime)
-            self.metrics.add_time('store.set_batch.connector', keys, ctime)
-            self.metrics.add_time('store.set_batch', keys, timer.elapsed_ns)
+            self.metrics.add_time('store.put_batch.serialize', keys, stime)
+            self.metrics.add_time('store.put_batch.connector', keys, ctime)
+            self.metrics.add_time('store.put_batch', keys, timer.elapsed_ns)
 
         logger.debug(
-            f'Store(name="{self.name}"): SET_BATCH ({len(keys)} items) in '
+            f'Store(name="{self.name}"): PUT_BATCH ({len(keys)} items) in '
             f'{timer.elapsed_ms:.3f} ms',
         )
         return keys

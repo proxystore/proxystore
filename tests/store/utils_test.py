@@ -14,7 +14,7 @@ from proxystore.store.utils import resolve_async
 
 def test_get_key_from_proxy() -> None:
     with LocalStore('store') as store:
-        key = store.set('value')
+        key = store.put('value')
         proxy: Proxy[str] = store.proxy_from_key(key)
 
         assert get_key(proxy) == key
