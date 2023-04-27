@@ -10,6 +10,7 @@ import uuid
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 
 ENDPOINT_CONFIG_FILE = 'config.json'
+ENDPOINT_DATABASE_FILE = 'data.db'
 ENDPOINT_LOG_FILE = 'log.txt'
 ENDPOINT_PID_FILE = 'daemon.pid'
 
@@ -24,10 +25,10 @@ class EndpointConfig:
         host: Host endpoint is running on.
         port: Port endpoint is running on.
         relay_server: Optional relay server the endpoint should register with.
-        max_memory: Optional memory limit before demoting objects to disk.
+        database_path: Optional path to SQLite database file that will be used
+            for storing endpoint data. If `None`, data will only be stored
+            in-memory.
         max_object_size: Optional maximum object size.
-        dump_dir: Optional directory to put objects in when `max_memory` is
-            exceeded.
         peer_channels: Number of peer channels to multiplex communications
             over.
         verify_certificates: Validate the SSL certificates of the `relay`
@@ -44,9 +45,8 @@ class EndpointConfig:
     host: str | None
     port: int
     relay_server: str | None = None
-    max_memory: int | None = None
+    database_path: str | None = None
     max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT
-    dump_dir: str | None = None
     peer_channels: int = 1
     verify_certificate: bool = True
 
@@ -72,8 +72,6 @@ class EndpointConfig:
             raise ValueError(
                 'Server must start with ws:// or wss://.',
             )
-        if self.max_memory is not None and self.max_memory < 1:
-            raise ValueError('Max memory must be None or greater than zero.')
         if self.max_object_size is not None and self.max_object_size < 1:
             raise ValueError(
                 'Max object size must be None or greater than zero.',

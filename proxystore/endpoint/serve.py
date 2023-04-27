@@ -109,7 +109,12 @@ def serve(
     kwargs.pop('host', None)
     kwargs.pop('port', None)
 
-    endpoint = Endpoint(**kwargs)
+    database_path = kwargs.pop('database_path', None)
+    if database_path is not None:
+        raise AssertionError('database_path is not supported yet.')
+    storage = database_path
+
+    endpoint = Endpoint(**kwargs, storage=storage)
     app = create_app(endpoint)
 
     if use_uvloop:  # pragma: no cover

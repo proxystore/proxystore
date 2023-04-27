@@ -107,32 +107,24 @@ def version() -> None:
     help='Optional relay server address.',
 )
 @click.option(
-    '--max-memory',
-    default=None,
-    type=int,
-    metavar='BYTES',
-    help='Optional maximum memory to use.',
-)
-@click.option(
-    '--dump-dir',
-    default=None,
-    metavar='PATH',
-    help='Directory to dump object to if max-memory exceeded.',
-)
-@click.option(
     '--peer-channels',
     default=1,
     type=int,
     metavar='COUNT',
     help='Datachannels to use per peer connection.',
 )
+@click.option(
+    '--persist/--no-persist',
+    default=False,
+    metavar='BOOL',
+    help='Optionally persist data to a database.',
+)
 def configure(
     name: str,
     port: int,
     relay_server: str,
-    max_memory: int | None,
-    dump_dir: str | None,
     peer_channels: int,
+    persist: bool,
 ) -> None:
     """Configure a new endpoint."""
     raise SystemExit(
@@ -140,9 +132,8 @@ def configure(
             name,
             port=port,
             relay_server=relay_server,
-            max_memory=max_memory,
-            dump_dir=dump_dir,
             peer_channels=peer_channels,
+            persist_data=persist,
         ),
     )
 

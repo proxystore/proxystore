@@ -118,7 +118,6 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'relay_server': 'wss://'}, True),
         ({'relay_server': ''}, False),
         ({'relay_server': 'https://'}, False),
-        ({'max_memory': -1}, False),
         ({'peer_channels': 1}, True),
         ({'peer_channels': 0}, False),
         ({'max_object_size': 0}, False),

@@ -21,6 +21,7 @@ import daemon.pidfile
 import psutil
 
 from proxystore import utils
+from proxystore.endpoint.config import ENDPOINT_DATABASE_FILE
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
@@ -101,9 +102,8 @@ def configure_endpoint(
     port: int,
     relay_server: str | None,
     proxystore_dir: str | None = None,
-    max_memory: int | None = None,
-    dump_dir: str | None = None,
     peer_channels: int = 1,
+    persist_data: bool = False,
 ) -> int:
     """Configure a new endpoint.
 
@@ -113,17 +113,24 @@ def configure_endpoint(
         relay_server: Optional relay server address for P2P endpoint connections.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.home_dir].
-        max_memory: Optional max memory in bytes to use for storing
-            objects. If exceeded, LRU objects will be dumped to `dump_dir`.
-        dump_dir: Optional directory to dump objects to if the
-            memory limit is exceeded.
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
+        persist_data: Persist data stored in the endpoint.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
+    if proxystore_dir is None:
+        proxystore_dir = home_dir()
+    endpoint_dir = os.path.join(proxystore_dir, name)
+
+    database_path = (
+        os.path.join(endpoint_dir, ENDPOINT_DATABASE_FILE)
+        if persist_data
+        else None
+    )
+
     try:
         cfg = EndpointConfig(
             name=name,
@@ -131,17 +138,12 @@ def configure_endpoint(
             host=None,
             port=port,
             relay_server=relay_server,
-            max_memory=max_memory,
-            dump_dir=dump_dir,
+            database_path=database_path,
             peer_channels=peer_channels,
         )
     except ValueError as e:
         logger.error(str(e))
         return 1
-
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-    endpoint_dir = os.path.join(proxystore_dir, name)
 
     if os.path.exists(endpoint_dir):
         logger.error(f'An endpoint named {name} already exists.')

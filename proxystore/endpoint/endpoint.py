@@ -11,16 +11,19 @@ from uuid import UUID
 from uuid import uuid4
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
-from proxystore.endpoint.storage import EndpointStorage
+from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import Storage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
+from proxystore.utils import bytes_to_readable
 
 logger = logging.getLogger(__name__)
 
@@ -112,16 +115,14 @@ class Endpoint:
         relay_server: Address of relay server used for peer-to-peer
             connections between endpoints. If None, endpoint will not be able
             to communicate with other endpoints.
-        peer_timeout: Timeout for establishing p2p connection with
-            another endpoint.
-        max_memory: Optional max memory in bytes to use for storing
-            objects. If exceeded, LRU objects will be dumped to `dump_dir`.
         max_object_size: Optional max size in bytes for any single
             object stored by the endpoint. If exceeded, an error is raised.
-        dump_dir: Optional directory to dump objects to if the
-            memory limit is exceeded.
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
+        peer_timeout: Timeout for establishing p2p connection with
+            another endpoint.
+        storage: Storage interface to use. If `None`,
+            [`DictStorage`][proxystore.endpoint.storage.DictStorage] is used.
         verify_certificate: Verify the relay server's SSL
             certificate. This should almost never be disabled except for
             testing with self-signed certificates.
@@ -132,39 +133,31 @@ class Endpoint:
         name: str,
         uuid: UUID,
         relay_server: str | None = None,
-        peer_timeout: int = 30,
-        max_memory: int | None = None,
+        *,
         max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
-        dump_dir: str | None = None,
         peer_channels: int = 1,
+        peer_timeout: int = 30,
+        storage: Storage | None = None,
         verify_certificate: bool = True,
     ) -> None:
-        # TODO(gpauloski): need to consider semantics of operations
-        #   - can all ops be triggered on remote?
-        #   - or just get? do we move data permanently on get? etc...
         self._name = name
         self._uuid = uuid
         self._relay_server = relay_server
-        self._peer_timeout = peer_timeout
+        self._max_object_size = max_object_size
         self._peer_channels = peer_channels
+        self._peer_timeout = peer_timeout
         self._verify_certificate = verify_certificate
+
+        self._storage = DictStorage() if storage is None else storage
 
         self._mode = (
             EndpointMode.SOLO if relay_server is None else EndpointMode.PEERING
         )
-
         self._peer_manager: PeerManager | None = None
-
-        self._data = EndpointStorage(
-            max_size=max_memory,
-            max_object_size=max_object_size,
-            dump_dir=dump_dir,
-        )
         self._pending_requests: dict[
             str,
             asyncio.Future[EndpointRequest],
         ] = {}
-
         self._async_init_done = False
         self._peer_handler_task: asyncio.Task[None] | None = None
 
@@ -354,8 +347,7 @@ class Endpoint:
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
         else:
-            if key in self._data:
-                del self._data[key]
+            await self._storage.evict(key)
 
     async def exists(self, key: str, endpoint: UUID | None = None) -> bool:
         """Check if key exists on endpoint.
@@ -388,7 +380,7 @@ class Endpoint:
             assert isinstance(response.exists, bool)
             return response.exists
         else:
-            return key in self._data
+            return await self._storage.exists(key)
 
     async def get(
         self,
@@ -424,10 +416,7 @@ class Endpoint:
             response = await request_future
             return response.data
         else:
-            if key in self._data:
-                return self._data[key]
-            else:
-                return None
+            return await self._storage.get(key, None)
 
     async def set(
         self,
@@ -452,6 +441,7 @@ class Endpoint:
         logger.debug(
             f'{self._log_prefix}: SET key={key} on endpoint={endpoint}',
         )
+
         if self._is_peer_request(endpoint):
             assert endpoint is not None
             request = EndpointRequest(
@@ -463,8 +453,17 @@ class Endpoint:
             )
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
+        elif (
+            self._max_object_size is not None
+            and len(data) > self._max_object_size
+        ):
+            raise ObjectSizeExceededError(
+                f'Bytes value has size {bytes_to_readable(len(data))} which '
+                f'exceeds the {bytes_to_readable(self._max_object_size)} '
+                'object limit.',
+            )
         else:
-            self._data[key] = data
+            await self._storage.set(key, data)
 
     async def close(self) -> None:
         """Close the endpoint and any open connections safely."""
@@ -476,5 +475,5 @@ class Endpoint:
                 pass
         if self._peer_manager is not None:
             await self._peer_manager.close()
-        self._data.cleanup()
+        await self._storage.close()
         logger.info(f'{self._log_prefix}: endpoint closed')
