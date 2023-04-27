@@ -9,8 +9,8 @@ import os
 import uuid
 
 try:
-    import hypercorn
     import quart
+    import uvicorn
     import uvloop
     from quart import request
     from quart import Response
@@ -112,21 +112,30 @@ def serve(
     endpoint = Endpoint(**kwargs)
     app = create_app(endpoint)
 
-    serve_config = hypercorn.config.Config()
-    serve_config.bind = [f'{config.host}:{config.port}']
-    serve_config.accesslog = logging.getLogger('hypercorn.access')
-    serve_config.errorlog = logging.getLogger('hypercorn.error')
-
     if use_uvloop:  # pragma: no cover
         logger.info('Installing uvloop as default event loop')
         uvloop.install()
+    else:
+        logger.warning(
+            'Not installing uvloop. Uvicorn may override and install anyways',
+        )
+
+    server_config = uvicorn.Config(
+        app,
+        host=config.host,
+        port=config.port,
+        log_config=None,
+        log_level=logger.level,
+        access_log=False,
+    )
+    server = uvicorn.Server(server_config)
 
     logger.info(
         f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
         f'{config.host}:{config.port}',
     )
     logger.info(f'Config: {config}')
-    asyncio.run(hypercorn.asyncio.serve(app, serve_config))
+    asyncio.run(server.serve())
 
 
 @routes_blueprint.before_app_serving

@@ -32,9 +32,9 @@ repos:
       - id: mypy
         additional_dependencies:
           - globus-sdk
-          - hypercorn
           - parsl
+          - quart
           - types-redis
           - types-requests
-          - quart
+          - uvicorn
           - websockets

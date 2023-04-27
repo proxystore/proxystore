@@ -21,7 +21,7 @@ in this case is `~/.local/share/proxystore/myendpoint`
 (see [`home_dir()`][proxystore.utils.home_dir] for the full specification).
 ```bash
 $ tail -n 1 ~/.local/share/proxystore/myendpoint/endpoint.log
-INFO  (hypercorn.error) :: Running on http://127.0.0.1:8765 (CTRL + C to quit)
+INFO  (uvicorn.error) :: Uvicorn running on http://127.0.1.1:8766 (Press CTRL+C to quit)
 ```
 The logs are the first place to check for any potential issues.
 
