@@ -18,6 +18,7 @@ from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
+from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_pid_filepath
@@ -335,7 +336,7 @@ def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
 
     endpoint_dir = os.path.join(tmp_path, _NAME)
     os.makedirs(endpoint_dir)
-    with open(os.path.join(endpoint_dir, 'endpoint.json'), 'w') as f:
+    with open(os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE), 'w') as f:
         f.write('not valid json')
 
     rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))

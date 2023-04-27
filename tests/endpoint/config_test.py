@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
@@ -72,12 +73,12 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
     # Make a bad config to make sure its skipped
     ep5 = os.path.join(tmp_dir, 'ep5')
     os.makedirs(ep5)
-    with open(os.path.join(ep5, 'endpoint.json'), 'w') as f:
+    with open(os.path.join(ep5, ENDPOINT_CONFIG_FILE), 'w') as f:
         f.write('this is not json')
     # Make another bad config to make sure its skipped
     ep6 = os.path.join(tmp_dir, 'ep6')
     os.makedirs(ep6)
-    with open(os.path.join(ep6, 'endpoint.json'), 'w') as f:
+    with open(os.path.join(ep6, ENDPOINT_CONFIG_FILE), 'w') as f:
         f.write('{"name": "this is missing keys"}')
 
     configs = get_configs(tmp_dir)
