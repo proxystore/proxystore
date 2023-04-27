@@ -12,18 +12,21 @@ else:  # pragma: <3.9 cover
 
 
 class DIMKey(NamedTuple):
-    """Key to objects stored across `UCXConnector`s."""
+    """Key to objects stored across `UCXConnector`s.
+    
+    Attributes:
+        dim_type: Type of DIM this key belongs to.
+        obj_id: Unique object key.
+        size: Object size in bytes.
+        peer_host: Hostname of peer where object is located.
+        peer_port: Port of peer server where object is located.
+    """
 
     dim_type: Literal['margo', 'ucx', 'zmq']
-    """Type of DIM this key belongs to."""
     obj_id: str
-    """Unique object key."""
     size: int
-    """Object size in bytes."""
     peer_host: str
-    """Hostname of peer where object is located."""
     peer_port: int
-    """Port of peer server where object is located."""
 
 
 @dataclass
