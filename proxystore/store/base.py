@@ -101,18 +101,14 @@ class StoreFactory(Generic[ConnectorT, T]):
 
         return obj
 
-    def __getnewargs_ex__(
-        self,
-    ) -> tuple[tuple[ConnectorKeyT, dict[str, Any]], dict[str, Any]]:
-        # Pickle without possible futures.
-        return (
-            self.key,
-            self.store_config,
-        ), {
-            'evict': self.evict,
-            'deserializer': self.deserializer,
-            'metrics': self.metrics,
-        }
+    def __getstate__(self) -> dict[str, Any]:
+        # Override pickling behavior to not serialize a possible future
+        state = self.__dict__.copy()
+        state['_obj_future'] = None
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        self.__dict__.update(state)
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.

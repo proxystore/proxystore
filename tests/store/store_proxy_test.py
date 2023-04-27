@@ -70,6 +70,33 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     unregister_store(store_info.name)
 
 
+def test_factory_serialization(store_implementation: StoreFixtureType) -> None:
+    store, store_info = store_implementation
+
+    register_store(store)
+
+    key = store.set([1, 2, 3])
+    f1: StoreFactory[Any, list[int]] = StoreFactory(
+        key,
+        store_config=store.config(),
+    )
+    f1_bytes = serialize(f1)
+    f2 = deserialize(f1_bytes)
+    assert f1() == f2() == [1, 2, 3]
+
+    # Check serialize after async resolve
+    f3: StoreFactory[Any, list[int]] = StoreFactory(
+        key,
+        store_config=store.config(),
+    )
+    f3.resolve_async()
+    f3_bytes = serialize(f3)
+    f4 = deserialize(f3_bytes)
+    assert f3() == f4() == [1, 2, 3]
+
+    unregister_store(store)
+
+
 def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     """Test Store Proxy."""
     store, store_info = store_implementation
