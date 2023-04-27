@@ -309,6 +309,7 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store instance.
         """
+        config = config.copy()  # Avoid messing with callers version
         connector_type = config.pop('connector_type')
         connector_config = config.pop('connector_config')
         connector = import_class(connector_type)
