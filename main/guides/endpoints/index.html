@@ -1917,6 +1917,14 @@ command.</p>
 or <code>$XDG_DATA_HOME/proxystore/{endpoint-name}</code>
 (see <a class="autorefs autorefs-internal" href="../../api/utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>) and contain the name, UUID,
 host address, port, and singaling server address.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>By default, <code>$XDG_DATA_HOME/proxystore</code> will usually resolve to
+<code>~/.local/share/proxystore</code>. You can change this behavior by setting
+<code>$PROXYSTORE_HOME</code> in your <code>~/.bashrc</code> or similar configuration file.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PROXYSTORE_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.proxystore&quot;</span>
+</span></code></pre></div></p>
+</div>
 <ol>
 <li><strong>Name:</strong> readable name of the endpoint. Used for management in the CLI and
    to improve log readability.</li>
@@ -1935,7 +1943,7 @@ host address, port, and singaling server address.</p>
 <p>Starting the endpoint will load the configuration from the ProxyStore home
 directory, initialize the endpoint, and start a Quart app using the host and
 port.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
 <h2 id="endpointconnector">EndpointConnector<a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h2>
 <p>The primary interface to endpoints is the
@@ -1946,19 +1954,19 @@ port.</p>
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface. See the
 <a href="../../get-started/">Get Started</a> guide before getting started with endpoints.</p>
 </div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.endpoint</span> <span class="kn">import</span> <span class="n">EndpointConnector</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>   <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>       <span class="s1">&#39;5349ffce-edeb-4a8b-94a6-ab16ade1c1a1&#39;</span><span class="p">,</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>       <span class="s1">&#39;d62910f6-0d29-452e-80b7-e0cd601949db&#39;</span><span class="p">,</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>       <span class="o">...</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>   <span class="p">],</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="p">)</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.endpoint</span> <span class="kn">import</span> <span class="n">EndpointConnector</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>   <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>       <span class="s1">&#39;5349ffce-edeb-4a8b-94a6-ab16ade1c1a1&#39;</span><span class="p">,</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>       <span class="s1">&#39;d62910f6-0d29-452e-80b7-e0cd601949db&#39;</span><span class="p">,</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>       <span class="o">...</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>   <span class="p">],</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> takes
 a list of endpoint UUIDs. This list represents any endpoint that proxies
@@ -2009,7 +2017,7 @@ though we hope to in the future! Hosting your own relay server is simple
 if you have a host accessible from the internet (e.g., a compute instance from
 a cloud provider or a machine behind a NAT with an open port) and the
 ProxyStore package installed.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-relay<span class="w"> </span>--port<span class="w"> </span><span class="m">3579</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>proxystore-relay<span class="w"> </span>--port<span class="w"> </span><span class="m">3579</span>
 </span></code></pre></div>
 
 

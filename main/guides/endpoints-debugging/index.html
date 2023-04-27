@@ -1929,13 +1929,13 @@ are encountering issues using ProxyStore Endpoints.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w"> </span>Starting<span class="w"> </span>endpoint<span class="w"> </span>process<span class="w"> </span>as<span class="w"> </span>daemon.
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>INFO:<span class="w"> </span>Logs<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>written<span class="w"> </span>to<span class="w"> </span>~/.local/share/proxystore/myendpoint/endpoint.log
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>INFO:<span class="w"> </span>Logs<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>written<span class="w"> </span>to<span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
 </span></code></pre></div></p>
 <h3 id="check-endpoint-logs">Check Endpoint Logs<a class="headerlink" href="#check-endpoint-logs" title="Permanent link">&para;</a></h3>
 <p>Endpoint logs are written to a directory in <code>$XDG_DATA_HOME/proxystore</code> which
 in this case is <code>~/.local/share/proxystore/myendpoint</code>
 (see <a class="autorefs autorefs-internal" href="../../api/utils/#proxystore.utils.home_dir"><code>home_dir()</code></a> for the full specification).
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>~/.local/share/proxystore/myendpoint/endpoint.log
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>INFO<span class="w">  </span><span class="o">(</span>uvicorn.error<span class="o">)</span><span class="w"> </span>::<span class="w"> </span>Uvicorn<span class="w"> </span>running<span class="w"> </span>on<span class="w"> </span>http://127.0.1.1:8766<span class="w"> </span><span class="o">(</span>Press<span class="w"> </span>CTRL+C<span class="w"> </span>to<span class="w"> </span>quit<span class="o">)</span>
 </span></code></pre></div>
 The logs are the first place to check for any potential issues.</p>
@@ -1971,8 +1971,8 @@ with UUID <code>bbbbab4d-c73a-44ee-a316-58ec8857e83a</code>.</p>
 <p>Both endpoints must be connected to the same relay server to form a peer
 connection. First, check the <code>relay_server</code> value in the endpoint config is
 correct and not <code>null</code>.
-The endpoint config is found in the <code>endpoint.json</code> file in the endpoint
-directory (e.g., <code>~/.local/share/proxystore/myendpoint/endpoint.json</code>).
+The endpoint config is found in the <code>config.json</code> file in the endpoint
+directory (e.g., <code>~/.local/share/proxystore/myendpoint/config.json</code>).
 Restart your endpoints if you had to change the configuration.</p>
 <p>Second, confirm the endpoint connects to the relay server when started by
 checking the endpoint logs for a line like this.
