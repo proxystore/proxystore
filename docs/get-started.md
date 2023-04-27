@@ -72,8 +72,8 @@ register_store(store)
 # A registered store can be retrieved by name
 store = get_store('my-store')
 
-# Stores have basic get/set functionality
-key = store.set(my_object)
+# Stores have basic get/put functionality
+key = store.put(my_object)
 assert my_object == store.get(key)
 
 # Place an object in the store and return a proxy

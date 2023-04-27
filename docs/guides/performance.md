@@ -1,6 +1,6 @@
 # Performance Tracking
 
-The [`Store`][proxystore.store.base.Store] can record metrics on executed operations (e.g., `get` and `set`).
+The [`Store`][proxystore.store.base.Store] can record metrics on executed operations (e.g., `get` and `put`).
 Metric collection is disabled by default and can be enabled by passing `#!python metrics=True` to a [`Store`][proxystore.store.base.Store] constructor.
 
 ## Enabling Metrics
@@ -39,9 +39,9 @@ Three types of metrics are collected.
 
 ## A Simple Example
 
-Consider executing a `get` and `set` operation on `store`.
+Consider executing a `get` and `put` operation on `store`.
 ```python
-key = store.set([0, 1, 2, 3, 4, 5])
+key = store.put([0, 1, 2, 3, 4, 5])
 store.get(key)
 ```
 
@@ -58,18 +58,18 @@ is a [`dataclass`][dataclasses.dataclass] with three fields:
 `attributes`, `counters`, and `times`. We can further inspect these fields.
 ```python
 metrics.attributes
->>> {'store.get.object_size': 219, 'store.set.object_size': 219}
+>>> {'store.get.object_size': 219, 'store.put.object_size': 219}
 metrics.counters
 >>> {'store.get.cache_misses': 1}
 metrics.times
 >>> {
->>>     'store.set.serialize': TimeStats(
+>>>     'store.put.serialize': TimeStats(
 >>>         count=1, avg_time_ms=9.9, min_time_ms=9.9, max_time_ms=9.9
 >>>     ),
->>>     'store.set.connector': TimeStats(
+>>>     'store.put.connector': TimeStats(
 >>>         count=1, avg_time_ms=36.9, min_time_ms=36.9, max_time_ms=36.9
 >>>     ),
->>>     'store.set': TimeStats(
+>>>     'store.put': TimeStats(
 >>>         count=1, avg_time_ms=53.4, min_time_ms=53.4, max_time_ms=53.4
 >>>     ),
 >>>     'store.get.connector': TimeStats(
@@ -135,13 +135,13 @@ metrics.times
 >>>     'store.get.connector': TimeStats(...),
 >>>     'store.get.deserialize': TimeStats(...),
 >>>     'store.proxy': TimeStats(...),
->>>     'store.set': TimeStats(...),
->>>     'store.set.connector': TimeStats(...),
->>>     'store.set.serialize': TimeStats(...),
+>>>     'store.put': TimeStats(...),
+>>>     'store.put.connector': TimeStats(...),
+>>>     'store.put.serialize': TimeStats(...),
 >>> }
 ```
 Calling [`Store.proxy()`][proxystore.store.base.Store.proxy] internally
-called [`Store.set()`][proxystore.store.base.Store.set]. Accessing the
+called [`Store.put()`][proxystore.store.base.Store.put]. Accessing the
 proxy internally resolved the factory so we also see metrics about the
 `factory` and `store.get`.
 
@@ -160,13 +160,13 @@ recorded for the entire batch. I.e., the batch of keys is treated as a single
 super key.
 
 ```python
-keys = store.set_batch(['value1', 'value2', 'value3'])
+keys = store.put_batch(['value1', 'value2', 'value3'])
 metrics = store.metrics.get_metrics(keys)
 metrics.times
 >>> {
->>>     'store.set_batch.serialize': TimeStats(...),
->>>     'store.set_batch.connector': TimeStats(...),
->>>     'store.set_batch': TimeStats(...)
+>>>     'store.put_batch.serialize': TimeStats(...),
+>>>     'store.put_batch.connector': TimeStats(...),
+>>>     'store.put_batch': TimeStats(...)
 >>> }
 ```
 
@@ -184,12 +184,12 @@ store.metrics.aggregate_times()
 >>>     'store.get.connector': TimeStats(...),
 >>>     'store.get.deserialize': TimeStats(...),
 >>>     'store.proxy': TimeStats(...),
->>>     'store.set': TimeStats(...),
->>>     'store.set.connector': TimeStats(...),
->>>     'store.set.serialize': TimeStats(...),
->>>     'store.set_batch': TimeStats(...),
->>>     'store.set_batch.connector': TimeStats(...),
->>>     'store.set_batch.serialize': TimeStats(...),
+>>>     'store.put': TimeStats(...),
+>>>     'store.put.connector': TimeStats(...),
+>>>     'store.put.serialize': TimeStats(...),
+>>>     'store.put_batch': TimeStats(...),
+>>>     'store.put_batch.connector': TimeStats(...),
+>>>     'store.put_batch.serialize': TimeStats(...),
 >>> }
 ```
 Each of these [`TimeStats`][proxystore.store.metrics.TimeStats] represents

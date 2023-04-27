@@ -126,7 +126,7 @@ def test_endpoint_transfer(endpoints) -> None:
     )
 
     obj = [1, 2, 3]
-    key = store1.set(obj)
+    key = store1.put(obj)
     assert obj == store2.get(key)
     store2.evict(key)
     assert not store1.exists(key)

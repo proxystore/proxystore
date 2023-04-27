@@ -29,7 +29,7 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     )
     register_store(store)
 
-    key = store.set([1, 2, 3])
+    key = store.put([1, 2, 3])
 
     # Clear store to see if factory can reinitialize it
     unregister_store(store_info.name)
@@ -49,7 +49,7 @@ def test_store_factory(store_implementation: StoreFixtureType) -> None:
     assert f2() == [1, 2, 3]
     assert not store.exists(key)
 
-    key = store.set([1, 2, 3])
+    key = store.put([1, 2, 3])
     # Clear store to see if factory can reinitialize it
     unregister_store(store_info.name)
 
@@ -75,7 +75,7 @@ def test_factory_serialization(store_implementation: StoreFixtureType) -> None:
 
     register_store(store)
 
-    key = store.set([1, 2, 3])
+    key = store.put([1, 2, 3])
     f1: StoreFactory[Any, list[int]] = StoreFactory(
         key,
         store_config=store.config(),

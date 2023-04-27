@@ -20,7 +20,7 @@ register_store(store)
 assert store.metrics is not None
 
 target = list(range(0, 100))
-key = store.set(target)
+key = store.put(target)
 store.get(key)
 
 metrics = store.metrics.get_metrics(key)
@@ -52,7 +52,7 @@ assert metrics is not None
 print('Times:')
 print(metrics.times)
 
-keys = store.set_batch(['value1', 'value2', 'value3'])
+keys = store.put_batch(['value1', 'value2', 'value3'])
 metrics = store.metrics.get_metrics(keys)
 assert metrics is not None
 print('Times:')

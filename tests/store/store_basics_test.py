@@ -27,11 +27,11 @@ def test_store_base(store_implementation: StoreFixtureType) -> None:
     key_fake = missing_key(store)
     value = 'test_value'
 
-    # Store.set()
-    key_bytes = store.set(str.encode(value))
-    key_str = store.set(value)
-    key_callable = store.set(lambda: value)
-    key_array = store.set([1, 2, 3])
+    # Store.put()
+    key_bytes = store.put(str.encode(value))
+    key_str = store.put(value)
+    key_callable = store.put(lambda: value)
+    key_array = store.put([1, 2, 3])
 
     # Store.get()
     assert store.get(key_bytes) == str.encode(value)
@@ -64,7 +64,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
     value = 'test_value'
 
     # Test cache size 0
-    key1 = store.set(value)
+    key1 = store.put(value)
     assert store.get(key1) == value
     assert not store.is_cached(key1)
 
@@ -72,7 +72,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
     new_cache: LRUCache[str, Any] = LRUCache(1)
     with mock.patch.object(store, 'cache', new_cache):
         # Add our test value
-        key1 = store.set(value)
+        key1 = store.put(value)
 
         # Test caching
         assert not store.is_cached(key1)
@@ -84,7 +84,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
         assert store.exists(key1)
 
         # Add second value
-        key2 = store.set(value)
+        key2 = store.put(value)
         assert store.is_cached(key1)
         assert not store.is_cached(key2)
 
@@ -102,16 +102,16 @@ def test_store_custom_serialization(
 
     # Pretend serialized string
     s = b'ABC'
-    key = store.set(s, serializer=lambda s: s)
+    key = store.put(s, serializer=lambda s: s)
     assert store.get(key, deserializer=lambda s: s) == s
 
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the array is not already serialized
-        store.set([1, 2, 3], serializer=lambda s: s)
+        store.put([1, 2, 3], serializer=lambda s: s)
 
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the array is not already serialized
-        store.set_batch([[1, 2, 3]], serializer=lambda s: s)
+        store.put_batch([[1, 2, 3]], serializer=lambda s: s)
 
 
 def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
@@ -121,7 +121,7 @@ def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 
     # Test without keys
-    keys = store.set_batch(values)
+    keys = store.put_batch(values)
     for key in keys:
         assert store.exists(key)
 
@@ -134,6 +134,6 @@ def test_store_batch_ops_remote(
 
     values = ['test_value1', 'test_value2', 'test_value3']
 
-    new_keys = store.set_batch(values, serializer=lambda s: str.encode(s))
+    new_keys = store.put_batch(values, serializer=lambda s: str.encode(s))
     for key in new_keys:
         assert store.exists(key)

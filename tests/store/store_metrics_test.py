@@ -28,7 +28,7 @@ def store(
 
 def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     value = 'value'
-    key = store.set(value)
+    key = store.put(value)
     assert store.exists(key)
     assert store.get(key) == value
     assert store.get(key) == value
@@ -41,7 +41,7 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
 
     size = len(serialize(value))
     assert key_metrics.attributes['store.get.object_size'] == size
-    assert key_metrics.attributes['store.set.object_size'] == size
+    assert key_metrics.attributes['store.put.object_size'] == size
 
     assert key_metrics.counters['store.get.cache_hits'] == 1
     assert key_metrics.counters['store.get.cache_misses'] == 1
@@ -56,9 +56,9 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     assert key_metrics.times['store.get.connector'].count == 1
     assert key_metrics.times['store.get.deserialize'].count == 1
 
-    assert key_metrics.times['store.set'].count == 1
-    assert key_metrics.times['store.set.connector'].count == 1
-    assert key_metrics.times['store.set.serialize'].count == 1
+    assert key_metrics.times['store.put'].count == 1
+    assert key_metrics.times['store.put.connector'].count == 1
+    assert key_metrics.times['store.put.serialize'].count == 1
 
     proxy = store.proxy(value)
     assert proxy == value
@@ -73,7 +73,7 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
 
 def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
     values = ['value1', 'value2', 'value3']
-    keys = store.set_batch(values)
+    keys = store.put_batch(values)
     assert all(store.exists(key) for key in keys)
 
     assert store.metrics is not None
@@ -81,10 +81,10 @@ def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
     assert key_metrics is not None
 
     sizes = sum(len(serialize(value)) for value in values)
-    assert key_metrics.attributes['store.set_batch.object_sizes'] == sizes
-    assert key_metrics.times['store.set_batch.serialize'].count == 1
-    assert key_metrics.times['store.set_batch.connector'].count == 1
-    assert key_metrics.times['store.set_batch'].count == 1
+    assert key_metrics.attributes['store.put_batch.object_sizes'] == sizes
+    assert key_metrics.times['store.put_batch.serialize'].count == 1
+    assert key_metrics.times['store.put_batch.connector'].count == 1
+    assert key_metrics.times['store.put_batch'].count == 1
 
     proxies = store.proxy_batch(values)
     for proxy, value in zip(proxies, values):
@@ -93,7 +93,7 @@ def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
     proxy_metrics = store.metrics.get_metrics(proxies)
     assert proxy_metrics is not None
 
-    assert proxy_metrics.times['store.set_batch'].count == 1
+    assert proxy_metrics.times['store.put_batch'].count == 1
     assert proxy_metrics.times['store.proxy_batch'].count == 1
 
     for proxy in proxies:
