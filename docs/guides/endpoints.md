@@ -70,7 +70,7 @@ To start the endpoint:
 Endpoint configurations are stored to `$PROXYSTORE_HOME/{endpoint-name}`
 or `$XDG_DATA_HOME/proxystore/{endpoint-name}`
 (see [`home_dir()`][proxystore.utils.home_dir]) and contain the name, UUID,
-host address, port, and singaling server address.
+host address, port, relay server address, and more.
 
 !!! tip
 
@@ -92,6 +92,14 @@ host address, port, and singaling server address.
    connections. All endpoints that may peer with each other must use the same
    relay server. Relay servers are optional, and if unspecified, the
    endpoint will operate without peering functionalities.
+
+!!! tip
+
+    Endpoints provide no data persistence by default, but this can be enabled
+    by passing the `--persist` flag when configuring the endpoint or by
+    setting `"database_path"` in the config. When set, blobs stored by the
+    endpoint will be written to a SQLite database file. Note this will
+    result in slower performance.
 
 An up-to-date configuration description can found in the
 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.

@@ -26,6 +26,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
@@ -109,7 +110,20 @@ def serve(
     kwargs.pop('host', None)
     kwargs.pop('port', None)
 
-    endpoint = Endpoint(**kwargs)
+    database_path = kwargs.pop('database_path', None)
+    storage: SQLiteStorage | None
+    if database_path is not None:
+        logger.info(
+            f'Using SQLite database for storage (path: {database_path})',
+        )
+        storage = SQLiteStorage(database_path)
+    else:
+        logger.warning(
+            'Database path not provided. Data will not be persisted',
+        )
+        storage = None
+
+    endpoint = Endpoint(**kwargs, storage=storage)
     app = create_app(endpoint)
 
     if use_uvloop:  # pragma: no cover
