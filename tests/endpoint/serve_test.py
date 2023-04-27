@@ -374,7 +374,7 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
             port=open_port(),
             relay_server=None,
         )
-        with mock.patch('hypercorn.asyncio.serve', AsyncMock()):
+        with mock.patch('uvicorn.Server.serve', AsyncMock()):
             serve(
                 config,
                 log_level='INFO',

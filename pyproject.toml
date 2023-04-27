@@ -42,7 +42,7 @@ repository = "https://github.com/proxystore/proxystore"
 all = ["proxystore[endpoints,redis,zmq]"]
 endpoints = [
     "aiortc>=1.3.2",
-    "hypercorn[uvloop]>=0.13.0",
+    "uvicorn[standard]",
     "psutil",
     "python-daemon",
     "quart>=0.18.0",
