@@ -1839,7 +1839,7 @@
 <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> instance and provides
 extra functionality. Similar to the
 <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>, the
-<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> exposes <code>evict</code>, <code>exist</code>, <code>get</code>, and <code>set</code>
+<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> exposes <code>evict</code>, <code>exist</code>, <code>get</code>, and <code>put</code>
 operations; however, these operations act on Python objects rather than
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes"><code>bytes</code></a>. The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will (de)serialize
 objects accordingly before invoking the corresponding operation on the
@@ -1939,7 +1939,7 @@ innefficient. E.g.,</p>
 </span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a><span class="n">mymodel</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">()</span>
 </span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>
 </span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">mymodel</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">serialize_torch_model</span><span class="p">)</span>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">mymodel</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">serialize_torch_model</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Rather than providing a custom serializer or deserializer to each method
 invocation, a default serializer and deserializer can be provided when
