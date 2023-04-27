@@ -324,6 +324,7 @@ def test_serve(use_uvloop: bool) -> None:
         uuid=uuid.uuid4(),
         host='localhost',
         port=open_port(),
+        database_path=':memory:',
     )
 
     process = multiprocessing.Process(

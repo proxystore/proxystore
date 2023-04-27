@@ -10,7 +10,7 @@ import uuid
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 
 ENDPOINT_CONFIG_FILE = 'config.json'
-ENDPOINT_DATABASE_FILE = 'data.db'
+ENDPOINT_DATABASE_FILE = 'blobs.db'
 ENDPOINT_LOG_FILE = 'log.txt'
 ENDPOINT_PID_FILE = 'daemon.pid'
 
