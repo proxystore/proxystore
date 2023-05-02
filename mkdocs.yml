@@ -14,6 +14,7 @@ theme:
   features:
     - content.code.annotate
     - content.code.copy
+    - content.code.select
     - navigation.path
     - navigation.sections
     - navigation.tabs
@@ -119,6 +120,7 @@ nav:
       - Store: concepts/store.md
   - Guides:
       - guides/index.md
+      - Globus Compute: guides/globus-compute.md
       - Endpoints Overview: guides/endpoints.md
       - Endpoints Debugging: guides/endpoints-debugging.md
       - Performance Tracking: guides/performance.md

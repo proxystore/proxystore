@@ -1,5 +1,7 @@
 # Peer-to-Peer Endpoints
 
+*Last updated 2 May 2023*
+
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.
@@ -122,7 +124,7 @@ The primary interface to endpoints is the
     [`Store`][proxystore.store.base.Store] interface. See the
     [Get Started](../get-started.md) guide before getting started with endpoints.
 
-```python
+```python title="Endpoint Client Example" linenums="1"
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.store import Store
 

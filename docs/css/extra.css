@@ -9,10 +9,11 @@
  *   light-purple: #C19EE1
  *
  */
-:root {
+:root > * {
   --md-primary-fg-color: #5B2A86;
   --md-accent-fg-color: #D16666;
   --md-accent-bg-color: #D16666;
+  --md-code-hl-color: #EBE0F5;
 }
 
 [data-md-color-primary="proxystore-light"] {

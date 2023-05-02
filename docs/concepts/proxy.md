@@ -22,7 +22,7 @@ the proxy is passed between multiple functions.
 
 ## Creating Proxies
 
-```python
+```python linenums="1"
 from proxystore.proxy import Proxy
 
 def resolve_object(...):
@@ -40,7 +40,7 @@ any callable object (i.e., object which implements `__call__`).
 Proxies are powerful because they can intercept and redefine functionality of
 an object while emulating the rest of the objects behavior.
 
-```python
+```python linenums="1" hl_lines="15 16 18 19 20 21"
 import numpy as np
 from proxystore.proxy import Proxy
 
@@ -55,16 +55,17 @@ class MyFactory():
 
 p = Proxy(MyFactory(x))
 
-# A proxy is an instance of its wrapped object
-assert isinstance(p, Proxy)
+assert isinstance(p, Proxy) # (1)!
 assert isinstance(p, np.ndarray)
 
-# The proxy can do everything the numpy array can
-assert np.array_equal(p, [1, 2, 3])
+assert np.array_equal(p, [1, 2, 3]) # (2)!
 assert np.sum(p) == 6
 y = x + p
 assert np.array_equal(y, [2, 4, 6])
 ```
+
+1. A proxy is an instance of its wrapped object.
+2. The proxy can do everything the numpy array can.
 
 The ProxyStore [`Proxy`][proxystore.proxy.Proxy] is built on the proxy from
 [`lazy-object-proxy`](https://github.com/ionelmc/python-lazy-object-proxy){target=_blank}
