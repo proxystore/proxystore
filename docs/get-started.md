@@ -60,7 +60,7 @@ The following example uses the
 [`RedisConnector`][proxystore.connectors.redis.RedisConnector] to interface
 with an already running Redis server using proxies.
 
-```python
+```python title="Basic ProxyStore Usage" linenums="1"
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store import get_store
 from proxystore.store import register_store
@@ -69,19 +69,20 @@ from proxystore.store import Store
 store = Store(name='my-store', RedisConnector(hostname='localhost', port=1234))
 register_store(store)
 
-# A registered store can be retrieved by name
-store = get_store('my-store')
+store = get_store('my-store')  # (1)!
 
-# Stores have basic get/put functionality
-key = store.put(my_object)
+key = store.put(my_object)  # (2)!
 assert my_object == store.get(key)
 
-# Place an object in the store and return a proxy
-p = store.proxy(my_object)
+p = store.proxy(my_object)  # (3)!
 
-# The proxy, when used, will behave as the target
-assert isinstance(p, type(my_object))
+assert isinstance(p, type(my_object))  # (4)!
 ```
+
+1. A registered store can be retrieved by name.
+2. Stores have basic get/put functionality.
+3. Place an object in the store and return a proxy.
+4. The proxy, when used, will behave as the target.
 
 This proxy, `p`, can be cheaply serialized and communicated to any
 arbitrary Python process as if it were the target object itself. Once the
@@ -97,7 +98,7 @@ For example, if you want to execute a function and the input data may be
 passed directly, via a key to an object in Redis, or as a filepath to a
 serialized object on disk, you will need boilerplate code that looks like:
 
-```python
+```python linenums="1"
 def my_function(input: MyDataType | str | ...) -> None:
    if is_filepath(input_data):
        data = read_and_deserialize(input)
@@ -118,13 +119,14 @@ communication method is used. With proxies, all of the boilerplate code
 can be removed because the proxy will contain within itself all of the
 necessary code to resolve the object.
 
-```python
+```python linenums="1"
 def my_function(input: MyDataType) -> None:
-   # Always true even if input is a proxy
-   assert isinstance(input, MyDataType)
+   assert isinstance(input, MyDataType)  # (1)!
 
    # Compute using the data
 ```
+
+1. Always true even if input is a proxy.
 
 In this model, only the producer of the data needs to be aware of which
 ProxyStore backend to use, and no modification to consumer code are ever

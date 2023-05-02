@@ -6,7 +6,7 @@ of [`bytes`][bytes] of data and keys which are tuples of metadata that can
 identify a unique object.
 
 The protocol is as follows:
-```python
+```python title="Connector Protocol" linenums="1"
 KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 class Connector(Protocol[KeyT]):

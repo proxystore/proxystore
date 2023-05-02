@@ -21,29 +21,32 @@ returned by the [`Connector`][proxystore.connectors.connector.Connector] and
 other information necessary to retrieve the object from the mediated channel
 is generated, and then a new proxy, internalized with the factory, is returned.
 
-```python
+```python title="Base Store Usage" linenums="1"
 from proxystore.connectors.redis import RedisConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 from proxystore.store import register_store
 
 def my_function(x: MyDataType) -> ...:
-    # x is resolved from "my-store" on first use
-    assert isinstance(x, MyDataType)
+    assert isinstance(x, MyDataType)  # (1)!
     # More computation...
 
-store = Store('my-store', RedisConnector(...))
-# Registering the Store enables proxies to reuse the
-# same Store instance in a process to improve performance
-register_store(store)
+store = Store('my-store', RedisConnector(...)) # (2)!
+register_store(store)  # (3)!
 
-# Store the object and get a proxy
-my_object = MyDataType(...)
+my_object = MyDataType(...) # (4)!
 p = store.proxy(my_object)
 isinstance(p, Proxy)
 
-my_function(p)  # Succeeds
+my_function(p) # (5)!
 ```
+
+1. `x` is resolved from "my-store" on the first use of `x`.
+2. The `Connector` defines the low-level communication method used by the `Store`.
+3. Registering `store` globally enables proxies to reuse the same instance
+   to improve performance.
+4. Store the object and get a proxy.
+5. Always succeeds regardless of if `p` is the true object or a proxy.
 
 ## Asynchronous Resolving
 
@@ -52,7 +55,7 @@ remotely to not be needed immediately upon execution.
 Proxies created by a [`Store`][proxystore.store.base.Store] support
 asynchronous resolution to overlap communication and computation.
 
-```python
+```python linenums="1"
 from proxystore.store.utils import resolve_async
 
 def complex_function(large_proxied_input):
@@ -71,7 +74,7 @@ The [`Store`][proxystore.store.base.Store] provides built in caching functionali
 Caches are local to the Python process but will speed up the resolution when
 multiple proxies refer to the same object.
 
-```python
+```python linenums="1"
 from proxystore.store import Store
 
 # Cache size of 16 is the default
@@ -91,7 +94,7 @@ serialization utilities ([`proxystore.serialize`][proxystore.serialize]) by defa
 However, the [`Store`][proxystore.store.base.Store] can be initialized with
 custom default serializers or deserializers of the form:
 
-```python
+```python linenums="1"
 serializer = Callable[[Any], bytes]
 deserializer = Callable[[bytes], Any]
 ```
@@ -103,7 +106,7 @@ Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
 innefficient. E.g.,
 
-```python
+```python linenums="1"
 import torch
 import io
 

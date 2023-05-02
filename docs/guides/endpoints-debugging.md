@@ -1,5 +1,7 @@
 # Endpoints Debugging
 
+*Last updated 2 May 2023*
+
 This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.
 
