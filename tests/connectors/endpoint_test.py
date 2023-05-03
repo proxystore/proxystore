@@ -30,7 +30,7 @@ def test_no_endpoints_accessible(endpoint_connector) -> None:
     response = requests.Response()
     response.status_code = 400
 
-    with mock.patch('requests.get', return_value=response):
+    with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='Failed to find'):
             EndpointConnector(**endpoint_connector.kwargs)
 
@@ -40,7 +40,7 @@ def test_endpoint_uuid_mismatch(endpoint_connector) -> None:
     response.status_code = 200
     response.json = lambda: {'uuid': str(uuid.uuid4())}  # type: ignore
 
-    with mock.patch('requests.get', return_value=response):
+    with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='Failed to find'):
             EndpointConnector(**endpoint_connector.kwargs)
 
@@ -52,20 +52,20 @@ def test_bad_responses(endpoint_connector) -> None:
     response = requests.Response()
     response.status_code = 400
 
-    with mock.patch('requests.get', return_value=response):
+    with mock.patch('requests.Session.get', return_value=response):
         key = connector.put(b'value')
         assert connector.get(key) is None
 
     response.status_code = 401
 
-    with mock.patch('requests.get', return_value=response):
+    with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='401'):
             connector.exists(key)
 
         with pytest.raises(EndpointConnectorError, match='401'):
             connector.get(key)
 
-    with mock.patch('requests.post', return_value=response):
+    with mock.patch('requests.Session.post', return_value=response):
         with pytest.raises(EndpointConnectorError, match='401'):
             connector.evict(key)
 
