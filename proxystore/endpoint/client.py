@@ -14,6 +14,7 @@ def evict(
     address: str,
     key: str,
     endpoint: uuid.UUID | str | None = None,
+    session: requests.Session | None = None,
 ) -> None:
     """Evict the object associated with the key.
 
@@ -21,6 +22,9 @@ def evict(
         address: Address of endpoint.
         key: Key associated with object to evict.
         endpoint: Optional UUID of remote endpoint to forward operation to.
+        session: Session instance to use for making the request. Reusing the
+            same session across multiple requests to the same host can improve
+            performance.
 
     Raises:
         RequestException: If the endpoint request results in an unexpected
@@ -29,7 +33,8 @@ def evict(
     endpoint_str = (
         str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
     )
-    response = requests.post(
+    post = requests.post if session is None else session.post
+    response = post(
         f'{address}/evict',
         params={'key': key, 'endpoint': endpoint_str},
     )
@@ -45,6 +50,7 @@ def exists(
     address: str,
     key: str,
     endpoint: uuid.UUID | str | None = None,
+    session: requests.Session | None = None,
 ) -> bool:
     """Check if an object associated with the key exists.
 
@@ -52,6 +58,9 @@ def exists(
         address: Address of endpoint.
         key: Key potentially associated with stored object.
         endpoint: Optional UUID of remote endpoint to forward operation to.
+        session: Session instance to use for making the request. Reusing the
+            same session across multiple requests to the same host can improve
+            performance.
 
     Returns:
         If an object associated with the key exists.
@@ -63,7 +72,8 @@ def exists(
     endpoint_str = (
         str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
     )
-    response = requests.get(
+    get_ = requests.get if session is None else session.get
+    response = get_(
         f'{address}/exists',
         params={'key': key, 'endpoint': endpoint_str},
     )
@@ -80,6 +90,7 @@ def get(
     address: str,
     key: str,
     endpoint: uuid.UUID | str | None = None,
+    session: requests.Session | None = None,
 ) -> bytes | None:
     """Get the serialized object associated with the key.
 
@@ -87,6 +98,9 @@ def get(
         address: Address of endpoint.
         key: Key associated with object to retrieve.
         endpoint: Optional UUID of remote endpoint to forward operation to.
+        session: Session instance to use for making the request. Reusing the
+            same session across multiple requests to the same host can improve
+            performance.
 
     Returns:
         Serialized object or `None` if the object does not exist.
@@ -98,7 +112,8 @@ def get(
     endpoint_str = (
         str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
     )
-    response = requests.get(
+    get_ = requests.get if session is None else session.get
+    response = get_(
         f'{address}/get',
         params={'key': key, 'endpoint': endpoint_str},
         stream=True,
@@ -125,6 +140,7 @@ def put(
     key: str,
     data: bytes,
     endpoint: uuid.UUID | str | None = None,
+    session: requests.Session | None = None,
 ) -> None:
     """Put a serialized object in the store.
 
@@ -133,6 +149,9 @@ def put(
         key: Key associated with object to retrieve.
         data: Serialized data to put in the store.
         endpoint: Optional UUID of remote endpoint to forward operation to.
+        session: Session instance to use for making the request. Reusing the
+            same session across multiple requests to the same host can improve
+            performance.
 
     Raises:
         RequestException: If the endpoint request results in an unexpected
@@ -141,7 +160,8 @@ def put(
     endpoint_str = (
         str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
     )
-    response = requests.post(
+    post = requests.post if session is None else session.post
+    response = post(
         f'{address}/set',
         headers={'Content-Type': 'application/octet-stream'},
         params={'key': key, 'endpoint': endpoint_str},
