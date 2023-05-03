@@ -78,6 +78,10 @@ class EndpointConnector:
         ]
         self.proxystore_dir = proxystore_dir
 
+        # Maintain single session for connection pooling persistence to
+        # speed up repeat requests to same endpoint.
+        self._session = requests.Session()
+
         # Find the first locally accessible endpoint to use as our
         # home endpoint
         available_endpoints = get_configs(
@@ -87,7 +91,7 @@ class EndpointConnector:
         for endpoint in available_endpoints:
             if endpoint.uuid in self.endpoints:
                 logger.debug(f'Attempting connection to {endpoint.uuid}')
-                response = requests.get(
+                response = self._session.get(
                     f'http://{endpoint.host}:{endpoint.port}/endpoint',
                 )
                 if response.status_code == 200:
@@ -108,6 +112,7 @@ class EndpointConnector:
                     logger.debug(f'Connection to {endpoint.uuid} failed')
 
         if found_endpoint is None:
+            self._session.close()
             raise EndpointConnectorError(
                 'Failed to find endpoint configuration matching one of the '
                 'provided endpoint UUIDs.',
@@ -137,7 +142,7 @@ class EndpointConnector:
 
     def close(self) -> None:
         """Close the connector and clean up."""
-        pass
+        self._session.close()
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -166,7 +171,12 @@ class EndpointConnector:
             key: Key associated with object to evict.
         """
         try:
-            client.evict(self.address, key.object_id, key.endpoint_id)
+            client.evict(
+                self.address,
+                key.object_id,
+                key.endpoint_id,
+                session=self._session,
+            )
         except requests.exceptions.RequestException as e:
             raise EndpointConnectorError(
                 f'Evict failed with error code {e.response.status_code}.',
@@ -182,7 +192,12 @@ class EndpointConnector:
             If an object associated with the key exists.
         """
         try:
-            return client.exists(self.address, key.object_id, key.endpoint_id)
+            return client.exists(
+                self.address,
+                key.object_id,
+                key.endpoint_id,
+                session=self._session,
+            )
         except requests.exceptions.RequestException as e:
             raise EndpointConnectorError(
                 f'Exists failed with error code {e.response.status_code}.',
@@ -198,7 +213,12 @@ class EndpointConnector:
             Serialized object or `None` if the object does not exist.
         """
         try:
-            return client.get(self.address, key.object_id, key.endpoint_id)
+            return client.get(
+                self.address,
+                key.object_id,
+                key.endpoint_id,
+                session=self._session,
+            )
         except requests.exceptions.RequestException as e:
             raise EndpointConnectorError(
                 f'Get failed with error code {e.response.status_code}.',
@@ -230,7 +250,13 @@ class EndpointConnector:
             endpoint_id=str(self.endpoint_uuid),
         )
         try:
-            client.put(self.address, key.object_id, obj, key.endpoint_id)
+            client.put(
+                self.address,
+                key.object_id,
+                obj,
+                key.endpoint_id,
+                session=self._session,
+            )
         except requests.exceptions.RequestException as e:
             raise EndpointConnectorError(
                 f'Put failed with error code {e.response.status_code}.',

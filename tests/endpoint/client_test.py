@@ -24,6 +24,21 @@ def test_basic_client_interaction(endpoint: EndpointConfig) -> None:
     assert client.get(address, key) is None
 
 
+def test_client_interaction_with_session(endpoint: EndpointConfig) -> None:
+    address = f'http://{endpoint.host}:{endpoint.port}'
+    key = str(uuid.uuid4())
+    data = b'test'
+
+    with requests.Session() as session:
+        client.put(address, key, data, session=session)
+        assert client.exists(address, key, session=session)
+        assert client.get(address, key, session=session) == data
+
+        client.evict(address, key, session=session)
+        assert not client.exists(address, key, session=session)
+        assert client.get(address, key, session=session) is None
+
+
 def test_errors_raised() -> None:
     address = 'http://localhost:8539'
     key = 'abcd'
