@@ -137,7 +137,7 @@ def redis_connector() -> Generator[Connector[Any], None, None]:
     redis_port = random.randint(5500, 5999)
 
     # Make new global MOCK_REDIS_CACHE
-    global MOCK_REDIS_CACHE
+    global MOCK_REDIS_CACHE  # noqa: PLW0603
     MOCK_REDIS_CACHE = {}
 
     def create_mocked_redis(*args: Any, **kwargs: Any) -> MockStrictRedis:

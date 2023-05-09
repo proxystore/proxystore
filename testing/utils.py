@@ -11,8 +11,6 @@ def open_port() -> int:
 
     Source: https://stackoverflow.com/questions/2838244
     """
-    global _used_ports
-
     while True:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
