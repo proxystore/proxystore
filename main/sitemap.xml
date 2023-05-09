@@ -121,7 +121,17 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/api/connectors/dim/exceptions/</loc>
+         <lastmod>2023-05-09</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/api/connectors/dim/margo/</loc>
+         <lastmod>2023-05-09</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/connectors/dim/models/</loc>
          <lastmod>2023-05-09</lastmod>
          <changefreq>daily</changefreq>
     </url>
