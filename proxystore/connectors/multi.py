@@ -420,11 +420,10 @@ class MultiConnector:
                     connector_name=connector_name,
                     connector_key=key,
                 )
-        else:
-            raise MultiConnectorError(
-                'No connector policy was suitable for the constraints: '
-                f'subset_tags={subset_tags}, superset_tags={superset_tags}.',
-            )
+        raise MultiConnectorError(
+            'No connector policy was suitable for the constraints: '
+            f'subset_tags={subset_tags}, superset_tags={superset_tags}.',
+        )
 
     def put_batch(
         self,
