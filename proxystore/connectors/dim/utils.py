@@ -4,7 +4,6 @@ from __future__ import annotations
 import fcntl
 import socket
 import struct
-from typing import NamedTuple
 
 
 def get_ip_address(ifname: str) -> str:
@@ -35,10 +34,3 @@ def get_ip_address(ifname: str) -> str:
         if ifname == 'localhost':  # pragma: no cover
             ifname = '127.0.0.1'
         return ifname
-
-
-class Status(NamedTuple):
-    """Task status response."""
-
-    success: bool
-    error: Exception | None = None

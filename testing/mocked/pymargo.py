@@ -12,7 +12,7 @@ client = 'client'
 server = 'server'
 
 # server dictionary
-data_dict = {}
+data_dict: dict[str, bytes] = {}
 
 
 class MargoException(Exception):  # pragma: no cover  # noqa: N818
@@ -164,8 +164,6 @@ bulk = MockBulkMod()
 class Bulk:
     """Mock Bulk implementation."""
 
-    data: bytearray | bytes
-
     def __init__(self, data: bytearray | bytes) -> None:
         self.data = data
 
@@ -173,20 +171,13 @@ class Bulk:
 class Handle:
     """Mock Handle implementation."""
 
-    response: Any
-
     def __init__(self) -> None:
-        from proxystore.connectors.dim.utils import Status
+        self.response: Any = None
 
-        self.response = Status(True, None)
-
-    def respond(
-        self,
-        status: Any,
-    ) -> Any:
+    def respond(self, response: Any) -> None:
         """Mock respond."""
-        self.response = status
-        return self.response
+        self.response = response
+        return None
 
     def get_addr(self) -> str:
         """Mock addr."""
