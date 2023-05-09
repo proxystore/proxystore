@@ -22,7 +22,7 @@ def test_no_endpoints_match(endpoint_connector) -> None:
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
         EndpointConnector(
             endpoints=[str(uuid.uuid4())],
-            proxystore_dir=endpoint_connector.kwargs['proxystore_dir'],
+            proxystore_dir=endpoint_connector.config()['proxystore_dir'],
         )
 
 
@@ -32,7 +32,7 @@ def test_no_endpoints_accessible(endpoint_connector) -> None:
 
     with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='Failed to find'):
-            EndpointConnector(**endpoint_connector.kwargs)
+            EndpointConnector.from_config(endpoint_connector.config())
 
 
 def test_endpoint_uuid_mismatch(endpoint_connector) -> None:
@@ -42,12 +42,12 @@ def test_endpoint_uuid_mismatch(endpoint_connector) -> None:
 
     with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='Failed to find'):
-            EndpointConnector(**endpoint_connector.kwargs)
+            EndpointConnector.from_config(endpoint_connector.config())
 
 
 def test_bad_responses(endpoint_connector) -> None:
     """Test handling of bad responses from Endpoint."""
-    connector = EndpointConnector(**endpoint_connector.kwargs)
+    connector = EndpointConnector.from_config(endpoint_connector.config())
 
     response = requests.Response()
     response.status_code = 400
@@ -76,7 +76,7 @@ def test_bad_responses(endpoint_connector) -> None:
 
 
 def test_chunked_requests(endpoint_connector) -> None:
-    connector = EndpointConnector(**endpoint_connector.kwargs)
+    connector = EndpointConnector.from_config(endpoint_connector.config())
 
     # Set to 2*chunk_size + 1 to force there to be two full size chunks
     # and one partial chunk

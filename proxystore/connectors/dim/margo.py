@@ -1,15 +1,16 @@
 """Margo RPC-based distributed in-memory connector implementation."""
 from __future__ import annotations
 
+import atexit
 import logging
+import multiprocessing
+import os
 import sys
+import time
 import uuid
 from enum import Enum
-from multiprocessing import Process
-from os import getpid
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -21,27 +22,23 @@ try:
     import pymargo
     import pymargo.bulk as bulk
     from pymargo.bulk import Bulk
-    from pymargo.core import Address
     from pymargo.core import Engine
     from pymargo.core import Handle
     from pymargo.core import MargoException
-    from pymargo.core import RemoteFunction
 
     pymargo_import_error = None
 except ImportError as e:  # pragma: no cover
     pymargo_import_error = e
 
-
+from proxystore.connectors.dim.exceptions import ServerTimeoutError
+from proxystore.connectors.dim.models import DIMKey
+from proxystore.connectors.dim.models import RPC
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.connectors.dim.utils import get_ip_address
-from proxystore.connectors.dim.utils import Status
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
-server_process: Process | None = None
-client_pids: set[int] = set()
 logger = logging.getLogger(__name__)
-engine: Engine | None = None
-_rpcs: dict[str, RemoteFunction]
 
 
 class Protocol(Enum):
@@ -63,17 +60,6 @@ class Protocol(Enum):
     """BMI tcp module (TCP/IP)"""
 
 
-class MargoKey(NamedTuple):
-    """Key to objects stored across `MargoConnector`s."""
-
-    margo_key: str
-    """Unique object key."""
-    obj_size: int
-    """Object size in bytes."""
-    peer: str
-    """Peer where object is located."""
-
-
 class MargoConnector:
     """Margo RPC-based distributed in-memory connector.
 
@@ -87,66 +73,73 @@ class MargoConnector:
         interface: The network interface to use.
         port: The desired port for the spawned server.
         protocol: The communication protocol to use.
+        timeout: Timeout in seconds to try connecting to a local server before
+            spawning one.
+
+    Raises:
+        ServerTimeoutError: If a local server cannot be connected to within
+            `timeout` seconds, and a new local server does not respond within
+            `timeout` seconds after being started.
     """
 
-    host: str
-    addr: str
-    protocol: Protocol
-    engine: Engine
-    _mochi_addr: Address
-    _rpcs: dict[str, RemoteFunction]
-    _pid: int
-
-    # TODO : make host optional and try to get infiniband path automatically
     def __init__(
         self,
         interface: str,
         port: int,
-        protocol: Protocol = Protocol.OFI_VERBS,
+        protocol: Protocol | str,
+        timeout: float = 1,
     ) -> None:
-        global server_process
-        global client_pids
-        global engine
-        global _rpcs
-
-        # raise error if modules not properly loaded
+        # Py-Mochi-Margo is not a required dependency and requires the user
+        # to install it themselves.
         if pymargo_import_error is not None:  # pragma: no cover
             raise pymargo_import_error
 
-        self.protocol = protocol
-
         self.interface = interface
-        self.host = get_ip_address(interface)
         self.port = port
+        self.protocol = (
+            protocol if isinstance(protocol, str) else protocol.value
+        )
+        self.timeout = timeout
 
+        self.host = get_ip_address(interface)
         self.addr = f'{self.protocol}://{self.host}:{port}'
 
-        if server_process is None:
-            server_process = Process(target=self._start_server)
-            server_process.start()
+        self.engine = Engine(
+            self.protocol,
+            mode=pymargo.client,
+            use_progress_thread=True,
+        )
 
-        if engine is None:
-            # start client
-            engine = Engine(
-                self.protocol,
-                mode=pymargo.client,
-                use_progress_thread=True,
+        self._rpcs = {
+            'evict': self.engine.register('evict'),
+            'exists': self.engine.register('exists'),
+            'get': self.engine.register('get'),
+            'put': self.engine.register('put'),
+        }
+
+        self.server: multiprocessing.context.SpawnProcess | None
+        try:
+            logger.info(
+                f'Connecting to local server (address={self.addr})...',
             )
-
-            _rpcs = {
-                'set': engine.register('set'),
-                'get': engine.register('get'),
-                'exists': engine.register('exists'),
-                'evict': engine.register('evict'),
-            }
-
-        self.engine = engine
-        self._rpcs = _rpcs
-
-        self.server_started()
-
-        self._pid = getpid()
-        client_pids.add(self._pid)
+            wait_for_server(self.protocol, self.host, self.port, self.timeout)
+            logger.info(
+                f'Connected to local server (address={self.addr})',
+            )
+        except ServerTimeoutError:
+            logger.info(
+                'Failed to connect to local server '
+                f'(address={self.addr}, timeout={self.timeout})',
+            )
+            self.server = spawn_server(
+                self.protocol,
+                self.host,
+                self.port,
+                spawn_timeout=self.timeout,
+            )
+            logger.info(f'Spawned local server (address={self.addr})')
+        else:
+            self.server = None
 
     def __enter__(self) -> Self:
         return self
@@ -159,86 +152,67 @@ class MargoConnector:
     ) -> None:
         self.close()
 
-    def _start_server(self) -> None:
-        """Launch the local Margo server (Peer) process."""
-        logger.info(f'starting server {self.addr}')
-        server_engine = Engine(self.addr)
+    def _send_rpcs(self, rpcs: Sequence[RPC]) -> list[RPCResponse]:
+        """Send an RPC request to the server.
 
-        logger.info(f'Server running at address {str(server_engine.addr())}')
-
-        server_engine.on_finalize(when_finalize)
-        server_engine.enable_remote_shutdown()
-
-        # create server
-        receiver = MargoServer(server_engine)
-        server_engine.register('get', receiver.get)
-        server_engine.register('set', receiver.set)
-        server_engine.register('exists', receiver.exists)
-        server_engine.register('evict', receiver.evict)
-        server_engine.wait_for_finalize()
-
-    def server_started(self) -> None:  # pragma: no cover
-        """Loop until server has started."""
-        logger.debug('Checking if server has started')
-        while True:
-            assert engine is not None
-            try:
-                self._mochi_addr = engine.lookup(self.addr)
-                break
-            except MargoException:
-                pass
-
-    @staticmethod
-    def call_rpc_on(
-        engine: Engine,
-        addr: str,
-        rpc: RemoteFunction,
-        array_str: Bulk,
-        key: str,
-        size: int,
-    ) -> Status:
-        """Initiate the desired RPC call on the specified provider.
-
-        Arguments:
-            engine: The client-side engine.
-            addr: The address of Margo provider to access
-                (e.g. tcp://172.21.2.203:6367).
-            rpc: The rpc to issue to the server.
-            array_str: The serialized data/buffer to send to the server.
-            key: The identifier of the data stored on the server.
-            size: The size of the the data.
+        Args:
+            rpcs: List of RPCs to invoke on local server.
 
         Returns:
-            A string denoting whether the communication was successful
+            List of RPC responses.
+
+        Raises:
+            Exception: Any exception returned by the local server.
         """
-        server_addr = engine.lookup(addr)
-        return deserialize(rpc.on(server_addr)(array_str, size, key))
+        responses = []
 
-    def close(self) -> None:
-        """Close the connector and clean up.
+        for rpc in rpcs:
+            addr = f'{self.protocol}://{rpc.key.peer_host}:{rpc.key.peer_port}'
+            server_addr = self.engine.lookup(addr)
+            logger.debug(
+                f'Sent {rpc.operation.upper()} RPC (key={rpc.key})',
+            )
+            result = self._rpcs[rpc.operation].on(server_addr)(
+                rpc.data,
+                rpc.key.size,
+                rpc.key,
+            )
 
-        Warning:
-            This will terminate the server is no clients are still connected.
+            response = deserialize(result)
+            logger.debug(
+                f'Received {rpc.operation.upper()} RPC response '
+                f'(key={response.key}, '
+                f'exception={response.exception is not None})',
+            )
 
-        Warning:
-            This method should only be called at the end of the program
-            when the connector will no longer be used, for example once all
-            proxies have been resolved.
+            if response.exception is not None:
+                raise response.exception
+
+            assert rpc.operation == response.operation
+            assert rpc.key == response.key
+
+            responses.append(response)
+
+        return responses
+
+    def close(self, kill_server: bool = True) -> None:
+        """Close the connector.
+
+        Args:
+            kill_server: Whether to kill the server process. If this instance
+                did not spawn the local node's server process, this is a
+                no-op.
         """
-        global server_process
-        global client_pids
-        global engine
+        if kill_server and self.server is not None:
+            self.engine.lookup(self.addr).shutdown()
+            self.server.join()
+            logger.info(
+                'Terminated local server on connector close '
+                f'(pid={self.server.pid})',
+            )
 
-        client_pids.discard(self._pid)
-
-        logger.info('Clean up requested')
-
-        if len(client_pids) == 0 and server_process is not None:
-            engine = None
-            self._mochi_addr.shutdown()
-            self.engine.finalize()
-            server_process.join()
-            server_process = None
+        self.engine.finalize()
+        logger.info('Closed Margo connector')
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -250,6 +224,7 @@ class MargoConnector:
             'interface': self.interface,
             'port': self.port,
             'protocol': self.protocol,
+            'timeout': self.timeout,
         }
 
     @classmethod
@@ -261,23 +236,16 @@ class MargoConnector:
         """
         return cls(**config)
 
-    def evict(self, key: MargoKey) -> None:
+    def evict(self, key: DIMKey) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
         """
-        logger.debug(f'Client issuing an evict request on key {key}')
-        self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['evict'],
-            '',
-            key.margo_key,
-            0,
-        )
+        rpc = RPC(operation='evict', key=key)
+        self._send_rpcs([rpc])
 
-    def exists(self, key: MargoKey) -> bool:
+    def exists(self, key: DIMKey) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
@@ -286,23 +254,12 @@ class MargoConnector:
         Returns:
             If an object associated with the key exists.
         """
-        logger.debug(f'Client issuing an exists request on key {key}')
-        buff = bytearray(4)  # equivalent to malloc
+        rpc = RPC(operation='exists', key=key)
+        (response,) = self._send_rpcs([rpc])
+        assert response.exists is not None
+        return response.exists
 
-        blk = self.engine.create_bulk(buff, bulk.write_only)
-
-        self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['exists'],
-            blk,
-            key.margo_key,
-            len(buff),
-        )
-
-        return bool(int(deserialize(bytes(buff))))
-
-    def get(self, key: MargoKey) -> bytes | None:
+    def get(self, key: DIMKey) -> bytes | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -311,25 +268,18 @@ class MargoConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        logger.debug(f'Client issuing get request on key {key}')
+        buff = bytearray(key.size)
+        blk = self.engine.create_bulk(buff, bulk.write_only)
 
-        buff = bytearray(key.obj_size)
-        blk = self.engine.create_bulk(buff, bulk.read_write)
-        s = self.call_rpc_on(
-            self.engine,
-            key.peer,
-            self._rpcs['get'],
-            blk,
-            key.margo_key,
-            key.obj_size,
-        )
+        rpc = RPC(operation='get', key=key, data=blk)
+        (result,) = self._send_rpcs([rpc])
 
-        if not s.success:
-            logger.error(f'{s.error}')
-            return None
-        return bytes(buff)
+        if result.exists:
+            return bytes(buff)
 
-    def get_batch(self, keys: Sequence[MargoKey]) -> list[bytes | None]:
+        return None
+
+    def get_batch(self, keys: Sequence[DIMKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -339,9 +289,23 @@ class MargoConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        return [self.get(key) for key in keys]
+        rpcs: list[RPC] = []
+        buffers: list[bytearray] = []
 
-    def put(self, obj: bytes) -> MargoKey:
+        for key in keys:
+            buff = bytearray(key.size)
+            blk = self.engine.create_bulk(buff, bulk.write_only)
+
+            buffers.append(buff)
+            rpcs.append(RPC(operation='get', key=key, data=blk))
+
+        responses = self._send_rpcs(rpcs)
+        return [
+            bytes(b) if responses[i].exists else None
+            for i, b in enumerate(buffers)
+        ]
+
+    def put(self, obj: bytes) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -350,59 +314,133 @@ class MargoConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = MargoKey(
-            margo_key=str(uuid.uuid4()),
-            obj_size=len(obj),
-            peer=self.addr,
+        key = DIMKey(
+            dim_type='margo',
+            obj_id=str(uuid.uuid4()),
+            size=len(obj),
+            peer_host=self.host,
+            peer_port=self.port,
         )
-        logger.debug(f'Client {self.addr} issuing set request on key {key}')
         blk = self.engine.create_bulk(obj, bulk.read_only)
-        self.call_rpc_on(
-            self.engine,
-            self.addr,
-            self._rpcs['set'],
-            blk,
-            key.margo_key,
-            key.obj_size,
-        )
+
+        rpc = RPC(operation='put', key=key, data=blk)
+        self._send_rpcs([rpc])
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[MargoKey]:
+    def put_batch(self, objs: Sequence[bytes]) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to
+            List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
-        return [self.put(obj) for obj in objs]
+        keys = [
+            DIMKey(
+                dim_type='margo',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.host,
+                peer_port=self.port,
+            )
+            for obj in objs
+        ]
+        rpcs: list[RPC] = []
+
+        for key, obj in zip(keys, objs):
+            blk = self.engine.create_bulk(obj, bulk.read_only)
+            rpcs.append(RPC(operation='put', key=key, data=blk))
+
+        self._send_rpcs(rpcs)
+
+        return keys
 
 
 class MargoServer:
-    """MargoServer implementation.
-
-    Args:
-        engine: The server engine created at the specified network address.
-    """
-
-    data: dict[str, bytes]
-    engine: Engine
+    """MargoServer implementation."""
 
     def __init__(self, engine: Engine) -> None:
-        self.data = {}
-
+        self.data: dict[str, bytes] = {}
         self.engine = engine
 
-        logger.debug('Server initialized')
-
-    def set(
+    def evict(
         self,
         handle: Handle,
         bulk_str: Bulk,
         bulk_size: int,
-        key: str,
+        key: DIMKey,
+    ) -> None:
+        """Remove key from local dictionary.
+
+        Args:
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
+        """
+        self.data.pop(key.obj_id, None)
+        response = RPCResponse(operation='evict', key=key)
+        handle.respond(serialize(response))
+
+    def exists(
+        self,
+        handle: Handle,
+        bulk_str: Bulk,
+        bulk_size: int,
+        key: DIMKey,
+    ) -> None:
+        """Check if key exists within local dictionary.
+
+        Args:
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
+        """
+        exists = key.obj_id in self.data
+        response = RPCResponse(operation='exists', key=key, exists=exists)
+        handle.respond(serialize(response))
+
+    def get(
+        self,
+        handle: Handle,
+        bulk_str: Bulk,
+        bulk_size: int,
+        key: DIMKey,
+    ) -> None:
+        """Return data at a given key back to the client.
+
+        Args:
+            handle: The client handle.
+            bulk_str: The buffer that will store shared data.
+            bulk_size: The size of the data to be received.
+            key: The data's key.
+        """
+        local_array = self.data.get(key.obj_id, None)
+        if local_array is not None:
+            local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
+            self.engine.transfer(
+                bulk.push,
+                handle.get_addr(),
+                bulk_str,
+                0,
+                local_bulk,
+                0,
+                bulk_size,
+            )
+            response = RPCResponse(operation='get', key=key, exists=True)
+        else:
+            response = RPCResponse(operation='get', key=key, exists=False)
+        handle.respond(serialize(response))
+
+    def put(
+        self,
+        handle: Handle,
+        bulk_str: Bulk,
+        bulk_size: int,
+        key: DIMKey,
     ) -> None:
         """Obtain data from the client and store it in local dictionary.
 
@@ -412,10 +450,6 @@ class MargoServer:
             bulk_size: The size of the data being transferred.
             key: The data key.
         """
-        logger.debug(f'Received set RPC for key {key}.')
-
-        s = Status(True, None)
-
         local_buffer = bytearray(bulk_size)
         local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
         self.engine.transfer(
@@ -427,107 +461,142 @@ class MargoServer:
             0,
             bulk_size,
         )
-        self.data[key] = local_buffer
+        self.data[key.obj_id] = local_buffer
 
-        handle.respond(serialize(s))
+        response = RPCResponse(operation='put', key=key)
+        handle.respond(serialize(response))
 
-    def get(
-        self,
-        handle: Handle,
-        bulk_str: Bulk,
-        bulk_size: int,
-        key: str,
-    ) -> None:
-        """Return data at a given key back to the client.
 
-        Args:
-            handle: The client handle.
-            bulk_str: The buffer that will store shared data.
-            bulk_size: The size of the data to be received.
-            key: The data's key.
-        """
-        logger.debug(f'Received get RPC for key {key}.')
+def _when_finalize() -> None:
+    logger.info(f'Margo server finalized (pid={os.getpid()})')
 
-        s = Status(True, None)
 
-        try:
-            local_array = self.data[key]
-            local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
-            self.engine.transfer(
-                bulk.push,
-                handle.get_addr(),
-                bulk_str,
-                0,
-                local_bulk,
-                0,
-                bulk_size,
-            )
-        except KeyError as error:
-            logger.error(f'key {error} not found.')
-            s = Status(False, error)
+def start_server(address: str) -> None:
+    """Start and wait on a Margo server.
 
-        handle.respond(serialize(s))
+    Args:
+        address: Address of the engine that will be started. Should take
+            the form `{protocol}://{host}:{port}`.
+    """
+    server_engine = Engine(address)
+    server_engine.on_finalize(_when_finalize)
+    server_engine.enable_remote_shutdown()
 
-    def evict(
-        self,
-        handle: Handle,
-        bulk_str: str,
-        bulk_size: int,
-        key: str,
-    ) -> None:
-        """Remove key from local dictionary.
+    receiver = MargoServer(server_engine)
+    server_engine.register('evict', receiver.evict)
+    server_engine.register('exists', receiver.exists)
+    server_engine.register('get', receiver.get)
+    server_engine.register('put', receiver.put)
+    server_engine.wait_for_finalize()
 
-        Args:
-            handle: The client handle.
-            bulk_str: The buffer that will store shared data.
-            bulk_size: The size of the data to be received.
-            key: The data's key.
-        """
-        logger.debug(f'Received exists RPC for key {key}')
 
-        self.data.pop(key, None)
-        s = Status(True, None)
+def spawn_server(
+    protocol: str,
+    host: str,
+    port: int,
+    *,
+    spawn_timeout: float = 5.0,
+    kill_timeout: float | None = 1.0,
+) -> multiprocessing.context.SpawnProcess:
+    """Spawn a local server running in a separate process.
 
-        handle.respond(serialize(s))
+    Note:
+        An `atexit` callback is registered which will terminate the spawned
+        server process when the calling process exits.
 
-    def exists(
-        self,
-        handle: Handle,
-        bulk_str: str,
-        bulk_size: int,
-        key: str,
-    ) -> None:
-        """Check if key exists within local dictionary.
+    Args:
+        protocol: Communication protocol.
+        host: Host of the server to wait on.
+        port: Port of the server to wait on.
+        spawn_timeout: Max time in seconds to wait for the server to start.
+        kill_timeout: Max time in seconds to wait for the server to shutdown
+            on exit.
 
-        Args:
-            handle: The client handle.
-            bulk_str: The buffer that will store shared data.
-            bulk_size: The size of the data to be received.
-            key: The data's key.
-        """
-        logger.debug(f'Received exists RPC for key {key}')
+    Returns:
+        The process that the server is running in.
+    """
+    address = f'{protocol}://{host}:{port}'
 
-        s = Status(True, None)
+    ctx = multiprocessing.get_context('spawn')
+    server_process = ctx.Process(
+        target=start_server,
+        args=(address,),
+    )
+    server_process.start()
 
-        # converting to int then string because length appears to be 7 for
-        # True with pickle protocol 4 and cannot always guarantee that that
-        # protocol will be selected
-        local_array = serialize(str(int(key in self.data)))
-        local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
-        size = len(local_array)
-        self.engine.transfer(
-            bulk.push,
-            handle.get_addr(),
-            bulk_str,
-            0,
-            local_bulk,
-            0,
-            size,
+    def _kill_on_exit() -> None:  # pragma: no cover
+        server_process.terminate()
+        server_process.join(timeout=kill_timeout)
+        if server_process.is_alive():
+            server_process.kill()
+            server_process.join()
+        logger.debug(
+            'Server terminated on parent process exit '
+            f'(pid={server_process.pid})',
         )
 
-        handle.respond(serialize(s))
+    atexit.register(_kill_on_exit)
+    logger.debug('Registered server cleanup atexit callback')
+
+    wait_for_server(protocol, host, port, timeout=spawn_timeout)
+    logger.debug(
+        f'Server started (address={address}, pid={server_process.pid})',
+    )
+
+    return server_process
 
 
-def when_finalize() -> None:
-    """Print a statement advising that engine finalization was triggered."""
-    logger.info('Finalize was called. Cleaning up.')
+def wait_for_server(
+    protocol: str,
+    host: str,
+    port: int,
+    timeout: float = 0.1,
+) -> None:
+    """Wait until the server responds.
+
+    Warning:
+        Due to how Margo blocks internally, the timeout is not very accurate.
+
+    Args:
+        protocol: Communication protocol.
+        host: Host of the server to wait on.
+        port: Port of the server to wait on.
+        timeout: The max time in seconds to wait for server response.
+
+    Raises:
+        ServerTimeoutError: If the server does not respond within the timeout.
+    """
+    engine = Engine(protocol, mode=pymargo.client, use_progress_thread=True)
+    remote_function = engine.register('exists')
+    key = DIMKey(
+        'margo',
+        obj_id='ping',
+        size=0,
+        peer_host=host,
+        peer_port=port,
+    )
+    rpc = RPC('exists', key=key)
+    address = f'{protocol}://{host}:{port}'
+
+    sleep_time = 0.01
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            local_address = engine.lookup(address)
+            result = remote_function.on(local_address)(
+                rpc.data,
+                rpc.key.size,
+                rpc.key,
+            )
+            response = deserialize(result)
+            assert response.exception is None
+            # We could call engine.finalize() now to be safe but Margo
+            # raises a _pymargo.MargoException: margo_addr_free() returned 11
+            # exception.
+            return
+        except MargoException:  # pragma: no cover
+            time.sleep(sleep_time)
+
+    raise ServerTimeoutError(
+        f'Failed to connect to server within timeout ({timeout} seconds).',
+    )

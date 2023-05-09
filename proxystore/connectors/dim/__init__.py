@@ -6,8 +6,8 @@ import warnings
 from proxystore.warnings import ExperimentalWarning
 
 warnings.warn(
-    'The proxystore.connectors.dim module contains experimental code that may '
-    'change in the future or be unstable.',
+    'The proxystore.connectors.dim module is experimental and may be '
+    'moved to the proxystore-extensions package in the future.',
     category=ExperimentalWarning,
     stacklevel=2,
 )

@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from proxystore.connectors.dim.models import DIMKey
+from proxystore.connectors.dim.models import RPCResponse
 from proxystore.serialize import serialize
 
 # pymargo vars
@@ -10,7 +12,7 @@ client = 'client'
 server = 'server'
 
 # server dictionary
-data_dict = {}
+data_dict: dict[str, bytes] = {}
 
 
 class MargoException(Exception):  # pragma: no cover  # noqa: N818
@@ -23,8 +25,8 @@ class MargoException(Exception):  # pragma: no cover  # noqa: N818
 class Address:  # pragma: no cover
     """Mock Address implementation."""
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self):
+        return
 
     def shutdown(self) -> None:
         """Mock shutdown."""
@@ -40,11 +42,7 @@ class Engine:
         mode: str = server,
         use_progress_thread: bool = False,
     ) -> None:
-        self.url = url
-
-    def addr(self) -> str:
-        """Get Mock Engine address."""
-        return self.url
+        self.addr = Address()
 
     def on_finalize(self, func: Any) -> None:
         """Mock engine on_finalize."""
@@ -62,13 +60,9 @@ class Engine:
         """Mock create_bulk implementation."""
         return Bulk(data)
 
-    def lookup(self, addr: str) -> Engine:
+    def lookup(self, addr: str) -> Address:
         """Mock lookup implementation."""
-        return self
-
-    def shutdown(self) -> None:
-        """Mock shutdown."""
-        pass
+        return self.addr
 
     def finalize(self) -> None:
         """Mock finalize."""
@@ -96,65 +90,61 @@ class Engine:
             assert isinstance(bulk_str.data, bytearray)
             bulk_str.data[:] = local_bulk.data
 
-    def register(self, funcname: str, *args: Any) -> RPC:
+    def register(self, funcname: str, *args: Any) -> RemoteFunction:
         """Mock register.
 
         Args:
             funcname: The function name.
             args: Additional positional arguments.
         """
-        return RPC(funcname)
+        return RemoteFunction(funcname)
 
 
-class RPC:
-    """Mock RPC implementation."""
+class RemoteFunction:
+    """Mock RemoteFunction implementation."""
 
     def __init__(self, name: str) -> None:
         self.name = name
 
     def on(self, addr: str) -> Any:
-        """Mock RPC on implementation."""
+        """Mock RemoteFunction on implementation."""
         return self.mockfunc
 
     def mockfunc(
         self,
         array_str: Bulk,
         size: int,
-        key: str,
+        key: DIMKey,
     ) -> Any:
         """Mockfunc implementation."""
-        from proxystore.connectors.dim.utils import Status
-
-        if self.name == 'set':
-            data_dict[key] = array_str.data
-            return serialize(Status(True, None))
+        if self.name == 'put':
+            data_dict[key.obj_id] = array_str.data
+            return serialize(RPCResponse(operation='put', key=key))
         elif self.name == 'get':
-            if key not in data_dict:
+            if key.obj_id not in data_dict:
                 return serialize(
-                    Status(
-                        False,
-                        Exception('MockException occurred in `get_bytes`'),
-                    ),
+                    RPCResponse(operation='get', key=key, exists=False),
                 )
             else:
                 assert isinstance(array_str.data, bytearray)
-                array_str.data[:] = data_dict[key]
-            return serialize(Status(True, None))
+                array_str.data[:] = data_dict[key.obj_id]
+            return serialize(
+                RPCResponse(operation='get', key=key, exists=True),
+            )
         elif self.name == 'evict':
-            if key not in data_dict:
-                return serialize(
-                    Status(
-                        False,
-                        Exception('MockException occurred in `evict`'),
-                    ),
-                )
+            if key.obj_id not in data_dict:
+                return serialize(RPCResponse(operation='evict', key=key))
             else:
-                del data_dict[key]
-            return serialize(Status(True, None))
+                del data_dict[key.obj_id]
+            return serialize(RPCResponse(operation='evict', key=key))
         else:
-            assert isinstance(array_str.data, bytearray)
-            array_str.data[:] = serialize(key in data_dict)
-            return serialize(Status(True, None))
+            return serialize(
+                RPCResponse(
+                    operation='exists',
+                    key=key,
+                    exists=(key.obj_id in data_dict),
+                ),
+            )
 
 
 class MockBulkMod:
@@ -174,8 +164,6 @@ bulk = MockBulkMod()
 class Bulk:
     """Mock Bulk implementation."""
 
-    data: bytearray | bytes
-
     def __init__(self, data: bytearray | bytes) -> None:
         self.data = data
 
@@ -183,27 +171,14 @@ class Bulk:
 class Handle:
     """Mock Handle implementation."""
 
-    response: Any
-
     def __init__(self) -> None:
-        from proxystore.connectors.dim.utils import Status
+        self.response: Any = None
 
-        self.response = Status(True, None)
-
-    def respond(
-        self,
-        status: Any,
-    ) -> Any:
+    def respond(self, response: Any) -> None:
         """Mock respond."""
-        self.response = status
-        return self.response
+        self.response = response
+        return None
 
     def get_addr(self) -> str:
         """Mock addr."""
         return 'addr'
-
-
-class RemoteFunction:
-    """Remote function implementation."""
-
-    pass
