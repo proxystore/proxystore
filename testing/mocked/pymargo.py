@@ -25,12 +25,15 @@ class MargoException(Exception):  # pragma: no cover  # noqa: N818
 class Address:  # pragma: no cover
     """Mock Address implementation."""
 
-    def __init__(self):
-        return
+    def __init__(self, url):
+        self.addr = url
 
     def shutdown(self) -> None:
         """Mock shutdown."""
         pass
+
+    def __str__(self) -> str:
+        return self.addr
 
 
 class Engine:
@@ -42,7 +45,14 @@ class Engine:
         mode: str = server,
         use_progress_thread: bool = False,
     ) -> None:
-        self.addr = Address()
+        if url is None or '://' not in url:
+            self.address = Address('tcp://127.0.0.1:1234')
+        else:
+            self.address = Address(url)
+
+    def addr(self) -> Address:
+        """Mock Engine addr implementation."""
+        return self.address
 
     def on_finalize(self, func: Any) -> None:
         """Mock engine on_finalize."""
@@ -62,7 +72,7 @@ class Engine:
 
     def lookup(self, addr: str) -> Address:
         """Mock lookup implementation."""
-        return self.addr
+        return self.address
 
     def finalize(self) -> None:
         """Mock finalize."""

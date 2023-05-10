@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
 from typing import Any
 from unittest import mock
 
@@ -9,6 +10,7 @@ import pytest
 
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
 from proxystore.connectors.dim.margo import _when_finalize
+from proxystore.connectors.dim.margo import Engine as MargoEngine
 from proxystore.connectors.dim.margo import MargoConnector
 from proxystore.connectors.dim.margo import MargoServer
 from proxystore.connectors.dim.margo import spawn_server
@@ -40,12 +42,17 @@ def test_connector_spawns_server() -> None:
     with mock.patch(
         'proxystore.connectors.dim.margo.wait_for_server',
         side_effect=ServerTimeoutError,
-    ), mock.patch(
-        'proxystore.connectors.dim.margo.Engine',
+    ), mock.patch.object(
+        MargoEngine,
+        'lookup',
+    ), mock.patch.object(
+        MargoEngine,
+        'addr',
+        return_value='tcp://127.0.0.1:0',
     ), mock.patch(
         'proxystore.connectors.dim.margo.spawn_server',
     ) as mock_spawn_server:
-        with MargoConnector(protocol='tcp', interface='127.0.0.1', port=0):
+        with MargoConnector(protocol='tcp', port=0):
             pass
         mock_spawn_server.assert_called_once()
 
@@ -59,13 +66,13 @@ def test_multiple_connectors() -> None:  # pragma: no cover
     # C1 creates the server
     c1 = MargoConnector(
         protocol='tcp',
-        interface='127.0.0.1',
+        # interface='127.0.0.1',
         port=port,
         timeout=TIMEOUT,
     )
     c2 = MargoConnector(
         protocol='tcp',
-        interface='127.0.0.1',
+        # interface='127.0.0.1',
         port=port,
         timeout=TIMEOUT,
     )
@@ -102,10 +109,14 @@ def test_handle_server_error_responses() -> None:
     # to an existing server
     with mock.patch(
         'proxystore.connectors.dim.margo.wait_for_server',
-    ), mock.patch('proxystore.connectors.dim.margo.Engine'):
+    ), mock.patch.object(MargoEngine, 'lookup'), mock.patch.object(
+        MargoEngine,
+        'addr',
+        return_value='tcp://127.0.0.1:0',
+    ):
         connector = MargoConnector(
             protocol='tcp',
-            interface='127.0.0.1',
+            # interface='127.0.0.1',
             port=0,
         )
 
@@ -198,3 +209,19 @@ def test_mocked_spawn_server() -> None:
 def test_wait_for_server_raises_error() -> None:
     with pytest.raises(ServerTimeoutError):
         wait_for_server('tcp', '127.0.0.1', 0, timeout=0)
+
+
+def test_provide_interface() -> None:
+    with MargoConnector(
+        protocol='tcp',
+        address='127.0.0.1',
+        port=1234,
+    ) as connector:
+        assert connector.url == 'tcp://127.0.0.1:1234'
+
+    with MargoConnector(
+        protocol='tcp',
+        interface='lo',
+        port=1234,
+    ) as connector:
+        assert connector.url == 'tcp://127.0.0.1:1234'
