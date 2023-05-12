@@ -1,0 +1,65 @@
+/* Don't capitalize names. */
+h5.doc-heading {
+  text-transform: none !important;
+}
+
+/* Avoid breaking parameters name, etc. in table cells. */
+.doc-contents td code {
+  word-break: normal !important;
+}
+
+/* For pieces of Markdown rendered in table cells. */
+.doc-contents td p {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Max width for docstring sections tables. */
+.doc .md-typeset__table,
+.doc .md-typeset__table table {
+  display: table !important;
+  width: 100%;
+}
+.doc .md-typeset__table tr {
+  display: table-row;
+}
+
+/* Avoid line breaks in rendered fields. */
+.field-body p {
+  display: inline;
+}
+
+/* Defaults in Spacy table style. */
+.doc-param-default {
+  float: right;
+}
+
+span.doc.doc-object-name {
+  font-weight: 400;
+  font-family: var(--md-code-font-family);
+}
+
+h2.doc.doc-heading {
+  border-bottom-style: solid;
+  border-color: var(--md-default-fg-color--lighter);
+  border-width: 2px;
+}
+
+h3.doc.doc-heading {
+  border-bottom-style: dashed;
+  border-color: var(--md-default-fg-color--lighter);
+  border-width: 1px;
+}
+
+span.doc.doc-object-name.doc-function-name {
+  font-style: normal;
+}
+
+/*
+div.doc.doc-object.doc-class {
+  border-bottom-style: solid;
+  border-top-style: solid;
+  border-color: var(--md-code-bg-color);
+  border-width: 1px;
+}
+*/
