@@ -227,23 +227,13 @@ def test_end_to_end() -> None:  # pragma: no cover
         assert connector.get(key) == b'data'
 
 
-def test_provide_ip() -> None:
-    port = open_port()
+def test_provide_ip_or_interface() -> None:
     host = '127.0.0.1'
     with mock.patch(
         'proxystore.connectors.dim.ucx.wait_for_server',
     ):
-        with UCXConnector(
-            address=host,
-            port=port,
-            timeout=1,
-        ) as connector:
+        with UCXConnector(port=0, address=host) as connector:
             assert connector.address == host
 
-        port = open_port()
-        with UCXConnector(
-            interface='lo',
-            port=port,
-            timeout=1,
-        ) as connector:
+        with UCXConnector(port=0, interface='lo') as connector:
             assert connector.address == host

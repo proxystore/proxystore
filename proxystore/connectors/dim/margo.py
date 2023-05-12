@@ -115,7 +115,7 @@ class MargoConnector:
 
         if self._address is not None:
             self.address = self._address
-        elif self._interface is not None:
+        elif self._interface is not None:  # pragma: darwin no cover
             self.address = get_ip_address(self._interface)
         else:
             eng_url = str(self.engine.addr())

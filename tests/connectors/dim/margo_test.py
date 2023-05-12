@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import platform
 from typing import Any
 from unittest import mock
 
@@ -204,20 +205,31 @@ def test_wait_for_server_raises_error() -> None:
         wait_for_server('tcp', '127.0.0.1', 0, timeout=0)
 
 
-def test_provide_interface() -> None:
+def test_provide_ip() -> None:
     with mock.patch(
         'proxystore.connectors.dim.margo.wait_for_server',
     ):
         with MargoConnector(
+            port=0,
             protocol='tcp',
             address='127.0.0.1',
-            port=1234,
         ) as connector:
-            assert connector.url == 'tcp://127.0.0.1:1234'
+            assert connector.url == 'tcp://127.0.0.1:0'
 
+
+@pytest.mark.skipif(
+    platform.system() == 'Darwin',
+    reason=(
+        'Resolving an IP address from an interface is not supported on MacOS'
+    ),
+)
+def test_provide_interface() -> None:  # pragma: darwin no cover
+    with mock.patch(
+        'proxystore.connectors.dim.margo.wait_for_server',
+    ):
         with MargoConnector(
+            port=0,
             protocol='tcp',
             interface='lo',
-            port=1234,
         ) as connector:
-            assert connector.url == 'tcp://127.0.0.1:1234'
+            assert connector.url == 'tcp://127.0.0.1:0'

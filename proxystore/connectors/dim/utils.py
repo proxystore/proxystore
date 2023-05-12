@@ -6,8 +6,11 @@ import socket
 import struct
 
 
-def get_ip_address(ifname: str) -> str:
+def get_ip_address(ifname: str) -> str:  # pragma: darwin no cover
     """Get ip address provided an interface name.
+
+    Warning:
+        This function does not work on MacOS/Darwin.
 
     Args:
         ifname: The interface name.
