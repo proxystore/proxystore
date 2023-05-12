@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import platform
 from typing import Any
 from unittest import mock
 
@@ -41,11 +43,14 @@ def test_connector_spawns_server() -> None:
         'proxystore.connectors.dim.margo.wait_for_server',
         side_effect=ServerTimeoutError,
     ), mock.patch(
-        'proxystore.connectors.dim.margo.Engine',
+        'proxystore.connectors.dim.margo.Engine.lookup',
+    ), mock.patch(
+        'proxystore.connectors.dim.margo.Engine.addr',
+        return_value='tcp://127.0.0.1:0',
     ), mock.patch(
         'proxystore.connectors.dim.margo.spawn_server',
     ) as mock_spawn_server:
-        with MargoConnector(protocol='tcp', interface='127.0.0.1', port=0):
+        with MargoConnector(protocol='tcp', port=0):
             pass
         mock_spawn_server.assert_called_once()
 
@@ -59,13 +64,11 @@ def test_multiple_connectors() -> None:  # pragma: no cover
     # C1 creates the server
     c1 = MargoConnector(
         protocol='tcp',
-        interface='127.0.0.1',
         port=port,
         timeout=TIMEOUT,
     )
     c2 = MargoConnector(
         protocol='tcp',
-        interface='127.0.0.1',
         port=port,
         timeout=TIMEOUT,
     )
@@ -102,10 +105,12 @@ def test_handle_server_error_responses() -> None:
     # to an existing server
     with mock.patch(
         'proxystore.connectors.dim.margo.wait_for_server',
-    ), mock.patch('proxystore.connectors.dim.margo.Engine'):
+    ), mock.patch('proxystore.connectors.dim.margo.Engine.lookup'), mock.patch(
+        'proxystore.connectors.dim.margo.Engine.addr',
+        return_value='tcp://127.0.0.1:0',
+    ):
         connector = MargoConnector(
             protocol='tcp',
-            interface='127.0.0.1',
             port=0,
         )
 
@@ -198,3 +203,33 @@ def test_mocked_spawn_server() -> None:
 def test_wait_for_server_raises_error() -> None:
     with pytest.raises(ServerTimeoutError):
         wait_for_server('tcp', '127.0.0.1', 0, timeout=0)
+
+
+def test_provide_ip() -> None:
+    with mock.patch(
+        'proxystore.connectors.dim.margo.wait_for_server',
+    ):
+        with MargoConnector(
+            port=0,
+            protocol='tcp',
+            address='127.0.0.1',
+        ) as connector:
+            assert connector.url == 'tcp://127.0.0.1:0'
+
+
+@pytest.mark.skipif(
+    platform.system() == 'Darwin',
+    reason=(
+        'Resolving an IP address from an interface is not supported on MacOS'
+    ),
+)
+def test_provide_interface() -> None:  # pragma: darwin no cover
+    with mock.patch(
+        'proxystore.connectors.dim.margo.wait_for_server',
+    ):
+        with MargoConnector(
+            port=0,
+            protocol='tcp',
+            interface='lo',
+        ) as connector:
+            assert connector.url == 'tcp://127.0.0.1:0'

@@ -70,9 +70,12 @@ class MargoConnector:
         to that server.
 
     Args:
-        interface: The network interface to use.
         port: The desired port for the spawned server.
         protocol: The communication protocol to use.
+        address: The network IP to use for transfer. Has precedence over `interface`
+            if both are provided.
+        interface: The network interface to use. `addr` has precedence over
+            this attribute if both are provided.
         timeout: Timeout in seconds to try connecting to a local server before
             spawning one.
 
@@ -84,9 +87,10 @@ class MargoConnector:
 
     def __init__(
         self,
-        interface: str,
         port: int,
         protocol: Protocol | str,
+        address: str | None = None,
+        interface: str | None = None,
         timeout: float = 1,
     ) -> None:
         # Py-Mochi-Margo is not a required dependency and requires the user
@@ -94,21 +98,30 @@ class MargoConnector:
         if pymargo_import_error is not None:  # pragma: no cover
             raise pymargo_import_error
 
-        self.interface = interface
+        self._address = address
+        self._interface = interface
         self.port = port
         self.protocol = (
             protocol if isinstance(protocol, str) else protocol.value
         )
-        self.timeout = timeout
 
-        self.host = get_ip_address(interface)
-        self.addr = f'{self.protocol}://{self.host}:{port}'
+        self.timeout = timeout
 
         self.engine = Engine(
             self.protocol,
             mode=pymargo.client,
             use_progress_thread=True,
         )
+
+        if self._address is not None:
+            self.address = self._address
+        elif self._interface is not None:  # pragma: darwin no cover
+            self.address = get_ip_address(self._interface)
+        else:
+            eng_url = str(self.engine.addr())
+            self.address = eng_url.split(':')[1].split('/')[2]
+
+        self.url = f'{self.protocol}://{self.address}:{self.port}'
 
         self._rpcs = {
             'evict': self.engine.register('evict'),
@@ -120,24 +133,29 @@ class MargoConnector:
         self.server: multiprocessing.context.SpawnProcess | None
         try:
             logger.info(
-                f'Connecting to local server (address={self.addr})...',
+                f'Connecting to local server (address={self.url})...',
             )
-            wait_for_server(self.protocol, self.host, self.port, self.timeout)
+            wait_for_server(
+                self.protocol,
+                self.address,
+                self.port,
+                self.timeout,
+            )
             logger.info(
-                f'Connected to local server (address={self.addr})',
+                f'Connected to local server (address={self.url})',
             )
         except ServerTimeoutError:
             logger.info(
                 'Failed to connect to local server '
-                f'(address={self.addr}, timeout={self.timeout})',
+                f'(address={self.url}, timeout={self.timeout})',
             )
             self.server = spawn_server(
                 self.protocol,
-                self.host,
+                self.address,
                 self.port,
                 spawn_timeout=self.timeout,
             )
-            logger.info(f'Spawned local server (address={self.addr})')
+            logger.info(f'Spawned local server (address={self.url})')
         else:
             self.server = None
 
@@ -167,12 +185,12 @@ class MargoConnector:
         responses = []
 
         for rpc in rpcs:
-            addr = f'{self.protocol}://{rpc.key.peer_host}:{rpc.key.peer_port}'
-            server_addr = self.engine.lookup(addr)
+            url = f'{self.protocol}://{rpc.key.peer_host}:{rpc.key.peer_port}'
+            server_url = self.engine.lookup(url)
             logger.debug(
                 f'Sent {rpc.operation.upper()} RPC (key={rpc.key})',
             )
-            result = self._rpcs[rpc.operation].on(server_addr)(
+            result = self._rpcs[rpc.operation].on(server_url)(
                 rpc.data,
                 rpc.key.size,
                 rpc.key,
@@ -204,7 +222,7 @@ class MargoConnector:
                 no-op.
         """
         if kill_server and self.server is not None:
-            self.engine.lookup(self.addr).shutdown()
+            self.engine.lookup(self.url).shutdown()
             self.server.join()
             logger.info(
                 'Terminated local server on connector close '
@@ -221,7 +239,8 @@ class MargoConnector:
         the connector object.
         """
         return {
-            'interface': self.interface,
+            'address': self._address,
+            'interface': self._interface,
             'port': self.port,
             'protocol': self.protocol,
             'timeout': self.timeout,
@@ -318,7 +337,7 @@ class MargoConnector:
             dim_type='margo',
             obj_id=str(uuid.uuid4()),
             size=len(obj),
-            peer_host=self.host,
+            peer_host=self.address,
             peer_port=self.port,
         )
         blk = self.engine.create_bulk(obj, bulk.read_only)
@@ -342,7 +361,7 @@ class MargoConnector:
                 dim_type='margo',
                 obj_id=str(uuid.uuid4()),
                 size=len(obj),
-                peer_host=self.host,
+                peer_host=self.address,
                 peer_port=self.port,
             )
             for obj in objs
@@ -471,14 +490,14 @@ def _when_finalize() -> None:
     logger.info(f'Margo server finalized (pid={os.getpid()})')
 
 
-def start_server(address: str) -> None:
+def start_server(url: str) -> None:
     """Start and wait on a Margo server.
 
     Args:
-        address: Address of the engine that will be started. Should take
+        url: URL of the engine that will be started. Should take
             the form `{protocol}://{host}:{port}`.
     """
-    server_engine = Engine(address)
+    server_engine = Engine(url)
     server_engine.on_finalize(_when_finalize)
     server_engine.enable_remote_shutdown()
 
@@ -492,7 +511,7 @@ def start_server(address: str) -> None:
 
 def spawn_server(
     protocol: str,
-    host: str,
+    address: str,
     port: int,
     *,
     spawn_timeout: float = 5.0,
@@ -506,7 +525,7 @@ def spawn_server(
 
     Args:
         protocol: Communication protocol.
-        host: Host of the server to wait on.
+        address: Host IP of the server to wait on.
         port: Port of the server to wait on.
         spawn_timeout: Max time in seconds to wait for the server to start.
         kill_timeout: Max time in seconds to wait for the server to shutdown
@@ -515,12 +534,12 @@ def spawn_server(
     Returns:
         The process that the server is running in.
     """
-    address = f'{protocol}://{host}:{port}'
+    url = f'{protocol}://{address}:{port}'
 
     ctx = multiprocessing.get_context('spawn')
     server_process = ctx.Process(
         target=start_server,
-        args=(address,),
+        args=(url,),
     )
     server_process.start()
 
@@ -538,9 +557,9 @@ def spawn_server(
     atexit.register(_kill_on_exit)
     logger.debug('Registered server cleanup atexit callback')
 
-    wait_for_server(protocol, host, port, timeout=spawn_timeout)
+    wait_for_server(protocol, address, port, timeout=spawn_timeout)
     logger.debug(
-        f'Server started (address={address}, pid={server_process.pid})',
+        f'Server started (address={url}, pid={server_process.pid})',
     )
 
     return server_process
@@ -548,7 +567,7 @@ def spawn_server(
 
 def wait_for_server(
     protocol: str,
-    host: str,
+    address: str,
     port: int,
     timeout: float = 0.1,
 ) -> None:
@@ -559,7 +578,7 @@ def wait_for_server(
 
     Args:
         protocol: Communication protocol.
-        host: Host of the server to wait on.
+        address: Host IP of the server to wait on.
         port: Port of the server to wait on.
         timeout: The max time in seconds to wait for server response.
 
@@ -572,18 +591,18 @@ def wait_for_server(
         'margo',
         obj_id='ping',
         size=0,
-        peer_host=host,
+        peer_host=address,
         peer_port=port,
     )
     rpc = RPC('exists', key=key)
-    address = f'{protocol}://{host}:{port}'
+    url = f'{protocol}://{address}:{port}'
 
     sleep_time = 0.01
     start = time.time()
     while time.time() - start < timeout:
         try:
-            local_address = engine.lookup(address)
-            result = remote_function.on(local_address)(
+            local_url = engine.lookup(url)
+            result = remote_function.on(local_url)(
                 rpc.data,
                 rpc.key.size,
                 rpc.key,

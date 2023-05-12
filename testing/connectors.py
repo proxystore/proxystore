@@ -151,7 +151,6 @@ def redis_connector() -> Generator[Connector[Any], None, None]:
 @pytest.fixture(scope='session')
 def margo_connector() -> Generator[Connector[Any], None, None]:
     """MargoConnector fixture."""
-    host = '127.0.0.1'
     port = open_port()
     protocol = margo.Protocol.OFI_TCP
 
@@ -168,7 +167,6 @@ def margo_connector() -> Generator[Connector[Any], None, None]:
     with ctx():
         connector = margo.MargoConnector(
             protocol=protocol,
-            interface=host,
             port=port,
             timeout=timeout,
         )
@@ -182,7 +180,6 @@ def margo_connector() -> Generator[Connector[Any], None, None]:
 @pytest.fixture(scope='session')
 def ucx_connector() -> Generator[Connector[Any], None, None]:
     """UCXConnector fixture."""
-    interface = '127.0.0.1'
     port = open_port()
 
     ucp_spec = importlib.util.find_spec('ucp')
@@ -192,7 +189,7 @@ def ucx_connector() -> Generator[Connector[Any], None, None]:
         ctx = mock_multiprocessing
 
     with ctx():
-        connector = ucx.UCXConnector(interface=interface, port=port)
+        connector = ucx.UCXConnector(port=port)
 
     yield connector
 
@@ -208,7 +205,6 @@ def ucx_connector() -> Generator[Connector[Any], None, None]:
 @pytest.fixture(scope='session')
 def zmq_connector() -> Generator[Connector[Any], None, None]:
     """ZeroMQ store fixture."""
-    interface = '127.0.0.1'
     port = open_port()
 
     if platform.system() == 'Darwin':  # pragma: no cover
@@ -218,7 +214,6 @@ def zmq_connector() -> Generator[Connector[Any], None, None]:
         timeout = 0.5
 
     with zmq.ZeroMQConnector(
-        interface=interface,
         port=port,
         timeout=timeout,
     ) as connector:

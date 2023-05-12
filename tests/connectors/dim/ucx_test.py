@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
+import importlib.util
 import sys
 from unittest import mock
 
@@ -46,7 +47,7 @@ async def test_connector_spawns_server() -> None:
     ), mock.patch(
         'proxystore.connectors.dim.ucx.spawn_server',
     ) as mock_spawn_server:
-        with UCXConnector('eth0', 0):
+        with UCXConnector(port=0):
             pass
         mock_spawn_server.assert_called_once()
 
@@ -66,7 +67,7 @@ def test_connector_raises_rpc_error() -> None:
         'ucp.create_endpoint',
         AsyncMock(return_value=MockEndpoint()),
     ):
-        with UCXConnector('eth0', 0) as connector:
+        with UCXConnector(port=0) as connector:
             with pytest.raises(Exception, match='test'):
                 connector._send_rpcs([RPC('get', TEST_KEY)])
 
@@ -84,7 +85,7 @@ def test_connector_close_kills_server() -> None:
             self.join_called = True
 
     with mock.patch('proxystore.connectors.dim.ucx.wait_for_server'):
-        connector = UCXConnector('eth0', 0)
+        connector = UCXConnector(port=0)
 
     connector.server = MockProcess()  # type: ignore[assignment]
     connector.close(kill_server=True)
@@ -209,18 +210,30 @@ def test_mocked_spawn_server() -> None:
     reason='Not compatible with mocked UCP module.',
 )
 def test_end_to_end() -> None:  # pragma: no cover
-    host = '127.0.0.1'
     port = open_port()
 
+    host = '127.0.0.1'
     spawn_server(host, port, spawn_timeout=1)
 
-    with UCXConnector(host, port, timeout=1) as connector:
+    with UCXConnector(port=port, timeout=1) as connector:
         # assert connector.server is not None
 
         # Check multiple connectors okay
-        connector2 = UCXConnector(host, port, timeout=1)
+        connector2 = UCXConnector(port=port, timeout=1)
         connector2.close()
         assert connector2.server is None
 
         key = connector.put(b'data')
         assert connector.get(key) == b'data'
+
+
+def test_provide_ip_or_interface() -> None:
+    host = '127.0.0.1'
+    with mock.patch(
+        'proxystore.connectors.dim.ucx.wait_for_server',
+    ):
+        with UCXConnector(port=0, address=host) as connector:
+            assert connector.address == host
+
+        with UCXConnector(port=0, interface='lo') as connector:
+            assert connector.address == host

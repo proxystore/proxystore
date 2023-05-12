@@ -28,7 +28,6 @@ from proxystore.connectors.dim.exceptions import ServerTimeoutError
 from proxystore.connectors.dim.models import DIMKey
 from proxystore.connectors.dim.models import RPC
 from proxystore.connectors.dim.models import RPCResponse
-from proxystore.connectors.dim.utils import get_ip_address
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
@@ -45,8 +44,11 @@ class UCXConnector:
         to that server.
 
     Args:
-        interface: The network interface to use.
         port: The desired port for the spawned server.
+        address: The IP address of the network interface to use.
+            Has precedence over `interface` if both are provided.
+        interface: The network interface to use.
+            `address` has precedence if both args are defined.
         timeout: Timeout in seconds to try connecting to local server before
             spawning one.
 
@@ -58,40 +60,48 @@ class UCXConnector:
 
     def __init__(
         self,
-        interface: str,
         port: int,
+        address: str | None = None,
+        interface: str | None = None,
         timeout: float = 1,
     ) -> None:
         if ucx_import_error is not None:  # pragma: no cover
             raise ucx_import_error
 
-        self.interface = interface
+        self._address = address
+        self._interface = interface
         self.port = port
         self.timeout = timeout
 
-        self.host = get_ip_address(interface)
-        self.addr = f'{self.host}:{self.port}'
+        if self._address is not None:
+            self.address = self._address
+        elif self._interface is not None:
+            self.address = ucp.get_address(ifname=self._interface)
+        else:
+            self.address = ucp.get_address()
+
+        self.url = f'{self.address}:{self.port}'
 
         self.server: multiprocessing.context.SpawnProcess | None
         try:
             logger.info(
-                f'Connecting to local server (address={self.addr})...',
+                f'Connecting to local server (URL={self.url})...',
             )
-            wait_for_server(self.host, self.port, self.timeout)
+            wait_for_server(self.address, self.port, self.timeout)
             logger.info(
-                f'Connected to local server (address={self.addr})',
+                f'Connected to local server (URL={self.url})',
             )
         except ServerTimeoutError:
             logger.info(
                 'Failed to connect to local server '
-                f'(address={self.addr}, timeout={self.timeout})',
+                f'(URL={self.url}, timeout={self.timeout})',
             )
             self.server = spawn_server(
-                self.host,
+                self.address,
                 self.port,
                 spawn_timeout=self.timeout,
             )
-            logger.info(f'Spawned local server (address={self.addr})')
+            logger.info(f'Spawned local server (address={self.url})')
         else:
             self.server = None
 
@@ -184,7 +194,8 @@ class UCXConnector:
         the connector object.
         """
         return {
-            'interface': self.interface,
+            'address': self._address,
+            'interface': self._interface,
             'port': self.port,
             'timeout': self.timeout,
         }
@@ -261,7 +272,7 @@ class UCXConnector:
             dim_type='ucx',
             obj_id=str(uuid.uuid4()),
             size=len(obj),
-            peer_host=self.host,
+            peer_host=self.address,
             peer_port=self.port,
         )
         rpc = RPC(operation='put', key=key, data=obj)
@@ -283,7 +294,7 @@ class UCXConnector:
                 dim_type='ucx',
                 obj_id=str(uuid.uuid4()),
                 size=len(obj),
-                peer_host=self.host,
+                peer_host=self.address,
                 peer_port=self.port,
             )
             for obj in objs
@@ -437,7 +448,7 @@ def start_server(port: int) -> None:  # pragma: no cover
 
 
 def spawn_server(
-    host: str,
+    address: str,
     port: int,
     *,
     spawn_timeout: float = 5.0,
@@ -450,7 +461,7 @@ def spawn_server(
         server process when the calling process exits.
 
     Args:
-        host: IP address the server will listen on.
+        address: IP address the server will listen on.
         port: Port the server will listen on.
         spawn_timeout: Max time in seconds to wait for the server to start.
         kill_timeout: Max time in seconds to wait for the server to shutdown
@@ -483,23 +494,23 @@ def spawn_server(
     atexit.register(_kill_on_exit)
     logger.debug('Registered server cleanup atexit callback')
 
-    wait_for_server(host, port, timeout=spawn_timeout)
+    wait_for_server(address, port, timeout=spawn_timeout)
     logger.debug(
-        f'Server started (host={host}, port={port}, pid={server_process.pid})',
+        f'Server started (host={address}, port={port}, pid={server_process.pid})',
     )
 
     return server_process
 
 
 async def wait_for_server_async(
-    host: str,
+    address: str,
     port: int,
     timeout: float = 0.1,
 ) -> None:
     """Wait until the server responds.
 
     Args:
-        host: Host of the server to ping.
+        address: Host IP of the server to ping.
         port: Port of the server to ping.
         timeout: Max time in seconds to wait for server response.
 
@@ -511,7 +522,7 @@ async def wait_for_server_async(
 
     while True:
         try:
-            ep = await ucp.create_endpoint(host, port)
+            ep = await ucp.create_endpoint(address, port)
         except ucp._libs.exceptions.UCXNotConnected as e:  # pragma: no cover
             if time_waited >= timeout:
                 raise ServerTimeoutError(
@@ -530,7 +541,7 @@ async def wait_for_server_async(
     del ep
 
 
-def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
+def wait_for_server(address: str, port: int, timeout: float = 0.1) -> None:
     """Wait until the server responds.
 
     Note:
@@ -539,14 +550,14 @@ def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
         using [`asyncio.run()`][asyncio.run].
 
     Args:
-        host: The host of the server to ping.
+        address: The host IP of the server to ping.
         port: Theport of the server to ping.
         timeout: The max time in seconds to wait for server response.
 
     Raises:
         ServerTimeoutError: If the server does not respond within the timeout.
     """
-    asyncio.run(wait_for_server_async(host, port, timeout))
+    asyncio.run(wait_for_server_async(address, port, timeout))
 
 
 async def reset_ucp_async(reset_ucp: bool = True) -> None:  # pragma: no cover

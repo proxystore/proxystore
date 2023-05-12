@@ -123,3 +123,8 @@ def create_listener(handler: Any, port: int) -> Any:  # pragma: no cover
 async def create_endpoint(host: str, port: int) -> MockEndpoint:
     """Create endpoint mock implementation."""
     return MockEndpoint()
+
+
+def get_address(ifname: str | None = None) -> str:
+    """Mock get_address implementation."""
+    return '127.0.0.1'

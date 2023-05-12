@@ -40,7 +40,6 @@ def test_wait_for_server() -> None:
 def test_large_message_sizes() -> None:
     chunk_length = 1000
     with ZeroMQConnector(
-        '127.0.0.1',
         open_port(),
         chunk_length=1000,
         timeout=TIMEOUT,
@@ -54,8 +53,8 @@ def test_large_message_sizes() -> None:
 def test_multiple_connectors() -> None:
     port = open_port()
     # C1 creates the server
-    c1 = ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT)
-    c2 = ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT)
+    c1 = ZeroMQConnector(port, timeout=TIMEOUT)
+    c2 = ZeroMQConnector(port, timeout=TIMEOUT)
 
     key = c1.put(b'data')
     assert c2.get(key) == b'data'
@@ -88,7 +87,7 @@ def test_handle_server_error_responses() -> None:
 
     port = open_port()
     with mock.patch('proxystore.connectors.dim.zmq.wait_for_server'):
-        with ZeroMQConnector('127.0.0.1', port, timeout=TIMEOUT) as connector:
+        with ZeroMQConnector(port, timeout=TIMEOUT) as connector:
             with mock.patch.object(
                 connector.socket,
                 'send_multipart',
@@ -99,3 +98,26 @@ def test_handle_server_error_responses() -> None:
             ):
                 with pytest.raises(RuntimeError, match='xyz'):
                     connector._send_rpcs([rpc])
+
+
+def test_provide_ip() -> None:
+    host = '127.0.0.1'
+    with mock.patch(
+        'proxystore.connectors.dim.zmq.wait_for_server',
+    ):
+        with ZeroMQConnector(port=0, address=host) as connector:
+            assert connector.address == host
+
+
+@pytest.mark.skipif(
+    platform.system() == 'Darwin',
+    reason=(
+        'Resolving an IP address from an interface is not supported on MacOS'
+    ),
+)
+def test_provide_interface() -> None:  # pragma: darwin no cover
+    with mock.patch(
+        'proxystore.connectors.dim.zmq.wait_for_server',
+    ):
+        with ZeroMQConnector(port=0, interface='lo') as connector:
+            assert connector.address == '127.0.0.1'
