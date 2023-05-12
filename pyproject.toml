@@ -76,7 +76,8 @@ docs = [
     "mkdocs-literate-nav",
     "mkdocs-material",
     "mkdocs-section-index",
-    "mkdocstrings[python]",
+    "mkdocstrings",
+    "mkdocstrings-python==0.10.1",
     "mike",
     # Needed for generating CLI docs
     "proxystore[all]",
