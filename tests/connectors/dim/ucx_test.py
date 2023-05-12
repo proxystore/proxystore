@@ -230,17 +230,20 @@ def test_end_to_end() -> None:  # pragma: no cover
 def test_provide_ip() -> None:
     port = open_port()
     host = '127.0.0.1'
-    with UCXConnector(
-        address=host,
-        port=port,
-        timeout=1,
-    ) as connector:
-        assert connector.address == host
+    with mock.patch(
+        'proxystore.connectors.dim.ucx.wait_for_server',
+    ):
+        with UCXConnector(
+            address=host,
+            port=port,
+            timeout=1,
+        ) as connector:
+            assert connector.address == host
 
-    port = open_port()
-    with UCXConnector(
-        interface='lo',
-        port=port,
-        timeout=1,
-    ) as connector:
-        assert connector.address == host
+        port = open_port()
+        with UCXConnector(
+            interface='lo',
+            port=port,
+            timeout=1,
+        ) as connector:
+            assert connector.address == host

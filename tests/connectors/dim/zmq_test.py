@@ -103,16 +103,19 @@ def test_handle_server_error_responses() -> None:
 def test_provide_ip() -> None:
     port = open_port()
     host = '127.0.0.1'
-    with ZeroMQConnector(
-        port=port,
-        address=host,
-        timeout=TIMEOUT,
-    ) as connector:
-        assert connector.address == host
+    with mock.patch(
+        'proxystore.connectors.dim.zmq.wait_for_server',
+    ):
+        with ZeroMQConnector(
+            port=port,
+            address=host,
+            timeout=TIMEOUT,
+        ) as connector:
+            assert connector.address == host
 
-    with ZeroMQConnector(
-        port=port,
-        interface='lo',
-        timeout=TIMEOUT,
-    ) as connector:
-        assert connector.address == host
+        with ZeroMQConnector(
+            port=port,
+            interface='lo',
+            timeout=TIMEOUT,
+        ) as connector:
+            assert connector.address == host
