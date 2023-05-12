@@ -6,6 +6,7 @@ import atexit
 import logging
 import multiprocessing
 import signal
+import socket
 import sys
 import time
 import uuid
@@ -50,7 +51,10 @@ class ZeroMQConnector:
         to that server.
 
     Args:
-        interface: The network interface to use.
+        address: The network IP address to use. Takes precedence over
+            `interface` if both are provided.
+        interface: The network interface to use. `address` arg takes precedence
+            if both are provided.
         port: The desired port for the spawned server.
         chunk_length: Message chunk size in bytes. Defaults to
             `MAX_CHUNK_LENGTH_DEFAULT`.
@@ -65,8 +69,9 @@ class ZeroMQConnector:
 
     def __init__(
         self,
-        interface: str,
         port: int,
+        address: str | None = None,
+        interface: str | None = None,
         chunk_length: int | None = None,
         timeout: float = 1,
     ) -> None:
@@ -75,37 +80,45 @@ class ZeroMQConnector:
         if zmq_import_error is not None:  # pragma: no cover
             raise zmq_import_error
 
-        self.interface = interface
+        self._address = address
+        self._interface = interface
         self.port = port
         self.chunk_length = (
             MAX_CHUNK_LENGTH_DEFAULT if chunk_length is None else chunk_length
         )
         self.timeout = timeout
 
-        self.host = get_ip_address(interface)
-        self.addr = f'tcp://{self.host}:{self.port}'
+        if self._address is not None:
+            self.address = self._address
+        elif self._interface is not None:
+            self.address = get_ip_address(self._interface)
+        else:
+            host = socket.gethostname()
+            self.address = socket.gethostbyname(host)
+
+        self.url = f'tcp://{self.address}:{self.port}'
 
         self.server: multiprocessing.Process | None
         try:
             logger.info(
-                f'Connecting to local server (address={self.addr})...',
+                f'Connecting to local server (url={self.url})...',
             )
-            wait_for_server(self.host, self.port, self.timeout)
+            wait_for_server(self.address, self.port, self.timeout)
             logger.info(
-                f'Connected to local server (address={self.addr})',
+                f'Connected to local server (url={self.url})',
             )
         except ServerTimeoutError:
             logger.info(
                 'Failed to connect to local server '
-                f'(address={self.addr}, timeout={self.timeout})',
+                f'(address={self.url}, timeout={self.timeout})',
             )
             self.server = spawn_server(
-                self.host,
+                self.address,
                 self.port,
                 chunk_length=self.chunk_length,
                 spawn_timeout=self.timeout,
             )
-            logger.info(f'Spawned local server (address={self.addr})')
+            logger.info(f'Spawned local server (url={self.url})')
         else:
             self.server = None
 
@@ -139,8 +152,8 @@ class ZeroMQConnector:
 
         for rpc in rpcs:
             message = serialize(rpc)
-            addr = f'tcp://{rpc.key.peer_host}:{rpc.key.peer_port}'
-            with self.socket.connect(addr):
+            url = f'tcp://{rpc.key.peer_host}:{rpc.key.peer_port}'
+            with self.socket.connect(url):
                 self.socket.send_multipart(
                     list(utils.chunk_bytes(message, self.chunk_length)),
                 )
@@ -193,7 +206,8 @@ class ZeroMQConnector:
         the connector object.
         """
         return {
-            'interface': self.interface,
+            'address': self._address,
+            'interface': self._interface,
             'port': self.port,
             'chunk_length': self.chunk_length,
             'timeout': self.timeout,
@@ -271,7 +285,7 @@ class ZeroMQConnector:
             dim_type='zmq',
             obj_id=str(uuid.uuid4()),
             size=len(obj),
-            peer_host=self.host,
+            peer_host=self.address,
             peer_port=self.port,
         )
         rpc = RPC(operation='put', key=key, data=obj)
@@ -293,7 +307,7 @@ class ZeroMQConnector:
                 dim_type='zmq',
                 obj_id=str(uuid.uuid4()),
                 size=len(obj),
-                peer_host=self.host,
+                peer_host=self.address,
                 peer_port=self.port,
             )
             for obj in objs
@@ -383,7 +397,7 @@ class ZeroMQServer:
 
 
 async def run_server(
-    host: str,
+    address: str,
     port: int,
     chunk_length: int | None = None,
 ) -> None:
@@ -393,7 +407,7 @@ async def run_server(
         This function does not return until SIGINT or SIGTERM is received.
 
     Args:
-        host: IP address the server should bind to.
+        address: IP address the server should bind to.
         port: Port the server should listen on.
         chunk_length: Message chunk size in bytes. Defaults to
             `MAX_CHUNK_LENGTH_DEFAULT`.
@@ -413,7 +427,7 @@ async def run_server(
     socket = context.socket(zmq.REP)
     socket.setsockopt(zmq.RCVTIMEO, 100)
 
-    with socket.bind(f'tcp://{host}:{port}'):
+    with socket.bind(f'tcp://{address}:{port}'):
         while not close_future.done():
             try:
                 rpc_parts = await socket.recv_multipart()
@@ -442,7 +456,7 @@ async def run_server(
 
 
 def start_server(
-    host: str,
+    address: str,
     port: int,
     chunk_length: int | None = None,
 ) -> None:
@@ -454,16 +468,16 @@ def start_server(
         that loop.
 
     Args:
-        host: IP address the server should bind to.
+        address: IP address the server should bind to.
         port: Port the server should listen on.
         chunk_length: Message chunk size in bytes. Defaults to
             `MAX_CHUNK_LENGTH_DEFAULT`.
     """
-    asyncio.run(run_server(host, port, chunk_length))
+    asyncio.run(run_server(address, port, chunk_length))
 
 
 def spawn_server(
-    host: str,
+    address: str,
     port: int,
     *,
     chunk_length: int | None = None,
@@ -477,7 +491,7 @@ def spawn_server(
         server process when the calling process exits.
 
     Args:
-        host: IP address the server should bind to.
+        address: IP address the server should bind to.
         port: Port the server will listen on.
         chunk_length: Message chunk size in bytes. Defaults to
             `MAX_CHUNK_LENGTH_DEFAULT`.
@@ -490,7 +504,7 @@ def spawn_server(
     """
     server_process = multiprocessing.Process(
         target=start_server,
-        args=(host, port, chunk_length),
+        args=(address, port, chunk_length),
     )
     server_process.start()
 
@@ -508,19 +522,19 @@ def spawn_server(
     atexit.register(_kill_on_exit)
     logger.debug('Registered server cleanup atexit callback')
 
-    wait_for_server(host, port, timeout=spawn_timeout)
+    wait_for_server(address, port, timeout=spawn_timeout)
     logger.debug(
-        f'Server started (host={host}, port={port}, pid={server_process.pid})',
+        f'Server started (host={address}, port={port}, pid={server_process.pid})',
     )
 
     return server_process
 
 
-def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
+def wait_for_server(address: str, port: int, timeout: float = 0.1) -> None:
     """Wait until the server responds.
 
     Args:
-        host: Host of the server to ping.
+        address: Host of the server to ping.
         port: Port of the server to ping.
         timeout: Max time in seconds to wait for server response.
 
@@ -531,7 +545,7 @@ def wait_for_server(host: str, port: int, timeout: float = 0.1) -> None:
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
     socket.setsockopt(zmq.LINGER, 0)
-    socket.connect(f'tcp://{host}:{port}')
+    socket.connect(f'tcp://{address}:{port}')
     socket.send(b'ping')
 
     poller = zmq.Poller()

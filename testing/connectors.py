@@ -205,7 +205,6 @@ def ucx_connector() -> Generator[Connector[Any], None, None]:
 @pytest.fixture(scope='session')
 def zmq_connector() -> Generator[Connector[Any], None, None]:
     """ZeroMQ store fixture."""
-    interface = '127.0.0.1'
     port = open_port()
 
     if platform.system() == 'Darwin':  # pragma: no cover
@@ -215,7 +214,6 @@ def zmq_connector() -> Generator[Connector[Any], None, None]:
         timeout = 0.5
 
     with zmq.ZeroMQConnector(
-        interface=interface,
         port=port,
         timeout=timeout,
     ) as connector:

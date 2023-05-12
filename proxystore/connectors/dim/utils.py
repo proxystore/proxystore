@@ -16,21 +16,13 @@ def get_ip_address(ifname: str) -> str:
         The IP address.
     """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        return socket.inet_ntoa(
-            fcntl.ioctl(
-                s.fileno(),
-                0x8915,
-                struct.pack(
-                    '256s',
-                    bytes(ifname[:15], 'utf-8'),
-                ),  # SIOCGIFADDR
-            )[20:24],
-        )
-    except OSError:
-        # Not a solution, but the above doesn't work with Macs
-        # need to provide IP rather than the interface name for the time being
-
-        if ifname == 'localhost':  # pragma: no cover
-            ifname = '127.0.0.1'
-        return ifname
+    return socket.inet_ntoa(
+        fcntl.ioctl(
+            s.fileno(),
+            0x8915,
+            struct.pack(
+                '256s',
+                bytes(ifname[:15], 'utf-8'),
+            ),  # SIOCGIFADDR
+        )[20:24],
+    )
