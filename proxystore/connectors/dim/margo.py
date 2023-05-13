@@ -78,6 +78,8 @@ class MargoConnector:
             this attribute if both are provided.
         timeout: Timeout in seconds to try connecting to a local server before
             spawning one.
+        force_spawn_server: Force spawn a server rather than waiting to check
+            if one is already running.
 
     Raises:
         ServerTimeoutError: If a local server cannot be connected to within
@@ -92,6 +94,7 @@ class MargoConnector:
         address: str | None = None,
         interface: str | None = None,
         timeout: float = 1,
+        force_spawn_server: bool = False,
     ) -> None:
         # Py-Mochi-Margo is not a required dependency and requires the user
         # to install it themselves.
@@ -106,6 +109,7 @@ class MargoConnector:
         )
 
         self.timeout = timeout
+        self.force_spawn_server = force_spawn_server
 
         self.engine = Engine(
             self.protocol,
@@ -130,25 +134,30 @@ class MargoConnector:
             'put': self.engine.register('put'),
         }
 
+        server_available = False
+        if not force_spawn_server:
+            try:
+                logger.info(
+                    f'Connecting to local server (address={self.url})...',
+                )
+                wait_for_server(
+                    self.protocol,
+                    self.address,
+                    self.port,
+                    self.timeout,
+                )
+                logger.info(
+                    f'Connected to local server (address={self.url})',
+                )
+                server_available = True
+            except ServerTimeoutError:
+                logger.info(
+                    'Failed to connect to local server '
+                    f'(address={self.url}, timeout={self.timeout})',
+                )
+
         self.server: multiprocessing.context.SpawnProcess | None
-        try:
-            logger.info(
-                f'Connecting to local server (address={self.url})...',
-            )
-            wait_for_server(
-                self.protocol,
-                self.address,
-                self.port,
-                self.timeout,
-            )
-            logger.info(
-                f'Connected to local server (address={self.url})',
-            )
-        except ServerTimeoutError:
-            logger.info(
-                'Failed to connect to local server '
-                f'(address={self.url}, timeout={self.timeout})',
-            )
+        if not server_available or force_spawn_server:
             self.server = spawn_server(
                 self.protocol,
                 self.address,
@@ -244,6 +253,7 @@ class MargoConnector:
             'port': self.port,
             'protocol': self.protocol,
             'timeout': self.timeout,
+            'force_spawn_server': self.force_spawn_server,
         }
 
     @classmethod
@@ -544,15 +554,16 @@ def spawn_server(
     server_process.start()
 
     def _kill_on_exit() -> None:  # pragma: no cover
-        server_process.terminate()
-        server_process.join(timeout=kill_timeout)
         if server_process.is_alive():
-            server_process.kill()
-            server_process.join()
-        logger.debug(
-            'Server terminated on parent process exit '
-            f'(pid={server_process.pid})',
-        )
+            server_process.terminate()
+            server_process.join(timeout=kill_timeout)
+            if server_process.is_alive():
+                server_process.kill()
+                server_process.join()
+            logger.debug(
+                'Server terminated on parent process exit '
+                f'(pid={server_process.pid})',
+            )
 
     atexit.register(_kill_on_exit)
     logger.debug('Registered server cleanup atexit callback')
