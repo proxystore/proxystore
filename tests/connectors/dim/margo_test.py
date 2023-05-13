@@ -66,6 +66,7 @@ def test_multiple_connectors() -> None:  # pragma: no cover
         protocol='tcp',
         port=port,
         timeout=TIMEOUT,
+        force_spawn_server=True,
     )
     c2 = MargoConnector(
         protocol='tcp',

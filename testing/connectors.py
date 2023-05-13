@@ -169,6 +169,7 @@ def margo_connector() -> Generator[Connector[Any], None, None]:
             protocol=protocol,
             port=port,
             timeout=timeout,
+            force_spawn_server=True,
         )
 
     yield connector
