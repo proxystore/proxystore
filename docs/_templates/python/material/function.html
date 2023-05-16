@@ -38,7 +38,7 @@
 
     {% if config.separate_signature %}
       {% filter highlight(language="python", inline=False) %}
-        {% filter format_signature(config.line_length) %}
+        {% filter format_signature(function, config.line_length, crossrefs=config.signature_crossrefs) %}
           {% if show_full_path %}{{ function.path }}{% else %}{{ function.name }}{% endif %}
           {% include "signature.html" with context %}
         {% endfilter %}
