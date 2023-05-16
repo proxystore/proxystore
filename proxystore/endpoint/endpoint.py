@@ -301,7 +301,7 @@ class Endpoint:
         except Exception as e:
             self._pending_requests[request.uuid].set_exception(
                 PeerRequestError(
-                    f'Request to peer {endpoint} failed: {str(e)}',
+                    f'Request to peer {endpoint} failed: {e!s}',
                 ),
             )
         return self._pending_requests[request.uuid]
