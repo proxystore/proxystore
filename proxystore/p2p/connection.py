@@ -341,7 +341,7 @@ class PeerConnection:
             self._handshake_success.set_exception(
                 PeerConnectionError(
                     'Received error message from relay server: '
-                    f'{str(message.error)}',
+                    f'{message.error!s}',
                 ),
             )
             return

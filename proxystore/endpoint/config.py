@@ -155,13 +155,13 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
                 cfg_json = json.load(f)
             except json.decoder.JSONDecodeError as e:
                 raise ValueError(
-                    f'Unable to parse ({path}): {str(e)}.',
+                    f'Unable to parse ({path}): {e!s}.',
                 ) from None
         try:
             cfg = EndpointConfig(**cfg_json)
         except TypeError as e:
             raise ValueError(
-                f'Keys in config ({path}) do not match expected: {str(e)}.',
+                f'Keys in config ({path}) do not match expected: {e!s}.',
             ) from None
         return cfg
     else:
