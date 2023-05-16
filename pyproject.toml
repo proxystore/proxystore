@@ -77,7 +77,7 @@ docs = [
     "mkdocs-material",
     "mkdocs-section-index",
     "mkdocstrings",
-    "mkdocstrings-python==0.10.1",
+    "mkdocstrings-python",
     "mike",
     # Needed for generating CLI docs
     "proxystore[all]",
