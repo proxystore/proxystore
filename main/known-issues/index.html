@@ -1814,13 +1814,27 @@
   <h1>Known Issues</h1>
 
 <ul>
+<li>The <a class="autorefs autorefs-internal" href="../api/connectors/dim/zmq/#proxystore.connectors.dim.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a> will raise a <code>_pickle.UnpicklingError: pickle data was truncated</code> error if the serialized data is larger than the chunk size (64 MiB by default).<ul>
+<li>Affected versions: <code>==0.4.1</code></li>
+<li>Fixed in <code>0.5.0</code> by <a href="https://github.com/proxystore/proxystore/pull/219" target="_blank">PR #219</a>.</li>
+</ul>
+</li>
 <li><a href="../guides/endpoints/">ProxyStore Endpoints</a> are not supported for
   Python 3.7 on ARM-based Macs because
   <a href="https://aiortc.readthedocs.io" target="_blank">aiortc</a> does not have the corresponding
   wheels. The base ProxyStore package can still be installed on this
-  software/hardware configurations---just not with the <code>endpoints</code> extras.</li>
+  software/hardware configurations---just not with the <code>endpoints</code> extras.<ul>
+<li>Affected versions: <code>&gt;=0.4.0,&lt;0.6.0</code></li>
+<li>Python 3.7 support will be removed in <code>0.6.0</code>. See <a href="https://github.com/proxystore/proxystore/issues/236" target="_blank">Issue #236</a>.</li>
+</ul>
+</li>
 <li>Newer versions of <a href="https://github.com/rapidsai/ucx-py" target="_blank">UCX-Py</a>
-  no longer support Python 3.7.</li>
+  no longer support Python 3.7.<ul>
+<li>We test against and recommend using UCX-Py <code>0.30.00</code>.</li>
+<li>Affected versions: <code>&gt;=0.4.0,&lt;0.6.0</code></li>
+<li>Python 3.7 support will be removed in <code>0.6.0</code>. See <a href="https://github.com/proxystore/proxystore/issues/236" target="_blank">Issue #236</a>.</li>
+</ul>
+</li>
 </ul>
 
 
