@@ -79,3 +79,17 @@ my_function(proxy)  # Succeeds
 
 Check out the [Get Started](https://docs.proxystore.dev/main/get-started)
 guide to learn more!
+
+## Citation
+
+If you use ProxyStore or any of this code in your work, please cite the following [paper](https://arxiv.org/abs/2305.09593).
+```
+@misc{pauloski2023proxystore,
+    author = {J. Gregory Pauloski and Valerie Hayot-Sasson and Logan Ward and Nathaniel Hudson and Charlie Sabino and Matt Baughman and Kyle Chard and Ian Foster},
+    title = {{Accelerating Communications in Federated Applications with Transparent Object Proxies}},
+    archiveprefix = {arXiv},
+    eprint = {2305.09593},
+    primaryclass = {cs.DC},
+    year = {2023}
+}
+```
