@@ -66,7 +66,7 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import Store
 
-store = Store(name='my-store', RedisConnector(hostname='localhost', port=1234))
+store = Store('my-store', RedisConnector(hostname='localhost', port=1234))
 register_store(store)
 
 store = get_store('my-store')  # (1)!
