@@ -82,6 +82,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#bugs" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -457,9 +462,65 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Known Issues
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Known Issues
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bugs" class="md-nav__link">
+    Bugs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility" class="md-nav__link">
+    Compatibility
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mypy" class="md-nav__link">
+    MyPy
+  </a>
+  
+    <nav class="md-nav" aria-label="MyPy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implicit-re-exports" class="md-nav__link">
+    Implicit re-exports
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1795,6 +1856,48 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#bugs" class="md-nav__link">
+    Bugs
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility" class="md-nav__link">
+    Compatibility
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mypy" class="md-nav__link">
+    MyPy
+  </a>
+  
+    <nav class="md-nav" aria-label="MyPy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#implicit-re-exports" class="md-nav__link">
+    Implicit re-exports
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -1813,12 +1916,16 @@
 
   <h1>Known Issues</h1>
 
+<h2 id="bugs">Bugs<a class="headerlink" href="#bugs" title="Permanent link">&para;</a></h2>
 <ul>
 <li>The <a class="autorefs autorefs-internal" href="../api/connectors/dim/zmq/#proxystore.connectors.dim.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a> will raise a <code>_pickle.UnpicklingError: pickle data was truncated</code> error if the serialized data is larger than the chunk size (64 MiB by default).<ul>
 <li>Affected versions: <code>==0.4.1</code></li>
 <li>Fixed in <code>0.5.0</code> by <a href="https://github.com/proxystore/proxystore/pull/219" target="_blank">PR #219</a>.</li>
 </ul>
 </li>
+</ul>
+<h2 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h2>
+<ul>
 <li><a href="../guides/endpoints/">ProxyStore Endpoints</a> are not supported for
   Python 3.7 on ARM-based Macs because
   <a href="https://aiortc.readthedocs.io" target="_blank">aiortc</a> does not have the corresponding
@@ -1836,6 +1943,19 @@
 </ul>
 </li>
 </ul>
+<h2 id="mypy">MyPy<a class="headerlink" href="#mypy" title="Permanent link">&para;</a></h2>
+<h3 id="implicit-re-exports">Implicit re-exports<a class="headerlink" href="#implicit-re-exports" title="Permanent link">&para;</a></h3>
+<p>Examples throughout the documentation generally suggest importing
+<a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> like the following.
+<div class="language-python highlight"><span class="filename">example.py</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span></code></pre></div></p>
+<p>MyPy will raise an attribute defined error if run with <code>--no-implicit-reexport</code>.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>mypy<span class="w"> </span>example.py<span class="w"> </span>--no-implicit-reexport
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>example.py:1:<span class="w"> </span>error:<span class="w"> </span>Module<span class="w"> </span><span class="s2">&quot;proxystore.store&quot;</span><span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>explicitly<span class="w"> </span><span class="nb">export</span><span class="w"> </span>attribute<span class="w"> </span><span class="s2">&quot;Store&quot;</span><span class="w">  </span><span class="o">[</span>attr-defined<span class="o">]</span>
+</span></code></pre></div></p>
+<p>This can be fixed by using the explicit import.
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span></code></pre></div></p>
 
 
 
