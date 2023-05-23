@@ -21,7 +21,7 @@
         <link rel="next" href="../task/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.13">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
     
     
       
@@ -2030,7 +2030,7 @@ is called.</p>
       </li>
       <li class="field-body">
         <b>client_uuid</b>
-            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.uuid">uuid</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.uuid.UUID">UUID</span> | None</code>)
+            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.uuid">uuid</span>.<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
         – <p>Optional UUID of the client to use when registering with
 the relay server. If <code>None</code>, one will be generated.</p>
       </li>
@@ -2047,7 +2047,7 @@ the relay server. If <code>None</code>, the hostname will be used.</p>
       </li>
       <li class="field-body">
         <b>ssl</b>
-            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.ssl">ssl</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.ssl.SSLContext">SSLContext</span> | None</code>)
+            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.ssl">ssl</span>.<a class="autorefs autorefs-external" title="ssl.SSLContext" href="https://docs.python.org/3/library/ssl.html#ssl.SSLContext">SSLContext</a> | None</code>)
         – <p>When <code>None</code>, the correct value to pass to
 <a class="autorefs autorefs-external" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.client.connect"><code>websockets.connect()</code></a>
 is inferred from <code>address</code>. If <code>address</code> starts with <code>wss://</code> the
@@ -2334,7 +2334,7 @@ exponential backoff for connection failures.</p>
   <p>Returns:</p>
   <ul>
       <li class="field-body">
-            <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.Message" href="../messages/#proxystore.p2p.messages.Message">Message</a></code>
+            <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<span title="messages.Message">Message</span></code>
         – <p>The message received from the relay server.</p>
       </li>
   </ul>
@@ -2342,7 +2342,7 @@ exponential backoff for connection failures.</p>
   <p>Raises:</p>
   <ul>
       <li class="field-body">
-            <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.MessageDecodeError" href="../messages/#proxystore.p2p.messages.MessageDecodeError">MessageDecodeError</a></code>
+            <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<span title="messages.MessageDecodeError">MessageDecodeError</span></code>
           –
         <p>If the message received cannot
 be decoded into the appropriate message type.</p>
@@ -2413,7 +2413,7 @@ be decoded into the appropriate message type.</p>
   <ul>
       <li class="field-body">
         <b>message</b>
-            (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.Message" href="../messages/#proxystore.p2p.messages.Message">Message</a></code>)
+            (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<span title="messages.Message">Message</span></code>)
         – <p>The message to send to the relay server.</p>
       </li>
   </ul>
