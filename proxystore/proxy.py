@@ -82,6 +82,20 @@ class Proxy(slots.Proxy, Generic[T]):
         will be called again to resolve the object.
 
     Warning:
+        A proxy of a singleton type (e.g., `True`, `False`, and `None`) will
+        not behave exactly as a singleton type would. This is because the
+        proxy itself is not a singleton.
+
+        ```python
+        >>> from proxystore.proxy import Proxy
+        >>> p = Proxy(lambda: True)
+        >>> p == True
+        True
+        >>> p is True
+        False
+        ```
+
+    Warning:
         Python bindings to other languages (e.g., C, C++) may throw type
         errors when receiving a [`Proxy`][proxystore.proxy.Proxy] instance.
         Casting the proxy or extracting the target object may be needed.
