@@ -134,6 +134,18 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     unregister_store(store_info.name)
 
 
+def test_store_proxy_none_type(store_implementation: StoreFixtureType) -> None:
+    store, store_info = store_implementation
+
+    register_store(store)
+
+    p: Proxy[None] = store.proxy(None)
+    assert isinstance(p, Proxy)
+    assert isinstance(p, type(None))
+
+    unregister_store(store_info)
+
+
 def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
     """Test Proxy Recreates Store."""
     store, store_info = store_implementation

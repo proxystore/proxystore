@@ -44,6 +44,8 @@ SerializerT = Callable[[Any], bytes]
 DeserializerT = Callable[[bytes], Any]
 """Deserializer type alias."""
 
+_MISSING_OBJECT = object()
+
 
 class StoreFactory(Generic[ConnectorT, T]):
     """Factory that resolves an object from a store.
@@ -132,9 +134,13 @@ class StoreFactory(Generic[ConnectorT, T]):
         """
         with Timer() as timer:
             store = self.get_store()
-            obj = store.get(self.key, deserializer=self.deserializer)
+            obj = store.get(
+                self.key,
+                deserializer=self.deserializer,
+                default=_MISSING_OBJECT,
+            )
 
-            if obj is None:
+            if obj is _MISSING_OBJECT:
                 raise ProxyResolveMissingKeyError(
                     self.key,
                     type(store),
