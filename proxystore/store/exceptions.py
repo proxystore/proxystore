@@ -49,3 +49,7 @@ class ProxyResolveMissingKeyError(Exception):
             f"from {self.store_type.__name__}(name='{self.store_name}'): "
             'store returned NoneType with key.',
         )
+
+
+class NonProxiableTypeError(Exception):
+    """Exception raised when proxying an unproxiable type."""

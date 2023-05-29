@@ -10,9 +10,17 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Generic
+from typing import List
+from typing import overload
 from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
+from typing import Union
+
+if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+    from typing import Literal
+else:  # pragma: <3.9 cover
+    from typing_extensions import Literal
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -25,6 +33,7 @@ from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
+from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.metrics import StoreMetrics
 from proxystore.timer import Timer
@@ -35,6 +44,8 @@ _default_pool = ThreadPoolExecutor()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+NonProxiableT = TypeVar('NonProxiableT', bool, None)
+
 ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
 """Connector type variable."""
 ConnectorKeyT = Tuple[Any, ...]
@@ -43,6 +54,9 @@ SerializerT = Callable[[Any], bytes]
 """Serializer type alias."""
 DeserializerT = Callable[[bytes], Any]
 """Deserializer type alias."""
+
+# These should be kept in sync with NonProxiableT
+_NON_PROXIABLE_TYPES = (bool, type(None))
 
 _MISSING_OBJECT = object()
 
@@ -456,15 +470,46 @@ class Store(Generic[ConnectorT]):
         """
         return self.cache.exists(key)
 
+    # MyPy raises the following error which seems more of a lint than a type
+    # error because NonProxiableT is a subset of T.
+    #     Overloaded function signatures 1 and 2 overlap with
+    #     incompatible return types  [misc]
+    @overload
+    def proxy(  # type: ignore[misc]
+        self,
+        obj: NonProxiableT,
+        *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: Literal[True] = ...,
+        **kwargs: Any,
+    ) -> NonProxiableT:
+        ...
+
+    @overload
     def proxy(
         self,
         obj: T,
         *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: bool = ...,
+        **kwargs: Any,
+    ) -> Proxy[T]:
+        ...
+
+    def proxy(
+        self,
+        obj: T | NonProxiableT,
+        *,
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        skip_nonproxiable: bool = False,
         **kwargs: Any,
-    ) -> Proxy[T]:
+    ) -> Proxy[T] | NonProxiableT:
         """Create a proxy that will resolve to an object in the store.
 
         Args:
@@ -474,12 +519,33 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            skip_nonproxiable: Return non-proxiable types (e.g., built-in
+                constants like `bool` or `None`) rather than raising a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.connector.Connector.put].
 
         Returns:
-            A proxy of the object.
+            A proxy of the object unless `obj` is a non-proxiable type \
+            `#!python skip_nonproxiable is True` in which case `obj` is \
+            returned directly.
+
+        Raises:
+            NonProxiableTypeError: If `obj` is a non-proxiable type. This
+                behavior can be overridden by setting
+                `#!python skip_nonproxiable=True`.
         """
+        if isinstance(obj, _NON_PROXIABLE_TYPES):
+            if skip_nonproxiable:
+                # MyPy raises the following error which is not correct:
+                #     Incompatible return value type (got "Optional[bool]",
+                #     expected "Optional[Proxy[T]]")  [return-value]
+                return obj  # type: ignore[return-value]
+            else:
+                raise NonProxiableTypeError(
+                    f'Object of {type(obj)} is not proxiable.',
+                )
+
         with Timer() as timer:
             key = self.put(obj, serializer=serializer, **kwargs)
             factory: StoreFactory[ConnectorT, T] = StoreFactory(
@@ -500,15 +566,46 @@ class Store(Generic[ConnectorT]):
         )
         return proxy
 
+    # This method has the same MyPy complaint as Store.proxy()
+    @overload
+    def proxy_batch(  # type: ignore[misc]
+        self,
+        objs: Sequence[NonProxiableT],
+        *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: Literal[True] = ...,
+        **kwargs: Any,
+    ) -> list[NonProxiableT]:
+        ...
+
+    @overload
     def proxy_batch(
         self,
         objs: Sequence[T],
         *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: bool = ...,
+        **kwargs: Any,
+    ) -> list[Proxy[T]]:
+        ...
+
+    # MyPy raises the following:
+    #    Overloaded function implementation cannot produce return type of
+    #    signature 1
+    def proxy_batch(  # type: ignore[misc]
+        self,
+        objs: Sequence[T | NonProxiableT],
+        *,
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        skip_nonproxiable: bool = False,
         **kwargs: Any,
-    ) -> list[Proxy[T]]:
+    ) -> list[Proxy[T] | NonProxiableT]:
         """Create proxies that will resolve to an object in the store.
 
         Args:
@@ -518,14 +615,47 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            skip_nonproxiable: Return non-proxiable types (e.g., built-in
+                constants like `bool` or `None`) rather than raising a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.connector.Connector.put_batch].
 
         Returns:
-            A list of proxies of the objects.
+            A list of proxies of each object or the object itself if said \
+            object is not proxiable and `#!python skip_nonproxiable is True`.
+
+        Raises:
+            NonProxiableTypeError: If `obj` is a non-proxiable type. This
+                behavior can be overridden by setting
+                `#!python skip_nonproxiable=True`.
         """
         with Timer() as timer:
-            keys = self.put_batch(objs, serializer=serializer, **kwargs)
+            # Find if there are non-proxiable types and if that's okay
+            non_proxiable: list[tuple[int, Any]] = []
+            for i, obj in enumerate(objs):
+                if isinstance(obj, _NON_PROXIABLE_TYPES):
+                    non_proxiable.append((i, obj))
+
+            if len(non_proxiable) > 0 and not skip_nonproxiable:
+                raise NonProxiableTypeError(
+                    f'Input sequence contains {len(non_proxiable)} '
+                    'objects that are not proxiable.',
+                )
+
+            # Pop non-proxiable types so we can batch proxy the proxiable ones
+            non_proxiable_indicies = [i for i, _ in non_proxiable]
+            proxiable_objs = [
+                obj
+                for i, obj in enumerate(objs)
+                if i not in non_proxiable_indicies
+            ]
+
+            keys = self.put_batch(
+                proxiable_objs,
+                serializer=serializer,
+                **kwargs,
+            )
             proxies: list[Proxy[T]] = [
                 self.proxy_from_key(
                     key,
@@ -535,6 +665,11 @@ class Store(Generic[ConnectorT]):
                 for key in keys
             ]
 
+            # Put non-proxiable objects back in their original positions.
+            # The indices of non_proxiable must still be sorted
+            for original_index, original_object in non_proxiable:
+                proxies.insert(original_index, original_object)
+
         if self.metrics is not None:
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ns)
 
@@ -542,7 +677,7 @@ class Store(Generic[ConnectorT]):
             f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
             f'in {timer.elapsed_ms:.3f} ms',
         )
-        return proxies
+        return cast(List[Union[Proxy[T], NonProxiableT]], proxies)
 
     def proxy_from_key(
         self,
@@ -572,15 +707,43 @@ class Store(Generic[ConnectorT]):
         logger.debug(f'Store(name="{self.name}"): PROXY_FROM_KEY {key}')
         return Proxy(factory)
 
+    # This method has the same MyPy complaint as Store.proxy()
+    @overload
+    def locked_proxy(  # type: ignore[misc]
+        self,
+        obj: NonProxiableT,
+        *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: Literal[True] = ...,
+        **kwargs: Any,
+    ) -> NonProxiableT:
+        ...
+
+    @overload
     def locked_proxy(
         self,
         obj: T,
         *,
+        evict: bool = ...,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: bool = ...,
+        **kwargs: Any,
+    ) -> ProxyLocker[T]:
+        ...
+
+    def locked_proxy(
+        self,
+        obj: T | NonProxiableT,
+        *,
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        skip_nonproxiable: bool = True,
         **kwargs: Any,
-    ) -> ProxyLocker[T]:
+    ) -> ProxyLocker[T] | NonProxiableT:
         """Proxy an object and return [`ProxyLocker`][proxystore.proxy.ProxyLocker].
 
         Args:
@@ -590,21 +753,35 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            skip_nonproxiable: Return non-proxiable types (e.g., built-in
+                constants like `bool` or `None`) rather than raising a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.connector.Connector.put].
 
         Returns:
-            A proxy wrapped in a [`ProxyLocker`][proxystore.proxy.ProxyLocker].
+            A proxy wrapped in a \
+            [`ProxyLocker`][proxystore.proxy.ProxyLocker] unless `obj` is a \
+            non-proxiable type `#!python skip_nonproxiable is True` in which \
+            case `obj` is returned directly.
+
+        Raises:
+            NonProxiableTypeError: If `obj` is a non-proxiable type. This
+                behavior can be overridden by setting
+                `#!python skip_nonproxiable=True`.
         """
-        return ProxyLocker(
-            self.proxy(
-                obj,
-                evict=evict,
-                serializer=serializer,
-                deserializer=deserializer,
-                **kwargs,
-            ),
+        possible_proxy = self.proxy(
+            obj,
+            evict=evict,
+            serializer=serializer,
+            deserializer=deserializer,
+            skip_nonproxiable=skip_nonproxiable,
+            **kwargs,
         )
+
+        if isinstance(possible_proxy, Proxy):
+            return ProxyLocker(possible_proxy)
+        return possible_proxy
 
     def put(
         self,

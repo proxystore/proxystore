@@ -13,6 +13,7 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import StoreFactory
+from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.utils import get_key
 from testing.stores import StoreFixtureType
@@ -134,16 +135,38 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
     unregister_store(store_info.name)
 
 
-def test_store_proxy_none_type(store_implementation: StoreFixtureType) -> None:
+def test_store_proxy_resolve_none_type(
+    store_implementation: StoreFixtureType,
+) -> None:
     store, store_info = store_implementation
 
     register_store(store)
 
-    p: Proxy[None] = store.proxy(None)
+    # We have to put None in the store first then create a proxy from the
+    # key because store.proxy(None) will just return None as a shortcut
+    # because it is a singleton type.
+    key = store.put(None)
+    p: Proxy[None] = store.proxy_from_key(key)
     assert isinstance(p, Proxy)
     assert isinstance(p, type(None))
 
-    unregister_store(store_info)
+    unregister_store(store)
+
+
+def test_nonproxiable_types(store_implementation: StoreFixtureType) -> None:
+    store, store_info = store_implementation
+
+    register_store(store)
+
+    for t in (None, True, False):
+        p = store.proxy(t, skip_nonproxiable=True)
+        assert not isinstance(p, Proxy)
+        assert p is t
+
+        with pytest.raises(NonProxiableTypeError):
+            store.proxy(t, skip_nonproxiable=False)
+
+    unregister_store(store)
 
 
 def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
@@ -194,6 +217,46 @@ def test_proxy_batch(store_implementation: StoreFixtureType) -> None:
         assert p2 == v2
 
     unregister_store(store_info.name)
+
+
+def test_batch_nonproxiable_types(
+    store_implementation: StoreFixtureType,
+) -> None:
+    store, store_info = store_implementation
+
+    register_store(store)
+
+    with pytest.raises(NonProxiableTypeError):
+        # Only one bad value needed to fail
+        store.proxy_batch(['string', None, 'string'], skip_nonproxiable=False)
+
+    v1 = store.proxy_batch([None, True, False], skip_nonproxiable=True)
+    assert all(not isinstance(v, Proxy) for v in v1)
+
+    # Test mixed proxies and constants
+    inputs = [None, 'string', False, True, [1, 2, 3], 'string']
+    should_proxy = [False, True, False, False, True, True]
+    v2 = store.proxy_batch(inputs, skip_nonproxiable=True)
+    assert all(isinstance(v, Proxy) == e for v, e in zip(v2, should_proxy))
+
+    unregister_store(store)
+
+
+def test_locked_nonproxiable_types(
+    store_implementation: StoreFixtureType,
+) -> None:
+    store, store_info = store_implementation
+
+    register_store(store)
+
+    with pytest.raises(NonProxiableTypeError):
+        store.locked_proxy(None, skip_nonproxiable=False)
+
+    p = store.locked_proxy(None, skip_nonproxiable=True)
+    assert not isinstance(p, Proxy)
+    assert p is None
+
+    unregister_store(store)
 
 
 def test_raises_missing_key(store_implementation: StoreFixtureType) -> None:
