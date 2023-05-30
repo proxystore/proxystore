@@ -7,8 +7,7 @@ import pytest
 
 from proxystore.connectors.file import FileConnector
 from proxystore.serialize import serialize
-from proxystore.store import register_store
-from proxystore.store import unregister_store
+from proxystore.store import store_registration
 from proxystore.store.base import Store
 
 
@@ -16,14 +15,10 @@ from proxystore.store.base import Store
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
-    with Store(
-        'test-store',
-        connector=FileConnector(str(tmp_path)),
-        metrics=True,
-    ) as store:
-        register_store(store)
-        yield store
-        unregister_store(store.name)
+    path = str(tmp_path)
+    with Store('test', connector=FileConnector(path), metrics=True) as store:
+        with store_registration(store):
+            yield store
 
 
 def test_store_single_key_operations(store: Store[FileConnector]) -> None:

@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.serialize import deserialize
@@ -12,70 +13,58 @@ from proxystore.serialize import serialize
 from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
+from proxystore.store.base import Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.utils import get_key
-from testing.stores import StoreFixtureType
 
 
-def test_store_factory(store_implementation: StoreFixtureType) -> None:
+def test_store_factory() -> None:
     """Test Store Factory."""
-    _, store_info = store_implementation
+    with Store('test', LocalConnector()) as store:
+        key = store.put([1, 2, 3])
 
-    store = store_info.type(
-        store_info.name,
-        cache_size=16,
-        **store_info.kwargs,
-    )
-    register_store(store)
+        # Ensure store is not registered to test if factory can reinitialize it
+        assert get_store(store.name) is None
 
-    key = store.put([1, 2, 3])
+        f: StoreFactory[Any, list[int]] = StoreFactory(
+            key,
+            store_config=store.config(),
+        )
+        assert f() == [1, 2, 3]
 
-    # Clear store to see if factory can reinitialize it
-    unregister_store(store_info.name)
+        f2: StoreFactory[Any, list[int]] = StoreFactory(
+            key,
+            store_config=store.config(),
+            evict=True,
+        )
+        assert store.exists(key)
+        assert f2() == [1, 2, 3]
+        assert not store.exists(key)
 
-    f: StoreFactory[Any, list[int]] = StoreFactory(
-        key,
-        store_config=store.config(),
-    )
-    assert f() == [1, 2, 3]
+        key = store.put([1, 2, 3])
+        # Clear store to see if factory can reinitialize it
+        unregister_store(store)
 
-    f2: StoreFactory[Any, list[int]] = StoreFactory(
-        key,
-        store_config=store.config(),
-        evict=True,
-    )
-    assert store.exists(key)
-    assert f2() == [1, 2, 3]
-    assert not store.exists(key)
+        f = StoreFactory(
+            key,
+            store_config=store.config(),
+        )
+        f.resolve_async()
+        assert f._obj_future is not None
+        assert f() == [1, 2, 3]
+        assert f._obj_future is None
 
-    key = store.put([1, 2, 3])
-    # Clear store to see if factory can reinitialize it
-    unregister_store(store_info.name)
+        # Check factory serialization
+        f_str = serialize(f)
+        f = deserialize(f_str)
+        assert f() == [1, 2, 3]
 
-    f = StoreFactory(
-        key,
-        store_config=store.config(),
-    )
-    f.resolve_async()
-    assert f._obj_future is not None
-    assert f() == [1, 2, 3]
-    assert f._obj_future is None
-
-    # Check factory serialization
-    f_str = serialize(f)
-    f = deserialize(f_str)
-    assert f() == [1, 2, 3]
-
-    unregister_store(store_info.name)
+        unregister_store(store)
 
 
-def test_factory_serialization(store_implementation: StoreFixtureType) -> None:
-    store, store_info = store_implementation
-
-    register_store(store)
-
+def test_factory_serialization(store: Store[LocalConnector]) -> None:
     key = store.put([1, 2, 3])
     f1: StoreFactory[Any, list[int]] = StoreFactory(
         key,
@@ -95,15 +84,9 @@ def test_factory_serialization(store_implementation: StoreFixtureType) -> None:
     f4 = deserialize(f3_bytes)
     assert f3() == f4() == [1, 2, 3]
 
-    unregister_store(store)
 
-
-def test_store_proxy(store_implementation: StoreFixtureType) -> None:
+def test_store_proxy(store: Store[LocalConnector]) -> None:
     """Test Store Proxy."""
-    store, store_info = store_implementation
-
-    register_store(store)
-
     p: Proxy[list[int]] = store.proxy([1, 2, 3])
     assert isinstance(p, Proxy)
 
@@ -132,16 +115,8 @@ def test_store_proxy(store_implementation: StoreFixtureType) -> None:
 
     assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
 
-    unregister_store(store_info.name)
 
-
-def test_store_proxy_resolve_none_type(
-    store_implementation: StoreFixtureType,
-) -> None:
-    store, store_info = store_implementation
-
-    register_store(store)
-
+def test_store_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
     # We have to put None in the store first then create a proxy from the
     # key because store.proxy(None) will just return None as a shortcut
     # because it is a singleton type.
@@ -150,14 +125,8 @@ def test_store_proxy_resolve_none_type(
     assert isinstance(p, Proxy)
     assert isinstance(p, type(None))
 
-    unregister_store(store)
 
-
-def test_nonproxiable_types(store_implementation: StoreFixtureType) -> None:
-    store, store_info = store_implementation
-
-    register_store(store)
-
+def test_nonproxiable_types(store: Store[LocalConnector]) -> None:
     for t in (None, True, False):
         p = store.proxy(t, skip_nonproxiable=True)
         assert not isinstance(p, Proxy)
@@ -166,41 +135,34 @@ def test_nonproxiable_types(store_implementation: StoreFixtureType) -> None:
         with pytest.raises(NonProxiableTypeError):
             store.proxy(t, skip_nonproxiable=False)
 
-    unregister_store(store)
 
-
-def test_proxy_recreates_store(store_implementation: StoreFixtureType) -> None:
+def test_proxy_recreates_store() -> None:
     """Test Proxy Recreates Store."""
-    store, store_info = store_implementation
+    with Store('test', LocalConnector(), cache_size=0) as store:
+        register_store(store)
 
-    register_store(store)
+        p: Proxy[list[int]] = store.proxy([1, 2, 3])
+        key = get_key(p)
+        assert key is not None
 
-    p: Proxy[list[int]] = store.proxy([1, 2, 3])
-    key = get_key(p)
-    assert key is not None
+        # Unregister store so proxy recreates it when resolved
+        unregister_store(store)
 
-    # Unregister store so proxy recreates it when resolved
-    unregister_store(store_info.name)
+        # Resolve the proxy
+        assert p == [1, 2, 3]
 
-    # Resolve the proxy
-    assert p == [1, 2, 3]
+        # The store that created the proxy had cache_size=0 so the restored
+        # store should also have cache_size=0.
+        s = get_store(store.name)
+        assert store.cache.maxsize == 0
+        assert s is not None
+        assert not s.is_cached(key)
 
-    # The store that created the proxy had cache_size=0 so the restored
-    # store should also have cache_size=0.
-    s = get_store(store_info.name)
-    assert store.cache.maxsize == 0
-    assert s is not None
-    assert not s.is_cached(key)
-
-    unregister_store(store_info.name)
+        unregister_store(store)
 
 
-def test_proxy_batch(store_implementation: StoreFixtureType) -> None:
+def test_proxy_batch(store: Store[LocalConnector]) -> None:
     """Test Batch Creation of Proxies."""
-    store, store_info = store_implementation
-
-    register_store(store)
-
     values1 = [b'test_value1', b'test_value2', b'test_value3']
     proxies1: list[Proxy[bytes]] = store.proxy_batch(
         values1,
@@ -216,16 +178,8 @@ def test_proxy_batch(store_implementation: StoreFixtureType) -> None:
     for p2, v2 in zip(proxies2, values2):
         assert p2 == v2
 
-    unregister_store(store_info.name)
 
-
-def test_batch_nonproxiable_types(
-    store_implementation: StoreFixtureType,
-) -> None:
-    store, store_info = store_implementation
-
-    register_store(store)
-
+def test_batch_nonproxiable_types(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         # Only one bad value needed to fail
         store.proxy_batch(['string', None, 'string'], skip_nonproxiable=False)
@@ -239,16 +193,8 @@ def test_batch_nonproxiable_types(
     v2 = store.proxy_batch(inputs, skip_nonproxiable=True)
     assert all(isinstance(v, Proxy) == e for v, e in zip(v2, should_proxy))
 
-    unregister_store(store)
 
-
-def test_locked_nonproxiable_types(
-    store_implementation: StoreFixtureType,
-) -> None:
-    store, store_info = store_implementation
-
-    register_store(store)
-
+def test_locked_nonproxiable_types(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         store.locked_proxy(None, skip_nonproxiable=False)
 
@@ -256,15 +202,9 @@ def test_locked_nonproxiable_types(
     assert not isinstance(p, Proxy)
     assert p is None
 
-    unregister_store(store)
 
-
-def test_raises_missing_key(store_implementation: StoreFixtureType) -> None:
+def test_raises_missing_key(store: Store[LocalConnector]) -> None:
     """Test Proxy/Factory raise missing key error."""
-    store, store_info = store_implementation
-
-    register_store(store)
-
     proxy = store.proxy([1, 2, 3])
     key = get_key(proxy)
     store.evict(key)
@@ -276,5 +216,3 @@ def test_raises_missing_key(store_implementation: StoreFixtureType) -> None:
     proxy = store.proxy_from_key(key=key)
     with pytest.raises(ProxyResolveMissingKeyError):
         proxy()
-
-    unregister_store(store_info.name)
