@@ -8,13 +8,14 @@ from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import register_store
+from proxystore.store import store_registration
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 
 
-def test_store_registration() -> None:
+def test_register_unregister_store() -> None:
     """Test registering and unregistering stores directly."""
     store = Store('test', connector=LocalConnector())
 
@@ -68,3 +69,25 @@ def test_lookup_by_proxy(local_connector, redis_connector) -> None:
 
     unregister_store('local1')
     unregister_store('local2')
+
+
+def test_store_registration() -> None:
+    local1 = Store('local1', connector=LocalConnector())
+    local2 = Store('local2', connector=LocalConnector())
+
+    assert get_store(local1.name) is None
+    assert get_store(local2.name) is None
+
+    with store_registration(local1, local2):
+        assert get_store(local1.name) is local1
+        assert get_store(local2.name) is local2
+
+        with pytest.raises(StoreExistsError):
+            with store_registration(local1):
+                pass  # pragma: no cover
+
+        with store_registration(local1, exist_ok=True):
+            pass
+
+    assert get_store(local1.name) is None
+    assert get_store(local2.name) is None
