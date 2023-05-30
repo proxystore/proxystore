@@ -1,11 +1,16 @@
 """The ProxyStore [`Store`][proxystore.store.base.Store] interface."""
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import Any
+from typing import Generator
+from typing import Sequence
 from typing import TypeVar
 
+from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
+from proxystore.store.base import ConnectorT
 from proxystore.store.base import Store
 from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyStoreFactoryError
@@ -59,6 +64,10 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
     Note:
         Global means globally accessible within the Python process.
 
+    Tip:
+        Use the [`store_registration`][proxystore.store.store_registration]
+        context manager to automatically register and unregister as store.
+
     Args:
         store: Store instance to register.
         exist_ok: If a store with the same name exists, overwrite it.
@@ -72,6 +81,49 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
 
     _stores[store.name] = store
     logger.info(f'Registered a store named {store.name}')
+
+
+@contextlib.contextmanager
+def store_registration(
+    *stores: Store[Any],
+    exist_ok: bool = False,
+) -> Generator[None, None, None]:
+    """Context manager that registers and unregisters a set of stores.
+
+    Example:
+        ```python
+        from proxystore.connectors.local import LocalConnector
+        from proxystore.store import Store
+        from proxystore.store import store_registration
+
+        with Store('store', LocalConnector()) as store:
+            with store_registration(store):
+                ...
+
+        stores = [
+            Store('store1', LocalConnector()),
+            Store('store2', LocalConnector()),
+        ]
+        with store_registration(*stores):
+            ...
+        ```
+
+    Args:
+        stores: Set of [`Store`][proxystore.store.base.Store] instances to
+            register then unregister when the context manager is exited.
+        exist_ok: If a store with the same name exists, overwrite it.
+
+    Raises:
+        StoreExistsError: If a store with the same name is already registered
+            and `exist_ok` is false.
+    """
+    for store in stores:
+        register_store(store, exist_ok=exist_ok)
+
+    yield
+
+    for store in stores:
+        unregister_store(store)
 
 
 def unregister_store(name_or_store: str | Store[Any]) -> None:
