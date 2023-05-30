@@ -1,76 +1,61 @@
-"""Store Base Functionality Tests."""
 from __future__ import annotations
 
 from typing import Any
-from unittest import mock
 
 import pytest
 
-from proxystore.store.cache import LRUCache
-from testing.stores import missing_key
-from testing.stores import StoreFixtureType
+from proxystore.connectors.local import LocalConnector
+from proxystore.store import Store
 
 
-def test_store_init(store_implementation: StoreFixtureType) -> None:
-    """Test Store Base Functionality."""
-    _, store_info = store_implementation
-
+def test_negative_cache_size() -> None:
     with pytest.raises(ValueError):
-        # Negative Cache Size Error
-        store_info.type(store_info.name, **store_info.kwargs, cache_size=-1)
+        Store('test', LocalConnector(), cache_size=-1)
 
 
-def test_store_base(store_implementation: StoreFixtureType) -> None:
-    """Test Store Base Functionality."""
-    store, store_info = store_implementation
+@pytest.mark.parametrize(
+    'value',
+    (b'value', 'value', lambda: 'value', ['value1', 'value2', 'value3']),
+)
+def test_basic_operations(value: Any, store: Store[LocalConnector]) -> None:
+    key = store.put(value)
 
-    key_fake = missing_key(store)
-    value = 'test_value'
+    assert store.exists(key)
 
-    # Store.put()
-    key_bytes = store.put(str.encode(value))
-    key_str = store.put(value)
-    key_callable = store.put(lambda: value)
-    key_array = store.put([1, 2, 3])
+    if callable(value):
+        c = store.get(key)
+        assert c is not None
+        assert c() == value()
+    else:
+        assert store.get(key) == value
 
-    # Store.get()
-    assert store.get(key_bytes) == str.encode(value)
-    assert store.get(key_str) == value
-    c = store.get(key_callable)
-    assert c is not None
-    assert c.__call__() == value
+    store.evict(key)
+    assert not store.exists(key)
+    assert not store.is_cached(key)
+
+
+def test_operations_on_missing_key(store: Store[LocalConnector]) -> None:
+    key_fake = store.put(None)
+    store.evict(key_fake)
+
     assert store.get(key_fake) is None
     assert store.get(key_fake, default='alt_value') == 'alt_value'
-    assert store.get(key_array) == [1, 2, 3]
 
-    # Store.exists()
-    assert store.exists(key_bytes)
-    assert store.exists(key_str)
-    assert store.exists(key_callable)
     assert not store.exists(key_fake)
-
-    # Store.evict()
-    store.evict(key_str)
-    assert not store.exists(key_str)
-    assert not store.is_cached(key_str)
     store.evict(key_fake)
 
 
-def test_store_caching(store_implementation: StoreFixtureType) -> None:
-    """Test Store Caching Functionality."""
-    store, _ = store_implementation
+def test_caching() -> None:
+    with Store('test', LocalConnector(), cache_size=0) as store:
+        assert store.cache.maxsize == 0
+        value = 'test_value'
 
-    assert store.cache.maxsize == 0
-    value = 'test_value'
+        # Test cache size 0
+        key1 = store.put(value)
+        assert store.get(key1) == value
+        assert not store.is_cached(key1)
 
-    # Test cache size 0
-    key1 = store.put(value)
-    assert store.get(key1) == value
-    assert not store.is_cached(key1)
-
-    # Manually change cache size to size 1
-    new_cache: LRUCache[str, Any] = LRUCache(1)
-    with mock.patch.object(store, 'cache', new_cache):
+    with Store('test', LocalConnector(), cache_size=1) as store:
         # Add our test value
         key1 = store.put(value)
 
@@ -78,6 +63,8 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
         assert not store.is_cached(key1)
         # Cache exists is false but this is still true
         assert store.exists(key1)
+        assert store.get(key1) == value
+        # Get again comes from cache
         assert store.get(key1) == value
         assert store.is_cached(key1)
         # Cache exists is true shortcut
@@ -94,12 +81,7 @@ def test_store_caching(store_implementation: StoreFixtureType) -> None:
         assert store.is_cached(key2)
 
 
-def test_store_custom_serialization(
-    store_implementation: StoreFixtureType,
-) -> None:
-    """Test store custom serialization."""
-    store, store_info = store_implementation
-
+def test_custom_serializer(store: Store[LocalConnector]) -> None:
     # Pretend serialized string
     s = b'ABC'
     key = store.put(s, serializer=lambda s: s)
@@ -114,10 +96,7 @@ def test_store_custom_serialization(
         store.put_batch([[1, 2, 3]], serializer=lambda s: s)
 
 
-def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
-    """Test batch operations."""
-    store, store_info = store_implementation
-
+def test_put_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 
     # Test without keys
@@ -126,12 +105,7 @@ def test_store_batch_ops(store_implementation: StoreFixtureType) -> None:
         assert store.exists(key)
 
 
-def test_store_batch_ops_remote(
-    store_implementation: StoreFixtureType,
-) -> None:
-    """Test batch operations with custom serialization."""
-    store, store_info = store_implementation
-
+def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 
     new_keys = store.put_batch(values, serializer=lambda s: str.encode(s))

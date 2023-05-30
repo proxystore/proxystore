@@ -43,13 +43,7 @@ from testing.connectors import ucx_connector
 from testing.connectors import zmq_connector
 from testing.endpoint import endpoint
 from testing.relay_server import relay_server
-from testing.stores import endpoint_store
-from testing.stores import file_store
-from testing.stores import globus_store
-from testing.stores import local_store
-from testing.stores import multi_store
-from testing.stores import redis_store
-from testing.stores import store_implementation
+from testing.stores import store
 
 
 def pytest_addoption(parser):
