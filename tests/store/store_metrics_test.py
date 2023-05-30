@@ -15,6 +15,8 @@ from proxystore.store.base import Store
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
+    # We use FileConnector here instead of LocalConnector (as in the rest of
+    # the tests) because FileConnector operations take *some* amount of time.
     path = str(tmp_path)
     with Store('test', connector=FileConnector(path), metrics=True) as store:
         with store_registration(store):
