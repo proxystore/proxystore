@@ -293,6 +293,9 @@ class GlobusConnector:
             tasks have finished.
         sync_level: Globus transfer sync level.
         timeout: Timeout in seconds for waiting on Globus tasks.
+        clear: Clear all objects on
+            [`close()`][proxystore.connectors.globus.GlobusConnector.close] by
+            deleting the `local_path` of each endpoint.
 
     Raises:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
@@ -310,6 +313,7 @@ class GlobusConnector:
         sync_level: int
         | Literal['exists', 'size', 'mtime', 'checksum'] = 'mtime',
         timeout: int = 60,
+        clear: bool = True,
     ) -> None:
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
@@ -329,6 +333,7 @@ class GlobusConnector:
         self.polling_interval = polling_interval
         self.sync_level = sync_level
         self.timeout = timeout
+        self.clear = clear
 
         try:
             authorizer = get_proxystore_authorizer()
@@ -468,29 +473,41 @@ class GlobusConnector:
         tdata = _submit_transfer_action(self._transfer_client, transfer_task)
         return tdata['task_id']
 
-    def close(self) -> None:
+    def close(self, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:
-            This will delete the directory at `local_path` on each endpoint.
+            This will delete the directory at `local_path` on each endpoint
+            by default.
 
         Warning:
             This method should only be called at the end of the program when
             the store will no longer be used, for example once all proxies
             have been resolved.
+
+        Args:
+            clear: Remove the store directory. Overrides the default
+                value of `clear` provided when the
+                [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
+                was instantiated.
         """
-        for endpoint in self.endpoints:
-            delete_task = globus_sdk.DeleteData(
-                self._transfer_client,
-                endpoint=endpoint.uuid,
-                recursive=True,
-            )
-            delete_task['notify_on_succeeded'] = False
-            delete_task['notify_on_failed'] = False
-            delete_task['notify_on_inactive'] = False
-            delete_task.add_item(endpoint.endpoint_path)
-            tdata = _submit_transfer_action(self._transfer_client, delete_task)
-            self._wait_on_tasks(tdata['task_id'])
+        clear = self.clear if clear is None else clear
+        if clear:
+            for endpoint in self.endpoints:
+                delete_task = globus_sdk.DeleteData(
+                    self._transfer_client,
+                    endpoint=endpoint.uuid,
+                    recursive=True,
+                )
+                delete_task['notify_on_succeeded'] = False
+                delete_task['notify_on_failed'] = False
+                delete_task['notify_on_inactive'] = False
+                delete_task.add_item(endpoint.endpoint_path)
+                tdata = _submit_transfer_action(
+                    self._transfer_client,
+                    delete_task,
+                )
+                self._wait_on_tasks(tdata['task_id'])
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -503,6 +520,7 @@ class GlobusConnector:
             'polling_interval': self.polling_interval,
             'sync_level': self.sync_level,
             'timeout': self.timeout,
+            'clear': self.clear,
         }
 
     @classmethod

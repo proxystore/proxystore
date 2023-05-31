@@ -294,3 +294,42 @@ def test_globus_connector_key_equality() -> None:
     assert key != ('b', 'b')
     assert key == ('a', 'c')
     assert key != 'a'
+
+
+@pytest.mark.parametrize(
+    ('clear_default', 'clear_override', 'should_exist'),
+    ((True, None, False), (False, True, False), (False, False, True)),
+)
+def test_delete_local_paths_on_close(
+    clear_default: bool,
+    clear_override: bool | None,
+    should_exist: bool,
+) -> None:
+    endpoints = GlobusEndpoints(
+        [
+            GlobusEndpoint(
+                uuid='EP1UUID',
+                endpoint_path='/~/',
+                local_path='/tmp/proxystore-test-1',
+                host_regex='localhost',
+            ),
+            GlobusEndpoint(
+                uuid='EP2UUID',
+                endpoint_path='/~/',
+                local_path='/tmp/proxystore-test-2',
+                host_regex='localhost',
+            ),
+        ],
+    )
+
+    with mock.patch('globus_sdk.TransferClient'), mock.patch(
+        'proxystore.connectors.globus._submit_transfer_action',
+        return_value={'task_id': 'ABCD'},
+    ) as mocked:
+        connector = GlobusConnector(endpoints=endpoints, clear=clear_default)
+        connector.close(clear=clear_override)
+
+    if should_exist:
+        assert mocked.call_count == 0
+    else:
+        assert mocked.call_count == len(endpoints)
