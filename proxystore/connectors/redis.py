@@ -32,11 +32,16 @@ class RedisConnector:
     Args:
         hostname: Redis server hostname.
         port: Redis server port.
+        clear: Remove all keys from the Redis server when
+            [`close()`][proxystore.connectors.redis.RedisConnector.close]
+            is called. This will delete keys regardless of if they were
+            created by ProxyStore or not.
     """
 
-    def __init__(self, hostname: str, port: int) -> None:
+    def __init__(self, hostname: str, port: int, clear: bool = False) -> None:
         self.hostname = hostname
         self.port = port
+        self.clear = clear
         self._redis_client = redis.StrictRedis(host=hostname, port=port)
 
     def __enter__(self) -> Self:
@@ -56,9 +61,23 @@ class RedisConnector:
             f'port={self.port})'
         )
 
-    def close(self) -> None:
-        """Close the connector and clean up."""
-        pass
+    def close(self, clear: bool | None = None) -> None:
+        """Close the connector and clean up.
+
+        Warning:
+            Passing `clear=True` will result in **ALL** keys in the Redis
+            server being deleted regardless of if they were created by
+            ProxyStore or not.
+
+        Args:
+            clear: Remove all keys in the Redis server. Overrides the default
+                value of `clear` provided when the
+                [`RedisConnector`][proxystore.connectors.redis.RedisConnector]
+                was instantiated.
+        """
+        if self.clear if clear is None else clear:
+            self._redis_client.flushdb()
+        self._redis_client.close()
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -66,7 +85,11 @@ class RedisConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'hostname': self.hostname, 'port': self.port}
+        return {
+            'hostname': self.hostname,
+            'port': self.port,
+            'clear': self.clear,
+        }
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> RedisConnector:
