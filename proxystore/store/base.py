@@ -282,15 +282,21 @@ class Store(Generic[ConnectorT]):
             else proxystore.serialize.deserialize
         )
 
-    def close(self) -> None:
+    def close(self, *args: Any, **kwargs: Any) -> None:
         """Close the connector associated with the store.
 
         Warning:
             This method should only be called at the end of the program
             when the store will no longer be used, for example once all
             proxies have been resolved.
+
+        Args:
+            args: Positional arguments to pass to
+                [`Connector.close()`][proxystore.connectors.connector.Connector.close].
+            kwargs: Keyword arguments to pass to
+                [`Connector.close()`][proxystore.connectors.connector.Connector.close].
         """
-        self.connector.close()
+        self.connector.close(*args, **kwargs)
 
     def config(self) -> dict[str, Any]:
         """Get the store configuration.

@@ -10,6 +10,10 @@ class MockStrictRedis:
     def __init__(self, data: dict[str, Any], *args, **kwargs):
         self.data = data
 
+    def close(self) -> None:
+        """Close the client."""
+        pass
+
     def delete(self, key: str) -> None:
         """Delete key."""
         if key in self.data:
@@ -18,6 +22,10 @@ class MockStrictRedis:
     def exists(self, key: str) -> bool:
         """Check if key exists."""
         return key in self.data
+
+    def flushdb(self) -> None:
+        """Remove all keys."""
+        self.data.clear()
 
     def get(self, key: str) -> bytes | None:
         """Get value with key."""

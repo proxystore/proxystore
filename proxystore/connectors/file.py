@@ -35,10 +35,14 @@ class FileConnector:
     Args:
         store_dir: Path to directory to store data in. Note this
             directory will be deleted upon closing the store.
+        clear: Clear all objects on
+            [`close()`][proxystore.connectors.file.FileConnector] by removing
+            `store_dir`.
     """
 
-    def __init__(self, store_dir: str) -> None:
+    def __init__(self, store_dir: str, clear: bool = True) -> None:
         self.store_dir = os.path.abspath(store_dir)
+        self.clear = clear
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
@@ -57,18 +61,26 @@ class FileConnector:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(directory={self.store_dir})'
 
-    def close(self) -> None:
+    def close(self, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:
-            This will delete the `store_dir` directory.
+            This will delete the `store_dir` directory by default.
 
         Warning:
             This method should only be called at the end of the program
             when the connector will no longer be used, for example once all
             proxies have been resolved.
+
+        Args:
+            clear: Remove the store directory. Overrides the default
+                value of `clear` provided when the
+                [`FileConnector`][proxystore.connectors.file.FileConnector]
+                was instantiated.
         """
-        shutil.rmtree(self.store_dir)
+        clear = self.clear if clear is None else clear
+        if clear and os.path.isdir(self.store_dir):
+            shutil.rmtree(self.store_dir)
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -76,7 +88,7 @@ class FileConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'store_dir': self.store_dir}
+        return {'store_dir': self.store_dir, 'clear': self.clear}
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> FileConnector:
