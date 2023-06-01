@@ -5,6 +5,7 @@ import logging
 import sys
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
+import threading
 from types import TracebackType
 from typing import Any
 from typing import Callable
@@ -41,6 +42,7 @@ from proxystore.utils import get_class_path
 from proxystore.utils import import_class
 
 _default_pool = ThreadPoolExecutor()
+_factory_get_store_lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
@@ -133,11 +135,12 @@ class StoreFactory(Generic[ConnectorT, T]):
             ValueError: If the type of the returned store does not match the
                 expected store type passed to the factory constructor.
         """
-        store = proxystore.store.get_store(self.store_config['name'])
-        if store is None:
-            store = Store.from_config(self.store_config)
-            proxystore.store.register_store(store)
-        return store
+        with _factory_get_store_lock:
+            store = proxystore.store.get_store(self.store_config['name'])
+            if store is None:
+                store = Store.from_config(self.store_config)
+                proxystore.store.register_store(store)
+            return store
 
     def resolve(self) -> T:
         """Get object associated with key from store.
