@@ -2265,41 +2265,59 @@ element two is the policy in dictionary form.</p>
       <li class="field-body">
         <b>priority</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Priority for breaking ties between policies (higher is
+        –
+        <div class="doc-md-description">
+          <p>Priority for breaking ties between policies (higher is
 preferred).</p>
+        </div>
       </li>
       <li class="field-body">
         <b>host_pattern</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Pattern or iterable of patterns of valid hostnames.
+        –
+        <div class="doc-md-description">
+          <p>Pattern or iterable of patterns of valid hostnames.
 The hostname returned by <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.hostname"><code>hostname()</code></a>
 is matched against <code>host_pattern</code> using
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/re.html#re.fullmatch"><code>re.fullmatch()</code></a>. If <code>host_pattern</code> is an iterable,
 at least one of the patterns must match the hostname.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>min_size_bytes</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Minimum size in bytes allowed.</p>
+        –
+        <div class="doc-md-description">
+          <p>Minimum size in bytes allowed.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>max_size_bytes</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Maximum size in bytes allowed.</p>
+        –
+        <div class="doc-md-description">
+          <p>Maximum size in bytes allowed.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Subset tags. See
+        –
+        <div class="doc-md-description">
+          <p>Subset tags. See
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.Policy.is_valid"><code>is_valid()</code></a> for
 more details.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Superset tags. See
+        –
+        <div class="doc-md-description">
+          <p>Superset tags. See
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.Policy.is_valid"><code>is_valid()</code></a> for
 more details.</p>
+        </div>
       </li>
   </ul>
 
@@ -2349,19 +2367,28 @@ checked against the policy.</p>
       <li class="field-body">
         <b>size_bytes</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Object size in bytes.</p>
+        –
+        <div class="doc-md-description">
+          <p>Object size in bytes.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>)
-        – <p>Set of tags that must be a subset
+        –
+        <div class="doc-md-description">
+          <p>Set of tags that must be a subset
 of the Policy's <code>subset_tags</code> to be valid.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>)
-        – <p>Set of tags that must be a superset
+        –
+        <div class="doc-md-description">
+          <p>Set of tags that must be a superset
 of the Policy's <code>superset_tags</code> to be valid.</p>
+        </div>
       </li>
   </ul>
 
@@ -2369,7 +2396,10 @@ of the Policy's <code>superset_tags</code> to be valid.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If the provided constraints are valid for the policy.</p>
+        –
+        <div class="doc-md-description">
+          <p>If the provided constraints are valid for the policy.</p>
+      </div>
       </li>
   </ul>
 
@@ -2641,13 +2671,19 @@ of the Policy's <code>superset_tags</code> to be valid.</p>
       <li class="field-body">
         <b>connector_name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of connector that the associated object is
+        –
+        <div class="doc-md-description">
+          <p>Name of connector that the associated object is
 stored in.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>connector_key</b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
-        – <p>Key associated with the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object.</p>
+        </div>
       </li>
   </ul>
 
@@ -2724,14 +2760,19 @@ instance or because the corresponding connector is dormant.</p>
       <li class="field-body">
         <b>connectors</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.connector.Connector" href="../connector/#proxystore.connectors.connector.Connector">Connector</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>], <a class="autorefs autorefs-internal" title="proxystore.connectors.multi.Policy" href="#proxystore.connectors.multi.Policy">Policy</a>]]</code>)
-        – <p>Mapping of names to tuples of a
+        –
+        <div class="doc-md-description">
+          <p>Mapping of names to tuples of a
 <a class="autorefs autorefs-internal" href="../connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> and
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.Policy"><code>Policy</code></a>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>dormant_connectors</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.connectors.multi.ConnectorPolicyConfig" href="#proxystore.connectors.multi.ConnectorPolicyConfig">ConnectorPolicyConfig</a>] | None</code>)
-        – <p>Mapping of names to tuples containing the
+        –
+        <div class="doc-md-description">
+          <p>Mapping of names to tuples containing the
 configuration of a dormant connector. A dormant connector is
 a connector that is unused in this process, but could potentially
 be initialized and used on another process. For example,
@@ -2740,6 +2781,7 @@ current host. It is not recommended to create dormant connector
 configurations yourself. Rather, create your connectors and
 use the <code>host_pattern</code> of the policy to determine when a connector
 should be dormant.</p>
+        </div>
       </li>
   </ul>
 
@@ -2933,7 +2975,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.connectors.multi.ConnectorPolicyConfig" href="#proxystore.connectors.multi.ConnectorPolicyConfig">ConnectorPolicyConfig</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3013,7 +3058,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -3061,7 +3109,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -3069,7 +3120,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -3123,7 +3177,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3131,7 +3188,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -3185,7 +3245,10 @@ the connector object.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3193,7 +3256,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3251,19 +3317,28 @@ the connector object.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Iterable of tags that must be a subset
+        –
+        <div class="doc-md-description">
+          <p>Iterable of tags that must be a subset
 of a connector's policy <code>subset_tags</code> to match.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Iterable of tags that must be a superset
+        –
+        <div class="doc-md-description">
+          <p>Iterable of tags that must be a superset
 of a connectors's policy <code>superset_tags</code> to match.</p>
+        </div>
       </li>
   </ul>
 
@@ -3271,7 +3346,10 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3280,7 +3358,9 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiConnectorError" href="#proxystore.connectors.multi.MultiConnectorError">MultiConnectorError</a></code>
           –
-        <p>If no connector policy matches the arguments.</p>
+        <div class="doc-md-description">
+          <p>If no connector policy matches the arguments.</p>
+        </div>
       </li>
   </ul>
 
@@ -3397,19 +3477,28 @@ be placed in different connectors.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Iterable of tags that must be a subset
+        –
+        <div class="doc-md-description">
+          <p>Iterable of tags that must be a subset
 of a connector's policy <code>subset_tags</code> to match.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>Iterable of tags that must be a superset
+        –
+        <div class="doc-md-description">
+          <p>Iterable of tags that must be a superset
 of a connectors's policy <code>superset_tags</code> to match.</p>
+        </div>
       </li>
   </ul>
 
@@ -3417,7 +3506,10 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiKey" href="#proxystore.connectors.multi.MultiKey">MultiKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 
@@ -3426,7 +3518,9 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.multi.MultiConnectorError" href="#proxystore.connectors.multi.MultiConnectorError">MultiConnectorError</a></code>
           –
-        <p>If no connector policy matches the arguments.</p>
+        <div class="doc-md-description">
+          <p>If no connector policy matches the arguments.</p>
+        </div>
       </li>
   </ul>
 

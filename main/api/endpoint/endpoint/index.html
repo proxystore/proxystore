@@ -2271,50 +2271,74 @@ listener for incoming messages.</p>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Readable name of endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Readable name of endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of the endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of the endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>relay_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Address of relay server used for peer-to-peer
+        –
+        <div class="doc-md-description">
+          <p>Address of relay server used for peer-to-peer
 connections between endpoints. If None, endpoint will not be able
 to communicate with other endpoints.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>max_object_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Optional max size in bytes for any single
+        –
+        <div class="doc-md-description">
+          <p>Optional max size in bytes for any single
 object stored by the endpoint. If exceeded, an error is raised.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Number of datachannels per peer connection
+        –
+        <div class="doc-md-description">
+          <p>Number of datachannels per peer connection
 to another endpoint to communicate over.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>peer_timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Timeout for establishing p2p connection with
+        –
+        <div class="doc-md-description">
+          <p>Timeout for establishing p2p connection with
 another endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>storage</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.endpoint.storage.Storage" href="../storage/#proxystore.endpoint.storage.Storage">Storage</a> | None</code>)
-        – <p>Storage interface to use. If <code>None</code>,
+        –
+        <div class="doc-md-description">
+          <p>Storage interface to use. If <code>None</code>,
 <a class="autorefs autorefs-internal" href="../storage/#proxystore.endpoint.storage.DictStorage"><code>DictStorage</code></a> is used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>verify_certificate</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Verify the relay server's SSL
+        –
+        <div class="doc-md-description">
+          <p>Verify the relay server's SSL
 certificate. This should almost never be disabled except for
 testing with self-signed certificates.</p>
+        </div>
       </li>
   </ul>
 
@@ -2539,14 +2563,20 @@ testing with self-signed certificates.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key to evict.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
-        – <p>Endpoint to perform operation on. If
+        –
+        <div class="doc-md-description">
+          <p>Endpoint to perform operation on. If
 unspecified or if the endpoint is on solo mode, the operation
 will be performed on the local endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2555,7 +2585,9 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.exceptions.PeerRequestError" href="../exceptions/#proxystore.endpoint.exceptions.PeerRequestError">PeerRequestError</a></code>
           –
-        <p>If request to a peer endpoint fails.</p>
+        <div class="doc-md-description">
+          <p>If request to a peer endpoint fails.</p>
+        </div>
       </li>
   </ul>
 
@@ -2645,14 +2677,20 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key to check.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key to check.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
-        – <p>Endpoint to perform operation on. If
+        –
+        <div class="doc-md-description">
+          <p>Endpoint to perform operation on. If
 unspecified or if the endpoint is on solo mode, the operation
 will be performed on the local endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2660,7 +2698,10 @@ will be performed on the local endpoint.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -2669,7 +2710,9 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.exceptions.PeerRequestError" href="../exceptions/#proxystore.endpoint.exceptions.PeerRequestError">PeerRequestError</a></code>
           –
-        <p>If request to a peer endpoint fails.</p>
+        <div class="doc-md-description">
+          <p>If request to a peer endpoint fails.</p>
+        </div>
       </li>
   </ul>
 
@@ -2769,14 +2812,20 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key to get value for.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key to get value for.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
-        – <p>Endpoint to perform operation on. If
+        –
+        <div class="doc-md-description">
+          <p>Endpoint to perform operation on. If
 unspecified or if the endpoint is on solo mode, the operation
 will be performed on the local endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2784,7 +2833,10 @@ will be performed on the local endpoint.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Value associated with key.</p>
+        –
+        <div class="doc-md-description">
+          <p>Value associated with key.</p>
+      </div>
       </li>
   </ul>
 
@@ -2793,7 +2845,9 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.exceptions.PeerRequestError" href="../exceptions/#proxystore.endpoint.exceptions.PeerRequestError">PeerRequestError</a></code>
           –
-        <p>If request to a peer endpoint fails.</p>
+        <div class="doc-md-description">
+          <p>If request to a peer endpoint fails.</p>
+        </div>
       </li>
   </ul>
 
@@ -2901,19 +2955,28 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key to associate with value.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key to associate with value.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>data</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Value to associate with key.</p>
+        –
+        <div class="doc-md-description">
+          <p>Value to associate with key.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
-        – <p>Endpoint to perform operation on. If
+        –
+        <div class="doc-md-description">
+          <p>Endpoint to perform operation on. If
 unspecified or if the endpoint is on solo mode, the operation
 will be performed on the local endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2922,13 +2985,17 @@ will be performed on the local endpoint.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.exceptions.ObjectSizeExceededError" href="../exceptions/#proxystore.endpoint.exceptions.ObjectSizeExceededError">ObjectSizeExceededError</a></code>
           –
-        <p>If the max object size is configured and
+        <div class="doc-md-description">
+          <p>If the max object size is configured and
 the data exceeds that size.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.exceptions.PeerRequestError" href="../exceptions/#proxystore.endpoint.exceptions.PeerRequestError">PeerRequestError</a></code>
           –
-        <p>If request to a peer endpoint fails.</p>
+        <div class="doc-md-description">
+          <p>If request to a peer endpoint fails.</p>
+        </div>
       </li>
   </ul>
 

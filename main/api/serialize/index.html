@@ -1988,7 +1988,10 @@ is used as a fallback.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
-        – <p>Object to serialize.</p>
+        –
+        <div class="doc-md-description">
+          <p>Object to serialize.</p>
+        </div>
       </li>
   </ul>
 
@@ -1996,7 +1999,10 @@ is used as a fallback.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>
-        – <p>Bytes that can be passed to         <a class="autorefs autorefs-internal" href="#proxystore.serialize.deserialize"><code>deserialize()</code></a>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Bytes that can be passed to         <a class="autorefs autorefs-internal" href="#proxystore.serialize.deserialize"><code>deserialize()</code></a>.</p>
+      </div>
       </li>
   </ul>
 
@@ -2102,8 +2108,11 @@ is used as a fallback.</p>
       <li class="field-body">
         <b>data</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Bytes produced by
+        –
+        <div class="doc-md-description">
+          <p>Bytes produced by
 <a class="autorefs autorefs-internal" href="#proxystore.serialize.serialize"><code>serialize()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2111,7 +2120,10 @@ is used as a fallback.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
-        – <p>The deserialized object.</p>
+        –
+        <div class="doc-md-description">
+          <p>The deserialized object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2120,16 +2132,20 @@ is used as a fallback.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If <code>data</code> is not of type <code>bytes</code>.</p>
+        <div class="doc-md-description">
+          <p>If <code>data</code> is not of type <code>bytes</code>.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.serialize.SerializationError" href="#proxystore.serialize.SerializationError">SerializationError</a></code>
           –
-        <p>If the identifier of <code>data</code> is missing or
+        <div class="doc-md-description">
+          <p>If the identifier of <code>data</code> is missing or
 invalid. The identifier is prepended to the string in
 <a class="autorefs autorefs-internal" href="#proxystore.serialize.serialize"><code>serialize()</code></a> to indicate which
 serialization method was used (e.g., no serialization, pickle,
 etc.).</p>
+        </div>
       </li>
   </ul>
 

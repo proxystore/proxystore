@@ -2237,31 +2237,46 @@ to that server.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>The network IP address to use. Takes precedence over
+        –
+        <div class="doc-md-description">
+          <p>The network IP address to use. Takes precedence over
 <code>interface</code> if both are provided.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>interface</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>The network interface to use. <code>address</code> arg takes precedence
+        –
+        <div class="doc-md-description">
+          <p>The network interface to use. <code>address</code> arg takes precedence
 if both are provided.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The desired port for the spawned server.</p>
+        –
+        <div class="doc-md-description">
+          <p>The desired port for the spawned server.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Message chunk size in bytes. Defaults to
+        –
+        <div class="doc-md-description">
+          <p>Message chunk size in bytes. Defaults to
 <code>MAX_CHUNK_LENGTH_DEFAULT</code>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Timeout in seconds to try connecting to local server before
+        –
+        <div class="doc-md-description">
+          <p>Timeout in seconds to try connecting to local server before
 spawning one.</p>
+        </div>
       </li>
   </ul>
 
@@ -2270,9 +2285,11 @@ spawning one.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.exceptions.ServerTimeoutError" href="../exceptions/#proxystore.connectors.dim.exceptions.ServerTimeoutError">ServerTimeoutError</a></code>
           –
-        <p>If a local server cannot be connected to within
+        <div class="doc-md-description">
+          <p>If a local server cannot be connected to within
 <code>timeout</code> seconds, and a new local server does not response within
 <code>timeout</code> seconds after being started.</p>
+        </div>
       </li>
   </ul>
 
@@ -2428,9 +2445,12 @@ spawning one.</p>
       <li class="field-body">
         <b>kill_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Whether to kill the server process. If this instance
+        –
+        <div class="doc-md-description">
+          <p>Whether to kill the server process. If this instance
 did not spawn the local node's server process, this is a
 no-op.</p>
+        </div>
       </li>
   </ul>
 
@@ -2555,7 +2575,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2603,7 +2626,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -2651,7 +2677,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -2659,7 +2688,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -2717,7 +2749,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2725,7 +2760,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -2781,7 +2819,10 @@ the connector object.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2789,7 +2830,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2847,7 +2891,10 @@ the connector object.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2855,7 +2902,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2925,7 +2975,10 @@ the connector object.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2933,7 +2986,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 
@@ -3063,7 +3119,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -3109,7 +3168,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -3117,7 +3179,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -3169,7 +3234,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3177,7 +3245,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Data or <code>None</code> if no data associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>Data or <code>None</code> if no data associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -3229,12 +3300,18 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Key associated with data.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with data.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>data</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Data to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Data to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -3282,7 +3359,10 @@ the connector object.</p>
       <li class="field-body">
         <b>rpc</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.RPC" href="../models/#proxystore.connectors.dim.models.RPC">RPC</a></code>)
-        – <p>Client RPC to process.</p>
+        –
+        <div class="doc-md-description">
+          <p>Client RPC to process.</p>
+        </div>
       </li>
   </ul>
 
@@ -3290,7 +3370,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.RPCResponse" href="../models/#proxystore.connectors.dim.models.RPCResponse">RPCResponse</a></code>
-        – <p>Response containing result or an exception if the operation failed.</p>
+        –
+        <div class="doc-md-description">
+          <p>Response containing result or an exception if the operation failed.</p>
+      </div>
       </li>
   </ul>
 
@@ -3399,18 +3482,27 @@ the connector object.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>IP address the server should bind to.</p>
+        –
+        <div class="doc-md-description">
+          <p>IP address the server should bind to.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port the server should listen on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port the server should listen on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Message chunk size in bytes. Defaults to
+        –
+        <div class="doc-md-description">
+          <p>Message chunk size in bytes. Defaults to
 <code>MAX_CHUNK_LENGTH_DEFAULT</code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3564,18 +3656,27 @@ that loop.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>IP address the server should bind to.</p>
+        –
+        <div class="doc-md-description">
+          <p>IP address the server should bind to.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port the server should listen on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port the server should listen on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Message chunk size in bytes. Defaults to
+        –
+        <div class="doc-md-description">
+          <p>Message chunk size in bytes. Defaults to
 <code>MAX_CHUNK_LENGTH_DEFAULT</code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3657,29 +3758,44 @@ server process when the calling process exits.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>IP address the server should bind to.</p>
+        –
+        <div class="doc-md-description">
+          <p>IP address the server should bind to.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port the server will listen on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port the server will listen on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Message chunk size in bytes. Defaults to
+        –
+        <div class="doc-md-description">
+          <p>Message chunk size in bytes. Defaults to
 <code>MAX_CHUNK_LENGTH_DEFAULT</code>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>spawn_timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Max time in seconds to wait for the server to start.</p>
+        –
+        <div class="doc-md-description">
+          <p>Max time in seconds to wait for the server to start.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>kill_timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>)
-        – <p>Max time in seconds to wait for the server to shutdown
+        –
+        <div class="doc-md-description">
+          <p>Max time in seconds to wait for the server to shutdown
 on exit.</p>
+        </div>
       </li>
   </ul>
 
@@ -3687,7 +3803,10 @@ on exit.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing">multiprocessing</a>.<a class="autorefs autorefs-external" title="multiprocessing.Process" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process">Process</a></code>
-        – <p>The process that the server is running in.</p>
+        –
+        <div class="doc-md-description">
+          <p>The process that the server is running in.</p>
+      </div>
       </li>
   </ul>
 
@@ -3825,17 +3944,26 @@ on exit.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Host of the server to ping.</p>
+        –
+        <div class="doc-md-description">
+          <p>Host of the server to ping.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port of the server to ping.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port of the server to ping.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Max time in seconds to wait for server response.</p>
+        –
+        <div class="doc-md-description">
+          <p>Max time in seconds to wait for server response.</p>
+        </div>
       </li>
   </ul>
 
@@ -3844,7 +3972,9 @@ on exit.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.exceptions.ServerTimeoutError" href="../exceptions/#proxystore.connectors.dim.exceptions.ServerTimeoutError">ServerTimeoutError</a></code>
           –
-        <p>If the server does not respond within the timeout.</p>
+        <div class="doc-md-description">
+          <p>If the server does not respond within the timeout.</p>
+        </div>
       </li>
   </ul>
 

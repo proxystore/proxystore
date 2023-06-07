@@ -2025,34 +2025,49 @@ is called.</p>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Address of the relay server. Should start with <code>ws://</code> or
+        –
+        <div class="doc-md-description">
+          <p>Address of the relay server. Should start with <code>ws://</code> or
 <code>wss://</code>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>client_uuid</b>
             (<code><span title="proxystore.p2p.relay_client.RelayServerClient.uuid">uuid</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.uuid.UUID">UUID</span> | None</code>)
-        – <p>Optional UUID of the client to use when registering with
+        –
+        <div class="doc-md-description">
+          <p>Optional UUID of the client to use when registering with
 the relay server. If <code>None</code>, one will be generated.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>client_name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optional name of the client to use when registering with
+        –
+        <div class="doc-md-description">
+          <p>Optional name of the client to use when registering with
 the relay server. If <code>None</code>, the hostname will be used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Time to wait in seconds on server connections.</p>
+        –
+        <div class="doc-md-description">
+          <p>Time to wait in seconds on server connections.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>ssl</b>
             (<code><span title="proxystore.p2p.relay_client.RelayServerClient.ssl">ssl</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.ssl.SSLContext">SSLContext</span> | None</code>)
-        – <p>When <code>None</code>, the correct value to pass to
+        –
+        <div class="doc-md-description">
+          <p>When <code>None</code>, the correct value to pass to
 <a class="autorefs autorefs-external" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.client.connect"><code>websockets.connect()</code></a>
 is inferred from <code>address</code>. If <code>address</code> starts with <code>wss://</code> the
 value is True, otherwise is False. Optionally provide a custom
 <code>SSLContext</code> (useful if the server uses self-signed certificates).</p>
+        </div>
       </li>
   </ul>
 
@@ -2061,14 +2076,18 @@ value is True, otherwise is False. Optionally provide a custom
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.exceptions.PeerRegistrationError" href="../exceptions/#proxystore.p2p.exceptions.PeerRegistrationError">PeerRegistrationError</a></code>
           –
-        <p>If the connection to the relay server
+        <div class="doc-md-description">
+          <p>If the connection to the relay server
 is closed, does not reply to the registration request within the
 timeout, or replies with an error.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If address does not start with <code>ws://</code> or <code>wss://</code>.</p>
+        <div class="doc-md-description">
+          <p>If address does not start with <code>ws://</code> or <code>wss://</code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2178,7 +2197,10 @@ exponential backoff for connection failures.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" title="websockets.client.WebSocketClientProtocol" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/client.html#websockets.client.WebSocketClientProtocol">WebSocketClientProtocol</a></code>
-        – <p>WebSocket connection to the relay server.</p>
+        –
+        <div class="doc-md-description">
+          <p>WebSocket connection to the relay server.</p>
+      </div>
       </li>
   </ul>
 
@@ -2330,7 +2352,10 @@ exponential backoff for connection failures.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.Message" href="../messages/#proxystore.p2p.messages.Message">Message</a></code>
-        – <p>The message received from the relay server.</p>
+        –
+        <div class="doc-md-description">
+          <p>The message received from the relay server.</p>
+      </div>
       </li>
   </ul>
 
@@ -2339,8 +2364,10 @@ exponential backoff for connection failures.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.MessageDecodeError" href="../messages/#proxystore.p2p.messages.MessageDecodeError">MessageDecodeError</a></code>
           –
-        <p>If the message received cannot
+        <div class="doc-md-description">
+          <p>If the message received cannot
 be decoded into the appropriate message type.</p>
+        </div>
       </li>
   </ul>
 
@@ -2406,7 +2433,10 @@ be decoded into the appropriate message type.</p>
       <li class="field-body">
         <b>message</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.Message" href="../messages/#proxystore.p2p.messages.Message">Message</a></code>)
-        – <p>The message to send to the relay server.</p>
+        –
+        <div class="doc-md-description">
+          <p>The message to send to the relay server.</p>
+        </div>
       </li>
   </ul>
 

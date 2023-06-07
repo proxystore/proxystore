@@ -1955,56 +1955,83 @@
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of the store instance.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of the store instance.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoints</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoints" href="../../connectors/globus/#proxystore.connectors.globus.GlobusEndpoints">GlobusEndpoints</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoint" href="../../connectors/globus/#proxystore.connectors.globus.GlobusEndpoint">GlobusEndpoint</a>] | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]]</code>)
-        – <p>Globus endpoints to keep in sync. If passed as a <code>dict</code>,
+        –
+        <div class="doc-md-description">
+          <p>Globus endpoints to keep in sync. If passed as a <code>dict</code>,
 the dictionary must match the format expected by
 <a class="autorefs autorefs-internal" href="../../connectors/globus/#proxystore.connectors.globus.GlobusEndpoints.from_dict"><code>GlobusEndpoints.from_dict()</code></a>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>polling_interval</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Interval in seconds to check if Globus
+        –
+        <div class="doc-md-description">
+          <p>Interval in seconds to check if Globus
 tasks have finished.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>sync_level</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;size&#39;, &#39;mtime&#39;, &#39;checksum&#39;]</code>)
-        – <p>Globus transfer sync level.</p>
+        –
+        <div class="doc-md-description">
+          <p>Globus transfer sync level.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Timeout in seconds for waiting on Globus tasks.</p>
+        –
+        <div class="doc-md-description">
+          <p>Timeout in seconds for waiting on Globus tasks.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>serializer</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="../base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>)
-        – <p>Optional callable which serializes the object. If <code>None</code>,
+        –
+        <div class="doc-md-description">
+          <p>Optional callable which serializes the object. If <code>None</code>,
 the default serializer
 (<a class="autorefs autorefs-internal" href="../../serialize/#proxystore.serialize.serialize"><code>serialize()</code></a>) will be used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>deserializer</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="../base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>)
-        – <p>Optional callable used by the factory to deserialize the
+        –
+        <div class="doc-md-description">
+          <p>Optional callable used by the factory to deserialize the
 byte string. If <code>None</code>, the default deserializer
 (<a class="autorefs autorefs-internal" href="../../serialize/#proxystore.serialize.deserialize"><code>deserialize()</code></a>) will be
 used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>cache_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Size of LRU cache (in # of objects). If 0,
+        –
+        <div class="doc-md-description">
+          <p>Size of LRU cache (in # of objects). If 0,
 the cache is disabled. The cache is local to the Python process.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>metrics</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Enable recording operation metrics.</p>
+        –
+        <div class="doc-md-description">
+          <p>Enable recording operation metrics.</p>
+        </div>
       </li>
   </ul>
 

@@ -1947,39 +1947,57 @@
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of the store instance.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of the store instance.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>store_dict</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.local.LocalKey" href="../../connectors/local/#proxystore.connectors.local.LocalKey">LocalKey</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>] | None</code>)
-        – <p>Dictionary to store data in. If not specified,
+        –
+        <div class="doc-md-description">
+          <p>Dictionary to store data in. If not specified,
 a new empty dict will be generated.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>serializer</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="../base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>)
-        – <p>Optional callable which serializes the object. If <code>None</code>,
+        –
+        <div class="doc-md-description">
+          <p>Optional callable which serializes the object. If <code>None</code>,
 the default serializer
 (<a class="autorefs autorefs-internal" href="../../serialize/#proxystore.serialize.serialize"><code>serialize()</code></a>) will be used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>deserializer</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="../base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>)
-        – <p>Optional callable used by the factory to deserialize the
+        –
+        <div class="doc-md-description">
+          <p>Optional callable used by the factory to deserialize the
 byte string. If <code>None</code>, the default deserializer
 (<a class="autorefs autorefs-internal" href="../../serialize/#proxystore.serialize.deserialize"><code>deserialize()</code></a>) will be
 used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>cache_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Size of LRU cache (in # of objects). If 0,
+        –
+        <div class="doc-md-description">
+          <p>Size of LRU cache (in # of objects). If 0,
 the cache is disabled. The cache is local to the Python process.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>metrics</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Enable recording operation metrics.</p>
+        –
+        <div class="doc-md-description">
+          <p>Enable recording operation metrics.</p>
+        </div>
       </li>
   </ul>
 

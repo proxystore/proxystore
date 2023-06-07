@@ -2211,27 +2211,39 @@
       <li class="field-body">
         <b>uuid</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>UUID of Globus endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of Globus endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint_path</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Path within endpoint to directory to use
+        –
+        <div class="doc-md-description">
+          <p>Path within endpoint to directory to use
 for storing objects.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>local_path</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Local path (as seen by the host filesystem) that
+        –
+        <div class="doc-md-description">
+          <p>Local path (as seen by the host filesystem) that
 corresponds to the directory specified by <code>endpoint_path</code>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>host_regex</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="typing.Pattern" href="https://docs.python.org/3/library/typing.html#typing.Pattern">Pattern</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
-        – <p>String that matches the host where
+        –
+        <div class="doc-md-description">
+          <p>String that matches the host where
 the Globus endpoint exists or regex pattern than can be used
 to match the host. The host pattern is needed so that proxies
 can figure out what the local endpoint is when they are resolved.</p>
+        </div>
       </li>
   </ul>
 
@@ -2328,9 +2340,12 @@ can figure out what the local endpoint is when they are resolved.</p>
       <li class="field-body">
         <b>endpoints</b>
             (<code><a class="autorefs autorefs-external" title="typing.Collection" href="https://docs.python.org/3/library/typing.html#typing.Collection">Collection</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoint" href="#proxystore.connectors.globus.GlobusEndpoint">GlobusEndpoint</a>]</code>)
-        – <p>Iterable of
+        –
+        <div class="doc-md-description">
+          <p>Iterable of
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusEndpoints"><code>GlobusEndpoints</code></a>
 instances.</p>
+        </div>
       </li>
   </ul>
 
@@ -2339,7 +2354,9 @@ instances.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If <code>endpoints</code> has length 0 or if multiple endpoints with             the same UUID are provided.</p>
+        <div class="doc-md-description">
+          <p>If <code>endpoints</code> has length 0 or if multiple endpoints with             the same UUID are provided.</p>
+        </div>
       </li>
   </ul>
 
@@ -2644,7 +2661,10 @@ object can be reconstructed by passing the <code>dict</code> to.
       <li class="field-body">
         <b>host</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Host to match.</p>
+        –
+        <div class="doc-md-description">
+          <p>Host to match.</p>
+        </div>
       </li>
   </ul>
 
@@ -2652,7 +2672,10 @@ object can be reconstructed by passing the <code>dict</code> to.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoint" href="#proxystore.connectors.globus.GlobusEndpoint">GlobusEndpoint</a></code>
-        – <p>Globus endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Globus endpoint.</p>
+      </div>
       </li>
   </ul>
 
@@ -2661,7 +2684,9 @@ object can be reconstructed by passing the <code>dict</code> to.
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If <code>host</code> does not match any of the endpoints.</p>
+        <div class="doc-md-description">
+          <p>If <code>host</code> does not match any of the endpoints.</p>
+        </div>
       </li>
   </ul>
 
@@ -2741,12 +2766,18 @@ object can be reconstructed by passing the <code>dict</code> to.
       <li class="field-body">
         <b>filename</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Unique object filename.</p>
+        –
+        <div class="doc-md-description">
+          <p>Unique object filename.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>task_id</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Globus transfer task ID for the file.</p>
+        –
+        <div class="doc-md-description">
+          <p>Globus transfer task ID for the file.</p>
+        </div>
       </li>
   </ul>
 
@@ -2868,32 +2899,47 @@ Authentication only needs to be performed once per system.</p>
       <li class="field-body">
         <b>endpoints</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoints" href="#proxystore.connectors.globus.GlobusEndpoints">GlobusEndpoints</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusEndpoint" href="#proxystore.connectors.globus.GlobusEndpoint">GlobusEndpoint</a>] | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]]</code>)
-        – <p>Globus endpoints to keep in sync. If passed as a <code>dict</code>,
+        –
+        <div class="doc-md-description">
+          <p>Globus endpoints to keep in sync. If passed as a <code>dict</code>,
 the dictionary must match the format expected by
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusEndpoints.from_dict"><code>GlobusEndpoints.from_dict()</code></a>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>polling_interval</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Interval in seconds to check if Globus
+        –
+        <div class="doc-md-description">
+          <p>Interval in seconds to check if Globus
 tasks have finished.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>sync_level</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;size&#39;, &#39;mtime&#39;, &#39;checksum&#39;]</code>)
-        – <p>Globus transfer sync level.</p>
+        –
+        <div class="doc-md-description">
+          <p>Globus transfer sync level.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Timeout in seconds for waiting on Globus tasks.</p>
+        –
+        <div class="doc-md-description">
+          <p>Timeout in seconds for waiting on Globus tasks.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>clear</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Clear all objects on
+        –
+        <div class="doc-md-description">
+          <p>Clear all objects on
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusConnector.close"><code>close()</code></a> by
 deleting the <code>local_path</code> of each endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2902,18 +2948,24 @@ deleting the <code>local_path</code> of each endpoint.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.globus.GlobusAuthFileError" href="../../globus/#proxystore.globus.GlobusAuthFileError">GlobusAuthFileError</a></code>
           –
-        <p>If the Globus authentication file cannot be found.</p>
+        <div class="doc-md-description">
+          <p>If the Globus authentication file cannot be found.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If <code>endpoints</code> is of an incorrect type.</p>
+        <div class="doc-md-description">
+          <p>If <code>endpoints</code> is of an incorrect type.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If the <code class="language-python highlight"><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span></code> because this
+        <div class="doc-md-description">
+          <p>If the <code class="language-python highlight"><span class="nb">len</span><span class="p">(</span><span class="n">endpoints</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">2</span></code> because this
 implementation can currently only keep two endpoints in sync.</p>
+        </div>
       </li>
   </ul>
 
@@ -3050,10 +3102,13 @@ have been resolved.</p>
       <li class="field-body">
         <b>clear</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a> | None</code>)
-        – <p>Remove the store directory. Overrides the default
+        –
+        <div class="doc-md-description">
+          <p>Remove the store directory. Overrides the default
 value of <code>clear</code> provided when the
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a>
 was instantiated.</p>
+        </div>
       </li>
   </ul>
 
@@ -3210,7 +3265,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3258,7 +3316,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -3319,7 +3380,10 @@ method will wait to make sure the transfers is successful.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -3327,7 +3391,10 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -3393,7 +3460,10 @@ method will wait to make sure the transfers is successful.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3401,7 +3471,10 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -3463,7 +3536,10 @@ method will wait to make sure the transfers is successful.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3471,7 +3547,10 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3525,7 +3604,10 @@ method will wait to make sure the transfers is successful.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -3533,7 +3615,10 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3605,7 +3690,10 @@ method will wait to make sure the transfers is successful.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -3613,7 +3701,10 @@ method will wait to make sure the transfers is successful.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.globus.GlobusKey" href="#proxystore.connectors.globus.GlobusKey">GlobusKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 

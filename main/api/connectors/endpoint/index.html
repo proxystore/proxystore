@@ -2123,12 +2123,18 @@
       <li class="field-body">
         <b>object_id</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Unique object ID.</p>
+        –
+        <div class="doc-md-description">
+          <p>Unique object ID.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint_id</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Endpoint UUID where object is stored.</p>
+        –
+        <div class="doc-md-description">
+          <p>Endpoint UUID where object is stored.</p>
+        </div>
       </li>
   </ul>
 
@@ -2187,15 +2193,21 @@ will be used.</p>
       <li class="field-body">
         <b>endpoints</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>]</code>)
-        – <p>Sequence of valid and running endpoint
+        –
+        <div class="doc-md-description">
+          <p>Sequence of valid and running endpoint
 UUIDs to use. At least one of these endpoints must be
 accessible by this process.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home
 directory. Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2204,13 +2216,17 @@ directory. Defaults to <a class="autorefs autorefs-internal" href="../../utils/#
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If endpoints is an empty list.</p>
+        <div class="doc-md-description">
+          <p>If endpoints is an empty list.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointConnectorError" href="#proxystore.connectors.endpoint.EndpointConnectorError">EndpointConnectorError</a></code>
           –
-        <p>If unable to connect to one of the endpoints
+        <div class="doc-md-description">
+          <p>If unable to connect to one of the endpoints
 provided.</p>
+        </div>
       </li>
   </ul>
 
@@ -2442,7 +2458,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2490,7 +2509,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -2556,7 +2578,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -2564,7 +2589,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -2636,7 +2664,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2644,7 +2675,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -2718,7 +2752,10 @@ the connector object.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2726,7 +2763,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2780,7 +2820,10 @@ the connector object.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2788,7 +2831,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2874,7 +2920,10 @@ the connector object.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2882,7 +2931,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.endpoint.EndpointKey" href="#proxystore.connectors.endpoint.EndpointKey">EndpointKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 

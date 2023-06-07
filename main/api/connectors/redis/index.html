@@ -2085,7 +2085,10 @@
       <li class="field-body">
         <b>redis_key</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Unique object ID.</p>
+        –
+        <div class="doc-md-description">
+          <p>Unique object ID.</p>
+        </div>
       </li>
   </ul>
 
@@ -2135,20 +2138,29 @@
       <li class="field-body">
         <b>hostname</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Redis server hostname.</p>
+        –
+        <div class="doc-md-description">
+          <p>Redis server hostname.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Redis server port.</p>
+        –
+        <div class="doc-md-description">
+          <p>Redis server port.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>clear</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Remove all keys from the Redis server when
+        –
+        <div class="doc-md-description">
+          <p>Remove all keys from the Redis server when
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.redis.RedisConnector.close"><code>close()</code></a>
 is called. This will delete keys regardless of if they were
 created by ProxyStore or not.</p>
+        </div>
       </li>
   </ul>
 
@@ -2206,10 +2218,13 @@ ProxyStore or not.</p>
       <li class="field-body">
         <b>clear</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a> | None</code>)
-        – <p>Remove all keys in the Redis server. Overrides the default
+        –
+        <div class="doc-md-description">
+          <p>Remove all keys in the Redis server. Overrides the default
 value of <code>clear</code> provided when the
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a>
 was instantiated.</p>
+        </div>
       </li>
   </ul>
 
@@ -2326,7 +2341,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2374,7 +2392,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -2420,7 +2441,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -2428,7 +2452,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -2480,7 +2507,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2488,7 +2518,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -2540,7 +2573,10 @@ the connector object.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -2548,7 +2584,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2602,7 +2641,10 @@ the connector object.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2610,7 +2652,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -2666,7 +2711,10 @@ the connector object.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -2674,7 +2722,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.redis.RedisKey" href="#proxystore.connectors.redis.RedisKey">RedisKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 

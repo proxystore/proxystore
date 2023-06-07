@@ -2228,13 +2228,19 @@ is running on another host.</p>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of endpoint to check.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of endpoint to check.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2242,7 +2248,10 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.commands.EndpointStatus" href="#proxystore.endpoint.commands.EndpointStatus">EndpointStatus</a></code>
-        – <p><code>EndpointStatus.RUNNING</code> if the endpoint has a valid directory and         the PID file points to a running process.         <code>EndpointStatus.STOPPED</code> if the endpoint has a valid directory and no         PID file.         <code>EndpointStatus.UNKNOWN</code> if the endpoint directory is missing or the         config file is missing/unreadable.         <code>EndpointStatus.HANGING</code> if the endpoint has a valid directory but         the PID file does not point to a running process. This can be due to         the endpoint process dying unexpectedly or the endpoint process is on         a different host.</p>
+        –
+        <div class="doc-md-description">
+          <p><code>EndpointStatus.RUNNING</code> if the endpoint has a valid directory and         the PID file points to a running process.         <code>EndpointStatus.STOPPED</code> if the endpoint has a valid directory and no         PID file.         <code>EndpointStatus.UNKNOWN</code> if the endpoint directory is missing or the         config file is missing/unreadable.         <code>EndpointStatus.HANGING</code> if the endpoint has a valid directory but         the PID file does not point to a running process. This can be due to         the endpoint process dying unexpectedly or the endpoint process is on         a different host.</p>
+      </div>
       </li>
   </ul>
 
@@ -2368,34 +2377,52 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port for endpoint to listen on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port for endpoint to listen on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>relay_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optional relay server address for P2P endpoint connections.</p>
+        –
+        <div class="doc-md-description">
+          <p>Optional relay server address for P2P endpoint connections.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Number of datachannels per peer connection
+        –
+        <div class="doc-md-description">
+          <p>Number of datachannels per peer connection
 to another endpoint to communicate over.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>persist_data</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Persist data stored in the endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Persist data stored in the endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2403,7 +2430,10 @@ to another endpoint to communicate over.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-        – <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+        –
+        <div class="doc-md-description">
+          <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+      </div>
       </li>
   </ul>
 
@@ -2555,8 +2585,11 @@ to another endpoint to communicate over.</p>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2564,7 +2597,10 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-        – <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+        –
+        <div class="doc-md-description">
+          <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+      </div>
       </li>
   </ul>
 
@@ -2666,13 +2702,19 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of endpoint to remove.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of endpoint to remove.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2680,7 +2722,10 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-        – <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+        –
+        <div class="doc-md-description">
+          <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+      </div>
       </li>
   </ul>
 
@@ -2788,23 +2833,35 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of endpoint to start.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of endpoint to start.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>detach</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Start the endpoint as a daemon process.</p>
+        –
+        <div class="doc-md-description">
+          <p>Start the endpoint as a daemon process.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>log_level</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Logging level of the endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Logging level of the endpoint.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2812,7 +2869,10 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-        – <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+        –
+        <div class="doc-md-description">
+          <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+      </div>
       </li>
   </ul>
 
@@ -3006,13 +3066,19 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of endpoint to start.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of endpoint to start.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optionally specify the proxystore home directory.
+        –
+        <div class="doc-md-description">
+          <p>Optionally specify the proxystore home directory.
 Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.utils.home_dir"><code>home_dir()</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3020,7 +3086,10 @@ Defaults to <a class="autorefs autorefs-internal" href="../../utils/#proxystore.
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>
-        – <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+        –
+        <div class="doc-md-description">
+          <p>Exit code where 0 is success and 1 is failure. Failure messages         are logged to the default logger.</p>
+      </div>
       </li>
   </ul>
 

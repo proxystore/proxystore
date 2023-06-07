@@ -2542,36 +2542,54 @@ to that server.</p>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The desired port for the spawned server.</p>
+        –
+        <div class="doc-md-description">
+          <p>The desired port for the spawned server.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>protocol</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.margo.Protocol" href="#proxystore.connectors.dim.margo.Protocol">Protocol</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>The communication protocol to use.</p>
+        –
+        <div class="doc-md-description">
+          <p>The communication protocol to use.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>The network IP to use for transfer. Has precedence over <code>interface</code>
+        –
+        <div class="doc-md-description">
+          <p>The network IP to use for transfer. Has precedence over <code>interface</code>
 if both are provided.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>interface</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>The network interface to use. <code>addr</code> has precedence over
+        –
+        <div class="doc-md-description">
+          <p>The network interface to use. <code>addr</code> has precedence over
 this attribute if both are provided.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Timeout in seconds to try connecting to a local server before
+        –
+        <div class="doc-md-description">
+          <p>Timeout in seconds to try connecting to a local server before
 spawning one.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>force_spawn_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Force spawn a server rather than waiting to check
+        –
+        <div class="doc-md-description">
+          <p>Force spawn a server rather than waiting to check
 if one is already running.</p>
+        </div>
       </li>
   </ul>
 
@@ -2580,9 +2598,11 @@ if one is already running.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.exceptions.ServerTimeoutError" href="../exceptions/#proxystore.connectors.dim.exceptions.ServerTimeoutError">ServerTimeoutError</a></code>
           –
-        <p>If a local server cannot be connected to within
+        <div class="doc-md-description">
+          <p>If a local server cannot be connected to within
 <code>timeout</code> seconds, and a new local server does not respond within
 <code>timeout</code> seconds after being started.</p>
+        </div>
       </li>
   </ul>
 
@@ -2784,9 +2804,12 @@ if one is already running.</p>
       <li class="field-body">
         <b>kill_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Whether to kill the server process. If this instance
+        –
+        <div class="doc-md-description">
+          <p>Whether to kill the server process. If this instance
 did not spawn the local node's server process, this is a
 no-op.</p>
+        </div>
       </li>
   </ul>
 
@@ -2911,7 +2934,10 @@ the connector object.</p>
       <li class="field-body">
         <b>config</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration returned by <code class="language-python highlight"><span class="o">.</span><span class="n">config</span><span class="p">()</span></code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2959,7 +2985,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key associated with object to evict.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with object to evict.</p>
+        </div>
       </li>
   </ul>
 
@@ -3007,7 +3036,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key potentially associated with stored object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key potentially associated with stored object.</p>
+        </div>
       </li>
   </ul>
 
@@ -3015,7 +3047,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
-        – <p>If an object associated with the key exists.</p>
+        –
+        <div class="doc-md-description">
+          <p>If an object associated with the key exists.</p>
+      </div>
       </li>
   </ul>
 
@@ -3073,7 +3108,10 @@ the connector object.</p>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>Key associated with the object to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the object to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3081,7 +3119,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>
-        – <p>Serialized object or <code>None</code> if the object does not exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object or <code>None</code> if the object does not exist.</p>
+      </div>
       </li>
   </ul>
 
@@ -3151,7 +3192,10 @@ the connector object.</p>
       <li class="field-body">
         <b>keys</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a>]</code>)
-        – <p>Sequence of keys associated with objects to retrieve.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of keys associated with objects to retrieve.</p>
+        </div>
       </li>
   </ul>
 
@@ -3159,7 +3203,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None]</code>
-        – <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+        –
+        <div class="doc-md-description">
+          <p>List with same order as <code>keys</code> with the serialized objects or             <code>None</code> if the corresponding key does not have an associated object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3241,7 +3288,10 @@ the connector object.</p>
       <li class="field-body">
         <b>obj</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
-        – <p>Serialized object to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Serialized object to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -3249,7 +3299,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>
-        – <p>Key which can be used to retrieve the object.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key which can be used to retrieve the object.</p>
+      </div>
       </li>
   </ul>
 
@@ -3323,7 +3376,10 @@ the connector object.</p>
       <li class="field-body">
         <b>objs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
-        – <p>Sequence of serialized objects to put in the store.</p>
+        –
+        <div class="doc-md-description">
+          <p>Sequence of serialized objects to put in the store.</p>
+        </div>
       </li>
   </ul>
 
@@ -3331,7 +3387,10 @@ the connector object.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a>]</code>
-        – <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of keys with the same order as <code>objs</code> which can be used to             retrieve the objects.</p>
+      </div>
       </li>
   </ul>
 
@@ -3474,22 +3533,34 @@ the connector object.</p>
       <li class="field-body">
         <b>handle</b>
             (<code><span title="pymargo.core.Handle">Handle</span></code>)
-        – <p>The client handle.</p>
+        –
+        <div class="doc-md-description">
+          <p>The client handle.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_str</b>
             (<code><span title="pymargo.bulk.Bulk">Bulk</span></code>)
-        – <p>The buffer that will store shared data.</p>
+        –
+        <div class="doc-md-description">
+          <p>The buffer that will store shared data.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The size of the data to be received.</p>
+        –
+        <div class="doc-md-description">
+          <p>The size of the data to be received.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>The data's key.</p>
+        –
+        <div class="doc-md-description">
+          <p>The data's key.</p>
+        </div>
       </li>
   </ul>
 
@@ -3562,22 +3633,34 @@ the connector object.</p>
       <li class="field-body">
         <b>handle</b>
             (<code><span title="pymargo.core.Handle">Handle</span></code>)
-        – <p>The client handle.</p>
+        –
+        <div class="doc-md-description">
+          <p>The client handle.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_str</b>
             (<code><span title="pymargo.bulk.Bulk">Bulk</span></code>)
-        – <p>The buffer that will store shared data.</p>
+        –
+        <div class="doc-md-description">
+          <p>The buffer that will store shared data.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The size of the data to be received.</p>
+        –
+        <div class="doc-md-description">
+          <p>The size of the data to be received.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>The data's key.</p>
+        –
+        <div class="doc-md-description">
+          <p>The data's key.</p>
+        </div>
       </li>
   </ul>
 
@@ -3650,22 +3733,34 @@ the connector object.</p>
       <li class="field-body">
         <b>handle</b>
             (<code><span title="pymargo.core.Handle">Handle</span></code>)
-        – <p>The client handle.</p>
+        –
+        <div class="doc-md-description">
+          <p>The client handle.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_str</b>
             (<code><span title="pymargo.bulk.Bulk">Bulk</span></code>)
-        – <p>The buffer that will store shared data.</p>
+        –
+        <div class="doc-md-description">
+          <p>The buffer that will store shared data.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The size of the data to be received.</p>
+        –
+        <div class="doc-md-description">
+          <p>The size of the data to be received.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>The data's key.</p>
+        –
+        <div class="doc-md-description">
+          <p>The data's key.</p>
+        </div>
       </li>
   </ul>
 
@@ -3764,22 +3859,34 @@ the connector object.</p>
       <li class="field-body">
         <b>handle</b>
             (<code><span title="pymargo.core.Handle">Handle</span></code>)
-        – <p>The client handle.</p>
+        –
+        <div class="doc-md-description">
+          <p>The client handle.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_str</b>
             (<code><span title="pymargo.bulk.Bulk">Bulk</span></code>)
-        – <p>The buffer containing the data to be shared.</p>
+        –
+        <div class="doc-md-description">
+          <p>The buffer containing the data to be shared.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>bulk_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The size of the data being transferred.</p>
+        –
+        <div class="doc-md-description">
+          <p>The size of the data being transferred.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
-        – <p>The data key.</p>
+        –
+        <div class="doc-md-description">
+          <p>The data key.</p>
+        </div>
       </li>
   </ul>
 
@@ -3880,8 +3987,11 @@ the connector object.</p>
       <li class="field-body">
         <b>url</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>URL of the engine that will be started. Should take
+        –
+        <div class="doc-md-description">
+          <p>URL of the engine that will be started. Should take
 the form <code>{protocol}://{host}:{port}</code>.</p>
+        </div>
       </li>
   </ul>
 
@@ -3959,28 +4069,43 @@ server process when the calling process exits.</p>
       <li class="field-body">
         <b>protocol</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Communication protocol.</p>
+        –
+        <div class="doc-md-description">
+          <p>Communication protocol.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Host IP of the server to wait on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Host IP of the server to wait on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port of the server to wait on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port of the server to wait on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>spawn_timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Max time in seconds to wait for the server to start.</p>
+        –
+        <div class="doc-md-description">
+          <p>Max time in seconds to wait for the server to start.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>kill_timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>)
-        – <p>Max time in seconds to wait for the server to shutdown
+        –
+        <div class="doc-md-description">
+          <p>Max time in seconds to wait for the server to shutdown
 on exit.</p>
+        </div>
       </li>
   </ul>
 
@@ -3988,7 +4113,10 @@ on exit.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/multiprocessing.html#module-multiprocessing">multiprocessing</a>.<span title="multiprocessing.context">context</span>.<span title="multiprocessing.context.SpawnProcess">SpawnProcess</span></code>
-        – <p>The process that the server is running in.</p>
+        –
+        <div class="doc-md-description">
+          <p>The process that the server is running in.</p>
+      </div>
       </li>
   </ul>
 
@@ -4139,22 +4267,34 @@ on exit.</p>
       <li class="field-body">
         <b>protocol</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Communication protocol.</p>
+        –
+        <div class="doc-md-description">
+          <p>Communication protocol.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>address</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Host IP of the server to wait on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Host IP of the server to wait on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port of the server to wait on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port of the server to wait on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>The max time in seconds to wait for server response.</p>
+        –
+        <div class="doc-md-description">
+          <p>The max time in seconds to wait for server response.</p>
+        </div>
       </li>
   </ul>
 
@@ -4163,7 +4303,9 @@ on exit.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.exceptions.ServerTimeoutError" href="../exceptions/#proxystore.connectors.dim.exceptions.ServerTimeoutError">ServerTimeoutError</a></code>
           –
-        <p>If the server does not respond within the timeout.</p>
+        <div class="doc-md-description">
+          <p>If the server does not respond within the timeout.</p>
+        </div>
       </li>
   </ul>
 

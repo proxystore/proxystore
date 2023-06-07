@@ -2175,33 +2175,51 @@ interacting with metrics recorded for
       <li class="field-body">
         <b>count</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Number of times this event as occurred.</p>
+        –
+        <div class="doc-md-description">
+          <p>Number of times this event as occurred.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>avg_time_ms</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Average time in milliseconds of the event.</p>
+        –
+        <div class="doc-md-description">
+          <p>Average time in milliseconds of the event.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>min_time_ms</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Minimum time in milliseconds of all event occurrences.</p>
+        –
+        <div class="doc-md-description">
+          <p>Minimum time in milliseconds of all event occurrences.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>max_time_ms</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Maximum time in milliseconds of all event occurrences.</p>
+        –
+        <div class="doc-md-description">
+          <p>Maximum time in milliseconds of all event occurrences.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>last_time_ms</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Time in milliseconds of the most recent event occurrence.</p>
+        –
+        <div class="doc-md-description">
+          <p>Time in milliseconds of the most recent event occurrence.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>last_timestamp</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>The UNIX timestamp (seconds) of when the last
+        –
+        <div class="doc-md-description">
+          <p>The UNIX timestamp (seconds) of when the last
 event time was recorded.</p>
+        </div>
       </li>
   </ul>
 
@@ -2281,19 +2299,28 @@ event time was recorded.</p>
       <li class="field-body">
         <b>attributes</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>A mapping of attributes to their values.</p>
+        –
+        <div class="doc-md-description">
+          <p>A mapping of attributes to their values.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>counters</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>)
-        – <p>A mapping of counter names to the integer value of the
+        –
+        <div class="doc-md-description">
+          <p>A mapping of counter names to the integer value of the
 counter.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>times</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.store.metrics.TimeStats" href="#proxystore.store.metrics.TimeStats">TimeStats</a>]</code>)
-        – <p>A mapping of events to a summary of the statistics recorded
+        –
+        <div class="doc-md-description">
+          <p>A mapping of events to a summary of the statistics recorded
 over occurrences of that event.</p>
+        </div>
       </li>
   </ul>
 
@@ -2407,17 +2434,26 @@ over occurrences of that event.</p>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of attribute.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of attribute.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.KeyT" href="#proxystore.store.metrics.KeyT">KeyT</a></code>)
-        – <p>Key to add attribute to.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key to add attribute to.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>value</b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
-        – <p>Attribute value.</p>
+        –
+        <div class="doc-md-description">
+          <p>Attribute value.</p>
+        </div>
       </li>
   </ul>
 
@@ -2467,17 +2503,26 @@ over occurrences of that event.</p>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Name of counter.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of counter.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.KeyT" href="#proxystore.store.metrics.KeyT">KeyT</a></code>)
-        – <p>Key associated with the counter.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the counter.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>value</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Amount to increment counter by.</p>
+        –
+        <div class="doc-md-description">
+          <p>Amount to increment counter by.</p>
+        </div>
       </li>
   </ul>
 
@@ -2535,17 +2580,26 @@ over occurrences of that event.</p>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Event or operation the time is for.</p>
+        –
+        <div class="doc-md-description">
+          <p>Event or operation the time is for.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>key</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.KeyT" href="#proxystore.store.metrics.KeyT">KeyT</a></code>)
-        – <p>Key associated with the event.</p>
+        –
+        <div class="doc-md-description">
+          <p>Key associated with the event.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>time_ns</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>The time in nanoseconds of the event.</p>
+        –
+        <div class="doc-md-description">
+          <p>The time in nanoseconds of the event.</p>
+        </div>
       </li>
   </ul>
 
@@ -2600,7 +2654,10 @@ over occurrences of that event.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.store.metrics.TimeStats" href="#proxystore.store.metrics.TimeStats">TimeStats</a>]</code>
-        – <p>Dictionary mapping event names to the time statistics aggregated             for that event.</p>
+        –
+        <div class="doc-md-description">
+          <p>Dictionary mapping event names to the time statistics aggregated             for that event.</p>
+      </div>
       </li>
   </ul>
 
@@ -2656,8 +2713,11 @@ over occurrences of that event.</p>
       <li class="field-body">
         <b>key_or_proxy</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.KeyT" href="#proxystore.store.metrics.KeyT">KeyT</a> | <a class="autorefs autorefs-internal" title="proxystore.store.metrics.ProxyT" href="#proxystore.store.metrics.ProxyT">ProxyT</a></code>)
-        – <p>Key to get associated metrics. If a proxy or
+        –
+        <div class="doc-md-description">
+          <p>Key to get associated metrics. If a proxy or
 sequence of proxies, the key(s) will be extracted.</p>
+        </div>
       </li>
   </ul>
 
@@ -2665,7 +2725,10 @@ sequence of proxies, the key(s) will be extracted.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.metrics.Metrics" href="#proxystore.store.metrics.Metrics">Metrics</a> | None</code>
-        – <p>Metrics associated with the key or <code>None</code> if the key does not             exist.</p>
+        –
+        <div class="doc-md-description">
+          <p>Metrics associated with the key or <code>None</code> if the key does not             exist.</p>
+      </div>
       </li>
   </ul>
 

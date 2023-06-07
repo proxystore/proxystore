@@ -2130,12 +2130,18 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
       <li class="field-body">
         <b>relay_client</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.relay_client.RelayServerClient" href="../relay_client/#proxystore.p2p.relay_client.RelayServerClient">RelayServerClient</a></code>)
-        – <p>Client connection to the relay server.</p>
+        –
+        <div class="doc-md-description">
+          <p>Client connection to the relay server.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>channels</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Number of datachannels to open with peer.</p>
+        –
+        <div class="doc-md-description">
+          <p>Number of datachannels to open with peer.</p>
+        </div>
       </li>
   </ul>
 
@@ -2234,7 +2240,10 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-        – <p>One of 'connected', 'connecting', 'closed', 'failed', or 'new'.</p>
+        –
+        <div class="doc-md-description">
+          <p>One of 'connected', 'connecting', 'closed', 'failed', or 'new'.</p>
+      </div>
       </li>
   </ul>
   </div>
@@ -2317,18 +2326,27 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
       <li class="field-body">
         <b>callback</b>
             (<code><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[..., <a class="autorefs autorefs-external" title="typing.Awaitable" href="https://docs.python.org/3/library/typing.html#typing.Awaitable">Awaitable</a>[None]]</code>)
-        – <p>Callable to invoke when the peer connection state
+        –
+        <div class="doc-md-description">
+          <p>Callable to invoke when the peer connection state
 changes to closed or failed.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>args</b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
-        – <p>Positional arguments to pass to the callback.</p>
+        –
+        <div class="doc-md-description">
+          <p>Positional arguments to pass to the callback.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>kwargs</b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
-        – <p>Keyword arguments to pass to the callback.</p>
+        –
+        <div class="doc-md-description">
+          <p>Keyword arguments to pass to the callback.</p>
+        </div>
       </li>
   </ul>
 
@@ -2412,12 +2430,18 @@ changes to closed or failed.</p>
       <li class="field-body">
         <b>message</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Message to send to peer.</p>
+        –
+        <div class="doc-md-description">
+          <p>Message to send to peer.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Timeout to wait on peer connection to be ready.</p>
+        –
+        <div class="doc-md-description">
+          <p>Timeout to wait on peer connection to be ready.</p>
+        </div>
       </li>
   </ul>
 
@@ -2426,8 +2450,10 @@ changes to closed or failed.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.exceptions.PeerConnectionTimeoutError" href="../exceptions/#proxystore.p2p.exceptions.PeerConnectionTimeoutError">PeerConnectionTimeoutError</a></code>
           –
-        <p>If the peer connection is not
+        <div class="doc-md-description">
+          <p>If the peer connection is not
 established within the timeout.</p>
+        </div>
       </li>
   </ul>
 
@@ -2526,7 +2552,10 @@ established within the timeout.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-        – <p>Message received from peer.</p>
+        –
+        <div class="doc-md-description">
+          <p>Message received from peer.</p>
+      </div>
       </li>
   </ul>
 
@@ -2576,7 +2605,10 @@ established within the timeout.</p>
       <li class="field-body">
         <b>peer_uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of peer client to establish connection with.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of peer client to establish connection with.</p>
+        </div>
       </li>
   </ul>
 
@@ -2690,7 +2722,10 @@ established within the timeout.</p>
       <li class="field-body">
         <b>peer_uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of peer client that sent the initial offer.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of peer client that sent the initial offer.</p>
+        </div>
       </li>
   </ul>
 
@@ -2820,7 +2855,10 @@ established within the timeout.</p>
       <li class="field-body">
         <b>message</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.messages" href="../messages/#proxystore.p2p.messages">messages</a>.<a class="autorefs autorefs-internal" title="proxystore.p2p.messages.PeerConnection" href="../messages/#proxystore.p2p.messages.PeerConnection">PeerConnection</a></code>)
-        – <p>Message received from the relay server.</p>
+        –
+        <div class="doc-md-description">
+          <p>Message received from the relay server.</p>
+        </div>
       </li>
   </ul>
 
@@ -2958,9 +2996,12 @@ established within the timeout.</p>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>)
-        – <p>The maximum time in seconds to wait for
+        –
+        <div class="doc-md-description">
+          <p>The maximum time in seconds to wait for
 the peer connection to establish. If None, block until
 the connection is established.</p>
+        </div>
       </li>
   </ul>
 
@@ -2969,14 +3010,18 @@ the connection is established.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.exceptions.PeerConnectionTimeoutError" href="../exceptions/#proxystore.p2p.exceptions.PeerConnectionTimeoutError">PeerConnectionTimeoutError</a></code>
           –
-        <p>If the connection is not ready within
+        <div class="doc-md-description">
+          <p>If the connection is not ready within
 the timeout.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.exceptions.PeerConnectionError" href="../exceptions/#proxystore.p2p.exceptions.PeerConnectionError">PeerConnectionError</a></code>
           –
-        <p>If there is an error establishing the peer
+        <div class="doc-md-description">
+          <p>If there is an error establishing the peer
 connection.</p>
+        </div>
       </li>
   </ul>
 

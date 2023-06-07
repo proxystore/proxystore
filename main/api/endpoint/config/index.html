@@ -2019,51 +2019,78 @@
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Endpoint name.</p>
+        –
+        <div class="doc-md-description">
+          <p>Endpoint name.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>uuid</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/uuid.html#module-uuid">uuid</a>.<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>Endpoint UUID.</p>
+        –
+        <div class="doc-md-description">
+          <p>Endpoint UUID.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>host</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Host endpoint is running on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Host endpoint is running on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>port</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Port endpoint is running on.</p>
+        –
+        <div class="doc-md-description">
+          <p>Port endpoint is running on.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>relay_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optional relay server the endpoint should register with.</p>
+        –
+        <div class="doc-md-description">
+          <p>Optional relay server the endpoint should register with.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>database_path</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Optional path to SQLite database file that will be used
+        –
+        <div class="doc-md-description">
+          <p>Optional path to SQLite database file that will be used
 for storing endpoint data. If <code>None</code>, data will only be stored
 in-memory.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>max_object_size</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
-        – <p>Optional maximum object size.</p>
+        –
+        <div class="doc-md-description">
+          <p>Optional maximum object size.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Number of peer channels to multiplex communications
+        –
+        <div class="doc-md-description">
+          <p>Number of peer channels to multiplex communications
 over.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>verify_certificates</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Validate the SSL certificates of the <code>relay</code>
+        –
+        <div class="doc-md-description">
+          <p>Validate the SSL certificates of the <code>relay</code>
 server.</p>
+        </div>
       </li>
   </ul>
 
@@ -2072,9 +2099,11 @@ server.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If the name does not contain only alphanumeric, dash, or
+        <div class="doc-md-description">
+          <p>If the name does not contain only alphanumeric, dash, or
 underscore characters, if the UUID cannot be parsed, or if the
 port is not in the range [1, 65535].</p>
+        </div>
       </li>
   </ul>
 
@@ -2122,8 +2151,11 @@ port is not in the range [1, 65535].</p>
       <li class="field-body">
         <b>proxystore_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Parent directory containing possible endpoint
+        –
+        <div class="doc-md-description">
+          <p>Parent directory containing possible endpoint
 configurations.</p>
+        </div>
       </li>
   </ul>
 
@@ -2131,7 +2163,10 @@ configurations.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.endpoint.config.EndpointConfig" href="#proxystore.endpoint.config.EndpointConfig">EndpointConfig</a>]</code>
-        – <p>List of found configs.</p>
+        –
+        <div class="doc-md-description">
+          <p>List of found configs.</p>
+      </div>
       </li>
   </ul>
 
@@ -2219,7 +2254,10 @@ configurations.</p>
       <li class="field-body">
         <b>endpoint_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Directory for the endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Directory for the endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2227,7 +2265,10 @@ configurations.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-        – <p>Path to log file.</p>
+        –
+        <div class="doc-md-description">
+          <p>Path to log file.</p>
+      </div>
       </li>
   </ul>
 
@@ -2279,7 +2320,10 @@ configurations.</p>
       <li class="field-body">
         <b>endpoint_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Directory for the endpoint.</p>
+        –
+        <div class="doc-md-description">
+          <p>Directory for the endpoint.</p>
+        </div>
       </li>
   </ul>
 
@@ -2287,7 +2331,10 @@ configurations.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-        – <p>Path to PID file.</p>
+        –
+        <div class="doc-md-description">
+          <p>Path to PID file.</p>
+      </div>
       </li>
   </ul>
 
@@ -2339,7 +2386,10 @@ configurations.</p>
       <li class="field-body">
         <b>endpoint_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Directory containing endpoint configuration file.</p>
+        –
+        <div class="doc-md-description">
+          <p>Directory containing endpoint configuration file.</p>
+        </div>
       </li>
   </ul>
 
@@ -2347,7 +2397,10 @@ configurations.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.config.EndpointConfig" href="#proxystore.endpoint.config.EndpointConfig">EndpointConfig</a></code>
-        – <p>Config found in <code>endpoint_dir</code>.</p>
+        –
+        <div class="doc-md-description">
+          <p>Config found in <code>endpoint_dir</code>.</p>
+      </div>
       </li>
   </ul>
 
@@ -2356,12 +2409,16 @@ configurations.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError">FileNotFoundError</a></code>
           –
-        <p>If a config files does not exist in the directory.</p>
+        <div class="doc-md-description">
+          <p>If a config files does not exist in the directory.</p>
+        </div>
       </li>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If config contains an invalid value or cannot be parsed.</p>
+        <div class="doc-md-description">
+          <p>If config contains an invalid value or cannot be parsed.</p>
+        </div>
       </li>
   </ul>
 
@@ -2494,12 +2551,18 @@ configurations.</p>
       <li class="field-body">
         <b>cfg</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.endpoint.config.EndpointConfig" href="#proxystore.endpoint.config.EndpointConfig">EndpointConfig</a></code>)
-        – <p>Configuration to write.</p>
+        –
+        <div class="doc-md-description">
+          <p>Configuration to write.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>endpoint_dir</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Directory to write config to.</p>
+        –
+        <div class="doc-md-description">
+          <p>Directory to write config to.</p>
+        </div>
       </li>
   </ul>
 

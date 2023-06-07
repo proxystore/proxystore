@@ -1905,8 +1905,11 @@
       <li class="field-body">
         <b>val</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.T">T</span>]</code>)
-        – <p>name of the store to get or a <a class="autorefs autorefs-internal" href="../proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a>
+        –
+        <div class="doc-md-description">
+          <p>name of the store to get or a <a class="autorefs autorefs-internal" href="../proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a>
 instance.</p>
+        </div>
       </li>
   </ul>
 
@@ -1914,7 +1917,10 @@ instance.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>] | None</code>
-        – <p><a class="autorefs autorefs-internal" href="base/#proxystore.store.base.Store"><code>Store</code></a> if a store matching the         name or belonging to the proxy exists. If the store does not exist,         returns <code>None</code>.</p>
+        –
+        <div class="doc-md-description">
+          <p><a class="autorefs autorefs-internal" href="base/#proxystore.store.base.Store"><code>Store</code></a> if a store matching the         name or belonging to the proxy exists. If the store does not exist,         returns <code>None</code>.</p>
+      </div>
       </li>
   </ul>
 
@@ -1923,9 +1929,11 @@ instance.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.exceptions.ProxyStoreFactoryError" href="exceptions/#proxystore.store.exceptions.ProxyStoreFactoryError">ProxyStoreFactoryError</a></code>
           –
-        <p>If the value is a proxy but does not contain a
+        <div class="doc-md-description">
+          <p>If the value is a proxy but does not contain a
 factory of type
 <a class="autorefs autorefs-internal" href="base/#proxystore.store.base.StoreFactory"><code>StoreFactory</code></a>.</p>
+        </div>
       </li>
   </ul>
 
@@ -2036,12 +2044,18 @@ context manager to automatically register and unregister as store.</p>
       <li class="field-body">
         <b>store</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Store instance to register.</p>
+        –
+        <div class="doc-md-description">
+          <p>Store instance to register.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>exist_ok</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>If a store with the same name exists, overwrite it.</p>
+        –
+        <div class="doc-md-description">
+          <p>If a store with the same name exists, overwrite it.</p>
+        </div>
       </li>
   </ul>
 
@@ -2050,8 +2064,10 @@ context manager to automatically register and unregister as store.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.exceptions.StoreExistsError" href="exceptions/#proxystore.store.exceptions.StoreExistsError">StoreExistsError</a></code>
           –
-        <p>If a store with the same name is already registered
+        <div class="doc-md-description">
+          <p>If a store with the same name is already registered
 and <code>exist_ok</code> is false.</p>
+        </div>
       </li>
   </ul>
 
@@ -2149,13 +2165,19 @@ and <code>exist_ok</code> is false.</p>
       <li class="field-body">
         <b>stores</b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Set of <a class="autorefs autorefs-internal" href="base/#proxystore.store.base.Store"><code>Store</code></a> instances to
+        –
+        <div class="doc-md-description">
+          <p>Set of <a class="autorefs autorefs-internal" href="base/#proxystore.store.base.Store"><code>Store</code></a> instances to
 register then unregister when the context manager is exited.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>exist_ok</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>If a store with the same name exists, overwrite it.</p>
+        –
+        <div class="doc-md-description">
+          <p>If a store with the same name exists, overwrite it.</p>
+        </div>
       </li>
   </ul>
 
@@ -2164,8 +2186,10 @@ register then unregister when the context manager is exited.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.store.exceptions.StoreExistsError" href="exceptions/#proxystore.store.exceptions.StoreExistsError">StoreExistsError</a></code>
           –
-        <p>If a store with the same name is already registered
+        <div class="doc-md-description">
+          <p>If a store with the same name is already registered
 and <code>exist_ok</code> is false.</p>
+        </div>
       </li>
   </ul>
 
@@ -2284,7 +2308,10 @@ exists (i.e., no exception will be raised).</p>
       <li class="field-body">
         <b>name_or_store</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        – <p>Name of the store to unregister or a store itself.</p>
+        –
+        <div class="doc-md-description">
+          <p>Name of the store to unregister or a store itself.</p>
+        </div>
       </li>
   </ul>
 

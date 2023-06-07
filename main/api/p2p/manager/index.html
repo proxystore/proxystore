@@ -2102,36 +2102,54 @@ statement to correctly configure all async tasks and connections.</p>
       <li class="field-body">
         <b>uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of the client.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of the client.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>relay_server</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Address of relay server to use for establishing
+        –
+        <div class="doc-md-description">
+          <p>Address of relay server to use for establishing
 peer-to-peer connections.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>name</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
-        – <p>Readable name of the client to use in logging. If unspecified,
+        –
+        <div class="doc-md-description">
+          <p>Readable name of the client to use in logging. If unspecified,
 the hostname will be used.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>Timeout in seconds when waiting for a peer or relay server
+        –
+        <div class="doc-md-description">
+          <p>Timeout in seconds when waiting for a peer or relay server
 connection to be established.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
-        – <p>number of datachannels to split message sending over
+        –
+        <div class="doc-md-description">
+          <p>number of datachannels to split message sending over
 between each peer.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>verify_certificate</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
-        – <p>Verify the relay server's SSL certificate,</p>
+        –
+        <div class="doc-md-description">
+          <p>Verify the relay server's SSL certificate,</p>
+        </div>
       </li>
   </ul>
 
@@ -2140,8 +2158,10 @@ between each peer.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
           –
-        <p>If the relay server address does not start with "ws://"
+        <div class="doc-md-description">
+          <p>If the relay server address does not start with "ws://"
 or "wss://".</p>
+        </div>
       </li>
   </ul>
 
@@ -2457,8 +2477,11 @@ established.</p>
       <li class="field-body">
         <b>peers</b>
             (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>]</code>)
-        – <p>Iterable containing the two peer UUIDs taking part in the
+        –
+        <div class="doc-md-description">
+          <p>Iterable containing the two peer UUIDs taking part in the
 connection that should be closed.</p>
+        </div>
       </li>
   </ul>
 
@@ -2553,7 +2576,10 @@ connection that should be closed.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
-        – <p>Tuple containing the UUID of the peer that sent the message             and the message itself.</p>
+        –
+        <div class="doc-md-description">
+          <p>Tuple containing the UUID of the peer that sent the message             and the message itself.</p>
+      </div>
       </li>
   </ul>
 
@@ -2609,17 +2635,26 @@ connection that should be closed.</p>
       <li class="field-body">
         <b>peer_uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of peer to send message to.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of peer to send message to.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>message</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        – <p>Message to send to peer.</p>
+        –
+        <div class="doc-md-description">
+          <p>Message to send to peer.</p>
+        </div>
       </li>
       <li class="field-body">
         <b>timeout</b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
-        – <p>Timeout to wait on peer connection to be ready.</p>
+        –
+        <div class="doc-md-description">
+          <p>Timeout to wait on peer connection to be ready.</p>
+        </div>
       </li>
   </ul>
 
@@ -2628,8 +2663,10 @@ connection that should be closed.</p>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.exceptions.PeerConnectionTimeoutError" href="../exceptions/#proxystore.p2p.exceptions.PeerConnectionTimeoutError">PeerConnectionTimeoutError</a></code>
           –
-        <p>If the peer connection is not
+        <div class="doc-md-description">
+          <p>If the peer connection is not
 established within the timeout.</p>
+        </div>
       </li>
   </ul>
 
@@ -2703,7 +2740,10 @@ established within the timeout.</p>
       <li class="field-body">
         <b>peer_uuid</b>
             (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a></code>)
-        – <p>UUID of peer to make connection with.</p>
+        –
+        <div class="doc-md-description">
+          <p>UUID of peer to make connection with.</p>
+        </div>
       </li>
   </ul>
 
@@ -2711,7 +2751,10 @@ established within the timeout.</p>
   <ul>
       <li class="field-body">
             <code><a class="autorefs autorefs-internal" title="proxystore.p2p.connection.PeerConnection" href="../connection/#proxystore.p2p.connection.PeerConnection">PeerConnection</a></code>
-        – <p>The peer connection object.</p>
+        –
+        <div class="doc-md-description">
+          <p>The peer connection object.</p>
+      </div>
       </li>
   </ul>
 
