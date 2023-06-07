@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
-import threading
 from types import TracebackType
 from typing import Any
 from typing import Callable
