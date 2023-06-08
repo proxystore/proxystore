@@ -33,6 +33,8 @@
 
 ## Pull Request Checklist
 
+- [ ] I have read the [Contributing](https://docs.proxystore.dev/main/contributing/) and [PR submission](https://docs.proxystore.dev/main/contributing/issues-pull-requests/) guides.
+
 Please confirm the PR meets the following requirements.
 - [ ] Tags added to PR (e.g., breaking, bug, enhancement, internal, documentation, package, development, security).
 - [ ] Code changes pass `pre-commit` (e.g., black, mypy, ruff, etc.).
