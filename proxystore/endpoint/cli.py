@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 import uuid
+from typing import ClassVar
 
 import click
 import requests
@@ -42,7 +43,7 @@ class _CLIFormatter(logging.Formatter):
     bold_red = '\x1b[1;31m'
     reset = '\x1b[0m'
 
-    FORMATS = {
+    FORMATS: ClassVar[dict[int, str]] = {
         logging.DEBUG: f'{cyan}DEBUG:{reset} %(message)s',
         logging.INFO: f'{green}INFO:{reset} %(message)s',
         logging.WARNING: f'{yellow}WARNING:{reset} %(message)s',
