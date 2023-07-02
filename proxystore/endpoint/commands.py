@@ -177,19 +177,35 @@ def list_endpoints(
 
     endpoints = get_configs(proxystore_dir)
 
+    max_status_chars = max(
+        len('STATUS'),
+        *(len(e.name) for e in EndpointStatus),
+    )
+    # Note: endpoints can be empty so we need to pass an iterable rather
+    # than unpacking the arguments
+    max_endpoint_chars = max([18] + [len(e.name) for e in endpoints])
+
     if len(endpoints) == 0:
         logger.info(f'No valid endpoint configurations in {proxystore_dir}.')
-    else:
-        eps = [(e.name, str(e.uuid)) for e in endpoints]
-        eps = sorted(eps, key=lambda x: x[0])
-        logger.info(f'{"NAME":<18} {"STATUS":<8} UUID', extra={'simple': True})
-        logger.info('=' * (19 + 9 + len(eps[0][1])), extra={'simple': True})
-        for name, uuid_ in eps:
-            status = get_status(name, proxystore_dir)
-            logger.info(
-                f'{name:18.18} {status.name:<8.8} {uuid_}',
-                extra={'simple': True},
-            )
+        return 0
+
+    eps = [(e.name, str(e.uuid)) for e in endpoints]
+    eps = sorted(eps, key=lambda x: x[0])
+    logger.info(
+        f'{"NAME":<{max_endpoint_chars}} {"STATUS":<{max_status_chars}} UUID',
+        extra={'simple': True},
+    )
+
+    toprule_len = 2 + max_endpoint_chars + max_status_chars + len(eps[0][1])
+    logger.info('=' * toprule_len, extra={'simple': True})
+
+    for name, uuid_ in eps:
+        status = get_status(name, proxystore_dir)
+        logger.info(
+            f'{name:{max_endpoint_chars}.{max_endpoint_chars}} '
+            f'{status.name:<{max_status_chars}.{max_status_chars}} {uuid_}',
+            extra={'simple': True},
+        )
 
     return 0
 
