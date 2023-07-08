@@ -181,12 +181,10 @@ def test_globus_connector_init(globus_connector) -> None:
         # Invalid endpoint type
         GlobusConnector(endpoints=None)  # type: ignore[arg-type]
 
-    with pytest.raises(ValueError):
-        # Too many endpoints
-        GlobusConnector(endpoints=[EP1, EP2, EP3])
-
-    with pytest.raises(ValueError):
-        # Not enough endpoints
+    with pytest.raises(
+        ValueError,
+        match='At least two Globus endpoints are required.',
+    ):
         GlobusConnector(endpoints=[EP1])
 
 

@@ -243,11 +243,13 @@ class GlobusKey(NamedTuple):
 
     Attributes:
         filename: Unique object filename.
-        task_id: Globus transfer task ID for the file.
+        task_id: Globus transfer task IDs for the file.
     """
 
     filename: str
-    task_id: str
+    # We support single strings for backwards compatibility with
+    # proxies created in v0.5.1 or older.
+    task_id: str | tuple[str, ...]
 
     def __eq__(self, other: Any) -> bool:
         """Match keys by filename only.
@@ -289,6 +291,9 @@ class GlobusConnector:
         endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
             the dictionary must match the format expected by
             [`GlobusEndpoints.from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
+            Note that given `n` endpoints there will be `n-1` Globus transfers
+            per operation, so we suggest not using too many endpoints at the
+            same time.
         polling_interval: Interval in seconds to check if Globus
             tasks have finished.
         sync_level: Globus transfer sync level.
@@ -300,8 +305,7 @@ class GlobusConnector:
     Raises:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
         ValueError: If `endpoints` is of an incorrect type.
-        ValueError: If the `#!python len(endpoints) != 2` because this
-            implementation can currently only keep two endpoints in sync.
+        ValueError: If fewer than two endpoints are provided.
     """
 
     def __init__(
@@ -326,10 +330,8 @@ class GlobusConnector:
                 'endpoints must be of type GlobusEndpoints or a list of '
                 f'GlobusEndpoint. Got {type(endpoints)}.',
             )
-        if len(endpoints) != 2:
-            raise ValueError(
-                'ProxyStore only supports two endpoints at a time',
-            )
+        if len(endpoints) < 2:
+            raise ValueError('At least two Globus endpoints are required.')
         self.polling_interval = polling_interval
         self.sync_level = sync_level
         self.timeout = timeout
@@ -386,35 +388,38 @@ class GlobusConnector:
         """Get endpoint local to current host."""
         return self.endpoints.get_by_host(hostname())
 
-    def _validate_task_id(self, task_id: str) -> bool:
+    def _validate_task_id(self, task_ids: str | tuple[str, ...]) -> bool:
         """Validate key contains a real Globus task id."""
-        try:
-            self._transfer_client.get_task(task_id)
-        except globus_sdk.TransferAPIError as e:
-            if e.http_status == 400:
-                return False
-            raise e
+        task_ids = task_ids if isinstance(task_ids, tuple) else (task_ids,)
+        for tid in task_ids:
+            try:
+                self._transfer_client.get_task(tid)
+            except globus_sdk.TransferAPIError as e:
+                if e.http_status == 400:
+                    return False
+                raise e
         return True
 
-    def _wait_on_tasks(self, *tasks: str) -> None:
+    def _wait_on_tasks(self, task_ids: str | tuple[str, ...]) -> None:
         """Wait on list of Globus tasks."""
-        for task in tasks:
+        task_ids = task_ids if isinstance(task_ids, tuple) else (task_ids,)
+        for tid in task_ids:
             done = self._transfer_client.task_wait(
-                task,
+                tid,
                 timeout=self.timeout,
                 polling_interval=self.polling_interval,
             )
             if not done:
                 raise RuntimeError(
-                    f'Task {task} did not complete within the timeout',
+                    f'Task {tid} did not complete within the timeout',
                 )
 
     def _transfer_files(
         self,
         filenames: str | list[str],
         delete: bool = False,
-    ) -> str:
-        """Launch Globus Transfer to sync endpoints.
+    ) -> tuple[str, ...]:
+        """Launch Globus Transfers to sync endpoints.
 
         Args:
             filenames: Filename or list of filenames to transfer.
@@ -422,56 +427,56 @@ class GlobusConnector:
             delete: If `True`, delete the filenames rather than syncing them.
 
         Returns:
-            Globus Task UUID that can be used to check the status of the \
-            transfer.
+            Tuple of Globus Task UUID that can be used to check the status of
+            the transfers.
         """
         src_endpoint = self._get_local_endpoint()
         dst_endpoints = [ep for ep in self.endpoints if ep != src_endpoint]
-        assert len(dst_endpoints) == 1
-        dst_endpoint = dst_endpoints[0]
+        tids: list[str] = []
 
-        transfer_task: globus_sdk.DeleteData | globus_sdk.TransferData
-        if delete:
-            transfer_task = globus_sdk.DeleteData(
-                self._transfer_client,
-                endpoint=dst_endpoint.uuid,
-            )
-        else:
-            transfer_task = globus_sdk.TransferData(
-                self._transfer_client,
-                source_endpoint=src_endpoint.uuid,
-                destination_endpoint=dst_endpoint.uuid,
-                sync_level=self.sync_level,
-            )
-
-        transfer_task['notify_on_succeeded'] = False
-        transfer_task['notify_on_failed'] = False
-        transfer_task['notify_on_inactive'] = False
-
-        if isinstance(filenames, str):
-            filenames = [filenames]
-
-        for filename in filenames:
-            if isinstance(transfer_task, globus_sdk.DeleteData):
-                transfer_task.add_item(
-                    path=os.path.join(dst_endpoint.endpoint_path, filename),
-                )
-            elif isinstance(transfer_task, globus_sdk.TransferData):
-                transfer_task.add_item(
-                    source_path=os.path.join(
-                        src_endpoint.endpoint_path,
-                        filename,
-                    ),
-                    destination_path=os.path.join(
-                        dst_endpoint.endpoint_path,
-                        filename,
-                    ),
+        for dst_endpoint in dst_endpoints:
+            transfer_task: globus_sdk.DeleteData | globus_sdk.TransferData
+            if delete:
+                transfer_task = globus_sdk.DeleteData(
+                    self._transfer_client,
+                    endpoint=dst_endpoint.uuid,
                 )
             else:
-                raise AssertionError('Unreachable.')
+                transfer_task = globus_sdk.TransferData(
+                    self._transfer_client,
+                    source_endpoint=src_endpoint.uuid,
+                    destination_endpoint=dst_endpoint.uuid,
+                    sync_level=self.sync_level,
+                )
 
-        tdata = _submit_transfer_action(self._transfer_client, transfer_task)
-        return tdata['task_id']
+            transfer_task['notify_on_succeeded'] = False
+            transfer_task['notify_on_failed'] = False
+            transfer_task['notify_on_inactive'] = False
+
+            if isinstance(filenames, str):
+                filenames = [filenames]
+
+            for filename in filenames:
+                src_path = os.path.join(src_endpoint.endpoint_path, filename)
+                dst_path = os.path.join(dst_endpoint.endpoint_path, filename)
+
+                if isinstance(transfer_task, globus_sdk.DeleteData):
+                    transfer_task.add_item(path=dst_path)
+                elif isinstance(transfer_task, globus_sdk.TransferData):
+                    transfer_task.add_item(
+                        source_path=src_path,
+                        destination_path=dst_path,
+                    )
+                else:
+                    raise AssertionError('Unreachable.')
+
+            tdata = _submit_transfer_action(
+                self._transfer_client,
+                transfer_task,
+            )
+            tids.append(tdata['task_id'])
+
+        return tuple(tids)
 
     def close(self, clear: bool | None = None) -> None:
         """Close the connector and clean up.
@@ -608,9 +613,9 @@ class GlobusConnector:
         with open(path, 'wb', buffering=0) as f:
             f.write(obj)
 
-        task_id = self._transfer_files(filename)
+        tids = self._transfer_files(filename)
 
-        return GlobusKey(filename=filename, task_id=task_id)
+        return GlobusKey(filename=filename, task_id=tids)
 
     def put_batch(self, objs: Sequence[bytes]) -> list[GlobusKey]:
         """Put a batch of serialized objects in the store.
@@ -631,10 +636,10 @@ class GlobusConnector:
             with open(path, 'wb', buffering=0) as f:
                 f.write(obj)
 
-        task_id = self._transfer_files(filenames)
+        tids = self._transfer_files(filenames)
 
         return [
-            GlobusKey(filename=filename, task_id=task_id)
+            GlobusKey(filename=filename, task_id=tids)
             for filename in filenames
         ]
 
