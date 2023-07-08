@@ -16,6 +16,15 @@ from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 
+__all__ = [
+    'Store',
+    'StoreFactory',
+    'get_store',
+    'register_store',
+    'store_registration',
+    'unregister_store',
+]
+
 T = TypeVar('T')
 
 _stores: dict[str, Store[Any]] = {}
