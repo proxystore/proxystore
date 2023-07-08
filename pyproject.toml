@@ -24,7 +24,8 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: CPython",
 ]
 dependencies = [
-    "click",
+    # Click 8.1.4 fails mypy: https://github.com/pallets/click/issues/2558
+    "click!=8.1.4",
     "cloudpickle>=1.6.0",
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
