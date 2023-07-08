@@ -23,6 +23,8 @@
 
 ### Implicit re-exports
 
+*Affected versions:* `<=0.5.1`
+
 Examples throughout the documentation generally suggest importing
 [`Store`][proxystore.store.base.Store] like the following.
 ```python title="example.py"
