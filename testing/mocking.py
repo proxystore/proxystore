@@ -2,16 +2,11 @@
 from __future__ import annotations
 
 import contextlib
-import sys
 from typing import Any
 from typing import Callable
 from typing import Generator
 from unittest import mock
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
-else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
+from unittest.mock import AsyncMock
 
 
 def async_mock_once(

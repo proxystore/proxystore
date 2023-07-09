@@ -4,11 +4,11 @@ import asyncio
 import multiprocessing
 import os
 import pathlib
-import sys
 import time
 import uuid
 from typing import AsyncGenerator
 from unittest import mock
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
@@ -23,11 +23,6 @@ from proxystore.endpoint.serve import serve
 from proxystore.utils import chunk_bytes
 from testing.compat import randbytes
 from testing.utils import open_port
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
-else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
 
 
 @pytest_asyncio.fixture

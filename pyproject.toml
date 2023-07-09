@@ -15,7 +15,7 @@ maintainers = [
 ]
 description = "Lazy object proxy interface for distributed stores."
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 license = {text = "FILE"}
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -31,7 +31,6 @@ dependencies = [
     "globus-sdk>=3.3.0",
     "lazy-object-proxy>=1.6.0",
     "typing-extensions>=4.3.0",
-    "importlib-metadata; python_version<'3.8'",
 ]
 
 [project.urls]
@@ -54,7 +53,6 @@ endpoints = [
 redis = ["redis>=3.4"]
 zmq = ["pyzmq"]
 dev = [
-    "asynctest; python_version<'3.8'",
     "black",
     "covdefaults>=2.2",
     "coverage",
@@ -91,7 +89,7 @@ proxystore-relay = "proxystore.p2p.relay:cli"
 
 [tool.black]
 line-length = 79
-target-version = ["py37"]
+target-version = ["py38"]
 skip-string-normalization = true
 
 [tool.codespell]
@@ -198,7 +196,7 @@ extend-ignore = [
     # Allow pytest.raises() without match
     "PT011",
 ]
-target-version = "py37"
+target-version = "py38"
 
 [tool.ruff.flake8-pytest-style]
 parametrize-values-type = "tuple"
