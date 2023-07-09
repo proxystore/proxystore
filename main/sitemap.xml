@@ -271,42 +271,12 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/store/endpoint/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/store/exceptions/</loc>
          <lastmod>2023-07-09</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/store/file/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/store/globus/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/store/local/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/store/metrics/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/store/multi/</loc>
-         <lastmod>2023-07-09</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/store/redis/</loc>
          <lastmod>2023-07-09</lastmod>
          <changefreq>daily</changefreq>
     </url>
