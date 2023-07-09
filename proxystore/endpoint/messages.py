@@ -1,13 +1,8 @@
 """Endpoint to endpoint messages."""
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from typing import Literal
-else:  # pragma: <3.8 cover
-    from typing_extensions import Literal
+from typing import Literal
 
 
 @dataclass

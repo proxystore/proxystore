@@ -2,14 +2,8 @@
 from __future__ import annotations
 
 import pathlib
-import sys
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from typing import Protocol
-    from typing import runtime_checkable
-else:  # pragma: <3.8 cover
-    from typing_extensions import Protocol
-    from typing_extensions import runtime_checkable
+from typing import Protocol
+from typing import runtime_checkable
 
 import aiosqlite
 

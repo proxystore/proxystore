@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
 import uuid
 
 import pytest
@@ -11,11 +10,6 @@ from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.manager import PeerManager
 from testing.mocking import async_mock_once
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    pass
-else:  # pragma: <3.8 cover
-    pass
 
 
 @pytest.mark.asyncio()
@@ -85,13 +79,7 @@ async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
 
 
 @pytest.mark.asyncio()
-@pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason='aiortc in py37 raises InvalidStateError for unknown reason',
-)
-async def test_p2p_connection_error_from_server(
-    relay_server,
-) -> None:  # pragma: >=3.8 cover
+async def test_p2p_connection_error_from_server(relay_server) -> None:
     # Record current tasks so we know which not to clean up
     task_names = {task.get_name() for task in asyncio.all_tasks()}
 

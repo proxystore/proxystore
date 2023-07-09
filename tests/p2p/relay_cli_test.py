@@ -5,8 +5,8 @@ import multiprocessing
 import os
 import pathlib
 import subprocess
-import sys
 from unittest import mock
+from unittest.mock import AsyncMock
 
 import click
 import click.testing
@@ -17,11 +17,6 @@ from proxystore.p2p.relay import cli
 from proxystore.p2p.relay import serve
 from proxystore.p2p.relay_client import RelayServerClient
 from testing.utils import open_port
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
-else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
 
 
 def test_invoke() -> None:

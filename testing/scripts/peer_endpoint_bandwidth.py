@@ -8,12 +8,8 @@ import socket
 import sys
 import time
 import uuid
+from typing import Literal
 from typing import Sequence
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from typing import Literal
-else:  # pragma: <3.8 cover
-    from typing_extensions import Literal
 
 from proxystore.endpoint.endpoint import Endpoint
 from testing.compat import randbytes

@@ -1,18 +1,12 @@
 """Connector protocol."""
 from __future__ import annotations
 
-import sys
 from typing import Any
 from typing import NamedTuple
+from typing import Protocol
+from typing import runtime_checkable
 from typing import Sequence
 from typing import TypeVar
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from typing import Protocol
-    from typing import runtime_checkable
-else:  # pragma: <3.8 cover
-    from typing_extensions import Protocol
-    from typing_extensions import runtime_checkable
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)
 

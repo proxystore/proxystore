@@ -39,9 +39,8 @@ def serialize(obj: Any) -> bytes:
         # Use cloudpickle if pickle fails
         try:
             identifier = b'03\n'
-            # Pickle protocol 4 is available in Python 3.7 and later but not
-            # the default in Python 3.7 so manually specify it.
-            obj = pickle.dumps(obj, protocol=4)
+            # Pickle protocol 5 is available in Python 3.8 and later
+            obj = pickle.dumps(obj, protocol=5)
         except Exception:
             identifier = b'04\n'
             obj = cloudpickle.dumps(obj)

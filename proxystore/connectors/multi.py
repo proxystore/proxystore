@@ -13,17 +13,13 @@ from typing import Iterable
 from typing import NamedTuple
 from typing import Sequence
 from typing import Tuple
+from typing import TypedDict
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from typing import TypedDict
-else:  # pragma: <3.8 cover
-    from typing_extensions import TypedDict
 
 from proxystore import utils
 from proxystore.connectors.connector import Connector

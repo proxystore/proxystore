@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import sys
 import uuid
 from unittest import mock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -13,11 +13,6 @@ from proxystore.p2p.messages import encode
 from proxystore.p2p.messages import ServerRegistration
 from proxystore.p2p.messages import ServerResponse
 from proxystore.p2p.relay_client import RelayServerClient
-
-if sys.version_info >= (3, 8):  # pragma: >=3.8 cover
-    from unittest.mock import AsyncMock
-else:  # pragma: <3.8 cover
-    from asynctest import CoroutineMock as AsyncMock
 
 # Use 100ms as wait_for/timeout to keep test short
 _WAIT_FOR = 0.1
