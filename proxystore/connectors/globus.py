@@ -103,7 +103,7 @@ class GlobusEndpoints:
 
     Args:
         endpoints: Iterable of
-            [`GlobusEndpoints`][proxystore.store.globus.GlobusEndpoints]
+            [`GlobusEndpoints`][proxystore.connectors.globus.GlobusEndpoints]
             instances.
 
     Raises:
@@ -190,9 +190,9 @@ class GlobusEndpoints:
         """Construct a GlobusEndpoints object from a json file.
 
         The `dict` read from the JSON file will be passed to
-        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict] and
+        [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict] and
         should match the format expected by
-        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
+        [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict].
         """
         with open(json_file) as f:
             data = f.read()
@@ -202,9 +202,9 @@ class GlobusEndpoints:
         """Convert the GlobusEndpoints to a dict.
 
         Note that the
-        [`GlobusEndpoints`][proxystore.store.globus.GlobusEndpoints]
+        [`GlobusEndpoints`][proxystore.connectors.globus.GlobusEndpoints]
         object can be reconstructed by passing the `dict` to.
-        [`from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
+        [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict].
         """
         data = {}
         for endpoint in self:
@@ -290,7 +290,7 @@ class GlobusConnector:
     Args:
         endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
             the dictionary must match the format expected by
-            [`GlobusEndpoints.from_dict()`][proxystore.store.globus.GlobusEndpoints.from_dict].
+            [`GlobusEndpoints.from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict].
             Note that given `n` endpoints there will be `n-1` Globus transfers
             per operation, so we suggest not using too many endpoints at the
             same time.

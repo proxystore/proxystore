@@ -38,7 +38,7 @@ KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 class PolicyDict(TypedDict):
-    """JSON compatible representation of a [`Policy`][proxystore.store.multi.Policy]."""  # noqa: E501
+    """JSON compatible representation of a [`Policy`][proxystore.connectors.multi.Policy]."""  # noqa: E501
 
     priority: int
     host_pattern: list[str] | str | None
@@ -222,7 +222,7 @@ class MultiConnector:
     Args:
         connectors: Mapping of names to tuples of a
             [`Connector`][proxystore.connectors.connector.Connector] and
-            [`Policy`][proxystore.store.multi.Policy].
+            [`Policy`][proxystore.connectors.multi.Policy].
         dormant_connectors: Mapping of names to tuples containing the
             configuration of a dormant connector. A dormant connector is
             a connector that is unused in this process, but could potentially

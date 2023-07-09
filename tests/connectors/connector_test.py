@@ -5,6 +5,10 @@ from typing import Any
 from proxystore.connectors.connector import Connector
 
 
+def test_connector_repr(connectors: Connector[Any]) -> None:
+    assert isinstance(repr(connectors), str)
+
+
 def test_connector_basic_ops(connectors: Connector[Any]) -> None:
     connector = connectors
     value = b'test_value'
