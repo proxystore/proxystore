@@ -20,7 +20,7 @@ class Lib:
     class exceptions:  # noqa: N801
         """Mock Lib exceptions implementation."""
 
-        class UCXNotConnected(Exception):  # noqa: 818
+        class UCXNotConnected(Exception):  # noqa: N818
             """Mock Exception implementation."""
 
             pass
