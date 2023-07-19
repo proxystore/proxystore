@@ -21,7 +21,7 @@
         <link rel="next" href="../redis/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -2092,7 +2092,7 @@
 
 
 <h2 id="proxystore.connectors.multi.ConnectorPolicyConfig" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">ConnectorPolicyConfig</span>
+          <span class="doc doc-object-name doc-attribute-name">ConnectorPolicyConfig</span>
 
   
   <span class="doc doc-labels">
@@ -2121,19 +2121,18 @@ element two is the policy in dictionary form.</p>
 
 
 <h2 id="proxystore.connectors.multi.PolicyDict" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">PolicyDict</span>
+          <span class="doc doc-object-name doc-class-name">PolicyDict</span>
 
 
 <a href="#proxystore.connectors.multi.PolicyDict" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.TypedDict" href="https://docs.python.org/3/library/typing.html#typing.TypedDict">TypedDict</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.TypedDict" href="https://docs.python.org/3/library/typing.html#typing.TypedDict">TypedDict</a></code></p>
 
   
       <p>JSON compatible representation of a <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.Policy"><code>Policy</code></a>.</p>
-
 
 
   
@@ -2161,7 +2160,7 @@ element two is the policy in dictionary form.</p>
 
 
 <h2 id="proxystore.connectors.multi.Policy" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Policy</span>
+          <span class="doc doc-object-name doc-class-name">Policy</span>
 
   
   <span class="doc doc-labels">
@@ -2175,6 +2174,8 @@ element two is the policy in dictionary form.</p>
 
   
       <p>Policy that allows validating a set of constraints.</p>
+
+
 
   <p>Attributes:</p>
   <ul>
@@ -2238,7 +2239,6 @@ more details.</p>
   </ul>
 
 
-
   
 
   <div class="doc doc-children">
@@ -2278,6 +2278,8 @@ more details.</p>
 <code>None</code>. If left as the default, that constraint will not be
 checked against the policy.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2307,6 +2309,8 @@ of the Policy's <code>superset_tags</code> to be valid.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2545,19 +2549,18 @@ of the Policy's <code>superset_tags</code> to be valid.</p>
 
 
 <h2 id="proxystore.connectors.multi.MultiConnectorError" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">MultiConnectorError</span>
+          <span class="doc doc-object-name doc-class-name">MultiConnectorError</span>
 
 
 <a href="#proxystore.connectors.multi.MultiConnectorError" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
 
   
       <p>Exceptions raised by the <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a>.</p>
-
 
 
   </div>
@@ -2569,18 +2572,20 @@ of the Policy's <code>superset_tags</code> to be valid.</p>
 
 
 <h2 id="proxystore.connectors.multi.MultiKey" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">MultiKey</span>
+          <span class="doc doc-object-name doc-class-name">MultiKey</span>
 
 
 <a href="#proxystore.connectors.multi.MultiKey" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
   
       <p>Key to objects in <a class="autorefs autorefs-internal" href="#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a>.</p>
+
+
 
   <p>Attributes:</p>
   <ul>
@@ -2602,7 +2607,6 @@ stored in.</p>
         </div>
       </li>
   </ul>
-
 
 
   
@@ -2630,7 +2634,7 @@ stored in.</p>
 
 
 <h2 id="proxystore.connectors.multi.MultiConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">MultiConnector</span>
+          <span class="doc doc-object-name doc-class-name">MultiConnector</span>
 
 
 <a href="#proxystore.connectors.multi.MultiConnector" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2638,7 +2642,7 @@ stored in.</p>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">connectors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Connector</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">Policy</span><span class="p">]],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">dormant_connectors</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ConnectorPolicyConfig</span><span class="p">]</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2671,6 +2675,8 @@ if they are passed an invalid key where a key could be invalid
 because the connector which created the key is not known by this class
 instance or because the corresponding connector is dormant.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2701,10 +2707,9 @@ should be dormant.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/multi.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-237">237</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/multi.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-237">237</a></span>
 <span class="normal"><a href="#__codelineno-0-238">238</a></span>
 <span class="normal"><a href="#__codelineno-0-239">239</a></span>
 <span class="normal"><a href="#__codelineno-0-240">240</a></span>
@@ -2738,7 +2743,7 @@ should be dormant.</p>
 </span><span id="__span-0-252"><a id="__codelineno-0-252" name="__codelineno-0-252"></a>        <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2886,6 +2891,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2969,6 +2976,8 @@ the connector object.</p>
   
       <p>Evict the object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3020,6 +3029,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3031,6 +3042,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3088,6 +3101,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3099,6 +3114,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3156,6 +3173,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3167,6 +3186,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3228,6 +3249,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3258,6 +3281,8 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -3268,6 +3293,8 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -3388,6 +3415,8 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
 for each item in the batch so items in the batch can potentially
 be placed in different connectors.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3418,6 +3447,8 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -3428,6 +3459,8 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>

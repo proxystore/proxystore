@@ -21,7 +21,7 @@
         <link rel="next" href="../relay_client/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1958,7 +1958,7 @@ of peer WebRTC connections.</p>
 
 
 <h2 id="proxystore.p2p.relay.Client" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Client</span>
+          <span class="doc doc-object-name doc-class-name">Client</span>
 
   
   <span class="doc doc-labels">
@@ -1972,6 +1972,8 @@ of peer WebRTC connections.</p>
 
   
       <p>Representation of client connection.</p>
+
+
 
   <p>Attributes:</p>
   <ul>
@@ -2002,7 +2004,6 @@ of peer WebRTC connections.</p>
   </ul>
 
 
-
   
 
   <div class="doc doc-children">
@@ -2028,11 +2029,11 @@ of peer WebRTC connections.</p>
 
 
 <h2 id="proxystore.p2p.relay.RelayServer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">RelayServer</span>
+          <span class="doc doc-object-name doc-class-name">RelayServer</span>
 
 
 <a href="#proxystore.p2p.relay.RelayServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RelayServer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">RelayServer</span><span class="p">()</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2063,16 +2064,15 @@ served using <a class="autorefs autorefs-external" href="https://websockets.read
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="o">...</span>
 </span></code></pre></div>
 </details>
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/p2p/relay.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-84">84</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/p2p/relay.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-84">84</a></span>
 <span class="normal"><a href="#__codelineno-0-85">85</a></span>
 <span class="normal"><a href="#__codelineno-0-86">86</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_websocket_to_client</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">WebSocketServerProtocol</span><span class="p">,</span> <span class="n">Client</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_uuid_to_client</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">Client</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2108,6 +2108,8 @@ served using <a class="autorefs autorefs-external" href="https://websockets.read
   <div class="doc doc-contents ">
   
       <p>Send message on the socket.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2200,6 +2202,8 @@ served using <a class="autorefs autorefs-external" href="https://websockets.read
   <div class="doc doc-contents ">
   
       <p>Register peer with relay server.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2334,6 +2338,8 @@ served using <a class="autorefs autorefs-external" href="https://websockets.read
   
       <p>Unregister the endpoint.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2430,6 +2436,8 @@ error.</p>
   <div class="doc doc-contents ">
   
       <p>Pass peer connection messages between clients.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2540,6 +2548,8 @@ connection message.</p>
   <div class="doc doc-contents ">
   
       <p>Websocket server message handler.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2714,6 +2724,8 @@ connection message.</p>
 <p>Initializes a <a class="autorefs autorefs-internal" href="#proxystore.p2p.relay.RelayServer"><code>RelayServer</code></a>
 and starts a websocket server listening on <code>host:port</code> for new connections
 and incoming messages.</p>
+
+
 
   <p>Parameters:</p>
   <ul>

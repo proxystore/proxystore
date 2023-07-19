@@ -21,7 +21,7 @@
         <link rel="next" href="../task/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1899,7 +1899,7 @@
 
 
 <h2 id="proxystore.p2p.relay_client.RelayServerClient" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">RelayServerClient</span>
+          <span class="doc doc-object-name doc-class-name">RelayServerClient</span>
 
 
 <a href="#proxystore.p2p.relay_client.RelayServerClient" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1909,7 +1909,7 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">client_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">ssl</span><span class="p">:</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLContext</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -1936,6 +1936,8 @@ a message is received, or
 <a class="autorefs autorefs-internal" href="#proxystore.p2p.relay_client.RelayServerClient.connect"><code>connect()</code></a>
 is called.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -1987,6 +1989,8 @@ value is True, otherwise is False. Optionally provide a custom
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2007,10 +2011,9 @@ timeout, or replies with an error.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/p2p/relay_client.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/p2p/relay_client.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-79"> 79</a></span>
 <span class="normal"><a href="#__codelineno-0-80"> 80</a></span>
 <span class="normal"><a href="#__codelineno-0-81"> 81</a></span>
 <span class="normal"><a href="#__codelineno-0-82"> 82</a></span>
@@ -2064,7 +2067,7 @@ timeout, or replies with an error.</p>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_websocket</span><span class="p">:</span> <span class="n">WebSocketClientProtocol</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2109,6 +2112,8 @@ send and receive methods will automatically call this.</p>
 Otherwise, a new connection will be attempted with
 exponential backoff for connection failures.</p>
 </details>
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2264,6 +2269,8 @@ exponential backoff for connection failures.</p>
   
       <p>Receive the next message.</p>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2274,6 +2281,8 @@ exponential backoff for connection failures.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -2343,6 +2352,8 @@ be decoded into the appropriate message type.</p>
   <div class="doc doc-contents ">
   
       <p>Send a message.</p>
+
+
 
   <p>Parameters:</p>
   <ul>

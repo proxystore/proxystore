@@ -21,7 +21,7 @@
         <link rel="next" href="../globus/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1983,18 +1983,20 @@
 
 
 <h2 id="proxystore.connectors.file.FileKey" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">FileKey</span>
+          <span class="doc doc-object-name doc-class-name">FileKey</span>
 
 
 <a href="#proxystore.connectors.file.FileKey" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
   
       <p>Key to objects in a file system directory.</p>
+
+
 
   <p>Attributes:</p>
   <ul>
@@ -2007,7 +2009,6 @@
         </div>
       </li>
   </ul>
-
 
 
   
@@ -2035,17 +2036,19 @@
 
 
 <h2 id="proxystore.connectors.file.FileConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">FileConnector</span>
+          <span class="doc doc-object-name doc-class-name">FileConnector</span>
 
 
 <a href="#proxystore.connectors.file.FileConnector" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FileConnector</span><span class="p">(</span><span class="n">store_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">clear</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FileConnector</span><span class="p">(</span><span class="n">store_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">clear</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
 
   
       <p>Connector to shared file system.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2070,10 +2073,9 @@ directory will be deleted upon closing the store.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/file.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-43">43</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/file.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-43">43</a></span>
 <span class="normal"><a href="#__codelineno-0-44">44</a></span>
 <span class="normal"><a href="#__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#__codelineno-0-46">46</a></span>
@@ -2085,7 +2087,7 @@ directory will be deleted upon closing the store.</p>
 </span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store_dir</span><span class="p">):</span>
 </span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a>        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">store_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2125,6 +2127,8 @@ directory will be deleted upon closing the store.</p>
 when the connector will no longer be used, for example once all
 proxies have been resolved.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2246,6 +2250,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2296,6 +2302,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2350,6 +2358,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2361,6 +2371,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2418,6 +2430,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2429,6 +2443,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2494,6 +2510,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2505,6 +2523,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2569,6 +2589,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2580,6 +2602,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2647,6 +2671,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2658,6 +2684,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>

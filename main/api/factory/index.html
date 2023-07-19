@@ -21,7 +21,7 @@
         <link rel="next" href="../globus/">
       
       <link rel="icon" href="../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1261,6 +1261,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#proxystore.factory.SimpleFactory.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxystore.factory.SimpleFactory.resolve" class="md-nav__link">
     resolve()
   </a>
@@ -1279,6 +1286,13 @@
   
     <nav class="md-nav" aria-label="LambdaFactory">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.factory.LambdaFactory.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#proxystore.factory.LambdaFactory.resolve" class="md-nav__link">
@@ -1869,6 +1883,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#proxystore.factory.SimpleFactory.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxystore.factory.SimpleFactory.resolve" class="md-nav__link">
     resolve()
   </a>
@@ -1887,6 +1908,13 @@
   
     <nav class="md-nav" aria-label="LambdaFactory">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.factory.LambdaFactory.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#proxystore.factory.LambdaFactory.resolve" class="md-nav__link">
@@ -1953,16 +1981,16 @@ object.</p>
 
 
 <h2 id="proxystore.factory.Factory" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Factory</span>
+          <span class="doc doc-object-name doc-class-name">Factory</span>
 
 
 <a href="#proxystore.factory.Factory" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Factory</span><span class="p">()</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<span title="proxystore.factory.T">T</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<span title="proxystore.factory.T">T</span>]</code></p>
 
   
       <p>Abstract Factory Class.</p>
@@ -1979,14 +2007,13 @@ to ensure that a pickled factory does not contain the object itself,
 just what is needed to resolve the object to keep the final pickled
 factory as small as possible.</p>
 </details>
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/factory.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/factory.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
 <span class="normal"><a href="#__codelineno-0-35">35</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a>    <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2071,19 +2098,21 @@ factory as small as possible.</p>
 
 
 <h2 id="proxystore.factory.SimpleFactory" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">SimpleFactory</span>
+          <span class="doc doc-object-name doc-class-name">SimpleFactory</span>
 
 
 <a href="#proxystore.factory.SimpleFactory" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SimpleFactory</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SimpleFactory</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-internal" title="proxystore.factory.Factory" href="#proxystore.factory.Factory">Factory</a>[<span title="proxystore.factory.T">T</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.factory.Factory" href="#proxystore.factory.Factory">Factory</a>[<span title="proxystore.factory.T">T</span>]</code></p>
 
   
       <p>Simple Factory that stores object as class attribute.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2097,14 +2126,13 @@ factory as small as possible.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/factory.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-53">53</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/factory.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-53">53</a></span>
 <span class="normal"><a href="#__codelineno-0-54">54</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_obj</span> <span class="o">=</span> <span class="n">obj</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2117,6 +2145,35 @@ factory as small as possible.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="proxystore.factory.SimpleFactory.__call__" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">__call__()</span>
+
+
+<a href="#proxystore.factory.SimpleFactory.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="fm">__call__</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Alias <a class="autorefs autorefs-internal" href="#proxystore.factory.Factory.resolve"><code>Factory.resolve()</code></a>.</p>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/factory.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias [`Factory.resolve()`][proxystore.factory.Factory.resolve].&quot;&quot;&quot;</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -2160,21 +2217,23 @@ factory as small as possible.</p>
 
 
 <h2 id="proxystore.factory.LambdaFactory" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">LambdaFactory</span>
+          <span class="doc doc-object-name doc-class-name">LambdaFactory</span>
 
 
 <a href="#proxystore.factory.LambdaFactory" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">LambdaFactory</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">target</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-internal" title="proxystore.factory.Factory" href="#proxystore.factory.Factory">Factory</a>[<span title="proxystore.factory.T">T</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.factory.Factory" href="#proxystore.factory.Factory">Factory</a>[<span title="proxystore.factory.T">T</span>]</code></p>
 
   
       <p>Factory that takes any callable object.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2205,10 +2264,9 @@ invoked when the factory is resolved.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/factory.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71">71</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/factory.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71">71</a></span>
 <span class="normal"><a href="#__codelineno-0-72">72</a></span>
 <span class="normal"><a href="#__codelineno-0-73">73</a></span>
 <span class="normal"><a href="#__codelineno-0-74">74</a></span>
@@ -2226,7 +2284,7 @@ invoked when the factory is resolved.</p>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_args</span> <span class="o">=</span> <span class="n">args</span>
 </span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2239,6 +2297,35 @@ invoked when the factory is resolved.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="proxystore.factory.LambdaFactory.__call__" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">__call__()</span>
+
+
+<a href="#proxystore.factory.LambdaFactory.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="fm">__call__</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">T</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Alias <a class="autorefs autorefs-internal" href="#proxystore.factory.Factory.resolve"><code>Factory.resolve()</code></a>.</p>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/factory.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-37">37</a></span>
+<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+<span class="normal"><a href="#__codelineno-0-39">39</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias [`Factory.resolve()`][proxystore.factory.Factory.resolve].&quot;&quot;&quot;</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

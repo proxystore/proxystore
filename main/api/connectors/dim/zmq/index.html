@@ -21,7 +21,7 @@
         <link rel="next" href="../../endpoint/">
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -2123,7 +2123,7 @@
 
 
 <h2 id="proxystore.connectors.dim.zmq.ZeroMQConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">ZeroMQConnector</span>
+          <span class="doc doc-object-name doc-class-name">ZeroMQConnector</span>
 
 
 <a href="#proxystore.connectors.dim.zmq.ZeroMQConnector" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2133,7 +2133,7 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2148,6 +2148,8 @@ spawn a <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.z
 that will store data. Hence, this connector just acts as an interface
 to that server.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2196,6 +2198,8 @@ spawning one.</p>
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2209,10 +2213,9 @@ spawning one.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/zmq.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/zmq.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
 <span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
 <span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
 <span class="normal"><a href="#__codelineno-0-73"> 73</a></span>
@@ -2326,7 +2329,7 @@ spawning one.</p>
 </span><span id="__span-0-125"><a id="__codelineno-0-125" name="__codelineno-0-125"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">zmq</span><span class="o">.</span><span class="n">Context</span><span class="p">()</span>
 </span><span id="__span-0-126"><a id="__codelineno-0-126" name="__codelineno-0-126"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">zmq</span><span class="o">.</span><span class="n">REQ</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2355,6 +2358,8 @@ spawning one.</p>
   <div class="doc doc-contents ">
   
       <p>Close the connector.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2486,6 +2491,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2536,6 +2543,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2588,6 +2597,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2599,6 +2610,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2660,6 +2673,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2671,6 +2686,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2730,6 +2747,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2741,6 +2760,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2802,6 +2823,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2813,6 +2836,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2886,6 +2911,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2897,6 +2924,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2981,11 +3010,11 @@ the connector object.</p>
 
 
 <h2 id="proxystore.connectors.dim.zmq.ZeroMQServer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">ZeroMQServer</span>
+          <span class="doc doc-object-name doc-class-name">ZeroMQServer</span>
 
 
 <a href="#proxystore.connectors.dim.zmq.ZeroMQServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ZeroMQServer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ZeroMQServer</span><span class="p">()</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2993,14 +3022,13 @@ the connector object.</p>
   
       <p>ZeroMQServer implementation.</p>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/zmq.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-326">326</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/zmq.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-326">326</a></span>
 <span class="normal"><a href="#__codelineno-0-327">327</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -3029,6 +3057,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3079,6 +3109,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3090,6 +3122,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3145,6 +3179,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3156,6 +3192,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3210,6 +3248,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Put data in the store.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3270,6 +3310,8 @@ the connector object.</p>
   
       <p>Process an RPC request.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3281,6 +3323,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3393,6 +3437,8 @@ the connector object.</p>
   <summary>Warning</summary>
   <p>This function does not return until SIGINT or SIGTERM is received.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3567,6 +3613,8 @@ the connector object.</p>
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.zmq.run_server"><code>run_server()</code></a> within
 that loop.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3669,6 +3717,8 @@ that loop.</p>
   <p>An <code>atexit</code> callback is registered which will terminate the spawned
 server process when the calling process exits.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3714,6 +3764,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3855,6 +3907,8 @@ on exit.</p>
   
       <p>Wait until the server responds.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3882,6 +3936,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>

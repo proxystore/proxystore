@@ -21,7 +21,7 @@
         <link rel="next" href="../file/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1997,19 +1997,18 @@
 
 
 <h2 id="proxystore.connectors.endpoint.EndpointConnectorError" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">EndpointConnectorError</span>
+          <span class="doc doc-object-name doc-class-name">EndpointConnectorError</span>
 
 
 <a href="#proxystore.connectors.endpoint.EndpointConnectorError" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
 
   
       <p>Exception resulting from request to Endpoint.</p>
-
 
 
   </div>
@@ -2021,18 +2020,20 @@
 
 
 <h2 id="proxystore.connectors.endpoint.EndpointKey" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">EndpointKey</span>
+          <span class="doc doc-object-name doc-class-name">EndpointKey</span>
 
 
 <a href="#proxystore.connectors.endpoint.EndpointKey" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
   
       <p>Key to object in an Endpoint.</p>
+
+
 
   <p>Attributes:</p>
   <ul>
@@ -2053,7 +2054,6 @@
         </div>
       </li>
   </ul>
-
 
 
   
@@ -2081,14 +2081,14 @@
 
 
 <h2 id="proxystore.connectors.endpoint.EndpointConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">EndpointConnector</span>
+          <span class="doc doc-object-name doc-class-name">EndpointConnector</span>
 
 
 <a href="#proxystore.connectors.endpoint.EndpointConnector" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">EndpointConnector</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">endpoints</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">UUID</span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">proxystore_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2104,6 +2104,8 @@ created by this store could end up on. It is recommended to leave
 the <code>proxystore_dir</code> unspecified so the correct default directory
 will be used.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2127,6 +2129,8 @@ directory. Defaults to <a class="autorefs autorefs-internal" href="../../utils/#
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2146,10 +2150,9 @@ provided.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/endpoint.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/endpoint.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-69"> 69</a></span>
 <span class="normal"><a href="#__codelineno-0-70"> 70</a></span>
 <span class="normal"><a href="#__codelineno-0-71"> 71</a></span>
 <span class="normal"><a href="#__codelineno-0-72"> 72</a></span>
@@ -2261,7 +2264,7 @@ provided.</p>
 </span><span id="__span-0-123"><a id="__codelineno-0-123" name="__codelineno-0-123"></a>
 </span><span id="__span-0-124"><a id="__codelineno-0-124" name="__codelineno-0-124"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;http://</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_host</span><span class="si">}</span><span class="s1">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">endpoint_port</span><span class="si">}</span><span class="s1">&#39;</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2369,6 +2372,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2419,6 +2424,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2489,6 +2496,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2500,6 +2509,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2575,6 +2586,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2586,6 +2599,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2663,6 +2678,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2674,6 +2691,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2731,6 +2750,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2742,6 +2763,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2831,6 +2854,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2842,6 +2867,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>

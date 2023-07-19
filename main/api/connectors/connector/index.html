@@ -21,7 +21,7 @@
         <link rel="next" href="../dim/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1969,21 +1969,20 @@
 
 
 <h2 id="proxystore.connectors.connector.Connector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Connector</span>
+          <span class="doc doc-object-name doc-class-name">Connector</span>
 
 
 <a href="#proxystore.connectors.connector.Connector" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a>[<span title="proxystore.connectors.connector.KeyT">KeyT</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a>[<span title="proxystore.connectors.connector.KeyT">KeyT</span>]</code></p>
 
   
       <p>Connector protocol for interfacing with external object storage.</p>
 <p>The Connector protocol defines the interface for interacting with a
 byte-level object store.</p>
-
 
 
   
@@ -2045,6 +2044,8 @@ byte-level object store.</p>
 <p>The configuration contains all the information needed to reconstruct
 the connector object.</p>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2103,6 +2104,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2114,6 +2117,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2171,6 +2176,8 @@ the connector object.</p>
   
       <p>Evict the object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2220,6 +2227,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2231,6 +2240,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2286,6 +2297,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2297,6 +2310,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2352,6 +2367,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2363,6 +2380,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2420,6 +2439,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2431,6 +2452,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2486,6 +2509,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2497,6 +2522,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>

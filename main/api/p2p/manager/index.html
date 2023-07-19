@@ -21,7 +21,7 @@
         <link rel="next" href="../messages/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1955,7 +1955,7 @@
 
 
 <h2 id="proxystore.p2p.manager.PeerManager" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">PeerManager</span>
+          <span class="doc doc-object-name doc-class-name">PeerManager</span>
 
 
 <a href="#proxystore.p2p.manager.PeerManager" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1967,7 +1967,7 @@
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">peer_channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">verify_certificate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2013,6 +2013,8 @@ statement to correctly configure all async tasks and connections.</p>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="o">...</span>
 </span></code></pre></div>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2069,6 +2071,8 @@ between each peer.</p>
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2081,10 +2085,9 @@ or "wss://".</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/p2p/manager.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/p2p/manager.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
 <span class="normal"><a href="#__codelineno-0-104">104</a></span>
@@ -2152,7 +2155,7 @@ or "wss://".</p>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">frozenset</span><span class="p">[</span><span class="n">UUID</span><span class="p">],</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_relay_server_client_or_none</span><span class="p">:</span> <span class="n">RelayServerClient</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2169,7 +2172,7 @@ or "wss://".</p>
 
 
 <h3 id="proxystore.p2p.manager.PeerManager.uuid" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">uuid</span>
+          <span class="doc doc-object-name doc-attribute-name">uuid</span>
 
   
   <span class="doc doc-labels">
@@ -2192,7 +2195,7 @@ or "wss://".</p>
 
 
 <h3 id="proxystore.p2p.manager.PeerManager.name" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">name</span>
+          <span class="doc doc-object-name doc-attribute-name">name</span>
 
   
   <span class="doc doc-labels">
@@ -2388,6 +2391,8 @@ cancel the asyncio task handling peer messages. If the
 send a message from the peer again, a new connection will be
 established.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2488,6 +2493,8 @@ connection that should be closed.</p>
   
       <p>Receive next message from a peer.</p>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2546,6 +2553,8 @@ connection that should be closed.</p>
   
       <p>Send message to peer.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2573,6 +2582,8 @@ connection that should be closed.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -2651,6 +2662,8 @@ established within the timeout.</p>
   
       <p>Get connection to the peer.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2662,6 +2675,8 @@ established within the timeout.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>

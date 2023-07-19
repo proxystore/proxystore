@@ -21,7 +21,7 @@
         <link rel="next" href="../utils/">
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -2165,7 +2165,7 @@
 
 
 <h2 id="proxystore.connectors.dim.ucx.UCXConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">UCXConnector</span>
+          <span class="doc doc-object-name doc-class-name">UCXConnector</span>
 
 
 <a href="#proxystore.connectors.dim.ucx.UCXConnector" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2174,7 +2174,7 @@
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2189,6 +2189,8 @@ spawn a <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.u
 that will store data. Hence, this connector just acts as an interface
 to that server.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2228,6 +2230,8 @@ spawning one.</p>
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2241,10 +2245,9 @@ spawning one.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/ucx.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/ucx.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-61"> 61</a></span>
 <span class="normal"><a href="#__codelineno-0-62"> 62</a></span>
 <span class="normal"><a href="#__codelineno-0-63"> 63</a></span>
 <span class="normal"><a href="#__codelineno-0-64"> 64</a></span>
@@ -2346,7 +2349,7 @@ spawning one.</p>
 </span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a>    <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
 </span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">new_event_loop</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2375,6 +2378,8 @@ spawning one.</p>
   <div class="doc doc-contents ">
   
       <p>Close the connector.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2500,6 +2505,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2550,6 +2557,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2602,6 +2611,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2613,6 +2624,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2674,6 +2687,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2685,6 +2700,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2744,6 +2761,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2755,6 +2774,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2816,6 +2837,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2827,6 +2850,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2900,6 +2925,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2911,6 +2938,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2995,11 +3024,11 @@ the connector object.</p>
 
 
 <h2 id="proxystore.connectors.dim.ucx.UCXServer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">UCXServer</span>
+          <span class="doc doc-object-name doc-class-name">UCXServer</span>
 
 
 <a href="#proxystore.connectors.dim.ucx.UCXServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">UCXServer</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">UCXServer</span><span class="p">()</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -3007,14 +3036,13 @@ the connector object.</p>
   
       <p>UCXServer implementation.</p>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/ucx.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-313">313</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/ucx.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-313">313</a></span>
 <span class="normal"><a href="#__codelineno-0-314">314</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -3043,6 +3071,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3093,6 +3123,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3104,6 +3136,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3159,6 +3193,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3170,6 +3206,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3224,6 +3262,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Put data in the store.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3284,6 +3324,8 @@ the connector object.</p>
   
       <p>Process an RPC request.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3295,6 +3337,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3394,6 +3438,8 @@ the connector object.</p>
   
       <p>Handle endpoint requests.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3480,6 +3526,8 @@ the connector object.</p>
   <summary>Warning</summary>
   <p>This function does not return until SIGINT or SIGTERM is received.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3579,6 +3627,8 @@ the connector object.</p>
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.ucx.run_server"><code>run_server()</code></a> within
 that loop.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3649,6 +3699,8 @@ that loop.</p>
   <p>An <code>atexit</code> callback is registered which will terminate the spawned
 server process when the calling process exits.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3685,6 +3737,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3832,6 +3886,8 @@ on exit.</p>
   
       <p>Wait until the server responds.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3859,6 +3915,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -3976,6 +4034,8 @@ on exit.</p>
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.ucx.wait_for_server_async"><code>wait_for_server_async()</code></a>
 using <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/asyncio-runner.html#asyncio.run"><code>asyncio.run()</code></a>.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4003,6 +4063,8 @@ using <a class="autorefs autorefs-external" href="https://docs.python.org/3/libr
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>

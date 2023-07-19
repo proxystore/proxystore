@@ -21,7 +21,7 @@
         <link rel="next" href="../models/">
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -2219,19 +2219,18 @@
 
 
 <h2 id="proxystore.connectors.dim.margo.Protocol" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Protocol</span>
+          <span class="doc doc-object-name doc-class-name">Protocol</span>
 
 
 <a href="#proxystore.connectors.dim.margo.Protocol" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="enum.Enum" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="enum.Enum" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
 
   
       <p>Available Mercury plugins and transports.</p>
-
 
 
   
@@ -2249,7 +2248,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.OFI_TCP" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">OFI_TCP</span>
+          <span class="doc doc-object-name doc-attribute-name">OFI_TCP</span>
 
   
   <span class="doc doc-labels">
@@ -2273,7 +2272,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.OFI_VERBS" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">OFI_VERBS</span>
+          <span class="doc doc-object-name doc-attribute-name">OFI_VERBS</span>
 
   
   <span class="doc doc-labels">
@@ -2297,7 +2296,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.OFI_GNI" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">OFI_GNI</span>
+          <span class="doc doc-object-name doc-attribute-name">OFI_GNI</span>
 
   
   <span class="doc doc-labels">
@@ -2321,7 +2320,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.UCX_TCP" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">UCX_TCP</span>
+          <span class="doc doc-object-name doc-attribute-name">UCX_TCP</span>
 
   
   <span class="doc doc-labels">
@@ -2345,7 +2344,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.UCX_VERBS" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">UCX_VERBS</span>
+          <span class="doc doc-object-name doc-attribute-name">UCX_VERBS</span>
 
   
   <span class="doc doc-labels">
@@ -2369,7 +2368,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.SM_SHM" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">SM_SHM</span>
+          <span class="doc doc-object-name doc-attribute-name">SM_SHM</span>
 
   
   <span class="doc doc-labels">
@@ -2393,7 +2392,7 @@
 
 
 <h3 id="proxystore.connectors.dim.margo.Protocol.BMI_TCP" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">BMI_TCP</span>
+          <span class="doc doc-object-name doc-attribute-name">BMI_TCP</span>
 
   
   <span class="doc doc-labels">
@@ -2427,7 +2426,7 @@
 
 
 <h2 id="proxystore.connectors.dim.margo.MargoConnector" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">MargoConnector</span>
+          <span class="doc doc-object-name doc-class-name">MargoConnector</span>
 
 
 <a href="#proxystore.connectors.dim.margo.MargoConnector" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2438,7 +2437,7 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">force_spawn_server</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2453,6 +2452,8 @@ spawn a <a class="autorefs autorefs-internal" href="#proxystore.connectors.dim.m
 that will store data. Hence, this connector just acts as an interface
 to that server.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2509,6 +2510,8 @@ if one is already running.</p>
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2522,10 +2525,9 @@ if one is already running.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/margo.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/margo.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
 <span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
 <span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
 <span class="normal"><a href="#__codelineno-0-93"> 93</a></span>
@@ -2685,7 +2687,7 @@ if one is already running.</p>
 </span><span id="__span-0-168"><a id="__codelineno-0-168" name="__codelineno-0-168"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-169"><a id="__codelineno-0-169" name="__codelineno-0-169"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">server</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2714,6 +2716,8 @@ if one is already running.</p>
   <div class="doc doc-contents ">
   
       <p>Close the connector.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2845,6 +2849,8 @@ the connector object.</p>
   
       <p>Create a new connector instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2895,6 +2901,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2947,6 +2955,8 @@ the connector object.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2958,6 +2968,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3019,6 +3031,8 @@ the connector object.</p>
   
       <p>Get the serialized object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3030,6 +3044,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3103,6 +3119,8 @@ the connector object.</p>
   
       <p>Get a batch of serialized objects associated with the keys.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3114,6 +3132,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3199,6 +3219,8 @@ the connector object.</p>
   
       <p>Put a serialized object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3210,6 +3232,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3287,6 +3311,8 @@ the connector object.</p>
   
       <p>Put a batch of serialized objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3298,6 +3324,8 @@ the connector object.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3388,11 +3416,11 @@ the connector object.</p>
 
 
 <h2 id="proxystore.connectors.dim.margo.MargoServer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">MargoServer</span>
+          <span class="doc doc-object-name doc-class-name">MargoServer</span>
 
 
 <a href="#proxystore.connectors.dim.margo.MargoServer" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MargoServer</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">MargoServer</span><span class="p">(</span><span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -3400,16 +3428,15 @@ the connector object.</p>
   
       <p>MargoServer implementation.</p>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/connectors/dim/margo.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-393">393</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/connectors/dim/margo.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-393">393</a></span>
 <span class="normal"><a href="#__codelineno-0-394">394</a></span>
 <span class="normal"><a href="#__codelineno-0-395">395</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-393"><a id="__codelineno-0-393" name="__codelineno-0-393"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">engine</span><span class="p">:</span> <span class="n">Engine</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-394"><a id="__codelineno-0-394" name="__codelineno-0-394"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="__span-0-395"><a id="__codelineno-0-395" name="__codelineno-0-395"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="n">engine</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -3443,6 +3470,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Remove key from local dictionary.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3544,6 +3573,8 @@ the connector object.</p>
   
       <p>Check if key exists within local dictionary.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3643,6 +3674,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Return data at a given key back to the client.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3769,6 +3802,8 @@ the connector object.</p>
   <div class="doc doc-contents ">
   
       <p>Obtain data from the client and store it in local dictionary.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -3898,6 +3933,8 @@ the connector object.</p>
   
       <p>Start and wait on a Margo server.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3980,6 +4017,8 @@ the form <code>{protocol}://{host}:{port}</code>.</p>
   <p>An <code>atexit</code> callback is registered which will terminate the spawned
 server process when the calling process exits.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4024,6 +4063,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -4178,6 +4219,8 @@ on exit.</p>
   <summary>Warning</summary>
   <p>Due to how Margo blocks internally, the timeout is not very accurate.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4213,6 +4256,8 @@ on exit.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>

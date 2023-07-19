@@ -21,7 +21,7 @@
         <link rel="next" href="../../factory/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -2119,19 +2119,18 @@
 
 
 <h2 id="proxystore.endpoint.storage.Storage" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Storage</span>
+          <span class="doc doc-object-name doc-class-name">Storage</span>
 
 
 <a href="#proxystore.endpoint.storage.Storage" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
   
       <p>Endpoint storage protocol for blobs.</p>
-
 
 
   
@@ -2165,6 +2164,8 @@
   <div class="doc doc-contents ">
   
       <p>Evict a blob from storage.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2219,6 +2220,8 @@
   
       <p>Check if a blob exists in the storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2230,6 +2233,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2289,6 +2294,8 @@
   
       <p>Get a blob from storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2308,6 +2315,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2376,6 +2385,8 @@
   <div class="doc doc-contents ">
   
       <p>Store the blob associated with a key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2466,11 +2477,11 @@
 
 
 <h2 id="proxystore.endpoint.storage.DictStorage" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">DictStorage</span>
+          <span class="doc doc-object-name doc-class-name">DictStorage</span>
 
 
 <a href="#proxystore.endpoint.storage.DictStorage" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DictStorage</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">DictStorage</span><span class="p">()</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2478,14 +2489,13 @@
   
       <p>Simple dictionary-based storage for blobs.</p>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/endpoint/storage.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-67">67</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/endpoint/storage.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-67">67</a></span>
 <span class="normal"><a href="#__codelineno-0-68">68</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2518,6 +2528,8 @@
   <div class="doc doc-contents ">
   
       <p>Evict a blob from storage.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2572,6 +2584,8 @@
   
       <p>Check if a blob exists in the storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2583,6 +2597,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2642,6 +2658,8 @@
   
       <p>Get a blob from storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2661,6 +2679,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2729,6 +2749,8 @@
   <div class="doc doc-contents ">
   
       <p>Store the blob associated with a key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2819,13 +2841,13 @@
 
 
 <h2 id="proxystore.endpoint.storage.SQLiteStorage" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">SQLiteStorage</span>
+          <span class="doc doc-object-name doc-class-name">SQLiteStorage</span>
 
 
 <a href="#proxystore.endpoint.storage.SQLiteStorage" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SQLiteStorage</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">database_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">=</span> <span class="s2">&quot;:memory:&quot;</span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2833,10 +2855,9 @@
   
       <p>SQLite storage protocol for blobs.</p>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/endpoint/storage.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-122">122</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/endpoint/storage.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-122">122</a></span>
 <span class="normal"><a href="#__codelineno-0-123">123</a></span>
 <span class="normal"><a href="#__codelineno-0-124">124</a></span>
 <span class="normal"><a href="#__codelineno-0-125">125</a></span>
@@ -2852,7 +2873,7 @@
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>
 </span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="p">:</span> <span class="n">aiosqlite</span><span class="o">.</span><span class="n">Connection</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2931,6 +2952,8 @@
   
       <p>Evict a blob from storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2988,6 +3011,8 @@
   
       <p>Check if a blob exists in the storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2999,6 +3024,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3070,6 +3097,8 @@
   
       <p>Get a blob from storage.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3089,6 +3118,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3175,6 +3206,8 @@
   <div class="doc doc-contents ">
   
       <p>Store the blob associated with a key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>

@@ -21,7 +21,7 @@
         <link rel="next" href="base/">
       
       <link rel="icon" href="../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1970,7 +1970,7 @@
 
 
 <h2 id="proxystore.store.StoreFactory" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">StoreFactory</span>
+          <span class="doc doc-object-name doc-class-name">StoreFactory</span>
 
 
 <a href="#proxystore.store.StoreFactory" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1981,12 +1981,12 @@
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">evict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n">DeserializerT</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorT" href="base/#proxystore.store.base.ConnectorT">ConnectorT</a>, <span title="proxystore.store.base.T">T</span>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorT" href="base/#proxystore.store.base.ConnectorT">ConnectorT</a>, <span title="proxystore.store.base.T">T</span>]</code></p>
 
   
       <p>Factory that resolves an object from a store.</p>
@@ -1995,6 +1995,8 @@
 <p>The factory takes the <code>store_config</code> parameter that is
 used to reinitialize the store if the factory is sent to a remote
 process where the store has not already been initialized.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2045,10 +2047,9 @@ If <code>None</code>, the default deserializer
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/store/base.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/store/base.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-89"> 89</a></span>
 <span class="normal"><a href="#__codelineno-0-90"> 90</a></span>
 <span class="normal"><a href="#__codelineno-0-91"> 91</a></span>
 <span class="normal"><a href="#__codelineno-0-92"> 92</a></span>
@@ -2084,7 +2085,7 @@ If <code>None</code>, the default deserializer
 </span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>    <span class="c1"># because they are specific to that instance of the factory</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_obj_future</span><span class="p">:</span> <span class="n">Future</span><span class="p">[</span><span class="n">T</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2113,6 +2114,8 @@ If <code>None</code>, the default deserializer
   <div class="doc doc-contents ">
   
       <p>Get store and reinitialize if necessary.</p>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -2174,6 +2177,8 @@ expected store type passed to the factory constructor.</p>
   <div class="doc doc-contents ">
   
       <p>Get object associated with key from store.</p>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -2298,7 +2303,7 @@ factory does not exist in the store.</p>
 
 
 <h2 id="proxystore.store.Store" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Store</span>
+          <span class="doc doc-object-name doc-class-name">Store</span>
 
 
 <a href="#proxystore.store.Store" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2310,12 +2315,12 @@ factory does not exist in the store.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n">DeserializerT</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">cache_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">metrics</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorT" href="base/#proxystore.store.base.ConnectorT">ConnectorT</a>]</code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorT" href="base/#proxystore.store.base.ConnectorT">ConnectorT</a>]</code></p>
 
   
       <p>Key-value store interface for proxies.</p>
@@ -2330,6 +2335,8 @@ context manager which will automatically call
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2388,6 +2395,8 @@ the cache is disabled. The cache is local to the Python process.</p>
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2399,10 +2408,9 @@ the cache is disabled. The cache is local to the Python process.</p>
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/store/base.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-214">214</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/store/base.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-214">214</a></span>
 <span class="normal"><a href="#__codelineno-0-215">215</a></span>
 <span class="normal"><a href="#__codelineno-0-216">216</a></span>
 <span class="normal"><a href="#__codelineno-0-217">217</a></span>
@@ -2450,7 +2458,7 @@ the cache is disabled. The cache is local to the Python process.</p>
 </span><span id="__span-0-236"><a id="__codelineno-0-236" name="__codelineno-0-236"></a>
 </span><span id="__span-0-237"><a id="__codelineno-0-237" name="__codelineno-0-237"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Initialized </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2467,7 +2475,7 @@ the cache is disabled. The cache is local to the Python process.</p>
 
 
 <h3 id="proxystore.store.base.Store.name" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">name</span>
+          <span class="doc doc-object-name doc-attribute-name">name</span>
 
   
   <span class="doc doc-labels">
@@ -2490,7 +2498,7 @@ the cache is disabled. The cache is local to the Python process.</p>
 
 
 <h3 id="proxystore.store.base.Store.metrics" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">metrics</span>
+          <span class="doc doc-object-name doc-attribute-name">metrics</span>
 
   
   <span class="doc doc-labels">
@@ -2513,7 +2521,7 @@ the cache is disabled. The cache is local to the Python process.</p>
 
 
 <h3 id="proxystore.store.base.Store.serializer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">serializer</span>
+          <span class="doc doc-object-name doc-attribute-name">serializer</span>
 
   
   <span class="doc doc-labels">
@@ -2536,7 +2544,7 @@ the cache is disabled. The cache is local to the Python process.</p>
 
 
 <h3 id="proxystore.store.base.Store.deserializer" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">deserializer</span>
+          <span class="doc doc-object-name doc-attribute-name">deserializer</span>
 
   
   <span class="doc doc-labels">
@@ -2578,6 +2586,8 @@ the cache is disabled. The cache is local to the Python process.</p>
 when the store will no longer be used, for example once all
 proxies have been resolved.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2660,6 +2670,8 @@ proxies have been resolved.</p>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2742,6 +2754,8 @@ proxies have been resolved.</p>
   
       <p>Create a new store instance from a configuration.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2753,6 +2767,8 @@ proxies have been resolved.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2819,6 +2835,8 @@ proxies have been resolved.</p>
   <div class="doc doc-contents ">
   
       <p>Evict the object associated with the key.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2901,6 +2919,8 @@ proxies have been resolved.</p>
   
       <p>Check if an object associated with the key exists.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2912,6 +2932,8 @@ proxies have been resolved.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3006,6 +3028,8 @@ proxies have been resolved.</p>
   
       <p>Get the object associated with the key.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3035,6 +3059,8 @@ associated with the key does not exist.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3218,6 +3244,8 @@ associated with the key does not exist.</p>
   
       <p>Check if an object associated with the key is cached locally.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3229,6 +3257,8 @@ associated with the key does not exist.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3292,6 +3322,8 @@ associated with the key does not exist.</p>
   
       <p>Create a proxy that will resolve to an object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3349,6 +3381,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -3359,6 +3393,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -3534,6 +3570,8 @@ behavior can be overridden by setting
   
       <p>Create proxies that will resolve to an object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3591,6 +3629,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -3601,6 +3641,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -3807,6 +3849,8 @@ behavior can be overridden by setting
   
       <p>Create a proxy that will resolve to an object already in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3835,6 +3879,8 @@ store instance.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -3932,6 +3978,8 @@ store instance.</p>
   
       <p>Proxy an object and return <a class="autorefs autorefs-internal" href="../proxy/#proxystore.proxy.ProxyLocker"><code>ProxyLocker</code></a>.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -3989,6 +4037,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -3999,6 +4049,8 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4137,6 +4189,8 @@ behavior can be overridden by setting
   
       <p>Put an object in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4167,6 +4221,8 @@ store instance.</p>
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -4177,6 +4233,8 @@ store instance.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4319,6 +4377,8 @@ store instance.</p>
   
       <p>Put multiple objects in the store.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4349,6 +4409,8 @@ store instance.</p>
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -4359,6 +4421,8 @@ store instance.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4525,6 +4589,8 @@ store instance.</p>
   
       <p>Get the backend store with name.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4538,6 +4604,8 @@ instance.</p>
       </li>
   </ul>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -4548,6 +4616,8 @@ instance.</p>
       </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4664,6 +4734,8 @@ factory of type
   <p>Use the <a class="autorefs autorefs-internal" href="#proxystore.store.store_registration"><code>store_registration</code></a>
 context manager to automatically register and unregister as store.</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4683,6 +4755,8 @@ context manager to automatically register and unregister as store.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4785,6 +4859,8 @@ and <code>exist_ok</code> is false.</p>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="o">...</span>
 </span></code></pre></div>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -4805,6 +4881,8 @@ register then unregister when the context manager is exited.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -4928,6 +5006,8 @@ and <code>exist_ok</code> is false.</p>
   <p>This function is a no-op if no store matching the name
 exists (i.e., no exception will be raised).</p>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">

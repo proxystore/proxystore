@@ -21,7 +21,7 @@
         <link rel="next" href="../connection/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1953,19 +1953,18 @@
 
 
 <h2 id="proxystore.p2p.chunks.ChunkDType" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">ChunkDType</span>
+          <span class="doc doc-object-name doc-class-name">ChunkDType</span>
 
 
 <a href="#proxystore.p2p.chunks.ChunkDType" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-      <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/enum.html#module-enum">enum</a>.<a class="autorefs autorefs-external" title="enum.Enum" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/enum.html#module-enum">enum</a>.<a class="autorefs autorefs-external" title="enum.Enum" href="https://docs.python.org/3/library/enum.html#enum.Enum">Enum</a></code></p>
 
   
       <p>Data type contained in a Chunk.</p>
-
 
 
   
@@ -1983,7 +1982,7 @@
 
 
 <h3 id="proxystore.p2p.chunks.ChunkDType.BYTES" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">BYTES</span>
+          <span class="doc doc-object-name doc-attribute-name">BYTES</span>
 
   
   <span class="doc doc-labels">
@@ -2007,7 +2006,7 @@
 
 
 <h3 id="proxystore.p2p.chunks.ChunkDType.STRING" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">STRING</span>
+          <span class="doc doc-object-name doc-attribute-name">STRING</span>
 
   
   <span class="doc doc-labels">
@@ -2041,7 +2040,7 @@
 
 
 <h2 id="proxystore.p2p.chunks.Chunk" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Chunk</span>
+          <span class="doc doc-object-name doc-class-name">Chunk</span>
 
 
 <a href="#proxystore.p2p.chunks.Chunk" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2051,13 +2050,15 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">seq_len</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">dtype</span><span class="p">:</span> <span class="n">ChunkDType</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
 
   
       <p>Representation of a chunk of a message.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2103,6 +2104,8 @@
       </li>
   </ul>
 
+
+
   <p>Raises:</p>
   <ul>
       <li class="field-body">
@@ -2114,10 +2117,9 @@
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/p2p/chunks.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-37">37</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/p2p/chunks.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-37">37</a></span>
 <span class="normal"><a href="#__codelineno-0-38">38</a></span>
 <span class="normal"><a href="#__codelineno-0-39">39</a></span>
 <span class="normal"><a href="#__codelineno-0-40">40</a></span>
@@ -2165,7 +2167,7 @@
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">dtype</span> <span class="o">=</span> <span class="n">dtype</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2338,6 +2340,8 @@
   
       <p>Generate chunks from data.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2365,6 +2369,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Yields:</p>
   <ul>
@@ -2450,6 +2456,8 @@
   
       <p>Reconstructs data from list of chunks.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2461,6 +2469,8 @@
         </div>
       </li>
   </ul>
+
+
 
   <p>Returns:</p>
   <ul>

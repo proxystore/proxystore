@@ -21,7 +21,7 @@
         <link rel="next" href="../counter/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.19">
     
     
       
@@ -29,7 +29,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.26e3688c.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.eebd395e.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.ecc896b0.min.css">
@@ -1983,13 +1983,13 @@
 
 
 <h2 id="proxystore.p2p.connection.PeerConnection" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">PeerConnection</span>
+          <span class="doc doc-object-name doc-class-name">PeerConnection</span>
 
 
 <a href="#proxystore.p2p.connection.PeerConnection" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">PeerConnection</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">relay_client</span><span class="p">:</span> <span class="n">RelayServerClient</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">channels</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -2041,6 +2041,8 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
 </span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a><span class="k">await</span> <span class="n">connection2</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div>
 </details>
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2061,10 +2063,9 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
       </li>
   </ul>
 
-
-          <details class="quote">
-            <summary>Source code in <code>proxystore/p2p/connection.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
+              <details class="quote">
+                <summary>Source code in <code>proxystore/p2p/connection.py</code></summary>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
 <span class="normal"><a href="#__codelineno-0-104">104</a></span>
@@ -2120,7 +2121,7 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
 </span><span id="__span-0-127"><a id="__codelineno-0-127" name="__codelineno-0-127"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_peer_uuid</span><span class="p">:</span> <span class="n">UUID</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_peer_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
-          </details>
+              </details>
 
   
 
@@ -2137,7 +2138,7 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
 
 
 <h3 id="proxystore.p2p.connection.PeerConnection.state" class="doc doc-heading">
-        <span class="doc doc-object-name doc-attribute-name">state</span>
+          <span class="doc doc-object-name doc-attribute-name">state</span>
 
   
   <span class="doc doc-labels">
@@ -2151,6 +2152,8 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
   <div class="doc doc-contents ">
   
       <p>Get the current connection state.</p>
+
+
 
   <p>Returns:</p>
   <ul>
@@ -2236,6 +2239,8 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
   <div class="doc doc-contents ">
   
       <p>Configure a callback for when the connection fails or closes.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2341,6 +2346,8 @@ changes to closed or failed.</p>
   
       <p>Send message to peer.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2360,6 +2367,8 @@ changes to closed or failed.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
@@ -2464,6 +2473,8 @@ established within the timeout.</p>
   
       <p>Receive next message from peer.</p>
 
+
+
   <p>Returns:</p>
   <ul>
       <li class="field-body">
@@ -2515,6 +2526,8 @@ established within the timeout.</p>
   <div class="doc doc-contents ">
   
       <p>Send offer for peering via relay server.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2632,6 +2645,8 @@ established within the timeout.</p>
   <div class="doc doc-contents ">
   
       <p>Send answer to peering request via relay server.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2765,6 +2780,8 @@ established within the timeout.</p>
   <div class="doc doc-contents ">
   
       <p>Handle message from the relay server.</p>
+
+
 
   <p>Parameters:</p>
   <ul>
@@ -2907,6 +2924,8 @@ established within the timeout.</p>
   
       <p>Wait for connection to be ready.</p>
 
+
+
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
@@ -2920,6 +2939,8 @@ the connection is established.</p>
         </div>
       </li>
   </ul>
+
+
 
   <p>Raises:</p>
   <ul>
