@@ -1,15 +1,14 @@
 """ZeroMQ-based distributed in-memory connector implementation."""
 from __future__ import annotations
-import _pymargo
 import types
 import json
 from typing import Type, Callable, Any, List, Mapping, Union, Optional
-from .typing import hg_addr_t, margo_instance_id, margo_request
-from .bulk import Bulk
-from .logging import Logger
+#from .typing import hg_addr_t, margo_instance_id, margo_request
+#from .bulk import Bulk
+#from .logging import Logger
 import asyncio
 import atexit
-import logging
+#import logging
 import multiprocessing
 import signal
 import socket
@@ -159,6 +158,7 @@ class ZeroMQConnector:
         responses = []
 
         for rpc in rpcs:
+            print(f'{rpc.key=}')
             message = serialize(rpc)
             url = f'tcp://{rpc.key.peer_host}:{rpc.key.peer_port}'
             with self.socket.connect(url):
@@ -186,6 +186,7 @@ class ZeroMQConnector:
             responses.append(response)
 
         return responses
+
 
     def close(self, kill_server: bool = True) -> None:
         """Close the connector.
@@ -253,7 +254,7 @@ class ZeroMQConnector:
         assert response.exists is not None
         return response.exists
 
-    def get(self, key: DIMKey) -> bytes | None:
+    def get(self, key: DIMKey | None) -> bytes | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -358,9 +359,10 @@ class ZeroMQServer:
         '''the put function appends new data '''
         self.data[key] = data
 
-    def get(self, key: str) -> bytes | None:  
+    def get(self, key: str) -> bytes | None:
         '''The get function gives us the next data'''
-        return self.data.popitem(0)
+        print(self.data)
+        return self.data.pop(list(self.data.keys())[0])
         #self.stream.next(data)
 
     def handle_rpc(self, rpc: RPC) -> RPCResponse:
@@ -590,7 +592,6 @@ class ProxyStream:
 
     def get(self, key: DIMKey) -> bytes | None:
         return self.connector.get(key)
-
 
     ####replacing the while loop####
 
