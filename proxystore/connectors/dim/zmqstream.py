@@ -1,6 +1,12 @@
 """ZeroMQ-based distributed in-memory connector implementation."""
 from __future__ import annotations
-
+import _pymargo
+import types
+import json
+from typing import Type, Callable, Any, List, Mapping, Union, Optional
+from .typing import hg_addr_t, margo_instance_id, margo_request
+from .bulk import Bulk
+from .logging import Logger
 import asyncio
 import atexit
 import logging
@@ -327,7 +333,7 @@ class ZeroMQServer:
 
     def __init__(self) -> None:
         self.data: dict[str, bytes] = {}
-        self.stream: ProxyStream = ProxyStream()
+        # self.stream: ProxyStream = ProxyStream()
 
     def evict(self, key: str) -> None:
         """Evict the object associated with the key.
@@ -348,13 +354,14 @@ class ZeroMQServer:
         """
         return key in self.data
 
-    def put(self, data:bytes) -> None:
+    def put(self, key: str, data:bytes) -> None:
         '''the put function appends new data '''
-        self.stream.append(data)
+        self.data[key] = data
 
-    def get(self, data:bytes) -> None:  
+    def get(self, key: str) -> bytes | None:  
         '''The get function gives us the next data'''
-        self.stream.next(data)
+        return self.data.popitem(0)
+        #self.stream.next(data)
 
     def handle_rpc(self, rpc: RPC) -> RPCResponse:
         """Process an RPC request.
