@@ -209,6 +209,9 @@ class Endpoint:
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,
             )
+            self._peer_handler_task.set_name(
+                f'endpoint-{self.uuid}-handle-peer-requests',
+            )
             logger.info(f'{self._log_prefix}: initialized peer manager')
             self._async_init_done = True
 

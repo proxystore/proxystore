@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import traceback
 from typing import Any
 from typing import Callable
 from typing import Coroutine
@@ -16,6 +17,23 @@ class SafeTaskExitError(Exception):
     pass
 
 
+async def _execute_and_log_traceback(
+    coro: Callable[..., Coroutine[Any, Any, None]],
+    *args: Any,
+    **kwargs: Any,
+) -> None:
+    """Execute a coroutine and log any tracebacks.
+
+    Catches any exceptions raised by the coroutine, logs the traceback,
+    and re-raises the exception.
+    """
+    try:
+        await coro(*args, **kwargs)
+    except Exception:
+        logger.error(traceback.format_exc())
+        raise
+
+
 def exit_on_error(task: asyncio.Task[Any]) -> None:
     """Task callback that raises SystemExit on task exception."""
     if (
@@ -23,7 +41,10 @@ def exit_on_error(task: asyncio.Task[Any]) -> None:
         and task.exception() is not None
         and not isinstance(task.exception(), SafeTaskExitError)
     ):
-        logger.error(f'Exception in background coroutine: {task.exception()}')
+        logger.error(
+            f'Exception in background task (name="{task.get_name()}"): '
+            f'{task.exception()!r}',
+        )
         raise SystemExit(1)
 
 
@@ -54,6 +75,8 @@ def spawn_guarded_background_task(
     Returns:
         Asyncio task handle.
     """
-    task = asyncio.create_task(coro(*args, **kwargs))
+    task = asyncio.create_task(
+        _execute_and_log_traceback(coro, *args, **kwargs),
+    )
     task.add_done_callback(exit_on_error)
     return task
