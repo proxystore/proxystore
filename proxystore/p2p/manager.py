@@ -185,6 +185,7 @@ class PeerManager:
             self._server_task = spawn_guarded_background_task(
                 self._handle_server_messages,
             )
+            self._server_task.set_name('peer-manager-server-message-handler')
 
     async def __aenter__(self) -> PeerManager:
         await self.async_init()
@@ -280,6 +281,10 @@ class PeerManager:
                         self._handle_peer_messages,
                         message.source_uuid,
                         connection,
+                    )
+                    self._tasks[peers].set_name(
+                        'handle-peer-messages-'
+                        f'{message.source_uuid}-{message.peer_uuid}',
                     )
                     connection.on_close_callback(self.close_connection, peers)
                 await self._peers[peers].handle_server_message(message)
@@ -409,5 +414,9 @@ class PeerManager:
             peer_uuid,
             connection,
         )
+        self._tasks[peers].set_name(
+            f'handle-peer-messages-{self._uuid}-{peer_uuid}',
+        )
+
         connection.on_close_callback(self.close_connection, peers)
         return connection
