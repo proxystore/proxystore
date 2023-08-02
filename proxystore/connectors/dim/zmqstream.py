@@ -1,5 +1,6 @@
 """ZeroMQ-based distributed in-memory connector implementation."""
 from __future__ import annotations
+from asyncio import streams
 import types
 import json
 from typing import Type, Callable, Any, List, Mapping, Union, Optional
@@ -8,7 +9,7 @@ from typing import Type, Callable, Any, List, Mapping, Union, Optional
 #from .logging import Logger
 import asyncio
 import atexit
-#import logging
+import logging
 import multiprocessing
 import signal
 import socket
@@ -34,6 +35,7 @@ except ImportError as e:  # pragma: no cover
     zmq_import_error = e
 
 import proxystore.utils as utils
+from proxystore.streaming import ProxyStream
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
 from proxystore.connectors.dim.models import DIMKey
 from proxystore.connectors.dim.models import RPC
@@ -88,6 +90,7 @@ class ZeroMQConnector:
 
         self._address = address
         self._interface = interface
+        self._client_id = str(uuid.uuid4())
         self.port = port
         self.chunk_length = (
             MAX_CHUNK_LENGTH_DEFAULT if chunk_length is None else chunk_length
@@ -158,7 +161,6 @@ class ZeroMQConnector:
         responses = []
 
         for rpc in rpcs:
-            print(f'{rpc.key=}')
             message = serialize(rpc)
             url = f'tcp://{rpc.key.peer_host}:{rpc.key.peer_port}'
             with self.socket.connect(url):
@@ -237,7 +239,7 @@ class ZeroMQConnector:
         Args:
             key: Key associated with object to evict.
         """
-        rpc = RPC(operation='evict', key=key)
+        rpc = RPC(operation='evict', key=key, client_id=self._client_id)
         self._send_rpcs([rpc])
 
     def exists(self, key: DIMKey) -> bool:
@@ -263,7 +265,7 @@ class ZeroMQConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        rpc = RPC(operation='get', key=key)
+        rpc = RPC(operation='get', key=key, client_id=self._client_id)
         (result,) = self._send_rpcs([rpc])
         return result.data
 
@@ -274,14 +276,15 @@ class ZeroMQConnector:
             keys: Sequence of keys associated with objects to retrieve.
 
         Returns:
-            List with same order as `keys` with the serialized objects or \
+            List with same order as `keys` with the serialized objects or 
             `None` if the corresponding key does not have an associated object.
         """
-        rpcs = [RPC(operation='get', key=key) for key in keys]
+        rpcs = [RPC(operation='get', key=key, client_id=self._client_id) for key in keys]
         responses = self._send_rpcs(rpcs)
         return [r.data for r in responses]
+ 
 
-    def put(self, obj: bytes) -> DIMKey:
+    def put(self, obj: bytes, key: DIMKey = None) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -290,25 +293,37 @@ class ZeroMQConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = DIMKey(
-            dim_type='zmq',
-            obj_id=str(uuid.uuid4()),
-            size=len(obj),
-            peer_host=self.address,
-            peer_port=self.port,
-        )
-        rpc = RPC(operation='put', key=key, data=obj)
+        if key is None:        
+            data_key = DIMKey(
+                dim_type='zmq',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.address,
+                peer_port=self.port,
+                stream_id=None
+            )
+        else:
+            data_key = DIMKey(
+                dim_type='zmq',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.address,
+                peer_port=self.port,
+                stream_id=key.stream_id
+            )
+
+        rpc = RPC(operation='put', key=data_key, data=obj)
         self._send_rpcs([rpc])
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[DIMKey]:
+    def put_batch(self, objs: Sequence[bytes], key: DIMKey | None) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
             objs: Sequence of serialized objects to put in the store.
 
         Returns:
-            List of keys with the same order as `objs` which can be used to \
+            List of keys with the same order as `objs` which can be used to 
             retrieve the objects.
         """
         keys = [
@@ -318,33 +333,58 @@ class ZeroMQConnector:
                 size=len(obj),
                 peer_host=self.address,
                 peer_port=self.port,
+                stream_id=key.stream_id if key.stream_id is not None else None
             )
             for obj in objs
         ]
         rpcs = [
-            RPC(operation='put', key=key, data=obj)
+            RPC(operation='put', key=key, data=obj) for key in keys
             for key, obj in zip(keys, objs)
         ]
         self._send_rpcs(rpcs)
         return keys
+
+    def create_stream(self) -> DIMKey:
+        stream_id = str(uuid.uuid4())
+        key = DIMKey(
+            dim_type='zmq',
+            obj_id= stream_id,
+            size=0,
+            stream_id = stream_id,
+            peer_host=self.address,
+            peer_port=self.port,
+        )
+        return key
+    
+    def close_stream(self, key: DIMKey) -> None:
+        self.evict(key)
+        #self.end_stream(self)
 
 
 class ZeroMQServer:
     """ZeroMQServer implementation."""
 
     def __init__(self) -> None:
-        self.data: dict[str, bytes] = {}
-        # self.stream: ProxyStream = ProxyStream()
+        self.data: dict[str, bytes | ProxyStream] = {}
 
-    def evict(self, key: str) -> None:
+    def evict(self, key: DIMKey) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
         """
-        self.data.pop(key, None)
+        # check if stream
+        if key.stream_id is not None:
+            stream = self.data[key.stream_id]
+            stream.end_stream()
 
-    def exists(self, key: str) -> bool:
+            # clean out packets from data base
+            for id in stream.proxy_uuids:
+                self.data.pop(id, None)
+            
+        self.data.pop(key.obj_id, None)
+
+    def exists(self, key: DIMKey) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
@@ -353,17 +393,31 @@ class ZeroMQServer:
         Returns:
             If an object associated with the key exists.
         """
-        return key in self.data
+        return key.obj_id in self.data
 
-    def put(self, key: str, data:bytes) -> None:
+    def put(self, key: DIMKey, data:bytes) -> None:
         '''the put function appends new data '''
-        self.data[key] = data
+        if key.stream_id is not None:
+            # if stream does not yet exist
+            if key.stream_id not in self.data:
+                stream = ProxyStream() # create stream
+                self.data[key.stream_id] = stream # add stream to self.data
+            else:
+                stream = self.data[key.stream_id] # fetch existing stream
 
-    def get(self, key: str) -> bytes | None:
+            stream.append(key.obj_id) # append obj_id of next packet
+        self.data[key.obj_id] = data # store packet data in our store
+
+
+    def get(self, key: DIMKey, host_id) -> bytes | None:
         '''The get function gives us the next data'''
-        print(self.data)
-        return self.data.pop(list(self.data.keys())[0])
-        #self.stream.next(data)
+        if key.stream_id is not None: # is a stream
+            stream  = self.data[key.stream_id]
+            stream.connect(host=host_id)
+            proxy_uuid = stream.next_data(host_id)
+            return self.data.get(proxy_uuid, None)
+        else: # is not a stream
+            return self.data.get(key.obj_id, None)
 
     def handle_rpc(self, rpc: RPC) -> RPCResponse:
         """Process an RPC request.
@@ -377,17 +431,17 @@ class ZeroMQServer:
         response: RPCResponse
         try:
             if rpc.operation == 'exists':
-                exists = self.exists(rpc.key.obj_id)
+                exists = self.exists(rpc.key)
                 response = RPCResponse('exists', key=rpc.key, exists=exists)
             elif rpc.operation == 'evict':
-                self.evict(rpc.key.obj_id)
+                self.evict(rpc.key)
                 response = RPCResponse('evict', key=rpc.key)
             elif rpc.operation == 'get':
-                data = self.get(rpc.key.obj_id)
+                data = self.get(rpc.key, rpc.client_id)
                 response = RPCResponse('get', key=rpc.key, data=data)
             elif rpc.operation == 'put':
                 assert rpc.data is not None
-                self.put(rpc.key.obj_id, rpc.data)
+                self.put(rpc.key, rpc.data)
                 response = RPCResponse('put', key=rpc.key)
             else:
                 raise AssertionError('Unreachable.')
@@ -565,54 +619,6 @@ def wait_for_server(address: str, port: int, timeout: float = 0.1) -> None:
     raise ServerTimeoutError(
         f'Failed to connect to server within timeout ({timeout} seconds).',
     )
-
-class ProxyStream:
-    def __init__(self):
-        self.data_packets = []
-        self.is_end = False
-
-    def append(self, data):
-        self.data_packets.append(data)
-
-    def next_data(self):
-        if self.data_packets:
-            return self.data_packets.pop(0)
-        else:
-            return None  # Return None when no more data available
-
-    def is_end_of_stream(self):
-        return self.is_end
-
-    def end_stream(self):
-        self.is_end = True
-
-    def put(self, obj: bytes) -> DIMKey:
-        key = self.connector.put(obj)
-        return key
-
-    def get(self, key: DIMKey) -> bytes | None:
-        return self.connector.get(key)
-
-    ####replacing the while loop####
-
-    def producer(self, connector: ZeroMQConnector):
-        self.index = 0
-
-    def generate_data():
-        return "Data"
-
-    def produce_data(self, connector: ZeroMQConnector):
-        if self.index < 1000:
-            data = self.generate_data()
-            key = connector.put(data)
-            self.index += 1
-            self.produce_data()
-        else:
-            connector.end_stream()
-            print("Stream complete")
-
-    def end_of_stream_condition(i):
-        return i > 100
 
 # def server():
 #     context = zmq.Context()

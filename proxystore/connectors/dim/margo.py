@@ -13,6 +13,8 @@ from types import TracebackType
 from typing import Any
 from typing import Sequence
 
+from proxystore.streaming import ProxyStream
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -30,6 +32,7 @@ try:
 except ImportError as e:  # pragma: no cover
     pymargo_import_error = e
 
+from proxystore.streaming import ProxyStream
 from proxystore.connectors.dim.exceptions import ServerTimeoutError
 from proxystore.connectors.dim.models import DIMKey
 from proxystore.connectors.dim.models import RPC
@@ -103,6 +106,7 @@ class MargoConnector:
 
         self._address = address
         self._interface = interface
+        self._client_id = str(uuid.uuid4())
         self.port = port
         self.protocol = (
             protocol if isinstance(protocol, str) else protocol.value
@@ -199,11 +203,20 @@ class MargoConnector:
             logger.debug(
                 f'Sent {rpc.operation.upper()} RPC (key={rpc.key})',
             )
-            result = self._rpcs[rpc.operation].on(server_url)(
+
+            if rpc.operation == 'get':
+                result = self._rpcs[rpc.operation].on(server_url)(
                 rpc.data,
                 rpc.key.size,
                 rpc.key,
+                rpc.client_id
             )
+            else:
+                result = self._rpcs[rpc.operation].on(server_url)(
+                    rpc.data,
+                    rpc.key.size,
+                    rpc.key,
+                )
 
             response = deserialize(result)
             logger.debug(
@@ -300,7 +313,7 @@ class MargoConnector:
         buff = bytearray(key.size)
         blk = self.engine.create_bulk(buff, bulk.write_only)
 
-        rpc = RPC(operation='get', key=key, data=blk)
+        rpc = RPC(operation='get', key=key, data=blk, client_id=self._client_id)
         (result,) = self._send_rpcs([rpc])
 
         if result.exists:
@@ -326,7 +339,7 @@ class MargoConnector:
             blk = self.engine.create_bulk(buff, bulk.write_only)
 
             buffers.append(buff)
-            rpcs.append(RPC(operation='get', key=key, data=blk))
+            rpcs.append(RPC(operation='get', key=key, data=blk, client_id=self._client_id))
 
         responses = self._send_rpcs(rpcs)
         return [
@@ -334,7 +347,7 @@ class MargoConnector:
             for i, b in enumerate(buffers)
         ]
 
-    def put(self, obj: bytes) -> DIMKey:
+    def put(self, obj: bytes, key: DIMKey | None) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -343,20 +356,21 @@ class MargoConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = DIMKey(
+        k = DIMKey(
             dim_type='margo',
             obj_id=str(uuid.uuid4()),
             size=len(obj),
             peer_host=self.address,
             peer_port=self.port,
+            stream_id=key.stream_id if key.stream_id is not None else None,
         )
         blk = self.engine.create_bulk(obj, bulk.read_only)
 
-        rpc = RPC(operation='put', key=key, data=blk)
+        rpc = RPC(operation='put', key=k, data=blk)
         self._send_rpcs([rpc])
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[DIMKey]:
+    def put_batch(self, objs: Sequence[bytes], key: DIMKey | None) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -373,19 +387,35 @@ class MargoConnector:
                 size=len(obj),
                 peer_host=self.address,
                 peer_port=self.port,
+                stream_id=key.stream_id if key.stream_id is not None else None
+
             )
             for obj in objs
         ]
         rpcs: list[RPC] = []
 
-        for key, obj in zip(keys, objs):
+        for k, obj in zip(keys, objs):
             blk = self.engine.create_bulk(obj, bulk.read_only)
-            rpcs.append(RPC(operation='put', key=key, data=blk))
+            rpcs.append(RPC(operation='put', key=k, data=blk))
 
         self._send_rpcs(rpcs)
 
         return keys
 
+    def create_stream(self) -> DIMKey:
+        stream_id = str(uuid.uuid4())
+        key = DIMKey(
+            dim_type='margo',
+            obj_id= stream_id,
+            size=0,
+            stream_id = stream_id,
+            peer_host=self.address,
+            peer_port=self.port,
+        )
+        return key
+    
+    def close_stream(self, key: DIMKey) -> None:
+        self.evict(key)
 
 class MargoServer:
     """MargoServer implementation."""
@@ -409,7 +439,15 @@ class MargoServer:
             bulk_size: The size of the data to be received.
             key: The data's key.
         """
-        self.data.pop(key.obj_id, None)
+        if key.stream_id is not None:
+            stream = self.data[key.stream_id]
+            stream.end_stream()
+
+            # clean out packets from data base
+            for id in stream.proxy_uuids:
+                self.data.pop(id, None)
+            
+        self.data.pop(key.obj_id, None)        
         response = RPCResponse(operation='evict', key=key)
         handle.respond(serialize(response))
 
@@ -438,6 +476,7 @@ class MargoServer:
         bulk_str: Bulk,
         bulk_size: int,
         key: DIMKey,
+        host_id: str,
     ) -> None:
         """Return data at a given key back to the client.
 
@@ -447,7 +486,13 @@ class MargoServer:
             bulk_size: The size of the data to be received.
             key: The data's key.
         """
-        local_array = self.data.get(key.obj_id, None)
+        obj_key = key.obj_id
+        if key.stream_id is not None:
+            stream = self.data[key.stream_id]
+            stream.connect(host=host_id)
+            obj_key = stream.next_data(host_id)
+
+        local_array = self.data.get(obj_key, None)
         if local_array is not None:
             local_bulk = self.engine.create_bulk(local_array, bulk.read_only)
             self.engine.transfer(
@@ -479,6 +524,15 @@ class MargoServer:
             bulk_size: The size of the data being transferred.
             key: The data key.
         """
+        if key.stream_id is not None:
+            if key.stream_id not in self.data:
+                stream = ProxyStream()
+                self.data[key.stream_id] = stream
+            else:
+                stream = self.data[key.stream_id]
+            
+            stream.append(key.obj_id)
+
         local_buffer = bytearray(bulk_size)
         local_bulk = self.engine.create_bulk(local_buffer, bulk.write_only)
         self.engine.transfer(
