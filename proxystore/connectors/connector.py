@@ -1,6 +1,6 @@
 """Connector protocol."""
 from __future__ import annotations
-
+from proxystore.connectors.dim.models import DIMKey
 from typing import Any
 from typing import NamedTuple
 from typing import Protocol
@@ -88,7 +88,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def put(self, obj: bytes) -> KeyT:
+    def put(self, obj: bytes, key: DIMKey = None) -> KeyT:
         """Put a serialized object in the store.
 
         Args:
@@ -99,7 +99,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[KeyT]:
+    def put_batch(self, objs: Sequence[bytes], key: DIMKey = None) -> list[KeyT]:
         """Put a batch of serialized objects in the store.
 
         Args:

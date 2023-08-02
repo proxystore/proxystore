@@ -415,7 +415,11 @@ class Store(Generic[ConnectorT]):
         timer = Timer()
         timer.start()
 
-        if self.is_cached(key):
+        is_stream = False
+        if hasattr(key, 'stream_id'):
+            is_stream = key.stream_id is not None
+
+        if self.is_cached(key) and not is_stream:
             value = self.cache.get(key)
 
             timer.stop()
@@ -454,7 +458,12 @@ class Store(Generic[ConnectorT]):
                     obj_size,
                 )
 
-            self.cache.set(key, result)
+            is_stream = False
+            if hasattr(key, 'stream_uuid'):
+                is_stream = key.stream_uuid is not None
+
+            if not is_stream: 
+                self.cache.set(key, result)
         else:
             result = default
 
@@ -905,3 +914,55 @@ class Store(Generic[ConnectorT]):
             f'{timer.elapsed_ms:.3f} ms',
         )
         return keys
+
+    def create_stream(
+        self,
+        *,
+        serializer: SerializerT | None = None,
+        **kwargs: Any,
+    ) -> ConnectorKeyT:
+        """Create a ProxyStream object on the server.
+        Args:
+            serializer: Optionally override the default serializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
+
+        Returns:
+            A key which can be used to retrieve the object.
+
+        Raises:
+            TypeError: If the output of `serializer` is not bytes.
+        """
+        timer = Timer()
+        timer.start()
+
+        with Timer() as connector_timer:
+            key = self.connector.create_stream(**kwargs)
+
+        timer.stop()
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            self.metrics.add_time('store.create_stream.connector', key, ctime)
+            self.metrics.add_time('store.create_stream', key, timer.elapsed_ns)
+
+        logger.debug(
+            f'Store(name="{self.name}"): CREATE_STREAM {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
+        )
+        return key
+
+    def close_stream(self, key: ConnectorKeyT) -> None:
+        """Close the stream associated with the given key.
+
+        Args:
+            key: The key associated with the stream to be closed.
+
+        Raises:
+            KeyError: If the provided key does not exist in the store.
+        """
+        self.connector.close_stream(key)
+        logger.debug(
+            f'Store(name="{self.name}"): close_stream {key} in '
+            )
+
