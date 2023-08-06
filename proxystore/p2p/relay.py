@@ -233,7 +233,6 @@ class RelayServer:
             websocket: Websocket message was received on.
             uri: URI message was sent to.
         """
-        logger.info('Relay server listening for incoming connections')
         while True:
             try:
                 message_str = await websocket.recv()
@@ -358,10 +357,10 @@ async def serve(
         server.handler,
         host,
         port,
-        logger=logger,
+        logger=None,
         ssl=ssl_context,
     ):
-        logger.info(f'Serving relay server on {host}:{port}')
+        logger.info(f'Relay server listening on {host}:{port}')
         logger.info('Use ctrl-C to stop')
         await stop
 
@@ -375,7 +374,7 @@ async def serve(
     loop.remove_signal_handler(signal.SIGINT)
     loop.remove_signal_handler(signal.SIGTERM)
 
-    logger.info('Server closed')
+    logger.info('Relay server shutdown')
 
 
 @click.command()
@@ -453,5 +452,7 @@ def cli(
         level=log_level,
         handlers=handlers,
     )
+
+    logging.getLogger('websockets').setLevel(logging.WARNING)
 
     asyncio.run(serve(host, port, certfile=certfile, keyfile=keyfile))
