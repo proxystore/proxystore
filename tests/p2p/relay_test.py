@@ -8,6 +8,9 @@ import pytest
 import websockets
 
 from proxystore.p2p import messages
+from proxystore.p2p.relay import Client
+from proxystore.p2p.relay import periodic_client_logger
+from proxystore.p2p.relay import RelayServer
 from proxystore.p2p.relay_client import RelayServerClient
 
 # Use 200ms as wait_for/timeout to keep test short
@@ -244,6 +247,41 @@ async def test_relay_server_send_connection_closed(
         [
             'Connection closed' in record.message
             and record.levelname == 'ERROR'
+            for record in caplog.records
+        ],
+    )
+
+
+@pytest.mark.asyncio()
+async def test_periodic_client_logger(caplog) -> None:
+    caplog.set_level(logging.INFO)
+
+    server = RelayServer()
+    client = Client(
+        name='test',
+        uuid=uuid4(),
+        websocket=None,  # type: ignore[arg-type]
+    )
+    server.clients[client.uuid] = client
+
+    task = periodic_client_logger(server, 0.001)
+    await asyncio.sleep(0.01)
+    task.cancel()
+    try:
+        await task
+    except asyncio.CancelledError:
+        pass
+
+    assert any(
+        [
+            'Connected clients: 1' in record.message
+            and record.levelname == 'INFO'
+            for record in caplog.records
+        ],
+    )
+    assert any(
+        [
+            str(client.uuid) in record.message and record.levelname == 'INFO'
             for record in caplog.records
         ],
     )

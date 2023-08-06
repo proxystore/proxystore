@@ -32,6 +32,7 @@ except ImportError as e:  # pragma: no cover
     )
 
 from proxystore.p2p import messages
+from proxystore.p2p.task import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,9 @@ class Client:
     name: str
     uuid: UUID
     websocket: WebSocketServerProtocol
+
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}(name={self.name}, uuid={self.uuid})'
 
 
 class RelayServer:
@@ -84,6 +88,11 @@ class RelayServer:
     def __init__(self) -> None:
         self._websocket_to_client: dict[WebSocketServerProtocol, Client] = {}
         self._uuid_to_client: dict[UUID, Client] = {}
+
+    @property
+    def clients(self) -> dict[UUID, Client]:
+        """Mapping of connected clients."""
+        return self._uuid_to_client
 
     async def send(
         self,
@@ -262,11 +271,47 @@ class RelayServer:
                 raise AssertionError('Unreachable.')
 
 
+def periodic_client_logger(
+    server: RelayServer,
+    interval: float = 60,
+    level: int = logging.INFO,
+) -> asyncio.Task[None]:
+    """Create an asyncio task which logs currently connected clients.
+
+    Args:
+        server: Relay server instance to log connected clients of.
+        interval: Seconds between logging connected clients.
+        level: Logging level.
+
+    Returns:
+        Asyncio task.
+    """
+
+    async def _log() -> None:
+        while True:
+            await asyncio.sleep(interval)
+            clients = list(server.clients.values())
+            clients = sorted(clients, key=lambda client: client.name)
+            clients_repr = '\n'.join(repr(client) for client in clients)
+            message = f'Connected clients: {len(clients)}'
+            message = (
+                f'{message}\n{clients_repr}' if len(clients) > 0 else message
+            )
+            logger.log(level, message)
+
+    task = spawn_guarded_background_task(_log)
+    task.set_name('relay-server-client-logger')
+
+    return task
+
+
 async def serve(
     host: str,
     port: int,
     certfile: str | None = None,
     keyfile: str | None = None,
+    *,
+    logging_interval: float | None = 60,
 ) -> None:
     """Run the relay server.
 
@@ -281,6 +326,8 @@ async def serve(
             serving.
         keyfile: Optional private key file. If not specified, the key will be
             taken from the certfile.
+        logging_interval: Seconds between logging the list of connected
+            endpoints.
     """
     server = RelayServer()
 
@@ -295,6 +342,10 @@ async def serve(
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         ssl_context.load_cert_chain(certfile, keyfile=keyfile)
 
+    client_logger_task: asyncio.Task[None] | None = None
+    if logging_interval is not None:  # pragma: no branch
+        client_logger_task = periodic_client_logger(server, logging_interval)
+
     async with websockets.server.serve(
         server.handler,
         host,
@@ -305,6 +356,13 @@ async def serve(
         logger.info(f'Serving relay server on {host}:{port}')
         logger.info('Use ctrl-C to stop')
         await stop
+
+    if client_logger_task is not None:  # pragma: no branch
+        client_logger_task.cancel()
+        try:
+            await client_logger_task
+        except asyncio.CancelledError:
+            pass
 
     loop.remove_signal_handler(signal.SIGINT)
     loop.remove_signal_handler(signal.SIGTERM)
