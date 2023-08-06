@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import datetime
 import logging
 from uuid import uuid4
 
@@ -261,6 +262,8 @@ async def test_periodic_client_logger(caplog) -> None:
         name='test',
         uuid=uuid4(),
         websocket=None,  # type: ignore[arg-type]
+        created=datetime.datetime.now(tz=datetime.timezone.utc),
+        address='localhost',
     )
     server.clients[client.uuid] = client
 

@@ -50,9 +50,15 @@ class Client:
     name: str
     uuid: UUID
     websocket: WebSocketServerProtocol
+    created: datetime.datetime
+    address: str
 
     def __repr__(self) -> str:
-        return f'{self.__class__.__name__}(name={self.name}, uuid={self.uuid})'
+        created = self.created.strftime('%Y-%m-%d %H:%M:%S %Z')
+        return (
+            f'{self.__class__.__name__}(name={self.name}, uuid={self.uuid}, '
+            f'address={self.address}, created={created})'
+        )
 
 
 class RelayServer:
@@ -143,6 +149,8 @@ class RelayServer:
                 name=request.name,
                 uuid=request.uuid,
                 websocket=websocket,
+                created=datetime.datetime.now(tz=datetime.timezone.utc),
+                address=str(websocket.remote_address),
             )
             self._websocket_to_client[websocket] = client
             self._uuid_to_client[client.uuid] = client
