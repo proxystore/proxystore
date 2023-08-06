@@ -386,7 +386,7 @@ async def serve(
 )
 @click.option(
     '--port',
-    default=8765,
+    default=8700,
     type=int,
     metavar='PORT',
     help='Port to listen on.',
