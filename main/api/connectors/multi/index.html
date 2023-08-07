@@ -21,7 +21,7 @@
         <link rel="next" href="../redis/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2284,7 +2284,9 @@ checked against the policy.</p>
   <ul>
       <li class="field-body">
         <b>size_bytes</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Object size in bytes.</p>
@@ -2292,7 +2294,9 @@ checked against the policy.</p>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Set of tags that must be a subset
@@ -2301,7 +2305,9 @@ of the Policy's <code>subset_tags</code> to be valid.</p>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Set of tags that must be a superset
@@ -2691,7 +2697,9 @@ instance or because the corresponding connector is dormant.</p>
       </li>
       <li class="field-body">
         <b>dormant_connectors</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.connectors.multi.ConnectorPolicyConfig" href="#proxystore.connectors.multi.ConnectorPolicyConfig">ConnectorPolicyConfig</a>] | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-internal" title="proxystore.connectors.multi.ConnectorPolicyConfig" href="#proxystore.connectors.multi.ConnectorPolicyConfig">ConnectorPolicyConfig</a>] | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Mapping of names to tuples containing the
@@ -3263,7 +3271,9 @@ the connector object.</p>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                <code>()</code>
+)
         –
         <div class="doc-md-description">
           <p>Iterable of tags that must be a subset
@@ -3272,7 +3282,9 @@ of a connector's policy <code>subset_tags</code> to match.</p>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                <code>()</code>
+)
         –
         <div class="doc-md-description">
           <p>Iterable of tags that must be a superset
@@ -3429,7 +3441,9 @@ be placed in different connectors.</p>
       </li>
       <li class="field-body">
         <b>subset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                <code>()</code>
+)
         –
         <div class="doc-md-description">
           <p>Iterable of tags that must be a subset
@@ -3438,7 +3452,9 @@ of a connector's policy <code>subset_tags</code> to match.</p>
       </li>
       <li class="field-body">
         <b>superset_tags</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>, default:
+                <code>()</code>
+)
         –
         <div class="doc-md-description">
           <p>Iterable of tags that must be a superset

@@ -21,7 +21,7 @@
         <link rel="next" href="../exceptions/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2203,7 +2203,9 @@ listener for incoming messages.</p>
       </li>
       <li class="field-body">
         <b>relay_server</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Address of relay server used for peer-to-peer
@@ -2213,7 +2215,9 @@ to communicate with other endpoints.</p>
       </li>
       <li class="field-body">
         <b>max_object_size</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code><a class="autorefs autorefs-internal" title="proxystore.endpoint.constants.MAX_OBJECT_SIZE_DEFAULT" href="../constants/#proxystore.endpoint.constants.MAX_OBJECT_SIZE_DEFAULT">MAX_OBJECT_SIZE_DEFAULT</a></code>
+)
         –
         <div class="doc-md-description">
           <p>Optional max size in bytes for any single
@@ -2222,7 +2226,9 @@ object stored by the endpoint. If exceeded, an error is raised.</p>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>1</code>
+)
         –
         <div class="doc-md-description">
           <p>Number of datachannels per peer connection
@@ -2231,7 +2237,9 @@ to another endpoint to communicate over.</p>
       </li>
       <li class="field-body">
         <b>peer_timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>30</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout for establishing p2p connection with
@@ -2240,7 +2248,9 @@ another endpoint.</p>
       </li>
       <li class="field-body">
         <b>storage</b>
-            (<code><a class="autorefs autorefs-internal" title="proxystore.endpoint.storage.Storage" href="../storage/#proxystore.endpoint.storage.Storage">Storage</a> | None</code>)
+            (<code><a class="autorefs autorefs-internal" title="proxystore.endpoint.storage.Storage" href="../storage/#proxystore.endpoint.storage.Storage">Storage</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Storage interface to use. If <code>None</code>,
@@ -2249,7 +2259,9 @@ another endpoint.</p>
       </li>
       <li class="field-body">
         <b>verify_certificate</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                <code>True</code>
+)
         –
         <div class="doc-md-description">
           <p>Verify the relay server's SSL
@@ -2494,7 +2506,9 @@ testing with self-signed certificates.</p>
       </li>
       <li class="field-body">
         <b>endpoint</b>
-            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Endpoint to perform operation on. If
@@ -2612,7 +2626,9 @@ will be performed on the local endpoint.</p>
       </li>
       <li class="field-body">
         <b>endpoint</b>
-            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Endpoint to perform operation on. If
@@ -2753,7 +2769,9 @@ will be performed on the local endpoint.</p>
       </li>
       <li class="field-body">
         <b>endpoint</b>
-            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Endpoint to perform operation on. If
@@ -2910,7 +2928,9 @@ will be performed on the local endpoint.</p>
       </li>
       <li class="field-body">
         <b>endpoint</b>
-            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" title="uuid.UUID" href="https://docs.python.org/3/library/uuid.html#uuid.UUID">UUID</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Endpoint to perform operation on. If

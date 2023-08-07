@@ -21,7 +21,7 @@
         <link rel="next" href="../messages/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2036,7 +2036,9 @@ peer-to-peer connections.</p>
       </li>
       <li class="field-body">
         <b>name</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Readable name of the client to use in logging. If unspecified,
@@ -2045,7 +2047,9 @@ the hostname will be used.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>30</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout in seconds when waiting for a peer or relay server
@@ -2054,7 +2058,9 @@ connection to be established.</p>
       </li>
       <li class="field-body">
         <b>peer_channels</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>1</code>
+)
         –
         <div class="doc-md-description">
           <p>number of datachannels to split message sending over
@@ -2063,7 +2069,9 @@ between each peer.</p>
       </li>
       <li class="field-body">
         <b>verify_certificate</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                <code>True</code>
+)
         –
         <div class="doc-md-description">
           <p>Verify the relay server's SSL certificate,</p>
@@ -2577,7 +2585,9 @@ connection that should be closed.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>30</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout to wait on peer connection to be ready.</p>

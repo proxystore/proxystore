@@ -21,7 +21,7 @@
         <link rel="next" href="../local/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2838,7 +2838,9 @@ same time.</p>
       </li>
       <li class="field-body">
         <b>polling_interval</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>1</code>
+)
         –
         <div class="doc-md-description">
           <p>Interval in seconds to check if Globus
@@ -2847,7 +2849,9 @@ tasks have finished.</p>
       </li>
       <li class="field-body">
         <b>sync_level</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;size&#39;, &#39;mtime&#39;, &#39;checksum&#39;]</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | <span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;size&#39;, &#39;mtime&#39;, &#39;checksum&#39;]</code>, default:
+                <code>&#39;mtime&#39;</code>
+)
         –
         <div class="doc-md-description">
           <p>Globus transfer sync level.</p>
@@ -2855,7 +2859,9 @@ tasks have finished.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>60</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout in seconds for waiting on Globus tasks.</p>
@@ -2863,7 +2869,9 @@ tasks have finished.</p>
       </li>
       <li class="field-body">
         <b>clear</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                <code>True</code>
+)
         –
         <div class="doc-md-description">
           <p>Clear all objects on
@@ -3029,7 +3037,9 @@ have been resolved.</p>
   <ul>
       <li class="field-body">
         <b>clear</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Remove the store directory. Overrides the default

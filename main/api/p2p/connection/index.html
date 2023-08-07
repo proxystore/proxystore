@@ -21,7 +21,7 @@
         <link rel="next" href="../counter/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2055,7 +2055,9 @@ the <a class="autorefs autorefs-internal" href="#proxystore.p2p.connection.PeerC
       </li>
       <li class="field-body">
         <b>channels</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
+                <code>1</code>
+)
         –
         <div class="doc-md-description">
           <p>Number of datachannels to open with peer.</p>
@@ -2255,7 +2257,9 @@ changes to closed or failed.</p>
       </li>
       <li class="field-body">
         <b>args</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
+                <code>()</code>
+)
         –
         <div class="doc-md-description">
           <p>Positional arguments to pass to the callback.</p>
@@ -2263,7 +2267,9 @@ changes to closed or failed.</p>
       </li>
       <li class="field-body">
         <b>kwargs</b>
-            (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
+            (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
+                <code>{}</code>
+)
         –
         <div class="doc-md-description">
           <p>Keyword arguments to pass to the callback.</p>
@@ -2360,7 +2366,9 @@ changes to closed or failed.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>30</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout to wait on peer connection to be ready.</p>
@@ -2930,7 +2938,9 @@ established within the timeout.</p>
   <ul>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>The maximum time in seconds to wait for

@@ -21,7 +21,7 @@
         <link rel="next" href="../task/">
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -1951,7 +1951,9 @@ is called.</p>
       </li>
       <li class="field-body">
         <b>client_uuid</b>
-            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.uuid">uuid</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.uuid.UUID">UUID</span> | None</code>)
+            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.uuid">uuid</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.uuid.UUID">UUID</span> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Optional UUID of the client to use when registering with
@@ -1960,7 +1962,9 @@ the relay server. If <code>None</code>, one will be generated.</p>
       </li>
       <li class="field-body">
         <b>client_name</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Optional name of the client to use when registering with
@@ -1969,7 +1973,9 @@ the relay server. If <code>None</code>, the hostname will be used.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>10</code>
+)
         –
         <div class="doc-md-description">
           <p>Time to wait in seconds on server connections.</p>
@@ -1977,7 +1983,9 @@ the relay server. If <code>None</code>, the hostname will be used.</p>
       </li>
       <li class="field-body">
         <b>ssl</b>
-            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.ssl">ssl</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.ssl.SSLContext">SSLContext</span> | None</code>)
+            (<code><span title="proxystore.p2p.relay_client.RelayServerClient.ssl">ssl</span>.<span title="proxystore.p2p.relay_client.RelayServerClient.ssl.SSLContext">SSLContext</span> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>When <code>None</code>, the correct value to pass to

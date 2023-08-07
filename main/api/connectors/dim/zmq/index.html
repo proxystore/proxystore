@@ -21,7 +21,7 @@
         <link rel="next" href="../../endpoint/">
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -2154,7 +2154,9 @@ to that server.</p>
   <ul>
       <li class="field-body">
         <b>address</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>The network IP address to use. Takes precedence over
@@ -2163,7 +2165,9 @@ to that server.</p>
       </li>
       <li class="field-body">
         <b>interface</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>The network interface to use. <code>address</code> arg takes precedence
@@ -2180,7 +2184,9 @@ if both are provided.</p>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Message chunk size in bytes. Defaults to
@@ -2189,7 +2195,9 @@ if both are provided.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>1</code>
+)
         –
         <div class="doc-md-description">
           <p>Timeout in seconds to try connecting to local server before
@@ -2365,7 +2373,9 @@ spawning one.</p>
   <ul>
       <li class="field-body">
         <b>kill_server</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+                <code>True</code>
+)
         –
         <div class="doc-md-description">
           <p>Whether to kill the server process. If this instance
@@ -3459,7 +3469,9 @@ the connector object.</p>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Message chunk size in bytes. Defaults to
@@ -3635,7 +3647,9 @@ that loop.</p>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Message chunk size in bytes. Defaults to
@@ -3739,7 +3753,9 @@ server process when the calling process exits.</p>
       </li>
       <li class="field-body">
         <b>chunk_length</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
+                <code>None</code>
+)
         –
         <div class="doc-md-description">
           <p>Message chunk size in bytes. Defaults to
@@ -3748,7 +3764,9 @@ server process when the calling process exits.</p>
       </li>
       <li class="field-body">
         <b>spawn_timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>5.0</code>
+)
         –
         <div class="doc-md-description">
           <p>Max time in seconds to wait for the server to start.</p>
@@ -3756,7 +3774,9 @@ server process when the calling process exits.</p>
       </li>
       <li class="field-body">
         <b>kill_timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>, default:
+                <code>1.0</code>
+)
         –
         <div class="doc-md-description">
           <p>Max time in seconds to wait for the server to shutdown
@@ -3929,7 +3949,9 @@ on exit.</p>
       </li>
       <li class="field-body">
         <b>timeout</b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>)
+            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
+                <code>0.1</code>
+)
         –
         <div class="doc-md-description">
           <p>Max time in seconds to wait for server response.</p>
