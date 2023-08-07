@@ -52,7 +52,7 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
         # Wait for server to log that it is listening
         assert server_handle.stdout is not None
         for line in server_handle.stdout:  # pragma: no cover
-            if 'Serving' in line:
+            if 'Relay server listening on' in line:
                 break
 
         server_handle.terminate()
@@ -122,7 +122,7 @@ async def test_start_server_cli() -> None:
     # Wait for server to log that it is listening
     assert server_handle.stdout is not None
     for line in server_handle.stdout:  # pragma: no cover
-        if 'Serving relay server' in line:
+        if 'Relay server listening on' in line:
             break
 
     client = RelayServerClient(address)
