@@ -27,7 +27,8 @@ class DIMKey(NamedTuple):
     size: int
     peer_host: str
     peer_port: int
-    stream_id: str | None = None
+    next_id: str | None = None
+
 
 ##new changes##
 @dataclass
@@ -40,12 +41,11 @@ class RPC:
         size: Size of data associated with key.
         data: Data associated with `set` operation.
     """
-    
+
     operation: Literal['exists', 'evict', 'get', 'put']
-    key: DIMKey
-    client_id : str | None = None
+    key: DIMKey | None
+    client_id: str | None = None
     data: bytes | None = None
-    
 
 
 @dataclass
