@@ -28,6 +28,7 @@ except ImportError as e:  # pragma: no cover
 
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerRegistrationError
+from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.utils import hostname
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,10 @@ class RelayServerClient:
             is inferred from `address`. If `address` starts with `wss://` the
             value is True, otherwise is False. Optionally provide a custom
             `SSLContext` (useful if the server uses self-signed certificates).
+        reconnect_task: Spawn a background task which will automatically
+            reconnect to the relay server when the websocket client closes.
+            Otherwise, reconnections will only be attempted when sending or
+            receiving a message.
 
     Raises:
         PeerRegistrationError: If the connection to the relay server
@@ -83,6 +88,8 @@ class RelayServerClient:
         client_name: str | None = None,
         timeout: float = 10,
         ssl: ssl.SSLContext | None = None,
+        *,
+        reconnect_task: bool = True,
     ) -> None:
         self.address = address
         self.uuid = uuid.uuid4() if client_uuid is None else client_uuid
@@ -99,10 +106,12 @@ class RelayServerClient:
             )
         ssl_default = True if self.address.startswith('wss://') else None
         self.ssl = ssl_default if ssl is None else ssl
+        self.reconnect_task = reconnect_task
 
         self.initial_backoff_seconds = 1.0
 
         self._connect_lock = asyncio.Lock()
+        self._reconnect_task: asyncio.Task[None] | None = None
         self._websocket: WebSocketClientProtocol | None = None
 
     async def __aenter__(self) -> Self:
@@ -179,6 +188,18 @@ class RelayServerClient:
                 f'{type(message).__name__}.',
             )
 
+    async def _reconnect_on_close(self) -> None:
+        """Wait for websocket to close and immediately reconnect.
+
+        This is intended to be run as an asyncio tasks and should only
+        be started after the websocket connection has been created.
+        """
+        assert self._websocket is not None
+        while True:
+            await self._websocket.wait_closed()
+            assert self._websocket.closed
+            await self.connect()
+
     async def connect(self) -> WebSocketClientProtocol:
         """Connect to the relay server.
 
@@ -204,6 +225,11 @@ class RelayServerClient:
                     self._websocket = await self._register(
                         timeout=self.timeout,
                     )
+                    if self._reconnect_task is None and self.reconnect_task:
+                        self._reconnect_task = spawn_guarded_background_task(
+                            self._reconnect_on_close,
+                        )
+                        self._reconnect_task.set_name('relay-client-reconnect')
                 except (
                     # Exceptions that we should wait and retry again for
                     ConnectionRefusedError,
@@ -226,6 +252,13 @@ class RelayServerClient:
 
     async def close(self) -> None:
         """Close the connection to the relay server."""
+        if self._reconnect_task is not None:
+            self._reconnect_task.cancel()
+            try:
+                await self._reconnect_task
+            except asyncio.CancelledError:
+                pass
+
         if self._websocket is not None:
             await self._websocket.close()
 
