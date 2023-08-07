@@ -210,7 +210,8 @@ class RelayServerClient:
         Note:
             If an existing and open connection exists, that will be returned.
             Otherwise, a new connection will be attempted with
-            exponential backoff for connection failures.
+            exponential backoff (starting at 1 second and increasing to a max
+            of 60 seconds) for connection failures.
 
         Returns:
             WebSocket connection to the relay server.
@@ -242,7 +243,7 @@ class RelayServerClient:
                         f'{backoff_seconds} seconds',
                     )
                     await asyncio.sleep(backoff_seconds)
-                    backoff_seconds *= 2
+                    backoff_seconds = min(backoff_seconds * 2, 60)
                 else:
                     # Coverage doesn't detect the singular break but it does
                     # get executed to break from the loop
