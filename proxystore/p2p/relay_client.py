@@ -102,6 +102,7 @@ class RelayServerClient:
 
         self.initial_backoff_seconds = 1.0
 
+        self._connect_lock = asyncio.Lock()
         self._websocket: WebSocketClientProtocol | None = None
 
     async def __aenter__(self) -> Self:
@@ -193,30 +194,33 @@ class RelayServerClient:
         Returns:
             WebSocket connection to the relay server.
         """
-        if self._websocket is not None and self._websocket.open:
-            return self._websocket
+        async with self._connect_lock:
+            if self._websocket is not None and self._websocket.open:
+                return self._websocket
 
-        backoff_seconds = self.initial_backoff_seconds
-        while True:
-            try:
-                self._websocket = await self._register(timeout=self.timeout)
-            except (
-                # Exceptions that we should wait and retry again for
-                ConnectionRefusedError,
-                asyncio.TimeoutError,
-                websockets.exceptions.ConnectionClosed,
-            ) as e:
-                logger.warning(
-                    f'Registration with relay server at {self.address} '
-                    f'failed because of {e}. Retrying connection in '
-                    f'{backoff_seconds} seconds',
-                )
-                await asyncio.sleep(backoff_seconds)
-                backoff_seconds *= 2
-            else:
-                # Coverage doesn't detect the singular break but it does
-                # get executed to break from the loop
-                break  # pragma: no cover
+            backoff_seconds = self.initial_backoff_seconds
+            while True:
+                try:
+                    self._websocket = await self._register(
+                        timeout=self.timeout,
+                    )
+                except (
+                    # Exceptions that we should wait and retry again for
+                    ConnectionRefusedError,
+                    asyncio.TimeoutError,
+                    websockets.exceptions.ConnectionClosed,
+                ) as e:
+                    logger.warning(
+                        f'Registration with relay server at {self.address} '
+                        f'failed because of {e}. Retrying connection in '
+                        f'{backoff_seconds} seconds',
+                    )
+                    await asyncio.sleep(backoff_seconds)
+                    backoff_seconds *= 2
+                else:
+                    # Coverage doesn't detect the singular break but it does
+                    # get executed to break from the loop
+                    break  # pragma: no cover
 
         return self._websocket
 
