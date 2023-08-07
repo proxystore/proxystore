@@ -20,24 +20,24 @@ _WAIT_FOR = 0.2
 
 @pytest.mark.asyncio()
 async def test_connect_twice(relay_server) -> None:
-    client = RelayServerClient(relay_server.address)
-    websocket = await client.connect()
-    pong_waiter = await websocket.ping()
-    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
-    await websocket.send(
-        messages.encode(
-            messages.ServerRegistration(
-                name='different-host',
-                uuid=client.uuid,
+    async with RelayServerClient(relay_server.address) as client:
+        websocket = await client.connect()
+        pong_waiter = await websocket.ping()
+        await asyncio.wait_for(pong_waiter, _WAIT_FOR)
+        await websocket.send(
+            messages.encode(
+                messages.ServerRegistration(
+                    name='different-host',
+                    uuid=client.uuid,
+                ),
             ),
-        ),
-    )
-    message_ = await asyncio.wait_for(websocket.recv(), _WAIT_FOR)
-    assert isinstance(message_, str)
-    message = messages.decode(message_)
-    assert isinstance(message, messages.ServerResponse)
-    assert message.success
-    assert not message.error
+        )
+        message_ = await asyncio.wait_for(websocket.recv(), _WAIT_FOR)
+        assert isinstance(message_, str)
+        message = messages.decode(message_)
+        assert isinstance(message, messages.ServerResponse)
+        assert message.success
+        assert not message.error
 
 
 @pytest.mark.asyncio()
@@ -59,10 +59,13 @@ async def test_connect_reconnect_new_socket(relay_server) -> None:
     pong_waiter = await websocket2.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
+    await client1.close()
+    await client2.close()
+
 
 @pytest.mark.asyncio()
 async def test_expected_client_disconnect(relay_server) -> None:
-    client = RelayServerClient(relay_server.address)
+    client = RelayServerClient(relay_server.address, reconnect_task=False)
     websocket = await client.connect()
     server_client = relay_server.relay_server._uuid_to_client[client.uuid]
     assert (
@@ -81,10 +84,12 @@ async def test_expected_client_disconnect(relay_server) -> None:
         not in relay_server.relay_server._websocket_to_client.values()
     )
 
+    await client.close()
+
 
 @pytest.mark.asyncio()
 async def test_unexpected_client_disconnect(relay_server) -> None:
-    client = RelayServerClient(relay_server.address)
+    client = RelayServerClient(relay_server.address, reconnect_task=False)
     websocket = await client.connect()
     server_client = relay_server.relay_server._uuid_to_client[client.uuid]
     assert (
@@ -103,16 +108,18 @@ async def test_unexpected_client_disconnect(relay_server) -> None:
         not in relay_server.relay_server._websocket_to_client.values()
     )
 
+    await client.close()
+
 
 @pytest.mark.asyncio()
 async def test_server_deserialization_fails_silently(relay_server) -> None:
-    client = RelayServerClient(relay_server.address)
-    websocket = await client.connect()
-    # This message should cause deserialization error on server but
-    # server should catch and wait for next message
-    await websocket.send('invalid message')
-    pong_waiter = await websocket.ping()
-    await asyncio.wait_for(pong_waiter, _WAIT_FOR)
+    async with RelayServerClient(relay_server.address) as client:
+        websocket = await client.connect()
+        # This message should cause deserialization error on server but
+        # server should catch and wait for next message
+        await websocket.send('invalid message')
+        pong_waiter = await websocket.ping()
+        await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
 @pytest.mark.asyncio()
@@ -186,6 +193,9 @@ async def test_p2p_message_passing(relay_server) -> None:
     message = await asyncio.wait_for(client1.recv(), 1)
     assert isinstance(message, messages.PeerConnection)
 
+    await client1.close()
+    await client2.close()
+
 
 @pytest.mark.asyncio()
 async def test_p2p_message_passing_unknown_peer(relay_server) -> None:
@@ -209,6 +219,8 @@ async def test_p2p_message_passing_unknown_peer(relay_server) -> None:
     assert str(peer2_uuid) in message.error
     assert 'unknown' in message.error
 
+    await client1.close()
+
 
 @pytest.mark.asyncio()
 async def test_relay_server_send_encode_error(
@@ -217,10 +229,10 @@ async def test_relay_server_send_encode_error(
 ) -> None:
     caplog.set_level(logging.ERROR)
 
-    client = RelayServerClient(relay_server.address)
-    websocket = await client.connect()
-    # Error should be logged but not raised
-    await relay_server.relay_server.send(websocket, 'abc')
+    async with RelayServerClient(relay_server.address) as client:
+        websocket = await client.connect()
+        # Error should be logged but not raised
+        await relay_server.relay_server.send(websocket, 'abc')
 
     assert any(
         [
@@ -251,6 +263,8 @@ async def test_relay_server_send_connection_closed(
             for record in caplog.records
         ],
     )
+
+    await client.close()
 
 
 @pytest.mark.asyncio()

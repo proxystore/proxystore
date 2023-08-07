@@ -110,17 +110,17 @@ async def test_connect_unknown_response(relay_server) -> None:
 @pytest.mark.asyncio()
 async def test_relay_server_backoff(relay_server, caplog) -> None:
     caplog.set_level(logging.WARNING)
-    async with RelayServerClient(relay_server.address) as client:
-        client.initial_backoff_seconds = 0.01
-        # First and second connection fails but third will work
-        with mock.patch.object(
-            client,
-            '_register',
-            AsyncMock(
-                side_effect=[asyncio.TimeoutError, asyncio.TimeoutError, None],
-            ),
-        ):
-            await client.connect()
+    client = RelayServerClient(relay_server.address, reconnect_task=False)
+    client.initial_backoff_seconds = 0.01
+    # First and second connection fails but third will work
+    with mock.patch.object(
+        client,
+        '_register',
+        AsyncMock(
+            side_effect=[asyncio.TimeoutError, asyncio.TimeoutError, None],
+        ),
+    ):
+        await client.connect()
 
     records = [
         record.message
@@ -131,11 +131,25 @@ async def test_relay_server_backoff(relay_server, caplog) -> None:
     assert '0.01 seconds' in records[0]
     assert '0.02 seconds' in records[1]
 
+    await client.close()
+
 
 @pytest.mark.asyncio()
-async def test_relay_server_reconnection(relay_server) -> None:
+async def test_relay_server_manual_reconnection(relay_server) -> None:
     async with RelayServerClient(relay_server.address) as client:
         websocket = await client.connect()
         await websocket.close()
         # We should get a new connection now that we closed the old one
         assert websocket != await client.connect()
+
+
+@pytest.mark.asyncio()
+async def test_relay_server_auto_reconnection(relay_server) -> None:
+    async with RelayServerClient(relay_server.address) as client:
+        websocket = await client.connect()
+        await websocket.close()
+        assert client._websocket is not None
+        assert client._websocket.closed
+        await asyncio.sleep(0.01)
+        assert not client._websocket.closed
+        assert client._websocket != websocket

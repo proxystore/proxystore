@@ -75,7 +75,7 @@ def _serve(host: str, port: int) -> None:
 @pytest.mark.timeout(5)
 @pytest.mark.asyncio()
 async def test_server_without_ssl() -> None:
-    host = 'localhost'
+    host = '127.0.0.1'
     port = open_port()
     address = f'ws://{host}:{port}'
 
@@ -104,11 +104,13 @@ async def test_server_without_ssl() -> None:
 
     process.join()
 
+    await client.close()
+
 
 @pytest.mark.timeout(5)
 @pytest.mark.asyncio()
 async def test_start_server_cli() -> None:
-    host = 'localhost'
+    host = '127.0.0.1'
     port = str(open_port())
     address = f'ws://{host}:{port}'
 
@@ -135,3 +137,5 @@ async def test_start_server_cli() -> None:
 
     with pytest.raises(websockets.exceptions.ConnectionClosedOK):
         await websocket.recv()
+
+    await client.close()
