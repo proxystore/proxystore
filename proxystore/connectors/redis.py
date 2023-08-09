@@ -15,6 +15,8 @@ else:  # pragma: <3.11 cover
 
 import redis
 
+from proxystore.serialize import serialize
+
 
 class RedisKey(NamedTuple):
     """Key to objects store in a Redis server.
@@ -24,6 +26,7 @@ class RedisKey(NamedTuple):
     """
 
     redis_key: str
+    next_id: str | None = None
 
 
 class RedisConnector:
@@ -151,7 +154,19 @@ class RedisConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = RedisKey(redis_key=str(uuid.uuid4()))
+        if id is not None:
+            next_id = str(uuid.uuid4())
+
+            next_key = RedisKey(
+                redis_key=next_id,
+            )
+            obj = serialize((next_key, obj))
+            key = RedisKey(
+                redis_key=id,
+                next_id=next_id,
+            )
+        else:
+            key = RedisKey(redis_key=str(uuid.uuid4()))
         self._redis_client.set(key.redis_key, obj)
         return key
 
