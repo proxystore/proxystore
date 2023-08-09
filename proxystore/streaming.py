@@ -20,11 +20,14 @@ class ProxyStreamProducer:
         self.store = store
         self.id = str(uuid.uuid4())
         self._next_uuid = self.id
+        self.key = 'start'
 
     def append(self, obj) -> KeyT:
         # store object and get key reference to object
         key = self.store.put(obj, id=self._next_uuid)
         self._next_uuid = key.next_id
+        if self.key == -1 :
+            self.key = key
         return key
 
     def close_stream(self) -> None:
@@ -33,7 +36,7 @@ class ProxyStreamProducer:
 
 
 class ProxyStreamConsumer:
-    def __init__(self, store: Store[ConnectorT], stream: KeyT):
+    def __init__(self, store: Store[ConnectorT], stream: KeyT | None | int):
         self.store = store
         self.stream_key = stream
 
@@ -50,31 +53,3 @@ class ProxyStreamConsumer:
                 yield deserialize(obj)
             except TypeError:
                 return None
-
-
-class ProxyStream:
-    def __init__(self):
-        self.proxy_uuids = []
-        self.is_end = False
-        self.connected_clients: dict[str, int] = {}
-
-    def append(self, data):
-        self.proxy_uuids.append(data)
-
-    def next_data(self, host):
-        try:
-            data = self.proxy_uuids[self.connected_clients[host]]
-            self.connected_clients[host] += 1
-            return data
-        except IndexError:
-            return None
-
-    def is_end_of_stream(self):
-        return self.is_end
-
-    def end_stream(self):
-        self.is_end = True
-
-    def connect(self, host):
-        if host not in self.connected_clients:
-            self.connected_clients[host] = len(self.proxy_uuids) - 1
