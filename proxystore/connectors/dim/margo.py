@@ -337,7 +337,7 @@ class MargoConnector:
 
         return None
 
-    def get_batch(self, keys: Sequence[DIMKey | str]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[DIMKey]) -> list[bytes | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -363,7 +363,7 @@ class MargoConnector:
             for i, b in enumerate(buffers)
         ]
 
-    def put(self, obj: bytes, id: DIMKey | None) -> DIMKey:
+    def put(self, obj: bytes, key_id: str | None = None) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -372,7 +372,7 @@ class MargoConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        if id is not None:
+        if key_id is not None:
             next_id = str(uuid.uuid4())
 
             next_key = DIMKey(
@@ -385,7 +385,7 @@ class MargoConnector:
             data = serialize((next_key, obj))
             k = DIMKey(
                 dim_type='margo',
-                obj_id=id,
+                obj_id=key_id,
                 size=len(data),
                 peer_host=self.address,
                 peer_port=self.port,
@@ -408,7 +408,11 @@ class MargoConnector:
         self._send_rpcs([rpc])
         return k
 
-    def put_batch(self, objs: Sequence[bytes], id: str | None) -> list[DIMKey]:
+    def put_batch(
+        self,
+        objs: Sequence[bytes],
+        key_id: str | None = None,
+    ) -> list[DIMKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -418,15 +422,15 @@ class MargoConnector:
             List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
-        if id is not None:
+        if key_id is not None:
             keys = []
             for obj in objs:
                 next_id = str(uuid.uuid4())
-                data = serialize(next_id, obj)
+                data = serialize((next_id, obj))
                 keys.append(
                     DIMKey(
                         dim_type='margo',
-                        obj_id=id,
+                        obj_id=key_id,
                         size=len(data),
                         peer_host=self.address,
                         peer_port=self.port,
@@ -454,21 +458,6 @@ class MargoConnector:
         self._send_rpcs(rpcs)
 
         return keys
-
-    def create_stream(self) -> DIMKey:
-        stream_id = str(uuid.uuid4())
-        key = DIMKey(
-            dim_type='margo',
-            obj_id=stream_id,
-            size=0,
-            stream_id=stream_id,
-            peer_host=self.address,
-            peer_port=self.port,
-        )
-        return key
-
-    def close_stream(self, key: DIMKey) -> None:
-        self.evict(key)
 
 
 class MargoServer:
@@ -549,7 +538,8 @@ class MargoServer:
             local_array = self.data.get(obj_key, None)
             if local_array is not None:
                 local_bulk = self.engine.create_bulk(
-                    local_array, bulk.read_only,
+                    local_array,
+                    bulk.read_only,
                 )
                 self.engine.transfer(
                     bulk.push,

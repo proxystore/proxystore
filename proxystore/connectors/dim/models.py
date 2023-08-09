@@ -43,7 +43,7 @@ class RPC:
     """
 
     operation: Literal['exists', 'evict', 'get', 'put']
-    key: DIMKey | None
+    key: DIMKey
     client_id: str | None = None
     data: bytes | None = None
 

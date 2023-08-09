@@ -19,15 +19,13 @@ class ProxyStreamProducer:
     def __init__(self, store: Store[ConnectorT]):
         self.store = store
         self.id = str(uuid.uuid4())
-        self._next_uuid = self.id
-        self.key = 'start'
+        self._next_uuid: str | None = self.id
+        self.key: KeyT | None = self.append(None)
 
-    def append(self, obj) -> KeyT:
+    def append(self, obj: Any) -> KeyT:
         # store object and get key reference to object
         key = self.store.put(obj, id=self._next_uuid)
         self._next_uuid = key.next_id
-        if self.key == -1:
-            self.key = key
         return key
 
     def close_stream(self) -> None:
@@ -36,7 +34,7 @@ class ProxyStreamProducer:
 
 
 class ProxyStreamConsumer:
-    def __init__(self, store: Store[ConnectorT], stream: KeyT | None | int):
+    def __init__(self, store: Store[ConnectorT], stream: KeyT | None):
         self.store = store
         self.stream_key = stream
 
@@ -44,12 +42,15 @@ class ProxyStreamConsumer:
         while self.stream_key is not None:
             try:
                 self.stream_key, obj = self.store.get(self.stream_key)
+                obj = deserialize(
+                    obj,
+                )  # TODO: deserialize using the store's serializer
 
                 if (
                     obj is None
                 ):  # keep looping if data hasn't been produced yet
                     continue
 
-                yield deserialize(obj)
+                yield obj
             except TypeError:
                 return None

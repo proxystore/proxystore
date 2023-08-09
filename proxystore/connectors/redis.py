@@ -145,7 +145,7 @@ class RedisConnector:
         """
         return self._redis_client.mget([key.redis_key for key in keys])
 
-    def put(self, obj: bytes) -> RedisKey:
+    def put(self, obj: bytes, key_id: RedisKey | None = None) -> RedisKey:
         """Put a serialized object in the store.
 
         Args:
@@ -154,7 +154,7 @@ class RedisConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        if id is not None:
+        if key_id is not None:
             next_id = str(uuid.uuid4())
 
             next_key = RedisKey(
@@ -162,7 +162,7 @@ class RedisConnector:
             )
             obj = serialize((next_key, obj))
             key = RedisKey(
-                redis_key=id,
+                redis_key=key_id.redis_key,
                 next_id=next_id,
             )
         else:
@@ -170,7 +170,11 @@ class RedisConnector:
         self._redis_client.set(key.redis_key, obj)
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[RedisKey]:
+    def put_batch(
+        self,
+        objs: Sequence[bytes],
+        key_id: RedisKey | None = None,
+    ) -> list[RedisKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
