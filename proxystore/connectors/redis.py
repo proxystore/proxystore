@@ -145,7 +145,7 @@ class RedisConnector:
         """
         return self._redis_client.mget([key.redis_key for key in keys])
 
-    def put(self, obj: bytes, key_id: RedisKey | None = None) -> RedisKey:
+    def put(self, obj: bytes, key_id: str | None = None) -> RedisKey:
         """Put a serialized object in the store.
 
         Args:
@@ -162,7 +162,7 @@ class RedisConnector:
             )
             obj = serialize((next_key, obj))
             key = RedisKey(
-                redis_key=key_id.redis_key,
+                redis_key=key_id,
                 next_id=next_id,
             )
         else:

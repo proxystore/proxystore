@@ -259,7 +259,7 @@ class UCXConnector:
         responses = self._send_rpcs(rpcs)
         return [r.data for r in responses]
 
-    def put(self, obj: bytes, key_id: DIMKey | None = None) -> DIMKey:
+    def put(self, obj: bytes, key_id: str | None = None) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -281,7 +281,7 @@ class UCXConnector:
             obj = serialize((next_key, obj))
             key = DIMKey(
                 dim_type='zmq',
-                obj_id=key_id.obj_id,
+                obj_id=key_id,
                 size=len(obj),
                 peer_host=self.address,
                 peer_port=self.port,
