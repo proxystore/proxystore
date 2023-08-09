@@ -272,7 +272,7 @@ class ZeroMQConnector:
         responses = self._send_rpcs(rpcs)
         return [r.data for r in responses]
 
-    def put(self, obj: bytes) -> DIMKey:
+    def put(self, obj: bytes, id: DIMKey | None) -> DIMKey:
         """Put a serialized object in the store.
 
         Args:
@@ -281,13 +281,35 @@ class ZeroMQConnector:
         Returns:
             Key which can be used to retrieve the object.
         """
-        key = DIMKey(
-            dim_type='zmq',
-            obj_id=str(uuid.uuid4()),
-            size=len(obj),
-            peer_host=self.address,
-            peer_port=self.port,
-        )
+        
+        if id is not None:
+            next_id = str(uuid.uuid4())
+
+            next_key = DIMKey(
+                dim_type='zmq',
+                obj_id=next_id,
+                size=-1,
+                peer_host=self.address,
+                peer_port=self.port,
+            )
+            obj = serialize((next_key, obj))
+            key = DIMKey(
+                dim_type='zmq',
+                obj_id=id,
+                size=len(obj),
+                peer_host=self.address,
+                peer_port=self.port,
+                next_id=next_id,
+            )
+        else:
+            key = DIMKey(
+                dim_type='zmq',
+                obj_id=str(uuid.uuid4()),
+                size=len(obj),
+                peer_host=self.address,
+                peer_port=self.port,
+            )
+
         rpc = RPC(operation='put', key=key, data=obj)
         self._send_rpcs([rpc])
         return key

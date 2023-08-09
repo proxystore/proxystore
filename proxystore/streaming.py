@@ -26,7 +26,7 @@ class ProxyStreamProducer:
         # store object and get key reference to object
         key = self.store.put(obj, id=self._next_uuid)
         self._next_uuid = key.next_id
-        if self.key == -1 :
+        if self.key == -1:
             self.key = key
         return key
 
