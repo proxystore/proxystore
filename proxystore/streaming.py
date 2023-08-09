@@ -29,7 +29,7 @@ class ProxyStreamProducer:
         return key
 
     def close_stream(self) -> None:
-        self.store.put(None, id=None)
+        self.store.put(None, key_id=None)
         self._next_uuid = None
 
 
