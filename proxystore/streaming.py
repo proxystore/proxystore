@@ -24,7 +24,7 @@ class ProxyStreamProducer:
 
     def append(self, obj: Any) -> KeyT:
         # store object and get key reference to object
-        key = self.store.put(obj, id=self._next_uuid)
+        key = self.store.put(obj, key_id=self._next_uuid)
         self._next_uuid = key.next_id
         return key
 
