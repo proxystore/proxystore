@@ -2,6 +2,8 @@
 
 ## Citing ProxyStore
 
+[![DOI](https://zenodo.org/badge/357984234.svg)](https://zenodo.org/badge/latestdoi/357984234)
+
 If you use ProxyStore or any of this code in your work, please cite the following paper.
 
 > J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Nathaniel Hudson, Charlie Sabino, Matt Baughman, Kyle Chard, and Ian Foster. ["Accelerating Communications in Federated Applications with Transparent Object Proxies."](https://arxiv.org/abs/2305.09593){target=_blank} arXiv, 2023.
