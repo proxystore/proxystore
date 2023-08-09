@@ -1,0 +1,41 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+authors:
+  - family-names: Pauloski
+    given-names: Greg
+    orcid: https://orcid.org/0000-0002-6547-6902
+  - family-names: Globus Labs
+license: MIT
+repository-code: https://github.com/proxystore/proxystore
+title: ProxyStore
+url: https://docs.proxystore.dev
+preferred-citation:
+  type: misc
+  authors:
+    - family-names: Pauloski
+      given-names: J. Gregory
+      orcid: https://orcid.org/0000-0002-6547-6902
+    - family-names: Hayot-Sasson
+      given-names: Valerie
+      orcid: https://orcid.org/0000-0002-4830-4535
+    - family-names: Ward
+      given-names: Logan
+      orcid: https://orcid.org/0000-0002-1323-5939
+    - family-names: Hudson
+      given-names: Nathaniel
+      orcid: https://orcid.org/0000-0001-7474-2689
+    - family-names: Sabino
+      given-names: Charlie
+      orcid: https://orcid.org/0009-0000-9100-6210
+    - family-names: Baughman
+      given-names: Matt
+      orcid: https://orcid.org/0000-0003-2227-2851
+    - family-names: Chard
+      given-names: Kyle
+      orcid: https://orcid.org/0000-0002-7370-4805
+    - family-names: Foster
+      given-names: Ian
+      orcid: https://orcid.org/0000-0003-2129-5269
+  doi: 10.48550/arXiv.2305.09593
+  title: Accelerating Communications in Federated Applications with Transparent Object Proxies
+  year: 2023
