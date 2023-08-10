@@ -1,12 +1,14 @@
 """ProxyStream implementation."""
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 from typing import NamedTuple
 from typing import TypeVar
 
 from proxystore.connectors.connector import Connector
+from proxystore.proxy import Proxy
 from proxystore.serialize import deserialize
 from proxystore.store import Store
 
@@ -14,13 +16,16 @@ ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)
 
+logger = logging.getLogger(__name__)
+
 
 class ProxyStreamProducer:
     def __init__(self, store: Store[ConnectorT]):
         self.store = store
         self.id = str(uuid.uuid4())
         self._next_uuid: str | None = self.id
-        self.key: KeyT | None = self.append(None)
+        self._key: KeyT = self.append(None)
+        self.proxy = self.store.proxy_from_key(self._key)
 
     def append(self, obj: Any) -> KeyT:
         # store object and get key reference to object
@@ -34,11 +39,19 @@ class ProxyStreamProducer:
 
 
 class ProxyStreamConsumer:
-    def __init__(self, store: Store[ConnectorT], stream: KeyT | None):
+    def __init__(self, store: Store[ConnectorT], stream: Proxy):
         self.store = store
-        self.stream_key = stream
+        self.stream_proxy = stream
+        self.stream_key = None
 
     def __iter__(self):
+        (
+            self.stream_key,
+            obj,
+        ) = (
+            self.stream_proxy
+        )  # resolve the 'head' proxy which doesn't contain data
+
         while self.stream_key is not None:
             try:
                 self.stream_key, obj = self.store.get(self.stream_key)
