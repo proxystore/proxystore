@@ -5,10 +5,12 @@ import atexit
 import logging
 import multiprocessing
 import os
+import struct
 import sys
 import time
 import uuid
 from enum import Enum
+from multiprocessing import shared_memory
 from types import TracebackType
 from typing import Any
 from typing import Sequence
@@ -93,6 +95,7 @@ class MargoConnector:
         protocol: Protocol | str,
         address: str | None = None,
         interface: str | None = None,
+        buff_size: int = 5 * 1024**2,
         timeout: float = 1,
         force_spawn_server: bool = False,
     ) -> None:
@@ -107,6 +110,8 @@ class MargoConnector:
         self.protocol = (
             protocol if isinstance(protocol, str) else protocol.value
         )
+
+        self.buff_size = buff_size
 
         self.timeout = timeout
         self.force_spawn_server = force_spawn_server
@@ -162,6 +167,7 @@ class MargoConnector:
                 self.protocol,
                 self.address,
                 self.port,
+                buff_size=self.buff_size,
                 spawn_timeout=self.timeout,
             )
             logger.info(f'Spawned local server (address={self.url})')
@@ -203,7 +209,7 @@ class MargoConnector:
             if rpc.operation == 'get':
                 result = self._rpcs[rpc.operation].on(server_url)(
                     rpc.data,
-                    rpc.key.size,
+                    rpc.key.size if rpc.key.size != -1 else self.buff_size,
                     rpc.key,
                 )
             else:
@@ -305,25 +311,11 @@ class MargoConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
+        buff: bytearray | memoryview
+
         if key.size == -1:  # is a stream key
-            rpc = RPC(operation='get', key=key)
-            (result,) = self._send_rpcs([rpc])
-
-            if result.data is not None:
-                size = next(iter(result.data))
-
-                # update key to reflect size
-                key = DIMKey(
-                    dim_type='margo',
-                    obj_id=key.obj_id,
-                    size=size,
-                    peer_host=key.peer_host,
-                    peer_port=key.peer_port,
-                    next_id=key.next_id,
-                )
-                buff = bytearray(size)
-            else:
-                return None
+            shm = shared_memory.SharedMemory(create=True, size=self.buff_size)
+            buff = shm.buf
         else:
             buff = bytearray(key.size)
 
@@ -333,6 +325,14 @@ class MargoConnector:
         (result,) = self._send_rpcs([rpc])
 
         if result.exists:
+            if key.size == -1:
+                struct_size = struct.calcsize('!Q')
+                obj_size = struct.unpack('!Q', buff[0:struct_size])[0]
+                obj = bytes(buff[struct_size : struct_size + obj_size])
+                shm.close()
+                shm.unlink()
+                return obj
+
             return bytes(buff)
 
         return None
@@ -463,9 +463,10 @@ class MargoConnector:
 class MargoServer:
     """MargoServer implementation."""
 
-    def __init__(self, engine: Engine) -> None:
+    def __init__(self, engine: Engine, buff_size: int) -> None:
         self.data: dict[str, bytes] = {}
         self.engine = engine
+        self.buff_size = buff_size
 
     def evict(
         self,
@@ -520,39 +521,46 @@ class MargoServer:
             bulk_size: The size of the data to be received.
             key: The data's key.
         """
+        local_array: bytes | memoryview
+
         obj_key = key.obj_id
-        if key.size == -1:
-            data = self.data.get(obj_key, None)
 
-            if data is not None:
-                response = RPCResponse(
-                    operation='get',
-                    key=key,
-                    data=bytes([len(data)]),
-                    exists=True,
+        obj = self.data.get(obj_key, None)
+        if obj is not None:
+            if key.size == -1:
+                shm_array = shared_memory.SharedMemory(
+                    create=True,
+                    size=self.buff_size,
                 )
+                objsize = struct.pack('!Q', len(obj))
+                size_struct = struct.calcsize('!Q')
+                shm_array.buf[0:size_struct] = objsize
+                shm_array.buf[size_struct : size_struct + len(obj)] = obj
+                local_array = shm_array.buf
             else:
-                response = RPCResponse(operation='get', key=key, exists=False)
+                local_array = obj
 
+            local_bulk = self.engine.create_bulk(
+                local_array,
+                bulk.read_only,
+            )
+            self.engine.transfer(
+                bulk.push,
+                handle.get_addr(),
+                bulk_str,
+                0,
+                local_bulk,
+                0,
+                bulk_size,
+            )
+
+            if key.size == -1:
+                shm_array.close()
+                shm_array.unlink()
+
+            response = RPCResponse(operation='get', key=key, exists=True)
         else:
-            local_array = self.data.get(obj_key, None)
-            if local_array is not None:
-                local_bulk = self.engine.create_bulk(
-                    local_array,
-                    bulk.read_only,
-                )
-                self.engine.transfer(
-                    bulk.push,
-                    handle.get_addr(),
-                    bulk_str,
-                    0,
-                    local_bulk,
-                    0,
-                    bulk_size,
-                )
-                response = RPCResponse(operation='get', key=key, exists=True)
-            else:
-                response = RPCResponse(operation='get', key=key, exists=False)
+            response = RPCResponse(operation='get', key=key, exists=False)
         handle.respond(serialize(response))
 
     def put(
@@ -591,7 +599,7 @@ def _when_finalize() -> None:
     logger.info(f'Margo server finalized (pid={os.getpid()})')
 
 
-def start_server(url: str) -> None:
+def start_server(url: str, buff_size: int) -> None:
     """Start and wait on a Margo server.
 
     Args:
@@ -602,7 +610,7 @@ def start_server(url: str) -> None:
     server_engine.on_finalize(_when_finalize)
     server_engine.enable_remote_shutdown()
 
-    receiver = MargoServer(server_engine)
+    receiver = MargoServer(server_engine, buff_size=buff_size)
     server_engine.register('evict', receiver.evict)
     server_engine.register('exists', receiver.exists)
     server_engine.register('get', receiver.get)
@@ -614,6 +622,7 @@ def spawn_server(
     protocol: str,
     address: str,
     port: int,
+    buff_size: int,
     *,
     spawn_timeout: float = 5.0,
     kill_timeout: float | None = 1.0,
@@ -640,7 +649,7 @@ def spawn_server(
     # ctx = multiprocessing.get_context('spawn')
     server_process = multiprocessing.Process(
         target=start_server,
-        args=(url,),
+        args=(url, buff_size),
     )
     server_process.start()
 
