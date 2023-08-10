@@ -11,6 +11,7 @@ from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
 from proxystore.serialize import deserialize
 from proxystore.store import Store
+from proxystore.store import get_store
 
 ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
 
@@ -39,8 +40,8 @@ class ProxyStreamProducer:
 
 
 class ProxyStreamConsumer:
-    def __init__(self, store: Store[ConnectorT], stream: Proxy):
-        self.store = store
+    def __init__(self, stream: Proxy):
+        self.store = get_store(stream)
         self.stream_proxy = stream
         self.stream_key = None
 
