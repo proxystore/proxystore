@@ -10,8 +10,8 @@ from typing import TypeVar
 from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
 from proxystore.serialize import deserialize
-from proxystore.store import Store
 from proxystore.store import get_store
+from proxystore.store import Store
 
 ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
 

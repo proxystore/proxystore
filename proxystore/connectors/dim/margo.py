@@ -10,7 +10,6 @@ import sys
 import time
 import uuid
 from enum import Enum
-from multiprocessing import shared_memory
 from types import TracebackType
 from typing import Any
 from typing import Sequence
@@ -314,8 +313,7 @@ class MargoConnector:
         buff: bytearray | memoryview
 
         if key.size == -1:  # is a stream key
-            shm = shared_memory.SharedMemory(create=True, size=self.buff_size)
-            buff = shm.buf
+            buff = bytearray(self.buff_size)
         else:
             buff = bytearray(key.size)
 
@@ -329,8 +327,6 @@ class MargoConnector:
                 struct_size = struct.calcsize('!Q')
                 obj_size = struct.unpack('!Q', buff[0:struct_size])[0]
                 obj = bytes(buff[struct_size : struct_size + obj_size])
-                shm.close()
-                shm.unlink()
                 return obj
 
             return bytes(buff)
@@ -521,22 +517,19 @@ class MargoServer:
             bulk_size: The size of the data to be received.
             key: The data's key.
         """
-        local_array: bytes | memoryview
+        local_array: bytes | bytearray
 
         obj_key = key.obj_id
 
         obj = self.data.get(obj_key, None)
         if obj is not None:
             if key.size == -1:
-                shm_array = shared_memory.SharedMemory(
-                    create=True,
-                    size=self.buff_size,
-                )
+                local_array = bytearray(self.buff_size)
                 objsize = struct.pack('!Q', len(obj))
                 size_struct = struct.calcsize('!Q')
-                shm_array.buf[0:size_struct] = objsize
-                shm_array.buf[size_struct : size_struct + len(obj)] = obj
-                local_array = shm_array.buf
+                local_array[0:size_struct] = objsize
+                local_array[size_struct : size_struct + len(obj)] = obj
+                local_array = bytes(local_array)
             else:
                 local_array = obj
 
@@ -553,10 +546,6 @@ class MargoServer:
                 0,
                 bulk_size,
             )
-
-            if key.size == -1:
-                shm_array.close()
-                shm_array.unlink()
 
             response = RPCResponse(operation='get', key=key, exists=True)
         else:
