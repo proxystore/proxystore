@@ -208,7 +208,7 @@ class MargoConnector:
             if rpc.operation == 'get':
                 result = self._rpcs[rpc.operation].on(server_url)(
                     rpc.data,
-                    rpc.key.size if rpc.key.size != -1 else self.buff_size,
+                    rpc.key.size,
                     rpc.key,
                 )
             else:
@@ -310,12 +310,7 @@ class MargoConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        buff: bytearray | memoryview
-
-        if key.size == -1:  # is a stream key
-            buff = bytearray(self.buff_size)
-        else:
-            buff = bytearray(key.size)
+        buff = bytearray(key.size)
 
         blk = self.engine.create_bulk(buff, bulk.write_only)
 
@@ -323,7 +318,7 @@ class MargoConnector:
         (result,) = self._send_rpcs([rpc])
 
         if result.exists:
-            if key.size == -1:
+            if key.next_id is not None:
                 struct_size = struct.calcsize('!Q')
                 obj_size = struct.unpack('!Q', buff[0:struct_size])[0]
                 obj = bytes(buff[struct_size : struct_size + obj_size])
@@ -374,20 +369,29 @@ class MargoConnector:
             next_key = DIMKey(
                 dim_type='margo',
                 obj_id=next_id,
-                size=-1,
+                size=self.buff_size,
                 peer_host=self.address,
                 peer_port=self.port,
+                next_id='stream'
             )
             data = serialize((next_key, obj))
             k = DIMKey(
                 dim_type='margo',
                 obj_id=key_id,
-                size=len(data),
+                size=self.buff_size,
                 peer_host=self.address,
                 peer_port=self.port,
                 next_id=next_id,
             )
-            blk = self.engine.create_bulk(data, bulk.read_only)
+
+            arr = bytearray(self.buff_size)
+            objsize = struct.pack('!Q', len(data))
+            size_struct = struct.calcsize('!Q')
+            arr[0:size_struct] = objsize
+            arr[size_struct : size_struct + len(data)] = data
+            arr = bytes(arr)
+
+            blk = self.engine.create_bulk(arr, bulk.read_only)
 
         else:
             k = DIMKey(
@@ -523,7 +527,7 @@ class MargoServer:
 
         obj = self.data.get(obj_key, None)
         if obj is not None:
-            if key.size == -1:
+            if key.next_id is not None:
                 local_array = bytearray(self.buff_size)
                 objsize = struct.pack('!Q', len(obj))
                 size_struct = struct.calcsize('!Q')
@@ -578,7 +582,14 @@ class MargoServer:
             0,
             bulk_size,
         )
-        self.data[key.obj_id] = local_buffer
+
+        if key.next_id is not None:
+            struct_size = struct.calcsize('!Q')
+            obj_size = struct.unpack('!Q', local_buffer[0:struct_size])[0]
+            obj = bytes(local_buffer[struct_size : struct_size + obj_size])
+            self.data[key.obj_id] = obj
+        else:
+            self.data[key.obj_id] = local_buffer
 
         response = RPCResponse(operation='put', key=key)
         handle.respond(serialize(response))
