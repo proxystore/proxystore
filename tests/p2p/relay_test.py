@@ -59,8 +59,8 @@ async def test_connect_reconnect_new_socket(relay_server) -> None:
     pong_waiter = await websocket2.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
-    await client1.close()
     await client2.close()
+    await client1.close()
 
 
 @pytest.mark.asyncio()
