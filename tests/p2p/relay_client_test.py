@@ -150,6 +150,9 @@ async def test_relay_server_auto_reconnection(relay_server) -> None:
         await websocket.close()
         assert client._websocket is not None
         assert client._websocket.closed
-        await asyncio.sleep(0.01)
+        # Give opportunity to yield control to any clean up methods within
+        # the websocket.
+        for _ in range(10):
+            await asyncio.sleep(0.001)
         assert not client._websocket.closed
         assert client._websocket != websocket
