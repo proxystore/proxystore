@@ -68,12 +68,12 @@ class Timer:
     @property
     def elapsed_ms(self) -> float:
         """Elapsed time in milliseconds."""
-        return self.elapsed_ns / 1e3
+        return self.elapsed_ns / 1e6
 
     @property
     def elapsed_s(self) -> float:
         """Elapsed time in seconds."""
-        return self.elapsed_ns / 1e6
+        return self.elapsed_ns / 1e9
 
     def start(self) -> None:
         """Start the timer."""
