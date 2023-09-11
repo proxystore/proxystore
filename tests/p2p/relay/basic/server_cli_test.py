@@ -85,7 +85,7 @@ async def test_server_without_ssl() -> None:
     while True:
         try:
             client = BasicRelayClient(address)
-            client.initial_backoff_seconds = 0.01
+            client._initial_backoff_seconds = 0.01
             websocket = await client.connect()
         except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)

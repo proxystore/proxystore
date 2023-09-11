@@ -27,7 +27,7 @@ def test_invalid_address_protocol() -> None:
 @pytest.mark.asyncio()
 async def test_default_ssl_context() -> None:
     client = BasicRelayClient('wss://myserver.com', ssl_context=None)
-    assert client.ssl_context is not None
+    assert client._ssl_context is not None
 
 
 @pytest.mark.asyncio()
@@ -37,9 +37,9 @@ async def test_default_ssl_context_no_verify() -> None:
         ssl_context=None,
         verify_certificate=False,
     )
-    assert client.ssl_context is not None
-    assert client.ssl_context.check_hostname is False
-    assert client.ssl_context.verify_mode == ssl.CERT_NONE
+    assert client._ssl_context is not None
+    assert client._ssl_context.check_hostname is False
+    assert client._ssl_context.verify_mode == ssl.CERT_NONE
 
 
 @pytest.mark.asyncio()
@@ -130,7 +130,7 @@ async def test_connect_unknown_response(relay_server) -> None:
 async def test_relay_server_backoff(relay_server, caplog) -> None:
     caplog.set_level(logging.WARNING)
     client = BasicRelayClient(relay_server.address, reconnect_task=False)
-    client.initial_backoff_seconds = 0.01
+    client._initial_backoff_seconds = 0.01
     # First and second connection fails but third will work
     with mock.patch.object(
         client,

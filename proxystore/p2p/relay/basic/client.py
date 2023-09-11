@@ -101,21 +101,21 @@ class BasicRelayClient:
                 f'Got {address}.',
             )
 
-        self.address = address
-        self.uuid = uuid.uuid4() if client_uuid is None else client_uuid
-        self.name = hostname() if client_name is None else client_name
-        self.timeout = timeout
+        self._address = address
+        self._uuid = uuid.uuid4() if client_uuid is None else client_uuid
+        self._name = hostname() if client_name is None else client_name
+        self._timeout = timeout
 
-        if self.address.startswith('wss://') and ssl_context is None:
+        if self._address.startswith('wss://') and ssl_context is None:
             ssl_context = ssl.create_default_context()
             if not verify_certificate:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
 
-        self.ssl_context = ssl_context
-        self.reconnect_task = reconnect_task
+        self._ssl_context = ssl_context
+        self._create_reconnect_task = reconnect_task
 
-        self.initial_backoff_seconds = 1.0
+        self._initial_backoff_seconds = 1.0
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -151,9 +151,9 @@ class BasicRelayClient:
             PeerRegistrationError: If the registration process failed.
         """
         websocket = await websockets.client.connect(
-            self.address,
+            self._address,
             open_timeout=timeout,
-            ssl=self.ssl_context,
+            ssl=self._ssl_context,
         )
 
         registration_message = messages.ServerRegistration(
@@ -180,7 +180,7 @@ class BasicRelayClient:
             if message.success:
                 logger.info(
                     'Established client connection to relay server at '
-                    f'{self.address} with client uuid={self.uuid} '
+                    f'{self._address} with client uuid={self.uuid} '
                     f'and name={self.name}',
                 )
                 return websocket
@@ -207,6 +207,16 @@ class BasicRelayClient:
             assert self._websocket.closed
             await self.connect()
 
+    @property
+    def name(self) -> str:
+        """Name of client as registered with relay server."""
+        return self._name
+
+    @property
+    def uuid(self) -> uuid.UUID:
+        """UUID of client as registered with relay server."""
+        return self._uuid
+
     async def connect(self) -> WebSocketClientProtocol:
         """Connect to the relay server.
 
@@ -227,13 +237,16 @@ class BasicRelayClient:
             if self._websocket is not None and self._websocket.open:
                 return self._websocket
 
-            backoff_seconds = self.initial_backoff_seconds
+            backoff_seconds = self._initial_backoff_seconds
             while True:
                 try:
                     self._websocket = await self._register(
-                        timeout=self.timeout,
+                        timeout=self._timeout,
                     )
-                    if self._reconnect_task is None and self.reconnect_task:
+                    if (
+                        self._reconnect_task is None
+                        and self._create_reconnect_task
+                    ):
                         self._reconnect_task = spawn_guarded_background_task(
                             self._reconnect_on_close,
                         )
@@ -245,7 +258,7 @@ class BasicRelayClient:
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
                     logger.warning(
-                        f'Registration with relay server at {self.address} '
+                        f'Registration with relay server at {self._address} '
                         f'failed because of {e}. Retrying connection in '
                         f'{backoff_seconds} seconds',
                     )
