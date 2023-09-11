@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
     
     
       
@@ -1914,12 +1914,96 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../p2p/relay/" class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../p2p/relay/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     relay
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7">
+            <span class="md-nav__icon md-icon"></span>
+            relay
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../p2p/relay/basic/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    basic
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_4_1_6_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            basic
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../p2p/relay/basic/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
   </span>
   
 
@@ -1935,15 +2019,51 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../p2p/relay_client/" class="md-nav__link">
+      <a href="../../../p2p/relay/basic/server/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    relay_client
+    server
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../p2p/relay/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2675,7 +2795,7 @@ to that server.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>address</b>
+        <b><code>address</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2686,7 +2806,7 @@ to that server.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>interface</b>
+        <b><code>interface</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2697,7 +2817,7 @@ if both are provided.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>port</b>
+        <b><code>port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2705,7 +2825,7 @@ if both are provided.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>chunk_length</b>
+        <b><code>chunk_length</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2716,7 +2836,7 @@ if both are provided.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>timeout</b>
+        <b><code>timeout</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
                 <code>1</code>
 )
@@ -2894,7 +3014,7 @@ spawning one.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>kill_server</b>
+        <b><code>kill_server</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>True</code>
 )
@@ -3028,7 +3148,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>config</b>
+        <b><code>config</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
@@ -3081,7 +3201,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -3134,7 +3254,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -3210,7 +3330,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -3284,7 +3404,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>keys</b>
+        <b><code>keys</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="../models/#proxystore.connectors.dim.models.DIMKey">DIMKey</a>]</code>)
         –
         <div class="doc-md-description">
@@ -3360,7 +3480,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>obj</b>
+        <b><code>obj</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
         –
         <div class="doc-md-description">
@@ -3448,7 +3568,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>objs</b>
+        <b><code>objs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
         –
         <div class="doc-md-description">
@@ -3596,7 +3716,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -3647,7 +3767,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -3717,7 +3837,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -3787,7 +3907,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -3795,7 +3915,7 @@ the connector object.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>data</b>
+        <b><code>data</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></code>)
         –
         <div class="doc-md-description">
@@ -3848,7 +3968,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>rpc</b>
+        <b><code>rpc</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.RPC" href="../models/#proxystore.connectors.dim.models.RPC">RPC</a></code>)
         –
         <div class="doc-md-description">
@@ -3975,7 +4095,7 @@ the connector object.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>address</b>
+        <b><code>address</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -3983,7 +4103,7 @@ the connector object.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>port</b>
+        <b><code>port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -3991,7 +4111,7 @@ the connector object.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>chunk_length</b>
+        <b><code>chunk_length</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4153,7 +4273,7 @@ that loop.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>address</b>
+        <b><code>address</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -4161,7 +4281,7 @@ that loop.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>port</b>
+        <b><code>port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -4169,7 +4289,7 @@ that loop.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>chunk_length</b>
+        <b><code>chunk_length</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4259,7 +4379,7 @@ server process when the calling process exits.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>address</b>
+        <b><code>address</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -4267,7 +4387,7 @@ server process when the calling process exits.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>port</b>
+        <b><code>port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -4275,7 +4395,7 @@ server process when the calling process exits.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>chunk_length</b>
+        <b><code>chunk_length</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4286,7 +4406,7 @@ server process when the calling process exits.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>spawn_timeout</b>
+        <b><code>spawn_timeout</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
                 <code>5.0</code>
 )
@@ -4296,7 +4416,7 @@ server process when the calling process exits.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>kill_timeout</b>
+        <b><code>kill_timeout</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a> | None</code>, default:
                 <code>1.0</code>
 )
@@ -4455,7 +4575,7 @@ on exit.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>address</b>
+        <b><code>address</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -4463,7 +4583,7 @@ on exit.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>port</b>
+        <b><code>port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -4471,7 +4591,7 @@ on exit.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>timeout</b>
+        <b><code>timeout</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></code>, default:
                 <code>0.1</code>
 )

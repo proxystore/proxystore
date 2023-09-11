@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
     
     
       
@@ -1783,12 +1783,96 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../../p2p/relay/" class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../p2p/relay/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     relay
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7">
+            <span class="md-nav__icon md-icon"></span>
+            relay
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../../p2p/relay/basic/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    basic
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_4_1_6_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            basic
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../p2p/relay/basic/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
   </span>
   
 
@@ -1804,15 +1888,51 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../p2p/relay_client/" class="md-nav__link">
+      <a href="../../../p2p/relay/basic/server/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    relay_client
+    server
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../p2p/relay/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2401,7 +2521,7 @@
   <p>Attributes:</p>
   <ul>
       <li class="field-body">
-        <b>dim_type</b>
+        <b><code>dim_type</code></b>
             (<code><span title="typing_extensions.Literal">Literal</span>[&#39;margo&#39;, &#39;ucx&#39;, &#39;zmq&#39;]</code>)
         –
         <div class="doc-md-description">
@@ -2409,7 +2529,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>obj_id</b>
+        <b><code>obj_id</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -2417,7 +2537,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>size</b>
+        <b><code>size</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2425,7 +2545,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>peer_host</b>
+        <b><code>peer_host</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -2433,7 +2553,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>peer_port</b>
+        <b><code>peer_port</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2489,7 +2609,7 @@
   <p>Attributes:</p>
   <ul>
       <li class="field-body">
-        <b>operation</b>
+        <b><code>operation</code></b>
             (<code><span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;evict&#39;, &#39;get&#39;, &#39;put&#39;]</code>)
         –
         <div class="doc-md-description">
@@ -2497,7 +2617,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -2505,7 +2625,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>size</b>
+        <b><code>size</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -2513,7 +2633,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>data</b>
+        <b><code>data</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>)
         –
         <div class="doc-md-description">
@@ -2569,7 +2689,7 @@
   <p>Attributes:</p>
   <ul>
       <li class="field-body">
-        <b>operation</b>
+        <b><code>operation</code></b>
             (<code><span title="typing_extensions.Literal">Literal</span>[&#39;exists&#39;, &#39;evict&#39;, &#39;get&#39;, &#39;put&#39;]</code>)
         –
         <div class="doc-md-description">
@@ -2577,7 +2697,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -2585,7 +2705,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>size</b>
+        <b><code>size</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.connectors.dim.models.DIMKey" href="#proxystore.connectors.dim.models.DIMKey">DIMKey</a></code>)
         –
         <div class="doc-md-description">
@@ -2593,7 +2713,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>data</b>
+        <b><code>data</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | None</code>)
         –
         <div class="doc-md-description">
@@ -2601,7 +2721,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>exists</b>
+        <b><code>exists</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a> | None</code>)
         –
         <div class="doc-md-description">
@@ -2609,7 +2729,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>exception</b>
+        <b><code>exception</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a> | None</code>)
         –
         <div class="doc-md-description">

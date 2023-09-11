@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
     
     
       
@@ -1828,12 +1828,96 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../relay/" class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../relay/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     relay
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7">
+            <span class="md-nav__icon md-icon"></span>
+            relay
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../relay/basic/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    basic
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_4_1_6_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            basic
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay/basic/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
   </span>
   
 
@@ -1849,15 +1933,51 @@
   
   
     <li class="md-nav__item">
-      <a href="../relay_client/" class="md-nav__link">
+      <a href="../relay/basic/server/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    relay_client
+    server
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../relay/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2588,7 +2708,7 @@
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>stream_id</b>
+        <b><code>stream_id</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2596,7 +2716,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>seq_id</b>
+        <b><code>seq_id</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2604,7 +2724,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>seq_len</b>
+        <b><code>seq_len</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2612,7 +2732,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>data</b>
+        <b><code>data</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -2620,7 +2740,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>dtype</b>
+        <b><code>dtype</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.p2p.chunks.ChunkDType" href="#proxystore.p2p.chunks.ChunkDType">ChunkDType</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2872,7 +2992,7 @@
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>data</b>
+        <b><code>data</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -2880,7 +3000,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>size</b>
+        <b><code>size</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2888,7 +3008,7 @@
         </div>
       </li>
       <li class="field-body">
-        <b>stream_id</b>
+        <b><code>stream_id</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>)
         –
         <div class="doc-md-description">
@@ -2988,7 +3108,7 @@
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>chunks</b>
+        <b><code>chunks</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-internal" title="proxystore.p2p.chunks.Chunk" href="#proxystore.p2p.chunks.Chunk">Chunk</a>]</code>)
         –
         <div class="doc-md-description">

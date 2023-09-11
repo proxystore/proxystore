@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.2.8">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.3.1">
     
     
       
@@ -1711,12 +1711,96 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../p2p/relay/" class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../p2p/relay/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     relay
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7">
+            <span class="md-nav__icon md-icon"></span>
+            relay
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_7_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../p2p/relay/basic/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    basic
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_7_1">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_4_1_6_7_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_7_1">
+            <span class="md-nav__icon md-icon"></span>
+            basic
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../p2p/relay/basic/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
   </span>
   
 
@@ -1732,15 +1816,51 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay_client/" class="md-nav__link">
+      <a href="../p2p/relay/basic/server/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    relay_client
+    server
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../p2p/relay/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2517,7 +2637,7 @@ process where the store has not already been initialized.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -2525,7 +2645,7 @@ process where the store has not already been initialized.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>store_config</b>
+        <b><code>store_config</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
@@ -2534,7 +2654,7 @@ needed.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>evict</b>
+        <b><code>evict</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -2546,7 +2666,7 @@ is called.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2558,7 +2678,7 @@ If <code>None</code>, the default deserializer
         </div>
       </li>
       <li class="field-body">
-        <b>metrics</b>
+        <b><code>metrics</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -2863,7 +2983,7 @@ context manager which will automatically call
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>name</b>
+        <b><code>name</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
         –
         <div class="doc-md-description">
@@ -2871,7 +2991,7 @@ context manager which will automatically call
         </div>
       </li>
       <li class="field-body">
-        <b>connector</b>
+        <b><code>connector</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorT" href="base/#proxystore.store.base.ConnectorT">ConnectorT</a></code>)
         –
         <div class="doc-md-description">
@@ -2879,7 +2999,7 @@ context manager which will automatically call
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2891,7 +3011,7 @@ the default serializer
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -2904,7 +3024,7 @@ used.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>cache_size</b>
+        <b><code>cache_size</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a></code>, default:
                 <code>16</code>
 )
@@ -2915,7 +3035,7 @@ the cache is disabled. The cache is local to the Python process.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>metrics</b>
+        <b><code>metrics</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -3126,7 +3246,7 @@ proxies have been resolved.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>args</b>
+        <b><code>args</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>()</code>
 )
@@ -3137,7 +3257,7 @@ proxies have been resolved.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -3298,7 +3418,7 @@ proxies have been resolved.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>config</b>
+        <b><code>config</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
@@ -3380,7 +3500,7 @@ proxies have been resolved.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -3463,7 +3583,7 @@ proxies have been resolved.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -3572,7 +3692,7 @@ proxies have been resolved.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -3580,7 +3700,7 @@ proxies have been resolved.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -3591,7 +3711,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>default</b>
+        <b><code>default</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#object">object</a> | None</code>, default:
                 <code>None</code>
 )
@@ -3792,7 +3912,7 @@ associated with the key does not exist.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -3870,7 +3990,7 @@ associated with the key does not exist.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>obj</b>
+        <b><code>obj</code></b>
             (<code><span title="proxystore.store.base.T">T</span> | <span title="proxystore.store.base.NonProxiableT">NonProxiableT</span></code>)
         –
         <div class="doc-md-description">
@@ -3878,7 +3998,7 @@ associated with the key does not exist.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>evict</b>
+        <b><code>evict</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -3888,7 +4008,7 @@ associated with the key does not exist.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -3899,7 +4019,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -3910,7 +4030,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>skip_nonproxiable</b>
+        <b><code>skip_nonproxiable</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -3922,7 +4042,7 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -4128,7 +4248,7 @@ behavior can be overridden by setting
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>objs</b>
+        <b><code>objs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<span title="proxystore.store.base.T">T</span> | <span title="proxystore.store.base.NonProxiableT">NonProxiableT</span>]</code>)
         –
         <div class="doc-md-description">
@@ -4136,7 +4256,7 @@ behavior can be overridden by setting
         </div>
       </li>
       <li class="field-body">
-        <b>evict</b>
+        <b><code>evict</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -4146,7 +4266,7 @@ behavior can be overridden by setting
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4157,7 +4277,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4168,7 +4288,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>skip_nonproxiable</b>
+        <b><code>skip_nonproxiable</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -4180,7 +4300,7 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -4417,7 +4537,7 @@ behavior can be overridden by setting
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>key</b>
+        <b><code>key</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.ConnectorKeyT" href="base/#proxystore.store.base.ConnectorKeyT">ConnectorKeyT</a></code>)
         –
         <div class="doc-md-description">
@@ -4425,7 +4545,7 @@ behavior can be overridden by setting
         </div>
       </li>
       <li class="field-body">
-        <b>evict</b>
+        <b><code>evict</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -4435,7 +4555,7 @@ behavior can be overridden by setting
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4550,7 +4670,7 @@ store instance.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>obj</b>
+        <b><code>obj</code></b>
             (<code><span title="proxystore.store.base.T">T</span> | <span title="proxystore.store.base.NonProxiableT">NonProxiableT</span></code>)
         –
         <div class="doc-md-description">
@@ -4558,7 +4678,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>evict</b>
+        <b><code>evict</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -4568,7 +4688,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4579,7 +4699,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>deserializer</b>
+        <b><code>deserializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.DeserializerT" href="base/#proxystore.store.base.DeserializerT">DeserializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4590,7 +4710,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>skip_nonproxiable</b>
+        <b><code>skip_nonproxiable</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>True</code>
 )
@@ -4602,7 +4722,7 @@ constants like <code>bool</code> or <code>None</code>) rather than raising a
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -4771,7 +4891,7 @@ behavior can be overridden by setting
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>obj</b>
+        <b><code>obj</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>)
         –
         <div class="doc-md-description">
@@ -4779,7 +4899,7 @@ behavior can be overridden by setting
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4790,7 +4910,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -4963,7 +5083,7 @@ store instance.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>objs</b>
+        <b><code>objs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
@@ -4971,7 +5091,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>serializer</b>
+        <b><code>serializer</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.SerializerT" href="base/#proxystore.store.base.SerializerT">SerializerT</a> | None</code>, default:
                 <code>None</code>
 )
@@ -4982,7 +5102,7 @@ store instance.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>kwargs</b>
+        <b><code>kwargs</code></b>
             (<code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>, default:
                 <code>{}</code>
 )
@@ -5179,7 +5299,7 @@ store instance.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>val</b>
+        <b><code>val</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.T">T</span>]</code>)
         –
         <div class="doc-md-description">
@@ -5324,7 +5444,7 @@ context manager to automatically register and unregister as store.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>store</b>
+        <b><code>store</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
@@ -5332,7 +5452,7 @@ context manager to automatically register and unregister as store.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>exist_ok</b>
+        <b><code>exist_ok</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -5451,7 +5571,7 @@ and <code>exist_ok</code> is false.</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>stores</b>
+        <b><code>stores</code></b>
             (<code><a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>, default:
                 <code>()</code>
 )
@@ -5462,7 +5582,7 @@ register then unregister when the context manager is exited.</p>
         </div>
       </li>
       <li class="field-body">
-        <b>exist_ok</b>
+        <b><code>exist_ok</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
                 <code>False</code>
 )
@@ -5602,7 +5722,7 @@ exists (i.e., no exception will be raised).</p>
   <p>Parameters:</p>
   <ul>
       <li class="field-body">
-        <b>name_or_store</b>
+        <b><code>name_or_store</code></b>
             (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a class="autorefs autorefs-internal" title="proxystore.store.base.Store" href="base/#proxystore.store.base.Store">Store</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
         –
         <div class="doc-md-description">
