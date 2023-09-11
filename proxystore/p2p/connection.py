@@ -36,7 +36,7 @@ from proxystore.p2p.chunks import reconstruct
 from proxystore.p2p.counter import AtomicCounter
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay import RelayClient
 
 logger = logging.getLogger(__name__)
 
@@ -100,12 +100,10 @@ class PeerConnection:
 
     def __init__(
         self,
-        relay_client: BasicRelayClient,
+        relay_client: RelayClient,
         *,
         channels: int = 1,
     ) -> None:
-        self._uuid = relay_client.uuid
-        self._name = relay_client.name
         self._relay_client = relay_client
         self._max_channels = channels
 
@@ -129,7 +127,7 @@ class PeerConnection:
 
     @property
     def _log_prefix(self) -> str:
-        local = log_name(self._uuid, self._name)
+        local = log_name(self._relay_client.uuid, self._relay_client.name)
         remote = (
             'pending'
             if self._peer_uuid is None or self._peer_name is None
@@ -147,7 +145,12 @@ class PeerConnection:
         return self._pc.connectionState
 
     async def close(self) -> None:
-        """Terminate the peer connection."""
+        """Terminate the peer connection.
+
+        Note:
+            This will not call
+            [`RelayClient.close()`][proxystore.p2p.relay.protocols.RelayClient].
+        """
         logger.info(f'{self._log_prefix}: closing connection')
         # Flush send buffers before close
         # https://github.com/aiortc/aiortc/issues/547
@@ -255,8 +258,8 @@ class PeerConnection:
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
         message = messages.PeerConnection(
-            source_uuid=self._uuid,
-            source_name=self._name,
+            source_uuid=self._relay_client.uuid,
+            source_name=self._relay_client.name,
             peer_uuid=peer_uuid,
             description_type='offer',
             description=object_to_string(self._pc.localDescription),
@@ -302,8 +305,8 @@ class PeerConnection:
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
         message = messages.PeerConnection(
-            source_uuid=self._uuid,
-            source_name=self._name,
+            source_uuid=self._relay_client.uuid,
+            source_name=self._relay_client.name,
             peer_uuid=peer_uuid,
             description_type='answer',
             description=object_to_string(self._pc.localDescription),

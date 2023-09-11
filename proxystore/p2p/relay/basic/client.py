@@ -1,4 +1,4 @@
-"""Client interface to a relay server."""
+"""Client interface to a [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer]."""  # noqa: E501
 from __future__ import annotations
 
 import asyncio
@@ -34,8 +34,14 @@ from proxystore.utils import hostname
 logger = logging.getLogger(__name__)
 
 
+class RelayServerNotConnectedError(Exception):
+    """Error raised when the relay client has not connected to the server."""
+
+    pass
+
+
 class BasicRelayClient:
-    """Client interface to a relay server.
+    """Client interface to a [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer].
 
     This interface abstracts the low-level WebSocket connection to a
     relay server to provide automatic reconnection.
@@ -54,15 +60,19 @@ class BasicRelayClient:
         WebSocket connections are not opened until a message is sent,
         a message is received, or
         [`connect()`][proxystore.p2p.relay.BasicRelayClient.connect]
-        is called.
+        is called. Initializing the client with `await` will call
+        [`connect()`][proxystore.p2p.relay.BasicRelayClient.connect].
+        ```python
+        client = await BasicRelayClient(...)
+        ```
 
     Args:
         address: Address of the relay server. Should start with `ws://` or
             `wss://`.
-        client_uuid: Optional UUID of the client to use when registering with
-            the relay server. If `None`, one will be generated.
         client_name: Optional name of the client to use when registering with
             the relay server. If `None`, the hostname will be used.
+        client_uuid: Optional UUID of the client to use when registering with
+            the relay server. If `None`, one will be generated.
         reconnect_task: Spawn a background task which will automatically
             reconnect to the relay server when the websocket client closes.
             Otherwise, reconnections will only be attempted when sending or
@@ -82,14 +92,14 @@ class BasicRelayClient:
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with `ws://` or `wss://`.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
         address: str,
-        client_uuid: uuid.UUID | None = None,
-        client_name: str | None = None,
         *,
+        client_name: str | None = None,
+        client_uuid: uuid.UUID | None = None,
         reconnect_task: bool = True,
         ssl_context: ssl.SSLContext | None = None,
         timeout: float = 10,
@@ -102,8 +112,8 @@ class BasicRelayClient:
             )
 
         self._address = address
-        self._uuid = uuid.uuid4() if client_uuid is None else client_uuid
         self._name = hostname() if client_name is None else client_name
+        self._uuid = uuid.uuid4() if client_uuid is None else client_uuid
         self._timeout = timeout
 
         if self._address.startswith('wss://') and ssl_context is None:
@@ -122,6 +132,7 @@ class BasicRelayClient:
         self._websocket: WebSocketClientProtocol | None = None
 
     async def __aenter__(self) -> Self:
+        await self.connect()
         return self
 
     async def __aexit__(
@@ -217,7 +228,18 @@ class BasicRelayClient:
         """UUID of client as registered with relay server."""
         return self._uuid
 
-    async def connect(self) -> WebSocketClientProtocol:
+    @property
+    def websocket(self) -> WebSocketClientProtocol:
+        """Websocket connection to the relay server."""
+        if self._websocket is not None and self._websocket.open:
+            return self._websocket
+        else:
+            raise RelayServerNotConnectedError(
+                'Websocket connection to the relay server is not open. '
+                'Try calling connect() first.',
+            )
+
+    async def connect(self) -> None:
         """Connect to the relay server.
 
         Note:
@@ -225,17 +247,14 @@ class BasicRelayClient:
             send and receive methods will automatically call this.
 
         Note:
-            If an existing and open connection exists, that will be returned.
+            This method is a no-op if a connection is already established.
             Otherwise, a new connection will be attempted with
             exponential backoff (starting at 1 second and increasing to a max
             of 60 seconds) for connection failures.
-
-        Returns:
-            WebSocket connection to the relay server.
         """
         async with self._connect_lock:
             if self._websocket is not None and self._websocket.open:
-                return self._websocket
+                return
 
             backoff_seconds = self._initial_backoff_seconds
             while True:
@@ -269,8 +288,6 @@ class BasicRelayClient:
                     # get executed to break from the loop
                     break  # pragma: no cover
 
-        return self._websocket
-
     async def close(self) -> None:
         """Close the connection to the relay server."""
         if self._reconnect_task is not None:
@@ -293,7 +310,12 @@ class BasicRelayClient:
             messages.MessageDecodeError: If the message received cannot
                 be decoded into the appropriate message type.
         """
-        websocket = await self.connect()
+        try:
+            websocket = self.websocket
+        except RelayServerNotConnectedError:
+            await self.connect()
+            websocket = self.websocket
+
         message_str = await websocket.recv()
         if not isinstance(message_str, str):
             raise AssertionError('Received non-string from websocket.')
@@ -306,5 +328,11 @@ class BasicRelayClient:
             message: The message to send to the relay server.
         """
         message_str = messages.encode(message)
-        websocket = await self.connect()
+
+        try:
+            websocket = self.websocket
+        except RelayServerNotConnectedError:
+            await self.connect()
+            websocket = self.websocket
+
         await websocket.send(message_str)

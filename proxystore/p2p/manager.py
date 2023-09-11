@@ -20,13 +20,12 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore import utils
 from proxystore.p2p import messages
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay import RelayClient
 from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
 
@@ -45,52 +44,36 @@ class PeerManager:
     Example:
         ```python
         from proxystore.p2p.manager import PeerManager
+        from proxystore.p2p.relay import BasicRelayClient
 
-        pm1 = await PeerManager(uuid.uuid4(), relay_server_address)
-        pm2 = await PeerManager(uuid.uuid4(), relay_server_address)
+        relay_client = BasicRelayClient(relay_server_address)
+
+        pm1 = await PeerManager(relay_client)
+        pm2 = await PeerManager(relay_client)
 
         await pm1.send(pm2.uuid, 'hello hello')
         source_uuid, message = await pm2.recv()
         assert source_uuid == pm1.uuid
         assert message == 'hello hello'
 
-        pm1.close()
-        pm2.close()
+        await pm1.close()
+        await pm2.close()
         ```
 
     Note:
-        The class can also be used as a context manager.
+        The class can also be used as an asynchronous context manager.
 
         ```python
         async with PeerManager(..) as manager:
             ...
         ```
 
-    Warning:
-        The class must be initialized with await or inside an async with
-        statement to correctly configure all async tasks and connections.
-
-        ```python
-        manager = await PeerManager(...)
-        manager.close()
-        ```
-
-        ```python
-        async with PeerManager(...) as manager:
-            ...
-        ```
-
     Args:
-        uuid: UUID of the client.
-        relay_server: Address of relay server to use for establishing
-            peer-to-peer connections.
-        name: Readable name of the client to use in logging. If unspecified,
-            the hostname will be used.
-        timeout: Timeout in seconds when waiting for a peer or relay server
-            connection to be established.
+        relay_client: Established client interface to a relay server.
+        timeout: Timeout in seconds when waiting for a peer connection to be
+            established.
         peer_channels: number of datachannels to split message sending over
             between each peer.
-        verify_certificate: Verify the relay server's SSL certificate,
 
     Raises:
         ValueError: If the relay server address does not start with "ws://"
@@ -99,28 +82,14 @@ class PeerManager:
 
     def __init__(
         self,
-        uuid: UUID,
-        relay_server: str,
-        name: str | None = None,
+        relay_client: RelayClient,
         *,
         timeout: int = 30,
         peer_channels: int = 1,
-        verify_certificate: bool = True,
     ) -> None:
-        if not (
-            relay_server.startswith('ws://')
-            or relay_server.startswith('wss://')
-        ):
-            raise ValueError(
-                'Relay server address must start with ws:// or wss://'
-                f'Got {relay_server}.',
-            )
-        self._uuid = uuid
-        self._relay_server = relay_server
-        self._name = name if name is not None else utils.hostname()
+        self._relay_client = relay_client
         self._timeout = timeout
         self._peer_channels = peer_channels
-        self._verify_certificate = verify_certificate
 
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
@@ -130,50 +99,41 @@ class PeerManager:
         ] = asyncio.Queue()
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
-        self._relay_server_client_or_none: BasicRelayClient | None = None
 
     @property
     def _log_prefix(self) -> str:
-        return f'{self.__class__.__name__}[{log_name(self._uuid, self._name)}]'
-
-    @property
-    def _relay_server_client(self) -> BasicRelayClient:
-        if self._relay_server_client_or_none is not None:
-            return self._relay_server_client_or_none
-        raise RuntimeError(
-            f'{self.__class__.__name__} has not established a connection '
-            'to the relay server because async_init() has not been '
-            'called yet. Is the manager being initialized with await?',
-        )
-
-    @property
-    def uuid(self) -> UUID:
-        """UUID of the peer manager."""
-        return self._uuid
+        return f'{self.__class__.__name__}[{log_name(self.uuid, self.name)}]'
 
     @property
     def name(self) -> str:
-        """Name of the peer manager."""
-        return self._name
+        """Name of client as registered with relay server."""
+        return self.relay_client.name
+
+    @property
+    def uuid(self) -> UUID:
+        """UUID of client as registered with relay server."""
+        return self.relay_client.uuid
+
+    @property
+    def relay_client(self) -> RelayClient:
+        """Relay client interface.
+
+        Raises:
+            RuntimeError: if the manager is not initialized with `await` or
+                [`PeerManager.async_init()`][proxystore.p2p.manager.PeerManager.async_init]
+                has not been called.
+        """
+        if self._server_task is not None:
+            return self._relay_client
+        raise RuntimeError(
+            'The relay server message handler has not been created yet. '
+            'This is likely because async_init() has not been called. '
+            'Is the manager being initialized with await?',
+        )
 
     async def async_init(self) -> None:
-        """Connect to relay server."""
-        if self._relay_server_client_or_none is None:
-            client = BasicRelayClient(
-                address=self._relay_server,
-                client_uuid=self._uuid,
-                client_name=self._name,
-                timeout=self._timeout,
-                ssl_context=None,
-                verify_certificate=self._verify_certificate,
-            )
-            await client.connect()
-
-            self._relay_server_client_or_none = client
-            logger.info(
-                f'{self._log_prefix}: registered as peer with relay '
-                f'server at {self._relay_server}',
-            )
+        """Connect to relay server and being listening to incoming messages."""
+        await self._relay_client.connect()
         if self._server_task is None:
             self._server_task = spawn_guarded_background_task(
                 self._handle_server_messages,
@@ -212,7 +172,7 @@ class PeerManager:
             await connection.ready(timeout=self._timeout)
         except PeerConnectionError as e:
             logger.error(str(e))
-            await self.close_connection((self._uuid, peer_uuid))
+            await self.close_connection((self.uuid, peer_uuid))
 
     async def _handle_peer_messages(
         self,
@@ -244,7 +204,7 @@ class PeerManager:
         )
         while True:
             try:
-                message = await self._relay_server_client.recv()
+                message = await self.relay_client.recv()
             except websockets.exceptions.ConnectionClosedOK:
                 break
             except websockets.exceptions.ConnectionClosedError:
@@ -265,7 +225,7 @@ class PeerManager:
                 peers = frozenset({message.source_uuid, message.peer_uuid})
                 if peers not in self._peers:
                     connection = PeerConnection(
-                        relay_client=self._relay_server_client,
+                        relay_client=self.relay_client,
                         channels=self._peer_channels,
                     )
                     async with self._peers_lock:
@@ -295,24 +255,31 @@ class PeerManager:
                 )
 
     async def close(self) -> None:
-        """Close the connection manager."""
+        """Close the connection manager.
+
+        Warning:
+            This will close all create peer connections and close the
+            connection to the relay server.
+        """
         if self._server_task is not None:
             self._server_task.cancel()
             try:
                 await self._server_task
             except (asyncio.CancelledError, SafeTaskExitError):
                 pass
+
         for task in self._tasks.values():
             task.cancel()
             try:
                 await task
             except (asyncio.CancelledError, SafeTaskExitError):
                 pass
+
         async with self._peers_lock:
             for connection in self._peers.values():
                 await connection.close()
-        if self._relay_server_client_or_none is not None:
-            await self._relay_server_client_or_none.close()
+
+        await self.relay_client.close()
         logger.info(f'{self._log_prefix}: peer manager closed')
 
     async def close_connection(self, peers: Iterable[UUID]) -> None:
@@ -384,14 +351,14 @@ class PeerManager:
         Returns:
             The peer connection object.
         """
-        peers = frozenset({self._uuid, peer_uuid})
+        peers = frozenset({self.uuid, peer_uuid})
 
         async with self._peers_lock:
             if peers in self._peers:
                 return self._peers[peers]
 
             connection = PeerConnection(
-                self._relay_server_client,
+                self.relay_client,
                 channels=self._peer_channels,
             )
             self._peers[peers] = connection
@@ -408,7 +375,7 @@ class PeerManager:
             connection,
         )
         self._tasks[peers].set_name(
-            f'handle-peer-messages-{self._uuid}-{peer_uuid}',
+            f'handle-peer-messages-{self.uuid}-{peer_uuid}',
         )
 
         connection.on_close_callback(self.close_connection, peers)

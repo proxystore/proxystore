@@ -1,4 +1,4 @@
-"""Relay server implementation for WebRTC peer connections.
+"""Basic relay server implementation for WebRTC peer connections.
 
 The relay server (or signaling server) is a lightweight server accessible by
 all peers (e.g., has a public IP address) that facilitates the establishment
@@ -62,7 +62,7 @@ class Client:
 
 
 class BasicRelayServer:
-    """WebRTC relay server.
+    """Basic WebRTC relay server.
 
     The relay server acts as a public third-party that helps two peers
     (endpoints) establish a peer-to-peer connection during the WebRTC
@@ -323,7 +323,7 @@ async def serve(
     """Run the relay server.
 
     Initializes a
-    [`BasicRelayServer`][proxystore.p2p.relay.basic.server.RelayServer]
+    [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer]
     and starts a websocket server listening on `host:port` for new connections
     and incoming messages.
 

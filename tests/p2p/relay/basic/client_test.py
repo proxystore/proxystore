@@ -11,9 +11,11 @@ import pytest
 
 from proxystore.p2p.exceptions import PeerRegistrationError
 from proxystore.p2p.messages import encode
+from proxystore.p2p.messages import PeerConnection
 from proxystore.p2p.messages import ServerRegistration
 from proxystore.p2p.messages import ServerResponse
 from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.basic.client import RelayServerNotConnectedError
 
 # Use 100ms as wait_for/timeout to keep test short
 _WAIT_FOR = 0.1
@@ -51,8 +53,7 @@ async def test_open_and_close() -> None:
 @pytest.mark.asyncio()
 async def test_connect_and_ping_server(relay_server) -> None:
     async with BasicRelayClient(relay_server.address) as client:
-        websocket = await client.connect()
-        pong_waiter = await websocket.ping()
+        pong_waiter = await client.websocket.ping()
         await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
@@ -68,8 +69,11 @@ async def test_send_recv(relay_server) -> None:
 @pytest.mark.asyncio()
 async def test_recv_wrong_type(relay_server) -> None:
     async with BasicRelayClient(relay_server.address) as client:
-        websocket = await client.connect()
-        with mock.patch.object(websocket, 'recv', AsyncMock(return_value=b'')):
+        with mock.patch.object(
+            client.websocket,
+            'recv',
+            AsyncMock(return_value=b''),
+        ):
             with pytest.raises(AssertionError, match='non-string'):
                 await client.recv()
 
@@ -154,24 +158,53 @@ async def test_relay_server_backoff(relay_server, caplog) -> None:
 
 
 @pytest.mark.asyncio()
+async def test_connect_on_send(relay_server) -> None:
+    client = BasicRelayClient(relay_server.address)
+    with pytest.raises(RelayServerNotConnectedError):
+        assert client.websocket is None
+    message = PeerConnection(
+        client.uuid,
+        client.name,
+        uuid.uuid4(),
+        'offer',
+        'test',
+    )
+    await client.send(message)
+    assert client.websocket is not None
+    await client.recv()
+    await client.close()
+
+
+@pytest.mark.asyncio()
+async def test_connect_on_recv(relay_server) -> None:
+    client = BasicRelayClient(relay_server.address)
+    with pytest.raises(RelayServerNotConnectedError):
+        assert client.websocket is None
+    with pytest.raises(asyncio.TimeoutError):
+        await asyncio.wait_for(client.recv(), 0.01)
+    assert client.websocket is not None
+    await client.close()
+
+
+@pytest.mark.asyncio()
 async def test_relay_server_manual_reconnection(relay_server) -> None:
     async with BasicRelayClient(relay_server.address) as client:
-        websocket = await client.connect()
-        await websocket.close()
+        old_websocket = client.websocket
+        await old_websocket.close()
         # We should get a new connection now that we closed the old one
-        assert websocket != await client.connect()
+        await client.connect()
+        assert client.websocket != old_websocket
 
 
 @pytest.mark.asyncio()
 async def test_relay_server_auto_reconnection(relay_server) -> None:
     async with BasicRelayClient(relay_server.address) as client:
-        websocket = await client.connect()
-        await websocket.close()
-        assert client._websocket is not None
-        assert client._websocket.closed
+        old_websocket = client.websocket
+        await old_websocket.close()
+        assert old_websocket.closed
         # Give opportunity to yield control to any clean up methods within
         # the websocket.
         for _ in range(10):
             await asyncio.sleep(0.001)
-        assert not client._websocket.closed
-        assert client._websocket != websocket
+        assert not client.websocket.closed
+        assert client.websocket != old_websocket

@@ -86,7 +86,7 @@ async def test_server_without_ssl() -> None:
         try:
             client = BasicRelayClient(address)
             client._initial_backoff_seconds = 0.01
-            websocket = await client.connect()
+            await client.connect()
         except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)
         else:
@@ -94,13 +94,13 @@ async def test_server_without_ssl() -> None:
             # get executed to break from the loop
             break  # pragma: no cover
 
-    pong_waiter = await websocket.ping()
+    pong_waiter = await client.websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)
 
     process.terminate()
 
     with pytest.raises(websockets.exceptions.ConnectionClosedOK):
-        await websocket.recv()
+        await client.websocket.recv()
 
     process.join()
 
@@ -128,14 +128,14 @@ async def test_start_server_cli() -> None:
             break
 
     client = BasicRelayClient(address)
-    websocket = await client.connect()
-    pong_waiter = await websocket.ping()
+    await client.connect()
+    pong_waiter = await client.websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)
 
     server_handle.stdout.close()
     server_handle.terminate()
 
     with pytest.raises(websockets.exceptions.ConnectionClosedOK):
-        await websocket.recv()
+        await client.websocket.recv()
 
     await client.close()
