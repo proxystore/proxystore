@@ -34,7 +34,7 @@ from proxystore.utils import hostname
 logger = logging.getLogger(__name__)
 
 
-class RelayServerClient:
+class BasicRelayClient:
     """Client interface to a relay server.
 
     This interface abstracts the low-level WebSocket connection to a
@@ -43,9 +43,9 @@ class RelayServerClient:
     Tip:
         This class can be used as an async context manager!
         ```python
-        from proxystore.p2p.relay_client import RelayServerClient
+        from proxystore.p2p.relay import BasicRelayClient
 
-        async with RelayServerClient(...) as client:
+        async with BasicRelayClient(...) as client:
             await client.send(...)
             message = await client.recv(...)
         ```
@@ -53,7 +53,7 @@ class RelayServerClient:
     Note:
         WebSocket connections are not opened until a message is sent,
         a message is received, or
-        [`connect()`][proxystore.p2p.relay_client.RelayServerClient.connect]
+        [`connect()`][proxystore.p2p.relay.BasicRelayClient.connect]
         is called.
 
     Args:
@@ -63,16 +63,19 @@ class RelayServerClient:
             the relay server. If `None`, one will be generated.
         client_name: Optional name of the client to use when registering with
             the relay server. If `None`, the hostname will be used.
-        timeout: Time to wait in seconds on server connections.
-        ssl: When `None`, the correct value to pass to
-            [`websockets.connect()`][websockets.client.connect]
-            is inferred from `address`. If `address` starts with `wss://` the
-            value is True, otherwise is False. Optionally provide a custom
-            `SSLContext` (useful if the server uses self-signed certificates).
         reconnect_task: Spawn a background task which will automatically
             reconnect to the relay server when the websocket client closes.
             Otherwise, reconnections will only be attempted when sending or
             receiving a message.
+        ssl_context: Custom SSL context to pass to
+            [`websockets.connect()`][websockets.client.connect]. A TLS context
+            is created with
+            [`ssl.create_default_context()`][ssl.create_default_context]
+            when connecting to a `wss://` URI and `ssl_context` is not
+            provided.
+        timeout: Time to wait in seconds on relay server connection.
+        verify_certificate: Verify the relay server's SSL certificate. Only
+            used if `ssl_context` is `None` and connecting to a `wss://` URI.
 
     Raises:
         PeerRegistrationError: If the connection to the relay server
@@ -86,26 +89,30 @@ class RelayServerClient:
         address: str,
         client_uuid: uuid.UUID | None = None,
         client_name: str | None = None,
-        timeout: float = 10,
-        ssl: ssl.SSLContext | None = None,
         *,
         reconnect_task: bool = True,
+        ssl_context: ssl.SSLContext | None = None,
+        timeout: float = 10,
+        verify_certificate: bool = True,
     ) -> None:
+        if not (address.startswith('ws://') or address.startswith('wss://')):
+            raise ValueError(
+                'Relay server address must start with ws:// or wss://.'
+                f'Got {address}.',
+            )
+
         self.address = address
         self.uuid = uuid.uuid4() if client_uuid is None else client_uuid
         self.name = hostname() if client_name is None else client_name
         self.timeout = timeout
 
-        if not (
-            self.address.startswith('ws://')
-            or self.address.startswith('wss://')
-        ):
-            raise ValueError(
-                'Relay server address must start with ws:// or wss://.'
-                f'Got {self.address}.',
-            )
-        ssl_default = True if self.address.startswith('wss://') else None
-        self.ssl = ssl_default if ssl is None else ssl
+        if self.address.startswith('wss://') and ssl_context is None:
+            ssl_context = ssl.create_default_context()
+            if not verify_certificate:
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+
+        self.ssl_context = ssl_context
         self.reconnect_task = reconnect_task
 
         self.initial_backoff_seconds = 1.0
@@ -146,7 +153,7 @@ class RelayServerClient:
         websocket = await websockets.client.connect(
             self.address,
             open_timeout=timeout,
-            ssl=self.ssl,
+            ssl=self.ssl_context,
         )
 
         registration_message = messages.ServerRegistration(

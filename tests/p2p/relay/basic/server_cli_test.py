@@ -13,15 +13,15 @@ import click.testing
 import pytest
 import websockets
 
-from proxystore.p2p.relay import cli
-from proxystore.p2p.relay import serve
-from proxystore.p2p.relay_client import RelayServerClient
+from proxystore.p2p.relay.basic.client import BasicRelayClient
+from proxystore.p2p.relay.basic.server import cli
+from proxystore.p2p.relay.basic.server import serve
 from testing.utils import open_port
 
 
 def test_invoke() -> None:
     runner = click.testing.CliRunner()
-    with mock.patch('proxystore.p2p.relay.serve', AsyncMock()):
+    with mock.patch('proxystore.p2p.relay.basic.server.serve', AsyncMock()):
         runner.invoke(cli)
 
 
@@ -29,7 +29,7 @@ def test_invoke_with_log_dir(tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
     assert not os.path.isdir(tmp_dir)
     runner = click.testing.CliRunner()
-    with mock.patch('proxystore.p2p.relay.serve', AsyncMock()):
+    with mock.patch('proxystore.p2p.relay.basic.server.serve', AsyncMock()):
         runner.invoke(cli, ['--log-dir', str(tmp_dir)])
     assert os.path.isdir(tmp_dir)
 
@@ -84,7 +84,7 @@ async def test_server_without_ssl() -> None:
 
     while True:
         try:
-            client = RelayServerClient(address)
+            client = BasicRelayClient(address)
             client.initial_backoff_seconds = 0.01
             websocket = await client.connect()
         except OSError:  # pragma: no cover
@@ -127,7 +127,7 @@ async def test_start_server_cli() -> None:
         if 'Relay server listening on' in line:
             break
 
-    client = RelayServerClient(address)
+    client = BasicRelayClient(address)
     websocket = await client.connect()
     pong_waiter = await websocket.ping()
     await asyncio.wait_for(pong_waiter, 1)

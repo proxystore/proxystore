@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import ssl
 from types import TracebackType
 from typing import Any
 from typing import Generator
@@ -27,7 +26,7 @@ from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
-from proxystore.p2p.relay_client import RelayServerClient
+from proxystore.p2p.relay import BasicRelayClient
 from proxystore.p2p.task import SafeTaskExitError
 from proxystore.p2p.task import spawn_guarded_background_task
 
@@ -131,14 +130,14 @@ class PeerManager:
         ] = asyncio.Queue()
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
-        self._relay_server_client_or_none: RelayServerClient | None = None
+        self._relay_server_client_or_none: BasicRelayClient | None = None
 
     @property
     def _log_prefix(self) -> str:
         return f'{self.__class__.__name__}[{log_name(self._uuid, self._name)}]'
 
     @property
-    def _relay_server_client(self) -> RelayServerClient:
+    def _relay_server_client(self) -> BasicRelayClient:
         if self._relay_server_client_or_none is not None:
             return self._relay_server_client_or_none
         raise RuntimeError(
@@ -160,19 +159,13 @@ class PeerManager:
     async def async_init(self) -> None:
         """Connect to relay server."""
         if self._relay_server_client_or_none is None:
-            ssl_context = ssl.create_default_context()
-            if not self._verify_certificate:
-                ssl_context.check_hostname = False
-                ssl_context.verify_mode = ssl.CERT_NONE
-
-            client = RelayServerClient(
+            client = BasicRelayClient(
                 address=self._relay_server,
                 client_uuid=self._uuid,
                 client_name=self._name,
                 timeout=self._timeout,
-                ssl=ssl_context
-                if self._relay_server.startswith('wss://')
-                else None,
+                ssl_context=None,
+                verify_certificate=self._verify_certificate,
             )
             await client.connect()
 

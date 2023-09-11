@@ -9,10 +9,10 @@ import pytest
 import websockets
 
 from proxystore.p2p import messages
-from proxystore.p2p.relay import Client
-from proxystore.p2p.relay import periodic_client_logger
-from proxystore.p2p.relay import RelayServer
-from proxystore.p2p.relay_client import RelayServerClient
+from proxystore.p2p.relay.basic.client import BasicRelayClient
+from proxystore.p2p.relay.basic.server import BasicRelayServer
+from proxystore.p2p.relay.basic.server import Client
+from proxystore.p2p.relay.basic.server import periodic_client_logger
 
 # Use 200ms as wait_for/timeout to keep test short
 _WAIT_FOR = 0.2
@@ -20,7 +20,7 @@ _WAIT_FOR = 0.2
 
 @pytest.mark.asyncio()
 async def test_connect_twice(relay_server) -> None:
-    async with RelayServerClient(relay_server.address) as client:
+    async with BasicRelayClient(relay_server.address) as client:
         websocket = await client.connect()
         pong_waiter = await websocket.ping()
         await asyncio.wait_for(pong_waiter, _WAIT_FOR)
@@ -42,12 +42,12 @@ async def test_connect_twice(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_connect_reconnect_new_socket(relay_server) -> None:
-    client1 = RelayServerClient(relay_server.address)
+    client1 = BasicRelayClient(relay_server.address)
     websocket1 = await client1.connect()
     pong_waiter = await websocket1.ping()
     await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
-    client2 = RelayServerClient(
+    client2 = BasicRelayClient(
         relay_server.address,
         client_uuid=client1.uuid,
         client_name=client1.name,
@@ -65,7 +65,7 @@ async def test_connect_reconnect_new_socket(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_expected_client_disconnect(relay_server) -> None:
-    client = RelayServerClient(relay_server.address, reconnect_task=False)
+    client = BasicRelayClient(relay_server.address, reconnect_task=False)
     websocket = await client.connect()
     server_client = relay_server.relay_server._uuid_to_client[client.uuid]
     assert (
@@ -89,7 +89,7 @@ async def test_expected_client_disconnect(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_unexpected_client_disconnect(relay_server) -> None:
-    client = RelayServerClient(relay_server.address, reconnect_task=False)
+    client = BasicRelayClient(relay_server.address, reconnect_task=False)
     websocket = await client.connect()
     server_client = relay_server.relay_server._uuid_to_client[client.uuid]
     assert (
@@ -113,7 +113,7 @@ async def test_unexpected_client_disconnect(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_server_deserialization_fails_silently(relay_server) -> None:
-    async with RelayServerClient(relay_server.address) as client:
+    async with BasicRelayClient(relay_server.address) as client:
         websocket = await client.connect()
         # This message should cause deserialization error on server but
         # server should catch and wait for next message
@@ -147,10 +147,10 @@ async def test_endpoint_not_registered_error(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_p2p_message_passing(relay_server) -> None:
-    client1 = RelayServerClient(relay_server.address)
+    client1 = BasicRelayClient(relay_server.address)
     await client1.connect()
     peer1_name, peer1_uuid = client1.name, client1.uuid
-    client2 = RelayServerClient(relay_server.address)
+    client2 = BasicRelayClient(relay_server.address)
     await client2.connect()
     peer2_name, peer2_uuid = client2.name, client2.uuid
 
@@ -199,7 +199,7 @@ async def test_p2p_message_passing(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_p2p_message_passing_unknown_peer(relay_server) -> None:
-    client1 = RelayServerClient(relay_server.address)
+    client1 = BasicRelayClient(relay_server.address)
     await client1.connect()
     peer1_name, peer1_uuid = client1.name, client1.uuid
     peer2_uuid = uuid4()
@@ -229,7 +229,7 @@ async def test_relay_server_send_encode_error(
 ) -> None:
     caplog.set_level(logging.ERROR)
 
-    async with RelayServerClient(relay_server.address) as client:
+    async with BasicRelayClient(relay_server.address) as client:
         websocket = await client.connect()
         # Error should be logged but not raised
         await relay_server.relay_server.send(websocket, 'abc')
@@ -250,7 +250,7 @@ async def test_relay_server_send_connection_closed(
 ) -> None:
     caplog.set_level(logging.ERROR)
 
-    client = RelayServerClient(relay_server.address)
+    client = BasicRelayClient(relay_server.address)
     websocket = await client.connect()
     # Error should be logged but not raised
     await websocket.close()
@@ -271,7 +271,7 @@ async def test_relay_server_send_connection_closed(
 async def test_periodic_client_logger(caplog) -> None:
     caplog.set_level(logging.INFO)
 
-    server = RelayServer()
+    server = BasicRelayServer()
     client = Client(
         name='test',
         uuid=uuid4(),

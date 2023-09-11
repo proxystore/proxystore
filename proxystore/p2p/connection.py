@@ -36,7 +36,7 @@ from proxystore.p2p.chunks import reconstruct
 from proxystore.p2p.counter import AtomicCounter
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
-from proxystore.p2p.relay_client import RelayServerClient
+from proxystore.p2p.relay import BasicRelayClient
 
 logger = logging.getLogger(__name__)
 
@@ -63,13 +63,13 @@ class PeerConnection:
     Example:
         ```python
         from proxystore.p2p.connection import PeerConnection
-        from proxystore.p2p.relay_client import RelayServerClient
+        from proxystore.p2p.relay import BasicRelayClient
 
-        client1 = RelayServerClient(relay_server_address)
+        client1 = BasicRelayClient(relay_server_address)
         await client1.connect()
         connection1 = PeerConnection(client1)
 
-        client2 = RelayServerClient(relay_server_address)
+        client2 = BasicRelayClient(relay_server_address)
         await client2.connect()
         connection2 = PeerConnection(client2)
 
@@ -100,7 +100,7 @@ class PeerConnection:
 
     def __init__(
         self,
-        relay_client: RelayServerClient,
+        relay_client: BasicRelayClient,
         *,
         channels: int = 1,
     ) -> None:
