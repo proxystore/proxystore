@@ -38,7 +38,7 @@ This page provides documentation for our command line tools.
     :style: table
 
 ::: mkdocs-click
-    :module: proxystore.p2p.relay
+    :module: proxystore.p2p.relay.basic.server
     :command: cli
     :prog_name: proxystore-relay
     :depth: 1

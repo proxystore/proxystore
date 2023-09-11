@@ -19,6 +19,7 @@ from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
@@ -198,13 +199,16 @@ class Endpoint:
     async def async_init(self) -> None:
         """Initialize connections and tasks necessary for peering."""
         if self._relay_server is not None and not self._async_init_done:
-            self._peer_manager = await PeerManager(
-                uuid=self.uuid,
-                relay_server=self._relay_server,
-                name=self.name,
+            relay_client = BasicRelayClient(
+                self._relay_server,
+                client_name=self.name,
+                client_uuid=self.uuid,
                 timeout=self._peer_timeout,
-                peer_channels=self._peer_channels,
                 verify_certificate=self._verify_certificate,
+            )
+            self._peer_manager = await PeerManager(
+                relay_client,
+                timeout=self._peer_timeout,
             )
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,

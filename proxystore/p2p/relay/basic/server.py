@@ -1,4 +1,4 @@
-"""Relay server implementation for WebRTC peer connections.
+"""Basic relay server implementation for WebRTC peer connections.
 
 The relay server (or signaling server) is a lightweight server accessible by
 all peers (e.g., has a public IP address) that facilitates the establishment
@@ -61,8 +61,8 @@ class Client:
         )
 
 
-class RelayServer:
-    """WebRTC relay server.
+class BasicRelayServer:
+    """Basic WebRTC relay server.
 
     The relay server acts as a public third-party that helps two peers
     (endpoints) establish a peer-to-peer connection during the WebRTC
@@ -81,9 +81,9 @@ class RelayServer:
     Example:
         ```python
         import websockets
-        from proxystore.p2p.relay import RelayServer
+        from proxystore.p2p.relay import BasicRelayServer
 
-        relay_server = RelayServer()
+        relay_server = BasicRelayServer()
         async with websockets.serve(
              relay_server.handler, host='localhost', port=1234
         ) as websocket_server:
@@ -279,7 +279,7 @@ class RelayServer:
 
 
 def periodic_client_logger(
-    server: RelayServer,
+    server: BasicRelayServer,
     interval: float = 60,
     level: int = logging.INFO,
 ) -> asyncio.Task[None]:
@@ -322,7 +322,8 @@ async def serve(
 ) -> None:
     """Run the relay server.
 
-    Initializes a [`RelayServer`][proxystore.p2p.relay.RelayServer]
+    Initializes a
+    [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer]
     and starts a websocket server listening on `host:port` for new connections
     and incoming messages.
 
@@ -336,7 +337,7 @@ async def serve(
         logging_interval: Seconds between logging the list of connected
             endpoints.
     """
-    server = RelayServer()
+    server = BasicRelayServer()
 
     # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
     loop = asyncio.get_running_loop()

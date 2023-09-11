@@ -9,12 +9,13 @@ import pytest
 from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from testing.mocking import async_mock_once
 
 
 @pytest.mark.asyncio()
 async def test_awaitable(relay_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), relay_server.address)
+    manager = await PeerManager(BasicRelayClient(relay_server.address))
     # Calling async_init again should do nothing
     await manager.async_init()
     await manager.close()
@@ -22,41 +23,33 @@ async def test_awaitable(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_not_awaited(relay_server) -> None:
-    manager = PeerManager(uuid.uuid4(), relay_server.address)
+    manager = PeerManager(BasicRelayClient(relay_server.address))
     with pytest.raises(RuntimeError, match='await'):
         await manager.get_connection(uuid.uuid4())
-    await manager.close()
+    with pytest.raises(RuntimeError, match='await'):
+        await manager.close()
 
 
 @pytest.mark.asyncio()
 async def test_uuid_name_properties(relay_server) -> None:
     uuid_ = uuid.uuid4()
     name = 'pm'
-    async with PeerManager(
-        uuid_,
+    relay_client = BasicRelayClient(
         relay_server.address,
-        name=name,
-    ) as manager:
+        client_name=name,
+        client_uuid=uuid_,
+    )
+    async with PeerManager(relay_client) as manager:
         assert manager.uuid == uuid_
         assert manager.name == name
 
 
 @pytest.mark.asyncio()
-async def test_address_validation() -> None:
-    PeerManager(uuid.uuid4(), 'ws://example.com')
-    PeerManager(uuid.uuid4(), 'wss://example.com')
-    with pytest.raises(ValueError, match='wss://'):
-        PeerManager(uuid.uuid4(), 'http://example.com')
-
-
-@pytest.mark.asyncio()
 async def test_p2p_connection(relay_server) -> None:
     async with PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager1, PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager2:
         connection1 = await manager1.get_connection(manager2.uuid)
         assert connection1 == await manager1.get_connection(manager2.uuid)
@@ -70,12 +63,10 @@ async def test_p2p_connection(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
-    async with PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
-    ) as manager1:
+    relay_client = BasicRelayClient(relay_server.address)
+    async with PeerManager(relay_client) as manager:
         with pytest.raises(PeerConnectionError, match='unknown'):
-            await manager1.send(uuid.uuid4(), 'hello', timeout=0.2)
+            await manager.send(uuid.uuid4(), 'hello', timeout=0.2)
 
 
 @pytest.mark.asyncio()
@@ -84,17 +75,13 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
     task_names = {task.get_name() for task in asyncio.all_tasks()}
 
     async with PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager1, PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager2:
-        # Mock manager 1 to receive error peer connection from
-        # relay server
-        assert manager1._relay_server_client_or_none is not None
+        # Mock manager 1 to receive error peer connection from relay server
         mock_recv = async_mock_once(
-            manager1._relay_server_client_or_none.recv,
+            manager1._relay_client.recv,
             messages.PeerConnection(
                 source_uuid=manager2.uuid,
                 source_name=manager2.name,
@@ -104,7 +91,7 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
                 error='test error',
             ),
         )
-        manager1._relay_server_client_or_none.recv = mock_recv  # type: ignore
+        manager1._relay_client.recv = mock_recv  # type: ignore
 
         connection1 = await manager1.get_connection(manager2.uuid)
 
@@ -127,12 +114,9 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
 @pytest.mark.asyncio()
 async def test_p2p_messaging(relay_server) -> None:
     async with PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager1, PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
-        verify_certificate=False,
+        BasicRelayClient(relay_server.address),
     ) as manager2:
         await manager1.send(manager2.uuid, 'hello hello')
         source_uuid, message = await manager2.recv()
@@ -142,7 +126,7 @@ async def test_p2p_messaging(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_expected_server_disconnect(relay_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), relay_server.address)
+    manager = await PeerManager(BasicRelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
     await relay_server.relay_server._uuid_to_client[
         manager.uuid
@@ -152,7 +136,7 @@ async def test_expected_server_disconnect(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_unexpected_server_disconnect(relay_server) -> None:
-    manager = await PeerManager(uuid.uuid4(), relay_server.address)
+    manager = await PeerManager(BasicRelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
     await relay_server.relay_server._uuid_to_client[
         manager.uuid
@@ -165,14 +149,14 @@ async def test_serialization_error(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._relay_server_client_or_none is not None
-        assert manager._relay_server_client_or_none._websocket is not None
+    relay_client = BasicRelayClient(relay_server.address)
+    async with PeerManager(relay_client):
+        assert relay_client._websocket is not None
         mock_recv = async_mock_once(
-            manager._relay_server_client_or_none._websocket.recv,
+            relay_client._websocket.recv,
             'nonsense_string',
         )
-        manager._relay_server_client_or_none._websocket.recv = mock_recv  # type: ignore
+        relay_client._websocket.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -190,18 +174,14 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
     # PeerManager should log an exception and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._relay_server_client_or_none is not None
+    async with PeerManager(BasicRelayClient(relay_server.address)) as manager:
         message = messages.ServerResponse(
             success=True,
             message='',
             error=False,
         )
-        mock_recv = async_mock_once(
-            manager._relay_server_client_or_none.recv,
-            message,
-        )
-        manager._relay_server_client_or_none.recv = mock_recv  # type: ignore
+        mock_recv = async_mock_once(manager._relay_client.recv, message)
+        manager._relay_client.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -218,14 +198,10 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
     caplog.set_level(logging.ERROR)
-    async with PeerManager(uuid.uuid4(), relay_server.address) as manager:
-        assert manager._relay_server_client_or_none is not None
+    async with PeerManager(BasicRelayClient(relay_server.address)) as manager:
         message = messages.ServerRegistration('name', uuid.uuid4())
-        mock_recv = async_mock_once(
-            manager._relay_server_client_or_none.recv,
-            message,
-        )
-        manager._relay_server_client_or_none.recv = mock_recv  # type: ignore
+        mock_recv = async_mock_once(manager._relay_client.recv, message)
+        manager._relay_client.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -240,12 +216,9 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
 @pytest.mark.asyncio()
 async def test_close_connection(relay_server) -> None:
     async with PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
+        BasicRelayClient(relay_server.address),
     ) as manager1, PeerManager(
-        uuid.uuid4(),
-        relay_server.address,
-        verify_certificate=False,
+        BasicRelayClient(relay_server.address),
     ) as manager2:
         # Send message to make sure connection is open
         await manager1.send(manager2.uuid, 'hello hello')

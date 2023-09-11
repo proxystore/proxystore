@@ -2,15 +2,15 @@
 
 This module provides two main functionalities: the
 [`PeerManager`][proxystore.p2p.manager.PeerManager] and
-[`RelayServer`][proxystore.p2p.relay.RelayServer].
+relay client/server implementations.
 
 * The [`PeerManager`][proxystore.p2p.manager.PeerManager] enables
   easy communication between arbitrary peers even if peers are behind separate
   NATs. Peer connections are established using
   [aiortc](https://aiortc.readthedocs.io/){target=_blank}, an asyncio WebRTC
   implementation.
-* The [`RelayServer`][proxystore.p2p.relay.RelayServer] is a
-  commonly accessible server by peers that is used to facilitate WebRTC peer
-  connections.
+* The [`proxystore.p2p.relay`][proxystore.p2p.relay] module provides
+  implementations of the relay server and associated clients that are used by
+  peers to facilitate WebRTC peer connections.
 """
 from __future__ import annotations

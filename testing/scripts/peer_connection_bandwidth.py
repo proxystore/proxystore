@@ -11,7 +11,7 @@ from typing import Literal
 from typing import Sequence
 
 from proxystore.p2p.connection import PeerConnection
-from proxystore.p2p.relay_client import RelayServerClient
+from proxystore.p2p.relay import BasicRelayClient
 from testing.compat import randbytes
 
 
@@ -21,7 +21,7 @@ async def get_connection(
     channels: int = 1,
 ) -> PeerConnection:
     """Return a ready PeerConnection."""
-    client = RelayServerClient(relay)
+    client = BasicRelayClient(relay)
     local_uuid = client.uuid
     connection = PeerConnection(client, channels=channels)
 
