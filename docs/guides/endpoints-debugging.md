@@ -38,7 +38,7 @@ $ proxystore-endpoint --log-level DEBUG start myendpoint --no-detach
 
 ### Use the Test CLI
 The `proxystore-endpoint` CLI provides a `test` subcommand for testing endpoint commands.
-See the [CLI Reference](../../api/cli/#proxystore-endpoint-test){target=_blank}.
+See the [CLI Reference](../api/cli.md#proxystore-endpoint-test){target=_blank}.
 ```bash
 $ proxystore-endpoint test myendpoint exists abcdef
 INFO: Object exists: False
