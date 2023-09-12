@@ -255,12 +255,14 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
     with mock.patch(
         'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
         return_value=True,
-    ):
-        quart_app.endpoint._peer_manager = AsyncMock()
-        quart_app.endpoint._peer_manager.send = AsyncMock(
-            side_effect=Exception(),
-        )
-        quart_app.endpoint._peer_manager.close = AsyncMock()
+    ), mock.patch(
+        'proxystore.endpoint.endpoint.Endpoint.peer_manager',
+        new_callable=mock.PropertyMock,
+    ) as mock_peer_manager_property:
+        mock_peer_manager = AsyncMock()
+        mock_peer_manager.send = AsyncMock(side_effect=Exception())
+        mock_peer_manager.close = AsyncMock()
+        mock_peer_manager_property.return_value = mock_peer_manager
 
         evict_response = await client.post(
             'evict',

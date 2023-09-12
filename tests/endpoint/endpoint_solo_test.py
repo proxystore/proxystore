@@ -24,6 +24,18 @@ async def test_init() -> None:
 
 
 @pytest.mark.asyncio()
+async def test_init_requires_name_uuid() -> None:
+    message = (
+        'The name and uuid parameters must be provided if a PeerManager '
+        'is not provided.'
+    )
+    with pytest.raises(ValueError, match=message):
+        Endpoint(name='test')
+    with pytest.raises(ValueError, match=message):
+        Endpoint(uuid=uuid.uuid4())
+
+
+@pytest.mark.asyncio()
 async def test_set() -> None:
     async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
         data = randbytes(100)

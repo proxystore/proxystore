@@ -19,7 +19,6 @@ from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.relay import BasicRelayClient
 from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
@@ -48,11 +47,15 @@ class Endpoint:
     mode where the endpoint acts just as an isolated object store. Endpoints
     can also be configured in
     [`EndpointMode.PEERING`][proxystore.endpoint.endpoint.EndpointMode.PEERING]
-    mode by initializing the endpoint with a relay server address.
-    The relay server is used to establish peer-to-peer connections with
-    other endpoints after which endpoints can forward operations between each
-    other. Peering is available even when endpoints are being separate
-    NATs. See the [proxystore.p2p][] module to learn more about peering.
+    mode by initializing the endpoint with a
+    [`PeerManager`][proxystore.p2p.manager.PeerManager].
+    The [`PeerManager`][proxystore.p2p.manager.PeerManager] is connected to a
+    relay server which is used to establish peer-to-peer connections with
+    other endpoints connected to the same relay server. After peer connections
+    are established, endpoints can forward operations between each
+    other. Peering is available even when endpoints are behind separate
+    NATs. See the [`proxystore.p2p`][proxystore.p2p] module to learn more
+    about peering.
 
     Warning:
         Requests made to remote endpoints will only invoke the request on
@@ -65,44 +68,47 @@ class Endpoint:
         ```python
         async with Endpoint('ep1', uuid.uuid4()) as endpoint:
             serialized_data = b'data string'
-            endpoint.set('key', serialized_data)
-            assert endpoint.get('key') == serialized_data
-            endpoint.evict('key')
-            assert not endpoint.exists('key')
+            await endpoint.set('key', serialized_data)
+            assert await endpoint.get('key') == serialized_data
+            await endpoint.evict('key')
+            assert not await endpoint.exists('key')
         ```
 
     Example:
         Peering Mode Usage
 
         ```python
-        ep1 = await Endpoint('ep1', uuid.uuid4(), relay_server)
-        ep2 = await Endpoint('ep1', uuid.uuid4(), relay_server)
+        pm1 = await PeerManager(RelayClient(...))
+        pm2 = await PeerManager(RelayClient(...))
+        ep1 = await Endpoint(peer_manager=pm1)
+        ep2 = await Endpoint(peer_manager=pm2)
 
         serialized_data = b'data string'
-        ep1.set('key', serialized_data)
-        assert ep2.get('key', endpoint=ep1.uuid) == serialized_data
-        assert ep1.exists('key')
-        assert not ep1.exists('key', endpoint=ep2.uuid)
+        await ep1.set('key', serialized_data)
+        assert await ep2.get('key', endpoint=ep1.uuid) == serialized_data
+        assert await ep1.exists('key')
+        assert not await ep1.exists('key', endpoint=ep2.uuid)
 
-        ep1.close()
-        ep2.close()
+        await ep1.close()
+        await ep2.close()
         ```
 
     Note:
         Endpoints can be configured and started via the
-        `proxystore-endpoint` command-line interface.
+        [`proxystore-endpoint`](../cli.md#proxystore-endpoint) command-line
+        interface.
 
 
     Note:
         If the endpoint is being used in peering mode, the endpoint should be
         used as a context manager or initialized with await. This will ensure
         [`Endpoint.async_init()`][proxystore.endpoint.endpoint.Endpoint.async_init]
-        is executed which connects to the relay server and established a
-        listener for incoming messages.
+        is called which initializes the background task that listens for
+        incoming peer messages.
 
         ```python
         endpoint = await Endpoint(...)
-        endpoint.close()
+        await endpoint.close()
         ```
 
         ```python
@@ -111,75 +117,108 @@ class Endpoint:
         ```
 
     Args:
-        name: Readable name of endpoint.
-        uuid: UUID of the endpoint.
-        relay_server: Address of relay server used for peer-to-peer
-            connections between endpoints. If None, endpoint will not be able
-            to communicate with other endpoints.
+        name: Readable name of the endpoint. Only used if `peer_manager` is not
+            provided. Otherwise the name will be set to
+            [`PeerManager.name`][proxystore.p2p.manager.PeerManager.name].
+        uuid: UUID of the endpoint. Only used if `peer_manager` is not
+            provided. Otherwise the UUID will be set to
+            [`PeerManager.uuid`][proxystore.p2p.manager.PeerManager.uuid].
         max_object_size: Optional max size in bytes for any single
             object stored by the endpoint. If exceeded, an error is raised.
-        peer_channels: Number of datachannels per peer connection
-            to another endpoint to communicate over.
-        peer_timeout: Timeout for establishing p2p connection with
-            another endpoint.
+        peer_manager: Optional peer manager that is connected to a relay server
+            which will be used for establishing peer connections to other
+            endpoints connected to the same relay server.
         storage: Storage interface to use. If `None`,
             [`DictStorage`][proxystore.endpoint.storage.DictStorage] is used.
-        verify_certificate: Verify the relay server's SSL
-            certificate. This should almost never be disabled except for
-            testing with self-signed certificates.
+
+    Raises:
+        ValueError: if neither `name`/`uuid` or `peer_manager` are set.
     """
 
     def __init__(
         self,
-        name: str,
-        uuid: UUID,
-        relay_server: str | None = None,
+        name: str | None = None,
+        uuid: UUID | None = None,
         *,
         max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
-        peer_channels: int = 1,
-        peer_timeout: int = 30,
+        peer_manager: PeerManager | None = None,
         storage: Storage | None = None,
-        verify_certificate: bool = True,
     ) -> None:
-        self._name = name
-        self._uuid = uuid
-        self._relay_server = relay_server
-        self._max_object_size = max_object_size
-        self._peer_channels = peer_channels
-        self._peer_timeout = peer_timeout
-        self._verify_certificate = verify_certificate
+        if peer_manager is None and (name is None or uuid is None):
+            raise ValueError(
+                'The name and uuid parameters must be provided if '
+                'a PeerManager is not provided.',
+            )
 
+        self._default_name = name
+        self._default_uuid = uuid
+        self._max_object_size = max_object_size
+        self._peer_manager = peer_manager
         self._storage = DictStorage() if storage is None else storage
 
         self._mode = (
-            EndpointMode.SOLO if relay_server is None else EndpointMode.PEERING
+            EndpointMode.SOLO if peer_manager is None else EndpointMode.PEERING
         )
-        self._peer_manager: PeerManager | None = None
         self._pending_requests: dict[
             str,
             asyncio.Future[EndpointRequest],
         ] = {}
-        self._async_init_done = False
         self._peer_handler_task: asyncio.Task[None] | None = None
 
-        logger.info(
-            f'{self._log_prefix}: initialized endpoint operating '
-            f'in {self._mode.name} mode',
-        )
+        if self._mode is EndpointMode.SOLO:
+            # Initialization is not complete for endpoints in peering mode
+            # until async_init() is called.
+            logger.info(
+                f'{self._log_prefix}: initialized endpoint operating '
+                f'in {self._mode.name} mode',
+            )
 
     @property
     def _log_prefix(self) -> str:
         return f'{type(self).__name__}[{log_name(self.uuid, self.name)}]'
 
     @property
-    def uuid(self) -> UUID:
-        """UUID of this endpoint."""
-        return self._uuid
-
-    @property
     def name(self) -> str:
         """Name of this endpoint."""
-        return self._name
+        if self._mode is EndpointMode.SOLO:
+            assert self._default_name is not None
+            return self._default_name
+        elif self._mode is EndpointMode.PEERING:
+            assert self.peer_manager is not None
+            return self.peer_manager.name
+        else:
+            raise AssertionError('Unreachable.')
+
+    @property
+    def uuid(self) -> UUID:
+        """UUID of this endpoint."""
+        if self._mode is EndpointMode.SOLO:
+            assert self._default_uuid is not None
+            return self._default_uuid
+        elif self._mode is EndpointMode.PEERING:
+            assert self.peer_manager is not None
+            return self.peer_manager.uuid
+        else:
+            raise AssertionError('Unreachable.')
+
+    @property
+    def peer_manager(self) -> PeerManager | None:
+        """Peer manager.
+
+        Raises:
+            PeeringNotAvailableError: if the endpoint was initialized with
+                a [`PeerManager`][proxystore.p2p.manager.PeerManager] but
+                [`Endpoint.async_init()`][proxystore.endpoint.endpoint.Endpoint.async_init]
+                has not been called. This is likely because the endpoint was
+                not initialized with the `await` keyword.
+        """
+        if self._peer_manager is not None and self._peer_handler_task is None:
+            raise PeeringNotAvailableError(
+                'The peer message handler has not been created yet. '
+                'This is likely because async_init() has not been called. '
+                'Is the endpoint being initialized with await?',
+            )
+        return self._peer_manager
 
     async def __aenter__(self) -> Endpoint:
         await self.async_init()
@@ -197,35 +236,35 @@ class Endpoint:
         return self.__aenter__().__await__()
 
     async def async_init(self) -> None:
-        """Initialize connections and tasks necessary for peering."""
-        if self._relay_server is not None and not self._async_init_done:
-            relay_client = BasicRelayClient(
-                self._relay_server,
-                client_name=self.name,
-                client_uuid=self.uuid,
-                timeout=self._peer_timeout,
-                verify_certificate=self._verify_certificate,
-            )
-            self._peer_manager = await PeerManager(
-                relay_client,
-                timeout=self._peer_timeout,
-            )
+        """Initialize connections and tasks necessary for peering.
+
+        Note:
+            This will also call
+            [`PeerManager.async_init()`][proxystore.p2p.manager.PeerManager.async_init]
+            if one is provided so that asynchronous resources for both the
+            [`PeerManager`][proxystore.p2p.manager.PeerManager]
+            and endpoint can be initialized later after creation.
+        """
+        if self._peer_manager is not None and self._peer_handler_task is None:
+            await self._peer_manager.async_init()
             self._peer_handler_task = spawn_guarded_background_task(
                 self._handle_peer_requests,
             )
             self._peer_handler_task.set_name(
                 f'endpoint-{self.uuid}-handle-peer-requests',
             )
-            logger.info(f'{self._log_prefix}: initialized peer manager')
-            self._async_init_done = True
+            logger.info(
+                f'{self._log_prefix}: initialized endpoint operating '
+                f'in {self._mode.name} mode',
+            )
 
     async def _handle_peer_requests(self) -> None:
         """Coroutine to listen for request from peer endpoints."""
-        assert self._peer_manager is not None
+        assert self.peer_manager is not None
         logger.info(f'{self._log_prefix}: listening for peer requests')
 
         while True:
-            source_endpoint, message_ = await self._peer_manager.recv()
+            source_endpoint, message_ = await self.peer_manager.recv()
             assert isinstance(message_, bytes)
             try:
                 message: EndpointRequest = deserialize(message_)
@@ -281,7 +320,7 @@ class Endpoint:
                 f'id={message.uuid} and key={message.key} to '
                 f'{source_endpoint}',
             )
-            await self._peer_manager.send(source_endpoint, serialize(message))
+            await self.peer_manager.send(source_endpoint, serialize(message))
 
     async def _request_from_peer(
         self,
@@ -295,7 +334,7 @@ class Endpoint:
         # TODO(gpauloski):
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
-        assert self._peer_manager is not None
+        assert self.peer_manager is not None
         self._pending_requests[
             request.uuid
         ] = asyncio.get_running_loop().create_future()
@@ -304,7 +343,7 @@ class Endpoint:
             f'id={request.uuid} and key={request.key}) to {endpoint}',
         )
         try:
-            await self._peer_manager.send(endpoint, serialize(request))
+            await self.peer_manager.send(endpoint, serialize(request))
         except Exception as e:
             self._pending_requests[request.uuid].set_exception(
                 PeerRequestError(
@@ -319,12 +358,6 @@ class Endpoint:
             return False
         elif endpoint is None or endpoint == self.uuid:
             return False
-        elif self._peer_manager is None:
-            raise PeeringNotAvailableError(
-                'P2P connection manager has not been enabled yet. Try '
-                'initializing the endpoint with endpoint = await '
-                'Endpoint(...) or calling endpoint.async_init().',
-            )
         else:
             return True
 

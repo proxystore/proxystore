@@ -27,6 +27,8 @@ from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
@@ -55,11 +57,6 @@ def create_app(
     app.config['endpoint'] = endpoint
 
     app.register_blueprint(routes_blueprint, url_prefix='')
-
-    logger.info(
-        'Quart routes registered to endpoint '
-        f'{endpoint.uuid} ({endpoint.name})',
-    )
 
     app.config['MAX_CONTENT_LENGTH'] = max_content_length
     app.config['BODY_TIMEOUT'] = body_timeout
@@ -105,7 +102,9 @@ def serve(
     logging.getLogger().setLevel(log_level)
 
     kwargs = dataclasses.asdict(config)
-    # These are the only two EndpointConfig attributes not passed to the
+    # Some parameters are popped from this dictionary representation of the
+    # EndpointConfig as they are consumed by other objects. At the end,
+    # the only remaining parameters in kwargs are those passed to the
     # Endpoint constructor
     kwargs.pop('host', None)
     kwargs.pop('port', None)
@@ -123,7 +122,24 @@ def serve(
         )
         storage = None
 
-    endpoint = Endpoint(**kwargs, storage=storage)
+    peer_manager: PeerManager | None = None
+    relay_server = kwargs.pop('relay_server', None)
+    verify_certificate = kwargs.pop('verify_certificate', True)
+    peer_channels = kwargs.pop('peer_channels', 1)
+
+    if relay_server is not None:
+        relay_client = BasicRelayClient(
+            address=relay_server,
+            client_name=config.name,
+            client_uuid=config.uuid,
+            verify_certificate=verify_certificate,
+        )
+        peer_manager = PeerManager(relay_client, peer_channels=peer_channels)
+
+    # Note: the endpoint's async_init() method cannot be called at this point
+    # because we are not running in an event loop. The call to async_init
+    # is deferred to the "before_app_serving" hook of the Quart server.
+    endpoint = Endpoint(**kwargs, peer_manager=peer_manager, storage=storage)
     app = create_app(endpoint)
 
     if use_uvloop:  # pragma: no cover
@@ -145,7 +161,7 @@ def serve(
     server = uvicorn.Server(server_config)
 
     logger.info(
-        f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
+        f'Serving endpoint {config.uuid} ({config.name}) on '
         f'{config.host}:{config.port}',
     )
     logger.info(f'Config: {config}')
