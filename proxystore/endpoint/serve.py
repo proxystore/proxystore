@@ -64,42 +64,9 @@ def create_app(
     return app
 
 
-def serve(
-    config: EndpointConfig,
-    *,
-    log_level: int | str = logging.INFO,
-    log_file: str | None = None,
-    use_uvloop: bool = True,
-) -> None:
-    """Initialize endpoint and serve Quart app.
-
-    Warning:
-        This function does not return until the Quart app is terminated.
-
-    Args:
-        config: Configuration object.
-        log_level: Logging level of endpoint.
-        log_file: Optional file path to append log to.
-        use_uvloop: Install uvloop as the default event loop implementation.
-    """
+async def _serve_async(config: EndpointConfig) -> None:
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
-
-    if log_file is not None:
-        parent_dir = os.path.dirname(log_file)
-        if not os.path.isdir(parent_dir):
-            os.makedirs(parent_dir, exist_ok=True)
-        logging.getLogger().handlers.append(logging.FileHandler(log_file))
-
-    for handler in logging.getLogger().handlers:
-        handler.setFormatter(
-            logging.Formatter(
-                '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
-                '%(message)s',
-                datefmt='%Y-%m-%d %H:%M:%S',
-            ),
-        )
-    logging.getLogger().setLevel(log_level)
 
     kwargs = dataclasses.asdict(config)
     # Some parameters are popped from this dictionary representation of the
@@ -136,19 +103,12 @@ def serve(
         )
         peer_manager = PeerManager(relay_client, peer_channels=peer_channels)
 
-    # Note: the endpoint's async_init() method cannot be called at this point
-    # because we are not running in an event loop. The call to async_init
-    # is deferred to the "before_app_serving" hook of the Quart server.
-    endpoint = Endpoint(**kwargs, peer_manager=peer_manager, storage=storage)
+    endpoint = await Endpoint(
+        peer_manager=peer_manager,
+        storage=storage,
+        **kwargs,
+    )
     app = create_app(endpoint)
-
-    if use_uvloop:  # pragma: no cover
-        logger.info('Installing uvloop as default event loop')
-        uvloop.install()
-    else:
-        logger.warning(
-            'Not installing uvloop. Uvicorn may override and install anyways',
-        )
 
     server_config = uvicorn.Config(
         app,
@@ -165,12 +125,63 @@ def serve(
         f'{config.host}:{config.port}',
     )
     logger.info(f'Config: {config}')
-    asyncio.run(server.serve())
+
+    await server.serve()
+
+
+def serve(
+    config: EndpointConfig,
+    *,
+    log_level: int | str = logging.INFO,
+    log_file: str | None = None,
+    use_uvloop: bool = True,
+) -> None:
+    """Initialize endpoint and serve Quart app.
+
+    Warning:
+        This function does not return until the Quart app is terminated.
+
+    Args:
+        config: Configuration object.
+        log_level: Logging level of endpoint.
+        log_file: Optional file path to append log to.
+        use_uvloop: Install uvloop as the default event loop implementation.
+    """
+    if log_file is not None:
+        parent_dir = os.path.dirname(log_file)
+        if not os.path.isdir(parent_dir):
+            os.makedirs(parent_dir, exist_ok=True)
+        logging.getLogger().handlers.append(logging.FileHandler(log_file))
+
+    for handler in logging.getLogger().handlers:
+        handler.setFormatter(
+            logging.Formatter(
+                '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+                '%(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S',
+            ),
+        )
+    logging.getLogger().setLevel(log_level)
+
+    if use_uvloop:  # pragma: no cover
+        logger.info('Installing uvloop as default event loop')
+        uvloop.install()
+    else:
+        logger.warning(
+            'Not installing uvloop. Uvicorn may override and install anyways',
+        )
+
+    # The remaining set up and serving code is deferred to within the
+    # _serve_async helper function which will be executed within an event loop.
+    asyncio.run(_serve_async(config))
 
 
 @routes_blueprint.before_app_serving
 async def _startup() -> None:
     endpoint = quart.current_app.config['endpoint']
+    # Typically async_init() is called when the endpoint is initialized
+    # with the await keyword, but we call it again here in case the endpoint
+    # object needed to be initialized outside of an event loop.
     await endpoint.async_init()
 
 
