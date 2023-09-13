@@ -239,7 +239,7 @@ class BasicRelayClient:
                 'Try calling connect() first.',
             )
 
-    async def connect(self) -> None:
+    async def connect(self, retry: bool = True) -> None:
         """Connect to the relay server.
 
         Note:
@@ -249,8 +249,11 @@ class BasicRelayClient:
         Note:
             This method is a no-op if a connection is already established.
             Otherwise, a new connection will be attempted with
-            exponential backoff (starting at 1 second and increasing to a max
-            of 60 seconds) for connection failures.
+            exponential backoff when `retry` is True for connection failures.
+
+        Args:
+            retry: Retry the connection with exponential backoff starting at
+                one second and increasing to a max of 60 seconds.
         """
         async with self._connect_lock:
             if self._websocket is not None and self._websocket.open:
@@ -276,6 +279,9 @@ class BasicRelayClient:
                     asyncio.TimeoutError,
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
+                    if not retry:
+                        raise
+
                     logger.warning(
                         f'Registration with relay server at {self._address} '
                         f'failed because of {e}. Retrying connection in '
