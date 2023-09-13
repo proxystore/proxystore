@@ -14,7 +14,6 @@ from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoint
 from proxystore.connectors.globus import GlobusEndpoints
 from proxystore.connectors.globus import GlobusKey
-from proxystore.globus import GlobusAuthFileError
 
 EP1 = GlobusEndpoint(
     uuid='1',
@@ -274,16 +273,6 @@ def test_expand_user_path(globus_connector) -> None:
     )
 
 
-def test_globus_auth_not_done() -> None:
-    """Test Globus auth missing during Store init."""
-    with mock.patch(
-        'proxystore.connectors.globus.get_proxystore_authorizer',
-        side_effect=GlobusAuthFileError,
-    ):
-        with pytest.raises(GlobusAuthFileError, match='Complete the'):
-            GlobusConnector(endpoints=[EP1, EP2])
-
-
 def test_globus_connector_key_equality() -> None:
     """Test GlobusKey custom equality."""
     key = GlobusKey('a', 'b')
@@ -320,7 +309,9 @@ def test_delete_local_paths_on_close(
         ],
     )
 
-    with mock.patch('globus_sdk.TransferClient'), mock.patch(
+    with mock.patch(
+        'proxystore.connectors.globus.get_transfer_client_flow',
+    ), mock.patch(
         'proxystore.connectors.globus._submit_transfer_action',
         return_value={'task_id': 'ABCD'},
     ) as mocked:
