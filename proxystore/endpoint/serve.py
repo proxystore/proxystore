@@ -27,6 +27,8 @@ from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from proxystore.utils import chunk_bytes
 
 logger = logging.getLogger(__name__)
@@ -56,15 +58,75 @@ def create_app(
 
     app.register_blueprint(routes_blueprint, url_prefix='')
 
-    logger.info(
-        'Quart routes registered to endpoint '
-        f'{endpoint.uuid} ({endpoint.name})',
-    )
-
     app.config['MAX_CONTENT_LENGTH'] = max_content_length
     app.config['BODY_TIMEOUT'] = body_timeout
 
     return app
+
+
+async def _serve_async(config: EndpointConfig) -> None:
+    if config.host is None:
+        raise ValueError('EndpointConfig has NoneType as host.')
+
+    kwargs = dataclasses.asdict(config)
+    # Some parameters are popped from this dictionary representation of the
+    # EndpointConfig as they are consumed by other objects. At the end,
+    # the only remaining parameters in kwargs are those passed to the
+    # Endpoint constructor
+    kwargs.pop('host', None)
+    kwargs.pop('port', None)
+
+    database_path = kwargs.pop('database_path', None)
+    storage: SQLiteStorage | None
+    if database_path is not None:
+        logger.info(
+            f'Using SQLite database for storage (path: {database_path})',
+        )
+        storage = SQLiteStorage(database_path)
+    else:
+        logger.warning(
+            'Database path not provided. Data will not be persisted',
+        )
+        storage = None
+
+    peer_manager: PeerManager | None = None
+    relay_server = kwargs.pop('relay_server', None)
+    verify_certificate = kwargs.pop('verify_certificate', True)
+    peer_channels = kwargs.pop('peer_channels', 1)
+
+    if relay_server is not None:
+        relay_client = BasicRelayClient(
+            address=relay_server,
+            client_name=config.name,
+            client_uuid=config.uuid,
+            verify_certificate=verify_certificate,
+        )
+        peer_manager = PeerManager(relay_client, peer_channels=peer_channels)
+
+    endpoint = await Endpoint(
+        peer_manager=peer_manager,
+        storage=storage,
+        **kwargs,
+    )
+    app = create_app(endpoint)
+
+    server_config = uvicorn.Config(
+        app,
+        host=config.host,
+        port=config.port,
+        log_config=None,
+        log_level=logger.level,
+        access_log=False,
+    )
+    server = uvicorn.Server(server_config)
+
+    logger.info(
+        f'Serving endpoint {config.uuid} ({config.name}) on '
+        f'{config.host}:{config.port}',
+    )
+    logger.info(f'Config: {config}')
+
+    await server.serve()
 
 
 def serve(
@@ -85,9 +147,6 @@ def serve(
         log_file: Optional file path to append log to.
         use_uvloop: Install uvloop as the default event loop implementation.
     """
-    if config.host is None:
-        raise ValueError('EndpointConfig has NoneType as host.')
-
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
         if not os.path.isdir(parent_dir):
@@ -104,28 +163,6 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    kwargs = dataclasses.asdict(config)
-    # These are the only two EndpointConfig attributes not passed to the
-    # Endpoint constructor
-    kwargs.pop('host', None)
-    kwargs.pop('port', None)
-
-    database_path = kwargs.pop('database_path', None)
-    storage: SQLiteStorage | None
-    if database_path is not None:
-        logger.info(
-            f'Using SQLite database for storage (path: {database_path})',
-        )
-        storage = SQLiteStorage(database_path)
-    else:
-        logger.warning(
-            'Database path not provided. Data will not be persisted',
-        )
-        storage = None
-
-    endpoint = Endpoint(**kwargs, storage=storage)
-    app = create_app(endpoint)
-
     if use_uvloop:  # pragma: no cover
         logger.info('Installing uvloop as default event loop')
         uvloop.install()
@@ -134,27 +171,17 @@ def serve(
             'Not installing uvloop. Uvicorn may override and install anyways',
         )
 
-    server_config = uvicorn.Config(
-        app,
-        host=config.host,
-        port=config.port,
-        log_config=None,
-        log_level=logger.level,
-        access_log=False,
-    )
-    server = uvicorn.Server(server_config)
-
-    logger.info(
-        f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
-        f'{config.host}:{config.port}',
-    )
-    logger.info(f'Config: {config}')
-    asyncio.run(server.serve())
+    # The remaining set up and serving code is deferred to within the
+    # _serve_async helper function which will be executed within an event loop.
+    asyncio.run(_serve_async(config))
 
 
 @routes_blueprint.before_app_serving
 async def _startup() -> None:
     endpoint = quart.current_app.config['endpoint']
+    # Typically async_init() is called when the endpoint is initialized
+    # with the await keyword, but we call it again here in case the endpoint
+    # object needed to be initialized outside of an event loop.
     await endpoint.async_init()
 
 

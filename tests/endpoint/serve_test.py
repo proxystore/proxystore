@@ -255,12 +255,14 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
     with mock.patch(
         'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
         return_value=True,
-    ):
-        quart_app.endpoint._peer_manager = AsyncMock()
-        quart_app.endpoint._peer_manager.send = AsyncMock(
-            side_effect=Exception(),
-        )
-        quart_app.endpoint._peer_manager.close = AsyncMock()
+    ), mock.patch(
+        'proxystore.endpoint.endpoint.Endpoint.peer_manager',
+        new_callable=mock.PropertyMock,
+    ) as mock_peer_manager_property:
+        mock_peer_manager = AsyncMock()
+        mock_peer_manager.send = AsyncMock(side_effect=Exception())
+        mock_peer_manager.close = AsyncMock()
+        mock_peer_manager_property.return_value = mock_peer_manager
 
         evict_response = await client.post(
             'evict',
@@ -342,7 +344,7 @@ def test_serve(use_uvloop: bool) -> None:
         process.terminate()
 
 
-def test_serve_config_validation() -> None:
+def test_serve_config_validation(use_uvloop: bool) -> None:
     config = EndpointConfig(
         name='my-endpoint',
         uuid=uuid.uuid4(),
@@ -350,7 +352,7 @@ def test_serve_config_validation() -> None:
         port=open_port(),
     )
     with pytest.raises(ValueError, match='host'):
-        serve(config)
+        serve(config, use_uvloop=use_uvloop)
 
 
 def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
@@ -358,11 +360,6 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
 
     def _serve(log_file: str) -> None:
-        # serve() calls asyncio.run() but the pytest environment does not have
-        # a usable event loop so we need to manually create on.
-        # https://stackoverflow.com/questions/66583461
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         config = EndpointConfig(
             name='name',
             uuid=uuid.uuid4(),
@@ -377,7 +374,6 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
                 log_file=log_file,
                 use_uvloop=use_uvloop,
             )
-        loop.close()
 
     # Make directory if necessary
     log_file = os.path.join(tmp_dir, 'log.txt')

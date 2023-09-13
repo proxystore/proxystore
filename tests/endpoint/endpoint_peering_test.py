@@ -11,6 +11,8 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
+from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from proxystore.serialize import serialize
 from testing.compat import randbytes
 
@@ -19,25 +21,29 @@ from testing.compat import randbytes
 async def endpoints(
     relay_server,
 ) -> AsyncGenerator[tuple[Endpoint, Endpoint], None]:
-    async with Endpoint(
-        name='test-endpoint-1',
-        uuid=uuid.uuid4(),
-        relay_server=relay_server.address,
-    ) as endpoint1, Endpoint(
-        name='test-endpoint-2',
-        uuid=uuid.uuid4(),
-        relay_server=relay_server.address,
-    ) as endpoint2:
-        yield (endpoint1, endpoint2)
+    relay_client_1 = BasicRelayClient(
+        relay_server.address,
+        client_name='test-endpoint-1',
+    )
+    relay_client_2 = BasicRelayClient(
+        relay_server.address,
+        client_name='test-endpoint-2',
+    )
+    peer_manager_1 = await PeerManager(relay_client_1)
+    peer_manager_2 = await PeerManager(relay_client_2)
+    async with Endpoint(peer_manager=peer_manager_1) as ep1:
+        async with Endpoint(peer_manager=peer_manager_2) as ep2:
+            yield (ep1, ep2)
 
 
 @pytest.mark.asyncio()
 async def test_init(relay_server) -> None:
-    endpoint = await Endpoint(
-        name='test-init-endpoint',
-        uuid=uuid.uuid4(),
-        relay_server=relay_server.address,
+    relay_client = BasicRelayClient(
+        relay_server.address,
+        client_name='test-init-endpoint',
     )
+    peer_manager = await PeerManager(relay_client)
+    endpoint = await Endpoint(peer_manager=peer_manager)
     # Calling async_init multiple times should be no-op
     await endpoint.async_init()
     await endpoint.async_init()
@@ -106,24 +112,43 @@ async def test_remote_error_propogation(
 
 @pytest.mark.asyncio()
 async def test_peering_not_available(relay_server) -> None:
-    endpoint = Endpoint(
-        name='test',
-        uuid=uuid.uuid4(),
-        relay_server=relay_server.address,
+    relay_client = BasicRelayClient(
+        relay_server.address,
+        client_name='test-peering-not-available',
     )
+    peer_manager = await PeerManager(relay_client)
+    endpoint = Endpoint(peer_manager=peer_manager)
     # __await__ has not been called on endpoint so connection to server
     # has not been enabled
     with pytest.raises(PeeringNotAvailableError, match='await'):
         await endpoint.get('key', endpoint=uuid.uuid4())
+    await peer_manager.close()
+
+
+@pytest.mark.asyncio()
+async def test_delayed_peer_manager_async_init(relay_server) -> None:
+    relay_client = BasicRelayClient(
+        relay_server.address,
+        client_name='test-unknown-peer',
+    )
+    # The peer manager is not initialized with await so using it would raise
+    # an error but the async initialization of the Endpoint will call
+    # the peer manager's async_init()
+    peer_manager = PeerManager(relay_client)
+    with pytest.raises(RuntimeError, match='await'):
+        assert peer_manager.relay_client is not None
+    async with Endpoint(peer_manager=peer_manager):
+        assert peer_manager.relay_client is not None
 
 
 @pytest.mark.asyncio()
 async def test_unknown_peer(relay_server) -> None:
-    async with Endpoint(
-        name='test',
-        uuid=uuid.uuid4(),
-        relay_server=relay_server.address,
-    ) as endpoint:
+    relay_client = BasicRelayClient(
+        relay_server.address,
+        client_name='test-unknown-peer',
+    )
+    peer_manager = await PeerManager(relay_client)
+    async with Endpoint(peer_manager=peer_manager) as endpoint:
         with pytest.raises(PeerRequestError, match='unknown'):
             await endpoint.get('key', endpoint=uuid.uuid4())
 

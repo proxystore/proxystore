@@ -1,7 +1,6 @@
 """Utilities for launching endpoints in tests."""
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
 import time
@@ -29,13 +28,7 @@ def serve_endpoint_silent(
     """
     with contextlib.redirect_stdout(None), contextlib.redirect_stderr(None):
         logging.disable(100000)
-        # https://stackoverflow.com/questions/66583461
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         serve(config, use_uvloop=use_uvloop)
-        # May not be run if the endpoint is killed
-        loop.close()  # pragma: no cover
-    pass  # pragma: no cover
 
 
 def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:

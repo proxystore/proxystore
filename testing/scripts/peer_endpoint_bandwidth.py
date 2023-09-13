@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import socket
 import sys
 import time
 import uuid
@@ -12,19 +11,19 @@ from typing import Literal
 from typing import Sequence
 
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.relay import BasicRelayClient
 from testing.compat import randbytes
 
 
 async def get_endpoint(
     actor: Literal['local', 'remote'],
-    relay: str,
+    relay_server_address: str,
 ) -> tuple[Endpoint, uuid.UUID | None]:
     """Return a ready PeerConnection."""
-    endpoint = await Endpoint(
-        name=socket.gethostname(),
-        uuid=uuid.uuid4(),
-        relay_server=relay,
-    )
+    relay_client = BasicRelayClient(relay_server_address)
+    peer_manager = await PeerManager(relay_client)
+    endpoint = await Endpoint(peer_manager=peer_manager)
 
     print(f'Endpoint uuid: {endpoint.uuid}')
     if actor == 'local':

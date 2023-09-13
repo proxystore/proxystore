@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import pathlib
 import subprocess
+import time
 from unittest import mock
 from unittest.mock import AsyncMock
 
@@ -56,6 +57,8 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
                 break
 
         server_handle.terminate()
+        # Sleep for a small period (10ms) to allow file to get written
+        time.sleep(0.01)
 
     logs = [
         f

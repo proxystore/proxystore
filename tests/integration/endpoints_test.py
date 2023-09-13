@@ -31,7 +31,7 @@ async def wait_for_server(host: str, port: int) -> None:
     while True:
         try:
             client = BasicRelayClient(f'ws://{host}:{port}')
-            await client.connect()
+            await client.connect(retry=False)
         except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)
         else:
@@ -45,9 +45,7 @@ def serve_relay_server(host: str, port: int) -> None:
 
 
 @pytest.fixture(scope='module')
-def endpoints(
-    relay_server,
-) -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
+def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     """Launch the relay server and two endpoints."""
     tmp_dir = tempfile.TemporaryDirectory()
     tmp_path = pathlib.Path(tmp_dir.name)
