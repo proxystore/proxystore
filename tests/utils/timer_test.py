@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from proxystore.timer import Timer
+from proxystore.utils.timer import Timer
 
 
 def test_timer() -> None:
