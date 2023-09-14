@@ -28,7 +28,7 @@ class GlobusAuthManager(Protocol):
         """User has valid refresh tokens for necessary scopes."""
         ...
 
-    def authorizer(
+    def get_authorizer(
         self,
         resource_server: str,
     ) -> globus_sdk.authorizers.GlobusAuthorizer:
