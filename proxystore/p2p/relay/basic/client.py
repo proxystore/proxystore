@@ -27,17 +27,12 @@ except ImportError as e:  # pragma: no cover
     )
 
 from proxystore.p2p import messages
-from proxystore.p2p.exceptions import PeerRegistrationError
+from proxystore.p2p.relay.exceptions import RelayNotConnectedError
+from proxystore.p2p.relay.exceptions import RelayRegistrationError
 from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.utils import hostname
 
 logger = logging.getLogger(__name__)
-
-
-class RelayServerNotConnectedError(Exception):
-    """Error raised when the relay client has not connected to the server."""
-
-    pass
 
 
 class BasicRelayClient:
@@ -88,7 +83,7 @@ class BasicRelayClient:
             used if `ssl_context` is `None` and connecting to a `wss://` URI.
 
     Raises:
-        PeerRegistrationError: If the connection to the relay server
+        RelayRegistrationError: If the connection to the relay server
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with `ws://` or `wss://`.
@@ -159,7 +154,7 @@ class BasicRelayClient:
                 timeout.
             websockets.exceptions.ConnectionClosed: If the websocket connection
                 was closed while registering.
-            PeerRegistrationError: If the registration process failed.
+            RelayRegistrationError: If the registration process failed.
         """
         websocket = await websockets.client.connect(
             self._address,
@@ -183,7 +178,7 @@ class BasicRelayClient:
             else:
                 raise AssertionError('Received non-string type on websocket.')
         except messages.MessageDecodeError as e:
-            raise PeerRegistrationError(
+            raise RelayRegistrationError(
                 'Unable to decode response message from relay server.',
             ) from e
 
@@ -196,12 +191,12 @@ class BasicRelayClient:
                 )
                 return websocket
             else:
-                raise PeerRegistrationError(
+                raise RelayRegistrationError(
                     'Failed to register as peer with the relay server. '
                     f'Got exception: {message.message}',
                 )
         else:
-            raise PeerRegistrationError(
+            raise RelayRegistrationError(
                 'Relay server replied with unknown message type: '
                 f'{type(message).__name__}.',
             )
@@ -230,11 +225,18 @@ class BasicRelayClient:
 
     @property
     def websocket(self) -> WebSocketClientProtocol:
-        """Websocket connection to the relay server."""
+        """Websocket connection to the relay server.
+
+        Raises:
+            RelayNotConnectedError: if the websocket connection to the relay
+                server is not open. This usually indicates that
+                [`connect()`][proxystore.p2p.relay.basic.client.BasicRelayClient.connect]
+                needs to be called.
+        """
         if self._websocket is not None and self._websocket.open:
             return self._websocket
         else:
-            raise RelayServerNotConnectedError(
+            raise RelayNotConnectedError(
                 'Websocket connection to the relay server is not open. '
                 'Try calling connect() first.',
             )
@@ -318,7 +320,7 @@ class BasicRelayClient:
         """
         try:
             websocket = self.websocket
-        except RelayServerNotConnectedError:
+        except RelayNotConnectedError:
             await self.connect()
             websocket = self.websocket
 
@@ -337,7 +339,7 @@ class BasicRelayClient:
 
         try:
             websocket = self.websocket
-        except RelayServerNotConnectedError:
+        except RelayNotConnectedError:
             await self.connect()
             websocket = self.websocket
 
