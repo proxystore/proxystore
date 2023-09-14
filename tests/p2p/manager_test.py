@@ -6,10 +6,12 @@ import uuid
 
 import pytest
 
-from proxystore.p2p import messages
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
 from testing.mocking import async_mock_once
 
 
@@ -82,7 +84,7 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
         # Mock manager 1 to receive error peer connection from relay server
         mock_recv = async_mock_once(
             manager1._relay_client.recv,
-            messages.PeerConnection(
+            PeerConnectionRequest(
                 source_uuid=manager2.uuid,
                 source_name=manager2.name,
                 peer_uuid=manager1.uuid,
@@ -175,11 +177,7 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(BasicRelayClient(relay_server.address)) as manager:
-        message = messages.ServerResponse(
-            success=True,
-            message='',
-            error=False,
-        )
+        message = RelayResponse(success=True, message='', error=False)
         mock_recv = async_mock_once(manager._relay_client.recv, message)
         manager._relay_client.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:
@@ -199,7 +197,7 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
     # not raise an exception.
     caplog.set_level(logging.ERROR)
     async with PeerManager(BasicRelayClient(relay_server.address)) as manager:
-        message = messages.ServerRegistration('name', uuid.uuid4())
+        message = RelayRegistrationRequest('name', uuid.uuid4())
         mock_recv = async_mock_once(manager._relay_client.recv, message)
         manager._relay_client.recv = mock_recv  # type: ignore
         while not mock_recv.await_count > 1:

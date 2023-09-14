@@ -1,4 +1,4 @@
-"""Message encode/decode tests."""
+"""Relay server message encode/decode tests."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,17 @@ from typing import Any
 
 import pytest
 
-from proxystore.p2p import messages
+from proxystore.p2p.relay.messages import decode_relay_message
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayMessageDecodeError
+from proxystore.p2p.relay.messages import RelayMessageEncodeError
+from proxystore.p2p.relay.messages import RelayMessageType
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
+from proxystore.p2p.relay.messages import str_to_uuid
+from proxystore.p2p.relay.messages import uuid_to_str
 
 _TEST_UUID = uuid.uuid4()
 
@@ -34,7 +44,7 @@ def test_uuid_to_str_conversion(
     data: dict[str, Any],
     result: dict[str, Any],
 ) -> None:
-    assert messages.uuid_to_str(data) == result
+    assert uuid_to_str(data) == result
 
 
 @pytest.mark.parametrize(
@@ -67,18 +77,18 @@ def test_str_to_uuid_conversion(
     exception: bool,
 ) -> None:
     if exception:
-        with pytest.raises(messages.MessageDecodeError):
-            messages.str_to_uuid(data)
+        with pytest.raises(RelayMessageDecodeError):
+            str_to_uuid(data)
     else:
-        assert messages.str_to_uuid(data) == result
+        assert str_to_uuid(data) == result
 
 
 @pytest.mark.parametrize(
     'message',
     (
-        messages.ServerRegistration(name='host', uuid=uuid.uuid4()),
-        messages.ServerResponse(),
-        messages.PeerConnection(
+        RelayRegistrationRequest(name='host', uuid=uuid.uuid4()),
+        RelayResponse(),
+        PeerConnectionRequest(
             source_uuid=uuid.uuid4(),
             source_name='host',
             peer_uuid=uuid.uuid4(),
@@ -87,59 +97,60 @@ def test_str_to_uuid_conversion(
         ),
     ),
 )
-def test_encode_decode(message: messages.Message) -> None:
-    s = messages.encode(message)
-    assert messages.decode(s) == message
+def test_encode_decode(message: RelayMessage) -> None:
+    s = encode_relay_message(message)
+    assert isinstance(s, str)
+    assert decode_relay_message(s) == message
 
 
 def test_decode_errors() -> None:
     # Not parsable as JSON
     with pytest.raises(
-        messages.MessageDecodeError,
+        RelayMessageDecodeError,
         match='Failed to load string as JSON',
     ):
-        messages.decode('abcabc')
+        decode_relay_message('abcabc')
 
     # Missing message type key
     with pytest.raises(
-        messages.MessageDecodeError,
+        RelayMessageDecodeError,
         match='Message does not contain a message_type key',
     ):
-        messages.decode(json.dumps({'key': 'value'}))
+        decode_relay_message(json.dumps({'key': 'value'}))
 
     # Unknown message type
     with pytest.raises(
-        messages.MessageDecodeError,
+        RelayMessageDecodeError,
         match='The message is of an unknown message type',
     ):
-        messages.decode(json.dumps({'message_type': 'notarealmessagetype'}))
+        decode_relay_message(
+            json.dumps({'message_type': 'notarealmessagetype'}),
+        )
 
     # Fail to expand JSON into message type object
     with pytest.raises(
-        messages.MessageDecodeError,
+        RelayMessageDecodeError,
         match='Failed to convert message to',
     ):
-        messages.decode(
+        decode_relay_message(
             json.dumps(
                 # This fails because it is missing required keys
                 {
-                    'message_type': (
-                        messages.MessageType.server_registration.name
-                    ),
+                    'message_type': (RelayMessageType.relay_registration.name),
                 },
             ),
         )
 
 
 def test_encode_errors() -> None:
-    with pytest.raises(messages.MessageEncodeError, match='not an instance'):
-        messages.encode('just a string')  # type: ignore
+    with pytest.raises(RelayMessageEncodeError, match='not an instance'):
+        encode_relay_message('just a string')  # type: ignore
 
-    message = messages.ServerRegistration(name='name', uuid=uuid.uuid4())
+    message = RelayRegistrationRequest(name='name', uuid=uuid.uuid4())
     # UUID is not JSONable so will raise encode error
     message.name = uuid.uuid4()  # type: ignore
     with pytest.raises(
-        messages.MessageEncodeError,
+        RelayMessageEncodeError,
         match='Error encoding message',
     ):
-        messages.encode(message)
+        encode_relay_message(message)

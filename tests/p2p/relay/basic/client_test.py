@@ -9,13 +9,13 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from proxystore.p2p.messages import encode
-from proxystore.p2p.messages import PeerConnection
-from proxystore.p2p.messages import ServerRegistration
-from proxystore.p2p.messages import ServerResponse
 from proxystore.p2p.relay import BasicRelayClient
 from proxystore.p2p.relay.exceptions import RelayNotConnectedError
 from proxystore.p2p.relay.exceptions import RelayRegistrationError
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
 
 # Use 100ms as wait_for/timeout to keep test short
 _WAIT_FOR = 0.1
@@ -60,10 +60,10 @@ async def test_connect_and_ping_server(relay_server) -> None:
 @pytest.mark.asyncio()
 async def test_send_recv(relay_server) -> None:
     async with BasicRelayClient(relay_server.address) as client:
-        message = ServerRegistration(name=client.name, uuid=client.uuid)
+        message = RelayRegistrationRequest(name=client.name, uuid=client.uuid)
         await client.send(message)
         response = await asyncio.wait_for(client.recv(), _WAIT_FOR)
-        assert isinstance(response, ServerResponse)
+        assert isinstance(response, RelayResponse)
 
 
 @pytest.mark.asyncio()
@@ -105,11 +105,11 @@ async def test_connect_received_bad_message(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_connect_failure(relay_server) -> None:
-    message = ServerResponse(success=False, message='test error', error=True)
+    message = RelayResponse(success=False, message='test error', error=True)
     async with BasicRelayClient(relay_server.address) as client:
         with mock.patch(
             'websockets.WebSocketClientProtocol.recv',
-            AsyncMock(return_value=encode(message)),
+            AsyncMock(return_value=encode_relay_message(message)),
         ):
             with pytest.raises(RelayRegistrationError, match='test error'):
                 await client._register(_WAIT_FOR)
@@ -117,11 +117,11 @@ async def test_connect_failure(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_connect_unknown_response(relay_server) -> None:
-    message = ServerRegistration('name', uuid.uuid4())
+    message = RelayRegistrationRequest('name', uuid.uuid4())
     async with BasicRelayClient(relay_server.address) as client:
         with mock.patch(
             'websockets.WebSocketClientProtocol.recv',
-            AsyncMock(return_value=encode(message)),
+            AsyncMock(return_value=encode_relay_message(message)),
         ):
             with pytest.raises(
                 RelayRegistrationError,
@@ -162,7 +162,7 @@ async def test_connect_on_send(relay_server) -> None:
     client = BasicRelayClient(relay_server.address)
     with pytest.raises(RelayNotConnectedError):
         assert client.websocket is None
-    message = PeerConnection(
+    message = PeerConnectionRequest(
         client.uuid,
         client.name,
         uuid.uuid4(),

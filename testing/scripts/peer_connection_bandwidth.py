@@ -12,6 +12,7 @@ from typing import Sequence
 
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.messages import PeerConnectionRequest
 from testing.compat import randbytes
 
 
@@ -31,10 +32,12 @@ async def get_connection(
     if actor == 'producer':
         await connection.send_offer(remote_uuid)
         answer = await client.recv()
-        await connection.handle_server_message(answer)  # type: ignore
+        assert isinstance(answer, PeerConnectionRequest)
+        await connection.handle_server_message(answer)
     elif actor == 'consumer':
         offer = await client.recv()
-        await connection.handle_server_message(offer)  # type: ignore
+        assert isinstance(offer, PeerConnectionRequest)
+        await connection.handle_server_message(offer)
 
     await connection.ready()
 

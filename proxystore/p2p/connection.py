@@ -29,7 +29,6 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore.p2p import messages
 from proxystore.p2p.chunks import Chunk
 from proxystore.p2p.chunks import chunkify
 from proxystore.p2p.chunks import reconstruct
@@ -37,6 +36,7 @@ from proxystore.p2p.counter import AtomicCounter
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.relay import RelayClient
+from proxystore.p2p.relay.messages import PeerConnectionRequest
 
 logger = logging.getLogger(__name__)
 
@@ -257,7 +257,7 @@ class PeerConnection:
             channel.transport.transport.on('statechange', _on_close(label))
 
         await self._pc.setLocalDescription(await self._pc.createOffer())
-        message = messages.PeerConnection(
+        message = PeerConnectionRequest(
             source_uuid=self._relay_client.uuid,
             source_name=self._relay_client.name,
             peer_uuid=peer_uuid,
@@ -304,7 +304,7 @@ class PeerConnection:
                 self._handshake_success.set_result(True)
 
         await self._pc.setLocalDescription(await self._pc.createAnswer())
-        message = messages.PeerConnection(
+        message = PeerConnectionRequest(
             source_uuid=self._relay_client.uuid,
             source_name=self._relay_client.name,
             peer_uuid=peer_uuid,
@@ -333,7 +333,7 @@ class PeerConnection:
 
     async def handle_server_message(
         self,
-        message: messages.PeerConnection,
+        message: PeerConnectionRequest,
     ) -> None:
         """Handle message from the relay server.
 

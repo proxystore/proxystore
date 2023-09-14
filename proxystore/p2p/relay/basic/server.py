@@ -31,7 +31,14 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore.p2p import messages
+from proxystore.p2p.relay.messages import decode_relay_message
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayMessageDecodeError
+from proxystore.p2p.relay.messages import RelayMessageEncodeError
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
 from proxystore.p2p.task import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -103,7 +110,7 @@ class BasicRelayServer:
     async def send(
         self,
         websocket: WebSocketServerProtocol,
-        message: messages.Message,
+        message: RelayMessage,
     ) -> None:
         """Send message on the socket.
 
@@ -112,8 +119,8 @@ class BasicRelayServer:
             message: Message to json encode and send.
         """
         try:
-            message_str = messages.encode(message)
-        except messages.MessageEncodeError as e:
+            message_str = encode_relay_message(message)
+        except RelayMessageEncodeError as e:
             logger.error(f'Failed to encode message: {e}')
             return
 
@@ -125,7 +132,7 @@ class BasicRelayServer:
     async def register(
         self,
         websocket: WebSocketServerProtocol,
-        request: messages.ServerRegistration,
+        request: RelayRegistrationRequest,
     ) -> None:
         """Register peer with relay server.
 
@@ -165,7 +172,7 @@ class BasicRelayServer:
                 'reregister so previous registration will be returned',
             )
 
-        await self.send(websocket, messages.ServerResponse(success=True))
+        await self.send(websocket, RelayResponse(success=True))
 
     async def unregister(
         self,
@@ -194,7 +201,7 @@ class BasicRelayServer:
     async def connect(
         self,
         websocket: WebSocketServerProtocol,
-        message: messages.PeerConnection,
+        message: PeerConnectionRequest,
     ) -> None:
         """Pass peer connection messages between clients.
 
@@ -237,7 +244,7 @@ class BasicRelayServer:
             try:
                 message_str = await websocket.recv()
                 if isinstance(message_str, str):
-                    message = messages.decode(message_str)
+                    message = decode_relay_message(message_str)
                 else:
                     raise AssertionError(
                         'Received non-str type on websocket.',
@@ -248,16 +255,16 @@ class BasicRelayServer:
             except websockets.exceptions.ConnectionClosedError:
                 await self.unregister(websocket, expected=False)
                 break
-            except messages.MessageDecodeError as e:
+            except RelayMessageDecodeError as e:
                 logger.error(
                     'Caught deserialization error on message received from '
                     f'{websocket.remote_address}: {e} ...skipping message',
                 )
                 continue
 
-            if isinstance(message, messages.ServerRegistration):
+            if isinstance(message, RelayRegistrationRequest):
                 await self.register(websocket, message)
-            elif isinstance(message, messages.PeerConnection):
+            elif isinstance(message, PeerConnectionRequest):
                 if websocket in self._websocket_to_client:
                     await self.connect(websocket, message)
                 else:
@@ -268,7 +275,7 @@ class BasicRelayServer:
                         f'unregistered client {message.source_uuid} '
                         f'({message.source_name})',
                     )
-                    response = messages.ServerResponse(
+                    response = RelayResponse(
                         success=False,
                         message='client has not registered yet',
                         error=True,

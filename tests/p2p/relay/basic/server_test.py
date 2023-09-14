@@ -8,11 +8,16 @@ from uuid import uuid4
 import pytest
 import websockets
 
-from proxystore.p2p import messages
 from proxystore.p2p.relay.basic.client import BasicRelayClient
 from proxystore.p2p.relay.basic.server import BasicRelayServer
 from proxystore.p2p.relay.basic.server import Client
 from proxystore.p2p.relay.basic.server import periodic_client_logger
+from proxystore.p2p.relay.messages import decode_relay_message
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
 
 # Use 200ms as wait_for/timeout to keep test short
 _WAIT_FOR = 0.2
@@ -24,8 +29,8 @@ async def test_connect_twice(relay_server) -> None:
         pong_waiter = await client.websocket.ping()
         await asyncio.wait_for(pong_waiter, _WAIT_FOR)
         await client.websocket.send(
-            messages.encode(
-                messages.ServerRegistration(
+            encode_relay_message(
+                RelayRegistrationRequest(
                     name='different-host',
                     uuid=client.uuid,
                 ),
@@ -34,8 +39,8 @@ async def test_connect_twice(relay_server) -> None:
 
         message_ = await asyncio.wait_for(client.websocket.recv(), _WAIT_FOR)
         assert isinstance(message_, str)
-        message = messages.decode(message_)
-        assert isinstance(message, messages.ServerResponse)
+        message = decode_relay_message(message_)
+        assert isinstance(message, RelayResponse)
         assert message.success
         assert not message.error
 
@@ -129,8 +134,8 @@ async def test_server_deserialization_fails_silently(relay_server) -> None:
 async def test_endpoint_not_registered_error(relay_server) -> None:
     websocket = await websockets.client.connect(relay_server.address)
     await websocket.send(
-        messages.encode(
-            messages.PeerConnection(
+        encode_relay_message(
+            PeerConnectionRequest(
                 source_uuid=uuid4(),
                 source_name='',
                 peer_uuid=uuid4(),
@@ -141,8 +146,8 @@ async def test_endpoint_not_registered_error(relay_server) -> None:
     )
     message_ = await asyncio.wait_for(websocket.recv(), 1)
     assert isinstance(message_, str)
-    message = messages.decode(message_)
-    assert isinstance(message, messages.ServerResponse)
+    message = decode_relay_message(message_)
+    assert isinstance(message, RelayResponse)
     assert message.error
     assert message.message is not None
     assert 'not registered' in message.message
@@ -159,7 +164,7 @@ async def test_p2p_message_passing(relay_server) -> None:
 
     # Peer1 -> Peer2
     await client1.send(
-        messages.PeerConnection(
+        PeerConnectionRequest(
             source_uuid=peer1_uuid,
             source_name=peer1_name,
             peer_uuid=peer2_uuid,
@@ -168,11 +173,11 @@ async def test_p2p_message_passing(relay_server) -> None:
         ),
     )
     message = await asyncio.wait_for(client2.recv(), 1)
-    assert isinstance(message, messages.PeerConnection)
+    assert isinstance(message, PeerConnectionRequest)
 
     # Peer2 -> Peer1
     await client2.send(
-        messages.PeerConnection(
+        PeerConnectionRequest(
             source_uuid=peer2_uuid,
             source_name=peer2_name,
             peer_uuid=peer1_uuid,
@@ -181,11 +186,11 @@ async def test_p2p_message_passing(relay_server) -> None:
         ),
     )
     message = await asyncio.wait_for(client1.recv(), 1)
-    assert isinstance(message, messages.PeerConnection)
+    assert isinstance(message, PeerConnectionRequest)
 
     # Peer1 -> Peer1
     await client1.send(
-        messages.PeerConnection(
+        PeerConnectionRequest(
             source_uuid=peer1_uuid,
             source_name=peer1_name,
             peer_uuid=peer1_uuid,
@@ -194,7 +199,7 @@ async def test_p2p_message_passing(relay_server) -> None:
         ),
     )
     message = await asyncio.wait_for(client1.recv(), 1)
-    assert isinstance(message, messages.PeerConnection)
+    assert isinstance(message, PeerConnectionRequest)
 
     await client1.close()
     await client2.close()
@@ -208,7 +213,7 @@ async def test_p2p_message_passing_unknown_peer(relay_server) -> None:
     peer2_uuid = uuid4()
 
     await client1.send(
-        messages.PeerConnection(
+        PeerConnectionRequest(
             source_uuid=peer1_uuid,
             source_name=peer1_name,
             peer_uuid=peer2_uuid,
@@ -217,7 +222,7 @@ async def test_p2p_message_passing_unknown_peer(relay_server) -> None:
         ),
     )
     message = await asyncio.wait_for(client1.recv(), _WAIT_FOR)
-    assert isinstance(message, messages.PeerConnection)
+    assert isinstance(message, PeerConnectionRequest)
     assert message.error is not None
     assert str(peer2_uuid) in message.error
     assert 'unknown' in message.error
@@ -257,7 +262,7 @@ async def test_relay_server_send_connection_closed(
     # Error should be logged but not raised
     websocket = client.websocket
     await websocket.close()
-    await relay_server.relay_server.send(websocket, messages.Message())
+    await relay_server.relay_server.send(websocket, RelayMessage())
 
     assert any(
         [

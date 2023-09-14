@@ -26,9 +26,14 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore.p2p import messages
 from proxystore.p2p.relay.exceptions import RelayNotConnectedError
 from proxystore.p2p.relay.exceptions import RelayRegistrationError
+from proxystore.p2p.relay.messages import decode_relay_message
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayMessageDecodeError
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
 from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.utils import hostname
 
@@ -162,11 +167,8 @@ class BasicRelayClient:
             ssl=self._ssl_context,
         )
 
-        registration_message = messages.ServerRegistration(
-            uuid=self.uuid,
-            name=self.name,
-        )
-        await websocket.send(messages.encode(registration_message))
+        registration_message = RelayRegistrationRequest(self.name, self.uuid)
+        await websocket.send(encode_relay_message(registration_message))
 
         try:
             message_str = await asyncio.wait_for(
@@ -174,15 +176,15 @@ class BasicRelayClient:
                 timeout,
             )
             if isinstance(message_str, str):
-                message = messages.decode(message_str)
+                message = decode_relay_message(message_str)
             else:
                 raise AssertionError('Received non-string type on websocket.')
-        except messages.MessageDecodeError as e:
+        except RelayMessageDecodeError as e:
             raise RelayRegistrationError(
                 'Unable to decode response message from relay server.',
             ) from e
 
-        if isinstance(message, messages.ServerResponse):
+        if isinstance(message, RelayResponse):
             if message.success:
                 logger.info(
                     'Established client connection to relay server at '
@@ -308,14 +310,14 @@ class BasicRelayClient:
         if self._websocket is not None:
             await self._websocket.close()
 
-    async def recv(self) -> messages.Message:
+    async def recv(self) -> RelayMessage:
         """Receive the next message.
 
         Returns:
             The message received from the relay server.
 
         Raises:
-            messages.MessageDecodeError: If the message received cannot
+            RelayMessageDecodeError: If the message received cannot
                 be decoded into the appropriate message type.
         """
         try:
@@ -327,15 +329,15 @@ class BasicRelayClient:
         message_str = await websocket.recv()
         if not isinstance(message_str, str):
             raise AssertionError('Received non-string from websocket.')
-        return messages.decode(message_str)
+        return decode_relay_message(message_str)
 
-    async def send(self, message: messages.Message) -> None:
+    async def send(self, message: RelayMessage) -> None:
         """Send a message.
 
         Args:
             message: The message to send to the relay server.
         """
-        message_str = messages.encode(message)
+        message_str = encode_relay_message(message)
 
         try:
             websocket = self.websocket
