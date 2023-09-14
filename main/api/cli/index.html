@@ -1527,16 +1527,166 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../globus/" class="md-nav__link">
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../globus/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     proxystore.globus
   </span>
   
 
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_5">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_5">
+            <span class="md-nav__icon md-icon"></span>
+            proxystore.globus
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/cli/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    cli
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/scopes/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    scopes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/storage/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    storage
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/transfer/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    transfer
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -2206,6 +2356,26 @@
     proxystore-globus-auth
   </a>
   
+    <nav class="md-nav" aria-label="proxystore-globus-auth">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-globus-auth-login" class="md-nav__link">
+    login
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-globus-auth-logout" class="md-nav__link">
+    logout
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2513,6 +2683,26 @@
     proxystore-globus-auth
   </a>
   
+    <nav class="md-nav" aria-label="proxystore-globus-auth">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-globus-auth-login" class="md-nav__link">
+    login
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore-globus-auth-logout" class="md-nav__link">
+    logout
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2665,12 +2855,42 @@
 <h1 id="cli-reference">CLI Reference<a class="headerlink" href="#cli-reference" title="Permanent link">&para;</a></h1>
 <p>This page provides documentation for our command line tools.</p>
 <h2 id="proxystore-globus-auth">proxystore-globus-auth<a class="headerlink" href="#proxystore-globus-auth" title="Permanent link">&para;</a></h2>
-<p>Perform Globus authentication for the Transfer service.</p>
-<p>Collections or scopes options can be strung together. E.g.,
+<p>ProxyStore Globus Auth.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>proxystore-globus-auth [OPTIONS] COMMAND [ARGS]...
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Subcommands</strong></p>
+<ul>
+<li><em><a href="#proxystore-globus-auth-login">login</a></em>: Authenticate with Globus Auth.</li>
+<li><em><a href="#proxystore-globus-auth-logout">logout</a></em>: Revoke and remove all Globus tokens.</li>
+</ul>
+<h3 id="proxystore-globus-auth-login">proxystore-globus-auth login<a class="headerlink" href="#proxystore-globus-auth-login" title="Permanent link">&para;</a></h3>
+<p>Authenticate with Globus Auth.</p>
+<p>This requests scopes for the the Globus Auth and Transfer services.
+Collections or scopes options can be strung together. E.g.,
 request transfer scope for multiple collections with:</p>
 <p>$ proxystore-globus-auth -c UUID -c UUID -c UUID</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>proxystore-globus-auth [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>proxystore-globus-auth login [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2696,11 +2916,29 @@ request transfer scope for multiple collections with:</p>
 <td>None</td>
 </tr>
 <tr>
-<td><code>--delete</code></td>
+<td><code>--help</code></td>
 <td>boolean</td>
-<td>Delete existing tokens.</td>
+<td>Show this message and exit.</td>
 <td><code>False</code></td>
 </tr>
+</tbody>
+</table>
+<h3 id="proxystore-globus-auth-logout">proxystore-globus-auth logout<a class="headerlink" href="#proxystore-globus-auth-logout" title="Permanent link">&para;</a></h3>
+<p>Revoke and remove all Globus tokens.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>proxystore-globus-auth logout [OPTIONS]
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td><code>--help</code></td>
 <td>boolean</td>
@@ -2712,7 +2950,7 @@ request transfer scope for multiple collections with:</p>
 <h2 id="proxystore-endpoint">proxystore-endpoint<a class="headerlink" href="#proxystore-endpoint" title="Permanent link">&para;</a></h2>
 <p>Manage and start ProxyStore Endpoints.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>proxystore-endpoint [OPTIONS] COMMAND [ARGS]...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>proxystore-endpoint [OPTIONS] COMMAND [ARGS]...
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2753,7 +2991,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-configure">proxystore-endpoint configure<a class="headerlink" href="#proxystore-endpoint-configure" title="Permanent link">&para;</a></h3>
 <p>Configure a new endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>proxystore-endpoint configure [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint configure [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2801,7 +3039,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-help">proxystore-endpoint help<a class="headerlink" href="#proxystore-endpoint-help" title="Permanent link">&para;</a></h3>
 <p>Show available commands and options.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>proxystore-endpoint help [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>proxystore-endpoint help [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2825,7 +3063,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-list">proxystore-endpoint list<a class="headerlink" href="#proxystore-endpoint-list" title="Permanent link">&para;</a></h3>
 <p>List all user endpoints.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint list [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint list [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2849,7 +3087,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-remove">proxystore-endpoint remove<a class="headerlink" href="#proxystore-endpoint-remove" title="Permanent link">&para;</a></h3>
 <p>Remove an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>proxystore-endpoint remove [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proxystore-endpoint remove [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2873,7 +3111,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-start">proxystore-endpoint start<a class="headerlink" href="#proxystore-endpoint-start" title="Permanent link">&para;</a></h3>
 <p>Start an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint start [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint start [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2903,7 +3141,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-stop">proxystore-endpoint stop<a class="headerlink" href="#proxystore-endpoint-stop" title="Permanent link">&para;</a></h3>
 <p>Stop a detached endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proxystore-endpoint stop [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>proxystore-endpoint stop [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2927,7 +3165,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-test">proxystore-endpoint test<a class="headerlink" href="#proxystore-endpoint-test" title="Permanent link">&para;</a></h3>
 <p>Execute test commands on an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint test [OPTIONS] NAME COMMAND [ARGS]...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint test [OPTIONS] NAME COMMAND [ARGS]...
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2964,7 +3202,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-evict">proxystore-endpoint test NAME evict<a class="headerlink" href="#proxystore-endpoint-test-name-evict" title="Permanent link">&para;</a></h4>
 <p>Evict object from an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>proxystore-endpoint test NAME evict [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>proxystore-endpoint test NAME evict [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -2988,7 +3226,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-exists">proxystore-endpoint test NAME exists<a class="headerlink" href="#proxystore-endpoint-test-name-exists" title="Permanent link">&para;</a></h4>
 <p>Check if object exists in an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint test NAME exists [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint test NAME exists [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3012,7 +3250,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-get">proxystore-endpoint test NAME get<a class="headerlink" href="#proxystore-endpoint-test-name-get" title="Permanent link">&para;</a></h4>
 <p>Get an object from an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>proxystore-endpoint test NAME get [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>proxystore-endpoint test NAME get [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3036,7 +3274,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-put">proxystore-endpoint test NAME put<a class="headerlink" href="#proxystore-endpoint-test-name-put" title="Permanent link">&para;</a></h4>
 <p>Put an object in an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint test NAME put [OPTIONS] DATA
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-endpoint test NAME put [OPTIONS] DATA
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3060,7 +3298,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-version">proxystore-endpoint version<a class="headerlink" href="#proxystore-endpoint-version" title="Permanent link">&para;</a></h3>
 <p>Show the ProxyStore version.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>proxystore-endpoint version [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>proxystore-endpoint version [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3086,7 +3324,7 @@ request transfer scope for multiple collections with:</p>
 <p>The relay server is used by clients to establish peer-to-peer
 WebRTC connections.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-relay [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>proxystore-relay [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
