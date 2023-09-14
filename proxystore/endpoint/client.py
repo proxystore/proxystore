@@ -7,7 +7,7 @@ import requests
 from requests.exceptions import RequestException  # noqa: F401
 
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
-from proxystore.utils import chunk_bytes
+from proxystore.utils.data import chunk_bytes
 
 
 def evict(

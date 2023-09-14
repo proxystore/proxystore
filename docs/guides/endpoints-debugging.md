@@ -20,7 +20,8 @@ INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/log.txt
 ### Check Endpoint Logs
 Endpoint logs are written to a directory in `$XDG_DATA_HOME/proxystore` which
 in this case is `~/.local/share/proxystore/myendpoint`
-(see [`home_dir()`][proxystore.utils.home_dir] for the full specification).
+(see [`home_dir()`][proxystore.utils.environment.home_dir] for the full
+specification).
 ```bash
 $ tail -n 1 ~/.local/share/proxystore/myendpoint/log.txt
 INFO  (uvicorn.error) :: Uvicorn running on http://127.0.1.1:8766 (Press CTRL+C to quit)

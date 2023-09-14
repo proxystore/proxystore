@@ -71,8 +71,8 @@ To start the endpoint:
 
 Endpoint configurations are stored to `$PROXYSTORE_HOME/{endpoint-name}`
 or `$XDG_DATA_HOME/proxystore/{endpoint-name}`
-(see [`home_dir()`][proxystore.utils.home_dir]) and contain the name, UUID,
-host address, port, relay server address, and more.
+(see [`home_dir()`][proxystore.utils.environment.home_dir]) and contain the
+name, UUID, host address, port, relay server address, and more.
 
 !!! tip
 

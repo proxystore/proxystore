@@ -26,7 +26,7 @@ from proxystore.connectors.dim import zmq
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
-from proxystore.utils import hostname
+from proxystore.utils.environment import hostname
 from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData

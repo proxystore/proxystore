@@ -20,7 +20,7 @@ import requests
 from proxystore.endpoint import client
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
-from proxystore.utils import home_dir
+from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,8 @@ class EndpointConnector:
             UUIDs to use. At least one of these endpoints must be
             accessible by this process.
         proxystore_dir: Optionally specify the proxystore home
-            directory. Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            directory. Defaults to
+            [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Raises:
         ValueError: If endpoints is an empty list.

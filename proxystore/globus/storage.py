@@ -6,7 +6,7 @@ import pathlib
 
 from globus_sdk.tokenstorage import SQLiteAdapter
 
-from proxystore.utils import home_dir
+from proxystore.utils.environment import home_dir
 
 _TOKENS_FILE = 'storage.db'
 
@@ -22,7 +22,7 @@ def get_token_storage_adapter(
         filepath: Name of the database file. This is passed to SQLite so
             `:memory:` is a valid option for an in-memory database. If not
             provided, defaults to a file in the ProxyStore home directory
-            (see [`home_dir()`][proxystore.utils.home_dir]).
+            (see [`home_dir()`][proxystore.utils.environment.home_dir]).
         namespace: Optional namespace to use within the database. See
             [`SQLiteAdapter`][globus_sdk.tokenstorage.SQLiteAdapter] for
             more detauls.

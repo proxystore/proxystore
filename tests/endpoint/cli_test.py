@@ -21,7 +21,7 @@ from proxystore.endpoint.config import write_config
 @pytest.fixture()
 def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
     with mock.patch(
-        'proxystore.utils.home_dir',
+        'proxystore.utils.environment.home_dir',
         return_value=str(tmp_path),
     ), mock.patch(
         'proxystore.endpoint.commands.home_dir',

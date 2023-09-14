@@ -30,7 +30,7 @@ else:  # pragma: <3.9 cover
 import globus_sdk
 
 from proxystore.globus.transfer import get_transfer_client_flow
-from proxystore.utils import hostname
+from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'

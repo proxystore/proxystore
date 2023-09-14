@@ -20,7 +20,7 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
-from proxystore.utils import chunk_bytes
+from proxystore.utils.data import chunk_bytes
 from testing.compat import randbytes
 from testing.utils import open_port
 

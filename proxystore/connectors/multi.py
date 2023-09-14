@@ -23,8 +23,8 @@ else:  # pragma: <3.11 cover
 
 from proxystore import utils
 from proxystore.connectors.connector import Connector
-from proxystore.utils import get_class_path
-from proxystore.utils import import_class
+from proxystore.utils.imports import get_class_path
+from proxystore.utils.imports import import_class
 from proxystore.warnings import ExperimentalWarning
 
 warnings.warn(

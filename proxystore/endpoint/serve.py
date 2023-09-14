@@ -29,7 +29,7 @@ from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.relay import BasicRelayClient
-from proxystore.utils import chunk_bytes
+from proxystore.utils.data import chunk_bytes
 
 logger = logging.getLogger(__name__)
 

@@ -38,8 +38,8 @@ from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.metrics import StoreMetrics
 from proxystore.timer import Timer
-from proxystore.utils import get_class_path
-from proxystore.utils import import_class
+from proxystore.utils.imports import get_class_path
+from proxystore.utils.imports import import_class
 
 _default_pool = ThreadPoolExecutor()
 _factory_get_store_lock = threading.Lock()
