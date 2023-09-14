@@ -90,16 +90,14 @@ def globus_connector(
     )
 
     with mock.patch(
-        'proxystore.connectors.globus.get_proxystore_authorizer',
-    ), mock.patch(
-        'globus_sdk.TransferClient',
-        MockTransferClient,
-    ), mock.patch(
         'globus_sdk.DeleteData',
         MockDeleteData,
     ), mock.patch(
         'globus_sdk.TransferData',
         MockTransferData,
+    ), mock.patch(
+        'proxystore.connectors.globus.get_transfer_client_flow',
+        MockTransferClient,
     ):
         with globus.GlobusConnector(endpoints=endpoints) as connector:
             yield connector

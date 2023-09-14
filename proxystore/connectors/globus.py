@@ -29,8 +29,7 @@ else:  # pragma: <3.9 cover
 
 import globus_sdk
 
-from proxystore.globus import get_proxystore_authorizer
-from proxystore.globus import GlobusAuthFileError
+from proxystore.globus.transfer import get_transfer_client_flow
 from proxystore.utils import hostname
 
 logger = logging.getLogger(__name__)
@@ -283,9 +282,13 @@ class GlobusConnector:
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
-        performed otherwise an error will be raised. Authentication can be
-        performed on the command line with `#!bash proxystore-globus-auth`.
-        Authentication only needs to be performed once per system.
+        performed with the `#!bash proxystore-globus-auth` CLI. If
+        authentication is not performed before initializing a
+        [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector],
+        the program will prompt the user to perform authentication. This can
+        result in unexpected program hangs while the constructor waits on the
+        user to authenticate. Authentication only needs to be performed once
+        per system
 
     Args:
         endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
@@ -337,16 +340,8 @@ class GlobusConnector:
         self.timeout = timeout
         self.clear = clear
 
-        try:
-            authorizer = get_proxystore_authorizer()
-        except GlobusAuthFileError as e:
-            raise GlobusAuthFileError(
-                'Error loading Globus auth tokens. Complete the '
-                'authentication process with the proxystore-globus-auth tool.',
-            ) from e
-
-        self._transfer_client = globus_sdk.TransferClient(
-            authorizer=authorizer,
+        self._transfer_client = get_transfer_client_flow(
+            check_collections=[ep.uuid for ep in self.endpoints],
         )
 
     def __enter__(self) -> Self:

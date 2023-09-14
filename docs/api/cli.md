@@ -22,7 +22,7 @@
 This page provides documentation for our command line tools.
 
 ::: mkdocs-click
-    :module: proxystore.globus
+    :module: proxystore.globus.cli
     :command: cli
     :prog_name: proxystore-globus-auth
     :depth: 1
