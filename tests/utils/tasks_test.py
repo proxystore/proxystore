@@ -6,8 +6,8 @@ import logging
 
 import pytest
 
-from proxystore.p2p.task import SafeTaskExitError
-from proxystore.p2p.task import spawn_guarded_background_task
+from proxystore.utils.tasks import SafeTaskExitError
+from proxystore.utils.tasks import spawn_guarded_background_task
 
 
 def test_background_task_exits_on_error() -> None:

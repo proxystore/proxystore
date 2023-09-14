@@ -28,8 +28,8 @@ from proxystore.p2p.relay import RelayClient
 from proxystore.p2p.relay.messages import PeerConnectionRequest
 from proxystore.p2p.relay.messages import RelayMessageDecodeError
 from proxystore.p2p.relay.messages import RelayResponse
-from proxystore.p2p.task import SafeTaskExitError
-from proxystore.p2p.task import spawn_guarded_background_task
+from proxystore.utils.tasks import SafeTaskExitError
+from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
 
