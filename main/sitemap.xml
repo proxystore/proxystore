@@ -61,16 +61,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/timer/</loc>
-         <lastmod>2023-09-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/utils/</loc>
-         <lastmod>2023-09-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/warnings/</loc>
          <lastmod>2023-09-14</lastmod>
          <changefreq>daily</changefreq>
@@ -256,11 +246,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/p2p/counter/</loc>
-         <lastmod>2023-09-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/p2p/exceptions/</loc>
          <lastmod>2023-09-14</lastmod>
          <changefreq>daily</changefreq>
@@ -271,17 +256,17 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/p2p/messages/</loc>
-         <lastmod>2023-09-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/main/api/p2p/task/</loc>
-         <lastmod>2023-09-14</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/p2p/relay/exceptions/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/p2p/relay/messages/</loc>
          <lastmod>2023-09-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
@@ -332,6 +317,41 @@
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/utils/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/counter/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/data/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/environment/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/imports/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/tasks/</loc>
+         <lastmod>2023-09-14</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/utils/timer/</loc>
          <lastmod>2023-09-14</lastmod>
          <changefreq>daily</changefreq>
     </url>
