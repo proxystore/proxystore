@@ -19,11 +19,11 @@ from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.task import spawn_guarded_background_task
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 from proxystore.utils import bytes_to_readable
+from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
 

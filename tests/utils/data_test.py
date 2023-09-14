@@ -2,19 +2,12 @@
 from __future__ import annotations
 
 import os
-from typing import Any
-from unittest import mock
 
 import pytest
 
-from proxystore.connectors.file import FileConnector
-from proxystore.connectors.local import LocalConnector
-from proxystore.utils import bytes_to_readable
-from proxystore.utils import chunk_bytes
-from proxystore.utils import get_class_path
-from proxystore.utils import home_dir
-from proxystore.utils import import_class
-from proxystore.utils import readable_to_bytes
+from proxystore.utils.data import bytes_to_readable
+from proxystore.utils.data import chunk_bytes
+from proxystore.utils.data import readable_to_bytes
 
 
 @pytest.mark.parametrize(
@@ -27,58 +20,6 @@ def test_chunk_bytes(data_size: int, chunk_size: int) -> None:
     for chunk in chunk_bytes(data, chunk_size):
         result += chunk
     assert data == result
-
-
-@pytest.mark.parametrize(
-    ('cls', 'expected'),
-    (
-        (FileConnector, 'proxystore.connectors.file.FileConnector'),
-        (LocalConnector, 'proxystore.connectors.local.LocalConnector'),
-    ),
-)
-def test_get_class_path(cls: type[Any], expected: str) -> None:
-    assert get_class_path(cls) == expected
-
-
-@pytest.mark.parametrize(
-    ('path', 'expected'),
-    (
-        ('proxystore.connectors.file.FileConnector', FileConnector),
-        ('proxystore.connectors.local.LocalConnector', LocalConnector),
-        ('typing.Any', Any),
-    ),
-)
-def test_import_class(path: str, expected: type[Any]) -> None:
-    assert import_class(path) == expected
-
-
-def test_import_class_missing_path() -> None:
-    with pytest.raises(ImportError):
-        import_class('FileConnector')
-
-
-@pytest.mark.parametrize(
-    ('env', 'expected'),
-    (
-        ({}, '~/.local/share/proxystore'),
-        ({'PROXYSTORE_HOME': '/path/to/home'}, '/path/to/home'),
-        ({'XDG_DATA_HOME': '/path/to/home'}, '/path/to/home/proxystore'),
-        ({'PROXYSTORE_HOME': '/home1', 'XDG_DATA_HOME': '/home2'}, '/home1'),
-    ),
-)
-def test_home_dir(env: dict[str, str], expected: str) -> None:
-    # Unset $XDG_DATA_HOME and save for restoring later
-    xdg_data_home = os.environ.pop('XDG_DATA_HOME', None)
-
-    with mock.patch.dict(os.environ, env):
-        path = home_dir()
-        assert isinstance(path, str)
-        assert os.path.isabs(path)
-        assert path == os.path.expanduser(expected)
-
-    # Exclude from coverage because not every OS will set $XDG_DATA_HOME
-    if xdg_data_home is not None:  # pragma: no cover
-        os.environ['XDG_DATA_HOME'] = xdg_data_home
 
 
 @pytest.mark.parametrize(

@@ -26,18 +26,18 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore.p2p import messages
-from proxystore.p2p.exceptions import PeerRegistrationError
-from proxystore.p2p.task import spawn_guarded_background_task
-from proxystore.utils import hostname
+from proxystore.p2p.relay.exceptions import RelayNotConnectedError
+from proxystore.p2p.relay.exceptions import RelayRegistrationError
+from proxystore.p2p.relay.messages import decode_relay_message
+from proxystore.p2p.relay.messages import encode_relay_message
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayMessageDecodeError
+from proxystore.p2p.relay.messages import RelayRegistrationRequest
+from proxystore.p2p.relay.messages import RelayResponse
+from proxystore.utils.environment import hostname
+from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
-
-
-class RelayServerNotConnectedError(Exception):
-    """Error raised when the relay client has not connected to the server."""
-
-    pass
 
 
 class BasicRelayClient:
@@ -88,7 +88,7 @@ class BasicRelayClient:
             used if `ssl_context` is `None` and connecting to a `wss://` URI.
 
     Raises:
-        PeerRegistrationError: If the connection to the relay server
+        RelayRegistrationError: If the connection to the relay server
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with `ws://` or `wss://`.
@@ -159,7 +159,7 @@ class BasicRelayClient:
                 timeout.
             websockets.exceptions.ConnectionClosed: If the websocket connection
                 was closed while registering.
-            PeerRegistrationError: If the registration process failed.
+            RelayRegistrationError: If the registration process failed.
         """
         websocket = await websockets.client.connect(
             self._address,
@@ -167,11 +167,8 @@ class BasicRelayClient:
             ssl=self._ssl_context,
         )
 
-        registration_message = messages.ServerRegistration(
-            uuid=self.uuid,
-            name=self.name,
-        )
-        await websocket.send(messages.encode(registration_message))
+        registration_message = RelayRegistrationRequest(self.name, self.uuid)
+        await websocket.send(encode_relay_message(registration_message))
 
         try:
             message_str = await asyncio.wait_for(
@@ -179,15 +176,15 @@ class BasicRelayClient:
                 timeout,
             )
             if isinstance(message_str, str):
-                message = messages.decode(message_str)
+                message = decode_relay_message(message_str)
             else:
                 raise AssertionError('Received non-string type on websocket.')
-        except messages.MessageDecodeError as e:
-            raise PeerRegistrationError(
+        except RelayMessageDecodeError as e:
+            raise RelayRegistrationError(
                 'Unable to decode response message from relay server.',
             ) from e
 
-        if isinstance(message, messages.ServerResponse):
+        if isinstance(message, RelayResponse):
             if message.success:
                 logger.info(
                     'Established client connection to relay server at '
@@ -196,12 +193,12 @@ class BasicRelayClient:
                 )
                 return websocket
             else:
-                raise PeerRegistrationError(
+                raise RelayRegistrationError(
                     'Failed to register as peer with the relay server. '
                     f'Got exception: {message.message}',
                 )
         else:
-            raise PeerRegistrationError(
+            raise RelayRegistrationError(
                 'Relay server replied with unknown message type: '
                 f'{type(message).__name__}.',
             )
@@ -230,11 +227,18 @@ class BasicRelayClient:
 
     @property
     def websocket(self) -> WebSocketClientProtocol:
-        """Websocket connection to the relay server."""
+        """Websocket connection to the relay server.
+
+        Raises:
+            RelayNotConnectedError: if the websocket connection to the relay
+                server is not open. This usually indicates that
+                [`connect()`][proxystore.p2p.relay.basic.client.BasicRelayClient.connect]
+                needs to be called.
+        """
         if self._websocket is not None and self._websocket.open:
             return self._websocket
         else:
-            raise RelayServerNotConnectedError(
+            raise RelayNotConnectedError(
                 'Websocket connection to the relay server is not open. '
                 'Try calling connect() first.',
             )
@@ -306,38 +310,38 @@ class BasicRelayClient:
         if self._websocket is not None:
             await self._websocket.close()
 
-    async def recv(self) -> messages.Message:
+    async def recv(self) -> RelayMessage:
         """Receive the next message.
 
         Returns:
             The message received from the relay server.
 
         Raises:
-            messages.MessageDecodeError: If the message received cannot
+            RelayMessageDecodeError: If the message received cannot
                 be decoded into the appropriate message type.
         """
         try:
             websocket = self.websocket
-        except RelayServerNotConnectedError:
+        except RelayNotConnectedError:
             await self.connect()
             websocket = self.websocket
 
         message_str = await websocket.recv()
         if not isinstance(message_str, str):
             raise AssertionError('Received non-string from websocket.')
-        return messages.decode(message_str)
+        return decode_relay_message(message_str)
 
-    async def send(self, message: messages.Message) -> None:
+    async def send(self, message: RelayMessage) -> None:
         """Send a message.
 
         Args:
             message: The message to send to the relay server.
         """
-        message_str = messages.encode(message)
+        message_str = encode_relay_message(message)
 
         try:
             websocket = self.websocket
-        except RelayServerNotConnectedError:
+        except RelayNotConnectedError:
             await self.connect()
             websocket = self.websocket
 

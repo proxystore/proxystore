@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from proxystore.p2p.counter import AtomicCounter
+from proxystore.utils.counter import AtomicCounter
 
 
 def test_counter() -> None:

@@ -29,7 +29,7 @@ from proxystore.endpoint.config import get_pid_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.endpoint.serve import serve
-from proxystore.utils import home_dir
+from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     Args:
         name: Name of endpoint to check.
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Returns:
         `EndpointStatus.RUNNING` if the endpoint has a valid directory and \
@@ -112,7 +112,7 @@ def configure_endpoint(
         port: Port for endpoint to listen on.
         relay_server: Optional relay server address for P2P endpoint connections.
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
         persist_data: Persist data stored in the endpoint.
@@ -166,7 +166,7 @@ def list_endpoints(
 
     Args:
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -220,7 +220,7 @@ def remove_endpoint(
     Args:
         name: Name of endpoint to remove.
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -261,7 +261,7 @@ def start_endpoint(
         detach: Start the endpoint as a daemon process.
         log_level: Logging level of the endpoint.
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -335,7 +335,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     Args:
         name: Name of endpoint to start.
         proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.home_dir].
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \

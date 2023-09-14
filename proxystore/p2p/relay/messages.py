@@ -1,4 +1,4 @@
-"""Message types for peer-to-peer communication."""
+"""Message types for relay client and relay server communication."""
 from __future__ import annotations
 
 import dataclasses
@@ -14,26 +14,26 @@ else:  # pragma: <3.9 cover
     from typing_extensions import Literal
 
 
-class MessageType(enum.Enum):
+class RelayMessageType(enum.Enum):
     """Types of messages supported."""
 
-    server_response = 'ServerResponse'
-    """Server response message."""
-    server_registration = 'ServerRegistration'
-    """Server registration message."""
-    peer_connection = 'PeerConnection'
-    """Peer connection message."""
+    relay_response = 'RelayResponse'
+    """Relay response message."""
+    relay_registration = 'RelayRegistrationRequest'
+    """Relay registration request message."""
+    peer_connection = 'PeerConnectionRequest'
+    """Peer connection request message."""
 
 
 @dataclasses.dataclass
-class Message:
+class RelayMessage:
     """Base message."""
 
     pass
 
 
 @dataclasses.dataclass
-class ServerRegistration(Message):
+class RelayRegistrationRequest(RelayMessage):
     """Register with relay server as peer.
 
     Attributes:
@@ -43,11 +43,11 @@ class ServerRegistration(Message):
 
     name: str
     uuid: uuid.UUID
-    message_type: str = MessageType.server_registration.name
+    message_type: str = RelayMessageType.relay_registration.name
 
 
 @dataclasses.dataclass
-class ServerResponse(Message):
+class RelayResponse(RelayMessage):
     """Message returned by relay server on success or error.
 
     Attributes:
@@ -59,12 +59,12 @@ class ServerResponse(Message):
     success: bool = True
     message: str | None = None
     error: bool = False
-    message_type: str = MessageType.server_response.name
+    message_type: str = RelayMessageType.relay_response.name
 
 
 @dataclasses.dataclass
-class PeerConnection(Message):
-    """Message used in establishing a peer-to-peer connection.
+class PeerConnectionRequest(RelayMessage):
+    """Message used to request a peer-to-peer connection from a relay.
 
     Attributes:
         source_uuid: UUID of sending peer.
@@ -82,17 +82,23 @@ class PeerConnection(Message):
     description_type: Literal['answer', 'offer']
     description: str
     error: str | None = None
-    message_type: str = MessageType.peer_connection.name
+    message_type: str = RelayMessageType.peer_connection.name
 
 
-class MessageDecodeError(Exception):
-    """Error raised when a message cannot be decoded."""
+class RelayMessageError(Exception):
+    """Base exception type for relay messages."""
 
     pass
 
 
-class MessageEncodeError(Exception):
-    """Error raised when an message cannot be encoded."""
+class RelayMessageDecodeError(RelayMessageError):
+    """Exception raised when a message cannot be decoded."""
+
+    pass
+
+
+class RelayMessageEncodeError(RelayMessageError):
+    """Exception raised when an message cannot be encoded."""
 
     pass
 
@@ -119,15 +125,15 @@ def str_to_uuid(data: dict[str, Any]) -> dict[str, Any]:
     """Cast any possible UUID strings to UUID objects.
 
     The inverse operation of
-    [uuid_to_str()][proxystore.p2p.messages.uuid_to_str].
+    [uuid_to_str()][proxystore.p2p.relay.messages.uuid_to_str].
 
     Returns:
         Shallow copy of the input dictionary with values cast from \
         str to UUID if the key also contains UUID.
 
     Raises:
-        MessageDecodeError: If a key contains 'uuid' but the value cannot be
-            cast to a UUID.
+        RelayMessageDecodeError: If a key contains 'uuid' but the value cannot
+            be cast to a UUID.
     """
     data = data.copy()
     for key in data:
@@ -135,14 +141,14 @@ def str_to_uuid(data: dict[str, Any]) -> dict[str, Any]:
             try:
                 data[key] = uuid.UUID(data[key])
             except (AttributeError, TypeError, ValueError) as e:
-                raise MessageDecodeError(
+                raise RelayMessageDecodeError(
                     f'Failed to convert key {key} to UUID.',
                 ) from e
     return data
 
 
-def decode(message: str) -> Message:
-    """Decode JSON string into correct Message type.
+def decode_relay_message(message: str) -> RelayMessage:
+    """Decode JSON string into correct relay message type.
 
     Args:
         message: JSON string to decode.
@@ -151,27 +157,27 @@ def decode(message: str) -> Message:
         Parsed message.
 
     Raises:
-        MessageDecodeError: If the message cannot be decoded.
+        RelayMessageDecodeError: If the message cannot be decoded.
     """
     try:
         data = json.loads(message)
     except json.JSONDecodeError as e:
-        raise MessageDecodeError('Failed to load string as JSON.') from e
+        raise RelayMessageDecodeError('Failed to load string as JSON.') from e
 
     try:
         message_type_name = data.pop('message_type')
     except KeyError as e:
-        raise MessageDecodeError(
+        raise RelayMessageDecodeError(
             'Message does not contain a message_type key.',
         ) from e
 
     try:
         message_type = getattr(
             sys.modules[__name__],
-            MessageType[message_type_name].value,
+            RelayMessageType[message_type_name].value,
         )
     except (AttributeError, KeyError) as e:
-        raise MessageDecodeError(
+        raise RelayMessageDecodeError(
             'The message is of an unknown message type: '
             f'{message_type_name}.',
         ) from e
@@ -181,23 +187,23 @@ def decode(message: str) -> Message:
     try:
         return message_type(**data)
     except TypeError as e:
-        raise MessageDecodeError(
+        raise RelayMessageDecodeError(
             f'Failed to convert message to {message_type.__name__}: {e}',
         ) from e
 
 
-def encode(message: Message) -> str:
+def encode_relay_message(message: RelayMessage) -> str:
     """Encode message as JSON string.
 
     Args:
         message: Message to JSON encode.
 
     Raises:
-        MessageEncodeError: If the message cannot be JSON encoded.
+        RelayMessageEncodeError: If the message cannot be JSON encoded.
     """
-    if not isinstance(message, Message):
-        raise MessageEncodeError(
-            f'Message is not an instance of {Message.__name__}. '
+    if not isinstance(message, RelayMessage):
+        raise RelayMessageEncodeError(
+            f'Message is not an instance of {RelayMessage.__name__}. '
             f'Got {type(message).__name__}.',
         )
 
@@ -207,4 +213,4 @@ def encode(message: Message) -> str:
     try:
         return json.dumps(data)
     except TypeError as e:
-        raise MessageEncodeError('Error encoding message.') from e
+        raise RelayMessageEncodeError('Error encoding message.') from e

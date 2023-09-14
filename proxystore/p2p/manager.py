@@ -20,14 +20,16 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-from proxystore.p2p import messages
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
 from proxystore.p2p.relay import RelayClient
-from proxystore.p2p.task import SafeTaskExitError
-from proxystore.p2p.task import spawn_guarded_background_task
+from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayMessageDecodeError
+from proxystore.p2p.relay.messages import RelayResponse
+from proxystore.utils.tasks import SafeTaskExitError
+from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
 
@@ -209,14 +211,14 @@ class PeerManager:
                 break
             except websockets.exceptions.ConnectionClosedError:
                 break
-            except messages.MessageDecodeError as e:
+            except RelayMessageDecodeError as e:
                 logger.error(
                     f'{self._log_prefix}: error deserializing message from '
                     f'relay server: {e} ...skipping message',
                 )
                 continue
 
-            if isinstance(message, messages.PeerConnection):
+            if isinstance(message, PeerConnectionRequest):
                 logger.debug(
                     f'{self._log_prefix}: relay server forwarded peer '
                     'connection message from '
@@ -241,7 +243,7 @@ class PeerManager:
                     )
                     connection.on_close_callback(self.close_connection, peers)
                 await self._peers[peers].handle_server_message(message)
-            elif isinstance(message, messages.ServerResponse):
+            elif isinstance(message, RelayResponse):
                 # The peer manager should never send something to the
                 # relay server that warrants a ServerResponse
                 logger.exception(

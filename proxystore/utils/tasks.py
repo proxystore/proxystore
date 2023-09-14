@@ -1,4 +1,4 @@
-"""Utilities for launching async tasks."""
+"""Safely spawn asyncio background tasks with error handling."""
 from __future__ import annotations
 
 import asyncio
@@ -56,14 +56,14 @@ def spawn_guarded_background_task(
     """Run a coroutine safely in the background.
 
     Launches the coroutine as an asyncio task and sets the done
-    callback to [`exit_on_error()`][proxystore.p2p.task.exit_on_error].
+    callback to [`exit_on_error()`][proxystore.utils.tasks.exit_on_error].
     This is "safe" because it will ensure exceptions inside the task get logged
     and cause the program to exit. Otherwise, background tasks that are not
     awaited may not have their exceptions raised such that programs hang with
     no notice of the exception that caused the hang.
 
-    Tasks can raise [`SafeTaskExit`][proxystore.p2p.task.SafeTaskExitError] to
-    signal the task is finished but should not cause a system exit.
+    Tasks can raise [`SafeTaskExit`][proxystore.utils.tasks.SafeTaskExitError]
+    to signal the task is finished but should not cause a system exit.
 
     Source: https://stackoverflow.com/questions/62588076
 

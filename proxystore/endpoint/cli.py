@@ -24,7 +24,7 @@ from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import read_config
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.utils import home_dir
+from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 

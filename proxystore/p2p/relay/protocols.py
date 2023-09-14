@@ -5,8 +5,8 @@ import uuid
 from typing import Protocol
 from typing import runtime_checkable
 
-from proxystore.p2p.messages import Message
-from proxystore.p2p.messages import MessageDecodeError  # noqa: F401
+from proxystore.p2p.relay.messages import RelayMessage
+from proxystore.p2p.relay.messages import RelayMessageDecodeError  # noqa: F401
 
 
 @runtime_checkable
@@ -30,19 +30,19 @@ class RelayClient(Protocol):
     async def connect(self) -> None:
         """Connect to the relay server."""
 
-    async def recv(self) -> Message:
+    async def recv(self) -> RelayMessage:
         """Receive the next message from the relay server.
 
         Returns:
             The message received from the relay server.
 
         Raises:
-            MessageDecodeError: If the message received cannot be decoded into
-                the appropriate message type.
+            RelayMessageDecodeError: If the message received cannot be decoded
+                into the appropriate message type.
         """
         ...
 
-    async def send(self, message: Message) -> None:
+    async def send(self, message: RelayMessage) -> None:
         """Send a message to the relay server.
 
         Args:

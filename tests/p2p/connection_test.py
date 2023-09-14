@@ -6,13 +6,13 @@ from uuid import uuid4
 import aiortc
 import pytest
 
-from proxystore.p2p import messages
 from proxystore.p2p.connection import MAX_CHUNK_SIZE_BYTES
 from proxystore.p2p.connection import MAX_CHUNK_SIZE_STRING
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.messages import PeerConnectionRequest
 
 
 @pytest.mark.asyncio()
@@ -27,10 +27,10 @@ async def test_p2p_connection(relay_server) -> None:
 
     await connection1.send_offer(client2.uuid)
     offer = await client2.recv()
-    assert isinstance(offer, messages.PeerConnection)
+    assert isinstance(offer, PeerConnectionRequest)
     await connection2.handle_server_message(offer)
     answer = await client1.recv()
-    assert isinstance(answer, messages.PeerConnection)
+    assert isinstance(answer, PeerConnectionRequest)
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
@@ -73,10 +73,10 @@ async def test_p2p_connection_multichannel(relay_server) -> None:
 
     await connection1.send_offer(client2.uuid)
     offer = await client2.recv()
-    assert isinstance(offer, messages.PeerConnection)
+    assert isinstance(offer, PeerConnectionRequest)
     await connection2.handle_server_message(offer)
     answer = await client1.recv()
-    assert isinstance(answer, messages.PeerConnection)
+    assert isinstance(answer, PeerConnectionRequest)
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
@@ -123,7 +123,7 @@ async def test_p2p_connection_error(relay_server) -> None:
         pass
 
     await connection.handle_server_message(
-        messages.PeerConnection(
+        PeerConnectionRequest(
             source_uuid=client.uuid,
             source_name=client.name,
             peer_uuid=uuid4(),
@@ -164,10 +164,10 @@ async def test_p2p_closed_by_offerer_callback(relay_server) -> None:
 
     await connection1.send_offer(client2.uuid)
     offer = await client2.recv()
-    assert isinstance(offer, messages.PeerConnection)
+    assert isinstance(offer, PeerConnectionRequest)
     await connection2.handle_server_message(offer)
     answer = await client1.recv()
-    assert isinstance(answer, messages.PeerConnection)
+    assert isinstance(answer, PeerConnectionRequest)
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
@@ -217,10 +217,10 @@ async def test_p2p_closed_by_answerer_callback(relay_server) -> None:
 
     await connection1.send_offer(client2.uuid)
     offer = await client2.recv()
-    assert isinstance(offer, messages.PeerConnection)
+    assert isinstance(offer, PeerConnectionRequest)
     await connection2.handle_server_message(offer)
     answer = await client1.recv()
-    assert isinstance(answer, messages.PeerConnection)
+    assert isinstance(answer, PeerConnectionRequest)
     await connection1.handle_server_message(answer)
 
     await connection1.ready()
