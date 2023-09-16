@@ -18,7 +18,7 @@
         <link rel="prev" href="../basic/server/">
       
       
-        <link rel="next" href="../messages/">
+        <link rel="next" href="../globus/">
       
       
       <link rel="icon" href="../../../../static/favicon.png">
@@ -2046,8 +2046,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.p2p.relay.exceptions.UnknownPeerRequestedError" class="md-nav__link">
-    UnknownPeerRequestedError
+  <a href="#proxystore.p2p.relay.exceptions.ForbiddenError" class="md-nav__link">
+    ForbiddenError
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.p2p.relay.exceptions.InternalServerError" class="md-nav__link">
+    InternalServerError
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.p2p.relay.exceptions.UnauthorizedError" class="md-nav__link">
+    UnauthorizedError
   </a>
   
 </li>
@@ -2055,6 +2069,136 @@
     </ul>
   
 </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_5_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../globus/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    globus
+  </span>
+  
+
+            </a>
+            
+              <label class="md-nav__link " for="__nav_4_1_6_5_3">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="5" aria-labelledby="__nav_4_1_6_5_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_5_3">
+            <span class="md-nav__icon md-icon"></span>
+            globus
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/client/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    client
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/server/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    server
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../globus/utils/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    utils
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
       
     </li>
   
@@ -2749,8 +2893,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.p2p.relay.exceptions.UnknownPeerRequestedError" class="md-nav__link">
-    UnknownPeerRequestedError
+  <a href="#proxystore.p2p.relay.exceptions.ForbiddenError" class="md-nav__link">
+    ForbiddenError
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.p2p.relay.exceptions.InternalServerError" class="md-nav__link">
+    InternalServerError
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.p2p.relay.exceptions.UnauthorizedError" class="md-nav__link">
+    UnauthorizedError
   </a>
   
 </li>
@@ -2924,19 +3082,67 @@
 
 
 
-<h2 id="proxystore.p2p.relay.exceptions.UnknownPeerRequestedError" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">UnknownPeerRequestedError</span>
+<h2 id="proxystore.p2p.relay.exceptions.ForbiddenError" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">ForbiddenError</span>
 
 
-<a href="#proxystore.p2p.relay.exceptions.UnknownPeerRequestedError" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#proxystore.p2p.relay.exceptions.ForbiddenError" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
           <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.p2p.relay.exceptions.BadRequestError" href="#proxystore.p2p.relay.exceptions.BadRequestError">BadRequestError</a></code></p>
+            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.p2p.relay.exceptions.RelayServerError" href="#proxystore.p2p.relay.exceptions.RelayServerError">RelayServerError</a></code></p>
 
   
-      <p>An exception indicating a client wants to peer with an unknown peer.</p>
+      <p>Client does not have correct permissions after authentication.</p>
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="proxystore.p2p.relay.exceptions.InternalServerError" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">InternalServerError</span>
+
+
+<a href="#proxystore.p2p.relay.exceptions.InternalServerError" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.p2p.relay.exceptions.RelayServerError" href="#proxystore.p2p.relay.exceptions.RelayServerError">RelayServerError</a></code></p>
+
+  
+      <p>Server encountered an unexpected condition.</p>
+
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+
+<h2 id="proxystore.p2p.relay.exceptions.UnauthorizedError" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">UnauthorizedError</span>
+
+
+<a href="#proxystore.p2p.relay.exceptions.UnauthorizedError" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="proxystore.p2p.relay.exceptions.RelayServerError" href="#proxystore.p2p.relay.exceptions.RelayServerError">RelayServerError</a></code></p>
+
+  
+      <p>Client is missing authentication tokens.</p>
 
 
   </div>
