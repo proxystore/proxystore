@@ -166,8 +166,10 @@ async def test_server_register_override_existing(
     assert client is not None
 
     assert any(
-        'old registration will be removed' in record.message
-        for record in caplog.records
+        [
+            'old registration will be removed' in record.message
+            for record in caplog.records
+        ],
     )
 
 
@@ -216,8 +218,10 @@ async def test_server_unregister(
     assert client is None
 
     assert any(
-        f'Unregistering client {existing_client.uuid}' in record.message
-        for record in caplog.records
+        [
+            f'Unregistering client {existing_client.uuid}' in record.message
+            for record in caplog.records
+        ],
     )
 
 
