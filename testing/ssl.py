@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import datetime
 import pathlib
+import ssl
 
+import pytest
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
@@ -20,6 +22,21 @@ from cryptography.hazmat.primitives.asymmetric.rsa import generate_private_key
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPrivateKey
 from cryptography.x509 import Certificate
 from cryptography.x509.oid import NameOID
+
+
+@pytest.fixture(scope='session')
+def ssl_context(tmp_path_factory: pytest.TempPathFactory) -> ssl.SSLContext:
+    """Create an SSL context from a self-signed certificate."""
+    tmp_path = tmp_path_factory.mktemp('ssl-context-fixture')
+    certfile = tmp_path / 'cert.pem'
+    keyfile = tmp_path / 'key.pem'
+    cert, key = create_self_signed_cert()
+    write_cert_key_pair(cert, key, certfile, keyfile)
+
+    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    ssl_context.load_cert_chain(certfile, keyfile=keyfile)
+
+    return ssl_context
 
 
 def create_self_signed_cert() -> tuple[Certificate, RSAPrivateKey]:

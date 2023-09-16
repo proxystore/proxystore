@@ -1,7 +1,6 @@
 """Test fixtures for tests.p2p.relay.globus."""
 from __future__ import annotations
 
-import pathlib
 import ssl
 import uuid
 from typing import AsyncGenerator
@@ -15,8 +14,6 @@ from websockets.server import WebSocketServer
 
 from proxystore.globus.client import get_confidential_app_auth_client
 from proxystore.p2p.relay.globus.server import GlobusAuthRelayServer
-from testing.ssl import create_self_signed_cert
-from testing.ssl import write_cert_key_pair
 from testing.utils import open_port
 
 
@@ -34,20 +31,12 @@ class RelayServerInfo(NamedTuple):
 @pytest_asyncio.fixture()
 @pytest.mark.asyncio()
 async def globus_auth_relay(
-    tmp_path: pathlib.Path,
+    ssl_context: ssl.SSLContext,
 ) -> AsyncGenerator[RelayServerInfo, None]:
     """Run a GlobusAuthRelayServer."""
     host = 'localhost'
     port = open_port()
     address = f'wss://{host}:{port}'
-
-    certfile = tmp_path / 'cert.pem'
-    keyfile = tmp_path / 'key.pem'
-    cert, key = create_self_signed_cert()
-    write_cert_key_pair(cert, key, certfile, keyfile)
-
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    ssl_context.load_cert_chain(certfile, keyfile=keyfile)
 
     auth_client = get_confidential_app_auth_client(str(uuid.uuid4()), 'secret')
     server = GlobusAuthRelayServer(auth_client)
