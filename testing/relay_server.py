@@ -9,7 +9,7 @@ import pytest_asyncio
 import websockets
 from websockets.server import WebSocketServer
 
-from proxystore.p2p.relay import BasicRelayServer
+from proxystore.p2p.relay.basic.server import BasicRelayServer
 from testing.utils import open_port
 
 
