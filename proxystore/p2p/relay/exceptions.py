@@ -32,7 +32,19 @@ class BadRequestError(RelayServerError):
     pass
 
 
-class UnknownPeerRequestedError(BadRequestError):
-    """An exception indicating a client wants to peer with an unknown peer."""
+class ForbiddenError(RelayServerError):
+    """Client does not have correct permissions after authentication."""
+
+    pass
+
+
+class InternalServerError(RelayServerError):
+    """Server encountered an unexpected condition."""
+
+    pass
+
+
+class UnauthorizedError(RelayServerError):
+    """Client is missing authentication tokens."""
 
     pass
