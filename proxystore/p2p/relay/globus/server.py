@@ -58,7 +58,7 @@ class GlobusAuthRelayServer:
     https://webrtc.org/getting-started/peer-connections.
 
     The relay server is built on websockets and designed to be
-    served using [`serve()`][proxystore.p2p.relay.globus.run.serve].
+    served using [`serve()`][proxystore.p2p.relay.basic.server.serve].
 
     Args:
         auth_client: Confidential application authentication client which is
