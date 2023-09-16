@@ -16,6 +16,7 @@ from proxystore.p2p.relay.exceptions import UnauthorizedError
 PROXYSTORE_RESOURCE_SERVER_NAME = 'ProxyStore'
 
 User = TypeVar('User', covariant=True)
+"""Auth user generic type."""
 
 
 @runtime_checkable
