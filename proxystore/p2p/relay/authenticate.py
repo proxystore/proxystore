@@ -45,6 +45,9 @@ class NullUser:
     def __eq__(self, other: object) -> bool:
         return isinstance(other, type(self))
 
+    def __repr__(self) -> str:
+        return 'NullUser()'
+
 
 class NullAuthenticator:
     """Authenticator that implements no authentication."""

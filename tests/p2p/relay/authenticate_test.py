@@ -20,6 +20,7 @@ def test_null_authenticator() -> None:
     user1 = NullAuthenticator().authenticate_user({})
     user2 = NullAuthenticator().authenticate_user({'Authorization': 'token'})
     assert user1 == user2
+    assert isinstance(NullAuthenticator().authenticate_user({}), str)
 
 
 def test_globus_user_equality() -> None:

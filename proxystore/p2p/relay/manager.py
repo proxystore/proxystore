@@ -54,9 +54,10 @@ class Client(Generic[UserT]):
 
     def __repr__(self) -> str:
         created = self.created.strftime('%Y-%m-%d %H:%M:%S %Z')
+        address = str(self.websocket.remote_address)
         return (
             f'{self.__class__.__name__}(name={self.name}, uuid={self.uuid}, '
-            f'address={self.websocket.remote_address}, created={created})'
+            f'user={self.user}, address={address}, created={created})'
         )
 
 
