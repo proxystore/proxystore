@@ -11,7 +11,7 @@ from typing import Literal
 from typing import Sequence
 
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.client import RelayClient
 from testing.compat import randbytes
 
 
@@ -20,7 +20,7 @@ async def get_manager(
     relay: str,
 ) -> tuple[PeerManager, uuid.UUID]:
     """Return a ready PeerManager."""
-    manager = await PeerManager(BasicRelayClient(relay))
+    manager = await PeerManager(RelayClient(relay))
 
     print(f'{actor} uuid: {manager.uuid}')
     remote_uuid = uuid.UUID(input('enter the remote uuid: ').strip())

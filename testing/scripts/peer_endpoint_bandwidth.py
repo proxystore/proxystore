@@ -12,7 +12,7 @@ from typing import Sequence
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.client import RelayClient
 from testing.compat import randbytes
 
 
@@ -21,7 +21,7 @@ async def get_endpoint(
     relay_server_address: str,
 ) -> tuple[Endpoint, uuid.UUID | None]:
     """Return a ready PeerConnection."""
-    relay_client = BasicRelayClient(relay_server_address)
+    relay_client = RelayClient(relay_server_address)
     peer_manager = await PeerManager(relay_client)
     endpoint = await Endpoint(peer_manager=peer_manager)
 

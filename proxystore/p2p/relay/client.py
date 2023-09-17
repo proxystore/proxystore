@@ -1,4 +1,4 @@
-"""Client interface to a [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer]."""  # noqa: E501
+"""Client interface to a relay server."""
 from __future__ import annotations
 
 import asyncio
@@ -40,8 +40,8 @@ from proxystore.utils.tasks import spawn_guarded_background_task
 logger = logging.getLogger(__name__)
 
 
-class BasicRelayClient:
-    """Client interface to a [`BasicRelayServer`][proxystore.p2p.relay.basic.server.BasicRelayServer].
+class RelayClient:
+    """Client interface to a relay server.
 
     This interface abstracts the low-level WebSocket connection to a
     relay server to provide automatic reconnection.
@@ -49,9 +49,9 @@ class BasicRelayClient:
     Tip:
         This class can be used as an async context manager!
         ```python
-        from proxystore.p2p.relay import BasicRelayClient
+        from proxystore.p2p.relay.client import RelayClient
 
-        async with BasicRelayClient(...) as client:
+        async with RelayClient(...) as client:
             await client.send(...)
             message = await client.recv(...)
         ```
@@ -59,11 +59,11 @@ class BasicRelayClient:
     Note:
         WebSocket connections are not opened until a message is sent,
         a message is received, or
-        [`connect()`][proxystore.p2p.relay.BasicRelayClient.connect]
+        [`connect()`][proxystore.p2p.relay.client.RelayClient.connect]
         is called. Initializing the client with `await` will call
-        [`connect()`][proxystore.p2p.relay.BasicRelayClient.connect].
+        [`connect()`][proxystore.p2p.relay.client.RelayClient.connect].
         ```python
-        client = await BasicRelayClient(...)
+        client = await RelayClient(...)
         ```
 
     Args:
@@ -73,6 +73,12 @@ class BasicRelayClient:
             the relay server. If `None`, the hostname will be used.
         client_uuid: Optional UUID of the client to use when registering with
             the relay server. If `None`, one will be generated.
+        extra_headers: Arbitrary HTTP headers to add to the handshake request.
+            If connecting to a relay server with authentication, such as
+            one using the
+            [`GlobusAuthenticator`][proxystore.p2p.relay.authenticate.GlobusAuthenticator],
+            the headers should include the `Authorization` header containing
+            the bearer token.
         reconnect_task: Spawn a background task which will automatically
             reconnect to the relay server when the websocket client closes.
             Otherwise, reconnections will only be attempted when sending or
@@ -92,7 +98,7 @@ class BasicRelayClient:
             is closed, does not reply to the registration request within the
             timeout, or replies with an error.
         ValueError: If address does not start with `ws://` or `wss://`.
-    """  # noqa: E501
+    """
 
     def __init__(
         self,
@@ -100,6 +106,7 @@ class BasicRelayClient:
         *,
         client_name: str | None = None,
         client_uuid: uuid.UUID | None = None,
+        extra_headers: dict[str, str] | None = None,
         reconnect_task: bool = True,
         ssl_context: ssl.SSLContext | None = None,
         timeout: float = 10,
@@ -122,10 +129,11 @@ class BasicRelayClient:
                 ssl_context.check_hostname = False
                 ssl_context.verify_mode = ssl.CERT_NONE
 
+        self._extra_headers = extra_headers
         self._ssl_context = ssl_context
         self._create_reconnect_task = reconnect_task
 
-        self._initial_backoff_seconds = 1.0
+        self._initial_backoff_seconds = 1 / 4
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -165,6 +173,7 @@ class BasicRelayClient:
             self._address,
             open_timeout=timeout,
             ssl=self._ssl_context,
+            extra_headers=self._extra_headers,
         )
 
         registration_message = RelayRegistrationRequest(self.name, self.uuid)
@@ -232,7 +241,7 @@ class BasicRelayClient:
         Raises:
             RelayNotConnectedError: if the websocket connection to the relay
                 server is not open. This usually indicates that
-                [`connect()`][proxystore.p2p.relay.basic.client.BasicRelayClient.connect]
+                [`connect()`][proxystore.p2p.relay.client.RelayClient.connect]
                 needs to be called.
         """
         if self._websocket is not None and self._websocket.open:
@@ -257,7 +266,7 @@ class BasicRelayClient:
 
         Args:
             retry: Retry the connection with exponential backoff starting at
-                one second and increasing to a max of 60 seconds.
+                1/4th second and increasing to a max of 60 seconds.
         """
         async with self._connect_lock:
             if self._websocket is not None and self._websocket.open:
@@ -289,7 +298,7 @@ class BasicRelayClient:
                     logger.warning(
                         f'Registration with relay server at {self._address} '
                         f'failed because of {e}. Retrying connection in '
-                        f'{backoff_seconds} seconds',
+                        f'{backoff_seconds:.2f} seconds',
                     )
                     await asyncio.sleep(backoff_seconds)
                     backoff_seconds = min(backoff_seconds * 2, 60)

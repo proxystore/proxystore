@@ -28,7 +28,7 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.client import RelayClient
 from proxystore.utils.data import chunk_bytes
 
 logger = logging.getLogger(__name__)
@@ -95,7 +95,7 @@ async def _serve_async(config: EndpointConfig) -> None:
     peer_channels = kwargs.pop('peer_channels', 1)
 
     if relay_server is not None:
-        relay_client = BasicRelayClient(
+        relay_client = RelayClient(
             address=relay_server,
             client_name=config.name,
             client_uuid=config.uuid,
