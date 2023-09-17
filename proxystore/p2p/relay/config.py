@@ -15,7 +15,7 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class RelayAuthConfig:
     """Relay authentication configuration.
 
@@ -45,7 +45,7 @@ class RelayAuthConfig:
         return cls(method, options)  # type: ignore[arg-type]
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class RelayLoggingConfig:
     """Relay logging configuration.
 
@@ -105,7 +105,7 @@ class RelayLoggingConfig:
         return cls(**processed_options)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclasses.dataclass
 class RelayServingConfig:
     """Relay serving configuration.
 
