@@ -67,7 +67,10 @@ async def test_p2p_connection(relay_server) -> None:
 async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
     relay_client = RelayClient(relay_server.address)
     async with PeerManager(relay_client) as manager:
-        with pytest.raises(PeerConnectionError, match='unknown'):
+        with pytest.raises(
+            PeerConnectionError,
+            match='Cannot forward peer connection message',
+        ):
             await manager.send(uuid.uuid4(), 'hello', timeout=0.2)
 
 
@@ -130,9 +133,9 @@ async def test_p2p_messaging(relay_server) -> None:
 async def test_expected_server_disconnect(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
-    await relay_server.relay_server._uuid_to_client[
-        manager.uuid
-    ].websocket.close()
+    await relay_server.relay_server.client_manager.get_client_by_uuid(
+        manager.uuid,
+    ).websocket.close()
     await manager.close()
 
 
@@ -140,9 +143,9 @@ async def test_expected_server_disconnect(relay_server) -> None:
 async def test_unexpected_server_disconnect(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
-    await relay_server.relay_server._uuid_to_client[
-        manager.uuid
-    ].websocket.close(code=1002)
+    await relay_server.relay_server.client_manager.get_client_by_uuid(
+        manager.uuid,
+    ).websocket.close(code=1002)
     await manager.close()
 
 

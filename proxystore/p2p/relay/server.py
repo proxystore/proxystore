@@ -24,7 +24,6 @@ except ImportError as e:  # pragma: no cover
     )
 
 from proxystore.p2p.relay.authenticate import Authenticator
-from proxystore.p2p.relay.exceptions import BadRequestError
 from proxystore.p2p.relay.exceptions import ForbiddenError
 from proxystore.p2p.relay.exceptions import RelayServerError
 from proxystore.p2p.relay.exceptions import UnauthorizedError
@@ -179,15 +178,12 @@ class RelayServer(Generic[UserT]):
     ) -> None:
         """Forward peer connection request between two clients.
 
+        If an error is encountered, the relay server replies to the source
+        client with an error message set in `message.error`.
+
         Args:
             source_client: Client making forwarding request.
             request: Peer connection request to forward.
-
-        Raises:
-            BadRequestError: if the target client is not registered with this
-                relay server.
-            ForbiddenError: if the target client is not owned by the same
-                owner as the source client.
         """
         target_client = self.client_manager.get_client_by_uuid(
             request.peer_uuid,
@@ -198,11 +194,13 @@ class RelayServer(Generic[UserT]):
                 'attempting to send message to unknown peer '
                 f'{request.peer_uuid}',
             )
-            raise BadRequestError(
+            request.error = (
                 'Cannot forward peer connection message to peer '
                 f'{request.peer_uuid} because this peer is not registered '
-                'this relay server.',
+                'this relay server.'
             )
+            await self.send(source_client, request)
+            return
 
         if source_client.user != target_client.user:
             logger.warning(
@@ -210,17 +208,18 @@ class RelayServer(Generic[UserT]):
                 'attempting to send message to peer '
                 f'{request.peer_uuid} owned by another user',
             )
-            raise ForbiddenError(
+            request.error = (
                 f'The requested peer {request.peer_uuid} is owned by a '
-                'different user.',
+                'different user.'
             )
-
-        logger.info(
-            f'Transmitting message from {source_client.uuid} '
-            f'({source_client.name}) to {target_client.uuid} '
-            f'({target_client.name})',
-        )
-        await self.send(target_client, request)
+            await self.send(source_client, request)
+        else:
+            logger.info(
+                f'Transmitting message from {source_client.uuid} '
+                f'({source_client.name}) to {target_client.uuid} '
+                f'({target_client.name})',
+            )
+            await self.send(target_client, request)
 
     async def _process_message(
         self,

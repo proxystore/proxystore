@@ -149,7 +149,10 @@ async def test_unknown_peer(relay_server) -> None:
     )
     peer_manager = await PeerManager(relay_client)
     async with Endpoint(peer_manager=peer_manager) as endpoint:
-        with pytest.raises(PeerRequestError, match='unknown'):
+        with pytest.raises(
+            PeerRequestError,
+            match='Cannot forward peer connection message to peer',
+        ):
             await endpoint.get('key', endpoint=uuid.uuid4())
 
 

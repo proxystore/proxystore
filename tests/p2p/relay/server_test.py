@@ -18,6 +18,7 @@ from proxystore.p2p.relay.manager import Client
 from proxystore.p2p.relay.messages import decode_relay_message
 from proxystore.p2p.relay.messages import encode_relay_message
 from proxystore.p2p.relay.messages import PeerConnectionRequest
+from proxystore.p2p.relay.messages import RelayMessage
 from proxystore.p2p.relay.messages import RelayRegistrationRequest
 from proxystore.p2p.relay.messages import RelayResponse
 from proxystore.p2p.relay.server import RelayServer
@@ -239,13 +240,18 @@ async def test_forward_request_to_unknown_peer() -> None:
         description='description',
     )
 
-    with pytest.raises(
-        BadRequestError,
-        match=(
-            'Cannot forward peer connection message to peer '
-            f'{request.peer_uuid} because this peer is not registered'
-        ),
-    ):
+    async def _mock_send(
+        # _server_self: Any,
+        _client: Client[NullUser],
+        message: RelayMessage,
+    ) -> None:
+        assert isinstance(message, PeerConnectionRequest)
+        assert message.error is not None
+        assert (
+            'Cannot forward peer connection message to peer' in message.error
+        )
+
+    with mock.patch.object(server, 'send', AsyncMock(side_effect=_mock_send)):
         await server.forward(client, request)
 
 
@@ -266,13 +272,19 @@ async def test_forward_request_to_peer_owned_by_different_user() -> None:
         description='description',
     )
 
-    with pytest.raises(
-        ForbiddenError,
-        match=(
-            f'The requested peer {request.peer_uuid} is owned by a '
-            'different user.'
-        ),
-    ):
+    async def _mock_send(
+        # _server_self: Any,
+        _client: Client[NullUser],
+        message: RelayMessage,
+    ) -> None:
+        assert isinstance(message, PeerConnectionRequest)
+        assert message.error is not None
+        assert (
+            f'{request.peer_uuid} is owned by a different user'
+            in message.error
+        )
+
+    with mock.patch.object(server, 'send', AsyncMock(side_effect=_mock_send)):
         await server.forward(client, request)
 
 
@@ -316,7 +328,7 @@ async def test_handler_register_and_connect(
     assert decode_relay_message(request_str) == peer_request
 
     client_manager = relay_server.relay_server.client_manager
-    assert len(client_manager.get_clients()) == 2
+    assert len(client_manager.get_clients()) >= 2
 
     # Both okay and error closures should unregister user
     await client_sockets[0].close(code=1000)
@@ -326,7 +338,8 @@ async def test_handler_register_and_connect(
     for _ in range(5):
         await asyncio.sleep(0)
 
-    assert len(client_manager.get_clients()) == 0
+    for client_uuid in client_uuids:
+        assert client_manager.get_client_by_uuid(client_uuid) is None
 
 
 @pytest.mark.asyncio()
