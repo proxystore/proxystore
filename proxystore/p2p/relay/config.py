@@ -21,6 +21,7 @@ class RelayAuthConfig:
 
     Attributes:
         method: Authentication method.
+        kwargs: Arbitrary keyword arguments to pass to the authenticator.
     """
 
     method: Literal['globus'] | None = None
@@ -162,7 +163,7 @@ class RelayServingConfig:
             keyfile = /path/to/privkey.pem
 
             [serving.auth]
-            method = 'globus'
+            method = globus
             client_id = ...
             client_secret = ...
             audience = ...

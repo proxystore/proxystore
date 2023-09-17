@@ -1,1 +1,1 @@
-"""Relay server and client implementations."""
+"""Relay client and server implementation."""

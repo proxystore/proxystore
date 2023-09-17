@@ -84,7 +84,7 @@ async def serve(config: RelayServingConfig) -> None:
     Note:
         This function will not configure any logging. Configuring logging
         according to
-        [`config.logging`][proxystore.p2p.relay.config.RelayServingConfig.logging]
+        [`RelayServingConfig.logging`][proxystore.p2p.relay.config.RelayServingConfig]
         is the responsibility of the caller.
 
     Args:

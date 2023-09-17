@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 2 May 2023*
+*Last updated 17 September 2023*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -193,5 +193,42 @@ a cloud provider or a machine behind a NAT with an open port) and the
 ProxyStore package installed.
 
 ```bash
-$ proxystore-relay --port 3579
+$ proxystore-relay --port 8700
 ```
+
+This relay server would be accessible at `ws://localhost:8700`.
+Note that SSL is not enabled by default, and there is no user authentication.
+More advanced serving can be achieved with a configuration file.
+
+```cfg title="relay.cfg"
+[serving]
+port = 8700
+certfile = /path/to/cert.pem
+keyfile = /path/to/privkey.pem
+
+[serving.auth]
+method = 'globus'
+client_id = ...
+client_secret = ...
+audience = ...
+
+[serving.logging]
+log_dir = /path/to/log/dir
+default_log_level = INFO
+websockets_log_level = WARNING
+```
+
+The `client_id`, `client_secret`, and `audience` are used to initialize a
+[`GlobusAuthenticator`][proxystore.p2p.relay.authenticate.GlobusAuthenticator].
+When run, this relay will use SSL and authenticate users with their bearer
+token provided in the websocket opening handshake.
+
+```bash
+$ proxystore-relay --config relay.cfg
+```
+
+This relay server would be accessible at `wss://localhost:8700`.
+Note the `wss://` instead of `ws://` indicating that the websocket connection
+will be encrypted.
+See the [`RelayServingConfig`][proxystore.p2p.relay.config.RelayServingConfig]
+for a full list of configuration options.

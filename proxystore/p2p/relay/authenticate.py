@@ -36,8 +36,9 @@ class Authenticator(Protocol[UserT]):
             User representation on authentication success.
 
         Raises:
-            ForbiddenError
-            UnauthorizedError
+            ForbiddenError: user is authenticated but is missing permissions
+                or accessing forbidden resources.
+            UnauthorizedError: user authentication fails.
         """
         ...
 

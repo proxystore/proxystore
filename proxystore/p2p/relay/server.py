@@ -83,7 +83,7 @@ class RelayServer(Generic[UserT]):
 
         Note:
             Messages are JSON string encoded using
-            [`encode_relay_message()`][proxystore.p2p.relay.message.encode_relay_message].
+            [`encode_relay_message()`][proxystore.p2p.relay.messages.encode_relay_message].
 
         Args:
             client: Client to send message to.
@@ -254,6 +254,7 @@ class RelayServer(Generic[UserT]):
         """Websocket server message handler.
 
         The handler will close the connection for the following reasons.
+
         - An unexpected message type is received (code 4000).
         - The client can not be authenticated (code 4001).
         - The client attempts to access forbidden resources (code 4002).
