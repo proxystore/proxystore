@@ -13,6 +13,7 @@ from __future__ import annotations
 import datetime
 import pathlib
 import ssl
+from typing import NamedTuple
 
 import pytest
 from cryptography import x509
@@ -24,8 +25,16 @@ from cryptography.x509 import Certificate
 from cryptography.x509.oid import NameOID
 
 
+class SSLContextFixture(NamedTuple):
+    """SSL fixture return type."""
+
+    certfile: str
+    keyfile: str
+    ssl_context: ssl.SSLContext
+
+
 @pytest.fixture(scope='session')
-def ssl_context(tmp_path_factory: pytest.TempPathFactory) -> ssl.SSLContext:
+def ssl_context(tmp_path_factory: pytest.TempPathFactory) -> SSLContextFixture:
     """Create an SSL context from a self-signed certificate."""
     tmp_path = tmp_path_factory.mktemp('ssl-context-fixture')
     certfile = tmp_path / 'cert.pem'
@@ -36,7 +45,7 @@ def ssl_context(tmp_path_factory: pytest.TempPathFactory) -> ssl.SSLContext:
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(certfile, keyfile=keyfile)
 
-    return ssl_context
+    return SSLContextFixture(certfile, keyfile, ssl_context)
 
 
 def create_self_signed_cert() -> tuple[Certificate, RSAPrivateKey]:
