@@ -9,14 +9,16 @@ import pytest_asyncio
 import websockets
 from websockets.server import WebSocketServer
 
-from proxystore.p2p.relay.basic.server import BasicRelayServer
+from proxystore.p2p.relay.authenticate import NullAuthenticator
+from proxystore.p2p.relay.authenticate import NullUser
+from proxystore.p2p.relay.server import RelayServer
 from testing.utils import open_port
 
 
 class RelayServerInfo(NamedTuple):
     """NamedTuple returned by relay_server fixture."""
 
-    relay_server: BasicRelayServer
+    relay_server: RelayServer[NullUser]
     websocket_server: WebSocketServer
     host: str
     port: int
@@ -35,13 +37,13 @@ async def relay_server(
         between many tests.
 
     Yields:
-        `BasicRelayServerInfo <.RelayServerInfo>`
+        `RelayServerInfo <.RelayServerInfo>`
     """
     host = 'localhost'
     port = open_port()
     address = f'ws://{host}:{port}'
 
-    relay_server = BasicRelayServer()
+    relay_server = RelayServer(NullAuthenticator())
     async with websockets.server.serve(
         relay_server.handler,
         host,

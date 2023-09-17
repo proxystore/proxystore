@@ -1,4 +1,4 @@
-"""Relay server with Globus Auth for facilitating WebRTC peer connections.
+"""Relay server implementation for facilitating WebRTC peer connections.
 
 The relay server (or signaling server) is a lightweight server accessible by
 all peers (e.g., has a public IP address) that facilitates the establishment
@@ -7,8 +7,8 @@ of peer WebRTC connections.
 from __future__ import annotations
 
 import logging
-
-import globus_sdk
+from typing import Generic
+from typing import TypeVar
 
 try:
     import websockets.client
@@ -23,14 +23,13 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
+from proxystore.p2p.relay.authenticate import Authenticator
 from proxystore.p2p.relay.exceptions import BadRequestError
 from proxystore.p2p.relay.exceptions import ForbiddenError
 from proxystore.p2p.relay.exceptions import RelayServerError
 from proxystore.p2p.relay.exceptions import UnauthorizedError
-from proxystore.p2p.relay.globus.manager import Client
-from proxystore.p2p.relay.globus.manager import ClientManager
-from proxystore.p2p.relay.globus.utils import authenticate_user_with_token
-from proxystore.p2p.relay.globus.utils import get_token_from_header
+from proxystore.p2p.relay.manager import Client
+from proxystore.p2p.relay.manager import ClientManager
 from proxystore.p2p.relay.messages import decode_relay_message
 from proxystore.p2p.relay.messages import encode_relay_message
 from proxystore.p2p.relay.messages import PeerConnectionRequest
@@ -41,10 +40,11 @@ from proxystore.p2p.relay.messages import RelayRegistrationRequest
 from proxystore.p2p.relay.messages import RelayResponse
 
 logger = logging.getLogger(__name__)
+UserT = TypeVar('UserT')
 
 
-class GlobusAuthRelayServer:
-    """WebRTC relay server with Globus Auth.
+class RelayServer(Generic[UserT]):
+    """WebRTC relay server.
 
     The relay server acts as a public third-party that helps two peers
     (endpoints) establish a peer-to-peer connection during the WebRTC
@@ -58,35 +58,38 @@ class GlobusAuthRelayServer:
     https://webrtc.org/getting-started/peer-connections.
 
     The relay server is built on websockets and designed to be
-    served using [`serve()`][proxystore.p2p.relay.basic.server.serve].
+    served using [`serve()`][proxystore.p2p.relay.run.serve].
 
     Args:
-        auth_client: Confidential application authentication client which is
-            used for introspecting client tokens.
+        authenticator: Authenticator used to identify users from the opening
+            websocket headers.
     """
 
-    def __init__(
-        self,
-        auth_client: globus_sdk.ConfidentialAppAuthClient,
-    ) -> None:
-        self._auth_client = auth_client
-        self._client_manager = ClientManager()
+    def __init__(self, authenticator: Authenticator[UserT]) -> None:
+        self._authenticator = authenticator
+        self._client_manager: ClientManager[UserT] = ClientManager()
 
     @property
-    def client_manager(self) -> ClientManager:
+    def authenticator(self) -> Authenticator[UserT]:
+        """User authenticator."""
+        return self._authenticator
+
+    @property
+    def client_manager(self) -> ClientManager[UserT]:
         """Manager of user clients."""
         return self._client_manager
 
-    async def send(
-        self,
-        websocket: WebSocketServerProtocol,
-        message: RelayMessage,
-    ) -> None:
+    async def send(self, client: Client[UserT], message: RelayMessage) -> None:
         """Send message on the socket.
 
+        Note:
+            Messages are JSON string encoded using
+            [`encode_relay_message()`][proxystore.p2p.relay.message.encode_relay_message].
+
         Args:
-            websocket: Websocket to send message on.
-            message: Message to json encode and send.
+            client: Client to send message to.
+            message: Message to encode and send via the websocket connection
+                to the client.
         """
         try:
             message_str = encode_relay_message(message)
@@ -95,7 +98,7 @@ class GlobusAuthRelayServer:
             return
 
         try:
-            await websocket.send(message_str)
+            await client.websocket.send(message_str)
         except websockets.exceptions.ConnectionClosed:
             logger.error('Connection closed while attempting to send message')
 
@@ -104,7 +107,7 @@ class GlobusAuthRelayServer:
         websocket: WebSocketServerProtocol,
         request: RelayRegistrationRequest,
     ) -> None:
-        """Register peer with relay server.
+        """Register client with relay server.
 
         Args:
             websocket: Websocket connection with client wanting to register.
@@ -117,20 +120,25 @@ class GlobusAuthRelayServer:
             ForbiddenError: if the requested client UUID is already
                 registered by another user.
         """
-        token = get_token_from_header(websocket.request_headers)
-        globus_user = authenticate_user_with_token(self._auth_client, token)
+        auth_user = self.authenticator.authenticate_user(
+            websocket.request_headers,
+        )
 
         existing_client = self.client_manager.get_client_by_uuid(request.uuid)
         if existing_client is not None:
-            if existing_client.globus_user == globus_user:
+            if (
+                existing_client.user == auth_user
+                and existing_client.websocket != websocket
+            ):
                 logger.info(
                     f'Previously registered client {request.uuid} attempting '
-                    'to reregister so old registration will be removed',
+                    'to reregister on new socket so old socket associated '
+                    'with existing registration will be closed',
                 )
-                await self.unregister(existing_client.websocket, False)
-            else:
+                await self.unregister(existing_client, False)
+            elif existing_client.user != auth_user:
                 logger.warning(
-                    f'User {globus_user} is attempting to register with a UUID'
+                    f'User {auth_user} is attempting to register with a UUID'
                     f' ({request.uuid}) that is owned by a different user.',
                 )
                 raise ForbiddenError(
@@ -141,30 +149,21 @@ class GlobusAuthRelayServer:
         client = Client(
             name=request.name,
             uuid=request.uuid,
-            globus_user=globus_user,
+            user=auth_user,
             websocket=websocket,
         )
 
         self.client_manager.add_client(client)
-        await self.send(websocket, RelayResponse(success=True))
+        await self.send(client, RelayResponse(success=True))
 
-    async def unregister(
-        self,
-        websocket: WebSocketServerProtocol,
-        expected: bool,
-    ) -> None:
+    async def unregister(self, client: Client[UserT], expected: bool) -> None:
         """Unregister the endpoint.
 
         Args:
-            websocket: Websocket connection that was closed.
+            client: Client to unregister.
             expected: If the connection was closed intentionally or due to an
                 error.
         """
-        client = self.client_manager.get_client_by_websocket(websocket)
-        if client is None:
-            # Most likely websocket closed before registration was performed
-            return
-
         reason = 'ok' if expected else 'unexpected'
         logger.info(
             f'Unregistering client {client.uuid} ({client.name}) '
@@ -173,65 +172,80 @@ class GlobusAuthRelayServer:
         self.client_manager.remove_client(client)
         await client.websocket.close(code=1000 if expected else 1001)
 
-    async def connect(
+    async def forward(
         self,
-        websocket: WebSocketServerProtocol,
-        message: PeerConnectionRequest,
+        source_client: Client[UserT],
+        request: PeerConnectionRequest,
     ) -> None:
-        """Pass peer connection messages between clients.
+        """Forward peer connection request between two clients.
 
         Args:
-            websocket: Websocket connection with client that sent the peer
-                connection message.
-            message: Message to forward to peer client.
+            source_client: Client making forwarding request.
+            request: Peer connection request to forward.
 
         Raises:
-            BadRequestError: if the target peer is not registered with this
+            BadRequestError: if the target client is not registered with this
                 relay server.
-            ForbiddenError: if the requesting client has not registered.
-            ForbiddenError: if the target peer is not owned by the requesting
-                user.
+            ForbiddenError: if the target client is not owned by the same
+                owner as the source client.
         """
-        client = self.client_manager.get_client_by_websocket(websocket)
-        if client is None:
+        target_client = self.client_manager.get_client_by_uuid(
+            request.peer_uuid,
+        )
+        if target_client is None:
             logger.warning(
-                f'Unregistered client at {websocket.remote_address} '
-                f'and claimed client UUID {message.source_uuid} '
-                'attempting to forward peer request without being '
-                'registered.',
-            )
-            raise ForbiddenError(
-                'Client has not registered and authenticated with the '
-                'relay server.',
-            )
-
-        peer_client = self.client_manager.get_client_by_uuid(message.peer_uuid)
-        if peer_client is None:
-            logger.warning(
-                f'Client {client.uuid} ({client.name}) attempting to send '
-                f'message to unknown peer {message.peer_uuid}',
+                f'Client {source_client.uuid} ({source_client.name}) '
+                'attempting to send message to unknown peer '
+                f'{request.peer_uuid}',
             )
             raise BadRequestError(
                 'Cannot forward peer connection message to peer '
-                f'{message.peer_uuid} because this peer is not registered '
+                f'{request.peer_uuid} because this peer is not registered '
                 'this relay server.',
             )
 
-        if client.globus_user != peer_client.globus_user:
+        if source_client.user != target_client.user:
             logger.warning(
-                f'Client {client.uuid} ({client.name}) attempting to send '
-                f'message to peer {message.peer_uuid} owned by another user',
+                f'Client {source_client.uuid} ({source_client.name}) '
+                'attempting to send message to peer '
+                f'{request.peer_uuid} owned by another user',
             )
             raise ForbiddenError(
-                f'The requested peer {message.peer_uuid} is owned by a '
+                f'The requested peer {request.peer_uuid} is owned by a '
                 'different user.',
             )
 
         logger.info(
-            f'Transmitting message from {client.uuid} ({client.name}) '
-            f'to {message.peer_uuid}',
+            f'Transmitting message from {source_client.uuid} '
+            f'({source_client.name}) to {target_client.uuid} '
+            f'({target_client.name})',
         )
-        await self.send(peer_client.websocket, message)
+        await self.send(target_client, request)
+
+    async def _process_message(
+        self,
+        websocket: WebSocketServerProtocol,
+        message: RelayMessage,
+    ) -> None:
+        # Dispatches the message to the correct method depending on the type
+        if isinstance(message, RelayRegistrationRequest):
+            await self.register(websocket, message)
+        elif isinstance(message, PeerConnectionRequest):
+            client = self.client_manager.get_client_by_websocket(websocket)
+            if client is None:
+                logger.warning(
+                    f'Unregistered client at {websocket.remote_address} '
+                    f'and claimed client UUID {message.source_uuid} '
+                    'attempting to forward peer request without being '
+                    'registered.',
+                )
+                raise ForbiddenError(
+                    'Client has not registered and authenticated with the '
+                    'relay server.',
+                )
+            await self.forward(client, message)
+        else:
+            raise AssertionError('Unreachable.')
 
     async def handler(
         self,
@@ -252,33 +266,34 @@ class GlobusAuthRelayServer:
         while True:
             try:
                 message_str = await websocket.recv()
-                if isinstance(message_str, str):
-                    message = decode_relay_message(message_str)
-                else:
-                    raise AssertionError(
-                        'Received non-str type on websocket.',
-                    )
             except websockets.exceptions.ConnectionClosedOK:
-                await self.unregister(websocket, expected=True)
+                client = self.client_manager.get_client_by_websocket(websocket)
+                if client is not None:
+                    await self.unregister(client, expected=True)
                 break
             except websockets.exceptions.ConnectionClosedError:
-                await self.unregister(websocket, expected=False)
+                client = self.client_manager.get_client_by_websocket(websocket)
+                if client is not None:
+                    await self.unregister(client, expected=False)
                 break
+
+            try:
+                if isinstance(message_str, bytes):
+                    raise RelayMessageDecodeError(
+                        'Got message as bytes but expected str.',
+                    )
+                message = decode_relay_message(message_str)
             except RelayMessageDecodeError as e:
                 logger.error(
-                    'Caught deserialization error on message received from '
-                    f'{websocket.remote_address}: {e} ...closing websocket',
+                    'Closing websocket because deserialization error was '
+                    'caught on message received from '
+                    f'{websocket.remote_address}. {e}',
                 )
                 await websocket.close(4000, reason='Unknown message type.')
                 break
 
             try:
-                if isinstance(message, RelayRegistrationRequest):
-                    await self.register(websocket, message)
-                elif isinstance(message, PeerConnectionRequest):
-                    await self.connect(websocket, message)
-                else:
-                    raise AssertionError('Unreachable.')
+                await self._process_message(websocket, message)
             except UnauthorizedError as e:
                 await websocket.close(
                     code=4001,
@@ -295,4 +310,4 @@ class GlobusAuthRelayServer:
                     message=f'{e.__class__.__name__}: {e}',
                     error=True,
                 )
-                await self.send(websocket, response)
+                await websocket.send(encode_relay_message(response))
