@@ -4,14 +4,17 @@ import uuid
 from typing import Any
 from unittest import mock
 
-import globus_sdk
 import pytest
 import websockets
+import websockets.datastructures
 
+from proxystore.p2p.relay.authenticate import get_authenticator
 from proxystore.p2p.relay.authenticate import get_token_from_headers
 from proxystore.p2p.relay.authenticate import GlobusAuthenticator
 from proxystore.p2p.relay.authenticate import GlobusUser
 from proxystore.p2p.relay.authenticate import NullAuthenticator
+from proxystore.p2p.relay.authenticate import NullUser
+from proxystore.p2p.relay.config import RelayAuthConfig
 from proxystore.p2p.relay.exceptions import ForbiddenError
 from proxystore.p2p.relay.exceptions import UnauthorizedError
 
@@ -20,7 +23,7 @@ def test_null_authenticator() -> None:
     user1 = NullAuthenticator().authenticate_user({})
     user2 = NullAuthenticator().authenticate_user({'Authorization': 'token'})
     assert user1 == user2
-    assert isinstance(NullAuthenticator().authenticate_user({}), str)
+    assert isinstance(NullAuthenticator().authenticate_user({}), NullUser)
 
 
 def test_globus_user_equality() -> None:
@@ -35,13 +38,12 @@ def test_globus_user_equality() -> None:
 
 
 def test_authenticate_user_with_token() -> None:
-    auth_client = globus_sdk.ConfidentialAppAuthClient(str(uuid.uuid4()), '')
-    authenticator = GlobusAuthenticator(auth_client)
+    authenticator = GlobusAuthenticator(str(uuid.uuid4()), '')
 
     token_meta: dict[str, Any] = {
         'active': True,
-        'aud': [authenticator._audience],
-        'sub': auth_client.client_id,
+        'aud': [authenticator.audience],
+        'sub': authenticator.auth_client.client_id,
         'username': 'username',
         'client_id': str(uuid.uuid4()),
         'email': 'username@example.com',
@@ -49,7 +51,7 @@ def test_authenticate_user_with_token() -> None:
     }
 
     with mock.patch.object(
-        auth_client,
+        authenticator.auth_client,
         'oauth2_token_introspect',
         return_value=token_meta,
     ):
@@ -66,10 +68,9 @@ def test_authenticate_user_with_token() -> None:
 
 
 def test_authenticate_user_with_token_expired_token() -> None:
-    auth_client = globus_sdk.ConfidentialAppAuthClient(str(uuid.uuid4()), '')
-    authenticator = GlobusAuthenticator(auth_client)
+    authenticator = GlobusAuthenticator(str(uuid.uuid4()), '')
     with mock.patch.object(
-        auth_client,
+        authenticator.auth_client,
         'oauth2_token_introspect',
         return_value={'active': False},
     ), pytest.raises(
@@ -80,10 +81,13 @@ def test_authenticate_user_with_token_expired_token() -> None:
 
 
 def test_authenticate_user_with_token_wrong_audience() -> None:
-    auth_client = globus_sdk.ConfidentialAppAuthClient(str(uuid.uuid4()), '')
-    authenticator = GlobusAuthenticator(auth_client, audience='audience')
+    authenticator = GlobusAuthenticator(
+        str(uuid.uuid4()),
+        '',
+        audience='audience',
+    )
     with mock.patch.object(
-        auth_client,
+        authenticator.auth_client,
         'oauth2_token_introspect',
         return_value={'active': True},
     ), pytest.raises(
@@ -94,17 +98,40 @@ def test_authenticate_user_with_token_wrong_audience() -> None:
 
 
 def test_authenticate_user_with_token_identity_set() -> None:
-    auth_client = globus_sdk.ConfidentialAppAuthClient(str(uuid.uuid4()), '')
-    authenticator = GlobusAuthenticator(auth_client)
+    authenticator = GlobusAuthenticator(str(uuid.uuid4()), '')
     with mock.patch.object(
-        auth_client,
+        authenticator.auth_client,
         'oauth2_token_introspect',
-        return_value={'active': True, 'aud': [authenticator._audience]},
+        return_value={'active': True, 'aud': [authenticator.audience]},
     ), pytest.raises(
         ForbiddenError,
         match='The identity set of the token does not match this application',
     ):
         authenticator.authenticate_user({'Authorization': 'Bearer <TOKEN>'})
+
+
+def test_get_authenticator() -> None:
+    config = RelayAuthConfig()
+    authenticator = get_authenticator(config)
+    assert isinstance(authenticator, NullAuthenticator)
+
+    config = RelayAuthConfig(
+        method='globus',
+        kwargs={
+            'audience': 'test',
+            'client_id': str(uuid.uuid4()),
+            'client_secret': 'test',
+        },
+    )
+    authenticator = get_authenticator(config)
+    assert isinstance(authenticator, GlobusAuthenticator)
+    assert authenticator.audience == 'test'
+
+
+def test_get_authenticator_unknown() -> None:
+    config = RelayAuthConfig(method='test')  # type: ignore[arg-type]
+    with pytest.raises(ValueError, match='Unknown authentication method'):
+        get_authenticator(config)
 
 
 def test_get_token_from_headers() -> None:
