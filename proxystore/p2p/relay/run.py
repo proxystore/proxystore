@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
 import datetime
 import logging
 import logging.handlers
@@ -113,7 +112,7 @@ async def serve(config: RelayServingConfig) -> None:
             config.logging.default_level,
         )
 
-    config_repr = pprint.pformat(dataclasses.asdict(config), indent=2)
+    config_repr = pprint.pformat(config, indent=2)
     logger.info(f'Relay serving configuration:\n{config_repr}')
 
     async with websockets.server.serve(

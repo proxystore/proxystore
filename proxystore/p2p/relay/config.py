@@ -22,10 +22,15 @@ class RelayAuthConfig:
     Attributes:
         method: Authentication method.
         kwargs: Arbitrary keyword arguments to pass to the authenticator.
+            The kwargs are excluded from the [`repr()`][repr] of this
+            class because they often contain secrets.
     """
 
     method: Literal['globus'] | None = None
-    kwargs: dict[str, Any] = dataclasses.field(default_factory=dict)
+    kwargs: dict[str, Any] = dataclasses.field(
+        default_factory=dict,
+        repr=False,
+    )
 
     @classmethod
     def from_config_dict(cls, options: dict[str, str]) -> Self:
