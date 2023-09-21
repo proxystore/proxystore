@@ -133,7 +133,7 @@ class RelayClient:
         self._ssl_context = ssl_context
         self._create_reconnect_task = reconnect_task
 
-        self._initial_backoff_seconds = 1 / 4
+        self._initial_backoff_seconds = 1.0
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -266,7 +266,7 @@ class RelayClient:
 
         Args:
             retry: Retry the connection with exponential backoff starting at
-                1/4th second and increasing to a max of 60 seconds.
+                one second and increasing to a max of 60 seconds.
         """
         async with self._connect_lock:
             if self._websocket is not None and self._websocket.open:
@@ -298,7 +298,7 @@ class RelayClient:
                     logger.warning(
                         f'Registration with relay server at {self._address} '
                         f'failed because of {e}. Retrying connection in '
-                        f'{backoff_seconds:.2f} seconds',
+                        f'{backoff_seconds} seconds',
                     )
                     await asyncio.sleep(backoff_seconds)
                     backoff_seconds = min(backoff_seconds * 2, 60)
