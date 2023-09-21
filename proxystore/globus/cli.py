@@ -15,8 +15,7 @@ from __future__ import annotations
 import click
 
 from proxystore.globus.manager import NativeAppAuthManager
-from proxystore.globus.scopes import get_auth_scopes_by_resource_server
-from proxystore.globus.scopes import get_transfer_scopes_by_resource_server
+from proxystore.globus.scopes import get_all_scopes_by_resource_server
 
 
 @click.group()
@@ -43,20 +42,14 @@ def cli() -> None:  # pragma: no cover
 def login(collection: list[str], scope: list[str]) -> None:
     """Authenticate with Globus Auth.
 
-    This requests scopes for the the Globus Auth and Transfer services.
-    Collections or scopes options can be strung together. E.g.,
+    This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
+    relay server. Collections or scopes options can be strung together. E.g.,
     request transfer scope for multiple collections with:
 
     $ proxystore-globus-auth -c UUID -c UUID -c UUID
     """
-    resource_server_scopes = {
-        **get_auth_scopes_by_resource_server(),
-        **get_transfer_scopes_by_resource_server(collection),
-    }
-
-    manager = NativeAppAuthManager(
-        resource_server_scopes=resource_server_scopes,
-    )
+    basic_scopes = get_all_scopes_by_resource_server(collection)
+    manager = NativeAppAuthManager(resource_server_scopes=basic_scopes)
 
     if manager.logged_in:
         click.echo(
