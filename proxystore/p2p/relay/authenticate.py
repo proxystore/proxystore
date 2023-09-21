@@ -12,11 +12,10 @@ from typing import TypeVar
 import globus_sdk
 
 from proxystore.globus.client import get_confidential_app_auth_client
+from proxystore.globus.scopes import ProxyStoreRelayScopes
 from proxystore.p2p.relay.config import RelayAuthConfig
 from proxystore.p2p.relay.exceptions import ForbiddenError
 from proxystore.p2p.relay.exceptions import UnauthorizedError
-
-PROXYSTORE_RESOURCE_SERVER_NAME = 'ProxyStore'
 
 UserT = TypeVar('UserT', covariant=True)
 """Auth user generic type."""
@@ -111,7 +110,9 @@ class GlobusAuthenticator:
             Ignored if `auth_client` is provided.
         client_secret: Globus application client secret. See `client_id` for
             details. Ignored if `auth_client` is provided.
-        audience: Intended audience of the token.
+        audience: Intended audience of the token. This should typically be
+            the resource server of the the token was issued for. E.g.,
+            the UUID of the ProxyStore Relay Server application.
         auth_client: Optional confidential application authentication client
             which is used for introspecting client tokens.
     """
@@ -121,7 +122,7 @@ class GlobusAuthenticator:
         client_id: str | None = None,
         client_secret: str | None = None,
         *,
-        audience: str = PROXYSTORE_RESOURCE_SERVER_NAME,
+        audience: str = ProxyStoreRelayScopes.resource_server,
         auth_client: globus_sdk.ConfidentialAppAuthClient | None = None,
     ) -> None:
         self.auth_client = (
@@ -150,7 +151,6 @@ class GlobusAuthenticator:
             ForbiddenError: if the tokens have expired or been revoked.
             ForbiddenError: if `audience` is not included in the token's
                 audience.
-            ForbiddenError: if the identity set of the tokens does not match.
         """
         token = get_token_from_headers(headers)
         token_meta = self.auth_client.oauth2_token_introspect(token)
@@ -166,12 +166,6 @@ class GlobusAuthenticator:
                 f'Token audience does not include "{self.audience}". This '
                 'could result in a confused deputy attack. Ensure the correct '
                 'scopes are requested when the token is created.',
-            )
-
-        if self.auth_client.client_id != token_meta.get('sub'):
-            raise ForbiddenError(
-                'The identity set of the token does not match this application '
-                'client ID.',
             )
 
         return GlobusUser(

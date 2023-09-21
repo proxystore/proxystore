@@ -97,19 +97,6 @@ def test_authenticate_user_with_token_wrong_audience() -> None:
         authenticator.authenticate_user({'Authorization': 'Bearer <TOKEN>'})
 
 
-def test_authenticate_user_with_token_identity_set() -> None:
-    authenticator = GlobusAuthenticator(str(uuid.uuid4()), '')
-    with mock.patch.object(
-        authenticator.auth_client,
-        'oauth2_token_introspect',
-        return_value={'active': True, 'aud': [authenticator.audience]},
-    ), pytest.raises(
-        ForbiddenError,
-        match='The identity set of the token does not match this application',
-    ):
-        authenticator.authenticate_user({'Authorization': 'Bearer <TOKEN>'})
-
-
 def test_get_authenticator() -> None:
     config = RelayAuthConfig()
     authenticator = get_authenticator(config)
