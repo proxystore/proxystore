@@ -180,9 +180,13 @@ async def test_connect_on_recv(relay_server) -> None:
     client = RelayClient(relay_server.address)
     with pytest.raises(RelayNotConnectedError):
         assert client.websocket is None
-    with pytest.raises(asyncio.TimeoutError):
-        await asyncio.wait_for(client.recv(), 0.01)
-    assert client.websocket is not None
+    with mock.patch.object(client, 'connect', AsyncMock()) as mock_connect:
+        with pytest.raises(RelayNotConnectedError):
+            # This will fail once it tries to get the open websocket
+            # because we mocked connect, but we just want to make sure
+            # connect is called
+            await client.recv()
+        mock_connect.assert_awaited_once()
     await client.close()
 
 
