@@ -24,7 +24,7 @@ from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError  # noqa: F401
-from proxystore.p2p.relay import RelayClient
+from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.messages import PeerConnectionRequest
 from proxystore.p2p.relay.messages import RelayMessageDecodeError
 from proxystore.p2p.relay.messages import RelayResponse

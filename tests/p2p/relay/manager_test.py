@@ -5,9 +5,9 @@ from unittest import mock
 
 import websockets
 
-from proxystore.p2p.relay.globus.manager import Client
-from proxystore.p2p.relay.globus.manager import ClientManager
-from proxystore.p2p.relay.globus.utils import GlobusUser
+from proxystore.p2p.relay.authenticate import GlobusUser
+from proxystore.p2p.relay.manager import Client
+from proxystore.p2p.relay.manager import ClientManager
 
 
 def mock_websocket() -> websockets.server.WebSocketServerProtocol:
@@ -15,11 +15,11 @@ def mock_websocket() -> websockets.server.WebSocketServerProtocol:
         return websockets.server.WebSocketServerProtocol()  # type: ignore[call-arg]
 
 
-def generate_client() -> Client:
+def generate_client() -> Client[GlobusUser]:
     return Client(
         name='name',
         uuid=uuid.uuid4(),
-        globus_user=GlobusUser('username', uuid.uuid4()),
+        user=GlobusUser('username', uuid.uuid4()),
         websocket=mock_websocket(),
     )
 
@@ -31,7 +31,7 @@ def test_client_equality() -> None:
     client2 = Client(
         name='other-name',
         uuid=client1.uuid,
-        globus_user=client1.globus_user,
+        user=client1.user,
         websocket=mock_websocket(),
     )
     assert client1 == client2
@@ -44,7 +44,7 @@ def test_client_repr() -> None:
 
 
 def test_client_manager() -> None:
-    manager = ClientManager()
+    manager: ClientManager[GlobusUser] = ClientManager()
 
     # Test operations on empty manager
     assert len(manager.get_clients()) == 0

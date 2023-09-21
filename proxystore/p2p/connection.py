@@ -34,7 +34,7 @@ from proxystore.p2p.chunks import chunkify
 from proxystore.p2p.chunks import reconstruct
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
-from proxystore.p2p.relay import RelayClient
+from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.messages import PeerConnectionRequest
 from proxystore.utils.counter import AtomicCounter
 
@@ -149,7 +149,7 @@ class PeerConnection:
 
         Note:
             This will not call
-            [`RelayClient.close()`][proxystore.p2p.relay.protocols.RelayClient].
+            [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient].
         """
         logger.info(f'{self._log_prefix}: closing connection')
         # Flush send buffers before close

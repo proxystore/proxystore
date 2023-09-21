@@ -10,7 +10,7 @@ import click
 import globus_sdk
 
 from proxystore.globus.client import get_native_app_auth_client
-from proxystore.globus.scopes import get_auth_scopes_by_resource_server
+from proxystore.globus.scopes import get_all_scopes_by_resource_server
 from proxystore.globus.storage import get_token_storage_adapter
 
 
@@ -62,9 +62,10 @@ class NativeAppAuthManager:
         client: Optionally override the standard ProxyStore auth client.
         storage: Optionally override the default token storage.
         resource_server_scopes: Mapping of resource server URLs to a list
-            of scopes for that resource server. If unspecified, only basic
-            auth scopes will be requested. This parameter can be used
-            to request scopes for many resource server when
+            of scopes for that resource server. If unspecified, all basic
+            scopes needed by ProxyStore components will be requested.
+            This parameter can be used to request scopes for many resource
+            server when
             [`login()`][proxystore.globus.manager.NativeAppAuthManager.login]
             is invoked.
     """
@@ -89,7 +90,7 @@ class NativeAppAuthManager:
         self._resource_server_scopes = (
             resource_server_scopes
             if resource_server_scopes is not None
-            else get_auth_scopes_by_resource_server()
+            else get_all_scopes_by_resource_server()
         )
 
     @property

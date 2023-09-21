@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 2 May 2023*
+*Last updated 21 September 2023*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -187,11 +187,6 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 ## Hosting a Relay Server
 
 Currently, ProxyStore does not provided any publicly host relay servers,
-though we hope to in the future! Hosting your own relay server is simple
-if you have a host accessible from the internet (e.g., a compute instance from
-a cloud provider or a machine behind a NAT with an open port) and the
-ProxyStore package installed.
-
-```bash
-$ proxystore-relay --port 3579
-```
+though we hope to in the future! However, we do provide all of the tools to
+host your own relay server. See the [Relay Serving Guide](relay-serving.md)
+to learn more.

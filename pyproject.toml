@@ -73,7 +73,8 @@ docs = [
     "mkdocs-click",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
-    "mkdocs-material",
+    # mkdocs-material 9.4.0 makes mkdocs-section-index break
+    "mkdocs-material!=9.4.0",
     "mkdocs-section-index",
     "mkdocstrings",
     "mkdocstrings-python",
@@ -85,7 +86,7 @@ docs = [
 [project.scripts]
 proxystore-endpoint = "proxystore.endpoint.cli:cli"
 proxystore-globus-auth = "proxystore.globus.cli:cli"
-proxystore-relay = "proxystore.p2p.relay.basic.server:cli"
+proxystore-relay = "proxystore.p2p.relay.run:cli"
 
 [tool.black]
 line-length = 79

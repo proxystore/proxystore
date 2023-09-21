@@ -12,7 +12,7 @@ from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.relay import BasicRelayClient
+from proxystore.p2p.relay.client import RelayClient
 from proxystore.serialize import serialize
 from testing.compat import randbytes
 
@@ -21,11 +21,11 @@ from testing.compat import randbytes
 async def endpoints(
     relay_server,
 ) -> AsyncGenerator[tuple[Endpoint, Endpoint], None]:
-    relay_client_1 = BasicRelayClient(
+    relay_client_1 = RelayClient(
         relay_server.address,
         client_name='test-endpoint-1',
     )
-    relay_client_2 = BasicRelayClient(
+    relay_client_2 = RelayClient(
         relay_server.address,
         client_name='test-endpoint-2',
     )
@@ -38,7 +38,7 @@ async def endpoints(
 
 @pytest.mark.asyncio()
 async def test_init(relay_server) -> None:
-    relay_client = BasicRelayClient(
+    relay_client = RelayClient(
         relay_server.address,
         client_name='test-init-endpoint',
     )
@@ -112,7 +112,7 @@ async def test_remote_error_propogation(
 
 @pytest.mark.asyncio()
 async def test_peering_not_available(relay_server) -> None:
-    relay_client = BasicRelayClient(
+    relay_client = RelayClient(
         relay_server.address,
         client_name='test-peering-not-available',
     )
@@ -127,7 +127,7 @@ async def test_peering_not_available(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_delayed_peer_manager_async_init(relay_server) -> None:
-    relay_client = BasicRelayClient(
+    relay_client = RelayClient(
         relay_server.address,
         client_name='test-unknown-peer',
     )
@@ -143,13 +143,16 @@ async def test_delayed_peer_manager_async_init(relay_server) -> None:
 
 @pytest.mark.asyncio()
 async def test_unknown_peer(relay_server) -> None:
-    relay_client = BasicRelayClient(
+    relay_client = RelayClient(
         relay_server.address,
         client_name='test-unknown-peer',
     )
     peer_manager = await PeerManager(relay_client)
     async with Endpoint(peer_manager=peer_manager) as endpoint:
-        with pytest.raises(PeerRequestError, match='unknown'):
+        with pytest.raises(
+            PeerRequestError,
+            match='Cannot forward peer connection message to peer',
+        ):
             await endpoint.get('key', endpoint=uuid.uuid4())
 
 

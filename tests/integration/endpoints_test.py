@@ -16,8 +16,9 @@ import pytest
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
-from proxystore.p2p.relay import BasicRelayClient
-from proxystore.p2p.relay.basic.server import serve
+from proxystore.p2p.relay.client import RelayClient
+from proxystore.p2p.relay.config import RelayServingConfig
+from proxystore.p2p.relay.run import serve
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.base import Store
@@ -30,7 +31,7 @@ async def wait_for_server(host: str, port: int) -> None:
     """Wait for websocket server to be available for connections."""
     while True:
         try:
-            client = BasicRelayClient(f'ws://{host}:{port}')
+            client = RelayClient(f'ws://{host}:{port}')
             await client.connect(retry=False)
         except OSError:  # pragma: no cover
             await asyncio.sleep(0.01)
@@ -41,7 +42,8 @@ async def wait_for_server(host: str, port: int) -> None:
 
 def serve_relay_server(host: str, port: int) -> None:
     """Run relay server."""
-    asyncio.run(serve(host, port))
+    config = RelayServingConfig(host=host, port=port)
+    asyncio.run(serve(config))
 
 
 @pytest.fixture(scope='module')
