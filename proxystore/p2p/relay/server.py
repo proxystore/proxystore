@@ -119,9 +119,16 @@ class RelayServer(Generic[UserT]):
             ForbiddenError: if the requested client UUID is already
                 registered by another user.
         """
-        auth_user = self.authenticator.authenticate_user(
-            websocket.request_headers,
-        )
+        try:
+            auth_user = self.authenticator.authenticate_user(
+                websocket.request_headers,
+            )
+        except RelayServerError as e:
+            logging.warning(
+                'Failed to authenticate connection request from '
+                f'{websocket.remote_address}. {e.__class__.__name__}: {e}',
+            )
+            raise
 
         existing_client = self.client_manager.get_client_by_uuid(request.uuid)
         if existing_client is not None:
@@ -151,8 +158,9 @@ class RelayServer(Generic[UserT]):
             user=auth_user,
             websocket=websocket,
         )
-
         self.client_manager.add_client(client)
+        logger.info(f'Registered client: {client}')
+
         await self.send(client, RelayResponse(success=True))
 
     async def unregister(self, client: Client[UserT], expected: bool) -> None:
