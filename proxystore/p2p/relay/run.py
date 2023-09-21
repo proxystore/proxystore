@@ -141,13 +141,7 @@ async def serve(config: RelayServingConfig) -> None:
 
 
 @click.command()
-@click.option(
-    '--config',
-    '-c',
-    'config_path',
-    type=click.File('r'),
-    help='Configuration file.',
-)
+@click.option('--config', '-c', 'config_path', help='Configuration file.')
 @click.option('--host', metavar='ADDR', help='Interface to bind to.')
 @click.option('--port', type=int, metavar='PORT', help='Port to bind to.')
 @click.option('--log-dir', metavar='PATH', help='Logging directoryy.')
