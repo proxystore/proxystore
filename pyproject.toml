@@ -73,7 +73,8 @@ docs = [
     "mkdocs-click",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
-    "mkdocs-material",
+    # mkdocs-material 9.4.0 makes mkdocs-section-index break
+    "mkdocs-material!=9.4.0",
     "mkdocs-section-index",
     "mkdocstrings",
     "mkdocstrings-python",
