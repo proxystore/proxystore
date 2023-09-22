@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import uuid
+from typing import Literal
 
 try:
     import quart
@@ -27,6 +28,8 @@ from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.globus.manager import NativeAppAuthManager
+from proxystore.globus.scopes import ProxyStoreRelayScopes
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.relay.client import RelayClient
 from proxystore.utils.data import chunk_bytes
@@ -64,6 +67,21 @@ def create_app(
     return app
 
 
+def _get_auth_headers(method: Literal['globus'] | None) -> dict[str, str]:
+    if method is None:
+        return {}
+    elif method == 'globus':
+        manager = NativeAppAuthManager()
+        authorizer = manager.get_authorizer(
+            ProxyStoreRelayScopes.resource_server,
+        )
+        bearer = authorizer.get_authorization_header()
+        assert bearer is not None
+        return {'Authorization': bearer}
+    else:
+        raise AssertionError('Unreachable.')
+
+
 async def _serve_async(config: EndpointConfig) -> None:
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
@@ -91,14 +109,17 @@ async def _serve_async(config: EndpointConfig) -> None:
 
     peer_manager: PeerManager | None = None
     relay_server = kwargs.pop('relay_server', None)
+    relay_auth = kwargs.pop('relay_auth', None)
     verify_certificate = kwargs.pop('verify_certificate', True)
     peer_channels = kwargs.pop('peer_channels', 1)
 
     if relay_server is not None:
+        headers = _get_auth_headers(relay_auth)
         relay_client = RelayClient(
             address=relay_server,
             client_name=config.name,
             client_uuid=config.uuid,
+            extra_headers=headers,
             verify_certificate=verify_certificate,
         )
         peer_manager = PeerManager(relay_client, peer_channels=peer_channels)

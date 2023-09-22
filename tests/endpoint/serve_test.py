@@ -17,6 +17,7 @@ import requests
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
@@ -386,3 +387,21 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     _serve(log_file2)
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file2)
+
+
+def test_get_auth_headers() -> None:
+    assert _get_auth_headers(None) == {}
+
+    mock_authorizer = mock.MagicMock()
+    header = 'Bearer <TOKEN>'
+    with mock.patch(
+        'proxystore.globus.manager.NativeAppAuthManager.get_authorizer',
+        return_value=mock_authorizer,
+    ), mock.patch(
+        'proxystore.globus.manager.get_token_storage_adapter',
+    ), mock.patch.object(
+        mock_authorizer,
+        'get_authorization_header',
+        return_value=header,
+    ):
+        assert _get_auth_headers('globus')['Authorization'] == header

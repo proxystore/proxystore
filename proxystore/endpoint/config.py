@@ -6,6 +6,7 @@ import json
 import os
 import re
 import uuid
+from typing import Literal
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 
@@ -25,6 +26,7 @@ class EndpointConfig:
         host: Host endpoint is running on.
         port: Port endpoint is running on.
         relay_server: Optional relay server the endpoint should register with.
+        relay_auth: Relay server authentication method.
         database_path: Optional path to SQLite database file that will be used
             for storing endpoint data. If `None`, data will only be stored
             in-memory.
@@ -45,6 +47,7 @@ class EndpointConfig:
     host: str | None
     port: int
     relay_server: str | None = None
+    relay_auth: Literal['globus'] | None = None
     database_path: str | None = None
     max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT
     peer_channels: int = 1
