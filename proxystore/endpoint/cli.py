@@ -108,6 +108,12 @@ def version() -> None:
     help='Optional relay server address.',
 )
 @click.option(
+    '--relay-auth/--no-relay-auth',
+    default=True,
+    metavar='BOOL',
+    help='Disable relay server authentication.',
+)
+@click.option(
     '--peer-channels',
     default=1,
     type=int,
@@ -124,6 +130,7 @@ def configure(
     name: str,
     port: int,
     relay_server: str,
+    relay_auth: bool,
     peer_channels: int,
     persist: bool,
 ) -> None:
@@ -133,6 +140,7 @@ def configure(
             name,
             port=port,
             relay_server=relay_server,
+            relay_auth=relay_auth,
             peer_channels=peer_channels,
             persist_data=persist,
         ),

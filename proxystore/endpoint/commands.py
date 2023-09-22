@@ -101,6 +101,7 @@ def configure_endpoint(
     *,
     port: int,
     relay_server: str | None,
+    relay_auth: bool = True,
     proxystore_dir: str | None = None,
     peer_channels: int = 1,
     persist_data: bool = False,
@@ -111,6 +112,7 @@ def configure_endpoint(
         name: Name of endpoint.
         port: Port for endpoint to listen on.
         relay_server: Optional relay server address for P2P endpoint connections.
+        relay_auth: Relay server used Globus Auth.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
         peer_channels: Number of datachannels per peer connection
@@ -138,6 +140,7 @@ def configure_endpoint(
             host=None,
             port=port,
             relay_server=relay_server,
+            relay_auth='globus' if relay_auth else None,
             database_path=database_path,
             peer_channels=peer_channels,
         )
