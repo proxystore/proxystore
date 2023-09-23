@@ -42,19 +42,18 @@ encryption if a valid SSL certificate is provided.
 
 Advanced serving, such as TLS encryption, requires a relay configuration file.
 
-```cfg title="relay.cfg"
-[serving]
+```toml title="relay.toml"
 port = 8700
-certfile = cert.pem
-keyfile = privkey.pem
+certfile = "cert.pem"
+keyfile = "privkey.pem"
 ```
 
-The relay can be started using the `relay.cfg` file and will be accessible
+The relay can be started using the `relay.toml` file and will be accessible
 at `wss://localhost:8700` (note the change in protocol from `ws://` to
 `wss://`).
 
 ```bash
-$ proxystore-relay --config relay.cfg
+$ proxystore-relay --config relay.toml
 ```
 
 ### Logging Behavior
@@ -67,15 +66,15 @@ options or via the configuration file.
     CLI options can be combined with a configuration file, and CLI options
     will override the values in the configuration file if both are provided.
 
-The logging configuration is set in the `[serving.logging]` section. All
+The logging configuration is set in the `[logging]` section. All
 configurations are optional with defaults defined in
 [`RelayLoggingConfig`][proxystore.p2p.relay.config.RelayLoggingConfig].
 
-```cfg title="relay.cfg"
-[serving.logging]
-log_dir = /path/to/log/dir
-default_log_level = INFO
-websockets_log_level = WARNING
+```toml title="relay.toml"
+[logging]
+log_dir = "/path/to/log/dir"
+default_log_level = "INFO"
+websockets_log_level = "WARNING"
 current_client_interval = 60
 current_client_limit = 32
 ```
@@ -175,18 +174,20 @@ to authenticate the clients.
 
 ### Update the Relay Config
 
-The `[serving.auth]` section of the relay configuration is used to enable
+The `[auth]` section of the relay configuration is used to enable
 the authentication method of the relay server. Add the following and update
 the `client_id` and `client_secret` with the client UUID and secret from the
 application registration. The `audience` parameter should also be set to the
 client UUID.
 
-```cfg title="relay.cfg"
-[serving.auth]
-method = globus
-client_id = ...
-client_secret = ...
-audience = ...
+```toml title="relay.toml"
+[auth]
+method = "globus"
+
+[auth.kwargs]
+client_id = "..."
+client_secret = "..."
+audience = "..."
 ```
 
 The relay server will use the
@@ -206,7 +207,7 @@ After updating the configuration file, the relay can be run normally.
     using Globus Auth for user authentication.
 
 ```bash
-$ proxystore-relay --config relay.cfg
+$ proxystore-relay --config relay.toml
 ```
 
 ### Connecting as a Client

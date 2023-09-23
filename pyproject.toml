@@ -48,6 +48,7 @@ endpoints = [
     "python-daemon",
     "quart>=0.18.0",
     "requests>=2.27.1",
+    "tosholi",
     "websockets>=10.0",
 ]
 redis = ["redis>=3.4"]

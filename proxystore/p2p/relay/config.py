@@ -1,18 +1,22 @@
 """Relay server configuration file parsing."""
 from __future__ import annotations
 
-import configparser
 import dataclasses
 import logging
 import pathlib
 import sys
 from typing import Any
+from typing import Dict
 from typing import Literal
+from typing import Optional
+from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
+
+import tosholi
 
 
 @dataclasses.dataclass
@@ -26,29 +30,11 @@ class RelayAuthConfig:
             class because they often contain secrets.
     """
 
-    method: Literal['globus'] | None = None
-    kwargs: dict[str, Any] = dataclasses.field(
+    method: Optional[Literal['globus']] = None  # noqa: UP007
+    kwargs: Dict[str, Any] = dataclasses.field(  # noqa: UP006
         default_factory=dict,
         repr=False,
     )
-
-    @classmethod
-    def from_config_dict(cls, options: dict[str, str]) -> Self:
-        """Parse authentication configuration from dictionary of strings.
-
-        Args:
-            options: Flat dictionary mapping of string keys to string values
-                to be parsed into the correct types.
-
-        Returns:
-            Authentication configuration.
-        """
-        method = options.pop('method', None)
-        if isinstance(method, str):
-            method = method.lower()
-            if method not in ('globus',):
-                raise ValueError(f'Unknown authentication method "{method}".')
-        return cls(method, options)  # type: ignore[arg-type]
 
 
 @dataclasses.dataclass
@@ -68,47 +54,11 @@ class RelayLoggingConfig:
             list will be logged.
     """
 
-    log_dir: str | None = None
-    default_level: int = logging.INFO
-    websockets_level: int = logging.WARNING
-    current_client_interval: int | None = 60
-    current_client_limit: int | None = 32
-
-    @classmethod
-    def from_config_dict(cls, options: dict[str, str]) -> Self:
-        """Parse logging configuration from dictionary of strings.
-
-        Args:
-            options: Flat dictionary mapping of string keys to string values
-                to be parsed into the correct types.
-
-        Returns:
-            Logging configuration.
-        """
-        processed_options: dict[str, Any] = {}
-        processed_options['log_dir'] = options.get('log_dir', None)
-
-        default_level = options.get('default_level', None)
-        if default_level is not None:
-            processed_options['default_level'] = logging.getLevelName(
-                default_level,
-            )
-
-        websockets_level = options.get('websockets_level', None)
-        if websockets_level is not None:
-            processed_options['websockets_level'] = logging.getLevelName(
-                websockets_level,
-            )
-
-        client_interval = options.get('current_client_interval', None)
-        if client_interval is not None:
-            processed_options['current_client_interval'] = int(client_interval)
-
-        client_limit = options.get('current_client_limit', None)
-        if client_limit is not None:
-            processed_options['current_client_limit'] = int(client_limit)
-
-        return cls(**processed_options)
+    log_dir: Optional[str] = None  # noqa: UP007
+    default_level: Union[int, str] = logging.INFO  # noqa: UP007
+    websockets_level: Union[int, str] = logging.WARNING  # noqa: UP007
+    current_client_interval: Optional[int] = 60  # noqa: UP007
+    current_client_limit: Optional[int] = 32  # noqa: UP007
 
 
 @dataclasses.dataclass
@@ -125,29 +75,28 @@ class RelayServingConfig:
         logging: Logging configuration.
     """
 
-    host: str | None = None
+    host: Optional[str] = None  # noqa: UP007
     port: int = 8700
-    certfile: str | None = None
-    keyfile: str | None = None
+    certfile: Optional[str] = None  # noqa: UP007
+    keyfile: Optional[str] = None  # noqa: UP007
     auth: RelayAuthConfig = dataclasses.field(default_factory=RelayAuthConfig)
     logging: RelayLoggingConfig = dataclasses.field(
         default_factory=RelayLoggingConfig,
     )
 
     @classmethod
-    def from_config(cls, filepath: str | pathlib.Path) -> Self:
-        """Parse an INI config file.
+    def from_toml(cls, filepath: str | pathlib.Path) -> Self:
+        """Parse an TOML config file.
 
         Example:
             Minimal config without SSL and without authentication.
-            ```cfg title="relay.cfg"
-            [serving]
+            ```toml title="relay.toml"
             port = 8700
 
-            [serving.logging]
-            log_dir = /path/to/log/dir
-            default_log_level = INFO
-            websockets_log_level = WARNING
+            [logging]
+            log_dir = "/path/to/log/dir"
+            default_log_level = "INFO"
+            websockets_log_level = "WARNING"
             connected_client_logging_interval = 60
             connected_client_logging_limit = 32
             ```
@@ -155,77 +104,47 @@ class RelayServingConfig:
             ```python
             from proxystore.p2p.relay.globus.config
 
-            config = RelayServingConfig.from_config('relay.cfg')
+            config = RelayServingConfig.from_toml('relay.toml')
             ```
 
         Example:
             Serve with SSL and Globus Auth.
-            ```cfg title="relay.cfg"
-            [serving]
-            host = 0.0.0.0
+            ```toml title="relay.toml"
+            host = "0.0.0.0"
             port = 8700
-            certfile = /path/to/cert.pem
-            keyfile = /path/to/privkey.pem
+            certfile = "/path/to/cert.pem"
+            keyfile = "/path/to/privkey.pem"
 
-            [serving.auth]
-            method = globus
-            client_id = ...
-            client_secret = ...
-            audience = ...
+            [auth]
+            method = "globus"
 
-            [serving.logging]
-            log_dir = /path/to/log/dir
-            default_log_level = INFO
-            websockets_log_level = WARNING
+            [auth.kwargs]
+            client_id = "..."
+            client_secret = "..."
+
+            [logging]
+            log_dir = "/path/to/log/dir"
+            default_log_level = "INFO"
+            websockets_log_level = "WARNING"
             connected_client_logging_interval = 60
             connected_client_logging_limit = 32
             ```
 
         Note:
             Omitted values will be set to their defaults (if they are an
-            optional value with a default), and options without values
-            are considered `None`. E.g.,
-            ```cfg title="relay.cfg"
+            optional value with a default).
+            ```toml title="relay.toml"
             [serving]
-            ...
-            certfile = /path/to/cert.pem
-            keyfile
+            certfile = "/path/to/cert.pem"
             ```
 
             ```python
             from proxystore.p2p.relay.config import RelayServingConfig
 
-            config = RelayServingConfig.from_config('relay.cfg')
+            config = RelayServingConfig.from_config('relay.toml')
             assert config.certfile == '/path/to/cert.pem'
             assert config.keyfile is None
             ```
         """
-        config = configparser.ConfigParser(allow_no_value=True)
-        with open(filepath) as f:
-            config.read_string(f.read())
-
-        options: dict[str, Any] = (
-            dict(config['serving']) if 'serving' in config else {}
-        )
-        # Currently every value type in options is str | None, but some
-        # options need to be cast to ints
-        if 'port' in options and options['port'] is not None:
-            options['port'] = int(options['port'])
-
-        auth_options = (
-            config['serving.auth'] if 'serving.auth' in config else None
-        )
-        if auth_options is not None:
-            options['auth'] = RelayAuthConfig.from_config_dict(
-                dict(auth_options),
-            )
-
-        logging_options = (
-            config['serving.logging'] if 'serving.logging' in config else None
-        )
-        if logging_options is not None:
-            options['logging'] = RelayLoggingConfig.from_config_dict(
-                dict(logging_options),
-            )
-
-        return cls(**options)
+        with open(filepath, 'rb') as f:
+            return tosholi.load(cls, f)
