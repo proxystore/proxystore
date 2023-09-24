@@ -86,7 +86,7 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     assert cfg.name == _NAME
     assert cfg.host is None
     assert cfg.port == _PORT
-    assert cfg.relay_server == _SERVER
+    assert cfg.relay.address == _SERVER
 
     assert any(
         [
@@ -337,7 +337,7 @@ def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
     endpoint_dir = os.path.join(tmp_path, _NAME)
     os.makedirs(endpoint_dir)
     with open(os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE), 'w') as f:
-        f.write('not valid json')
+        f.write('not valid toml')
 
     rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
@@ -355,7 +355,12 @@ def test_start_endpoint_hanging_different_host(
 
     endpoint_dir = os.path.join(tmp_path, _NAME)
 
-    config = EndpointConfig(name=_NAME, uuid=_UUID, host='abcd', port=1234)
+    config = EndpointConfig(
+        name=_NAME,
+        uuid=str(_UUID),
+        host='abcd',
+        port=1234,
+    )
     write_config(config, endpoint_dir)
 
     pid_file = get_pid_filepath(endpoint_dir)
@@ -379,7 +384,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
 
     endpoint_dir = os.path.join(tmp_path, _NAME)
 
-    config = EndpointConfig(name=_NAME, uuid=_UUID, host=None, port=1234)
+    config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
     write_config(config, endpoint_dir)
 
     pid_file = get_pid_filepath(endpoint_dir)
@@ -465,7 +470,12 @@ def test_stop_endpoint_hanging_different_host(
     caplog.set_level(logging.ERROR)
     endpoint_dir = os.path.join(tmp_path, _NAME)
 
-    config = EndpointConfig(name=_NAME, uuid=_UUID, host='abcd', port=1234)
+    config = EndpointConfig(
+        name=_NAME,
+        uuid=str(_UUID),
+        host='abcd',
+        port=1234,
+    )
     write_config(config, endpoint_dir)
 
     pid_file = get_pid_filepath(endpoint_dir)
@@ -491,7 +501,7 @@ def test_stop_endpoint_dangling_pid_file(
     caplog.set_level(logging.DEBUG)
     endpoint_dir = os.path.join(tmp_path, _NAME)
 
-    config = EndpointConfig(name=_NAME, uuid=_UUID, host=None, port=1234)
+    config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
     write_config(config, endpoint_dir)
 
     pid_file = get_pid_filepath(endpoint_dir)

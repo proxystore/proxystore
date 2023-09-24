@@ -57,10 +57,9 @@ def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
     """Launch endpoint in subprocess."""
     config = EndpointConfig(
         name='endpoint-fixture',
-        uuid=uuid.uuid4(),
+        uuid=str(uuid.uuid4()),
         host='localhost',
         port=open_port(),
-        relay_server=None,
     )
     server_handle = Process(
         target=serve_endpoint_silent,

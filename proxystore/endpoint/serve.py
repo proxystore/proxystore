@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import asyncio
-import dataclasses
 import json
 import logging
 import os
 import uuid
+from typing import Any
 from typing import Literal
 
 try:
@@ -67,14 +67,19 @@ def create_app(
     return app
 
 
-def _get_auth_headers(method: Literal['globus'] | None) -> dict[str, str]:
+def _get_auth_headers(
+    method: Literal['globus'] | None,
+    **kwargs: Any,
+) -> dict[str, str]:
     if method is None:
         return {}
     elif method == 'globus':
         manager = NativeAppAuthManager()
-        authorizer = manager.get_authorizer(
+        resource_server = kwargs.get(
+            'resource_server',
             ProxyStoreRelayScopes.resource_server,
         )
+        authorizer = manager.get_authorizer(resource_server)
         bearer = authorizer.get_authorization_header()
         assert bearer is not None
         return {'Authorization': bearer}
@@ -86,16 +91,8 @@ async def _serve_async(config: EndpointConfig) -> None:
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
 
-    kwargs = dataclasses.asdict(config)
-    # Some parameters are popped from this dictionary representation of the
-    # EndpointConfig as they are consumed by other objects. At the end,
-    # the only remaining parameters in kwargs are those passed to the
-    # Endpoint constructor
-    kwargs.pop('host', None)
-    kwargs.pop('port', None)
-
-    database_path = kwargs.pop('database_path', None)
     storage: SQLiteStorage | None
+    database_path = config.storage.database_path
     if database_path is not None:
         logger.info(
             f'Using SQLite database for storage (path: {database_path})',
@@ -108,26 +105,29 @@ async def _serve_async(config: EndpointConfig) -> None:
         storage = None
 
     peer_manager: PeerManager | None = None
-    relay_server = kwargs.pop('relay_server', None)
-    relay_auth = kwargs.pop('relay_auth', None)
-    verify_certificate = kwargs.pop('verify_certificate', True)
-    peer_channels = kwargs.pop('peer_channels', 1)
-
-    if relay_server is not None:
-        headers = _get_auth_headers(relay_auth)
-        relay_client = RelayClient(
-            address=relay_server,
-            client_name=config.name,
-            client_uuid=config.uuid,
-            extra_headers=headers,
-            verify_certificate=verify_certificate,
+    if config.relay.address is not None:
+        headers = _get_auth_headers(
+            method=config.relay.auth.method,
+            **config.relay.auth.kwargs,
         )
-        peer_manager = PeerManager(relay_client, peer_channels=peer_channels)
+        relay_client = RelayClient(
+            address=config.relay.address,
+            client_name=config.name,
+            client_uuid=uuid.UUID(config.uuid),
+            extra_headers=headers,
+            verify_certificate=config.relay.verify_certificate,
+        )
+        peer_manager = PeerManager(
+            relay_client,
+            peer_channels=config.relay.peer_channels,
+        )
 
     endpoint = await Endpoint(
+        name=config.name,
+        uuid=uuid.UUID(config.uuid),
+        max_object_size=config.storage.max_object_size,
         peer_manager=peer_manager,
         storage=storage,
-        **kwargs,
     )
     app = create_app(endpoint)
 
@@ -142,7 +142,7 @@ async def _serve_async(config: EndpointConfig) -> None:
     server = uvicorn.Server(server_config)
 
     logger.info(
-        f'Serving endpoint {config.uuid} ({config.name}) on '
+        f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
         f'{config.host}:{config.port}',
     )
     logger.info(f'Config: {config}')

@@ -66,7 +66,7 @@ def test_configure_command(home_dir) -> None:
     cfg = read_config(endpoint_dir)
     assert cfg.name == name
     assert cfg.port == port
-    assert cfg.relay_server == relay_server
+    assert cfg.relay.address == relay_server
 
 
 def test_list_command(home_dir, caplog) -> None:

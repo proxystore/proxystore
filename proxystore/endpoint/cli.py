@@ -109,7 +109,7 @@ def version() -> None:
 )
 @click.option(
     '--relay-auth/--no-relay-auth',
-    default=True,
+    default=False,
     metavar='BOOL',
     help='Disable relay server authentication.',
 )

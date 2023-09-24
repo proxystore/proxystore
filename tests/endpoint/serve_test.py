@@ -16,6 +16,7 @@ import quart
 import requests
 
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import create_app
@@ -319,10 +320,10 @@ async def test_missing_key(quart_app) -> None:
 def test_serve(use_uvloop: bool) -> None:
     config = EndpointConfig(
         name='my-endpoint',
-        uuid=uuid.uuid4(),
+        uuid=str(uuid.uuid4()),
         host='localhost',
         port=open_port(),
-        database_path=':memory:',
+        storage=EndpointStorageConfig(database_path=':memory:'),
     )
 
     process = multiprocessing.Process(
@@ -348,7 +349,7 @@ def test_serve(use_uvloop: bool) -> None:
 def test_serve_config_validation(use_uvloop: bool) -> None:
     config = EndpointConfig(
         name='my-endpoint',
-        uuid=uuid.uuid4(),
+        uuid=str(uuid.uuid4()),
         host=None,
         port=open_port(),
     )
@@ -363,10 +364,9 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     def _serve(log_file: str) -> None:
         config = EndpointConfig(
             name='name',
-            uuid=uuid.uuid4(),
+            uuid=str(uuid.uuid4()),
             host='0.0.0.0',
             port=open_port(),
-            relay_server=None,
         )
         with mock.patch('uvicorn.Server.serve', AsyncMock()):
             serve(
