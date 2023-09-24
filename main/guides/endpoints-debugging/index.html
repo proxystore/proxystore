@@ -2885,10 +2885,10 @@ the logs.
 with UUID <code>bbbbab4d-c73a-44ee-a316-58ec8857e83a</code>.</p>
 <h3 id="check-relay-server-connections">Check Relay Server Connections<a class="headerlink" href="#check-relay-server-connections" title="Permanent link">&para;</a></h3>
 <p>Both endpoints must be connected to the same relay server to form a peer
-connection. First, check the <code>relay_server</code> value in the endpoint config is
-correct and not <code>null</code>.
-The endpoint config is found in the <code>config.json</code> file in the endpoint
-directory (e.g., <code>~/.local/share/proxystore/myendpoint/config.json</code>).
+connection. First, check the <code>address</code> value in the <code>[relay]</code> section
+is present and set to the correct URI string.
+The endpoint config is found in the <code>config.toml</code> file in the endpoint
+directory (e.g., <code>~/.local/share/proxystore/myendpoint/config.toml</code>).
 Restart your endpoints if you had to change the configuration.</p>
 <p>Second, confirm the endpoint connects to the relay server when started by
 checking the endpoint logs for a line like this.
