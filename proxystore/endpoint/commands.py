@@ -23,6 +23,9 @@ import psutil
 from proxystore import utils
 from proxystore.endpoint.config import ENDPOINT_DATABASE_FILE
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointRelayAuthConfig
+from proxystore.endpoint.config import EndpointRelayConfig
+from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
 from proxystore.endpoint.config import get_pid_filepath
@@ -136,13 +139,17 @@ def configure_endpoint(
     try:
         cfg = EndpointConfig(
             name=name,
-            uuid=uuid.uuid4(),
+            uuid=str(uuid.uuid4()),
             host=None,
             port=port,
-            relay_server=relay_server,
-            relay_auth='globus' if relay_auth else None,
-            database_path=database_path,
-            peer_channels=peer_channels,
+            relay=EndpointRelayConfig(
+                address=relay_server,
+                auth=EndpointRelayAuthConfig(
+                    method='globus' if relay_auth else None,
+                ),
+                peer_channels=peer_channels,
+            ),
+            storage=EndpointStorageConfig(database_path=database_path),
         )
     except ValueError as e:
         logger.error(str(e))

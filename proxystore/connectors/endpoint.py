@@ -90,27 +90,28 @@ class EndpointConnector:
         )
         found_endpoint: EndpointConfig | None = None
         for endpoint in available_endpoints:
-            if endpoint.uuid in self.endpoints:
-                logger.debug(f'Attempting connection to {endpoint.uuid}')
+            endpoint_uuid = UUID(endpoint.uuid)
+            if endpoint_uuid in self.endpoints:
+                logger.debug(f'Attempting connection to {endpoint_uuid}')
                 response = self._session.get(
                     f'http://{endpoint.host}:{endpoint.port}/endpoint',
                 )
                 if response.status_code == 200:
-                    uuid = response.json()['uuid']
-                    if str(endpoint.uuid) == uuid:
+                    uuid_ = response.json()['uuid']
+                    if endpoint_uuid == UUID(uuid_):
                         logger.debug(
-                            f'Connection to {endpoint.uuid} successful, using '
+                            f'Connection to {endpoint_uuid} successful, using '
                             'as local endpoint',
                         )
                         found_endpoint = endpoint
                         break
                     else:
                         logger.debug(
-                            f'Connection to {endpoint.uuid} returned '
+                            f'Connection to {endpoint_uuid} returned '
                             'different UUID',
                         )
                 else:
-                    logger.debug(f'Connection to {endpoint.uuid} failed')
+                    logger.debug(f'Connection to {endpoint_uuid} failed')
 
         if found_endpoint is None:
             self._session.close()
@@ -118,9 +119,9 @@ class EndpointConnector:
                 'Failed to find endpoint configuration matching one of the '
                 'provided endpoint UUIDs.',
             )
-        self.endpoint_uuid = found_endpoint.uuid
-        self.endpoint_host = found_endpoint.host
-        self.endpoint_port = found_endpoint.port
+        self.endpoint_uuid: uuid.UUID = uuid.UUID(found_endpoint.uuid)
+        self.endpoint_host: str | None = found_endpoint.host
+        self.endpoint_port: int = found_endpoint.port
 
         self.address = f'http://{self.endpoint_host}:{self.endpoint_port}'
 

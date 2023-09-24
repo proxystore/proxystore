@@ -66,10 +66,10 @@ with UUID `bbbbab4d-c73a-44ee-a316-58ec8857e83a`.
 
 ### Check Relay Server Connections
 Both endpoints must be connected to the same relay server to form a peer
-connection. First, check the `relay_server` value in the endpoint config is
-correct and not `null`.
-The endpoint config is found in the `config.json` file in the endpoint
-directory (e.g., `~/.local/share/proxystore/myendpoint/config.json`).
+connection. First, check the `address` value in the `[relay]` section
+is present and set to the correct URI string.
+The endpoint config is found in the `config.toml` file in the endpoint
+directory (e.g., `~/.local/share/proxystore/myendpoint/config.toml`).
 Restart your endpoints if you had to change the configuration.
 
 Second, confirm the endpoint connects to the relay server when started by

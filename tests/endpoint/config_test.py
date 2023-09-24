@@ -10,6 +10,8 @@ import pytest
 
 from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointRelayConfig
+from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
 from proxystore.endpoint.config import get_pid_filepath
@@ -24,10 +26,9 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
 
     cfg = EndpointConfig(
         name='name',
-        uuid=uuid.uuid4(),
+        uuid=str(uuid.uuid4()),
         host='host',
         port=1234,
-        relay_server=None,
     )
     write_config(cfg, tmp_dir)
     assert os.path.exists(tmp_dir)
@@ -61,7 +62,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
         write_config(
             EndpointConfig(
                 name=name,
-                uuid=uuid.uuid4(),
+                uuid=str(uuid.uuid4()),
                 host='host',
                 port=1234,
             ),
@@ -114,24 +115,14 @@ def test_validate_name(name: str, valid: bool) -> None:
         ({'uuid': 'abc-abc-abc'}, False),
         ({'port': 0}, False),
         ({'port': 1000000}, False),
-        ({'relay_server': 'ws://'}, True),
-        ({'relay_server': 'wss://'}, True),
-        ({'relay_server': ''}, False),
-        ({'relay_server': 'https://'}, False),
-        ({'peer_channels': 1}, True),
-        ({'peer_channels': 0}, False),
-        ({'max_object_size': 0}, False),
-        ({'max_object_size': 1}, True),
-        ({'max_object_size': -1}, False),
     ),
 )
 def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     options = {
         'name': 'name',
-        'uuid': uuid.uuid4(),
+        'uuid': str(uuid.uuid4()),
         'host': 'host',
         'port': 1234,
-        'relay_server': 'wss://myserver.com',
     }
     options.update(bad_cfg)
 
@@ -140,6 +131,41 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     else:
         with pytest.raises(ValueError):
             EndpointConfig(**options)  # type: ignore
+
+
+@pytest.mark.parametrize(
+    ('bad_cfg', 'valid'),
+    (
+        ({'address': 'ws://'}, True),
+        ({'address': 'wss://'}, True),
+        ({'address': ''}, False),
+        ({'address': 'https://'}, False),
+        ({'peer_channels': 1}, True),
+        ({'peer_channels': 0}, False),
+    ),
+)
+def test_validate_relay_config(bad_cfg: Any, valid: bool) -> None:
+    if valid:
+        EndpointRelayConfig(**bad_cfg)
+    else:
+        with pytest.raises(ValueError):
+            EndpointRelayConfig(**bad_cfg)
+
+
+@pytest.mark.parametrize(
+    ('bad_cfg', 'valid'),
+    (
+        ({'max_object_size': 0}, False),
+        ({'max_object_size': 1}, True),
+        ({'max_object_size': -1}, False),
+    ),
+)
+def test_validate_storage_config(bad_cfg: Any, valid: bool) -> None:
+    if valid:
+        EndpointStorageConfig(**bad_cfg)
+    else:
+        with pytest.raises(ValueError):
+            EndpointStorageConfig(**bad_cfg)
 
 
 def test_get_pid_filepath() -> None:

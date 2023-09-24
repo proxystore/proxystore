@@ -69,11 +69,11 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     for port in (open_port(), open_port()):
         cfg = EndpointConfig(
             name=f'test-endpoint-{port}',
-            uuid=uuid.uuid4(),
+            uuid=str(uuid.uuid4()),
             host='localhost',
             port=port,
-            relay_server=f'ws://{ss_host}:{ss_port}',
         )
+        cfg.relay.address = f'ws://{ss_host}:{ss_port}'
         assert cfg.host is not None
 
         # We want a unique proxystore_dir for each endpoint to simulate
@@ -81,7 +81,7 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
         proxystore_dir = os.path.join(tmp_path, str(port))
         endpoint_dir = os.path.join(proxystore_dir, cfg.name)
         write_config(cfg, endpoint_dir)
-        uuids.append(cfg.uuid)
+        uuids.append(uuid.UUID(cfg.uuid))
         dirs.append(proxystore_dir)
 
         handle = Process(target=serve_endpoint_silent, args=[cfg])

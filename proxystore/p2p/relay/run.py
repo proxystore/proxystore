@@ -105,11 +105,16 @@ async def serve(config: RelayServingConfig) -> None:
 
     client_logger_task: asyncio.Task[None] | None = None
     if config.logging.current_client_interval is not None:  # pragma: no branch
+        level = (
+            config.logging.default_level
+            if isinstance(config.logging.default_level, int)
+            else logging.getLevelName(config.logging.default_level)
+        )
         client_logger_task = periodic_client_logger(
             server,
             config.logging.current_client_interval,
             config.logging.current_client_limit,
-            config.logging.default_level,
+            level=level,
         )
 
     config_repr = pprint.pformat(config, indent=2)
@@ -171,7 +176,7 @@ def cli(
     config = (
         RelayServingConfig()
         if config_path is None
-        else RelayServingConfig.from_config(config_path)
+        else RelayServingConfig.from_toml(config_path)
     )
 
     # Override config with CLI options if given
