@@ -1,14 +1,9 @@
 """Testing fixtures for connector implementations."""
 from __future__ import annotations
 
-import contextlib
-import importlib.util
 import os
-import platform
 import random
 from typing import Any
-from typing import Callable
-from typing import ContextManager
 from typing import Generator
 from unittest import mock
 
@@ -20,9 +15,6 @@ from proxystore.connectors import local
 from proxystore.connectors import multi
 from proxystore.connectors import redis
 from proxystore.connectors.connector import Connector
-from proxystore.connectors.dim import margo
-from proxystore.connectors.dim import ucx
-from proxystore.connectors.dim import zmq
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
@@ -31,8 +23,6 @@ from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
-from testing.mocking import mock_multiprocessing
-from testing.utils import open_port
 
 FIXTURE_LIST = [
     'endpoint_connector',
@@ -41,9 +31,6 @@ FIXTURE_LIST = [
     'local_connector',
     'multi_connector',
     'redis_connector',
-    'margo_connector',
-    'ucx_connector',
-    'zmq_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
@@ -144,79 +131,6 @@ def redis_connector() -> Generator[Connector[Any], None, None]:
     with mock.patch('redis.StrictRedis', side_effect=create_mocked_redis):
         with redis.RedisConnector(redis_host, redis_port) as connector:
             yield connector
-
-
-@pytest.fixture(scope='session')
-def margo_connector() -> Generator[Connector[Any], None, None]:
-    """MargoConnector fixture."""
-    port = open_port()
-    protocol = margo.Protocol.OFI_TCP
-
-    margo_spec = importlib.util.find_spec('pymargo')
-
-    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
-    timeout = 1.0
-    if (  # pragma: no branch
-        margo_spec is not None and 'mocked' in margo_spec.name
-    ):
-        ctx = mock_multiprocessing
-        timeout = 0.01
-
-    with ctx():
-        connector = margo.MargoConnector(
-            protocol=protocol,
-            port=port,
-            timeout=timeout,
-            force_spawn_server=True,
-        )
-
-    yield connector
-
-    with ctx():
-        connector.close()
-
-
-@pytest.fixture(scope='session')
-def ucx_connector() -> Generator[Connector[Any], None, None]:
-    """UCXConnector fixture."""
-    port = open_port()
-
-    ucp_spec = importlib.util.find_spec('ucp')
-
-    ctx: Callable[[], ContextManager[None]] = contextlib.nullcontext
-    if ucp_spec is not None and 'mocked' in ucp_spec.name:  # pragma: no branch
-        ctx = mock_multiprocessing
-
-    with ctx():
-        connector = ucx.UCXConnector(port=port)
-
-    yield connector
-
-    with ctx():
-        connector.close()
-
-    if (
-        ucp_spec is not None and 'mocked' not in ucp_spec.name
-    ):  # pragma: no cover
-        connector._loop.run_until_complete(ucx.reset_ucp_async())
-
-
-@pytest.fixture(scope='session')
-def zmq_connector() -> Generator[Connector[Any], None, None]:
-    """ZeroMQ store fixture."""
-    port = open_port()
-
-    if platform.system() == 'Darwin':  # pragma: no cover
-        # MacOS GitHub Actions runners are slow
-        timeout = 1.0
-    else:  # pragma: no cover
-        timeout = 0.5
-
-    with zmq.ZeroMQConnector(
-        port=port,
-        timeout=timeout,
-    ) as connector:
-        yield connector
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)

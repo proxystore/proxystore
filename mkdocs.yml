@@ -158,6 +158,7 @@ plugins:
             - https://globus-sdk-python.readthedocs.io/en/stable/objects.inv
             - https://websockets.readthedocs.io/en/stable/objects.inv
             - https://requests.readthedocs.io/en/latest/objects.inv
+            - https://extensions.proxystore.dev/main/objects.inv
           options:
             docstring_section_style: list
             docstring_style: google
