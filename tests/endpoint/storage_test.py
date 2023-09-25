@@ -6,6 +6,7 @@ from typing import AsyncGenerator
 import pytest
 import pytest_asyncio
 
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
@@ -64,3 +65,14 @@ async def test_sqlite_storage_persists(tmp_path: pathlib.Path) -> None:
 async def test_sqlite_storage_close() -> None:
     storage = SQLiteStorage(':memory:')
     await storage.close()
+
+
+@pytest.mark.asyncio()
+async def test_max_object_size_exceeded() -> None:
+    dict_storage = DictStorage(max_object_size=100)
+    with pytest.raises(ObjectSizeExceededError):
+        await dict_storage.set('key', b'x' * 1000)
+
+    sqlite_storage = SQLiteStorage(':memory:', max_object_size=100)
+    with pytest.raises(ObjectSizeExceededError):
+        await sqlite_storage.set('key', b'x' * 1000)

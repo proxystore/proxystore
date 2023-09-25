@@ -10,8 +10,6 @@ from typing import Generator
 from uuid import UUID
 from uuid import uuid4
 
-from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.messages import EndpointRequest
@@ -22,7 +20,6 @@ from proxystore.p2p.manager import PeerManager
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
-from proxystore.utils import bytes_to_readable
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -123,8 +120,6 @@ class Endpoint:
         uuid: UUID of the endpoint. Only used if `peer_manager` is not
             provided. Otherwise the UUID will be set to
             [`PeerManager.uuid`][proxystore.p2p.manager.PeerManager.uuid].
-        max_object_size: Optional max size in bytes for any single
-            object stored by the endpoint. If exceeded, an error is raised.
         peer_manager: Optional peer manager that is connected to a relay server
             which will be used for establishing peer connections to other
             endpoints connected to the same relay server.
@@ -140,7 +135,6 @@ class Endpoint:
         name: str | None = None,
         uuid: UUID | None = None,
         *,
-        max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
         peer_manager: PeerManager | None = None,
         storage: Storage | None = None,
     ) -> None:
@@ -152,7 +146,6 @@ class Endpoint:
 
         self._default_name = name
         self._default_uuid = uuid
-        self._max_object_size = max_object_size
         self._peer_manager = peer_manager
         self._storage = DictStorage() if storage is None else storage
 
@@ -493,15 +486,6 @@ class Endpoint:
             )
             request_future = await self._request_from_peer(endpoint, request)
             await request_future
-        elif (
-            self._max_object_size is not None
-            and len(data) > self._max_object_size
-        ):
-            raise ObjectSizeExceededError(
-                f'Bytes value has size {bytes_to_readable(len(data))} which '
-                f'exceeds the {bytes_to_readable(self._max_object_size)} '
-                'object limit.',
-            )
         else:
             await self._storage.set(key, data)
 

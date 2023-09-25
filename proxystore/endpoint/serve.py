@@ -27,7 +27,9 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.endpoint.storage import Storage
 from proxystore.globus.manager import NativeAppAuthManager
 from proxystore.globus.scopes import ProxyStoreRelayScopes
 from proxystore.p2p.manager import PeerManager
@@ -91,18 +93,21 @@ async def _serve_async(config: EndpointConfig) -> None:
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
 
-    storage: SQLiteStorage | None
+    storage: Storage | None
     database_path = config.storage.database_path
     if database_path is not None:
         logger.info(
             f'Using SQLite database for storage (path: {database_path})',
         )
-        storage = SQLiteStorage(database_path)
+        storage = SQLiteStorage(
+            database_path,
+            max_object_size=config.storage.max_object_size,
+        )
     else:
         logger.warning(
             'Database path not provided. Data will not be persisted',
         )
-        storage = None
+        storage = DictStorage(max_object_size=config.storage.max_object_size)
 
     peer_manager: PeerManager | None = None
     if config.relay.address is not None:
@@ -125,7 +130,6 @@ async def _serve_async(config: EndpointConfig) -> None:
     endpoint = await Endpoint(
         name=config.name,
         uuid=uuid.UUID(config.uuid),
-        max_object_size=config.storage.max_object_size,
         peer_manager=peer_manager,
         storage=storage,
     )
