@@ -1,11 +1,8 @@
 """Mocking utilities."""
 from __future__ import annotations
 
-import contextlib
 from typing import Any
 from typing import Callable
-from typing import Generator
-from unittest import mock
 from unittest.mock import AsyncMock
 
 
@@ -24,14 +21,3 @@ def async_mock_once(
     amock.side_effect = return_once
 
     return amock
-
-
-@contextlib.contextmanager
-def mock_multiprocessing() -> Generator[None, None, None]:
-    """Mock `Process.{start,join,terminate}`."""
-    with mock.patch('multiprocessing.process.BaseProcess.start'), mock.patch(
-        'multiprocessing.process.BaseProcess.join',
-    ), mock.patch(
-        'multiprocessing.process.BaseProcess.terminate',
-    ):
-        yield

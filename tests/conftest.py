@@ -13,22 +13,6 @@ from unittest import mock
 import pytest
 import uvloop
 
-try:
-    import pymargo
-except ImportError:
-    from testing.mocked import pymargo
-
-    sys.modules['pymargo'] = pymargo
-    sys.modules['pymargo.bulk'] = pymargo
-    sys.modules['pymargo.core'] = pymargo
-
-try:
-    import ucp
-except ImportError:
-    from testing.mocked import ucx
-
-    sys.modules['ucp'] = ucx
-
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
 from testing.connectors import connectors
@@ -36,11 +20,8 @@ from testing.connectors import endpoint_connector
 from testing.connectors import file_connector
 from testing.connectors import globus_connector
 from testing.connectors import local_connector
-from testing.connectors import margo_connector
 from testing.connectors import multi_connector
 from testing.connectors import redis_connector
-from testing.connectors import ucx_connector
-from testing.connectors import zmq_connector
 from testing.endpoint import endpoint
 from testing.relay_server import relay_server
 from testing.ssl import ssl_context

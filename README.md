@@ -49,7 +49,7 @@ $ pip install proxystore[all]
 See the [Installation](https://docs.proxystore.dev/main/installation) guide for more information about the available extra install options.
 For local development, see the [Contributing](https://docs.proxystore.dev/main/contributing) guide.
 
-Additional features are available in the [`proxystore-extensions`](https://github.com/proxystore/extensions) package.
+Extended features are available in the [`proxystore-ex`](https://github.com/proxystore/extensions) package.
 
 ## Example
 

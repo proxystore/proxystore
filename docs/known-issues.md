@@ -1,6 +1,6 @@
 ## Bugs
 
-* The [`ZeroMQConnector`][proxystore.connectors.dim.zmq.ZeroMQConnector] will raise a `_pickle.UnpicklingError: pickle data was truncated` error if the serialized data is larger than the chunk size (64 MiB by default).
+* The [`ZeroMQConnector`][proxystore_ex.connectors.dim.zmq.ZeroMQConnector] will raise a `_pickle.UnpicklingError: pickle data was truncated` error if the serialized data is larger than the chunk size (64 MiB by default).
     * Affected versions: `==0.4.1`
     * Fixed in `0.5.0` by [PR #219](https://github.com/proxystore/proxystore/pull/219){target=_blank}.
 
