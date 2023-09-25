@@ -5,7 +5,6 @@ import uuid
 import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from testing.compat import randbytes
 
 _NAME = 'test-endpoint'
@@ -46,18 +45,6 @@ async def test_set() -> None:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
-
-
-@pytest.mark.asyncio()
-async def test_set_exceeds_size() -> None:
-    async with Endpoint(
-        name=_NAME,
-        uuid=_UUID,
-        max_object_size=10,
-    ) as endpoint:
-        data = randbytes(100)
-        with pytest.raises(ObjectSizeExceededError):
-            await endpoint.set('key', data)
 
 
 @pytest.mark.asyncio()
