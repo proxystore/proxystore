@@ -60,14 +60,12 @@ Endpoints can be configure and started with the
 command. By default, an Endpoint is configured to connect to ProxyStore's
 cloud-hosted relay server. This relay server uses
 [Globus Auth](https://www.globus.org/globus-auth-service) for identity and
-access management. You will be prompted to authenticate and get access
-tokens on [globus.org](https::/globus.org) the first time you start the
-endpoint. Alternatively, you can use the
+access management. To use the provided relay server, authenticate using the
 [`proxystore-globus-auth login`](../../api/cli/#proxystore-globus-auth-login)
-CLI to authenticate. Authentication only needs to be performed once per
-system.
+CLI. Authentication only needs to be performed once per system.
 
 ```bash
+$ proxystore-globus-auth login
 $ proxystore-endpoint configure my-endpoint
 INFO: Configured endpoint: my-endpoint <a6c7f036-3e29-4a7a-bf90-5a5f21056e39>
 INFO: Config and log file directory: ~/.local/share/proxystore/my-endpoint

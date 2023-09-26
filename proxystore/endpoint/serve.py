@@ -81,7 +81,15 @@ def _get_auth_headers(
             'resource_server',
             ProxyStoreRelayScopes.resource_server,
         )
-        authorizer = manager.get_authorizer(resource_server)
+        try:
+            authorizer = manager.get_authorizer(resource_server)
+        except LookupError as e:
+            logger.error(
+                'Failed to find Globus Auth tokens for the specified relay '
+                'resource server. Have you logged in yet? If not, login then '
+                'try again.\n  $ proxystore-globus-auth login',
+            )
+            raise SystemExit(1) from e
         bearer = authorizer.get_authorization_header()
         assert bearer is not None
         return {'Authorization': bearer}
