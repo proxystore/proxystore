@@ -2660,24 +2660,20 @@
 
 
 <h1 id="peer-to-peer-endpoints">Peer-to-Peer Endpoints<a class="headerlink" href="#peer-to-peer-endpoints" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 21 September 2023</em></p>
+<p><em>Last updated 26 September 2023</em></p>
 <p>ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Endpoints are experimental and the interfaces and underlying
-implementations will likely change. Refer to the API docs for the most
+implementations may change. Refer to the API docs for the most
 up-to-date information.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Endpoints do not have user authentication yet, so use at your own risk.</p>
 </div>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>At its core, the <a class="autorefs autorefs-internal" href="../../api/endpoint/endpoint/#proxystore.endpoint.endpoint.Endpoint"><code>Endpoint</code></a> is
 an in-memory data store built on asyncio. Endpoints provide a REST API, served
-using <a href="https://pgjones.gitlab.io/quart/"><code>Quart</code></a>, and ProxyStore provides the
+using <a href="https://pgjones.gitlab.io/quart/">Quart</a>, and ProxyStore provides the
 <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> as
 the primary interface for clients to interact with endpoints.</p>
 <p><img alt="ProxyStore Endpoints" src="../../static/endpoint-peering.svg" width="100%" /></p>
@@ -2712,15 +2708,24 @@ Endpoints that receive a request with a different endpoint UUID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.</p>
 <h2 id="endpoint-cli">Endpoint CLI<a class="headerlink" href="#endpoint-cli" title="Permanent link">&para;</a></h2>
-<p>Endpoints can be configure and started with the <code>proxystore-endpoint</code>
-command.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--relay-server<span class="w"> </span>wss://relay-address.com
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>Configured<span class="w"> </span>endpoint<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;12b8f3b6-6c0e-4141-b851-870895e3eb3c&gt;.
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>To<span class="w"> </span>start<span class="w"> </span>the<span class="w"> </span>endpoint:
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+<p>Endpoints can be configure and started with the
+<a href="../../api/cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a>
+command. By default, an Endpoint is configured to connect to ProxyStore's
+cloud-hosted relay server. This relay server uses
+<a href="https://www.globus.org/globus-auth-service">Globus Auth</a> for identity and
+access management. You will be prompted to authenticate and get access
+tokens on <a href="https::/globus.org">globus.org</a> the first time you start the
+endpoint. Alternatively, you can use the
+<a href="../../api/cli/#proxystore-globus-auth-login"><code>proxystore-globus-auth login</code></a>
+CLI to authenticate. Authentication only needs to be performed once per
+system.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;a6c7f036-3e29-4a7a-bf90-5a5f21056e39&gt;
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Config<span class="w"> </span>and<span class="w"> </span>log<span class="w"> </span>file<span class="w"> </span>directory:<span class="w"> </span>~/.local/share/proxystore/my-endpoint
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>INFO:<span class="w"> </span>Start<span class="w"> </span>the<span class="w"> </span>endpoint<span class="w"> </span>with:
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
-<p>Endpoint configurations are stored to <code>$PROXYSTORE_HOME/{endpoint-name}</code>
+<p>Endpoint configurations are stored in <code>$PROXYSTORE_HOME/{endpoint-name}</code>
 or <code>$XDG_DATA_HOME/proxystore/{endpoint-name}</code>
 (see <a class="autorefs autorefs-internal" href="../../api/utils/environment/#proxystore.utils.environment.home_dir"><code>home_dir()</code></a>) and contain the
 name, UUID, host address, port, relay server address, and more.</p>
@@ -2732,33 +2737,75 @@ name, UUID, host address, port, relay server address, and more.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PROXYSTORE_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.proxystore&quot;</span>
 </span></code></pre></div></p>
 </div>
+<p>A typical configuration looks like the following.</p>
+<div class="language-toml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">config.toml</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-2-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-2-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-2-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-2-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-2-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-2-10">10</a></span>
+<span class="normal"><a href="#__codelineno-2-11">11</a></span>
+<span class="normal"><a href="#__codelineno-2-12">12</a></span>
+<span class="normal"><a href="#__codelineno-2-13">13</a></span>
+<span class="normal"><a href="#__codelineno-2-14">14</a></span>
+<span class="normal"><a href="#__codelineno-2-15">15</a></span>
+<span class="normal"><a href="#__codelineno-2-16">16</a></span>
+<span class="normal"><a href="#__codelineno-2-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;my-endpoint&quot;</span><span class="w">  </span><span class="c1"># (1)!</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;d27cf8cb-45fa-46b0-b907-27c830da62e3&quot;</span><span class="w">  </span><span class="c1"># (2)!</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (3)!</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="k">[relay]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;wss://relay.proxystore.dev&quot;</span><span class="w">  </span><span class="c1"># (4)!</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (5)!</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">true</span><span class="w">  </span><span class="c1"># (6)!</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="k">[relay.auth]</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;globus&quot;</span><span class="w">  </span><span class="c1"># (7)!</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="p">[</span><span class="n">relay</span><span class="p">.</span><span class="n">auth</span><span class="p">.</span><span class="n">kwargs</span><span class="p">]</span><span class="w">  </span><span class="c1"># (8)!</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[storage]</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;~/.local/share/proxystore/my-endpoint/blobs.db&quot;</span><span class="w">  </span><span class="c1"># (9)!</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (10)!</span>
+</span></code></pre></div></td></tr></table></div>
 <ol>
-<li><strong>Name:</strong> readable name of the endpoint. Used for management in the CLI and
-   to improve log readability.</li>
-<li><strong>UUID:</strong> primary identifier of the endpoint. The relay server will
-   use this UUID to keep track of endpoints.</li>
-<li><strong>Host address:</strong> address of the host the endpoint was last started on.
-   Each time the endpoint is started, this address is updated.</li>
-<li><strong>Port:</strong> port the endpoint will listening on. Defaults to 8765.</li>
-<li><strong>Relay server address</strong>: address of relay server to use for peer
-   connections. All endpoints that may peer with each other must use the same
-   relay server. Relay servers are optional, and if unspecified, the
-   endpoint will operate without peering functionalities.</li>
+<li>Human-readable name of this endpoint. Only used for logging and CLI
+   operations.</li>
+<li>Unique identifier of this endpoint.</li>
+<li>Change the default port if running multiple endpoints on the same system.</li>
+<li>Comment out the relay address if you want to start the endpoint in SOLO
+   mode. Peering will not be available, but all other functionality will
+   remain.</li>
+<li>Number of channels to multiplex peer communications over. Increasing this
+   to two or four may improve performance on certain networks.</li>
+<li>Only disable this when connecting to a local relay server using self-signed
+   certificates for testing and development purposes.</li>
+<li>Authentication method to use with the relay server. Comment this out when
+   using a local relay server without authentication.</li>
+<li>Optional keyword arguments to use when creating the authorization headers.
+   Typically only used for testing and development purposes.</li>
+<li>Optional path to a SQLite database for persisting endpoint objects. See
+   the tip below for more details.</li>
+<li>Maximum object size. Comment out to disable object size limits.</li>
 </ol>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>Endpoints provide no data persistence by default, but this can be enabled
 by passing the <code>--persist</code> flag when configuring the endpoint or by
-setting <code>"database_path"</code> in the config. When set, blobs stored by the
-endpoint will be written to a SQLite database file. Note this will
-result in slower performance.</p>
+setting <code>"database_path"</code> in the <code>[storage]</code> section of the config. When
+set, blobs stored by the endpoint will be written to a SQLite database
+file. Note this will result in slower performance.</p>
 </div>
 <p>An up-to-date configuration description can found in the
 <a class="autorefs autorefs-internal" href="../../api/endpoint/config/#proxystore.endpoint.config.EndpointConfig"><code>EndpointConfig</code></a> docstring.</p>
 <p>Starting the endpoint will load the configuration from the ProxyStore home
 directory, initialize the endpoint, and start a Quart app using the host and
 port.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
 <h2 id="endpointconnector">EndpointConnector<a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h2>
 <p>The primary interface to endpoints is the
@@ -2769,31 +2816,31 @@ port.</p>
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface. See the
 <a href="../../get-started/">Get Started</a> guide before getting started with endpoints.</p>
 </div>
-<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Endpoint Client Example</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-3-10">10</a></span>
-<span class="normal"><a href="#__codelineno-3-11">11</a></span>
-<span class="normal"><a href="#__codelineno-3-12">12</a></span>
-<span class="normal"><a href="#__codelineno-3-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.endpoint</span> <span class="kn">import</span> <span class="n">EndpointConnector</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>   <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>       <span class="s1">&#39;5349ffce-edeb-4a8b-94a6-ab16ade1c1a1&#39;</span><span class="p">,</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a>       <span class="s1">&#39;d62910f6-0d29-452e-80b7-e0cd601949db&#39;</span><span class="p">,</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a>       <span class="o">...</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a>   <span class="p">],</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="p">)</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a>
-</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Endpoint Client Example</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span>
+<span class="normal"><a href="#__codelineno-4-11">11</a></span>
+<span class="normal"><a href="#__codelineno-4-12">12</a></span>
+<span class="normal"><a href="#__codelineno-4-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.endpoint</span> <span class="kn">import</span> <span class="n">EndpointConnector</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a>   <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a>       <span class="s1">&#39;5349ffce-edeb-4a8b-94a6-ab16ade1c1a1&#39;</span><span class="p">,</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a>       <span class="s1">&#39;d62910f6-0d29-452e-80b7-e0cd601949db&#39;</span><span class="p">,</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a>       <span class="o">...</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>   <span class="p">],</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
 <p>The <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> takes
 a list of endpoint UUIDs. This list represents any endpoint that proxies
@@ -2839,10 +2886,11 @@ The flow of data and their associated proxies are shown in <strong>Fig. 2</stron
    is resolved.</li>
 </ol>
 <h2 id="hosting-a-relay-server">Hosting a Relay Server<a class="headerlink" href="#hosting-a-relay-server" title="Permanent link">&para;</a></h2>
-<p>Currently, ProxyStore does not provided any publicly host relay servers,
-though we hope to in the future! However, we do provide all of the tools to
-host your own relay server. See the <a href="../relay-serving/">Relay Serving Guide</a>
-to learn more.</p>
+<p>The <a href="../api/cli/proxystore-endpoint-configure"><code>proxystore-endpoint configure</code></a>
+CLI will configure endpoints to use a relay server hosted by the ProxyStore
+team.  If this is not suitable (or the ProxyStore relay is unavailable) we
+provide all of the tools to host your own relay server. See the
+<a href="../relay-serving/">Relay Serving Guide</a> to learn more.</p>
 
 
 
