@@ -123,18 +123,27 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
                 break
 
         server_handle.terminate()
-        # Sleep for a small period (10ms) to allow file to get written
-        time.sleep(0.01)
+        server_handle.wait(1)
 
-    logs = [
-        f
-        for f in os.listdir(tmp_path)
-        if os.path.isfile(os.path.join(tmp_path, f))
-    ]
-    for log in logs:
-        with open(os.path.join(tmp_path, log)) as f:
-            assert 'DEBUG' not in f.read()
-    assert len(logs) >= 1
+    sleep_time = 0.01
+    max_wait_time = 1.0
+    waited_time = 0.0
+    while waited_time <= max_wait_time:  # pragma: no branch
+        logs = [
+            f
+            for f in os.listdir(tmp_path)
+            if os.path.isfile(os.path.join(tmp_path, f))
+        ]
+        if len(logs) >= 1:
+            for log in logs:
+                with open(os.path.join(tmp_path, log)) as f:
+                    assert 'DEBUG' not in f.read()
+            break
+        elif waited_time >= max_wait_time:  # pragma: no cover
+            raise TimeoutError('Timeout waiting for log file to be written.')
+        else:  # pragma: no cover
+            time.sleep(sleep_time)
+            waited_time += sleep_time
 
 
 def _serve(config: RelayServingConfig) -> None:
