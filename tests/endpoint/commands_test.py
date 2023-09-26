@@ -7,6 +7,7 @@ import pathlib
 import time
 import uuid
 from multiprocessing import Process
+from typing import Generator
 from unittest import mock
 
 import pytest
@@ -29,6 +30,21 @@ _NAME = 'default'
 _UUID = uuid.uuid4()
 _PORT = 1234
 _SERVER = None
+
+
+@pytest.fixture()
+def _patch_hostname() -> Generator[None, None, None]:
+    # Tests which call start_endpoint will sometimes fail on MacOS
+    # in the call to socket.gethostbyname(utils.hostname()).
+    # This is commonly because there is no entry in /etc/hosts which matches
+    # the hostname returned by proxystore.utils.environment.hostname.
+    # This fixture mocks the resulting address to be localhost.
+    #
+    # Related:
+    #   - https://apple.stackexchange.com/a/253834
+    #   - https://stackoverflow.com/a/43549848
+    with mock.patch('socket.gethostbyname', return_value='localhost'):
+        yield
 
 
 def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
@@ -252,6 +268,7 @@ def test_remove_endpoint_running(
     )
 
 
+@pytest.mark.usefixtures('_patch_hostname')
 def test_start_endpoint(tmp_path: pathlib.Path) -> None:
     configure_endpoint(
         name=_NAME,
@@ -264,6 +281,7 @@ def test_start_endpoint(tmp_path: pathlib.Path) -> None:
     assert rv == 0
 
 
+@pytest.mark.usefixtures('_patch_hostname')
 def test_start_endpoint_detached(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
 
@@ -347,6 +365,7 @@ def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
     )
 
 
+@pytest.mark.usefixtures('_patch_hostname')
 def test_start_endpoint_hanging_different_host(
     tmp_path: pathlib.Path,
     caplog,
@@ -379,6 +398,7 @@ def test_start_endpoint_hanging_different_host(
     )
 
 
+@pytest.mark.usefixtures('_patch_hostname')
 def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.DEBUG)
 
