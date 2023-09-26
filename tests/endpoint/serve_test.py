@@ -405,3 +405,18 @@ def test_get_auth_headers() -> None:
         return_value=header,
     ):
         assert _get_auth_headers('globus')['Authorization'] == header
+
+
+def test_get_auth_headers_missing() -> None:
+    assert _get_auth_headers(None) == {}
+
+    mock.MagicMock()
+    with mock.patch(
+        'proxystore.globus.manager.NativeAppAuthManager.get_authorizer',
+        side_effect=LookupError,
+    ), mock.patch(
+        'proxystore.globus.manager.get_token_storage_adapter',
+    ), pytest.raises(
+        SystemExit,
+    ):
+        assert _get_auth_headers('globus')
