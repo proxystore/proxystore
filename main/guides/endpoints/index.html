@@ -2713,17 +2713,15 @@ the request along and facilitate returning the response back to the client.</p>
 command. By default, an Endpoint is configured to connect to ProxyStore's
 cloud-hosted relay server. This relay server uses
 <a href="https://www.globus.org/globus-auth-service">Globus Auth</a> for identity and
-access management. You will be prompted to authenticate and get access
-tokens on <a href="https::/globus.org">globus.org</a> the first time you start the
-endpoint. Alternatively, you can use the
+access management. To use the provided relay server, authenticate using the
 <a href="../../api/cli/#proxystore-globus-auth-login"><code>proxystore-globus-auth login</code></a>
-CLI to authenticate. Authentication only needs to be performed once per
-system.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;a6c7f036-3e29-4a7a-bf90-5a5f21056e39&gt;
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Config<span class="w"> </span>and<span class="w"> </span>log<span class="w"> </span>file<span class="w"> </span>directory:<span class="w"> </span>~/.local/share/proxystore/my-endpoint
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>INFO:<span class="w"> </span>Start<span class="w"> </span>the<span class="w"> </span>endpoint<span class="w"> </span>with:
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+CLI. Authentication only needs to be performed once per system.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-globus-auth<span class="w"> </span>login
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;a6c7f036-3e29-4a7a-bf90-5a5f21056e39&gt;
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>INFO:<span class="w"> </span>Config<span class="w"> </span>and<span class="w"> </span>log<span class="w"> </span>file<span class="w"> </span>directory:<span class="w"> </span>~/.local/share/proxystore/my-endpoint
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w"> </span>Start<span class="w"> </span>the<span class="w"> </span>endpoint<span class="w"> </span>with:
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
 <p>Endpoint configurations are stored in <code>$PROXYSTORE_HOME/{endpoint-name}</code>
 or <code>$XDG_DATA_HOME/proxystore/{endpoint-name}</code>
