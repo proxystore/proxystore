@@ -55,7 +55,7 @@ def test_configure_command(home_dir) -> None:
     name = 'my-endpoint'
     port = 4321
     relay_server = 'ws://server:1234'
-    args = [name, '--port', str(port), '--relay-server', relay_server]
+    args = [name, '--port', str(port), '--relay-address', relay_server]
 
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['configure', *args])

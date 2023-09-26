@@ -162,7 +162,9 @@ def configure_endpoint(
 
     write_config(cfg, endpoint_dir)
 
-    logger.info(f'Configured endpoint {cfg.name} <{cfg.uuid}>. Start with:')
+    logger.info(f'Configured endpoint: {cfg.name} <{cfg.uuid}>')
+    logger.info(f'Config and log file directory: {endpoint_dir}')
+    logger.info('Start the endpoint with:')
     logger.info(f'  $ proxystore-endpoint start {cfg.name}')
 
     return 0

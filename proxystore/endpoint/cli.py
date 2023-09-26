@@ -102,16 +102,22 @@ def version() -> None:
     help='Port to listen on.',
 )
 @click.option(
-    '--relay-server',
-    default=None,
+    '--relay-address',
+    default='wss://relay.proxystore.dev',
     metavar='ADDR',
-    help='Optional relay server address.',
+    help='Relay server address.',
 )
 @click.option(
     '--relay-auth/--no-relay-auth',
-    default=False,
+    default=True,
     metavar='BOOL',
     help='Disable relay server authentication.',
+)
+@click.option(
+    '--relay-server/--no-relay-server',
+    default=True,
+    metavar='BOOL',
+    help='Disable connecting to the relay server on start.',
 )
 @click.option(
     '--peer-channels',
@@ -129,8 +135,9 @@ def version() -> None:
 def configure(
     name: str,
     port: int,
-    relay_server: str,
+    relay_address: str,
     relay_auth: bool,
+    relay_server: bool,
     peer_channels: int,
     persist: bool,
 ) -> None:
@@ -139,7 +146,7 @@ def configure(
         configure_endpoint(
             name,
             port=port,
-            relay_server=relay_server,
+            relay_server=relay_address if relay_server else None,
             relay_auth=relay_auth,
             peer_channels=peer_channels,
             persist_data=persist,

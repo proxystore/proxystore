@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 21 September 2023*
+*Last updated 26 September 2023*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -8,17 +8,14 @@ between multiple sites using NAT traversal.
 
 !!! warning
     Endpoints are experimental and the interfaces and underlying
-    implementations will likely change. Refer to the API docs for the most
+    implementations may change. Refer to the API docs for the most
     up-to-date information.
-
-!!! warning
-    Endpoints do not have user authentication yet, so use at your own risk.
 
 ## Overview
 
 At its core, the [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] is
 an in-memory data store built on asyncio. Endpoints provide a REST API, served
-using [`Quart`](https://pgjones.gitlab.io/quart/), and ProxyStore provides the
+using [Quart](https://pgjones.gitlab.io/quart/), and ProxyStore provides the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as
 the primary interface for clients to interact with endpoints.
 
@@ -58,18 +55,27 @@ the request along and facilitate returning the response back to the client.
 
 ## Endpoint CLI
 
-Endpoints can be configure and started with the `proxystore-endpoint`
-command.
+Endpoints can be configure and started with the
+[`proxystore-endpoint`](../../api/cli/#proxystore-endpoint)
+command. By default, an Endpoint is configured to connect to ProxyStore's
+cloud-hosted relay server. This relay server uses
+[Globus Auth](https://www.globus.org/globus-auth-service) for identity and
+access management. You will be prompted to authenticate and get access
+tokens on [globus.org](https::/globus.org) the first time you start the
+endpoint. Alternatively, you can use the
+[`proxystore-globus-auth login`](../../api/cli/#proxystore-globus-auth-login)
+CLI to authenticate. Authentication only needs to be performed once per
+system.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --relay-server wss://relay-address.com
-Configured endpoint my-endpoint <12b8f3b6-6c0e-4141-b851-870895e3eb3c>.
-
-To start the endpoint:
-   $ proxystore-endpoint start my-endpoint
+$ proxystore-endpoint configure my-endpoint
+INFO: Configured endpoint: my-endpoint <a6c7f036-3e29-4a7a-bf90-5a5f21056e39>
+INFO: Config and log file directory: ~/.local/share/proxystore/my-endpoint
+INFO: Start the endpoint with:
+INFO:   $ proxystore-endpoint start my-endpoint
 ```
 
-Endpoint configurations are stored to `$PROXYSTORE_HOME/{endpoint-name}`
+Endpoint configurations are stored in `$PROXYSTORE_HOME/{endpoint-name}`
 or `$XDG_DATA_HOME/proxystore/{endpoint-name}`
 (see [`home_dir()`][proxystore.utils.environment.home_dir]) and contain the
 name, UUID, host address, port, relay server address, and more.
@@ -83,25 +89,54 @@ name, UUID, host address, port, relay server address, and more.
     export PROXYSTORE_HOME="$HOME/.proxystore"
     ```
 
-1. **Name:** readable name of the endpoint. Used for management in the CLI and
-   to improve log readability.
-2. **UUID:** primary identifier of the endpoint. The relay server will
-   use this UUID to keep track of endpoints.
-3. **Host address:** address of the host the endpoint was last started on.
-   Each time the endpoint is started, this address is updated.
-4. **Port:** port the endpoint will listening on. Defaults to 8765.
-5. **Relay server address**: address of relay server to use for peer
-   connections. All endpoints that may peer with each other must use the same
-   relay server. Relay servers are optional, and if unspecified, the
-   endpoint will operate without peering functionalities.
+A typical configuration looks like the following.
+
+```toml title="config.toml" linenums="1"
+name = "my-endpoint"  # (1)!
+uuid = "d27cf8cb-45fa-46b0-b907-27c830da62e3"  # (2)!
+port = 8765  # (3)!
+
+[relay]
+address = "wss://relay.proxystore.dev"  # (4)!
+peer_channels = 1  # (5)!
+verify_certificate = true  # (6)!
+
+[relay.auth]
+method = "globus"  # (7)!
+
+[relay.auth.kwargs]  # (8)!
+
+[storage]
+database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (9)!
+max_object_size = 10000000  # (10)!
+```
+
+1. Human-readable name of this endpoint. Only used for logging and CLI
+   operations.
+2. Unique identifier of this endpoint.
+3. Change the default port if running multiple endpoints on the same system.
+4. Comment out the relay address if you want to start the endpoint in SOLO
+   mode. Peering will not be available, but all other functionality will
+   remain.
+5. Number of channels to multiplex peer communications over. Increasing this
+   to two or four may improve performance on certain networks.
+6. Only disable this when connecting to a local relay server using self-signed
+   certificates for testing and development purposes.
+7. Authentication method to use with the relay server. Comment this out when
+   using a local relay server without authentication.
+8. Optional keyword arguments to use when creating the authorization headers.
+   Typically only used for testing and development purposes.
+9. Optional path to a SQLite database for persisting endpoint objects. See
+   the tip below for more details.
+10. Maximum object size. Comment out to disable object size limits.
 
 !!! tip
 
     Endpoints provide no data persistence by default, but this can be enabled
     by passing the `--persist` flag when configuring the endpoint or by
-    setting `"database_path"` in the config. When set, blobs stored by the
-    endpoint will be written to a SQLite database file. Note this will
-    result in slower performance.
+    setting `"database_path"` in the `[storage]` section of the config. When
+    set, blobs stored by the endpoint will be written to a SQLite database
+    file. Note this will result in slower performance.
 
 An up-to-date configuration description can found in the
 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.
@@ -186,7 +221,8 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 
 ## Hosting a Relay Server
 
-Currently, ProxyStore does not provided any publicly host relay servers,
-though we hope to in the future! However, we do provide all of the tools to
-host your own relay server. See the [Relay Serving Guide](relay-serving.md)
-to learn more.
+The [`proxystore-endpoint configure`](../api/cli/proxystore-endpoint-configure)
+CLI will configure endpoints to use a relay server hosted by the ProxyStore
+team.  If this is not suitable (or the ProxyStore relay is unavailable) we
+provide all of the tools to host your own relay server. See the
+[Relay Serving Guide](relay-serving.md) to learn more.
