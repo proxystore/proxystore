@@ -205,7 +205,10 @@ class SQLiteStorage:
             'SELECT count(*) FROM blobs WHERE key=?',
             (key,),
         ) as cursor:
-            (count,) = await cursor.fetchone()
+            result = await cursor.fetchone()
+            # count() won't ever return 0 rows but mypy doesn't know this
+            assert result is not None
+            (count,) = result
             return bool(count)
 
     async def get(

@@ -42,7 +42,10 @@ def get_transfer_client_flow(
         try:
             transfer_client.operation_ls(collection, path='/')
         except globus_sdk.TransferAPIError as e:
-            if e.info.consent_required:
+            if (
+                e.info.consent_required
+                and e.info.consent_required.required_scopes is not None
+            ):
                 consent_required_scopes.extend(
                     e.info.consent_required.required_scopes,
                 )

@@ -27,7 +27,7 @@ Milestones are the [Issue Tracker](https://github.com/proxystore/proxystore/issu
     2. Add an "Upgrade Steps" section at the top (see previous releases for examples).
     3. Review the generated notes and edit as needed. PRs are organized by tag, but some PRs will be missing tags and need to be moved from the "Other Changes" section to the correct section.
     4. Select "Set as the latest release."
-7. **Unnofficial release:** (alpha/dev builds)
+7. **Unofficial release:** (alpha/dev builds)
     1. Do NOT generate release notes. The body can be along the lines of "Development pre-prelease for `V{VERSION}`."
     2. Leave the previous tag as "auto."
     3. Select "Set as a pre-release."

@@ -27,7 +27,7 @@ from proxystore.store.utils import get_key
 
 ConnectorKeyT = Tuple[Any, ...]
 KeyT = Union[ConnectorKeyT, Sequence[ConnectorKeyT]]
-"""Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""  # noqa: E501
+"""Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""
 ProxyT = Union[Proxy[Any], Sequence[Proxy[Any]]]
 """Proxy types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics].
 
@@ -118,7 +118,7 @@ class Metrics:
 
 
 class StoreMetrics:
-    """Record and query metrics on [`Store`][proxystore.store.base.Store] operations."""  # noqa: E501
+    """Record and query metrics on [`Store`][proxystore.store.base.Store] operations."""
 
     def __init__(self) -> None:
         self._metrics: dict[int, Metrics] = defaultdict(Metrics)
