@@ -84,7 +84,7 @@ class Policy:
         subset_tags: Iterable[str] | None = None,
         superset_tags: Iterable[str] | None = None,
     ) -> bool:
-        """Check if set of contstraints is valid for this policy.
+        """Check if set of constraints is valid for this policy.
 
         Note:
             All arguments are optional keyword arguments that default to

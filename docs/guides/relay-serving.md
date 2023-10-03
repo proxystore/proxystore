@@ -31,7 +31,7 @@ with a relay server.
 ### Enabling TLS
 
 In the above example, we connected to the relay with `ws://` which indicates
-that the connection is unecrypted. The relay can be served using TLS
+that the connection is unencrypted. The relay can be served using TLS
 encryption if a valid SSL certificate is provided.
 
 !!! alert
