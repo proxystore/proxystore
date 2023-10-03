@@ -22,7 +22,7 @@
       
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.2">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.3">
     
     
       
@@ -30,7 +30,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.d451bc0e.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.79e020e9.min.css">
       
         
         <link rel="stylesheet" href="../../../assets/stylesheets/palette.a5377069.min.css">
@@ -2753,7 +2753,10 @@ user's tokens have consent for.</p>
 <span class="normal"><a href="#__codelineno-0-58">58</a></span>
 <span class="normal"><a href="#__codelineno-0-59">59</a></span>
 <span class="normal"><a href="#__codelineno-0-60">60</a></span>
-<span class="normal"><a href="#__codelineno-0-61">61</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">def</span> <span class="nf">get_transfer_client_flow</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-61">61</a></span>
+<span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">def</span> <span class="nf">get_transfer_client_flow</span><span class="p">(</span>
 </span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a>    <span class="n">check_collections</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferClient</span><span class="p">:</span>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a transfer client with consent handling.</span>
@@ -2785,23 +2788,26 @@ user's tokens have consent for.</p>
 </span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="k">try</span><span class="p">:</span>
 </span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a>            <span class="n">transfer_client</span><span class="o">.</span><span class="n">operation_ls</span><span class="p">(</span><span class="n">collection</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
 </span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a>        <span class="k">except</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferAPIError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a>            <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">consent_required</span><span class="p">:</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>                <span class="n">consent_required_scopes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>                    <span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">consent_required</span><span class="o">.</span><span class="n">required_scopes</span><span class="p">,</span>
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a>                <span class="p">)</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">consent_required_scopes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a>        <span class="k">return</span> <span class="n">transfer_client</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a>            <span class="k">if</span> <span class="p">(</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>                <span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">consent_required</span>
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>                <span class="ow">and</span> <span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">consent_required</span><span class="o">.</span><span class="n">required_scopes</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a>            <span class="p">):</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a>                <span class="n">consent_required_scopes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>                    <span class="n">e</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">consent_required</span><span class="o">.</span><span class="n">required_scopes</span><span class="p">,</span>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a>                <span class="p">)</span>
 </span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="s1">&#39;One or more collections require consent in order to be used. &#39;</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>        <span class="s1">&#39;Login again to to grant the remaining consents.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="p">)</span>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a>    <span class="n">manager</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">additional_scopes</span><span class="o">=</span><span class="n">consent_required_scopes</span><span class="p">)</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>    <span class="n">authorizer</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">get_authorizer</span><span class="p">(</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>        <span class="n">globus_sdk</span><span class="o">.</span><span class="n">scopes</span><span class="o">.</span><span class="n">TransferScopes</span><span class="o">.</span><span class="n">resource_server</span><span class="p">,</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="p">)</span>
-</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="k">return</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferClient</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">consent_required_scopes</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>        <span class="k">return</span> <span class="n">transfer_client</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="n">click</span><span class="o">.</span><span class="n">echo</span><span class="p">(</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a>        <span class="s1">&#39;One or more collections require consent in order to be used. &#39;</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>        <span class="s1">&#39;Login again to to grant the remaining consents.&#39;</span><span class="p">,</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a>    <span class="p">)</span>
+</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="n">manager</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">additional_scopes</span><span class="o">=</span><span class="n">consent_required_scopes</span><span class="p">)</span>
+</span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a>    <span class="n">authorizer</span> <span class="o">=</span> <span class="n">manager</span><span class="o">.</span><span class="n">get_authorizer</span><span class="p">(</span>
+</span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a>        <span class="n">globus_sdk</span><span class="o">.</span><span class="n">scopes</span><span class="o">.</span><span class="n">TransferScopes</span><span class="o">.</span><span class="n">resource_server</span><span class="p">,</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>    <span class="p">)</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="k">return</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferClient</span><span class="p">(</span><span class="n">authorizer</span><span class="o">=</span><span class="n">authorizer</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -2828,10 +2834,10 @@ user's tokens have consent for.</p>
         </div>
         
           <button type="button" class="md-top md-icon" data-md-component="top" hidden>
-            
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
-            Back to top
-          </button>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
         
       </main>
       
@@ -2862,10 +2868,11 @@ user's tokens have consent for.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
+    
     <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.a264c092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.726fbb30.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.6eac0284.min.js"></script>
       
     
   </body>
