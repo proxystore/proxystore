@@ -29,7 +29,7 @@ _WAIT_FOR = 0.2
 
 def get_mock_websocket() -> websockets.server.WebSocketServerProtocol:
     with mock.patch('websockets.server.WebSocketServerProtocol'):
-        websocket = websockets.server.WebSocketServerProtocol()  # type: ignore[call-arg]  # noqa: E501
+        websocket = websockets.server.WebSocketServerProtocol()  # type: ignore[call-arg]
         headers = websockets.datastructures.Headers()
         websocket.request_headers = headers
         return websocket
