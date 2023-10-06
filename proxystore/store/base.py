@@ -12,16 +12,12 @@ from typing import Callable
 from typing import cast
 from typing import Generic
 from typing import List
+from typing import Literal
 from typing import overload
 from typing import Sequence
 from typing import Tuple
 from typing import TypeVar
 from typing import Union
-
-if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
-    from typing import Literal
-else:  # pragma: <3.9 cover
-    from typing_extensions import Literal
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
