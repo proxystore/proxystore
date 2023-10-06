@@ -27,8 +27,17 @@ jobs:
           python: '3.11'
           toxenv: py311
         - os: macos-latest
+          python: 3.8
+          toxenv: py38
+        - os: macos-latest
+          python: 3.9
+          toxenv: py310
+        - os: macos-latest
           python: '3.10'
           toxenv: py310
+        - os: macos-latest
+          python: '3.11'
+          toxenv: py311
     runs-on: ${{ matrix.os }}
 
     steps:
