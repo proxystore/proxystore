@@ -180,7 +180,7 @@ class EndpointConnector:
                 session=self._session,
             )
         except requests.exceptions.RequestException as e:
-            assert e.response is not None  # noqa: PT017
+            assert e.response is not None
             raise EndpointConnectorError(
                 f'Evict failed with error code {e.response.status_code}.',
             ) from e
@@ -202,7 +202,7 @@ class EndpointConnector:
                 session=self._session,
             )
         except requests.exceptions.RequestException as e:
-            assert e.response is not None  # noqa: PT017
+            assert e.response is not None
             raise EndpointConnectorError(
                 f'Exists failed with error code {e.response.status_code}.',
             ) from e
@@ -224,7 +224,7 @@ class EndpointConnector:
                 session=self._session,
             )
         except requests.exceptions.RequestException as e:
-            assert e.response is not None  # noqa: PT017
+            assert e.response is not None
             raise EndpointConnectorError(
                 f'Get failed with error code {e.response.status_code}.',
             ) from e
@@ -263,7 +263,7 @@ class EndpointConnector:
                 session=self._session,
             )
         except requests.exceptions.RequestException as e:
-            assert e.response is not None  # noqa: PT017
+            assert e.response is not None
             raise EndpointConnectorError(
                 f'Put failed with error code {e.response.status_code}.',
             ) from e
