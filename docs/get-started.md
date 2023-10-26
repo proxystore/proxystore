@@ -48,12 +48,12 @@ in stores and creating proxies that will resolve to the associated object in
 the store.
 
 A [`Store`][proxystore.store.base.Store] is initialized with a
-[`Connector`][proxystore.connectors.connector.Connector] which serves as the
+[`Connector`][proxystore.connectors.protocols.Connector] which serves as the
 low-level interface to an byte-level object store.
 ProxyStore provides many
-[`Connector`][proxystore.connectors.connector.Connector] implementations and
+[`Connector`][proxystore.connectors.protocols.Connector] implementations and
 third-party code can provide custom implementations provided they meet the
-[`Connector`][proxystore.connectors.connector.Connector] protocol
+[`Connector`][proxystore.connectors.protocols.Connector] protocol
 specification.
 
 The following example uses the

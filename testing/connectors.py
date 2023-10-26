@@ -14,8 +14,8 @@ from proxystore.connectors import globus
 from proxystore.connectors import local
 from proxystore.connectors import multi
 from proxystore.connectors import redis
-from proxystore.connectors.connector import Connector
 from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.connectors.protocols import Connector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import write_config
 from proxystore.utils.environment import hostname

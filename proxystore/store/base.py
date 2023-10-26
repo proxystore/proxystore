@@ -160,9 +160,9 @@ class Store(Generic[ConnectorT]):
 
         Args:
             args: Positional arguments to pass to
-                [`Connector.close()`][proxystore.connectors.connector.Connector.close].
+                [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
             kwargs: Keyword arguments to pass to
-                [`Connector.close()`][proxystore.connectors.connector.Connector.close].
+                [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
         """
         self.connector.close(*args, **kwargs)
 
@@ -397,7 +397,7 @@ class Store(Generic[ConnectorT]):
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
-                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
+                [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
             A proxy of the object unless `obj` is a non-proxiable type \
@@ -493,7 +493,7 @@ class Store(Generic[ConnectorT]):
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
-                [`Connector.put_batch()`][proxystore.connectors.connector.Connector.put_batch].
+                [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
         Returns:
             A list of proxies of each object or the object itself if said \
@@ -631,7 +631,7 @@ class Store(Generic[ConnectorT]):
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
             kwargs: Additional keyword arguments to pass to
-                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
+                [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
             A proxy wrapped in a \
@@ -671,7 +671,7 @@ class Store(Generic[ConnectorT]):
             serializer: Optionally override the default serializer for the
                 store instance.
             kwargs: Additional keyword arguments to pass to
-                [`Connector.put()`][proxystore.connectors.connector.Connector.put].
+                [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
             A key which can be used to retrieve the object.
@@ -723,7 +723,7 @@ class Store(Generic[ConnectorT]):
             serializer: Optionally override the default serializer for the
                 store instance.
             kwargs: Additional keyword arguments to pass to
-                [`Connector.put_batch()`][proxystore.connectors.connector.Connector.put_batch].
+                [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
         Returns:
             A list of keys which can be used to retrieve the objects.

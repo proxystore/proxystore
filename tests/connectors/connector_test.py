@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from proxystore.connectors.connector import Connector
+from proxystore.connectors.protocols import Connector
 
 
 def test_connector_repr(connectors: Connector[Any]) -> None:

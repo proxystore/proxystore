@@ -97,9 +97,9 @@ In `metrics.times`, we see statistics about the duration of each operation.
 For example, `store.get` is the overall time
 [`Store.get()`][proxystore.store.base.Store.get] took, `store.get.connector` is
 the time spent calling
-[`Connector.get()`][proxystore.connectors.connector.Connector.get], and
+[`Connector.get()`][proxystore.connectors.protocols.Connector.get], and
 `store.get.deserialize` is the time spent deserializing the object returned
-by [`Connector.get()`][proxystore.connectors.connector.Connector.get].
+by [`Connector.get()`][proxystore.connectors.protocols.Connector.get].
 
 If we get the object again, we'll see the metrics change.
 ```python

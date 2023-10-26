@@ -8,7 +8,7 @@ from typing import Generator
 from typing import Sequence
 from typing import TypeVar
 
-from proxystore.connectors.connector import Connector
+from proxystore.connectors.protocols import Connector
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError

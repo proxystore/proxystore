@@ -10,9 +10,9 @@ def get_class_path(cls: type[Any]) -> str:
 
     Example:
         ```python
-        >>> from proxystore.connectors.connector import Connector
+        >>> from proxystore.connectors.protocols import Connector
         >>> get_class_path(Connector)
-        'proxystore.connectors.connector.Connector'
+        'proxystore.connectors.protocols.Connector'
         ```
 
     Args:
@@ -29,8 +29,8 @@ def import_class(path: str) -> type[Any]:
 
     Example:
         ```python
-        >>> import_class('proxystore.connectors.connector.Connector')
-        <class 'proxystore.connectors.connector.Connector'>
+        >>> import_class('proxystore.connectors.protocols.Connector')
+        <class 'proxystore.connectors.protocols.Connector'>
         ```
 
     Args:
