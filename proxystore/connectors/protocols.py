@@ -113,7 +113,7 @@ class Connector(Protocol[KeyT]):
 
 
 @runtime_checkable
-class DeferrableConnector(Protocol[KeyT], Protocol):
+class DeferrableConnector(Protocol[KeyT]):
     """Extension of the [`Connector`][proxystore.connectors.protocols.Connector] with `set` semantics.
 
     Extends the [`Connector`][proxystore.connectors.protocols.Connector]
