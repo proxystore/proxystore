@@ -20,6 +20,9 @@ class Connector(Protocol[KeyT]):
     def put(self, obj: bytes) -> KeyT: ...
     def put_batch(self, objs: Sequence[bytes]) -> list[KeyT]: ...
 ```
+
+## Implementations
+
 Implementing a custom [`Connector`][proxystore.connectors.protocols.Connector]
 requires creating a class which implements the above methods. Note that
 the custom class does not need to inherit from
@@ -31,3 +34,18 @@ are provided in the [`proxystore.connectors`][proxystore.connectors] module,
 and users can easily create their own.
 A [`Connector`][proxystore.connectors.protocols.Connector] instance is used
 by the [`Store`][proxystore.store.base.Store] to interact with the store.
+
+## Extensions
+
+A [`Connector`][proxystore.connectors.protocols.Connector] implementation
+can be extended to implement the
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+protocol. A
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+provides methods for creating a key and then setting that key to an object
+at a later time. Not all of the provided
+[`Connector`][proxystore.connectors.protocols.Connector] implementations
+implement the
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+protocol because some transfer methods require the object before creating a
+key for that object.
