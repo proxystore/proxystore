@@ -1051,26 +1051,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1176,6 +1156,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2760,7 +2760,7 @@ guide.
 <h2 id="using-proxystore">Using ProxyStore<a class="headerlink" href="#using-proxystore" title="Permanent link">&para;</a></h2>
 <p>Now we will update our script to use ProxyStore. This takes three steps:</p>
 <ol>
-<li>Initialize a <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> and
+<li>Initialize a <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> and
    <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>. The <code>Connector</code> is the interface
    to the byte-level communication channel that will be used, and the <code>Store</code>
    is the high-level interface provided by ProxyStore.</li>
@@ -2866,7 +2866,7 @@ the <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.prox
 data via alternate means between the Globus Compute client and executors.</p>
 <p>More complex applications where the Globus Compute endpoints live elsewhere
 (e.g., on an HPC) cluster or that move larger data will benefit from the
-various <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>
+various <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
 implementations provided.</p>
 <p>Checkout the other <a href="../">Guides</a> to learn about more advanced ProxyStore
 features.</p>

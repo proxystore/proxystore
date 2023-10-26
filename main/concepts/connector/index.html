@@ -86,6 +86,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#implementations" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -642,6 +647,17 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Connector
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -651,6 +667,37 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#implementations" class="md-nav__link">
+    Implementations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensions" class="md-nav__link">
+    Extensions
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -986,26 +1033,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1111,6 +1138,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2566,6 +2613,28 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#implementations" class="md-nav__link">
+    Implementations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extensions" class="md-nav__link">
+    Extensions
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -2584,10 +2653,10 @@
 
   <h1>Connector</h1>
 
-<p>The <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is a
+<p>The <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is a
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a> that defines the low-level
 interface to a mediated communication channel or object store.
-The <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> methods operate
+The <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> methods operate
 of <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes"><code>bytes</code></a> of data and keys which are tuples of metadata that can
 identify a unique object.</p>
 <p>The protocol is as follows:
@@ -2614,17 +2683,31 @@ identify a unique object.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a>    <span class="k">def</span> <span class="nf">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">KeyT</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span> <span class="o">...</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a>    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeyT</span><span class="p">:</span> <span class="o">...</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>    <span class="k">def</span> <span class="nf">put_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">KeyT</span><span class="p">]:</span> <span class="o">...</span>
-</span></code></pre></div></td></tr></table></div>
-Implementing a custom <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>
+</span></code></pre></div></td></tr></table></div></p>
+<h2 id="implementations">Implementations<a class="headerlink" href="#implementations" title="Permanent link">&para;</a></h2>
+<p>Implementing a custom <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
 requires creating a class which implements the above methods. Note that
 the custom class does not need to inherit from
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> because it is a
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> because it is a
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a>.</p>
-<p>Many <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> implementations
+<p>Many <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations
 are provided in the <a class="autorefs autorefs-internal" href="../../api/connectors/#proxystore.connectors"><code>proxystore.connectors</code></a> module,
 and users can easily create their own.
-A <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> instance is used
+A <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instance is used
 by the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> to interact with the store.</p>
+<h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
+<p>A <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementation
+can be extended to implement the
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector"><code>DeferrableConnector</code></a>
+protocol. A
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector"><code>DeferrableConnector</code></a>
+provides methods for creating a key and then setting that key to an object
+at a later time. Not all of the provided
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations
+implement the
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector"><code>DeferrableConnector</code></a>
+protocol because some transfer methods require the object before creating a
+key for that object.</p>
 
 
 

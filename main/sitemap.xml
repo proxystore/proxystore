@@ -71,11 +71,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/connectors/connector/</loc>
-         <lastmod>2023-10-26</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/connectors/dim/</loc>
          <lastmod>2023-10-26</lastmod>
          <changefreq>daily</changefreq>
@@ -102,6 +97,11 @@
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/multi/</loc>
+         <lastmod>2023-10-26</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/main/api/connectors/protocols/</loc>
          <lastmod>2023-10-26</lastmod>
          <changefreq>daily</changefreq>
     </url>

@@ -978,26 +978,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1103,6 +1083,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2582,24 +2582,30 @@
 </blockquote>
 <p>ProxyStore is composed of three main components: the
 <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a>,
-<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>,
+<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>,
 and <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.</p>
 <p>The <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> model provides <em>pass-by-reference</em>
 semantics and <em>just-in-time</em> object resolution transparently to consumers.</p>
-<p>The <a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is a
+<p>The <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is a
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a> that defines the low-level
 interface to a mediated communication channel or object store.
-Many <a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> implementations
+Many <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations
 are provided in the <a class="autorefs autorefs-internal" href="../api/connectors/#proxystore.connectors"><code>proxystore.connectors</code></a> module,
 and users can easily create their own.</p>
 <p>The <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is a high-level abstraction of an
 object store and the intended means by which an application uses ProxyStore.
 The <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with
-a <a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> and provides
+a <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> and provides
 extra functionality like caching and serialization. Most important is that the
 <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>.proxy()</code></a> method is provided which can
 produce a <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> of an arbitrary object put in the
 store.</p>
+<p>Continue reading to learn more about these concepts.</p>
+<ul>
+<li><a href="proxy/">Proxy</a></li>
+<li><a href="connector/">Connector</a></li>
+<li><a href="store/">Store</a></li>
+</ul>
 
 
 

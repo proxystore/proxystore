@@ -1037,26 +1037,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1162,6 +1142,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2700,12 +2700,12 @@ to create powerful just-in-time resolution functionality for Python objects.</p>
 in stores and creating proxies that will resolve to the associated object in
 the store.</p>
 <p>A <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with a
-<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> which serves as the
+<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> which serves as the
 low-level interface to an byte-level object store.
 ProxyStore provides many
-<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> implementations and
+<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations and
 third-party code can provide custom implementations provided they meet the
-<a class="autorefs autorefs-internal" href="../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol
+<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol
 specification.</p>
 <p>The following example uses the
 <a class="autorefs autorefs-internal" href="../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a> to interface

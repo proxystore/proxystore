@@ -18,7 +18,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="connector/">
+        <link rel="next" href="dim/">
       
       
       <link rel="icon" href="../../static/favicon.png">
@@ -989,26 +989,6 @@
   
   
     <li class="md-nav__item">
-      <a href="connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="dim/" class="md-nav__link">
         
   
@@ -1114,6 +1094,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2616,15 +2616,15 @@
   <div class="doc doc-contents first">
   
       <p>Connector implementations.</p>
-<p>A <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is an interface
+<p>A <a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is an interface
 to a mediated communication channel or object store. Connectors operate on
 low-level bytes and are used by the <a class="autorefs autorefs-internal" href="../store/base/#proxystore.store.base.Store"><code>Store</code></a>
 to store and get serialized Python objects.</p>
 <p>Third-party code can provide custom connectors by implementing the
-<a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol. (Note:
-because <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> is a
+<a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol. (Note:
+because <a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is a
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a>, custom connectors do not need
-to inherit from <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>.)</p>
+to inherit from <a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>.)</p>
 
 <details class="example" open>
   <summary>Example</summary>
@@ -2642,10 +2642,10 @@ to inherit from <a class="autorefs autorefs-internal" href="connector/#proxystor
 </details>
 <details class="tip" open>
   <summary>Tip</summary>
-  <p>All of the <a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>
+  <p>All of the <a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
 implementations in this module can be used as context managers.
 Context manager support is not a required component of the
-<a class="autorefs autorefs-internal" href="connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> protocol. It is
+<a class="autorefs autorefs-internal" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol. It is
 simply provided for convenience with the native implementations.
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>

@@ -1047,26 +1047,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1172,6 +1152,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2682,14 +2682,14 @@
   <h1>Store</h1>
 
 <p>A <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with a
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> instance and provides
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instance and provides
 extra functionality. Similar to the
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>, the
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>, the
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> exposes <code>evict</code>, <code>exist</code>, <code>get</code>, and <code>put</code>
 operations; however, these operations act on Python objects rather than
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes"><code>bytes</code></a>. The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will (de)serialize
 objects accordingly before invoking the corresponding operation on the
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a>.
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>.
 The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> also provides caching of operations
 to reduce communication costs, and objects are cached after deserialization to
 avoid duplicate deserialization.</p>
@@ -2699,7 +2699,7 @@ operations, the proxy method, also provided by the
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> puts an object in the
 mediated channel and returns a proxy (see example below). The object is
 serialized before being put in the mediated channel, a factory with the key
-returned by the <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector"><code>Connector</code></a> and
+returned by the <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> and
 other information necessary to retrieve the object from the mediated channel
 is generated, and then a new proxy, internalized with the factory, is returned.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Base Store Usage</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>

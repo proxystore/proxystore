@@ -1058,26 +1058,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/connector/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    connector
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/connectors/dim/" class="md-nav__link">
         
   
@@ -1183,6 +1163,26 @@
   
   <span class="md-ellipsis">
     multi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/connectors/protocols/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    protocols
   </span>
   
 
@@ -2797,9 +2797,9 @@ In <code>metrics.times</code>, we see statistics about the duration of each oper
 For example, <code>store.get</code> is the overall time
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.get"><code>Store.get()</code></a> took, <code>store.get.connector</code> is
 the time spent calling
-<a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector.get"><code>Connector.get()</code></a>, and
+<a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector.get"><code>Connector.get()</code></a>, and
 <code>store.get.deserialize</code> is the time spent deserializing the object returned
-by <a class="autorefs autorefs-internal" href="../../api/connectors/connector/#proxystore.connectors.connector.Connector.get"><code>Connector.get()</code></a>.</p>
+by <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector.get"><code>Connector.get()</code></a>.</p>
 <p>If we get the object again, we'll see the metrics change.
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">store</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">metrics</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">metrics</span><span class="o">.</span><span class="n">get_metrics</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
