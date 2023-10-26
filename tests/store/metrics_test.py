@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from proxystore.proxy import Proxy
-from proxystore.store.base import StoreFactory
+from proxystore.store.factory import StoreFactory
 from proxystore.store.metrics import Metrics
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.metrics import TimeStats
