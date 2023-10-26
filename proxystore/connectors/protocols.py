@@ -15,8 +15,8 @@ KeyT = TypeVar('KeyT', bound=NamedTuple)
 class Connector(Protocol[KeyT]):
     """Connector protocol for interfacing with external object storage.
 
-    The Connector protocol defines the interface for interacting with a
-    byte-level object store.
+    The Connector protocol defines the interface for interacting with
+    a byte-level object store.
     """
 
     def close(self) -> None:
@@ -108,5 +108,53 @@ class Connector(Protocol[KeyT]):
         Returns:
             List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
+        """
+        ...
+
+
+@runtime_checkable
+class DeferrableConnector(Protocol[KeyT], Protocol):
+    """Extension of the [`Connector`][proxystore.connectors.protocols.Connector] with `set` semantics.
+
+    Extends the [`Connector`][proxystore.connectors.protocols.Connector]
+    protocol with additional methods necessary for creating a key while
+    deferring associated an object with the key.
+    """  # noqa: E501
+
+    def new_key(self, obj: bytes | None = None) -> KeyT:
+        """Create a new key.
+
+        Note:
+            Implementations may choose to require the object be provided, or
+            place restrictions on the scope of the key.
+
+        Args:
+            obj: Optional object which the key will be associated with.
+
+        Returns:
+            Key which can be used to retrieve an object once \
+            [`set()`][proxystore.connectors.protocols.DeferrableConnector.set] \
+            has been called on the key.
+        """
+        ...
+
+    def set(self, key: KeyT, obj: bytes) -> None:
+        """Set the object associated with a key.
+
+        Note:
+            The [`Connector`][proxystore.connectors.protocols.Connector]
+            provides write-once, read-many semantics. Thus,
+            [`set()`][proxystore.connectors.protocols.DeferrableConnector.set]
+            should only be called once per key, otherwise unexpected behavior
+            can occur.
+
+        Warning:
+            This method is not required to be atomic and could therefore
+            result in race conditions with calls to
+            [`get()`][proxystore.connectors.protocols.Connector.get].
+
+        Args:
+            key: Key that the object will be associated with.
+            obj: Object to associate with the key.
         """
         ...
