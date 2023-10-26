@@ -32,6 +32,10 @@ class FileKey(NamedTuple):
 class FileConnector:
     """Connector to shared file system.
 
+    This connector writes objects to unique files within `store_dir`. Marker
+    files are used to indicate that an object is finished being written
+    to avoid race conditions.
+
     Args:
         store_dir: Path to directory to store data in. Note this
             directory will be deleted upon closing the store.
@@ -108,6 +112,9 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename)
         if os.path.exists(path):
             os.remove(path)
+        marker = path + '.ready'
+        if os.path.exists(marker):
+            os.remove(marker)
 
     def exists(self, key: FileKey) -> bool:
         """Check if an object associated with the key exists.
@@ -118,7 +125,7 @@ class FileConnector:
         Returns:
             If an object associated with the key exists.
         """
-        path = os.path.join(self.store_dir, key.filename)
+        path = os.path.join(self.store_dir, key.filename + '.ready')
         return os.path.exists(path)
 
     def get(self, key: FileKey) -> bytes | None:
@@ -131,7 +138,8 @@ class FileConnector:
             Serialized object or `None` if the object does not exist.
         """
         path = os.path.join(self.store_dir, key.filename)
-        if os.path.exists(path):
+        marker = path + '.ready'
+        if os.path.exists(marker):
             with open(path, 'rb') as f:
                 data = f.read()
                 return data
@@ -149,6 +157,20 @@ class FileConnector:
         """
         return [self.get(key) for key in keys]
 
+    def new_key(self, obj: bytes | None = None) -> FileKey:
+        """Create a new key.
+
+        Args:
+            obj: Optional object which the key will be associated with.
+                Ignored by this implementation.
+
+        Returns:
+            Key which can be used to retrieve an object once \
+            [`set()`][proxystore.connectors.file.FileConnector.set] \
+            has been called on the key.
+        """
+        return FileKey(filename=str(uuid.uuid4()))
+
     def put(self, obj: bytes) -> FileKey:
         """Put a serialized object in the store.
 
@@ -159,11 +181,7 @@ class FileConnector:
             Key which can be used to retrieve the object.
         """
         key = FileKey(filename=str(uuid.uuid4()))
-
-        path = os.path.join(self.store_dir, key.filename)
-        with open(path, 'wb', buffering=0) as f:
-            f.write(obj)
-
+        self.set(key, obj)
         return key
 
     def put_batch(self, objs: Sequence[bytes]) -> list[FileKey]:
@@ -177,3 +195,23 @@ class FileConnector:
             retrieve the objects.
         """
         return [self.put(obj) for obj in objs]
+
+    def set(self, key: FileKey, obj: bytes) -> None:
+        """Set the object associated with a key.
+
+        Note:
+            The [`Connector`][proxystore.connectors.protocols.Connector]
+            provides write-once, read-many semantics. Thus,
+            [`set()`][proxystore.connectors.file.FileConnector.set]
+            should only be called once per key, otherwise unexpected behavior
+            can occur.
+
+        Args:
+            key: Key that the object will be associated with.
+            obj: Object to associate with the key.
+        """
+        path = os.path.join(self.store_dir, key.filename)
+        with open(path, 'wb', buffering=0) as f:
+            f.write(obj)
+        marker = path + '.ready'
+        open(marker, 'wb').close()
