@@ -10,11 +10,11 @@ from typing import TypeVar
 
 from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
-from proxystore.store.base import ConnectorT
 from proxystore.store.base import Store
-from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
+from proxystore.store.factory import StoreFactory
+from proxystore.store.types import ConnectorT
 
 __all__ = [
     'Store',

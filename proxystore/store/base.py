@@ -3,19 +3,14 @@ from __future__ import annotations
 
 import logging
 import sys
-import threading
-from concurrent.futures import Future
-from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import Generic
 from typing import List
 from typing import Literal
 from typing import overload
 from typing import Sequence
-from typing import Tuple
 from typing import TypeVar
 from typing import Union
 
@@ -26,153 +21,27 @@ else:  # pragma: <3.11 cover
 
 import proxystore
 import proxystore.serialize
-from proxystore.connectors.connector import Connector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import NonProxiableTypeError
-from proxystore.store.exceptions import ProxyResolveMissingKeyError
+from proxystore.store.factory import StoreFactory
 from proxystore.store.metrics import StoreMetrics
+from proxystore.store.types import ConnectorKeyT
+from proxystore.store.types import ConnectorT
+from proxystore.store.types import DeserializerT
+from proxystore.store.types import SerializerT
 from proxystore.utils.imports import get_class_path
 from proxystore.utils.imports import import_class
 from proxystore.utils.timer import Timer
 
-_default_pool = ThreadPoolExecutor()
-_factory_get_store_lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
 T = TypeVar('T')
+
 NonProxiableT = TypeVar('NonProxiableT', bool, None)
-
-ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
-"""Connector type variable."""
-ConnectorKeyT = Tuple[Any, ...]
-"""Connector key type alias."""
-SerializerT = Callable[[Any], bytes]
-"""Serializer type alias."""
-DeserializerT = Callable[[bytes], Any]
-"""Deserializer type alias."""
-
 # These should be kept in sync with NonProxiableT
 _NON_PROXIABLE_TYPES = (bool, type(None))
-
-_MISSING_OBJECT = object()
-
-
-class StoreFactory(Generic[ConnectorT, T]):
-    """Factory that resolves an object from a store.
-
-    Adds support for asynchronously retrieving objects from a
-    [`Store`][proxystore.store.base.Store] instance.
-
-    The factory takes the `store_config` parameter that is
-    used to reinitialize the store if the factory is sent to a remote
-    process where the store has not already been initialized.
-
-    Args:
-        key: Key corresponding to object in store.
-        store_config: Store configuration used to reinitialize the store if
-            needed.
-        evict: If True, evict the object from the store once
-            [`resolve()`][proxystore.store.base.StoreFactory.resolve]
-            is called.
-        deserializer: Optional callable used to deserialize the byte string.
-            If `None`, the default deserializer
-            ([`deserialize()`][proxystore.serialize.deserialize]) will be used.
-        metrics: Enable recording operation metrics.
-    """
-
-    def __init__(
-        self,
-        key: ConnectorKeyT,
-        store_config: dict[str, Any],
-        *,
-        evict: bool = False,
-        deserializer: DeserializerT | None = None,
-        metrics: bool = False,
-    ) -> None:
-        self.key = key
-        self.store_config = store_config
-        self.evict = evict
-        self.deserializer = deserializer
-        self.metrics = metrics
-
-        # The following are not included when a factory is serialized
-        # because they are specific to that instance of the factory
-        self._obj_future: Future[T] | None = None
-
-    def __call__(self) -> T:
-        with Timer() as timer:
-            if self._obj_future is not None:
-                obj = self._obj_future.result()
-                self._obj_future = None
-            else:
-                obj = self.resolve()
-
-        store = self.get_store()
-        if store.metrics is not None:
-            store.metrics.add_time('factory.call', self.key, timer.elapsed_ns)
-
-        return obj
-
-    def __getstate__(self) -> dict[str, Any]:
-        # Override pickling behavior to not serialize a possible future
-        state = self.__dict__.copy()
-        state['_obj_future'] = None
-        return state
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        self.__dict__.update(state)
-
-    def get_store(self) -> Store[ConnectorT]:
-        """Get store and reinitialize if necessary.
-
-        Raises:
-            ValueError: If the type of the returned store does not match the
-                expected store type passed to the factory constructor.
-        """
-        with _factory_get_store_lock:
-            store = proxystore.store.get_store(self.store_config['name'])
-            if store is None:
-                store = Store.from_config(self.store_config)
-                proxystore.store.register_store(store)
-            return store
-
-    def resolve(self) -> T:
-        """Get object associated with key from store.
-
-        Raises:
-            ProxyResolveMissingKeyError: If the key associated with this
-                factory does not exist in the store.
-        """
-        with Timer() as timer:
-            store = self.get_store()
-            obj = store.get(
-                self.key,
-                deserializer=self.deserializer,
-                default=_MISSING_OBJECT,
-            )
-
-            if obj is _MISSING_OBJECT:
-                raise ProxyResolveMissingKeyError(
-                    self.key,
-                    type(store),
-                    store.name,
-                )
-
-            if self.evict:
-                store.evict(self.key)
-
-        if store.metrics is not None:
-            total_time = timer.elapsed_ns
-            store.metrics.add_time('factory.resolve', self.key, total_time)
-
-        return cast(T, obj)
-
-    def resolve_async(self) -> None:
-        """Asynchronously get object associated with key from store."""
-        logger.debug(f'Starting asynchronous resolve of {self.key}')
-        self._obj_future = _default_pool.submit(self.resolve)
 
 
 class Store(Generic[ConnectorT]):

@@ -15,9 +15,9 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
-from proxystore.store.base import StoreFactory
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
+from proxystore.store.factory import StoreFactory
 from proxystore.store.utils import get_key
 
 
