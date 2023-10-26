@@ -78,7 +78,7 @@ $ python example.py
 
 Now we will update our script to use ProxyStore. This takes three steps:
 
-1. Initialize a [`Connector`][proxystore.connectors.connector.Connector] and
+1. Initialize a [`Connector`][proxystore.connectors.protocols.Connector] and
    [`Store`][proxystore.store.base.Store]. The `Connector` is the interface
    to the byte-level communication channel that will be used, and the `Store`
    is the high-level interface provided by ProxyStore.
@@ -161,7 +161,7 @@ data via alternate means between the Globus Compute client and executors.
 
 More complex applications where the Globus Compute endpoints live elsewhere
 (e.g., on an HPC) cluster or that move larger data will benefit from the
-various [`Connector`][proxystore.connectors.connector.Connector]
+various [`Connector`][proxystore.connectors.protocols.Connector]
 implementations provided.
 
 Checkout the other [Guides](index.md) to learn about more advanced ProxyStore

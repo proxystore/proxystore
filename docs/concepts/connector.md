@@ -1,7 +1,7 @@
-The [`Connector`][proxystore.connectors.connector.Connector] is a
+The [`Connector`][proxystore.connectors.protocols.Connector] is a
 [`Protocol`][typing.Protocol] that defines the low-level
 interface to a mediated communication channel or object store.
-The [`Connector`][proxystore.connectors.connector.Connector] methods operate
+The [`Connector`][proxystore.connectors.protocols.Connector] methods operate
 of [`bytes`][bytes] of data and keys which are tuples of metadata that can
 identify a unique object.
 
@@ -20,14 +20,32 @@ class Connector(Protocol[KeyT]):
     def put(self, obj: bytes) -> KeyT: ...
     def put_batch(self, objs: Sequence[bytes]) -> list[KeyT]: ...
 ```
-Implementing a custom [`Connector`][proxystore.connectors.connector.Connector]
+
+## Implementations
+
+Implementing a custom [`Connector`][proxystore.connectors.protocols.Connector]
 requires creating a class which implements the above methods. Note that
 the custom class does not need to inherit from
-[`Connector`][proxystore.connectors.connector.Connector] because it is a
+[`Connector`][proxystore.connectors.protocols.Connector] because it is a
 [`Protocol`][typing.Protocol].
 
-Many [`Connector`][proxystore.connectors.connector.Connector] implementations
+Many [`Connector`][proxystore.connectors.protocols.Connector] implementations
 are provided in the [`proxystore.connectors`][proxystore.connectors] module,
 and users can easily create their own.
-A [`Connector`][proxystore.connectors.connector.Connector] instance is used
+A [`Connector`][proxystore.connectors.protocols.Connector] instance is used
 by the [`Store`][proxystore.store.base.Store] to interact with the store.
+
+## Extensions
+
+A [`Connector`][proxystore.connectors.protocols.Connector] implementation
+can be extended to implement the
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+protocol. A
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+provides methods for creating a key and then setting that key to an object
+at a later time. Not all of the provided
+[`Connector`][proxystore.connectors.protocols.Connector] implementations
+implement the
+[`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
+protocol because some transfer methods require the object before creating a
+key for that object.

@@ -1,15 +1,15 @@
 """Connector implementations.
 
-A [`Connector`][proxystore.connectors.connector.Connector] is an interface
+A [`Connector`][proxystore.connectors.protocols.Connector] is an interface
 to a mediated communication channel or object store. Connectors operate on
 low-level bytes and are used by the [`Store`][proxystore.store.base.Store]
 to store and get serialized Python objects.
 
 Third-party code can provide custom connectors by implementing the
-[`Connector`][proxystore.connectors.connector.Connector] protocol. (Note:
-because [`Connector`][proxystore.connectors.connector.Connector] is a
+[`Connector`][proxystore.connectors.protocols.Connector] protocol. (Note:
+because [`Connector`][proxystore.connectors.protocols.Connector] is a
 [`Protocol`][typing.Protocol], custom connectors do not need
-to inherit from [`Connector`][proxystore.connectors.connector.Connector].)
+to inherit from [`Connector`][proxystore.connectors.protocols.Connector].)
 
 Example:
     ```python
@@ -26,10 +26,10 @@ Example:
     ```
 
 Tip:
-    All of the [`Connector`][proxystore.connectors.connector.Connector]
+    All of the [`Connector`][proxystore.connectors.protocols.Connector]
     implementations in this module can be used as context managers.
     Context manager support is not a required component of the
-    [`Connector`][proxystore.connectors.connector.Connector] protocol. It is
+    [`Connector`][proxystore.connectors.protocols.Connector] protocol. It is
     simply provided for convenience with the native implementations.
     ```python
     from proxystore.connectors.file import FileConnector

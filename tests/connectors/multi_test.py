@@ -8,11 +8,11 @@ from unittest import mock
 
 import pytest
 
-from proxystore.connectors.connector import Connector
 from proxystore.connectors.local import LocalConnector
 from proxystore.connectors.multi import MultiConnector
 from proxystore.connectors.multi import MultiConnectorError
 from proxystore.connectors.multi import Policy
+from proxystore.connectors.protocols import Connector
 
 
 @contextlib.contextmanager

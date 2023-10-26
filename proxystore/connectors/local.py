@@ -124,6 +124,20 @@ class LocalConnector:
         """
         return [self.get(key) for key in keys]
 
+    def new_key(self, obj: bytes | None = None) -> LocalKey:
+        """Create a new key.
+
+        Args:
+            obj: Optional object which the key will be associated with.
+                Ignored in this implementation.
+
+        Returns:
+            Key which can be used to retrieve an object once \
+            [`set()`][proxystore.connectors.local.LocalConnector.set] \
+            has been called on the key.
+        """
+        return LocalKey(str(uuid.uuid4()))
+
     def put(self, obj: bytes) -> LocalKey:
         """Put a serialized object in the store.
 
@@ -148,3 +162,12 @@ class LocalConnector:
             retrieve the objects.
         """
         return [self.put(obj) for obj in objs]
+
+    def set(self, key: LocalKey, obj: bytes) -> None:
+        """Set the object associated with a key.
+
+        Args:
+            key: Key that the object will be associated with.
+            obj: Object to associate with the key.
+        """
+        self._store[key] = obj

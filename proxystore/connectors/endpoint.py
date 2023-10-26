@@ -241,6 +241,30 @@ class EndpointConnector:
         """
         return [self.get(key) for key in keys]
 
+    def new_key(self, obj: bytes | None = None) -> EndpointKey:
+        """Create a new key.
+
+        Warning:
+            The returned key will be associated with this instance's local
+            endpoint. I.e., when
+            [`set()`][proxystore.connectors.endpoint.EndpointConnector.set]
+            is called on this key, the connector must be connected to the same
+            local endpoint.
+
+        Args:
+            obj: Optional object which the key will be associated with.
+                Ignored in this implementation.
+
+        Returns:
+            Key which can be used to retrieve an object once \
+            [`set()`][proxystore.connectors.endpoint.EndpointConnector.set] \
+            has been called on the key.
+        """
+        return EndpointKey(
+            object_id=str(uuid.uuid4()),
+            endpoint_id=str(self.endpoint_uuid),
+        )
+
     def put(self, obj: bytes) -> EndpointKey:
         """Put a serialized object in the store.
 
@@ -254,20 +278,7 @@ class EndpointConnector:
             object_id=str(uuid.uuid4()),
             endpoint_id=str(self.endpoint_uuid),
         )
-        try:
-            client.put(
-                self.address,
-                key.object_id,
-                obj,
-                key.endpoint_id,
-                session=self._session,
-            )
-        except requests.exceptions.RequestException as e:
-            assert e.response is not None
-            raise EndpointConnectorError(
-                f'Put failed with error code {e.response.status_code}.',
-            ) from e
-
+        self.set(key, obj)
         return key
 
     def put_batch(self, objs: Sequence[bytes]) -> list[EndpointKey]:
@@ -281,3 +292,31 @@ class EndpointConnector:
             retrieve the objects.
         """
         return [self.put(obj) for obj in objs]
+
+    def set(self, key: EndpointKey, obj: bytes) -> None:
+        """Set the object associated with a key.
+
+        Note:
+            The [`Connector`][proxystore.connectors.protocols.Connector]
+            provides write-once, read-many semantics. Thus,
+            [`set()`][proxystore.connectors.endpoint.EndpointConnector.set]
+            should only be called once per key, otherwise unexpected behavior
+            can occur.
+
+        Args:
+            key: Key that the object will be associated with.
+            obj: Object to associate with the key.
+        """
+        try:
+            client.put(
+                self.address,
+                key.object_id,
+                obj,
+                key.endpoint_id,
+                session=self._session,
+            )
+        except requests.exceptions.RequestException as e:
+            assert e.response is not None
+            raise EndpointConnectorError(
+                f'Put failed with error code {e.response.status_code}.',
+            ) from e

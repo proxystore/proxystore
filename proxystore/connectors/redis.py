@@ -142,6 +142,20 @@ class RedisConnector:
         """
         return self._redis_client.mget([key.redis_key for key in keys])
 
+    def new_key(self, obj: bytes | None = None) -> RedisKey:
+        """Create a new key.
+
+        Args:
+            obj: Optional object which the key will be associated with.
+                Ignored in this implementation.
+
+        Returns:
+            Key which can be used to retrieve an object once \
+            [`set()`][proxystore.connectors.redis.RedisConnector.set] \
+            has been called on the key.
+        """
+        return RedisKey(redis_key=str(uuid.uuid4()))
+
     def put(self, obj: bytes) -> RedisKey:
         """Put a serialized object in the store.
 
@@ -170,3 +184,19 @@ class RedisConnector:
             {key.redis_key: obj for key, obj in zip(keys, objs)},
         )
         return keys
+
+    def set(self, key: RedisKey, obj: bytes) -> None:
+        """Set the object associated with a key.
+
+        Note:
+            The [`Connector`][proxystore.connectors.protocols.Connector]
+            provides write-once, read-many semantics. Thus,
+            [`set()`][proxystore.connectors.redis.RedisConnector.set]
+            should only be called once per key, otherwise unexpected behavior
+            can occur.
+
+        Args:
+            key: Key that the object will be associated with.
+            obj: Object to associate with the key.
+        """
+        self._redis_client.set(key.redis_key, obj)

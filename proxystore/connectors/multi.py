@@ -22,7 +22,7 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from proxystore import utils
-from proxystore.connectors.connector import Connector
+from proxystore.connectors.protocols import Connector
 from proxystore.utils.imports import get_class_path
 from proxystore.utils.imports import import_class
 from proxystore.warnings import ExperimentalWarning
@@ -193,7 +193,7 @@ class MultiKey(NamedTuple):
 
 
 class MultiConnector:
-    """Policy based manager for a [`Connector`][proxystore.connectors.connector.Connector] collection.
+    """Policy based manager for a [`Connector`][proxystore.connectors.protocols.Connector] collection.
 
     Example:
         ```python
@@ -221,7 +221,7 @@ class MultiConnector:
 
     Args:
         connectors: Mapping of names to tuples of a
-            [`Connector`][proxystore.connectors.connector.Connector] and
+            [`Connector`][proxystore.connectors.protocols.Connector] and
             [`Policy`][proxystore.connectors.multi.Policy].
         dormant_connectors: Mapping of names to tuples containing the
             configuration of a dormant connector. A dormant connector is

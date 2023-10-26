@@ -6,7 +6,7 @@ from typing import Callable
 from typing import Tuple
 from typing import TypeVar
 
-from proxystore.connectors.connector import Connector
+from proxystore.connectors.protocols import Connector
 
 ConnectorT = TypeVar('ConnectorT', bound=Connector[Any])
 """Connector type variable."""

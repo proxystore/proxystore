@@ -1,12 +1,12 @@
 A [`Store`][proxystore.store.base.Store] is initialized with a
-[`Connector`][proxystore.connectors.connector.Connector] instance and provides
+[`Connector`][proxystore.connectors.protocols.Connector] instance and provides
 extra functionality. Similar to the
-[`Connector`][proxystore.connectors.connector.Connector], the
+[`Connector`][proxystore.connectors.protocols.Connector], the
 [`Store`][proxystore.store.base.Store] exposes `evict`, `exist`, `get`, and `put`
 operations; however, these operations act on Python objects rather than
 [`bytes`][bytes]. The [`Store`][proxystore.store.base.Store] will (de)serialize
 objects accordingly before invoking the corresponding operation on the
-[`Connector`][proxystore.connectors.connector.Connector].
+[`Connector`][proxystore.connectors.protocols.Connector].
 The [`Store`][proxystore.store.base.Store] also provides caching of operations
 to reduce communication costs, and objects are cached after deserialization to
 avoid duplicate deserialization.
@@ -17,7 +17,7 @@ operations, the proxy method, also provided by the
 [`Store.proxy()`][proxystore.store.base.Store.proxy] puts an object in the
 mediated channel and returns a proxy (see example below). The object is
 serialized before being put in the mediated channel, a factory with the key
-returned by the [`Connector`][proxystore.connectors.connector.Connector] and
+returned by the [`Connector`][proxystore.connectors.protocols.Connector] and
 other information necessary to retrieve the object from the mediated channel
 is generated, and then a new proxy, internalized with the factory, is returned.
 
