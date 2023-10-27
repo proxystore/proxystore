@@ -219,7 +219,7 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 
 ## Hosting a Relay Server
 
-The [`proxystore-endpoint configure`](../api/cli/proxystore-endpoint-configure)
+The [`proxystore-endpoint configure`](../../api/cli/#proxystore-endpoint-configure)
 CLI will configure endpoints to use a relay server hosted by the ProxyStore
 team.  If this is not suitable (or the ProxyStore relay is unavailable) we
 provide all of the tools to host your own relay server. See the
