@@ -206,7 +206,16 @@ def serve(
 
     # The remaining set up and serving code is deferred to within the
     # _serve_async helper function which will be executed within an event loop.
-    asyncio.run(_serve_async(config))
+    try:
+        asyncio.run(_serve_async(config))
+    except Exception as e:
+        # Intercept exception so we can log it in the case that the endpoint
+        # is running as a daemon process. Otherwise the user will never see
+        # the exception.
+        logger.exception(f'Caught unhandled exception: {e!r}')
+        raise
+    finally:
+        logger.info(f'Finished serving endpoint: {config.name}')
 
 
 @routes_blueprint.before_app_serving
