@@ -46,11 +46,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/legacy-docs/</loc>
-         <lastmod>2023-10-27</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://proxystore.dev/main/api/proxy/</loc>
          <lastmod>2023-10-27</lastmod>
          <changefreq>daily</changefreq>
