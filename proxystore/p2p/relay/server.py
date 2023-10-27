@@ -7,6 +7,7 @@ of peer WebRTC connections.
 from __future__ import annotations
 
 import logging
+import sys
 from typing import Generic
 from typing import TypeVar
 
@@ -62,11 +63,21 @@ class RelayServer(Generic[UserT]):
     Args:
         authenticator: Authenticator used to identify users from the opening
             websocket headers.
+        max_message_bytes: Optional maximum size of client messages in bytes.
+            Clients that send oversized messages will have their connections
+            closed. Note that message size is computed using
+            [`sys.getsizeof()`][sys.getsizeof] so will also include the
+            PyObject overhead.
     """
 
-    def __init__(self, authenticator: Authenticator[UserT]) -> None:
+    def __init__(
+        self,
+        authenticator: Authenticator[UserT],
+        max_message_bytes: int | None = None,
+    ) -> None:
         self._authenticator = authenticator
         self._client_manager: ClientManager[UserT] = ClientManager()
+        self._max_message_bytes = max_message_bytes
 
     @property
     def authenticator(self) -> Authenticator[UserT]:
@@ -266,6 +277,7 @@ class RelayServer(Generic[UserT]):
         - An unexpected message type is received (code 4000).
         - The client can not be authenticated (code 4001).
         - The client attempts to access forbidden resources (code 4002).
+        - The client sends a message larger than the allowed size (code 4003).
 
         Args:
             websocket: Websocket message was received on.
@@ -283,6 +295,22 @@ class RelayServer(Generic[UserT]):
                 client = self.client_manager.get_client_by_websocket(websocket)
                 if client is not None:
                     await self.unregister(client, expected=False)
+                break
+
+            if (
+                self._max_message_bytes is not None
+                and sys.getsizeof(message_str) > self._max_message_bytes
+            ):
+                await websocket.close(
+                    4003,
+                    reason='Message length exceeds limit.',
+                )
+                logger.warning(
+                    f'Client at {websocket.remote_address} sent message with '
+                    f'size {sys.getsizeof(message_str)} bytes which exceeds '
+                    f'the max configured size of {self._max_message_bytes} '
+                    'bytes. Connection closed with error code 4003',
+                )
                 break
 
             try:

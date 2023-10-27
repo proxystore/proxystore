@@ -73,6 +73,8 @@ class RelayServingConfig:
             taken from the certfile.
         auth: Authentication configuration.
         logging: Logging configuration.
+        max_message_bytes: Maximum size in bytes of messages received by
+            the relay server.
     """
 
     host: Optional[str] = None  # noqa: UP007
@@ -83,6 +85,7 @@ class RelayServingConfig:
     logging: RelayLoggingConfig = dataclasses.field(
         default_factory=RelayLoggingConfig,
     )
+    max_message_bytes: Optional[int] = None  # noqa: UP007
 
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:
