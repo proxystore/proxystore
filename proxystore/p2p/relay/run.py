@@ -90,7 +90,10 @@ async def serve(config: RelayServingConfig) -> None:
         config: Serving configuration.
     """
     authenticator = get_authenticator(config.auth)
-    server = RelayServer(authenticator)
+    server = RelayServer(
+        authenticator,
+        max_message_bytes=config.max_message_bytes,
+    )
 
     # Set the stop condition when receiving SIGINT (ctrl-C) and SIGTERM.
     loop = asyncio.get_running_loop()

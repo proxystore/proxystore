@@ -436,6 +436,36 @@ async def test_handler_bad_request_error(
 
 
 @pytest.mark.asyncio()
+async def test_handler_message_size_exceeded(
+    relay_server: RelayServerInfo,
+) -> None:
+    max_size = 1000
+    with mock.patch.object(
+        relay_server.relay_server,
+        '_max_message_bytes',
+        max_size,
+    ):
+        async with websockets.client.connect(
+            relay_server.address,
+        ) as websocket:
+            request = PeerConnectionRequest(
+                source_uuid=uuid.uuid4(),
+                source_name='test',
+                peer_uuid=uuid.uuid4(),
+                description_type='offer',
+                description='.' * max_size,
+            )
+            await asyncio.wait_for(
+                websocket.send(encode_relay_message(request)),
+                _WAIT_FOR,
+            )
+
+            await asyncio.wait_for(websocket.wait_closed(), _WAIT_FOR)
+            assert websocket.close_code == 4003
+            assert websocket.close_reason == 'Message length exceeds limit.'
+
+
+@pytest.mark.asyncio()
 async def test_handler_forward_request_before_registration(
     relay_server: RelayServerInfo,
 ) -> None:
