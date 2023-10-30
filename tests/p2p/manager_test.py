@@ -112,7 +112,9 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
             task.cancel()
             try:
                 await task
-            except asyncio.CancelledError:
+            # For note on AttributeError catching:
+            # https://github.com/proxystore/proxystore/issues/405
+            except (asyncio.CancelledError, AttributeError):
                 pass
 
 
