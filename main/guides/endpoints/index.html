@@ -2736,6 +2736,14 @@ cloud-hosted relay server. This relay server uses
 access management. To use the provided relay server, authenticate using the
 <a href="../../api/cli/#proxystore-globus-auth-login"><code>proxystore-globus-auth login</code></a>
 CLI. Authentication only needs to be performed once per system.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>Endpoints can be started using a client identity, rather than as a user,
+by exporting the <code>PROXYSTORE_GLOBUS_CLIENT_ID</code> and
+<code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code> environment variables. This is similar
+to how
+<a href="https://funcx.readthedocs.io/en/latest/sdk.html#client-credentials-with-clients" target="_blank">Globus Compute supports client login</a>.</p>
+</div>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-globus-auth<span class="w"> </span>login
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;a6c7f036-3e29-4a7a-bf90-5a5f21056e39&gt;

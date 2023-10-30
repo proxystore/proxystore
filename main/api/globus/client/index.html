@@ -1559,6 +1559,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.globus.client.is_client_login" class="md-nav__link">
+    is_client_login()
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2639,6 +2646,13 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.globus.client.is_client_login" class="md-nav__link">
+    is_client_login()
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2980,6 +2994,76 @@ is not a valid UUID.</p>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>        <span class="n">client_id</span><span class="o">=</span><span class="n">client_id</span><span class="p">,</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>        <span class="n">app_name</span><span class="o">=</span><span class="n">app_name</span><span class="p">,</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="proxystore.globus.client.is_client_login" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">is_client_login()</span>
+
+
+<a href="#proxystore.globus.client.is_client_login" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">is_client_login</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Check if Globus client identity environment variables are set.</p>
+<p>Based on the Globus Compute SDK's
+<a href="https://github.com/funcx-faas/funcX/blob/8f5b59075ae6f8e8b8b13fe1b91430271f4e0c3c/compute_sdk/globus_compute_sdk/sdk/login_manager/client_login.py#L24-L38" target="_blank"><code>is_client_login()</code></a>.</p>
+
+
+
+  <p>Returns:</p>
+  <ul>
+      <li class="field-body">
+            <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+        –
+        <div class="doc-md-description">
+          <p><code>True</code> if <code>PROXYSTORE_GLOBUS_CLIENT_ID</code> and         <code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code> are set.</p>
+      </div>
+      </li>
+  </ul>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/globus/client.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
+<span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span>
+<span class="normal"><a href="#__codelineno-0-105">105</a></span>
+<span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span>
+<span class="normal"><a href="#__codelineno-0-108">108</a></span>
+<span class="normal"><a href="#__codelineno-0-109">109</a></span>
+<span class="normal"><a href="#__codelineno-0-110">110</a></span>
+<span class="normal"><a href="#__codelineno-0-111">111</a></span>
+<span class="normal"><a href="#__codelineno-0-112">112</a></span>
+<span class="normal"><a href="#__codelineno-0-113">113</a></span>
+<span class="normal"><a href="#__codelineno-0-114">114</a></span>
+<span class="normal"><a href="#__codelineno-0-115">115</a></span>
+<span class="normal"><a href="#__codelineno-0-116">116</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="k">def</span> <span class="nf">is_client_login</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if Globus client identity environment variables are set.</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a><span class="sd">    Based on the Globus Compute SDK&#39;s</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="sd">    [`is_client_login()`](https://github.com/funcx-faas/funcX/blob/8f5b59075ae6f8e8b8b13fe1b91430271f4e0c3c/compute_sdk/globus_compute_sdk/sdk/login_manager/client_login.py#L24-L38){target=_blank}.</span>
+</span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="sd">    Returns:</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a><span class="sd">        `True` if `PROXYSTORE_GLOBUS_CLIENT_ID` and \</span>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">        `PROXYSTORE_GLOBUS_CLIENT_SECRET` are set.</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a>        <span class="n">_get_client_credentials_from_env</span><span class="p">()</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+</span><span id="__span-0-114"><a id="__codelineno-0-114" name="__codelineno-0-114"></a>        <span class="k">return</span> <span class="kc">False</span>
+</span><span id="__span-0-115"><a id="__codelineno-0-115" name="__codelineno-0-115"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-116"><a id="__codelineno-0-116" name="__codelineno-0-116"></a>        <span class="k">return</span> <span class="kc">True</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
