@@ -64,6 +64,14 @@ access management. To use the provided relay server, authenticate using the
 [`proxystore-globus-auth login`](../../api/cli/#proxystore-globus-auth-login)
 CLI. Authentication only needs to be performed once per system.
 
+!!! tip
+
+    Endpoints can be started using a client identity, rather than as a user,
+    by exporting the `PROXYSTORE_GLOBUS_CLIENT_ID` and
+    `PROXYSTORE_GLOBUS_CLIENT_SECRET` environment variables. This is similar
+    to how
+    [Globus Compute supports client login](https://funcx.readthedocs.io/en/latest/sdk.html#client-credentials-with-clients){target=_blank}.
+
 ```bash
 $ proxystore-globus-auth login
 $ proxystore-endpoint configure my-endpoint
