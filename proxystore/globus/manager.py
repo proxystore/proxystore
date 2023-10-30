@@ -9,6 +9,7 @@ from typing import runtime_checkable
 import click
 import globus_sdk
 
+from proxystore.globus.client import get_confidential_app_auth_client
 from proxystore.globus.client import get_native_app_auth_client
 from proxystore.globus.scopes import get_all_scopes_by_resource_server
 from proxystore.globus.storage import get_token_storage_adapter
@@ -19,7 +20,7 @@ class GlobusAuthManager(Protocol):
     """Protocol for a Globus Auth manager."""
 
     @property
-    def client(self) -> globus_sdk.AuthClient:
+    def client(self) -> globus_sdk.AuthLoginClient:
         """Globus Auth client."""
         ...
 
@@ -39,7 +40,7 @@ class GlobusAuthManager(Protocol):
         """
         ...
 
-    def login(self, *, additional_scopes: list[str] | None = None) -> None:
+    def login(self, *, additional_scopes: Iterable[str] = ()) -> None:
         """Perform the authentication flow.
 
         This method is idempotent meaning it will be a no-op if the user
@@ -53,6 +54,100 @@ class GlobusAuthManager(Protocol):
     def logout(self) -> None:
         """Revoke and remove authentication tokens."""
         ...
+
+
+class ConfidentialAppAuthManager:
+    """Globus confidential app (client identity) credential manager.
+
+    Args:
+        client: Optionally override the standard ProxyStore auth client.
+        storage: Optionally override the default token storage.
+        resource_server_scopes: Mapping of resource server URLs to a list
+            of scopes for that resource server. If unspecified, all basic
+            scopes needed by ProxyStore components will be requested.
+            This parameter can be used to request scopes for many resource
+            server when
+            [`login()`][proxystore.globus.manager.ConfidentialAppAuthManager.login]
+            is invoked.
+    """
+
+    def __init__(
+        self,
+        *,
+        client: globus_sdk.ConfidentialAppAuthClient | None = None,
+        storage: globus_sdk.tokenstorage.SQLiteAdapter | None = None,
+        resource_server_scopes: dict[str, list[str]] | None = None,
+    ) -> None:
+        self._client = (
+            client
+            if client is not None
+            else get_confidential_app_auth_client()
+        )
+        self._storage = (
+            storage
+            if storage is not None
+            else get_token_storage_adapter(
+                namespace=f'client/{self._client.client_id}',
+            )
+        )
+        self._resource_server_scopes = (
+            resource_server_scopes
+            if resource_server_scopes is not None
+            else get_all_scopes_by_resource_server()
+        )
+
+    @property
+    def client(self) -> globus_sdk.ConfidentialAppAuthClient:
+        """Globus Auth client."""
+        return self._client
+
+    @property
+    def logged_in(self) -> bool:
+        """User has valid refresh tokens for necessary scopes.
+
+        This is always true for client identities.
+        """
+        return True
+
+    def get_authorizer(
+        self,
+        resource_server: str,
+    ) -> globus_sdk.authorizers.GlobusAuthorizer:
+        """Get authorizer for a specific resource server."""
+        scopes = []
+        for rs_name, rs_scopes in self._resource_server_scopes.items():
+            if rs_name == resource_server:
+                scopes.extend(rs_scopes)
+
+        tokens = self._storage.get_token_data(resource_server)
+        if tokens is None:
+            tokens = {}
+
+        return globus_sdk.ClientCredentialsAuthorizer(
+            confidential_client=self.client,
+            scopes=scopes,
+            access_token=tokens.get('access_token', None),
+            expires_at=tokens.get('expires_at_seconds', None),
+            on_refresh=self._storage.on_refresh,
+        )
+
+    def login(self, *, additional_scopes: Iterable[str] = ()) -> None:
+        """Perform the authentication flow.
+
+        Client identities do not require a login flow so this is a no-op.
+
+        Args:
+            additional_scopes: Additional scopes to request.
+        """
+        return
+
+    def logout(self) -> None:
+        """Revoke and remove authentication tokens."""
+        for server, data in self._storage.get_by_resource_server().items():
+            for key in ('access_token', 'refresh_token'):
+                token = data[key]
+                self.client.oauth2_revoke_token(token)
+            self._storage.remove_tokens_for_resource_server(server)
 
 
 class NativeAppAuthManager:
