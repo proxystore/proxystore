@@ -30,6 +30,9 @@ from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
+from proxystore.globus.client import is_client_login
+from proxystore.globus.manager import ConfidentialAppAuthManager
+from proxystore.globus.manager import GlobusAuthManager
 from proxystore.globus.manager import NativeAppAuthManager
 from proxystore.globus.scopes import ProxyStoreRelayScopes
 from proxystore.p2p.manager import PeerManager
@@ -76,7 +79,13 @@ def _get_auth_headers(
     if method is None:
         return {}
     elif method == 'globus':
-        manager = NativeAppAuthManager()
+        manager: GlobusAuthManager
+        if is_client_login():
+            logger.info('Using confidential app Globus Auth client')
+            manager = ConfidentialAppAuthManager()
+        else:
+            logger.info('Using native app Globus Auth client')
+            manager = NativeAppAuthManager()
         resource_server = kwargs.get(
             'resource_server',
             ProxyStoreRelayScopes.resource_server,

@@ -96,3 +96,21 @@ def get_native_app_auth_client(
         client_id=client_id,
         app_name=app_name,
     )
+
+
+def is_client_login() -> bool:
+    """Check if Globus client identity environment variables are set.
+
+    Based on the Globus Compute SDK's
+    [`is_client_login()`](https://github.com/funcx-faas/funcX/blob/8f5b59075ae6f8e8b8b13fe1b91430271f4e0c3c/compute_sdk/globus_compute_sdk/sdk/login_manager/client_login.py#L24-L38){target=_blank}.
+
+    Returns:
+        `True` if `PROXYSTORE_GLOBUS_CLIENT_ID` and \
+        `PROXYSTORE_GLOBUS_CLIENT_SECRET` are set.
+    """
+    try:
+        _get_client_credentials_from_env()
+    except ValueError:
+        return False
+    else:
+        return True
