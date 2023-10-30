@@ -9,6 +9,7 @@ import pytest
 
 from proxystore.globus.client import get_confidential_app_auth_client
 from proxystore.globus.client import get_native_app_auth_client
+from proxystore.globus.client import is_client_login
 from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME
 from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME
 
@@ -53,3 +54,16 @@ def test_get_confidential_app_auth_client_bad_uuid() -> None:
 def test_get_native_app_auth_client() -> None:
     client = get_native_app_auth_client()
     assert isinstance(client, globus_sdk.NativeAppAuthClient)
+
+
+def test_is_client_login() -> None:
+    with mock.patch.dict(os.environ, {}):
+        assert not is_client_login()
+
+    env = {PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME: str(uuid.uuid4())}
+    with mock.patch.dict(os.environ, env):
+        assert not is_client_login()
+
+    env[PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME] = 'secret'
+    with mock.patch.dict(os.environ, env):
+        assert is_client_login()
