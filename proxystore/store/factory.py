@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -144,3 +145,93 @@ class StoreFactory(Generic[ConnectorT, T]):
         """Asynchronously get object associated with key from store."""
         logger.debug(f'Starting asynchronous resolve of {self.key}')
         self._obj_future = _default_pool.submit(self.resolve)
+
+
+class PollingStoreFactory(StoreFactory[ConnectorT, T]):
+    """Factory that polls a store until and object can be resolved.
+
+    This is an extension of the
+    [`StoreFactory`][proxystore.store.factory.StoreFactory] with the
+    [`resolve()`][proxystore.store.factory.StoreFactory.resolve] method
+    overridden to poll the store until the target object is available.
+
+    Args:
+        key: Key corresponding to object in store.
+        store_config: Store configuration used to reinitialize the store if
+            needed.
+        evict: If True, evict the object from the store once
+            [`resolve()`][proxystore.store.base.StoreFactory.resolve]
+            is called.
+        deserializer: Optional callable used to deserialize the byte string.
+            If `None`, the default deserializer
+            ([`deserialize()`][proxystore.serialize.deserialize]) will be used.
+        polling_interval: Seconds to sleep between polling the store for the
+            object.
+        polling_timeout: Optional maximum number of seconds to poll for.
+    """
+
+    def __init__(
+        self,
+        key: ConnectorKeyT,
+        store_config: dict[str, Any],
+        *,
+        evict: bool = False,
+        deserializer: DeserializerT | None = None,
+        polling_interval: float = 1,
+        polling_timeout: float | None = None,
+    ) -> None:
+        super().__init__(
+            key,
+            store_config,
+            evict=evict,
+            deserializer=deserializer,
+        )
+        self._polling_interval = polling_interval
+        self._polling_timeout = polling_timeout
+
+    def resolve(self) -> T:
+        """Get object associated with key from store.
+
+        Raises:
+            ProxyResolveMissingKeyError: If the object associated with the
+                key is not available after `polling_timeout` seconds.
+        """
+        with Timer() as timer:
+            store = self.get_store()
+            time_waited = 0.0
+
+            while True:
+                obj = store.get(
+                    self.key,
+                    deserializer=self.deserializer,
+                    default=_MISSING_OBJECT,
+                )
+
+                # Break because we found the object or we hit the timeout
+                if obj is not _MISSING_OBJECT or (
+                    self._polling_timeout is not None
+                    and time_waited >= self._polling_timeout
+                ):
+                    break
+
+                time.sleep(self._polling_interval)
+                time_waited += self._polling_interval
+
+            if obj is _MISSING_OBJECT:
+                raise ProxyResolveMissingKeyError(
+                    self.key,
+                    type(store),
+                    store.name,
+                )
+            elif self.evict:
+                store.evict(self.key)
+
+        if store.metrics is not None:
+            total_time = timer.elapsed_ns
+            store.metrics.add_time(
+                'factory.polling_resolve',
+                self.key,
+                total_time,
+            )
+
+        return cast(T, obj)
