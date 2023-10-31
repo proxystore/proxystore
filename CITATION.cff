@@ -1,16 +1,21 @@
 cff-version: 1.2.0
-message: If you use this software, please cite it as below.
-authors:
-  - family-names: Pauloski
-    given-names: Greg
-    orcid: https://orcid.org/0000-0002-6547-6902
-  - family-names: Globus Labs
-license: MIT
-repository-code: https://github.com/proxystore/proxystore
 title: ProxyStore
-url: https://docs.proxystore.dev
+message: 'If you use this software, please cite it as below.'
+type: software
+authors:
+  - given-names: Greg
+    family-names: Pauloski
+    orcid: 'https://orcid.org/0000-0002-6547-6902'
+  - name: Globus Labs
+repository-code: 'https://github.com/proxystore/proxystore'
+url: 'https://docs.proxystore.dev'
+abstract: >-
+  ProxyStore provides pass-by-reference semantics for
+  distributed Python applications through transparent object
+  proxies.
+license: MIT
 preferred-citation:
-  type: misc
+  type: conference-paper
   authors:
     - family-names: Pauloski
       given-names: J. Gregory
@@ -36,6 +41,14 @@ preferred-citation:
     - family-names: Foster
       given-names: Ian
       orcid: https://orcid.org/0000-0003-2129-5269
-  doi: 10.48550/arXiv.2305.09593
+  address: New York, NY, USA
+  articleno: 59
+  booktitle: Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis
+  doi: 10.1145/3581784.3607047
   title: Accelerating Communications in Federated Applications with Transparent Object Proxies
+  location: Denver, CO, USA
+  numpages: 15
+  publisher: Association for Computing Machinery
+  series: SC '23
+  url: https://doi.org/10.1145/3581784.3607047
   year: 2023
