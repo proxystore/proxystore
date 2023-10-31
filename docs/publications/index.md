@@ -6,15 +6,22 @@
 
 If you use ProxyStore or any of this code in your work, please cite the following paper.
 
-> J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Nathaniel Hudson, Charlie Sabino, Matt Baughman, Kyle Chard, and Ian Foster. ["Accelerating Communications in Federated Applications with Transparent Object Proxies."](https://arxiv.org/abs/2305.09593){target=_blank} arXiv, 2023.
+> J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Nathaniel Hudson, Charlie Sabino, Matt Baughman, Kyle Chard, and Ian Foster. 2023. Accelerating Communications in Federated Applications with Transparent Object Proxies. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '23). Association for Computing Machinery, New York, NY, USA, Article 59, 1–15. https://doi.org/10.1145/3581784.3607047
 
 ```
-@misc{pauloski2023proxystore,
-    author = {J. Gregory Pauloski and Valerie Hayot-Sasson and Logan Ward and Nathaniel Hudson and Charlie Sabino and Matt Baughman and Kyle Chard and Ian Foster},
+@inproceedings{pauloski2023proxystore,
+    author = {Pauloski, J. Gregory and Hayot-Sasson, Valerie and Ward, Logan and Hudson, Nathaniel and Sabino, Charlie and Baughman, Matt and Chard, Kyle and Foster, Ian},
     title = {{Accelerating Communications in Federated Applications with Transparent Object Proxies}},
-    archiveprefix = {arXiv},
-    eprint = {2305.09593},
-    primaryclass = {cs.DC},
+    address = {New York, NY, USA},
+    articleno = {59},
+    booktitle = {Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis},
+    doi = {10.1145/3581784.3607047},
+    isbn = {9798400701092},
+    location = {Denver, CO, USA},
+    numpages = {15},
+    publisher = {Association for Computing Machinery},
+    series = {SC '23},
+    url = {https://doi.org/10.1145/3581784.3607047},
     year = {2023}
 }
 ```
