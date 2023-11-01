@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -111,3 +112,26 @@ def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
     new_keys = store.put_batch(values, serializer=lambda s: str.encode(s))
     for key in new_keys:
         assert store.exists(key)
+
+
+def test_set(store: Store[LocalConnector]) -> None:
+    key = store.connector.new_key()
+    assert not store.exists(key)
+    store._set(key, 'test_value')
+    assert store.get(key) == 'test_value'
+
+
+def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
+    key = store.connector.new_key()
+    with mock.patch.object(store, 'connector', object()):
+        with pytest.raises(NotImplementedError, match='DeferrableConnector'):
+            store._set(key, 'new-value')
+
+
+def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
+    key = store.connector.new_key()
+    store._set(key, 'test_value', serializer=lambda s: str.encode(s))
+    assert store.get(key, deserializer=lambda s: s) == b'test_value'
+
+    with pytest.raises(TypeError, match='bytes'):
+        store._set(key, 'test_value', serializer=lambda s: s)

@@ -21,6 +21,7 @@ else:  # pragma: <3.11 cover
 
 import proxystore
 import proxystore.serialize
+from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
@@ -770,3 +771,70 @@ class Store(Generic[ConnectorT]):
             f'{timer.elapsed_ms:.3f} ms',
         )
         return keys
+
+    def _set(
+        self,
+        key: ConnectorKeyT,
+        obj: Any,
+        *,
+        serializer: SerializerT | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Set a key in the store to an object.
+
+        Warning:
+            This method only works if the `connector` is of type
+            [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+
+        Args:
+            key: Key to set the object on.
+            obj: Object to put in the store.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.set()`][proxystore.connectors.protocols.Connector.set].
+
+        Returns:
+            A key which can be used to retrieve the object.
+
+        Raises:
+            NotImplementedError: If the `connector` is not of type
+                [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+            TypeError: If the output of `serializer` is not bytes.
+        """
+        if not isinstance(self.connector, DeferrableConnector):
+            raise NotImplementedError(
+                'The provided connector is type '
+                f'{type(self.connector).__name__} which does not implement '
+                f'the {DeferrableConnector.__name__} necessary to use the '
+                'set method.',
+            )
+
+        timer = Timer()
+        timer.start()
+
+        with Timer() as serialize_timer:
+            if serializer is not None:
+                obj = serializer(obj)
+            else:
+                obj = self.serializer(obj)
+
+        if not isinstance(obj, bytes):
+            raise TypeError('Serializer must produce bytes.')
+
+        with Timer() as connector_timer:
+            self.connector.set(key, obj, **kwargs)
+
+        timer.stop()
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            stime = serialize_timer.elapsed_ns
+            self.metrics.add_attribute('store.set.object_size', key, len(obj))
+            self.metrics.add_time('store.set.serialize', key, stime)
+            self.metrics.add_time('store.set.connector', key, ctime)
+            self.metrics.add_time('store.set', key, timer.elapsed_ns)
+
+        logger.debug(
+            f'Store(name="{self.name}"): SET {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
+        )
