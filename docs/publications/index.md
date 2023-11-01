@@ -28,6 +28,7 @@ If you use ProxyStore or any of this code in your work, please cite the followin
 
 ## Featured Papers
 
+* Alok Kamatar, Mansi Sakarvadia, Valerie Hayot-Sasson, Kyle Chard, and Ian Foster. ["Lazy Python Dependency Management in Large-Scale Systems."](https://ieeexplore.ieee.org/document/10254910){target=_blank} *In Proceedings of IEEE 19th International Conference on e-Science.* IEEE, 2023.
 * Nicholson Collier, Justin M. Wozniak, Abby Stevens, Yadu Babuji, Mickaël Binois, Arindam Fadikar, Alexandra Würth, Kyle Chard, and Jonathan Ozik. ["Developing Distributed High-performance Computing Capabilities of an Open Science Platform for Robust Epidemic Analysis."](https://arxiv.org/abs/2304.14244){target=_blank} arXiv, 2023.
 * Logan Ward, J. Gregory Pauloski, Valerie Hayot-Sasson, Ryan Chard, Yadu Babuji, Ganesh Sivaraman, Sutanay Choudhury, Kyle Chard, Rajeev Thakur, and Ian Foster. ["Cloud Services Enable Efficient AI-Guided Simulation Workflows across Heterogeneous Resources."](https://arxiv.org/abs/2303.08803){target=_blank} *In Proceedings of Heterogeneity in Computing Workshop of the International Parallel and Distributed Processing Symposium.* 2023.
 * Maxim Zvyagin et al. ["GenSLMs: Genome-scale language models reveal SARS-CoV-2 evolutionary dynamics."](https://www.biorxiv.org/content/10.1101/2022.10.10.511571v2){target=_blank} bioRxiv, 2022.
