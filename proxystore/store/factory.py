@@ -51,7 +51,6 @@ class StoreFactory(Generic[ConnectorT, T]):
         deserializer: Optional callable used to deserialize the byte string.
             If `None`, the default deserializer
             ([`deserialize()`][proxystore.serialize.deserialize]) will be used.
-        metrics: Enable recording operation metrics.
     """
 
     def __init__(
@@ -61,13 +60,11 @@ class StoreFactory(Generic[ConnectorT, T]):
         *,
         evict: bool = False,
         deserializer: DeserializerT | None = None,
-        metrics: bool = False,
     ) -> None:
         self.key = key
         self.store_config = store_config
         self.evict = evict
         self.deserializer = deserializer
-        self.metrics = metrics
 
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
