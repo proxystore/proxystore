@@ -248,7 +248,14 @@ async def _home() -> tuple[str, int]:
 
 
 @routes_blueprint.route('/endpoint', methods=['GET'])
-async def _endpoint_() -> Response:
+async def endpoint_handler() -> Response:
+    """Route handler for `GET /endpoint`.
+
+    Responses:
+
+    * `Status Code 200`: JSON containing the key `uuid` with the value as
+      the string UUID of this endpoint.
+    """
     endpoint = quart.current_app.config['endpoint']
     return Response(
         json.dumps({'uuid': str(endpoint.uuid)}),
@@ -258,7 +265,18 @@ async def _endpoint_() -> Response:
 
 
 @routes_blueprint.route('/evict', methods=['POST'])
-async def _evict() -> Response:
+async def evict_handler() -> Response:
+    """Route handler for `POST /evict`.
+
+    Responses:
+
+    * `Status Code 200`: If the operation succeeds. The response message will
+      be empty.
+    * `Status Code 400`: If the key argument is missing or the endpoint UUID
+      argument is present but not a valid UUID.
+    * `Status Code 500`: If there was a peer request error. The response
+      will contain the string representation of the internal error.
+    """
     key = request.args.get('key', None)
     if key is None:
         return Response('request missing key', 400)
@@ -278,11 +296,22 @@ async def _evict() -> Response:
         await endpoint.evict(key=key, endpoint=endpoint_uuid)
         return Response('', 200)
     except PeerRequestError as e:
-        return Response(str(e), 400)
+        return Response(str(e), 500)
 
 
 @routes_blueprint.route('/exists', methods=['GET'])
-async def _exists() -> Response:
+async def exists_handler() -> Response:
+    """Route handler for `GET /exists`.
+
+    Responses:
+
+    * `Status Code 200`: If the operation succeeds. The response message will
+      be empty.
+    * `Status Code 400`: If the key argument is missing or the endpoint UUID
+      argument is present but not a valid UUID.
+    * `Status Code 500`: If there was a peer request error. The response
+      will contain the string representation of the internal error.
+    """
     key = request.args.get('key', None)
     if key is None:
         return Response('request missing key', 400)
@@ -306,11 +335,23 @@ async def _exists() -> Response:
             content_type='application/json',
         )
     except PeerRequestError as e:
-        return Response(str(e), 400)
+        return Response(str(e), 500)
 
 
 @routes_blueprint.route('/get', methods=['GET'])
-async def _get() -> Response:
+async def get_handler() -> Response:
+    """Route handler for `GET /get`.
+
+    Responses:
+
+    * `Status Code 200`: If the operation succeeds. The response message will
+       contain the octet-stream of the requested data.
+    * `Status Code 400`: If the key argument is missing or the endpoint UUID
+      argument is present but not a valid UUID.
+    * `Status Code 404`: If there is no data associated with the provided key.
+    * `Status Code 500`: If there was a peer request error. The response
+      will contain the string representation of the internal error.
+    """
     key = request.args.get('key', None)
     if key is None:
         return Response('request missing key', 400)
@@ -329,7 +370,7 @@ async def _get() -> Response:
     try:
         data = await endpoint.get(key=key, endpoint=endpoint_uuid)
     except PeerRequestError as e:
-        return Response(str(e), 400)
+        return Response(str(e), 500)
 
     if data is not None:
         return Response(
@@ -337,11 +378,23 @@ async def _get() -> Response:
             content_type='application/octet-stream',
         )
     else:
-        return Response('', 400)
+        return Response('no data associated with request key', 404)
 
 
 @routes_blueprint.route('/set', methods=['POST'])
-async def _set() -> Response:
+async def set_handler() -> Response:
+    """Route handler for `POST /set`.
+
+    Responses:
+
+    * `Status Code 200`: If the operation succeeds. The response message will
+      be empty.
+    * `Status Code 400`: If the key argument is missing, the endpoint UUID
+      argument is present but not a valid UUID, or the request is missing
+      the data payload.
+    * `Status Code 500`: If there was a peer request error. The response
+      will contain the string representation of the internal error.
+    """
     key = request.args.get('key', None)
     if key is None:
         return Response('request missing key', 400)
@@ -365,11 +418,11 @@ async def _set() -> Response:
         data += chunk
 
     if len(data) == 0:
-        return Response('Received empty payload', 400)
+        return Response('received empty payload', 400)
 
     try:
         await endpoint.set(key=key, data=bytes(data), endpoint=endpoint_uuid)
     except PeerRequestError as e:
-        return Response(str(e), 400)
+        return Response(str(e), 500)
     else:
         return Response('', 200)
