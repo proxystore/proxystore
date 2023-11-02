@@ -528,7 +528,6 @@ class Store(Generic[ConnectorT]):
                 store_config=self.config(),
                 deserializer=deserializer,
                 evict=evict,
-                metrics=self.metrics is not None,
             )
             proxy = Proxy(factory)
 
@@ -677,7 +676,6 @@ class Store(Generic[ConnectorT]):
             store_config=self.config(),
             deserializer=deserializer,
             evict=evict,
-            metrics=self.metrics is not None,
         )
         logger.debug(f'Store(name="{self.name}"): PROXY_FROM_KEY {key}')
         return Proxy(factory)
