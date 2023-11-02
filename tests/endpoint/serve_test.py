@@ -95,7 +95,7 @@ async def test_get_request(quart_app) -> None:
         '/get',
         query_string={'key': 'missing-key'},
     )
-    assert get_response.status_code == 400
+    assert get_response.status_code == 404
 
 
 @pytest.mark.asyncio()
@@ -272,19 +272,19 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
             'evict',
             query_string={'key': 'my-key', 'endpoint': unknown_uuid},
         )
-        assert evict_response.status_code == 400
+        assert evict_response.status_code == 500
 
         exists_response = await client.get(
             'exists',
             query_string={'key': 'my-key', 'endpoint': unknown_uuid},
         )
-        assert exists_response.status_code == 400
+        assert exists_response.status_code == 500
 
         get_response = await client.get(
             'get',
             query_string={'key': 'my-key', 'endpoint': unknown_uuid},
         )
-        assert get_response.status_code == 400
+        assert get_response.status_code == 500
 
         data = randbytes(100)
         set_response = await client.post(
@@ -293,7 +293,7 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
             query_string={'key': 'my-key', 'endpoint': unknown_uuid},
             data=data,
         )
-        assert set_response.status_code == 400
+        assert set_response.status_code == 500
 
 
 @pytest.mark.asyncio()

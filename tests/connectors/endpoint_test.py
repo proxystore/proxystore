@@ -50,7 +50,7 @@ def test_bad_responses(endpoint_connector) -> None:
     connector = EndpointConnector.from_config(endpoint_connector.config())
 
     response = requests.Response()
-    response.status_code = 400
+    response.status_code = 404
 
     with mock.patch('requests.Session.get', return_value=response):
         key = connector.put(b'value')

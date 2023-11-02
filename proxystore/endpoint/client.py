@@ -119,7 +119,9 @@ def get(
         stream=True,
     )
 
-    if response.status_code == 400:
+    # Status code 404 is only returned if there's no data associated with the
+    # provided key.
+    if response.status_code == 404:
         return None
 
     if not response.ok:
