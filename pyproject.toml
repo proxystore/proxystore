@@ -45,6 +45,7 @@ endpoints = [
     "aiosqlite",
     "uvicorn[standard]",
     "psutil",
+    "pystun3",
     "python-daemon",
     "quart>=0.18.0",
     "requests>=2.27.1",
