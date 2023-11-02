@@ -55,6 +55,15 @@ the request along and facilitate returning the response back to the client.
 
 ## Endpoint CLI
 
+!!! warning
+
+    Peer-to-peer connections between two Endpoints are not supported on
+    all network types. The NAT traversal techniques used to establish
+    peer-to-peer connections are unreliable across symmetric NATs or poorly
+    behaved legacy NATs. To check the compatibility of your network, use the
+    [`proxystore-endpoint check-nat`](../api/cli.md#proxystore-endpoint-check-nat)
+    CLI tool.
+
 Endpoints can be configure and started with the
 [`proxystore-endpoint`](../../api/cli/#proxystore-endpoint)
 command. By default, an Endpoint is configured to connect to ProxyStore's
