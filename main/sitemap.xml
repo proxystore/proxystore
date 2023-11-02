@@ -221,6 +221,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/api/p2p/nat/</loc>
+         <lastmod>2023-11-02</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/</loc>
          <lastmod>2023-11-02</lastmod>
          <changefreq>daily</changefreq>

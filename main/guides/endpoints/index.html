@@ -1813,6 +1813,26 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../../api/p2p/nat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    nat
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
     
     
     
@@ -1823,7 +1843,7 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_6" >
         
           
           
@@ -1839,14 +1859,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_6_5" id="__nav_4_1_6_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_6_6" id="__nav_4_1_6_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_6_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_6">
             <span class="md-nav__icon md-icon"></span>
             relay
           </label>
@@ -2768,6 +2788,15 @@ Endpoints that receive a request with a different endpoint UUID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.</p>
 <h2 id="endpoint-cli">Endpoint CLI<a class="headerlink" href="#endpoint-cli" title="Permanent link">&para;</a></h2>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Peer-to-peer connections between two Endpoints are not supported on
+all network types. The NAT traversal techniques used to establish
+peer-to-peer connections are unreliable across symmetric NATs or poorly
+behaved legacy NATs. To check the compatibility of your network, use the
+<a href="../../api/cli/#proxystore-endpoint-check-nat"><code>proxystore-endpoint check-nat</code></a>
+CLI tool.</p>
+</div>
 <p>Endpoints can be configure and started with the
 <a href="../../api/cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a>
 command. By default, an Endpoint is configured to connect to ProxyStore's

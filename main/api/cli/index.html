@@ -1740,6 +1740,26 @@
   
   
   
+    <li class="md-nav__item">
+      <a href="../p2p/nat/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    nat
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
     
     
     
@@ -1750,7 +1770,7 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_6_6" >
         
           
           
@@ -1766,14 +1786,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_6_5" id="__nav_4_1_6_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_6_6" id="__nav_4_1_6_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_6_5">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_6_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_6_6">
             <span class="md-nav__icon md-icon"></span>
             relay
           </label>
@@ -2494,6 +2514,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#proxystore-endpoint-check-nat" class="md-nav__link">
+    check-nat
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxystore-endpoint-configure" class="md-nav__link">
     configure
   </a>
@@ -2806,6 +2833,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#proxystore-endpoint-check-nat" class="md-nav__link">
+    check-nat
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#proxystore-endpoint-configure" class="md-nav__link">
     configure
   </a>
@@ -3071,6 +3105,7 @@ request transfer scope for multiple collections with:</p>
 </table>
 <p><strong>Subcommands</strong></p>
 <ul>
+<li><em><a href="#proxystore-endpoint-check-nat">check-nat</a></em>: Check the type of NAT you are behind.</li>
 <li><em><a href="#proxystore-endpoint-configure">configure</a></em>: Configure a new endpoint.</li>
 <li><em><a href="#proxystore-endpoint-help">help</a></em>: Show available commands and options.</li>
 <li><em><a href="#proxystore-endpoint-list">list</a></em>: List all user endpoints.</li>
@@ -3080,10 +3115,46 @@ request transfer scope for multiple collections with:</p>
 <li><em><a href="#proxystore-endpoint-test">test</a></em>: Execute test commands on an endpoint.</li>
 <li><em><a href="#proxystore-endpoint-version">version</a></em>: Show the ProxyStore version.</li>
 </ul>
+<h3 id="proxystore-endpoint-check-nat">proxystore-endpoint check-nat<a class="headerlink" href="#proxystore-endpoint-check-nat" title="Permanent link">&para;</a></h3>
+<p>Check the type of NAT you are behind.</p>
+<p><strong>Usage:</strong></p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint check-nat [OPTIONS]
+</span></code></pre></div>
+<p><strong>Options:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--host</code></td>
+<td>text</td>
+<td>Network interface address to listen on.</td>
+<td><code>0.0.0.0</code></td>
+</tr>
+<tr>
+<td><code>--port</code></td>
+<td>integer</td>
+<td>Port to listen on.</td>
+<td><code>54320</code></td>
+</tr>
+<tr>
+<td><code>--help</code></td>
+<td>boolean</td>
+<td>Show this message and exit.</td>
+<td><code>False</code></td>
+</tr>
+</tbody>
+</table>
 <h3 id="proxystore-endpoint-configure">proxystore-endpoint configure<a class="headerlink" href="#proxystore-endpoint-configure" title="Permanent link">&para;</a></h3>
 <p>Configure a new endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint configure [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>proxystore-endpoint configure [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3143,7 +3214,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-help">proxystore-endpoint help<a class="headerlink" href="#proxystore-endpoint-help" title="Permanent link">&para;</a></h3>
 <p>Show available commands and options.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>proxystore-endpoint help [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint help [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3167,7 +3238,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-list">proxystore-endpoint list<a class="headerlink" href="#proxystore-endpoint-list" title="Permanent link">&para;</a></h3>
 <p>List all user endpoints.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>proxystore-endpoint list [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proxystore-endpoint list [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3191,7 +3262,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-remove">proxystore-endpoint remove<a class="headerlink" href="#proxystore-endpoint-remove" title="Permanent link">&para;</a></h3>
 <p>Remove an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>proxystore-endpoint remove [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint remove [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3215,7 +3286,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-start">proxystore-endpoint start<a class="headerlink" href="#proxystore-endpoint-start" title="Permanent link">&para;</a></h3>
 <p>Start an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>proxystore-endpoint start [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>proxystore-endpoint start [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3245,7 +3316,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-stop">proxystore-endpoint stop<a class="headerlink" href="#proxystore-endpoint-stop" title="Permanent link">&para;</a></h3>
 <p>Stop a detached endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>proxystore-endpoint stop [OPTIONS] NAME
+<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint stop [OPTIONS] NAME
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3269,7 +3340,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-test">proxystore-endpoint test<a class="headerlink" href="#proxystore-endpoint-test" title="Permanent link">&para;</a></h3>
 <p>Execute test commands on an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>proxystore-endpoint test [OPTIONS] NAME COMMAND [ARGS]...
+<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>proxystore-endpoint test [OPTIONS] NAME COMMAND [ARGS]...
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3306,7 +3377,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-evict">proxystore-endpoint test NAME evict<a class="headerlink" href="#proxystore-endpoint-test-name-evict" title="Permanent link">&para;</a></h4>
 <p>Evict object from an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>proxystore-endpoint test NAME evict [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint test NAME evict [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3330,7 +3401,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-exists">proxystore-endpoint test NAME exists<a class="headerlink" href="#proxystore-endpoint-test-name-exists" title="Permanent link">&para;</a></h4>
 <p>Check if object exists in an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>proxystore-endpoint test NAME exists [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>proxystore-endpoint test NAME exists [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3354,7 +3425,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-get">proxystore-endpoint test NAME get<a class="headerlink" href="#proxystore-endpoint-test-name-get" title="Permanent link">&para;</a></h4>
 <p>Get an object from an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>proxystore-endpoint test NAME get [OPTIONS] KEY
+<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-endpoint test NAME get [OPTIONS] KEY
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3378,7 +3449,7 @@ request transfer scope for multiple collections with:</p>
 <h4 id="proxystore-endpoint-test-name-put">proxystore-endpoint test NAME put<a class="headerlink" href="#proxystore-endpoint-test-name-put" title="Permanent link">&para;</a></h4>
 <p>Put an object in an endpoint.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>proxystore-endpoint test NAME put [OPTIONS] DATA
+<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>proxystore-endpoint test NAME put [OPTIONS] DATA
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3402,7 +3473,7 @@ request transfer scope for multiple collections with:</p>
 <h3 id="proxystore-endpoint-version">proxystore-endpoint version<a class="headerlink" href="#proxystore-endpoint-version" title="Permanent link">&para;</a></h3>
 <p>Show the ProxyStore version.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>proxystore-endpoint version [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>proxystore-endpoint version [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
@@ -3432,7 +3503,7 @@ configuration will be created from
 The remaining CLI options will override the options provided in the
 configuration object.</p>
 <p><strong>Usage:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>proxystore-relay [OPTIONS]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>proxystore-relay [OPTIONS]
 </span></code></pre></div>
 <p><strong>Options:</strong></p>
 <table>
