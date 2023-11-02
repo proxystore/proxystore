@@ -22,6 +22,7 @@ from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import read_config
+from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.utils.environment import home_dir
@@ -90,6 +91,25 @@ def show_help() -> None:
 def version() -> None:
     """Show the ProxyStore version."""
     click.echo(f'ProxyStore v{proxystore.__version__}')
+
+
+@cli.command(name='check-nat')
+@click.option(
+    '--host',
+    default='0.0.0.0',
+    metavar='ADDR',
+    help='Network interface address to listen on.',
+)
+@click.option(
+    '--port',
+    default=54320,
+    type=int,
+    metavar='PORT',
+    help='Port to listen on.',
+)
+def check_nat_command(host: str, port: int) -> None:
+    """Check the type of NAT you are behind."""
+    check_nat_and_log(host, port)
 
 
 @cli.command()

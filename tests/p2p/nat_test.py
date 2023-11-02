@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 from unittest import mock
 
 import pytest
 import stun
 
 from proxystore.p2p.nat import check_nat
+from proxystore.p2p.nat import check_nat_and_log
 from proxystore.p2p.nat import NatType
+from proxystore.p2p.nat import Result
 from testing.utils import open_port
 
 
@@ -46,3 +49,48 @@ def test_check_nat_failure() -> None:
     ):
         with pytest.raises(RuntimeError, match='No STUN servers returned'):
             check_nat(source_port=open_port())
+
+
+def test_check_nat_and_log_normal(caplog) -> None:
+    caplog.set_level(logging.INFO)
+
+    result = Result(NatType.RestrictedCone, '192.168.1.1', 1234)
+    with mock.patch('proxystore.p2p.nat.check_nat', return_value=result):
+        check_nat_and_log()
+
+    assert 'NAT Type:       Restricted-cone NAT' == caplog.records[1].message
+    assert 'External IP:    192.168.1.1' == caplog.records[2].message
+    assert 'External Port:  1234' == caplog.records[3].message
+    assert caplog.records[4].message.startswith(
+        'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
+        'is likely to work.',
+    )
+
+
+def test_check_nat_and_log_symmetric(caplog) -> None:
+    caplog.set_level(logging.INFO)
+
+    result = Result(NatType.Symmetric, '192.168.1.1', 1234)
+    with mock.patch('proxystore.p2p.nat.check_nat', return_value=result):
+        check_nat_and_log()
+
+    assert 'NAT Type:       Symmetric NAT' in caplog.records[1].message
+    assert 'External IP:    192.168.1.1' in caplog.records[2].message
+    assert 'External Port:  1234' in caplog.records[3].message
+    assert caplog.records[4].message.startswith(
+        'NAT traversal (e.g., hole-punching) does not work reliably across',
+    )
+
+
+def test_check_nat_and_log_failure(caplog) -> None:
+    caplog.set_level(logging.INFO)
+
+    with mock.patch(
+        'proxystore.p2p.nat.check_nat',
+        side_effect=RuntimeError('test error'),
+    ):
+        check_nat_and_log()
+
+    assert caplog.records[1].message.startswith(
+        'Failed to determine NAT type: test error',
+    )

@@ -6,10 +6,13 @@ This module is a wrapper around the tools provided by
 from __future__ import annotations
 
 import enum
+import logging
 import socket
 from typing import NamedTuple
 
 import stun
+
+logger = logging.getLogger(__name__)
 
 # Selected from the following sources:
 #   https://github.com/pradt2/always-online-stun
@@ -88,6 +91,10 @@ def check_nat(
     This function uses the STUN protocol (RFC 3489) to discover the
     presence and type of the NAT between this host and the open Internet.
 
+    Args:
+        source_ip: Address to bind to.
+        source_port: Port to listen on.
+
     Returns:
         Result containing the NAT type and external IP/port of the host.
 
@@ -124,3 +131,43 @@ def check_nat(
             )
 
     return Result(nat_type, external['ExternalIP'], external['ExternalPort'])
+
+
+def check_nat_and_log(
+    source_ip: str = '0.0.0.0',
+    source_port: int = 54320,
+) -> None:
+    """Check the NAT type this host is behind and log the results.
+
+    Wrapper around [`check_nat()`][proxystore.p2p.nat.check_nat] that logs
+    the results rather than return them.
+
+    Args:
+        source_ip: Address to bind to.
+        source_port: Port to listen on.
+    """
+    logger.info('Checking NAT type. This may take a moment...')
+    try:
+        nat_type, external_ip, external_port = check_nat(
+            source_ip=source_ip,
+            source_port=source_port,
+        )
+    except Exception as e:
+        logger.error(f'Failed to determine NAT type: {e}')
+    else:
+        logger.info(f'NAT Type:       {nat_type.value}')
+        logger.info(f'External IP:    {external_ip}')
+        logger.info(f'External Port:  {external_port}')
+
+        if nat_type == NatType.Symmetric:
+            logger.warning(
+                'NAT traversal (e.g., hole-punching) does not work reliably '
+                'across Symmetric NATs or poorly behaved legacy NATs. '
+                'Peer-to-peer methods may not work.',
+            )
+        else:
+            logger.info(
+                'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
+                'is likely to work. (NAT traversal does not work reliably '
+                'across symmetric NATs or poorly behaved legacy NATs.)',
+            )
