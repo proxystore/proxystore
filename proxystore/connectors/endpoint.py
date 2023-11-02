@@ -116,8 +116,10 @@ class EndpointConnector:
         if found_endpoint is None:
             self._session.close()
             raise EndpointConnectorError(
-                'Failed to find endpoint configuration matching one of the '
-                'provided endpoint UUIDs.',
+                'Failed to find an endpoint configuration matching one of the '
+                'provided endpoint UUIDs, or an endpoint configuration was '
+                'found but the endpoint could not be connected to. '
+                'Enable debug level logging for more more details.',
             )
         self.endpoint_uuid: uuid.UUID = uuid.UUID(found_endpoint.uuid)
         self.endpoint_host: str | None = found_endpoint.host
