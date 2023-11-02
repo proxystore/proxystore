@@ -90,6 +90,38 @@ INFO: Object exists: False
 
 You will get an error if the peer connection fails. For example:
 ```bash
-ERROR: Endpoint returned HTTP error code 400. Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
+ERROR: Endpoint returned HTTP error code 500. Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
 ```
 If this happens, check the logs for both endpoints for further error messages.
+Peer requests typically fail for two reasons:
+
+1. One of the endpoints is not running (e.g., an endpoint crashed) or is not
+   connected to the relay server.
+2. One of the endpoints is behind a symmetric NAT. The NAT traversal
+   techniques used to establish peer-to-peer connections between endpoints
+   are not reliable across symmetric NATs or poorly behaved legacy NATs.
+
+### Check Peer-to-Peer Compatibility
+After ensuring both endpoints are running and connected to the relay server,
+you can check the NAT compatibility in two ways.
+
+1. Endpoints will attempt to discover and log the NAT type on startup, so check
+   the logs to see if this could be the reason.
+   ```
+   INFO  (proxystore.p2p.nat) :: Checking NAT type. This may take a moment...
+   INFO  (proxystore.p2p.nat) :: NAT Type:       Full-cone NAT
+   INFO  (proxystore.p2p.nat) :: External IP:    <IP ADDRESS>
+   INFO  (proxystore.p2p.nat) :: External Port:  <PORT>
+   INFO  (proxystore.p2p.nat) :: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
+   ```
+2. Use the
+   [`proxystore-endpoint check-nat`](../api/cli.md#proxystore-endpoint-check-nat)
+   command to discover your NAT type.
+   ```
+   $ proxystore-endpoint check-nat
+   INFO: Checking NAT type. This may take a moment...
+   INFO: NAT Type:       Full-cone NAT
+   INFO: External IP:    <IP ADDRESS>
+   INFO: External Port:  <PORT>
+   INFO: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
+   ```

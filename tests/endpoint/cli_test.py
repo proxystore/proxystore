@@ -16,6 +16,8 @@ from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
+from proxystore.p2p.nat import NatType
+from proxystore.p2p.nat import Result
 
 
 @pytest.fixture()
@@ -49,6 +51,24 @@ def test_version_command() -> None:
     result = runner.invoke(cli, ['version'])
     assert result.exit_code == 0
     assert result.output.strip() == f'ProxyStore v{proxystore.__version__}'
+
+
+def test_check_nat_normal(caplog) -> None:
+    caplog.set_level(logging.INFO)
+    runner = click.testing.CliRunner()
+
+    r = Result(NatType.RestrictedCone, '192.168.1.1', 1234)
+    with mock.patch('proxystore.p2p.nat.check_nat', return_value=r):
+        result = runner.invoke(cli, ['check-nat'])
+
+    assert result.exit_code == 0
+    assert 'NAT Type:       Restricted-cone NAT' == caplog.records[1].message
+    assert 'External IP:    192.168.1.1' == caplog.records[2].message
+    assert 'External Port:  1234' == caplog.records[3].message
+    assert caplog.records[4].message.startswith(
+        'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
+        'is likely to work.',
+    )
 
 
 def test_configure_command(home_dir) -> None:
