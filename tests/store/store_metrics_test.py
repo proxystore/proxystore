@@ -30,6 +30,7 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     assert store.get(key) == value
     assert store.get(key) == value
     assert store.exists(key)
+    store._set(key, value)
     store.evict(key)
 
     assert store.metrics is not None
@@ -39,6 +40,7 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     size = len(serialize(value))
     assert key_metrics.attributes['store.get.object_size'] == size
     assert key_metrics.attributes['store.put.object_size'] == size
+    assert key_metrics.attributes['store.set.object_size'] == size
 
     assert key_metrics.counters['store.get.cache_hits'] == 1
     assert key_metrics.counters['store.get.cache_misses'] == 1
@@ -55,6 +57,10 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
 
     assert key_metrics.times['store.put'].count == 1
     assert key_metrics.times['store.put.connector'].count == 1
+    assert key_metrics.times['store.put.serialize'].count == 1
+
+    assert key_metrics.times['store.set'].count == 1
+    assert key_metrics.times['store.set.connector'].count == 1
     assert key_metrics.times['store.put.serialize'].count == 1
 
     proxy = store.proxy(value)

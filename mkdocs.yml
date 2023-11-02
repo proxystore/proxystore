@@ -124,6 +124,7 @@ nav:
       - Endpoints Overview: guides/endpoints.md
       - Endpoints Debugging: guides/endpoints-debugging.md
       - Performance Tracking: guides/performance.md
+      - Proxy Futures: guides/proxy-futures.md
       - Relay Serving: guides/relay-serving.md
   - API Reference:
       - ProxyStore: api/

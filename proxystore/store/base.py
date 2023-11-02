@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import warnings
 from types import TracebackType
 from typing import Any
 from typing import cast
@@ -21,11 +22,14 @@ else:  # pragma: <3.11 cover
 
 import proxystore
 import proxystore.serialize
+from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import NonProxiableTypeError
+from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
+from proxystore.store.future import ProxyFuture
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
@@ -34,6 +38,7 @@ from proxystore.store.types import SerializerT
 from proxystore.utils.imports import get_class_path
 from proxystore.utils.imports import import_class
 from proxystore.utils.timer import Timer
+from proxystore.warnings import ExperimentalWarning
 
 logger = logging.getLogger(__name__)
 
@@ -205,6 +210,102 @@ class Store(Generic[ConnectorT]):
         connector = import_class(connector_type)
         config['connector'] = connector.from_config(connector_config)
         return cls(**config)
+
+    def future(
+        self,
+        *,
+        evict: bool = False,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
+        polling_interval: float = 1,
+        polling_timeout: float | None = None,
+    ) -> ProxyFuture[T]:
+        """Create a future to an object.
+
+        Example:
+            ```python
+            from proxystore.connectors.file import FileConnector
+            from proxystore.store import Store
+            from proxystore.store.future import ProxyFuture
+
+            def remote_foo(future: ProxyFuture) -> None:
+                # Computation that generates a result value needed by
+                # the remote_bar function.
+                future.set_result(...)
+
+            def remote_bar(data: Any) -> None:
+                # Function uses data, which is a proxy, as normal, blocking
+                # until the remote_foo function has called set_result.
+                ...
+
+            with Store('future-example', FileConnector(...)) as store:
+                future = store.future()
+
+                # The invoke_remove function invokes a provided function
+                # on a remote process. For example, this could be a serverless
+                # function execution.
+                foo_result_future = invoke_remote(remote_foo, future)
+                bar_result_future = invoke_remote(remote_bar, future.proxy())
+
+                foo_result_future.result()
+                bar_result_future.result()
+            ```
+
+        Warning:
+            This method only works if the `connector` is of type
+            [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+
+        Warning:
+            This method and the
+            [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
+            are experimental features and may change in future releases.
+
+        Args:
+            evict: If a proxy returned by
+                [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
+                should evict the object once resolved.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            polling_interval: Seconds to sleep between polling the store for
+                the object when getting the result of the future.
+            polling_timeout: Optional maximum number of seconds to poll for
+                when getting the result of the future.
+
+        Returns:
+            Future which can be used to get the result object at a later time \
+            or create a proxy which will resolve to the result of the future.
+
+        Raises:
+            NotImplementedError: If the `connector` is not of type
+                [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+        """
+        if not isinstance(self.connector, DeferrableConnector):
+            raise NotImplementedError(
+                'The provided connector is type '
+                f'{type(self.connector).__name__} which does not implement '
+                f'the {DeferrableConnector.__name__} necessary to use the '
+                f'{ProxyFuture.__name__} interface.',
+            )
+
+        warnings.warn(
+            'The Store.future() and ProxyFuture interfaces are experimental '
+            'and may change in future releases.',
+            category=ExperimentalWarning,
+            stacklevel=2,
+        )
+
+        key = self.connector.new_key()
+        factory: PollingStoreFactory[ConnectorT, T] = PollingStoreFactory(
+            key,
+            store_config=self.config(),
+            deserializer=deserializer,
+            evict=evict,
+            polling_interval=polling_interval,
+            polling_timeout=polling_timeout,
+        )
+        return ProxyFuture(factory, serializer=serializer)
 
     def evict(self, key: ConnectorKeyT) -> None:
         """Evict the object associated with the key.
@@ -770,3 +871,70 @@ class Store(Generic[ConnectorT]):
             f'{timer.elapsed_ms:.3f} ms',
         )
         return keys
+
+    def _set(
+        self,
+        key: ConnectorKeyT,
+        obj: Any,
+        *,
+        serializer: SerializerT | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Set a key in the store to an object.
+
+        Warning:
+            This method only works if the `connector` is of type
+            [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+
+        Args:
+            key: Key to set the object on.
+            obj: Object to put in the store.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.set()`][proxystore.connectors.protocols.Connector.set].
+
+        Returns:
+            A key which can be used to retrieve the object.
+
+        Raises:
+            NotImplementedError: If the `connector` is not of type
+                [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
+            TypeError: If the output of `serializer` is not bytes.
+        """
+        if not isinstance(self.connector, DeferrableConnector):
+            raise NotImplementedError(
+                'The provided connector is type '
+                f'{type(self.connector).__name__} which does not implement '
+                f'the {DeferrableConnector.__name__} necessary to use the '
+                'set method.',
+            )
+
+        timer = Timer()
+        timer.start()
+
+        with Timer() as serialize_timer:
+            if serializer is not None:
+                obj = serializer(obj)
+            else:
+                obj = self.serializer(obj)
+
+        if not isinstance(obj, bytes):
+            raise TypeError('Serializer must produce bytes.')
+
+        with Timer() as connector_timer:
+            self.connector.set(key, obj, **kwargs)
+
+        timer.stop()
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            stime = serialize_timer.elapsed_ns
+            self.metrics.add_attribute('store.set.object_size', key, len(obj))
+            self.metrics.add_time('store.set.serialize', key, stime)
+            self.metrics.add_time('store.set.connector', key, ctime)
+            self.metrics.add_time('store.set', key, timer.elapsed_ns)
+
+        logger.debug(
+            f'Store(name="{self.name}"): SET {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
+        )
