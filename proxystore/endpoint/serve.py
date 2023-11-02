@@ -36,6 +36,7 @@ from proxystore.globus.manager import GlobusAuthManager
 from proxystore.globus.manager import NativeAppAuthManager
 from proxystore.globus.scopes import ProxyStoreRelayScopes
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.nat import check_nat_and_log
 from proxystore.p2p.relay.client import RelayClient
 from proxystore.utils.data import chunk_bytes
 
@@ -143,6 +144,7 @@ async def _serve_async(config: EndpointConfig) -> None:
             relay_client,
             peer_channels=config.relay.peer_channels,
         )
+        check_nat_and_log()
 
     endpoint = await Endpoint(
         name=config.name,
