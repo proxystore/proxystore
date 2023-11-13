@@ -22,6 +22,7 @@ for path in sorted(Path('proxystore').rglob('**/*.py')):
     elif parts[-1].endswith('__main__'):
         continue
 
+    nav_parts: tuple[str, ...]
     if len(parts) == 1:
         nav_parts = parts
     elif len(parts) == 2:
