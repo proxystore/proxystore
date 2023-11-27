@@ -31,7 +31,7 @@ jobs:
           toxenv: py38
         - os: macos-latest
           python: 3.9
-          toxenv: py310
+          toxenv: py39
         - os: macos-latest
           python: '3.10'
           toxenv: py310
