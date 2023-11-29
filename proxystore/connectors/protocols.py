@@ -135,7 +135,7 @@ class DeferrableConnector(Protocol[KeyT]):
             Key which can be used to retrieve an object once \
             [`set()`][proxystore.connectors.protocols.DeferrableConnector.set] \
             has been called on the key.
-        """
+        """  # noqa: E501
         ...
 
     def set(self, key: KeyT, obj: bytes) -> None:

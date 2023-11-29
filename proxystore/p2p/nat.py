@@ -53,7 +53,8 @@ class NatType(enum.Enum):
     def _from_str(cls, nat_type: str) -> NatType:
         if nat_type == stun.Blocked:
             raise RuntimeError(
-                'No response from a STUN server. Unable to determine NAT type.',
+                'No response from a STUN server. '
+                'Unable to determine NAT type.',
             )
         elif nat_type == stun.ChangedAddressError:
             raise RuntimeError('Address changed during NAT type check.')
