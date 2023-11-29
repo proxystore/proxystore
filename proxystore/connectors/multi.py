@@ -182,7 +182,7 @@ class MultiKey(NamedTuple):
         connector_name: Name of connector that the associated object is
             stored in.
         connector_key: Key associated with the object.
-    """
+    """  # noqa: E501
 
     connector_name: str
     # Type this as Any because mypy has no way to tell statically what type

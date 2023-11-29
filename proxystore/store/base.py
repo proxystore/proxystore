@@ -742,7 +742,7 @@ class Store(Generic[ConnectorT]):
             NonProxiableTypeError: If `obj` is a non-proxiable type. This
                 behavior can be overridden by setting
                 `#!python skip_nonproxiable=True`.
-        """
+        """  # noqa: E501
         possible_proxy = self.proxy(
             obj,
             evict=evict,

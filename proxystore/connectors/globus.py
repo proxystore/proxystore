@@ -185,8 +185,8 @@ class GlobusEndpoints:
         """Construct a GlobusEndpoints object from a json file.
 
         The `dict` read from the JSON file will be passed to
-        [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict] and
-        should match the format expected by
+        [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict]
+        and should match the format expected by
         [`from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict].
         """
         with open(json_file) as f:

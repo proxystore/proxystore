@@ -27,12 +27,12 @@ from proxystore.store.utils import get_key
 
 ConnectorKeyT = Tuple[Any, ...]
 KeyT = Union[ConnectorKeyT, Sequence[ConnectorKeyT]]
-"""Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""
+"""Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""  # noqa: E501
 ProxyT = Union[Proxy[Any], Sequence[Proxy[Any]]]
 """Proxy types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics].
 
 When a `ProxyT` is passed, the keys are extracted from the proxies.
-"""
+"""  # noqa: E501
 
 
 @dataclasses.dataclass
@@ -118,7 +118,7 @@ class Metrics:
 
 
 class StoreMetrics:
-    """Record and query metrics on [`Store`][proxystore.store.base.Store] operations."""
+    """Record and query metrics on [`Store`][proxystore.store.base.Store] operations."""  # noqa: E501
 
     def __init__(self) -> None:
         self._metrics: dict[int, Metrics] = defaultdict(Metrics)
@@ -199,7 +199,8 @@ def _hash_key(key_or_proxy: KeyT | ProxyT) -> int:
         isinstance(proxy, Proxy) for proxy in key_or_proxy
     ):
         key = tuple(
-            get_key(proxy) for proxy in key_or_proxy  # type: ignore[arg-type]
+            get_key(proxy)  # type: ignore[arg-type]
+            for proxy in key_or_proxy
         )
     else:
         key = key_or_proxy

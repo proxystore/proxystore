@@ -57,7 +57,6 @@ extensions = [
 ]
 redis = ["redis>=3.4"]
 dev = [
-    "black",
     "covdefaults>=2.2",
     "coverage",
     "mypy",
@@ -91,11 +90,6 @@ docs = [
 proxystore-endpoint = "proxystore.endpoint.cli:cli"
 proxystore-globus-auth = "proxystore.globus.cli:cli"
 proxystore-relay = "proxystore.p2p.relay.run:cli"
-
-[tool.black]
-line-length = 79
-target-version = ["py38"]
-skip-string-normalization = true
 
 [tool.codespell]
 skip = """
@@ -198,9 +192,15 @@ extend-ignore = [
     # However, coverage marks unfinished generators as not covered and
     # all/any can early exit before exhausting the generator.
     "C419",
+    # Conflicts with ruff format but leaving as enabled for now. This
+    # may require ruff's linter to be run a second time after the formatter.
+    # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
+    # "COM812",
+    # "ISC001",
     # Allow pytest.raises() without match
     "PT011",
 ]
+line-length = 79
 target-version = "py38"
 
 [tool.ruff.flake8-pytest-style]
@@ -208,6 +208,10 @@ parametrize-values-type = "tuple"
 
 [tool.ruff.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "single"
 
 [tool.ruff.isort]
 force-single-line = true

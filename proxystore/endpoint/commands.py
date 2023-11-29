@@ -114,7 +114,8 @@ def configure_endpoint(
     Args:
         name: Name of endpoint.
         port: Port for endpoint to listen on.
-        relay_server: Optional relay server address for P2P endpoint connections.
+        relay_server: Optional relay server address for P2P endpoint
+            connections.
         relay_auth: Relay server used Globus Auth.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
