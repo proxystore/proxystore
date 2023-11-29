@@ -2837,6 +2837,10 @@ ProxyStore provides many features with extra dependencies that can be installed 
 <td style="text-align: left;">Use <a href="../guides/endpoints/">ProxyStore Endpoints</a></td>
 </tr>
 <tr>
+<td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>extensions<span class="o">]</span></code></td>
+<td style="text-align: left;">Install the <a href="https://github.com/proxystore/extensions" target="_blank"><code>proxystore-ex</code></a> package</td>
+</tr>
+<tr>
 <td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>redis<span class="o">]</span></code></td>
 <td style="text-align: left;">Use the <a class="autorefs autorefs-internal" href="../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a></td>
 </tr>
@@ -2857,11 +2861,17 @@ ProxyStore provides many features with extra dependencies that can be installed 
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span>
 </span></code></pre></div>
 <h2 id="proxystore-extensions">ProxyStore Extensions<a class="headerlink" href="#proxystore-extensions" title="Permanent link">&para;</a></h2>
-<p>Additional features are available in the <code>proxystore-extensions</code> package
-(<a href="https://github.com/proxystore/extensions" target="_blank">Repository</a> and
-<a href="https://extensions.proxystore.dev" target="_blank">Docs</a>).
-Features in the extensions package tend to be more experimental or have heavier dependencies.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore-ex
+<p>Additional features are available in the
+<a href="https://pypi.org/project/proxystore-ex/" target="_blank"><code>proxystore-ex</code></a>
+package (<a href="https://github.com/proxystore/extensions" target="_blank">repository</a>
+and <a href="https://extensions.proxystore.dev" target="_blank">docs</a>).
+Features in the extensions package tend to be more experimental or have heavier
+not pip-installable dependencies.</p>
+<p>The extensions package can be installed alongside ProxyStore.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>extensions<span class="o">]</span>
+</span></code></pre></div>
+Or standalone.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore-ex
 </span></code></pre></div></p>
 
 
