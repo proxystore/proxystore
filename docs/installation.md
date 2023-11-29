@@ -55,3 +55,6 @@ Or standalone.
 ```bash
 $ pip install proxystore-ex
 ```
+
+Rather than importing from `proxystore_ex` directly, ProxyStore re-exports
+all packages and modules via the [`proxystore.ex`][proxystore.ex] submodule.
