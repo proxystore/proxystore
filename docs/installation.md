@@ -21,6 +21,7 @@ ProxyStore provides many features with extra dependencies that can be installed 
 | :------ | :------ |
 | `#!bash pip install proxystore[all]` | Install all extras except `dev` and `docs` |
 | `#!bash pip install proxystore[endpoints]` | Use [ProxyStore Endpoints](guides/endpoints.md) |
+| `#!bash pip install proxystore[extensions]` | Install the [`proxystore-ex`](https://github.com/proxystore/extensions){target=_blank} package |
 | `#!bash pip install proxystore[redis]` | Use the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
 | `#!bash pip install proxystore[dev]` | Development dependencies |
 | `#!bash pip install proxystore[docs]` | Documentation dependencies |
@@ -39,10 +40,18 @@ $ pip install proxystore[all]
 
 ## ProxyStore Extensions
 
-Additional features are available in the `proxystore-extensions` package
-([Repository](https://github.com/proxystore/extensions){target=_blank} and
-[Docs](https://extensions.proxystore.dev){target=_blank}).
-Features in the extensions package tend to be more experimental or have heavier dependencies.
+Additional features are available in the
+[`proxystore-ex`](https://pypi.org/project/proxystore-ex/){target=_blank}
+package ([repository](https://github.com/proxystore/extensions){target=_blank}
+and [docs](https://extensions.proxystore.dev){target=_blank}).
+Features in the extensions package tend to be more experimental or have heavier
+not pip-installable dependencies.
+
+The extensions package can be installed alongside ProxyStore.
+```bash
+$ pip install proxystore[extensions]
+```
+Or standalone.
 ```bash
 $ pip install proxystore-ex
 ```

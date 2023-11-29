@@ -39,7 +39,7 @@ documentation = "https://docs.proxystore.dev"
 repository = "https://github.com/proxystore/proxystore"
 
 [project.optional-dependencies]
-all = ["proxystore[endpoints,redis]"]
+all = ["proxystore[endpoints,extensions,redis]"]
 endpoints = [
     "aiortc>=1.3.2",
     "aiosqlite",
@@ -51,6 +51,9 @@ endpoints = [
     "requests>=2.27.1",
     "tosholi",
     "websockets>=10.0",
+]
+extensions = [
+    "proxystore-ex",
 ]
 redis = ["redis>=3.4"]
 dev = [

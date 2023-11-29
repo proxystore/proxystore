@@ -41,15 +41,26 @@ Complete documentation for ProxyStore is available at
 
 ## Installation
 
+The base ProxyStore package can be installed with [`pip`](https://pip.pypa.io/en/stable/).
 ```bash
 $ pip install proxystore
-$ pip install proxystore[all]
 ```
 
-See the [Installation](https://docs.proxystore.dev/main/installation) guide for more information about the available extra install options.
-For local development, see the [Contributing](https://docs.proxystore.dev/main/contributing) guide.
+Many features require dependencies that are not installed by default but can
+be enabled via extras installation options.
+Install *all* optional dependencies with:
+```bash
+$ pip install proxystore[all]
+```
+This will also install the [`proxystore-ex`](https://extensions.proxystore.dev/)
+package which contains extension and experimental features.
+The extensions package can also be installed with `pip` using
+`proxystore[extensions]` or `proxystore-ex`.
 
-Extended features are available in the [`proxystore-ex`](https://github.com/proxystore/extensions) package.
+See the [Installation](https://docs.proxystore.dev/main/installation) guide
+for more information about the available extras installation options.
+See the [Contributing](https://docs.proxystore.dev/main/contributing) guide
+to get started for local development.
 
 ## Example
 
@@ -85,7 +96,7 @@ guide to learn more!
 [![DOI](https://zenodo.org/badge/357984234.svg)](https://zenodo.org/badge/latestdoi/357984234)
 
 If you use ProxyStore or any of this code in your work, please cite our [SC '23 paper](https://dl.acm.org/doi/10.1145/3581784.3607047).
-```
+```bibtex
 @inproceedings{pauloski2023proxystore,
     author = {Pauloski, J. Gregory and Hayot-Sasson, Valerie and Ward, Logan and Hudson, Nathaniel and Sabino, Charlie and Baughman, Matt and Chard, Kyle and Foster, Ian},
     title = {{Accelerating Communications in Federated Applications with Transparent Object Proxies}},
