@@ -2,437 +2,437 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://proxystore.dev/main/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/examples/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/get-started/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/installation/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/known-issues/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/SUMMARY/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/cli/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/ex/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/factory/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/proxy/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/serialize/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/warnings/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/dim/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/endpoint/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/file/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/globus/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/local/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/multi/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/protocols/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/connectors/redis/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/cli/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/client/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/commands/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/config/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/constants/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/endpoint/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/exceptions/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/messages/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/serve/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/endpoint/storage/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/cli/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/client/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/manager/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/scopes/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/storage/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/globus/transfer/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/chunks/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/connection/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/exceptions/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/manager/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/nat/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/authenticate/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/client/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/config/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/exceptions/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/manager/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/messages/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/run/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/p2p/relay/server/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/base/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/cache/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/exceptions/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/factory/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/future/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/metrics/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/types/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/store/utils/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/counter/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/data/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/environment/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/imports/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/tasks/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/api/utils/timer/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/concepts/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/concepts/connector/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/concepts/proxy/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/concepts/store/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/contributing/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/contributing/issues-pull-requests/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/contributing/releases/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/contributing/style-guide/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/endpoints-debugging/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/endpoints/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/globus-compute/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/performance/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/proxy-futures/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/guides/relay-serving/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/main/publications/</loc>
-         <lastmod>2023-11-29</lastmod>
+         <lastmod>2023-12-08</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
