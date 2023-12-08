@@ -25,11 +25,9 @@ class RelayServerInfo(NamedTuple):
     address: str
 
 
-@pytest_asyncio.fixture(scope='session')
+@pytest_asyncio.fixture()
 @pytest.mark.asyncio()
-async def relay_server(
-    event_loop,
-) -> AsyncGenerator[RelayServerInfo, None]:
+async def relay_server() -> AsyncGenerator[RelayServerInfo, None]:
     """Fixture that runs relay server locally.
 
     Warning:

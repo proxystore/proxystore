@@ -17,7 +17,7 @@ from proxystore.serialize import serialize
 from testing.compat import randbytes
 
 
-@pytest_asyncio.fixture(scope='module')
+@pytest_asyncio.fixture()
 async def endpoints(
     relay_server,
 ) -> AsyncGenerator[tuple[Endpoint, Endpoint], None]:
@@ -188,6 +188,9 @@ async def test_unexpected_response(
 ) -> None:
     caplog.set_level(logging.ERROR)
     endpoint1, endpoint2 = endpoints
+
+    # Make request to open peer connection
+    assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
 
     # Add bad message to queue
     message = serialize(
