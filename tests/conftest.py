@@ -45,15 +45,12 @@ def use_uvloop(request) -> bool:
 
 
 @pytest.fixture(scope='session')
-def event_loop(
+def event_loop_policy(
     use_uvloop: bool,
-) -> Generator[asyncio.AbstractEventLoop, None, None]:
-    """Get event loop.
+) -> Generator[asyncio.AbstractEventLoopPolicy, None, None]:
+    """Get the session-wide event loop policy.
 
-    Share event loop between all tests. Necessary for session scoped asyncio
-    fixtures.
-
-    Source: https://github.com/pytest-dev/pytest-asyncio#event_loop
+    This enables us to toggle between uvloop and asyncio.
     """
     context: ContextManager[Any]
     # Note: both of these are excluded from coverage because only one will
@@ -71,7 +68,5 @@ def event_loop(
         )
 
     policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
     with context:
-        yield loop
-    loop.close()
+        yield policy
