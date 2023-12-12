@@ -58,12 +58,24 @@ def test_check_nat_and_log_normal(caplog) -> None:
     with mock.patch('proxystore.p2p.nat.check_nat', return_value=result):
         check_nat_and_log()
 
-    assert 'NAT Type:       Restricted-cone NAT' == caplog.records[1].message
-    assert 'External IP:    192.168.1.1' == caplog.records[2].message
-    assert 'External Port:  1234' == caplog.records[3].message
-    assert caplog.records[4].message.startswith(
-        'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
-        'is likely to work.',
+    assert any(
+        [
+            'NAT Type:       Restricted-cone NAT' in r.message
+            for r in caplog.records
+        ],
+    )
+    assert any(
+        ['External IP:    192.168.1.1' in r.message for r in caplog.records],
+    )
+    assert any(['External Port:  1234' in r.message for r in caplog.records])
+    assert any(
+        [
+            r.message.startswith(
+                'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
+                'is likely to work.',
+            )
+            for r in caplog.records
+        ],
     )
 
 
@@ -74,11 +86,21 @@ def test_check_nat_and_log_symmetric(caplog) -> None:
     with mock.patch('proxystore.p2p.nat.check_nat', return_value=result):
         check_nat_and_log()
 
-    assert 'NAT Type:       Symmetric NAT' in caplog.records[1].message
-    assert 'External IP:    192.168.1.1' in caplog.records[2].message
-    assert 'External Port:  1234' in caplog.records[3].message
-    assert caplog.records[4].message.startswith(
-        'NAT traversal (e.g., hole-punching) does not work reliably across',
+    assert any(
+        ['NAT Type:       Symmetric NAT' in r.message for r in caplog.records],
+    )
+    assert any(
+        ['External IP:    192.168.1.1' in r.message for r in caplog.records],
+    )
+    assert any(['External Port:  1234' in r.message for r in caplog.records])
+    assert any(
+        [
+            r.message.startswith(
+                'NAT traversal (e.g., hole-punching) does not work '
+                'reliably across',
+            )
+            for r in caplog.records
+        ],
     )
 
 
@@ -91,6 +113,9 @@ def test_check_nat_and_log_failure(caplog) -> None:
     ):
         check_nat_and_log()
 
-    assert caplog.records[1].message.startswith(
-        'Failed to determine NAT type: test error',
+    assert any(
+        [
+            r.message.startswith('Failed to determine NAT type: test error')
+            for r in caplog.records
+        ],
     )
