@@ -116,7 +116,10 @@ def test_get_authenticator() -> None:
 
 
 def test_get_authenticator_unknown() -> None:
-    config = RelayAuthConfig(method='test')  # type: ignore[arg-type]
+    config = RelayAuthConfig(method='globus')
+    # Modify attribute after construction to avoid Pydantic checking string
+    # literal type.
+    config.method = 'test'  # type: ignore[assignment]
     with pytest.raises(ValueError, match='Unknown authentication method'):
         get_authenticator(config)
 

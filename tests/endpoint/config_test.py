@@ -127,10 +127,10 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     options.update(bad_cfg)
 
     if valid:
-        EndpointConfig(**options)  # type: ignore
+        EndpointConfig(**options)
     else:
         with pytest.raises(ValueError):
-            EndpointConfig(**options)  # type: ignore
+            EndpointConfig(**options)
 
 
 @pytest.mark.parametrize(
