@@ -45,11 +45,13 @@ endpoints = [
     "aiosqlite",
     "uvicorn[standard]",
     "psutil",
+    "pydantic>=2.0.0",
     "pystun3",
     "python-daemon",
     "quart>=0.18.0",
     "requests>=2.27.1",
-    "tosholi",
+    "tomli ; python_version<'3.11'",
+    "tomli-w",
     "websockets>=10.0",
 ]
 extensions = [
