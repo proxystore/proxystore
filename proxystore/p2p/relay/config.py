@@ -1,12 +1,10 @@
 """Relay server configuration file parsing."""
 from __future__ import annotations
 
-import dataclasses
 import logging
 import pathlib
 import sys
 from typing import Any
-from typing import Dict
 from typing import Literal
 from typing import Optional
 from typing import Union
@@ -16,11 +14,13 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-import tosholi
+from pydantic import BaseModel
+from pydantic import Field
+
+from proxystore.utils.config import load
 
 
-@dataclasses.dataclass
-class RelayAuthConfig:
+class RelayAuthConfig(BaseModel):
     """Relay authentication configuration.
 
     Attributes:
@@ -31,14 +31,10 @@ class RelayAuthConfig:
     """
 
     method: Optional[Literal['globus']] = None  # noqa: UP007
-    kwargs: Dict[str, Any] = dataclasses.field(  # noqa: UP006
-        default_factory=dict,
-        repr=False,
-    )
+    kwargs: dict[str, Any] = Field(default_factory=dict, repr=False)
 
 
-@dataclasses.dataclass
-class RelayLoggingConfig:
+class RelayLoggingConfig(BaseModel):
     """Relay logging configuration.
 
     Attributes:
@@ -61,8 +57,7 @@ class RelayLoggingConfig:
     current_client_limit: Optional[int] = 32  # noqa: UP007
 
 
-@dataclasses.dataclass
-class RelayServingConfig:
+class RelayServingConfig(BaseModel):
     """Relay serving configuration.
 
     Attributes:
@@ -81,10 +76,8 @@ class RelayServingConfig:
     port: int = 8700
     certfile: Optional[str] = None  # noqa: UP007
     keyfile: Optional[str] = None  # noqa: UP007
-    auth: RelayAuthConfig = dataclasses.field(default_factory=RelayAuthConfig)
-    logging: RelayLoggingConfig = dataclasses.field(
-        default_factory=RelayLoggingConfig,
-    )
+    auth: RelayAuthConfig = Field(default_factory=RelayAuthConfig)
+    logging: RelayLoggingConfig = Field(default_factory=RelayLoggingConfig)
     max_message_bytes: Optional[int] = None  # noqa: UP007
 
     @classmethod
@@ -150,4 +143,4 @@ class RelayServingConfig:
             ```
         """
         with open(filepath, 'rb') as f:
-            return tosholi.load(cls, f)
+            return load(cls, f)
