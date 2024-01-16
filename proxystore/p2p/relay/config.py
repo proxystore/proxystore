@@ -5,6 +5,7 @@ import logging
 import pathlib
 import sys
 from typing import Any
+from typing import Dict
 from typing import Literal
 from typing import Optional
 from typing import Union
@@ -31,7 +32,10 @@ class RelayAuthConfig(BaseModel):
     """
 
     method: Optional[Literal['globus']] = None  # noqa: UP007
-    kwargs: dict[str, Any] = Field(default_factory=dict, repr=False)
+    kwargs: Dict[str, Any] = Field(  # noqa: UP006
+        default_factory=dict,
+        repr=False,
+    )
 
 
 class RelayLoggingConfig(BaseModel):

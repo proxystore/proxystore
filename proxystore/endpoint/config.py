@@ -5,6 +5,7 @@ import os
 import re
 import uuid
 from typing import Any
+from typing import Dict
 from typing import Literal
 from typing import Optional
 
@@ -31,7 +32,7 @@ class EndpointRelayAuthConfig(BaseModel):
     """
 
     method: Optional[Literal['globus']] = None  # noqa: UP007
-    kwargs: dict[str, Any] = Field(default_factory=dict)
+    kwargs: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
 
 
 class EndpointRelayConfig(BaseModel):
