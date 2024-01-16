@@ -76,7 +76,7 @@ class EndpointRelayConfig(BaseModel):
 class EndpointStorageConfig(BaseModel):
     """Endpoint data storage configuration.
 
-    Args:
+    Attributes:
         database_path: Optional path to SQLite database file that will be used
             for storing endpoint data. If `None`, data will only be stored
             in-memory.
