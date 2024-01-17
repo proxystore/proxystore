@@ -69,26 +69,31 @@ def test_threading_open_close() -> None:
     assert len(messages) == 0
 
 
+def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
+    for message in messages:
+        publisher.send(message)
+    publisher.close()
+
+
+def subscribe(subscriber: QueueSubscriber, messages: list[bytes]) -> None:
+    received = []
+
+    for message in subscriber:
+        received.append(message)
+
+    assert received == messages
+
+
 def test_multiprocessing_send_messages() -> None:
     publisher, subscriber = create_pubsub_pair(multiprocessing.Queue())
 
     messages = [b'message-{i}' for i in range(10)]
 
-    def publish(publisher: QueuePublisher) -> None:
-        for message in messages:
-            publisher.send(message)
-        publisher.close()
-
-    def subscribe(subscriber: QueueSubscriber) -> None:
-        received = []
-
-        for message in subscriber:
-            received.append(message)
-
-        assert received == messages
-
-    pproc = multiprocessing.Process(target=publish, args=[publisher])
-    sproc = multiprocessing.Process(target=subscribe, args=[subscriber])
+    pproc = multiprocessing.Process(target=publish, args=[publisher, messages])
+    sproc = multiprocessing.Process(
+        target=subscribe,
+        args=[subscriber, messages],
+    )
 
     sproc.start()
     pproc.start()
@@ -105,21 +110,8 @@ def test_threading_send_messages() -> None:
 
     messages = [b'message-{i}' for i in range(10)]
 
-    def publish(publisher: QueuePublisher) -> None:
-        for message in messages:
-            publisher.send(message)
-        publisher.close()
-
-    def subscribe(subscriber: QueueSubscriber) -> None:
-        received = []
-
-        for message in subscriber:
-            received.append(message)
-
-        assert received == messages
-
-    pthread = threading.Thread(target=publish, args=[publisher])
-    sthread = threading.Thread(target=subscribe, args=[subscriber])
+    pthread = threading.Thread(target=publish, args=[publisher, messages])
+    sthread = threading.Thread(target=subscribe, args=[subscriber, messages])
 
     sthread.start()
     pthread.start()
