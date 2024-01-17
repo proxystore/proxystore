@@ -78,6 +78,7 @@ import dataclasses
 import json
 import logging
 import sys
+import warnings
 from types import TracebackType
 from typing import Any
 from typing import Generic
@@ -96,6 +97,13 @@ from proxystore.store.base import Store
 from proxystore.store.types import ConnectorT
 from proxystore.utils.imports import get_class_path
 from proxystore.utils.imports import import_class
+from proxystore.warnings import ExperimentalWarning
+
+warnings.warn(
+    'MultiConnector is an experimental feature and may change in the future.',
+    category=ExperimentalWarning,
+    stacklevel=2,
+)
 
 logger = logging.getLogger(__name__)
 
