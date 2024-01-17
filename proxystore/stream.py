@@ -55,7 +55,7 @@ Example:
     ```
 
     **Consumer Side**
-    ```
+    ```python
     from proxystore.connector.redis import RedisConnector
     from proxystore.pubsub.redis import RedisSubscriber
     from proxystore.store import Store
