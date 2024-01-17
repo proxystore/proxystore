@@ -1,4 +1,14 @@
-"""Pub/sub protocols."""
+"""Publisher and subscriber protocol definitions.
+
+The [`Publisher`][proxystore.pubsub.protocols.Publisher] and
+[`Subscriber`][proxystore.pubsub.protocols.Subscriber] are
+[`Protocols`][typing.Protocol] which define the publisher and subscriber
+interfaces to a pub/sub-like messaging system.
+
+In general, these protocols do not enforce any other implementation details
+besides the interface. For example, implementations could choose to support
+any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
+"""
 from __future__ import annotations
 
 import sys
@@ -36,7 +46,11 @@ class Publisher(Protocol):
 
 @runtime_checkable
 class Subscriber(Protocol):
-    """Subscriber interface to message stream."""
+    """Subscriber interface to message stream.
+
+    The subscriber protocol is an iterable object which yields objects
+    from the stream until the stream is closed.
+    """
 
     def __iter__(self) -> Self:
         ...
