@@ -286,6 +286,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/api/pubsub/kafka/</loc>
+         <lastmod>2024-01-18</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/api/pubsub/protocols/</loc>
          <lastmod>2024-01-18</lastmod>
          <changefreq>daily</changefreq>
