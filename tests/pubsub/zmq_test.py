@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import threading
+from unittest import mock
 
 import pytest
 
+from proxystore.pubsub.zmq import _CLOSED_SENTINAL
 from proxystore.pubsub.zmq import ZeroMQPublisher
 from proxystore.pubsub.zmq import ZeroMQSubscriber
 from testing.utils import open_port
@@ -38,29 +39,6 @@ def test_publisher_close_client_only() -> None:
     publisher.close(close_topics=False)
 
 
-def publish(publisher: ZeroMQPublisher, messages: list[bytes]) -> None:
-    for message in messages:
-        publisher.send(message)
-
-
-def subscribe(
-    subscriber: ZeroMQSubscriber,
-    publisher: ZeroMQPublisher,
-    messages: list[bytes],
-) -> None:
-    received = []
-
-    for message in subscriber:
-        received.append(message)
-
-        if len(received) == len(messages):
-            publisher.close()
-
-    assert received == messages
-
-    subscriber.close()
-
-
 def test_basic_publish_subscribe() -> None:
     address, port = '127.0.0.1', open_port()
 
@@ -69,14 +47,25 @@ def test_basic_publish_subscribe() -> None:
 
     messages = [f'message_{i}'.encode() for i in range(3)]
 
-    pproc = threading.Thread(target=publish, args=[publisher, messages])
-    sproc = threading.Thread(
-        target=subscribe,
-        args=[subscriber, publisher, messages],
-    )
+    with mock.patch.object(publisher._socket, 'send_multipart'):
+        for message in messages:
+            publisher.send(message)
 
-    sproc.start()
-    pproc.start()
+        publisher.close()
 
-    pproc.join(timeout=5)
-    sproc.join(timeout=5)
+    received = []
+
+    with mock.patch.object(
+        subscriber._socket,
+        'recv_multipart',
+        side_effect=[
+            (publisher._default_topic.encode(), message)
+            for message in [*messages, _CLOSED_SENTINAL]
+        ],
+    ):
+        for message in subscriber:
+            received.append(message)
+
+    subscriber.close()
+
+    assert messages == received
