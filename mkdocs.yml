@@ -162,6 +162,7 @@ plugins:
             - https://redis-py.readthedocs.io/en/stable/objects.inv
             - https://kafka-python.readthedocs.io/en/master/objects.inv
           options:
+            annotations_path: brief
             docstring_section_style: list
             docstring_style: google
             inherited_members: yes
@@ -169,12 +170,11 @@ plugins:
             members_order: source
             merge_init_into_class: yes
             separate_signature: yes
-            # Mutually exclusive with separate_signature
-            # show_root_members_full_path: yes
-            # Causes black error with show_root_full_path
-            # show_object_full_path: yes
+            show_root_members_full_path: no
+            show_object_full_path: no
             show_root_full_path: yes
             show_signature_annotations: yes
             show_submodules: no
+            signature_crossrefs: yes
   - search
   - section-index
