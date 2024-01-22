@@ -471,6 +471,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/main/guides/streaming/</loc>
+         <lastmod>2024-01-22</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/main/publications/</loc>
          <lastmod>2024-01-22</lastmod>
          <changefreq>daily</changefreq>
