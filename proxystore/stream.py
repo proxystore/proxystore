@@ -4,73 +4,8 @@ Warning:
     The streaming interfaces are experimental and may change in future
     releases.
 
-The [`StreamProducer`][proxystore.stream.StreamProducer]
-and [`StreamConsumer`][proxystore.stream.StreamConsumer] interfaces decouple
-bulk object communication from event notifications through the use of
-object proxies. This enables users to mix and match bulk object communication
-methods (via the [`Connector`][proxystore.connectors.protocols.Connector]
-interface) and event streaming methods (via the
-[`Publisher`][proxystore.pubsub.protocols.Publisher] and
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] interfaces).
-Additionally, because the [`StreamConsumer`][proxystore.stream.StreamConsumer]
-yields proxies of objects in the stream, bulk data transfer only occurs
-between the source and *true* destination of the object from the stream
-(i.e., the process which *resolves* the proxy from the stream).
-
-This model is well suited for applications which dispatch remote compute
-tasks on objects consumed from a stream. To understand why, consider an
-application with a data generator that is streaming chunks of data (i.e.,
-arbitrary Python objects) to a consumer which is then dispatching tasks
-which compute on a data chunk. In this scenario, the consumer does not need to
-have the actual chunk of data; rather, it only needs to know that a chunk is
-ready in order to dispatch a task which will actually consume the chunk. This
-is where a stream of proxies is beneficial---the consumer is receiving
-lightweight proxies from the stream and passing those proxies along to later
-computation stages. The bulk data are only transmitted between the data
-generator and the process/node computing on the proxy of the chunk, bypassing
-the intermediate dispatching process.
-
-Example:
-    Here is an example of using the
-    [`StreamProducer`][proxystore.stream.StreamProducer]
-    and [`StreamConsumer`][proxystore.stream.StreamConsumer] interfaces
-    to stream objects via Redis pub/sub and key/value store.
-
-    **Producer Side**
-    ```python
-    from proxystore.connector.redis import RedisConnector
-    from proxystore.pubsub.redis import RedisPublisher
-    from proxystore.store import Store
-    from proxystore.stream import StreamProducer
-
-    store = Store('example', RedisConnector(...))
-    publisher = RedisPublisher(...)
-
-    producer = StreamProducer(store, publisher)
-
-    for item in ...:
-        producer.send(item)
-
-    producer.close()
-    ```
-
-    **Consumer Side**
-    ```python
-    from proxystore.connector.redis import RedisConnector
-    from proxystore.pubsub.redis import RedisSubscriber
-    from proxystore.store import Store
-    from proxystore.stream import StreamConsumer
-
-    store = Store('example', RedisConnector(...))
-    subscriber = RedisSubscriber(...)
-
-    consumer = StreamConsumer(store, subscriber)
-
-    for item in consumer:
-        ...
-
-    consumer.close()
-    ```
+Tip:
+    Checkout the [Streaming Guide](../guides/streaming.md) to learn more!
 """
 from __future__ import annotations
 
