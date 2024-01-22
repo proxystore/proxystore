@@ -126,6 +126,7 @@ nav:
       - Performance Tracking: guides/performance.md
       - Proxy Futures: guides/proxy-futures.md
       - Relay Serving: guides/relay-serving.md
+      - Streaming: guides/streaming.md
   - API Reference:
       - ProxyStore: api/
       - CLI Reference: api/cli.md
