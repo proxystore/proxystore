@@ -1,5 +1,9 @@
 # ProxyStore
 
+![PyPI - Version](https://img.shields.io/pypi/v/proxystore)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore)
+![GitHub License](https://img.shields.io/github/license/proxystore/proxystore)
+
 [![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml)
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
