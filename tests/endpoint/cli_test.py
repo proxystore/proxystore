@@ -62,9 +62,9 @@ def test_check_nat_normal(caplog) -> None:
         result = runner.invoke(cli, ['check-nat'])
 
     assert result.exit_code == 0
-    assert 'NAT Type:       Restricted-cone NAT' == caplog.records[1].message
-    assert 'External IP:    192.168.1.1' == caplog.records[2].message
-    assert 'External Port:  1234' == caplog.records[3].message
+    assert caplog.records[1].message == 'NAT Type:       Restricted-cone NAT'
+    assert caplog.records[2].message == 'External IP:    192.168.1.1'
+    assert caplog.records[3].message == 'External Port:  1234'
     assert caplog.records[4].message.startswith(
         'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
         'is likely to work.',

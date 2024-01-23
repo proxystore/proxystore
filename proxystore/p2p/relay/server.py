@@ -265,7 +265,7 @@ class RelayServer(Generic[UserT]):
         else:
             raise AssertionError('Unreachable.')
 
-    async def handler(
+    async def handler(  # noqa: C901
         self,
         websocket: WebSocketServerProtocol,
         uri: str,

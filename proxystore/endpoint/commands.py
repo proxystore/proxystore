@@ -91,7 +91,8 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     if not os.path.isfile(pid_file):
         return EndpointStatus.STOPPED
 
-    pid = int(open(pid_file).read().strip())
+    with open(pid_file) as f:
+        pid = int(f.read().strip())
 
     if psutil.pid_exists(pid):
         return EndpointStatus.RUNNING

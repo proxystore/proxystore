@@ -251,7 +251,7 @@ class Endpoint:
                 f'in {self._mode.name} mode',
             )
 
-    async def _handle_peer_requests(self) -> None:
+    async def _handle_peer_requests(self) -> None:  # noqa: C901
         """Coroutine to listen for request from peer endpoints."""
         assert self.peer_manager is not None
         logger.info(f'{self._log_prefix}: listening for peer requests')
@@ -347,12 +347,11 @@ class Endpoint:
 
     def _is_peer_request(self, endpoint: UUID | None) -> bool:
         """Check if this request should be forwarded to peer endpoint."""
-        if self._mode == EndpointMode.SOLO:
-            return False
-        elif endpoint is None or endpoint == self.uuid:
-            return False
-        else:
-            return True
+        return not (
+            self._mode == EndpointMode.SOLO
+            or endpoint is None
+            or endpoint == self.uuid
+        )
 
     async def evict(self, key: str, endpoint: UUID | None = None) -> None:
         """Evict key from endpoint.
