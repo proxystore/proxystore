@@ -62,9 +62,7 @@ class GlobusEndpoint:
             raise TypeError('endpoint_path must be a str.')
         if not isinstance(local_path, str):
             raise TypeError('local_path must be a str.')
-        if not (
-            isinstance(host_regex, str) or isinstance(host_regex, Pattern)
-        ):
+        if not isinstance(host_regex, (str, Pattern)):
             raise TypeError('host_regex must be a str or re.Pattern.')
 
         self.uuid = uuid

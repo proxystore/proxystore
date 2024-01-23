@@ -197,10 +197,7 @@ class NativeAppAuthManager:
     def logged_in(self) -> bool:
         """User has valid refresh tokens for necessary scopes."""
         data = self._storage.get_by_resource_server()
-        for server in self._resource_server_scopes:
-            if server not in data:
-                return False
-        return True
+        return all(server in data for server in self._resource_server_scopes)
 
     def get_authorizer(
         self,
