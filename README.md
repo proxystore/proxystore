@@ -1,31 +1,31 @@
 # ProxyStore
 
+![PyPI - Version](https://img.shields.io/pypi/v/proxystore)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore)
+![GitHub License](https://img.shields.io/github/license/proxystore/proxystore)
+
 [![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml)
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
 
-ProxyStore provides pass-by-reference semantics for distributed Python
-applications through transparent object proxies. Moving data via proxies
-(1) decouples control flow from data flow, (2) enables producers to
-unilaterally (i.e., without the agreement of or awareness by the consumer)
-choose the best storage and communication channel for the data, and (3)
-perform just-in-time data movement directly between producer and consumer.
+ProxyStore is a library that facilitates efficient data management in distributed Python applications.
+At the core of ProxyStore is the [*proxy*](https://docs.proxystore.dev/main/concepts/proxy/) object which acts as a transparent reference to an object living in a global object store.
+This pass-by-reference interface with just-in-time object resolution works across processes, machines, and sites, and enables data producers to change the low-level communication method dynamically without altering application code or behavior.
 
-ProxyStore's goals are to:
+ProxyStore accelerates the development of dynamic task-based workflows, serverless applications, and more by (1) decoupling control flow from data flow, (2) abstracting low-level communication mechanisms, and (3) eliminating the need for shims, wrapper functions, and boilerplate code.
 
-* **Improve productivity.** ProxyStore enables easy decoupling of
-  communication from the rest of the code, allowing developers to focus
-  on functionality and performance.
-* **Improve compatibility.** Consumers of data can be agnostic to the
-  communication method because object proxies handle the communication
-  behind the scenes.
-* **Improve performance.** Transport methods and object stores can be changed
-  at runtime to optimal choices for the given data without the consumers
-  being aware of the change.
+ProxyStore supports a diverse set of programming paradigms:
+* [Task-based Workflows](https://arxiv.org/abs/2303.08803)
+* [Function-as-a-Service/Serverless Applications](https://docs.proxystore.dev/main/guides/globus-compute/)
+* [Distributed Futures](https://docs.proxystore.dev/main/guides/proxy-futures/)
+* [Bulk Data Streaming](https://docs.proxystore.dev/main/guides/streaming/)
+* and more!
 
 ProxyStore provides support for many third-party mediated communication methods
 out-of-the-box including
+[DAOS](https://docs.daos.io/v2.4/),
 [Globus Transfer](https://www.globus.org/data-transfer),
+[Kafka](https://kafka.apache.org/),
 [KeyDB](https://docs.keydb.dev/), and
 [Redis](https://redis.io/).
 Custom communication methods built on
@@ -33,7 +33,7 @@ Custom communication methods built on
 [UCX](https://openucx.org/),
 [WebRTC](https://webrtc.org/), and
 [ZeroMQ](https://zeromq.org/)
-are provided for high-performance and multi-site applications.
+are provided for high-performance and peer-to-peer applications.
 
 Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/main/concepts/).
 Complete documentation for ProxyStore is available at
@@ -43,14 +43,14 @@ Complete documentation for ProxyStore is available at
 
 The base ProxyStore package can be installed with [`pip`](https://pip.pypa.io/en/stable/).
 ```bash
-$ pip install proxystore
+pip install proxystore
 ```
 
 Many features require dependencies that are not installed by default but can
-be enabled via extras installation options.
-Install *all* optional dependencies with:
+be enabled via extras installation options such as `endpoints`, `kafka`, or `redis`.
+*All* optional dependencies can be installed with:
 ```bash
-$ pip install proxystore[all]
+pip install proxystore[all]
 ```
 This will also install the [`proxystore-ex`](https://extensions.proxystore.dev/)
 package which contains extension and experimental features.
