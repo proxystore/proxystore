@@ -15,6 +15,7 @@ This pass-by-reference interface with just-in-time object resolution works acros
 ProxyStore accelerates the development of dynamic task-based workflows, serverless applications, and more by (1) decoupling control flow from data flow, (2) abstracting low-level communication mechanisms, and (3) eliminating the need for shims, wrapper functions, and boilerplate code.
 
 ProxyStore supports a diverse set of programming paradigms:
+
 * [Task-based Workflows](https://arxiv.org/abs/2303.08803)
 * [Function-as-a-Service/Serverless Applications](https://docs.proxystore.dev/main/guides/globus-compute/)
 * [Distributed Futures](https://docs.proxystore.dev/main/guides/proxy-futures/)
