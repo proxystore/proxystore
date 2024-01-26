@@ -29,7 +29,6 @@ from proxystore.proxy import Proxy
 from proxystore.pubsub.protocols import Publisher
 from proxystore.pubsub.protocols import Subscriber
 from proxystore.store.base import Store
-from proxystore.store.types import ConnectorT
 from proxystore.utils.imports import get_class_path
 from proxystore.utils.imports import import_class
 from proxystore.warnings import ExperimentalWarning
@@ -44,8 +43,6 @@ logger = logging.getLogger(__name__)
 
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)
-PublisherT = TypeVar('PublisherT', bound=Publisher)
-SubscriberT = TypeVar('SubscriberT', bound=Subscriber)
 
 
 @dataclasses.dataclass
@@ -74,7 +71,7 @@ class _Event(Generic[KeyT]):
         return key_type(*self.raw_key)
 
 
-class StreamProducer(Generic[ConnectorT, PublisherT]):
+class StreamProducer:
     """Proxy stream producer interface.
 
     Note:
@@ -101,8 +98,8 @@ class StreamProducer(Generic[ConnectorT, PublisherT]):
 
     def __init__(
         self,
-        store: Store[ConnectorT],
-        publisher: PublisherT,
+        store: Store[Any],
+        publisher: Publisher,
     ) -> None:
         self._store = store
         self._publisher = publisher
@@ -180,7 +177,7 @@ class StreamProducer(Generic[ConnectorT, PublisherT]):
         self._publisher.send(message, topic=topic)
 
 
-class StreamConsumer(Generic[ConnectorT, SubscriberT]):
+class StreamConsumer:
     """Proxy stream consumer interface.
 
     This interface acts as an iterator that will yield items from the stream
@@ -221,8 +218,8 @@ class StreamConsumer(Generic[ConnectorT, SubscriberT]):
 
     def __init__(
         self,
-        store: Store[ConnectorT],
-        subscriber: SubscriberT,
+        store: Store[Any],
+        subscriber: Subscriber,
     ) -> None:
         self._store = store
         self._subscriber = subscriber
