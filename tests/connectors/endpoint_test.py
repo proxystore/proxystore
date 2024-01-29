@@ -1,4 +1,3 @@
-"""EndpointConnector Unit Tests."""
 from __future__ import annotations
 
 import uuid
@@ -46,7 +45,6 @@ def test_endpoint_uuid_mismatch(endpoint_connector) -> None:
 
 
 def test_bad_responses(endpoint_connector) -> None:
-    """Test handling of bad responses from Endpoint."""
     connector = EndpointConnector.from_config(endpoint_connector.config())
 
     response = requests.Response()

@@ -1,4 +1,3 @@
-"""Test fixtures for proxystore.globus."""
 from __future__ import annotations
 
 import pathlib

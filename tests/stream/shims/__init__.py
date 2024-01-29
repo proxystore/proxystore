@@ -1,1 +1,0 @@
-"""Pub/sub unit tests."""

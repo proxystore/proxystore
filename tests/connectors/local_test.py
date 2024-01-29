@@ -1,4 +1,3 @@
-"""LocalConnector Unit Tests."""
 from __future__ import annotations
 
 from proxystore.connectors.local import LocalConnector
@@ -6,7 +5,6 @@ from proxystore.connectors.local import LocalKey
 
 
 def test_connector_dict() -> None:
-    """Test LocalConnector reusable dict."""
     d: dict[LocalKey, bytes] = {}
     connector1 = LocalConnector(d)
     key = connector1.put(b'value')
