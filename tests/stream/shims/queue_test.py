@@ -6,10 +6,10 @@ import threading
 
 import pytest
 
-from proxystore.pubsub.protocols import Publisher
-from proxystore.pubsub.protocols import Subscriber
-from proxystore.pubsub.queue import QueuePublisher
-from proxystore.pubsub.queue import QueueSubscriber
+from proxystore.stream.protocols import Publisher
+from proxystore.stream.protocols import Subscriber
+from proxystore.stream.shims.queue import QueuePublisher
+from proxystore.stream.shims.queue import QueueSubscriber
 
 
 def create_pubsub_pair(

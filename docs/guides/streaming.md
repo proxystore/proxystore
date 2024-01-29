@@ -1,6 +1,6 @@
 # Streaming Objects with ProxyStore
 
-*Last updated 22 January 2024*
+*Last updated 29 January 2024*
 
 This guide describes the motivation for and usage of ProxyStore's
 streaming interface.
@@ -18,8 +18,8 @@ bulk object communication from event notifications through the use of
 object proxies. This enables users to mix and match bulk object communication
 methods (via the [`Connector`][proxystore.connectors.protocols.Connector]
 interface) and event streaming methods (via the
-[`Publisher`][proxystore.pubsub.protocols.Publisher] and
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] interfaces).
+[`Publisher`][proxystore.stream.protocols.Publisher] and
+[`Subscriber`][proxystore.stream.protocols.Subscriber] interfaces).
 Additionally, because the [`StreamConsumer`][proxystore.stream.StreamConsumer]
 yields proxies of objects from the stream, bulk data transfer only occurs
 between the source and *true* destination of the object from the stream
@@ -31,8 +31,8 @@ The ProxyStore streaming interface can be used anywhere where one process
 needs to stream objects to another process, and the interface can be used
 to optimize the deployment via different
 [`Connector`][proxystore.connectors.protocols.Connector] and
-[`Publisher`][proxystore.pubsub.protocols.Publisher]/
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] implementations.
+[`Publisher`][proxystore.stream.protocols.Publisher]/
+[`Subscriber`][proxystore.stream.protocols.Subscriber] implementations.
 
 But, this model is particularly powerful for applications which dispatch
 remote compute tasks on objects consumed from a stream.
@@ -68,15 +68,15 @@ pub/sub. However, the configuration can easily be optimized for different
 applications or deployments but using a different
 [`Connector`][proxystore.connectors.protocols.Connector] with the
 [`Store`][proxystore.store.base.Store] for data storage and/or a different
-[`Publisher`][proxystore.pubsub.protocols.Publisher]/
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] implementation for
+[`Publisher`][proxystore.stream.protocols.Publisher]/
+[`Subscriber`][proxystore.stream.protocols.Subscriber] implementation for
 event notifications.
 
 ```python title="producer.py" linenums="1"
 from proxystore.connector.file import FileConnector
-from proxystore.pubsub.redis import RedisPublisher
 from proxystore.store import Store
 from proxystore.stream import StreamProducer
+from proxystore.stream.shims.redis import RedisPublisher
 
 store = Store('example', FileConnector(...)) # (1)!
 publisher = RedisPublisher(...) # (2)!
@@ -93,16 +93,16 @@ producer.close() # (4)!
    on the producer and consumer side. Consider using different
    [`Connector`][proxystore.connectors.protocols.Connector] implementations
    depending on your deployment or data characteristics.
-2. The [`Publisher`][proxystore.pubsub.protocols.Publisher] is the interface
+2. The [`Publisher`][proxystore.stream.protocols.Publisher] is the interface
    to a pub/sub channel which will be used for sending event metadata to
    consumers.
 3. The state of the `evict` flag will alter if proxies yielded by a
    consumer are one-time use or not.
 4. Closing the [`StreamProducer`][proxystore.stream.StreamProducer] will close
-   the [`Publisher`][proxystore.pubsub.protocols.Publisher],
+   the [`Publisher`][proxystore.stream.protocols.Publisher],
    [`Store`][proxystore.store.base.Store], and
    [`Connector`][proxystore.connectors.protocols.Connector] by default. Closing
-   the [`Publisher`][proxystore.pubsub.protocols.Publisher] sends a special
+   the [`Publisher`][proxystore.stream.protocols.Publisher] sends a special
    event type to the stream that signals and consumers to raise a
    [`StopIteration`][StopIteration] exception signaling the end
    of the stream.
@@ -110,9 +110,9 @@ producer.close() # (4)!
 ```python title="consumer.py" linenums="1"
 from proxystore.connector.file import FileConnector
 from proxystore.proxy import Proxy
-from proxystore.pubsub.redis import RedisSubscriber
 from proxystore.store import Store
 from proxystore.stream import StreamConsumer
+from proxystore.stream.shims.redis import RedisSubscriber
 
 store = Store('example', FileConnector(...))  # (1)!
 subscriber = RedisSubscriber(...)  # (2)!
@@ -129,21 +129,21 @@ consumer.close() # (5)!
    on the producer and consumer side. Consider using different
    [`Connector`][proxystore.connectors.protocols.Connector] implementations
    depending on your deployment or data characteristics.
-2. The [`Subscriber`][proxystore.pubsub.protocols.Subscriber] is the interface
+2. The [`Subscriber`][proxystore.stream.protocols.Subscriber] is the interface
    to the same pub/sub channel that the producer is publishing event metadata
    to. These events are consumed by the
    [`StreamConsumer`][proxystore.stream.StreamConsumer] and used to
    generate proxies of the objects in the stream.
 3. Iterating on a [`StreamConsumer`][proxystore.stream.StreamConsumer] will
    block until new proxies are available and yield those proxies. Iteration
-   will stop once the [`Publisher`][proxystore.pubsub.protocols.Publisher]
+   will stop once the [`Publisher`][proxystore.stream.protocols.Publisher]
    is closed via the [`StreamProducer`][proxystore.stream.StreamProducer].
 4. The yielded proxies point to objects in the
    [`Store`][proxystore.store.base.Store], and the state of the `evict` flag
    inside the proxy's factory is determined in
    [`StreamProducer.send()`][proxystore.stream.StreamProducer.send].
 4. Closing the [`StreamConsumer`][proxystore.stream.StreamConsumer] will close
-   the [`Subscriber`][proxystore.pubsub.protocols.Subscriber],
+   the [`Subscriber`][proxystore.stream.protocols.Subscriber],
    [`Store`][proxystore.store.base.Store], and
    [`Connector`][proxystore.connectors.protocols.Connector] by default.
 
@@ -153,25 +153,25 @@ The [`StreamProducer`][proxystore.stream.StreamProducer]
 and [`StreamConsumer`][proxystore.stream.StreamConsumer] can support
 multi-producer and multi-consumer deployments, respectively.
 However, it is *not* a requirement that the
-[`Publisher`][proxystore.pubsub.protocols.Publisher] or
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] protocols to
+[`Publisher`][proxystore.stream.protocols.Publisher] or
+[`Subscriber`][proxystore.stream.protocols.Subscriber] protocols to
 implements multi-producer or multi-consumer support.
 In other words, it is up to each
-[`Publisher`][proxystore.pubsub.protocols.Publisher]/
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] implementation
+[`Publisher`][proxystore.stream.protocols.Publisher]/
+[`Subscriber`][proxystore.stream.protocols.Subscriber] implementation
 to decide on and document their support for these features, and users
 should confirm that the specific implementations or configurations parameters
 produce the behavior they want.
 
-**Multi-producer.** If a [`Publisher`][proxystore.pubsub.protocols.Publisher]
+**Multi-producer.** If a [`Publisher`][proxystore.stream.protocols.Publisher]
 supports multiple producers, typically no changes are required on
 when initializing the corresponding
 [`StreamProducer`][proxystore.stream.StreamProducer]. Each producer process
-can simply initialize the [`Publisher`][proxystore.pubsub.protocols.Publisher]
+can simply initialize the [`Publisher`][proxystore.stream.protocols.Publisher]
 and [`StreamProducer`][proxystore.stream.StreamProducer] and begin sending
 objects to the stream.
 
-**Multi-consumer.** If a [`Subscriber`][proxystore.pubsub.protocols.Subscriber]
+**Multi-consumer.** If a [`Subscriber`][proxystore.stream.protocols.Subscriber]
 support multiple consumers, attention should be given to the manner in which
 the consumers behave. If all consumers receive the full stream (i.e., each
 consumer receives each object in the stream), then the the `evict` flag of

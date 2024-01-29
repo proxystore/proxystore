@@ -1,24 +1,17 @@
-"""Proxy streaming interface.
+"""Stream producer and consumer interfaces.
 
-Warning:
-    The streaming interfaces are experimental and may change in future
-    releases.
-
-Tip:
-    Checkout the [Streaming Guide](../guides/streaming.md) to learn more!
+Note:
+    The [StreamProducer][proxystore.stream.interface.StreamProducer]
+    and [StreamConsumer][proxystore.stream.interface.StreamConsumer]
+    are re-exported in [`proxystore.stream`][proxystore.stream] for
+    convenience.
 """
 from __future__ import annotations
 
-import dataclasses
-import json
 import logging
 import sys
-import warnings
 from types import TracebackType
 from typing import Any
-from typing import Generic
-from typing import NamedTuple
-from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -26,57 +19,20 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from proxystore.proxy import Proxy
-from proxystore.pubsub.protocols import Publisher
-from proxystore.pubsub.protocols import Subscriber
 from proxystore.store.base import Store
-from proxystore.utils.imports import get_class_path
-from proxystore.utils.imports import import_class
-from proxystore.warnings import ExperimentalWarning
-
-warnings.warn(
-    'MultiConnector is an experimental feature and may change in the future.',
-    category=ExperimentalWarning,
-    stacklevel=2,
-)
+from proxystore.stream.event import Event
+from proxystore.stream.protocols import Publisher
+from proxystore.stream.protocols import Subscriber
 
 logger = logging.getLogger(__name__)
-
-
-KeyT = TypeVar('KeyT', bound=NamedTuple)
-
-
-@dataclasses.dataclass
-class _Event(Generic[KeyT]):
-    key_type: str
-    raw_key: tuple[Any]
-    evict: bool
-
-    @classmethod
-    def from_key(cls, key: KeyT, *, evict: bool = True) -> _Event[KeyT]:
-        return _Event(
-            key_type=get_class_path(type(key)),
-            raw_key=tuple(key),
-            evict=evict,
-        )
-
-    @classmethod
-    def from_json(cls, payload: str) -> _Event[KeyT]:
-        return _Event(**json.loads(payload))
-
-    def as_json(self) -> str:
-        return json.dumps(dataclasses.asdict(self))
-
-    def get_key(self) -> KeyT:
-        key_type = import_class(self.key_type)
-        return key_type(*self.raw_key)
 
 
 class StreamProducer:
     """Proxy stream producer interface.
 
     Note:
-        The [`StreamProducer`][proxystore.stream.StreamProducer] can be
-        used as a context manager.
+        The [`StreamProducer`][proxystore.stream.interface.StreamProducer] can
+        be used as a context manager.
 
         ```python
         with StreamProducer(...) as stream:
@@ -86,14 +42,16 @@ class StreamProducer:
 
     Note:
         The producer is only thread safe if the underlying
-        [`Publisher`][proxystore.pubsub.protocols.Publisher] instance
+        [`Publisher`][proxystore.stream.protocols.Publisher] instance
         is thread safe.
 
     Args:
         store: [`Store`][proxystore.store.base.Store] instance used to store
             and communicate serialized objects in the stream.
-        publisher: [`Publisher`][proxystore.pubsub.protocols.Publisher]
-            instance used to publish new object in stream events.
+        publisher: Object which implements the
+            [`Publisher`][proxystore.stream.protocols.Publisher] protocol.
+            Used to publish event messages when new objects are added to
+            the stream.
     """
 
     def __init__(
@@ -121,12 +79,12 @@ class StreamProducer:
         Warning:
             By default, this will also call `close()` on the
             [`Store`][proxystore.store.base.Store] and
-            [`Publisher`][proxystore.pubsub.protocols.Publisher] interfaces.
+            [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
 
         Args:
             store: Close the [`Store`][proxystore.store.base.Store] interface.
             publisher: Close the
-                [`Publisher`][proxystore.pubsub.protocols.Publisher] interface.
+                [`Publisher`][proxystore.stream.protocols.Publisher] interface.
         """
         if store:
             self._store.close()
@@ -146,7 +104,7 @@ class StreamProducer:
         [`Store`][proxystore.store.base.Store] to get back an identifier key,
         (2) creates a new event using the key and additional metadata, and
         (3) publishes the event to the stream via the
-        [`Publisher`][proxystore.pubsub.protocols.Publisher].
+        [`Publisher`][proxystore.stream.protocols.Publisher].
 
         Warning:
             Careful consideration should be given to the setting of the
@@ -163,16 +121,16 @@ class StreamProducer:
             evict: Evict the object from the
                 [`Store`][proxystore.store.base.Store] once the object is
                 consumed by a
-                [`StreamConsumer`][proxystore.stream.StreamConsumer]. Set to
-                `False` if a single object in the stream will be consumed by
-                multiple consumers. Note that when set to `False`, data
-                eviction must be handled manually.
+                [`StreamConsumer`][proxystore.stream.interface.StreamConsumer].
+                Set to `False` if a single object in the stream will be
+                consumed by multiple consumers. Note that when set to `False`,
+                data eviction must be handled manually.
             topic: Stream topic to publish to. `None` uses the default
                 stream of the
-                [`Publisher`][proxystore.pubsub.protocols.Publisher] instance.
+                [`Publisher`][proxystore.stream.protocols.Publisher] instance.
         """
         key = self._store.put(obj)
-        event: _Event[Any] = _Event.from_key(key, evict=evict)
+        event: Event[Any] = Event.from_key(key, evict=evict)
         message = event.as_json().encode()
         self._publisher.send(message, topic=topic)
 
@@ -184,8 +142,8 @@ class StreamConsumer:
     until the stream is closed.
 
     Note:
-        The [`StreamConsumer`][proxystore.stream.StreamConsumer] can be
-        used as a context manager.
+        The [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] can
+        be used as a context manager.
 
         ```python
         with StreamConsumer(...) as stream:
@@ -200,20 +158,22 @@ class StreamConsumer:
         multiple times but the first resolve triggered an eviction
         of the underlying data. If this is the case, confirm that the
         setting of the `evict` flag on
-        [`StreamProducer.send()`][proxystore.stream.StreamProducer.send]
+        [`StreamProducer.send()`][proxystore.stream.interface.StreamProducer.send]
         is set correctly and the there is not code incidentally resolving
         proxies before you expect.
 
     Note:
         The consumer is only thread safe if the underlying
-        [`Subscriber`][proxystore.pubsub.protocols.Subscriber] instance
+        [`Subscriber`][proxystore.stream.protocols.Subscriber] instance
         is thread safe.
 
     Args:
         store: [`Store`][proxystore.store.base.Store] instance used to
             retrieve serialized objects in the stream.
-        subscriber: [`Subscriber`][proxystore.pubsub.protocols.Subscriber]
-            instance to poll for new object in stream events.
+        subscriber: Object which implements the
+            [`Subscriber`][proxystore.stream.protocols.Subscriber] protocol.
+            Used to listen for new event messages indicating new objects
+            in the stream.
     """
 
     def __init__(
@@ -247,12 +207,12 @@ class StreamConsumer:
         Warning:
             By default, this will also call `close()` on the
             [`Store`][proxystore.store.base.Store] and
-            [`Publisher`][proxystore.pubsub.protocols.Publisher] interfaces.
+            [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
 
         Args:
             store: Close the [`Store`][proxystore.store.base.Store] interface.
             subscriber: Close the
-                [`Subscriber`][proxystore.pubsub.protocols.Subscriber]
+                [`Subscriber`][proxystore.stream.protocols.Subscriber]
                 interface.
         """
         if store:
@@ -267,7 +227,7 @@ class StreamConsumer:
             StopIteration: when the producer closes the stream.
         """
         message = next(self._subscriber)
-        event: _Event[Any] = _Event.from_json(message.decode())
+        event: Event[Any] = Event.from_json(message.decode())
         proxy: Proxy[Any] = self._store.proxy_from_key(
             event.get_key(),
             evict=event.evict,

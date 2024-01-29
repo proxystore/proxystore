@@ -19,8 +19,8 @@ import sys
 import time
 from typing import Sequence
 
-from proxystore.pubsub.redis import RedisPublisher
-from proxystore.pubsub.redis import RedisSubscriber
+from proxystore.stream.shims.redis import RedisPublisher
+from proxystore.stream.shims.redis import RedisSubscriber
 
 MESSAGES = [f'message_{i}'.encode() for i in range(10)]
 

@@ -58,7 +58,7 @@ class RedisPublisher:
 
         This will cause a [`StopIteration`][StopIteration] exception to be
         raised in any
-        [`RedisSubscriber`][proxystore.pubsub.redis.RedisSubscriber]
+        [`RedisSubscriber`][proxystore.stream.shims.redis.RedisSubscriber]
         instances that are currently iterating on new messages from *any*
         of the topics registered with this publisher. This behavior
         can be altered by passing `close_topics=True`.

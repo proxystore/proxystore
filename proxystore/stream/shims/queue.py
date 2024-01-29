@@ -58,7 +58,7 @@ class QueuePublisher:
         """Close this publisher and all topics associated with it.
 
         This will cause a [`StopIteration`][StopIteration] exception to be
-        raised in any [`Subscriber`][proxystore.pubsub.protocols.Subscriber]
+        raised in any [`Subscriber`][proxystore.stream.protocols.Subscriber]
         instances that are currently iterating on new messages.
         """
         for q in self._queues.values():
@@ -93,14 +93,14 @@ class QueuePublisher:
 
 
 class QueueSubscriber:
-    """Subscriber to a [`QueuePublisher`][proxystore.pubsub.queue.QueuePublisher] topic.
+    """Subscriber to a [`QueuePublisher`][proxystore.stream.shims.queue.QueuePublisher] topic.
 
     Warning:
         Each topic can only have one subscriber.
 
     Args:
         queue: Queue shared with the
-            [`QueuePublisher`][proxystore.pubsub.queue.QueuePublisher] to
+            [`QueuePublisher`][proxystore.stream.shims.queue.QueuePublisher] to
             pull messages from.
         block: Block until the next message is available in the queue.
         timeout: Block at most `timeout` seconds.

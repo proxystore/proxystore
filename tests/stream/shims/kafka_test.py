@@ -7,8 +7,8 @@ import pytest
 try:
     import kafka
 
-    from proxystore.pubsub.kafka import KafkaPublisher
-    from proxystore.pubsub.kafka import KafkaSubscriber
+    from proxystore.stream.shims.kafka import KafkaPublisher
+    from proxystore.stream.shims.kafka import KafkaSubscriber
     from testing.mocked.kafka import make_producer_consumer_pair
 
     kafka_available = True
