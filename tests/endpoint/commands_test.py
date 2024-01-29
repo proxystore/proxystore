@@ -1,4 +1,3 @@
-"""ProxyStore endpoint commands tests."""
 from __future__ import annotations
 
 import logging

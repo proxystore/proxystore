@@ -1,4 +1,3 @@
-"""Proxy Unit Tests."""
 from __future__ import annotations
 
 import pickle as pkl
@@ -15,7 +14,6 @@ from proxystore.serialize import serialize
 
 
 def test_proxy() -> None:
-    """Test Proxy behavior."""
     with pytest.raises(TypeError):
         # Proxy requires a callable type
         Proxy('not a factory')  # type: ignore

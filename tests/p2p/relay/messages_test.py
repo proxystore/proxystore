@@ -1,4 +1,3 @@
-"""Relay server message encode/decode tests."""
 from __future__ import annotations
 
 import json

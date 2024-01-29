@@ -1,4 +1,3 @@
-"""Serialization Unit Tests."""
 from __future__ import annotations
 
 import pytest
@@ -9,7 +8,6 @@ from proxystore.serialize import serialize
 
 
 def test_serialization() -> None:
-    """Test serialization."""
     xb = b'test string'
     b = serialize(xb)
     assert deserialize(b) == xb

@@ -1,4 +1,3 @@
-"""Factory Unit Tests."""
 from __future__ import annotations
 
 import proxystore as ps
@@ -7,7 +6,6 @@ from proxystore.factory import SimpleFactory
 
 
 def test_simple_factory() -> None:
-    """Test SimpleFactory."""
     f = SimpleFactory([1, 2, 3])
 
     # Test callable
@@ -20,7 +18,6 @@ def test_simple_factory() -> None:
 
 
 def test_lambda_factory() -> None:
-    """Test LambdaFactory."""
     f1 = LambdaFactory(lambda: [1, 2, 3])
 
     # Test callable

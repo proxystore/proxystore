@@ -1,4 +1,3 @@
-"""Cache Unit Tests."""
 from __future__ import annotations
 
 import pytest
@@ -7,13 +6,11 @@ from proxystore.store.cache import LRUCache
 
 
 def test_lru_raises() -> None:
-    """Test LRU Error Handling."""
     with pytest.raises(ValueError):
         LRUCache(-1)
 
 
 def test_lru_cache() -> None:
-    """Test LRU Cache."""
     c: LRUCache[str, int] = LRUCache(4)
     # Put 1, 2, 3, 4 in cache
     for i in range(1, 5):

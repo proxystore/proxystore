@@ -107,7 +107,6 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
 
 @pytest.mark.integration()
 def test_endpoint_transfer(endpoints) -> None:
-    """Test transferring data between two endpoints."""
     endpoints, proxystore_dirs = endpoints
 
     store1 = Store(
@@ -157,7 +156,6 @@ def _consume_local(queue: Queue[Any]) -> None:
 
 @pytest.mark.integration()
 def test_endpoint_proxy_transfer(endpoints) -> None:
-    """Test transferring data via proxy between processes sharing endpoint."""
     endpoints, proxystore_dirs = endpoints
 
     queue: Queue[Any] = Queue()
@@ -215,7 +213,6 @@ def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
 
 @pytest.mark.integration()
 def test_proxy_detects_endpoint(endpoints) -> None:
-    """Test transferring data via proxy between two process and endpoints."""
     endpoints, proxystore_dirs = endpoints
 
     queue: Queue[Any] = Queue()

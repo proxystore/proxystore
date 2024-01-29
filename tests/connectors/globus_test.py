@@ -1,4 +1,3 @@
-"""GlobusConnector Unit Tests."""
 from __future__ import annotations
 
 import json
@@ -53,7 +52,6 @@ def test_reprs() -> None:
 
 
 def test_globus_endpoint_objects() -> None:
-    """Test GlobusEndpoint(s) Objects."""
     with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid=1,  # type: ignore
@@ -114,7 +112,6 @@ def test_globus_endpoint_objects() -> None:
 
 
 def test_globus_endpoints_from_json() -> None:
-    """Test GlobusEndpoints from JSON file."""
     data = {
         'UUID1': {
             'endpoint_path': '/~/',
@@ -145,7 +142,6 @@ def test_globus_endpoints_from_json() -> None:
 
 
 def test_globus_endpoints_from_dict() -> None:
-    """Test GlobusEndpoints from JSON file."""
     data = {
         'UUID1': {
             'endpoint_path': '/~/',
@@ -168,7 +164,6 @@ def test_globus_endpoints_from_dict() -> None:
 
 
 def test_globus_connector_init(globus_connector) -> None:
-    """Test GlobusConnector Initialization."""
     eps = GlobusEndpoints([EP1, EP2])
 
     s1 = GlobusConnector(endpoints=[EP1, EP2])
@@ -188,7 +183,6 @@ def test_globus_connector_init(globus_connector) -> None:
 
 
 def test_globus_connector_internals(globus_connector) -> None:
-    """Test GlobusConnector internal mechanisms."""
     connector = GlobusConnector.from_config(globus_connector.config())
 
     class PatchedError(globus_sdk.TransferAPIError):
@@ -218,7 +212,6 @@ def test_globus_connector_internals(globus_connector) -> None:
 
 
 def test_get_filepath(globus_connector) -> None:
-    """Test GlobusConnector filepath building."""
     endpoints = GlobusEndpoints(
         [
             GlobusEndpoint(
@@ -245,7 +238,6 @@ def test_get_filepath(globus_connector) -> None:
 
 
 def test_expand_user_path(globus_connector) -> None:
-    """Test GlobusConnector expands user path."""
     store_dir = '.cache/proxystore_cache'
     short_path = os.path.join('~', store_dir)
     full_path = os.path.join(os.path.expanduser('~'), store_dir)
@@ -274,7 +266,6 @@ def test_expand_user_path(globus_connector) -> None:
 
 
 def test_globus_connector_key_equality() -> None:
-    """Test GlobusKey custom equality."""
     key = GlobusKey('a', 'b')
     assert key == GlobusKey('a', 'b')
     assert key == ('a', 'b')
