@@ -20,8 +20,8 @@ from typing import Sequence
 
 import kafka
 
-from proxystore.pubsub.kafka import KafkaPublisher
-from proxystore.pubsub.kafka import KafkaSubscriber
+from proxystore.stream.shims.kafka import KafkaPublisher
+from proxystore.stream.shims.kafka import KafkaSubscriber
 
 MESSAGES = [f'message_{i}'.encode() for i in range(10)]
 

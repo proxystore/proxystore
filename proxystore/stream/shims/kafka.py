@@ -48,7 +48,7 @@ class KafkaPublisher:
 
         This will cause a [`StopIteration`][StopIteration] exception to be
         raised in any
-        [`KafkaSubscriber`][proxystore.pubsub.kafka.KafkaSubscriber]
+        [`KafkaSubscriber`][proxystore.stream.shims.kafka.KafkaSubscriber]
         instances that are currently iterating on new messages from *any*
         of the topics registered with this publisher. This behavior can be
         altered by passing `close_topics=True`.

@@ -7,8 +7,8 @@ from unittest import mock
 
 import pytest
 
-from proxystore.pubsub.redis import RedisPublisher
-from proxystore.pubsub.redis import RedisSubscriber
+from proxystore.stream.shims.redis import RedisPublisher
+from proxystore.stream.shims.redis import RedisSubscriber
 from testing.mocked.redis import Message
 from testing.mocked.redis import MockStrictRedis
 

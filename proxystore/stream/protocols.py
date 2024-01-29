@@ -1,7 +1,7 @@
 """Publisher and subscriber protocol definitions.
 
-The [`Publisher`][proxystore.pubsub.protocols.Publisher] and
-[`Subscriber`][proxystore.pubsub.protocols.Subscriber] are
+The [`Publisher`][proxystore.stream.protocols.Publisher] and
+[`Subscriber`][proxystore.stream.protocols.Subscriber] are
 [`Protocols`][typing.Protocol] which define the publisher and subscriber
 interfaces to a pub/sub-like messaging system.
 
@@ -29,7 +29,7 @@ class Publisher(Protocol):
         """Close this publisher.
 
         This will cause a [`StopIteration`][StopIteration] exception to be
-        raised in any [`Subscriber`][proxystore.pubsub.protocols.Subscriber]
+        raised in any [`Subscriber`][proxystore.stream.protocols.Subscriber]
         instances that are currently iterating on new messages.
         """
         ...

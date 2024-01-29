@@ -4,9 +4,9 @@ from unittest import mock
 
 import pytest
 
-from proxystore.pubsub.zmq import _CLOSED_SENTINAL
-from proxystore.pubsub.zmq import ZeroMQPublisher
-from proxystore.pubsub.zmq import ZeroMQSubscriber
+from proxystore.stream.shims.zmq import _CLOSED_SENTINAL
+from proxystore.stream.shims.zmq import ZeroMQPublisher
+from proxystore.stream.shims.zmq import ZeroMQSubscriber
 from testing.utils import open_port
 
 

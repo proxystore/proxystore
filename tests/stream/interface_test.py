@@ -9,12 +9,12 @@ import pytest
 
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
-from proxystore.pubsub.queue import QueuePublisher
-from proxystore.pubsub.queue import QueueSubscriber
 from proxystore.store import Store
 from proxystore.store import store_registration
-from proxystore.stream import StreamConsumer
-from proxystore.stream import StreamProducer
+from proxystore.stream.interface import StreamConsumer
+from proxystore.stream.interface import StreamProducer
+from proxystore.stream.shims.queue import QueuePublisher
+from proxystore.stream.shims.queue import QueueSubscriber
 
 
 def create_pubsub_pair() -> tuple[QueuePublisher, QueueSubscriber]:
