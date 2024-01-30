@@ -1,36 +1,19 @@
-"""Pub/sub message stream implementations.
-
-Warning:
-    The pub/sub interfaces are experimental and may change in future
-    releases.
+"""Shim interfaces to common message brokers.
 
 The [`Publisher`][proxystore.stream.protocols.Publisher] and
 [`Subscriber`][proxystore.stream.protocols.Subscriber] are
 [`Protocols`][typing.Protocol] which define the publisher and subscriber
-interfaces to a pub/sub-like messaging system.
+interfaces to a pub/sub-like message broker.
 
-This sub-package provides both the base protocols and implementations of the
-protocol for common pub/sub systems.
+This sub-package provides a set of shim or adapter interfaces to
+common pub/sub systems like Kafka, Redis, and ZeroMQ. Generally, these
+shims are very lightweight and mostly serve to adapt the third-party
+interface to match the [`Publisher`][proxystore.stream.protocols.Publisher] and
+[`Subscriber`][proxystore.stream.protocols.Subscriber] protocols expected
+by the [StreamProducer][proxystore.stream.interface.StreamProducer]
+and [StreamConsumer][proxystore.stream.interface.StreamConsumer].
 
-Typical usage follows this pattern.
-
-**Publisher**
-```python
-publisher = Publisher(...)
-
-for message in ...:
-    publisher.send(message)
-
-producer.close()
-```
-
-**Subscriber**
-```python
-subscriber = Subscriber(...)
-
-for message in subscriber:
-    ...
-
-subscriber.close()
-```
+Warning:
+    Most of the provided shims have a external dependency that may not be
+    installed by default with ProxyStore.
 """

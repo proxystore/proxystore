@@ -93,10 +93,10 @@ class StreamProducer:
 
     def send(
         self,
+        topic: str,
         obj: Any,
         *,
         evict: bool = True,
-        topic: str | None = None,
     ) -> None:
         """Send an item to the stream.
 
@@ -117,6 +117,7 @@ class StreamProducer:
             of the underlying data.
 
         Args:
+            topic: Stream topic to send the object to.
             obj: Object to send via the stream.
             evict: Evict the object from the
                 [`Store`][proxystore.store.base.Store] once the object is
@@ -125,14 +126,11 @@ class StreamProducer:
                 Set to `False` if a single object in the stream will be
                 consumed by multiple consumers. Note that when set to `False`,
                 data eviction must be handled manually.
-            topic: Stream topic to publish to. `None` uses the default
-                stream of the
-                [`Publisher`][proxystore.stream.protocols.Publisher] instance.
         """
         key = self._store.put(obj)
         event: Event[Any] = Event.from_key(key, evict=evict)
         message = event.as_json().encode()
-        self._publisher.send(message, topic=topic)
+        self._publisher.send(topic, message)
 
 
 class StreamConsumer:
