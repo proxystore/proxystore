@@ -51,7 +51,7 @@ def test_basic_interface(store: Store[LocalConnector]) -> None:
     def consume() -> None:
         received = []
 
-        for obj in consumer:
+        for _, obj in zip(objects, consumer):
             assert isinstance(obj, Proxy)
             received.append(obj)
 
@@ -76,20 +76,6 @@ def test_context_manager(store: Store[LocalConnector]) -> None:
         with StreamConsumer(store, subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
-
-
-def test_producer_close_ends_stream(store: Store[LocalConnector]) -> None:
-    publisher, subscriber = create_pubsub_pair()
-
-    producer = StreamProducer(store, publisher)
-    consumer = StreamConsumer(store, subscriber)
-
-    producer.close()
-
-    with pytest.raises(StopIteration):
-        consumer.next()
-
-    consumer.close()
 
 
 def test_close_without_closing_connectors(

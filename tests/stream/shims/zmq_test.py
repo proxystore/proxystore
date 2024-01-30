@@ -2,26 +2,9 @@ from __future__ import annotations
 
 from unittest import mock
 
-import pytest
-
-from proxystore.stream.shims.zmq import _CLOSED_SENTINAL
 from proxystore.stream.shims.zmq import ZeroMQPublisher
 from proxystore.stream.shims.zmq import ZeroMQSubscriber
 from testing.utils import open_port
-
-
-def test_publish_unknown_topic() -> None:
-    publisher = ZeroMQPublisher('127.0.0.1', open_port(), topics=['default'])
-
-    with pytest.raises(ValueError, match='other'):
-        publisher.send('other', b'message')
-
-    publisher.close()
-
-
-def test_publisher_close_client_only() -> None:
-    publisher = ZeroMQPublisher('127.0.0.1', open_port())
-    publisher.close(close_topics=False)
 
 
 def test_basic_publish_subscribe() -> None:
@@ -43,11 +26,9 @@ def test_basic_publish_subscribe() -> None:
     with mock.patch.object(
         subscriber._socket,
         'recv_multipart',
-        side_effect=[
-            (b'default', message) for message in [*messages, _CLOSED_SENTINAL]
-        ],
+        side_effect=[(b'default', message) for message in messages],
     ):
-        for message in subscriber:
+        for _, message in zip(messages, subscriber):
             received.append(message)
 
     subscriber.close()

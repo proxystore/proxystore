@@ -25,26 +25,6 @@ skip_py312_reason = 'kafka-python<=2.0.2 is not compatible with Python 3.12'
 
 
 @pytest.mark.skipif(skip_py312, reason=skip_py312_reason)
-def test_publish_unknown_topic() -> None:
-    topic = 'default'
-    producer, _ = make_producer_consumer_pair(topic)
-
-    publisher = KafkaPublisher(producer, topics=[topic])
-
-    with pytest.raises(ValueError, match='other'):
-        publisher.send('other', b'message')
-
-    publisher.close()
-
-
-@pytest.mark.skipif(skip_py312, reason=skip_py312_reason)
-def test_publisher_close_client_only() -> None:
-    producer, _ = make_producer_consumer_pair()
-    publisher = KafkaPublisher(producer)
-    publisher.close(close_topics=False)
-
-
-@pytest.mark.skipif(skip_py312, reason=skip_py312_reason)
 def test_basic_publish_subscribe() -> None:
     producer, consumer = make_producer_consumer_pair('default')
     publisher = KafkaPublisher(producer)
@@ -57,10 +37,7 @@ def test_basic_publish_subscribe() -> None:
 
     publisher.close()
 
-    received = []
-    for message in subscriber:
-        received.append(message)
+    for expected, received in zip(messages, subscriber):
+        assert received == expected
 
     subscriber.close()
-
-    assert messages == received

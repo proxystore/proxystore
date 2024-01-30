@@ -8,6 +8,8 @@ interfaces to a pub/sub-like messaging system.
 In general, these protocols do not enforce any other implementation details
 besides the interface. For example, implementations could choose to support
 any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
+A set of shims implementing these protocols for third-party message brokers
+are provided in [`proxystore.stream.shims`][proxystore.stream.shims].
 """
 from __future__ import annotations
 
@@ -26,12 +28,7 @@ class Publisher(Protocol):
     """Publisher interface to message stream."""
 
     def close(self) -> None:
-        """Close this publisher.
-
-        This will cause a [`StopIteration`][StopIteration] exception to be
-        raised in any [`Subscriber`][proxystore.stream.protocols.Subscriber]
-        instances that are currently iterating on new messages.
-        """
+        """Close this publisher."""
         ...
 
     def send(self, topic: str, message: bytes) -> None:

@@ -26,7 +26,7 @@ def create_pubsub_pair(
 def test_unknown_topic() -> None:
     publisher = QueuePublisher({'default': queue.Queue()})
 
-    with pytest.raises(ValueError, match='Topic "other" does not exist.'):
+    with pytest.raises(ValueError, match='Unknown topic "other".'):
         publisher.send('other', b'message')
 
 
@@ -55,15 +55,6 @@ def test_multiprocessing_open_close() -> None:
     subscriber.close()
 
 
-def test_threading_open_close() -> None:
-    publisher, subscriber = create_pubsub_pair(queue.Queue())
-
-    publisher.close()
-
-    messages = list(subscriber)
-    assert len(messages) == 0
-
-
 def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
     for message in messages:
         publisher.send('default', message)
@@ -73,7 +64,7 @@ def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
 def subscribe(subscriber: QueueSubscriber, messages: list[bytes]) -> None:
     received = []
 
-    for message in subscriber:
+    for _, message in zip(messages, subscriber):
         received.append(message)
 
     assert received == messages

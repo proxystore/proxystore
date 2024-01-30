@@ -17,7 +17,7 @@ and [`StreamConsumer`][proxystore.stream.StreamConsumer] interfaces decouple
 bulk object communication from event notifications through the use of
 object proxies. This enables users to mix and match bulk object communication
 methods (via the [`Connector`][proxystore.connectors.protocols.Connector]
-interface) and event streaming methods (via the
+interface) and message stream brokers (via the
 [`Publisher`][proxystore.stream.protocols.Publisher] and
 [`Subscriber`][proxystore.stream.protocols.Subscriber] interfaces).
 Additionally, because the [`StreamConsumer`][proxystore.stream.StreamConsumer]
@@ -70,7 +70,7 @@ applications or deployments but using a different
 [`Store`][proxystore.store.base.Store] for data storage and/or a different
 [`Publisher`][proxystore.stream.protocols.Publisher]/
 [`Subscriber`][proxystore.stream.protocols.Subscriber] implementation for
-event notifications.
+event notifications via a message broker.
 
 ```python title="producer.py" linenums="1"
 from proxystore.connector.file import FileConnector
@@ -101,11 +101,7 @@ producer.close() # (4)!
 4. Closing the [`StreamProducer`][proxystore.stream.StreamProducer] will close
    the [`Publisher`][proxystore.stream.protocols.Publisher],
    [`Store`][proxystore.store.base.Store], and
-   [`Connector`][proxystore.connectors.protocols.Connector] by default. Closing
-   the [`Publisher`][proxystore.stream.protocols.Publisher] sends a special
-   event type to the stream that signals and consumers to raise a
-   [`StopIteration`][StopIteration] exception signaling the end
-   of the stream.
+   [`Connector`][proxystore.connectors.protocols.Connector] by default.
 
 ```python title="consumer.py" linenums="1"
 from proxystore.connector.file import FileConnector

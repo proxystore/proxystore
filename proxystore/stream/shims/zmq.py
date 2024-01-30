@@ -1,8 +1,14 @@
-"""ZeroMQ pub/sub interface."""
+"""ZeroMQ pub/sub interface.
+
+Note:
+    Unlike some of the other shims that simply interface with a third-party
+    message broker system, here the subscriber connects directly to
+    the publisher. This means that if the publisher is not alive when creating
+    the subscriber, the subscriber will fail.
+"""
 from __future__ import annotations
 
 import sys
-from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -10,8 +16,6 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 import zmq
-
-_CLOSED_SENTINAL = b'<queue-publisher-closed-topic>'
 
 
 class ZeroMQPublisher:
@@ -21,41 +25,15 @@ class ZeroMQPublisher:
         address: Address to bind to. The full address bound to will be
             `'tcp://{address}:{port}'`.
         port: Port to bind to.
-        topics: Sequence or set of all topics that might be published to.
     """
 
-    def __init__(
-        self,
-        address: str,
-        port: int,
-        *,
-        topics: Sequence[str] | set[str] = ('default',),
-    ) -> None:
-        self._topics = topics
-
+    def __init__(self, address: str, port: int) -> None:
         self._context = zmq.Context()
         self._socket = self._context.socket(zmq.PUB)
         self._socket.bind(f'tcp://{address}:{port}')
 
-    def close(self, *, close_topics: bool = True) -> None:
-        """Close this publisher.
-
-        This will cause a [`StopIteration`][StopIteration] exception to be
-        raised in any
-        [`ZeroMQSubscriber`][proxystore.stream.shims.zmq.ZeroMQSubscriber]
-        instances that are currently iterating on new messages from *any*
-        of the topics registered with this publisher. This behavior can be
-        altered by passing `close_topics=True`.
-
-        Args:
-            close_topics: Send an end-of-stream message to all topics
-                associated with this publisher.
-        """
-        if close_topics:
-            for topic in self._topics:
-                self._socket.send_multipart(
-                    (topic.encode(), _CLOSED_SENTINAL),
-                )
+    def close(self) -> None:
+        """Close this publisher."""
         self._context.destroy()
 
     def send(self, topic: str, message: bytes) -> None:
@@ -64,21 +42,15 @@ class ZeroMQPublisher:
         Args:
             topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
-
-        Raises:
-            ValueError: if `topic` is not in `topics` provided during
-                initialization.
         """
-        if topic not in self._topics:
-            raise ValueError(f'Topic "{topic}" is unknown.')
         self._socket.send_multipart((topic.encode(), message))
 
 
 class ZeroMQSubscriber:
     """ZeroMQ subscriber interface.
 
-    The subscriber protocol is an iterable object which yields objects
-    from the stream until the stream is closed.
+    This subscriber is an iterable object which yields [`bytes`][bytes]
+    messages indefinitely from the stream while connected to a publisher.
 
     Args:
         address: Publisher address to connect to. The full address will be
@@ -99,8 +71,6 @@ class ZeroMQSubscriber:
 
     def __next__(self) -> bytes:
         _, message = self._socket.recv_multipart()
-        if message == _CLOSED_SENTINAL:
-            raise StopIteration
         return message
 
     def close(self) -> None:

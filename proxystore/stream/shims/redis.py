@@ -1,4 +1,9 @@
-"""Redis pub/sub interface."""
+"""Redis publisher and subscriber shims.
+
+Shims to the
+[`redis-py`](https://redis-py.readthedocs.io/en/stable/index.html){target=_blank}
+[Publish / Subscribe interface](https://redis-py.readthedocs.io/en/stable/advanced_features.html#publish-subscribe){target=_blank}.
+"""
 from __future__ import annotations
 
 import sys
@@ -12,55 +17,31 @@ else:  # pragma: <3.11 cover
 
 import redis
 
-_CLOSED_SENTINAL = b'<queue-publisher-closed-topic>'
-
 
 class RedisPublisher:
-    """Publisher interface to Redis pub/sub.
+    """Redis pub/sub publisher shim.
 
     Args:
         hostname: Redis server hostname.
         port: Redis server port.
-        topics: Sequence or set of all topics that might be published to.
         kwargs: Extra keyword arguments to pass to
             [`redis.Redis()`][redis.Redis].
-
-    Raises:
-        ValueError: if `default_topic` is not in `topics`.
     """
 
     def __init__(
         self,
         hostname: str,
         port: int,
-        *,
-        topics: Sequence[str] | set[str] = ('default',),
         **kwargs: Any,
     ) -> None:
-        self._topics = topics
         self._redis_client = redis.StrictRedis(
             host=hostname,
             port=port,
             **kwargs,
         )
 
-    def close(self, *, close_topics: bool = True) -> None:
-        """Close this publisher.
-
-        This will cause a [`StopIteration`][StopIteration] exception to be
-        raised in any
-        [`RedisSubscriber`][proxystore.stream.shims.redis.RedisSubscriber]
-        instances that are currently iterating on new messages from *any*
-        of the topics registered with this publisher. This behavior
-        can be altered by passing `close_topics=True`.
-
-        Args:
-            close_topics: Send an end-of-stream message to all topics
-                associated with this publisher.
-        """
-        if close_topics:
-            for topic in self._topics:
-                self._redis_client.publish(topic, _CLOSED_SENTINAL)
+    def close(self) -> None:
+        """Close this publisher."""
         self._redis_client.close()
 
     def send(self, topic: str, message: bytes) -> None:
@@ -69,21 +50,16 @@ class RedisPublisher:
         Args:
             topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
-
-        Raises:
-            ValueError: if `topic` is not in `topics` provided during
-                initialization.
         """
-        if topic not in self._topics:
-            raise ValueError(f'Topic "{topic}" is unknown.')
         self._redis_client.publish(topic, message)
 
 
 class RedisSubscriber:
-    """Subscriber interface to Redis pub/sub topic.
+    """Redis pub/sub subscriber shim.
 
-    The subscriber protocol is an iterable object which yields objects
-    from the stream until the stream is closed.
+    This shim is an iterable object which will yield [`bytes`][bytes]
+    messages from the stream, blocking on the next message, until the stream
+    is closed.
 
     Args:
         hostname: Redis server hostname.
@@ -100,14 +76,14 @@ class RedisSubscriber:
         topic: str | Sequence[str],
         **kwargs: Any,
     ) -> None:
-        self._topic = [topic] if isinstance(topic, str) else topic
         self._redis_client = redis.StrictRedis(
             host=hostname,
             port=port,
             **kwargs,
         )
+        self._topics = [topic] if isinstance(topic, str) else topic
         self._pubsub_client = self._redis_client.pubsub()
-        self._pubsub_client.subscribe(*self._topic)
+        self._pubsub_client.subscribe(*self._topics)
 
     def __iter__(self) -> Self:
         return self
@@ -135,9 +111,6 @@ class RedisSubscriber:
             ):  # pragma: no cover
                 raise StopIteration
             elif kind in redis.client.PubSub.PUBLISH_MESSAGE_TYPES:
-                if data == _CLOSED_SENTINAL:
-                    self._pubsub_client.unsubscribe()
-                    raise StopIteration
                 return data
             else:  # pragma: no cover
                 # This case is pings and health check messages.
@@ -145,5 +118,6 @@ class RedisSubscriber:
 
     def close(self) -> None:
         """Close this subscriber."""
+        self._pubsub_client.unsubscribe()
         self._pubsub_client.close()
         self._redis_client.close()
