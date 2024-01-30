@@ -3031,7 +3031,7 @@ and <a class="autorefs autorefs-internal" href="../../api/stream/interface/#prox
 bulk object communication from event notifications through the use of
 object proxies. This enables users to mix and match bulk object communication
 methods (via the <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
-interface) and event streaming methods (via the
+interface) and message stream brokers (via the
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> interfaces).
 Additionally, because the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a>
@@ -3079,7 +3079,7 @@ applications or deployments but using a different
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> for data storage and/or a different
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>/
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> implementation for
-event notifications.</p>
+event notifications via a message broker.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">producer.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
@@ -3121,11 +3121,7 @@ event notifications.</p>
 <li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> will close
    the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>,
    <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, and
-   <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default. Closing
-   the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> sends a special
-   event type to the stream that signals and consumers to raise a
-   <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#StopIteration"><code>StopIteration</code></a> exception signaling the end
-   of the stream.</li>
+   <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.</li>
 </ol>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">consumer.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
