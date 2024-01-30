@@ -30,7 +30,7 @@ def publish(host: str, port: int, delay: float) -> None:
     publisher = RedisPublisher(host, port)
 
     for message in MESSAGES:
-        publisher.send(message)
+        publisher.send('default', message)
         print(f'Sent: {message!r}')
         time.sleep(delay)
 
@@ -40,7 +40,7 @@ def publish(host: str, port: int, delay: float) -> None:
 
 def subscribe(host: str, port: int) -> None:
     """Subscribe to messages from the stream."""
-    subscriber = RedisSubscriber(host, port)
+    subscriber = RedisSubscriber(host, port, 'default')
 
     print('Listening for messages...')
 

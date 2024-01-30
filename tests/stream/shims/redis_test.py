@@ -25,21 +25,11 @@ def _mock_redis() -> Generator[None, None, None]:
         yield
 
 
-def test_bad_publisher_default_topic() -> None:
-    with pytest.raises(ValueError, match='other'):
-        RedisPublisher(
-            'localhost',
-            0,
-            topics=['default'],
-            default_topic='other',
-        )
-
-
 def test_publish_unknown_topic() -> None:
     publisher = RedisPublisher('localhost', 0)
 
     with pytest.raises(ValueError, match='other'):
-        publisher.send(b'message', topic='other')
+        publisher.send('other', b'message')
 
     publisher.close()
 
@@ -51,12 +41,12 @@ def test_publisher_close_client_only() -> None:
 
 def test_basic_publish_subscribe() -> None:
     publisher = RedisPublisher('localhost', 0)
-    subscriber = RedisSubscriber('localhost', 0)
+    subscriber = RedisSubscriber('localhost', 0, 'default')
 
     messages = [f'message_{i}'.encode() for i in range(3)]
 
     for message in messages:
-        publisher.send(message)
+        publisher.send('default', message)
 
     publisher.close()
 

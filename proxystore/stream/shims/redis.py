@@ -22,8 +22,6 @@ class RedisPublisher:
         hostname: Redis server hostname.
         port: Redis server port.
         topics: Sequence or set of all topics that might be published to.
-        default_topic: Default topic to publish messages to. Must be contained
-            in `topics`.
         kwargs: Extra keyword arguments to pass to
             [`redis.Redis()`][redis.Redis].
 
@@ -37,16 +35,9 @@ class RedisPublisher:
         port: int,
         *,
         topics: Sequence[str] | set[str] = ('default',),
-        default_topic: str = 'default',
         **kwargs: Any,
     ) -> None:
-        if default_topic not in topics:
-            raise ValueError(
-                f'Default topic "{default_topic}" is not in the list of '
-                f'all topic: {topics}.',
-            )
         self._topics = topics
-        self._default_topic = default_topic
         self._redis_client = redis.StrictRedis(
             host=hostname,
             port=port,
@@ -72,18 +63,17 @@ class RedisPublisher:
                 self._redis_client.publish(topic, _CLOSED_SENTINAL)
         self._redis_client.close()
 
-    def send(self, message: bytes, *, topic: str | None = None) -> None:
+    def send(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
+            topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
-            topic: Stream topic to publish to. `None` uses the default stream.
 
         Raises:
             ValueError: if `topic` is not in `topics` provided during
                 initialization.
         """
-        topic = topic if topic is not None else self._default_topic
         if topic not in self._topics:
             raise ValueError(f'Topic "{topic}" is unknown.')
         self._redis_client.publish(topic, message)
@@ -107,8 +97,7 @@ class RedisSubscriber:
         self,
         hostname: str,
         port: int,
-        *,
-        topic: str | Sequence[str] = 'default',
+        topic: str | Sequence[str],
         **kwargs: Any,
     ) -> None:
         self._topic = [topic] if isinstance(topic, str) else topic

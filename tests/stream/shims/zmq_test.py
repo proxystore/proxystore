@@ -10,26 +10,11 @@ from proxystore.stream.shims.zmq import ZeroMQSubscriber
 from testing.utils import open_port
 
 
-def test_bad_publisher_default_topic() -> None:
-    with pytest.raises(ValueError, match='other'):
-        ZeroMQPublisher(
-            '127.0.0.1',
-            0,
-            topics=['default'],
-            default_topic='other',
-        )
-
-
 def test_publish_unknown_topic() -> None:
-    publisher = ZeroMQPublisher(
-        '127.0.0.1',
-        open_port(),
-        topics=['default'],
-        default_topic='default',
-    )
+    publisher = ZeroMQPublisher('127.0.0.1', open_port(), topics=['default'])
 
     with pytest.raises(ValueError, match='other'):
-        publisher.send(b'message', topic='other')
+        publisher.send('other', b'message')
 
     publisher.close()
 
@@ -49,7 +34,7 @@ def test_basic_publish_subscribe() -> None:
 
     with mock.patch.object(publisher._socket, 'send_multipart'):
         for message in messages:
-            publisher.send(message)
+            publisher.send('default', message)
 
         publisher.close()
 
@@ -59,8 +44,7 @@ def test_basic_publish_subscribe() -> None:
         subscriber._socket,
         'recv_multipart',
         side_effect=[
-            (publisher._default_topic.encode(), message)
-            for message in [*messages, _CLOSED_SENTINAL]
+            (b'default', message) for message in [*messages, _CLOSED_SENTINAL]
         ],
     ):
         for message in subscriber:

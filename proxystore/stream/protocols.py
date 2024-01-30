@@ -34,12 +34,12 @@ class Publisher(Protocol):
         """
         ...
 
-    def send(self, message: bytes, *, topic: str | None = None) -> None:
+    def send(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
+            topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
-            topic: Stream topic to publish to. `None` uses the default stream.
         """
         ...
 

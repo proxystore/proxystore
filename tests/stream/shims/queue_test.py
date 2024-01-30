@@ -17,22 +17,17 @@ def create_pubsub_pair(
 ) -> tuple[QueuePublisher, QueueSubscriber]:
     topic = 'default'
 
-    publisher = QueuePublisher({topic: queue_}, topic)
+    publisher = QueuePublisher({topic: queue_})
     subscriber = QueueSubscriber(queue_)
 
     return publisher, subscriber
 
 
-def test_bad_default_topic() -> None:
-    with pytest.raises(ValueError, match='Default topic'):
-        QueuePublisher({'default': queue.Queue()}, 'different-default')
-
-
 def test_unknown_topic() -> None:
-    publisher = QueuePublisher({'default': queue.Queue()}, 'default')
+    publisher = QueuePublisher({'default': queue.Queue()})
 
     with pytest.raises(ValueError, match='Topic "other" does not exist.'):
-        publisher.send(b'message', topic='other')
+        publisher.send('other', b'message')
 
 
 def test_multiprocessing_implements_protocol() -> None:
@@ -71,7 +66,7 @@ def test_threading_open_close() -> None:
 
 def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
     for message in messages:
-        publisher.send(message)
+        publisher.send('default', message)
     publisher.close()
 
 

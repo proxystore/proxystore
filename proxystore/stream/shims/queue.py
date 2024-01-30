@@ -23,13 +23,9 @@ class QueuePublisher:
 
     Args:
         queues: Mapping of topic name to Python queue.
-        default_topic: Default topic.
         block: Block until a free slot is available when sending a new message
             to the queue.
         timeout: Block at most `timeout` seconds.
-
-    Raises:
-        ValueError: if `default_topic` is not in the `queues` mapping.
     """
 
     def __init__(
@@ -38,19 +34,11 @@ class QueuePublisher:
             str,
             multiprocessing.Queue[bytes] | queue.Queue[bytes],
         ],
-        default_topic: str,
         *,
         block: bool = True,
         timeout: float | None = None,
     ) -> None:
-        if default_topic not in queues:
-            raise ValueError(
-                f'Default topic "{default_topic}" is not in the mapping'
-                'of queues.',
-            )
-
         self._queues = queues
-        self._default_topic = default_topic
         self._block = block
         self._timeout = timeout
 
@@ -71,17 +59,16 @@ class QueuePublisher:
             if isinstance(q, multiprocessing.queues.Queue):
                 q.close()
 
-    def send(self, message: bytes, *, topic: str | None = None) -> None:
+    def send(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
+            topic: Stream topic to publish message to.
             message: Message as bytes to publish to the stream.
-            topic: Stream topic to publish to. `None` uses the default topic.
 
         Raises:
             ValueError: if `topic` is not in the mapping of queues.
         """
-        topic = topic if topic is not None else self._default_topic
         if topic not in self._queues:
             raise ValueError(f'Topic "{topic}" does not exist.')
 
