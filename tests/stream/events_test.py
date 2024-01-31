@@ -20,7 +20,11 @@ class _TestKey(NamedTuple):
     'event',
     (
         EndOfStreamEvent(),
-        NewObjectEvent.from_key(_TestKey('a', 123)),
+        NewObjectEvent.from_key(
+            _TestKey('a', 123),
+            topic='default',
+            store_config={},
+        ),
     ),
 )
 def test_encode_decode(event: Event) -> None:
@@ -31,7 +35,7 @@ def test_encode_decode(event: Event) -> None:
 
 def test_new_object_to_from_key() -> None:
     key = _TestKey('a', 123)
-    event = NewObjectEvent.from_key(key)
+    event = NewObjectEvent.from_key(key, 'default', {})
     new_key = event.get_key()
     assert key == new_key
     assert type(key) == type(new_key)

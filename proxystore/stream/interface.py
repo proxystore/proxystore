@@ -10,10 +10,12 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from types import TracebackType
 from typing import Any
 from typing import Generic
 from typing import Iterable
+from typing import Mapping
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -22,6 +24,9 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from proxystore.proxy import Proxy
+from proxystore.store import get_store
+from proxystore.store import register_store
+from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import event_to_json
@@ -31,6 +36,8 @@ from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 
 logger = logging.getLogger(__name__)
+
+_consumer_get_store_lock = threading.Lock()
 
 T = TypeVar('T')
 
@@ -66,21 +73,25 @@ class StreamProducer(Generic[T]):
         ```
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance used to store
-            and communicate serialized objects in the stream.
         publisher: Object which implements the
             [`Publisher`][proxystore.stream.protocols.Publisher] protocol.
             Used to publish event messages when new objects are added to
             the stream.
+        stores: Mapping from topic names to the
+            [`Store`][proxystore.store.base.Store] instance used to store
+            and communicate serialized objects streamed to that topic.
+            The `None` topic can be used to specify a default
+            [`Store`][proxystore.store.base.Store] used for topics
+            not present in this mapping.
     """
 
     def __init__(
         self,
-        store: Store[Any],
         publisher: Publisher,
+        stores: Mapping[str | None, Store[Any]],
     ) -> None:
-        self._store = store
         self._publisher = publisher
+        self._stores = stores
 
     def __enter__(self) -> Self:
         return self
@@ -98,7 +109,7 @@ class StreamProducer(Generic[T]):
         *,
         topics: Iterable[str] = (),
         publisher: bool = True,
-        store: bool = True,
+        stores: bool = True,
     ) -> None:
         """Close the producer.
 
@@ -113,11 +124,14 @@ class StreamProducer(Generic[T]):
                 first.
             publisher: Close the
                 [`Publisher`][proxystore.stream.protocols.Publisher] interface.
-            store: Close the [`Store`][proxystore.store.base.Store] interface.
+            stores: Close and [unregister][proxystore.store.unregister_store]
+                the [`Store`][proxystore.store.base.Store] instances.
         """  # noqa: E501
         self.close_topics(*topics)
-        if store:
-            self._store.close()
+        if stores:
+            for store in self._stores.values():
+                store.close()
+                unregister_store(store)
         if publisher:
             self._publisher.close()
 
@@ -173,9 +187,29 @@ class StreamProducer(Generic[T]):
                 Set to `False` if a single object in the stream will be
                 consumed by multiple consumers. Note that when set to `False`,
                 data eviction must be handled manually.
+
+        Raises:
+            ValueError: if a store associated with `topic` is not found
+                in the mapping of topics to stores nor a default store is
+                provided.
         """
-        key = self._store.put(obj)
-        event = NewObjectEvent.from_key(key, evict=evict)
+        if topic in self._stores:
+            store = self._stores[topic]
+        elif None in self._stores:
+            store = self._stores[None]
+        else:
+            raise ValueError(
+                f'No store associated with topic "{topic}" found or '
+                'default store.',
+            )
+
+        key = store.put(obj)
+        event = NewObjectEvent.from_key(
+            key,
+            topic,
+            store.config(),
+            evict=evict,
+        )
         message = event_to_json(event).encode()
         self._publisher.send(topic, message)
 
@@ -230,21 +264,15 @@ class StreamConsumer(Generic[T]):
         is thread safe.
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance used to
-            retrieve serialized objects in the stream.
         subscriber: Object which implements the
             [`Subscriber`][proxystore.stream.protocols.Subscriber] protocol.
             Used to listen for new event messages indicating new objects
             in the stream.
     """
 
-    def __init__(
-        self,
-        store: Store[Any],
-        subscriber: Subscriber,
-    ) -> None:
-        self._store = store
+    def __init__(self, subscriber: Subscriber) -> None:
         self._subscriber = subscriber
+        self._stores: dict[str, Store[Any]] = {}
 
     def __enter__(self) -> Self:
         return self
@@ -263,7 +291,7 @@ class StreamConsumer(Generic[T]):
     def __next__(self) -> Proxy[T]:
         return self.next()
 
-    def close(self, *, store: bool = True, subscriber: bool = True) -> None:
+    def close(self, *, stores: bool = True, subscriber: bool = True) -> None:
         """Close the consumer.
 
         Warning:
@@ -272,18 +300,44 @@ class StreamConsumer(Generic[T]):
             [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
 
         Args:
-            store: Close the [`Store`][proxystore.store.base.Store] interface.
+            stores: Close and [unregister][proxystore.store.unregister_store]
+                the [`Store`][proxystore.store.base.Store] instances
+                used to resolve objects consumed from the stream.
             subscriber: Close the
                 [`Subscriber`][proxystore.stream.protocols.Subscriber]
                 interface.
         """
-        if store:
-            self._store.close()
+        if stores:
+            for store in self._stores.values():
+                store.close()
+                unregister_store(store)
         if subscriber:
             self._subscriber.close()
 
+    def _get_store(self, event: NewObjectEvent) -> Store[Any]:
+        if event.topic in self._stores:
+            return self._stores[event.topic]
+
+        with _consumer_get_store_lock:
+            store = get_store(event.store_config['name'])
+            if store is None:
+                store = Store.from_config(event.store_config)
+                register_store(store)
+            self._stores[event.topic] = store
+            return store
+
     def next(self) -> Proxy[T]:
         """Return a proxy of the next object in the stream.
+
+        Note:
+            This method has the potential side effect of initializing and
+            globally registering a new [`Store`][proxystore.store.base.Store]
+            instance. This will happen at most once per topic because the
+            producer can map topic names to
+            [`Store`][proxystore.store.base.Store] instances. This class will
+            keep track of the [`Store`][proxystore.store.base.Store] instances
+            used by the stream and will close and unregister them when this
+            class is closed.
 
         Raises:
             StopIteration: when an end of stream event is received from a
@@ -293,7 +347,8 @@ class StreamConsumer(Generic[T]):
         message = next(self._subscriber)
         event = json_to_event(message.decode())
         if isinstance(event, NewObjectEvent):
-            proxy: Proxy[T] = self._store.proxy_from_key(
+            store = self._get_store(event)
+            proxy: Proxy[T] = store.proxy_from_key(
                 event.get_key(),
                 evict=event.evict,
             )
