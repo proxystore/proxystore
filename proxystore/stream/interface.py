@@ -12,6 +12,8 @@ import logging
 import sys
 from types import TracebackType
 from typing import Any
+from typing import Generic
+from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -26,8 +28,10 @@ from proxystore.stream.protocols import Subscriber
 
 logger = logging.getLogger(__name__)
 
+T = TypeVar('T')
 
-class StreamProducer:
+
+class StreamProducer(Generic[T]):
     """Proxy stream producer interface.
 
     Note:
@@ -44,6 +48,18 @@ class StreamProducer:
         The producer is only thread safe if the underlying
         [`Publisher`][proxystore.stream.protocols.Publisher] instance
         is thread safe.
+
+    Tip:
+        This class is generic, so it is recommended that the type of objects
+        in the stream be annotated appropriately. This is useful for enabling
+        a static type checker to validate that the correct object types are
+        published to the stream.
+        ```python
+        producer = StreamProducer[str](...)
+        # mypy will raise an error that StreamProducer.send() expects a str
+        # but got a list[int].
+        producer.send('default', [1, 2, 3])
+        ```
 
     Args:
         store: [`Store`][proxystore.store.base.Store] instance used to store
@@ -94,7 +110,7 @@ class StreamProducer:
     def send(
         self,
         topic: str,
-        obj: Any,
+        obj: T,
         *,
         evict: bool = True,
     ) -> None:
@@ -133,7 +149,7 @@ class StreamProducer:
         self._publisher.send(topic, message)
 
 
-class StreamConsumer:
+class StreamConsumer(Generic[T]):
     """Proxy stream consumer interface.
 
     This interface acts as an iterator that will yield items from the stream
@@ -147,6 +163,23 @@ class StreamConsumer:
         with StreamConsumer(...) as stream:
             for item in stream:
                 ...
+        ```
+
+    Tip:
+        This class is generic, so it is recommended that the type of objects
+        in the stream be annotated appropriately.
+        ```python
+        consumer = StreamConsumer[str](...)
+        reveal_type(consumer.next())
+        # Proxy[str]
+        ```
+        If the stream is heterogeneous or objects types are not known ahead
+        of time, it may be appropriate to annotate the stream with
+        [`Any`][typing.Any].
+        ```python
+        consumer = StreamConsumer[Any](...)
+        reveal_type(consumer.next())
+        # Proxy[Any]
         ```
 
     Warning:
@@ -196,7 +229,7 @@ class StreamConsumer:
     def __iter__(self) -> Self:
         return self
 
-    def __next__(self) -> Proxy[Any]:
+    def __next__(self) -> Proxy[T]:
         return self.next()
 
     def close(self, *, store: bool = True, subscriber: bool = True) -> None:
@@ -218,7 +251,7 @@ class StreamConsumer:
         if subscriber:
             self._subscriber.close()
 
-    def next(self) -> Proxy[Any]:
+    def next(self) -> Proxy[T]:
         """Return a proxy of the next object in the stream.
 
         Raises:
@@ -226,7 +259,7 @@ class StreamConsumer:
         """
         message = next(self._subscriber)
         event: Event[Any] = Event.from_json(message.decode())
-        proxy: Proxy[Any] = self._store.proxy_from_key(
+        proxy: Proxy[T] = self._store.proxy_from_key(
             event.get_key(),
             evict=event.evict,
         )

@@ -37,8 +37,8 @@ def store() -> Generator[Store[LocalConnector], None, None]:
 def test_basic_interface(store: Store[LocalConnector]) -> None:
     publisher, subscriber = create_pubsub_pair()
 
-    producer = StreamProducer(store, publisher)
-    consumer = StreamConsumer(store, subscriber)
+    producer = StreamProducer[uuid.UUID](store, publisher)
+    consumer = StreamConsumer[uuid.UUID](store, subscriber)
 
     objects = [uuid.uuid4() for _ in range(10)]
 
@@ -72,8 +72,8 @@ def test_basic_interface(store: Store[LocalConnector]) -> None:
 def test_context_manager(store: Store[LocalConnector]) -> None:
     publisher, subscriber = create_pubsub_pair()
 
-    with StreamProducer(store, publisher) as producer:
-        with StreamConsumer(store, subscriber) as consumer:
+    with StreamProducer[str](store, publisher) as producer:
+        with StreamConsumer[str](store, subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
 
@@ -83,14 +83,14 @@ def test_close_without_closing_connectors(
 ) -> None:
     publisher, subscriber = create_pubsub_pair()
 
-    producer = StreamProducer(store, publisher)
-    consumer = StreamConsumer(store, subscriber)
+    producer = StreamProducer[str](store, publisher)
+    consumer = StreamConsumer[str](store, subscriber)
 
     producer.close(store=False, publisher=False)
     consumer.close(store=False, subscriber=False)
 
     # Reuse store, publisher, subscriber
-    with StreamProducer(store, publisher) as producer:
-        with StreamConsumer(store, subscriber) as consumer:
+    with StreamProducer[str](store, publisher) as producer:
+        with StreamConsumer[str](store, subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
