@@ -17,8 +17,10 @@ from proxystore.stream.shims.queue import QueuePublisher
 from proxystore.stream.shims.queue import QueueSubscriber
 
 
-def create_pubsub_pair() -> tuple[QueuePublisher, QueueSubscriber]:
-    topic = 'default'
+def create_pubsub_pair(
+    topic: str | None = None,
+) -> tuple[QueuePublisher, QueueSubscriber]:
+    topic = 'default' if topic is None else topic
     queue_: queue.Queue[bytes] = queue.Queue()
 
     publisher = QueuePublisher({topic: queue_})
@@ -94,3 +96,14 @@ def test_close_without_closing_connectors(
         with StreamConsumer[str](store, subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
+
+
+def test_producer_close_topic(store: Store[LocalConnector]) -> None:
+    publisher, subscriber = create_pubsub_pair('default')
+
+    with StreamProducer[str](store, publisher) as producer:
+        with StreamConsumer[str](store, subscriber) as consumer:
+            producer.close_topics('default')
+
+            with pytest.raises(StopIteration):
+                consumer.next()
