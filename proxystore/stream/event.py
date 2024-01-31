@@ -28,7 +28,7 @@ class Event(Generic[KeyT]):
     """
 
     key_type: str
-    raw_key: tuple[Any]
+    raw_key: tuple[Any, ...]
     evict: bool
 
     @classmethod
