@@ -13,6 +13,7 @@ import sys
 from types import TracebackType
 from typing import Any
 from typing import Generic
+from typing import Iterable
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -22,6 +23,7 @@ else:  # pragma: <3.11 cover
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import event_to_json
 from proxystore.stream.events import json_to_event
 from proxystore.stream.events import NewObjectEvent
@@ -91,7 +93,13 @@ class StreamProducer(Generic[T]):
     ) -> None:
         self.close()
 
-    def close(self, *, store: bool = True, publisher: bool = True) -> None:
+    def close(
+        self,
+        *,
+        topics: Iterable[str] = (),
+        publisher: bool = True,
+        store: bool = True,
+    ) -> None:
         """Close the producer.
 
         Warning:
@@ -100,14 +108,35 @@ class StreamProducer(Generic[T]):
             [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
 
         Args:
-            store: Close the [`Store`][proxystore.store.base.Store] interface.
+            topics: Topics to send end of stream events to. Equivalent to
+                calling [`close_topics()`][proxystore.stream.interface.StreamProducer.close_topics]
+                first.
             publisher: Close the
                 [`Publisher`][proxystore.stream.protocols.Publisher] interface.
-        """
+            store: Close the [`Store`][proxystore.store.base.Store] interface.
+        """  # noqa: E501
+        self.close_topics(*topics)
         if store:
             self._store.close()
         if publisher:
             self._publisher.close()
+
+    def close_topics(self, *topics: str) -> None:
+        """Send publish an end of stream event to each topic.
+
+        A [`StreamConsumer`][proxystore.stream.interface.StreamConsumer]
+        will raise a [`StopIteration`][StopIteration] exception when an
+        end of stream event is received. The end of stream event is still
+        ordered, however, so all prior sent events will be consumed first
+        before the end of stream event is propagated.
+
+        Args:
+            topics: Topics to send end of stream events to.
+        """
+        for topic in topics:
+            event = EndOfStreamEvent()
+            message = event_to_json(event).encode()
+            self._publisher.send(topic, message)
 
     def send(
         self,
@@ -257,7 +286,9 @@ class StreamConsumer(Generic[T]):
         """Return a proxy of the next object in the stream.
 
         Raises:
-            StopIteration: when the producer closes the stream.
+            StopIteration: when an end of stream event is received from a
+                producer. Note that this does not call
+                [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
         message = next(self._subscriber)
         event = json_to_event(message.decode())
@@ -267,5 +298,7 @@ class StreamConsumer(Generic[T]):
                 evict=event.evict,
             )
             return proxy
+        elif isinstance(event, EndOfStreamEvent):
+            raise StopIteration
         else:
             raise AssertionError('Unreachable.')

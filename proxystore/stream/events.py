@@ -2,7 +2,7 @@
 
 Warning:
     Event types are not considered as part of the public API and may change
-    at any time without warning. [`Events`][proxystore.stream.event.Event]
+    at any time without warning. [`Events`][proxystore.stream.events.Event]
     are created and consumed internally by the
     [StreamProducer][proxystore.stream.interface.StreamProducer] and
     [StreamConsumer][proxystore.stream.interface.StreamConsumer] and
