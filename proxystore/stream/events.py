@@ -34,14 +34,25 @@ class NewObjectEvent:
     key_type: str
     raw_key: list[Any]
     evict: bool
+    topic: str
+    store_config: dict[str, Any]
 
     @classmethod
-    def from_key(cls, key: Any, *, evict: bool = True) -> NewObjectEvent:
+    def from_key(
+        cls,
+        key: Any,
+        topic: str,
+        store_config: dict[str, Any],
+        *,
+        evict: bool = True,
+    ) -> NewObjectEvent:
         """Create a new event from a key to a stored object."""
         return NewObjectEvent(
             key_type=get_class_path(type(key)),
             raw_key=list(key),
             evict=evict,
+            topic=topic,
+            store_config=store_config,
         )
 
     def get_key(self) -> Any:
