@@ -326,7 +326,7 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://proxystore.dev/main/api/stream/event/</loc>
+         <loc>https://proxystore.dev/main/api/stream/events/</loc>
          <lastmod>2024-01-31</lastmod>
          <changefreq>daily</changefreq>
     </url>

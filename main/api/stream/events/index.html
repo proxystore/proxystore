@@ -12,7 +12,7 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://proxystore.dev/main/api/stream/event/">
+        <link rel="canonical" href="https://proxystore.dev/main/api/stream/events/">
       
       
         <link rel="prev" href="../">
@@ -26,7 +26,7 @@
     
     
       
-        <title>event - ProxyStore</title>
+        <title>events - ProxyStore</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#proxystorestreamevent" class="md-skip">
+        <a href="#proxystorestreamevents" class="md-skip">
           Skip to content
         </a>
       
@@ -124,7 +124,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              event
+              events
             
           </span>
         </div>
@@ -2334,7 +2334,7 @@
           
   
   <span class="md-ellipsis">
-    event
+    events
   </span>
   
 
@@ -2345,7 +2345,7 @@
         
   
   <span class="md-ellipsis">
-    event
+    events
   </span>
   
 
@@ -2367,43 +2367,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.event" class="md-nav__link">
-    proxystore.stream.event
+  <a href="#proxystore.stream.events" class="md-nav__link">
+    proxystore.stream.events
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event" class="md-nav__link">
+  <a href="#proxystore.stream.events.Event" class="md-nav__link">
     Event
   </a>
   
-    <nav class="md-nav" aria-label="Event">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.EndOfStreamEvent" class="md-nav__link">
+    EndOfStreamEvent
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.NewObjectEvent" class="md-nav__link">
+    NewObjectEvent
+  </a>
+  
+    <nav class="md-nav" aria-label="NewObjectEvent">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.from_key" class="md-nav__link">
+  <a href="#proxystore.stream.events.NewObjectEvent.from_key" class="md-nav__link">
     from_key()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.from_json" class="md-nav__link">
-    from_json()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.as_json" class="md-nav__link">
-    as_json()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.get_key" class="md-nav__link">
+  <a href="#proxystore.stream.events.NewObjectEvent.get_key" class="md-nav__link">
     get_key()
   </a>
   
@@ -2411,6 +2411,20 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.event_to_json" class="md-nav__link">
+    event_to_json()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.json_to_event" class="md-nav__link">
+    json_to_event()
+  </a>
   
 </li>
       
@@ -3010,43 +3024,43 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.event" class="md-nav__link">
-    proxystore.stream.event
+  <a href="#proxystore.stream.events" class="md-nav__link">
+    proxystore.stream.events
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event" class="md-nav__link">
+  <a href="#proxystore.stream.events.Event" class="md-nav__link">
     Event
   </a>
   
-    <nav class="md-nav" aria-label="Event">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.EndOfStreamEvent" class="md-nav__link">
+    EndOfStreamEvent
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.NewObjectEvent" class="md-nav__link">
+    NewObjectEvent
+  </a>
+  
+    <nav class="md-nav" aria-label="NewObjectEvent">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.from_key" class="md-nav__link">
+  <a href="#proxystore.stream.events.NewObjectEvent.from_key" class="md-nav__link">
     from_key()
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.from_json" class="md-nav__link">
-    from_json()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.as_json" class="md-nav__link">
-    as_json()
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#proxystore.stream.event.Event.get_key" class="md-nav__link">
+  <a href="#proxystore.stream.events.NewObjectEvent.get_key" class="md-nav__link">
     get_key()
   </a>
   
@@ -3054,6 +3068,20 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.event_to_json" class="md-nav__link">
+    event_to_json()
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.events.json_to_event" class="md-nav__link">
+    json_to_event()
+  </a>
   
 </li>
       
@@ -3075,21 +3103,30 @@
   
 
 
-<h1 id="proxystorestreamevent">proxystore.stream.event<a class="headerlink" href="#proxystorestreamevent" title="Permanent link">&para;</a></h1>
+<h1 id="proxystorestreamevents">proxystore.stream.events<a class="headerlink" href="#proxystorestreamevents" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
 
 
-<a id="proxystore.stream.event"></a>
+<a id="proxystore.stream.events"></a>
   <div class="doc doc-contents">
-      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/stream/event.py"><code>proxystore/stream/event.py</code></a>
+      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/stream/events.py"><code>proxystore/stream/events.py</code></a>
   </div>
 
   <div class="doc doc-contents first">
   
       <p>Event metadata type.</p>
 
+<details class="warning" open>
+  <summary>Warning</summary>
+  <p>Event types are not considered as part of the public API and may change
+at any time without warning. <a class="autorefs autorefs-internal" href="#proxystore.stream.events.Event"><code>Events</code></a>
+are created and consumed internally by the
+<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamProducer">StreamProducer</a> and
+<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamConsumer">StreamConsumer</a> and
+never exposed to client code.</p>
+</details>
   
 
   <div class="doc doc-children">
@@ -3100,38 +3137,76 @@
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="proxystore.stream.events.Event" class="doc doc-heading">
+          <span class="doc doc-object-name doc-attribute-name">Event</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#proxystore.stream.events.Event" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Event</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.EndOfStreamEvent" href="#proxystore.stream.events.EndOfStreamEvent">EndOfStreamEvent</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.NewObjectEvent" href="#proxystore.stream.events.NewObjectEvent">NewObjectEvent</a></span><span class="p">]</span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Event union type.</p>
+  </div>
+
+</div>
+
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="proxystore.stream.event.Event" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Event</span>
+<h2 id="proxystore.stream.events.EndOfStreamEvent" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">EndOfStreamEvent</span>
 
   
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
   </span>
 
-<a href="#proxystore.stream.event.Event" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#proxystore.stream.events.EndOfStreamEvent" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
   <div class="doc doc-contents ">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<span title="proxystore.stream.event.KeyT">KeyT</span>]</code></p>
 
   
-      <p>Event metadata for a stream.</p>
+      <p>End of stream event.</p>
 
-<details class="warning" open>
-  <summary>Warning</summary>
-  <p>This is not considered a public API and may change at any time
-without warning. <a class="autorefs autorefs-internal" href="#proxystore.stream.event.Event"><code>Event</code></a> instances
-are created and consumed internally by the
-<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamProducer">StreamProducer</a> and
-<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamConsumer">StreamConsumer</a> and
-never exposed to client code.</p>
-</details>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.stream.events.NewObjectEvent" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">NewObjectEvent</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
+  </span>
+
+<a href="#proxystore.stream.events.NewObjectEvent" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents ">
+
+  
+      <p>New object in stream event metadata.</p>
+
 
   
 
@@ -3149,7 +3224,7 @@ never exposed to client code.</p>
 
 
 
-<h3 id="proxystore.stream.event.Event.from_key" class="doc doc-heading">
+<h3 id="proxystore.stream.events.NewObjectEvent.from_key" class="doc doc-heading">
         <span class="doc doc-object-name doc-function-name">from_key()</span>
 
   
@@ -3157,8 +3232,8 @@ never exposed to client code.</p>
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
   </span>
 
-<a href="#proxystore.stream.event.Event.from_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">from_key</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><span title="proxystore.stream.event.KeyT">KeyT</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">evict</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.event.Event" href="#proxystore.stream.event.Event">Event</a></span><span class="p">[</span><span class="n"><span title="proxystore.stream.event.KeyT">KeyT</span></span><span class="p">]</span>
+<a href="#proxystore.stream.events.NewObjectEvent.from_key" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">from_key</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">evict</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.NewObjectEvent" href="#proxystore.stream.events.NewObjectEvent">NewObjectEvent</a></span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -3166,57 +3241,22 @@ never exposed to client code.</p>
       <p>Create a new event from a key to a stored object.</p>
 
       <details class="quote">
-        <summary>Source code in <code>proxystore/stream/event.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
+        <summary>Source code in <code>proxystore/stream/events.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-38">38</a></span>
 <span class="normal"><a href="#__codelineno-0-39">39</a></span>
 <span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="k">def</span> <span class="nf">from_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">KeyT</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">evict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Event</span><span class="p">[</span><span class="n">KeyT</span><span class="p">]:</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new event from a key to a stored object.&quot;&quot;&quot;</span>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a>    <span class="k">return</span> <span class="n">Event</span><span class="p">(</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a>        <span class="n">key_type</span><span class="o">=</span><span class="n">get_class_path</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">)),</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a>        <span class="n">raw_key</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">key</span><span class="p">),</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a>        <span class="n">evict</span><span class="o">=</span><span class="n">evict</span><span class="p">,</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="p">)</span>
-</span></code></pre></div></td></tr></table></div>
-      </details>
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="proxystore.stream.event.Event.from_json" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">from_json()</span>
-
-  
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
-  </span>
-
-<a href="#proxystore.stream.event.Event.from_json" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">from_json</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.event.Event" href="#proxystore.stream.event.Event">Event</a></span><span class="p">[</span><span class="n"><span title="proxystore.stream.event.KeyT">KeyT</span></span><span class="p">]</span>
-</span></code></pre></div>
-
-  <div class="doc doc-contents ">
-  
-      <p>Create a new event from its JSON representation.</p>
-
-      <details class="quote">
-        <summary>Source code in <code>proxystore/stream/event.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-43">43</a></span>
+<span class="normal"><a href="#__codelineno-0-41">41</a></span>
+<span class="normal"><a href="#__codelineno-0-42">42</a></span>
+<span class="normal"><a href="#__codelineno-0-43">43</a></span>
 <span class="normal"><a href="#__codelineno-0-44">44</a></span>
-<span class="normal"><a href="#__codelineno-0-45">45</a></span>
-<span class="normal"><a href="#__codelineno-0-46">46</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Event</span><span class="p">[</span><span class="n">KeyT</span><span class="p">]:</span>
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new event from its JSON representation.&quot;&quot;&quot;</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="k">return</span> <span class="n">Event</span><span class="p">(</span><span class="o">**</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="nd">@classmethod</span>
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="k">def</span> <span class="nf">from_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">evict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NewObjectEvent</span><span class="p">:</span>
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new event from a key to a stored object.&quot;&quot;&quot;</span>
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="k">return</span> <span class="n">NewObjectEvent</span><span class="p">(</span>
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>        <span class="n">key_type</span><span class="o">=</span><span class="n">get_class_path</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">key</span><span class="p">)),</span>
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a>        <span class="n">raw_key</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">key</span><span class="p">),</span>
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a>        <span class="n">evict</span><span class="o">=</span><span class="n">evict</span><span class="p">,</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -3227,41 +3267,12 @@ never exposed to client code.</p>
 
 
 
-<h3 id="proxystore.stream.event.Event.as_json" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">as_json()</span>
-
-
-<a href="#proxystore.stream.event.Event.as_json" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">as_json</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
-</span></code></pre></div>
-
-  <div class="doc doc-contents ">
-  
-      <p>Convert the event to a JSON string.</p>
-
-      <details class="quote">
-        <summary>Source code in <code>proxystore/stream/event.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-48">48</a></span>
-<span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="k">def</span> <span class="nf">as_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the event to a JSON string.&quot;&quot;&quot;</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
-</span></code></pre></div></td></tr></table></div>
-      </details>
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-
-<h3 id="proxystore.stream.event.Event.get_key" class="doc doc-heading">
+<h3 id="proxystore.stream.events.NewObjectEvent.get_key" class="doc doc-heading">
         <span class="doc doc-object-name doc-function-name">get_key()</span>
 
 
-<a href="#proxystore.stream.event.Event.get_key" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="proxystore.stream.event.KeyT">KeyT</span></span>
+<a href="#proxystore.stream.events.NewObjectEvent.get_key" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">get_key</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -3269,14 +3280,14 @@ never exposed to client code.</p>
       <p>Get the object key associated with the event.</p>
 
       <details class="quote">
-        <summary>Source code in <code>proxystore/stream/event.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
-<span class="normal"><a href="#__codelineno-0-55">55</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="k">def</span> <span class="nf">get_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeyT</span><span class="p">:</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the object key associated with the event.&quot;&quot;&quot;</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">key_type</span> <span class="o">=</span> <span class="n">import_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key_type</span><span class="p">)</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="k">return</span> <span class="n">key_type</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_key</span><span class="p">)</span>
+        <summary>Source code in <code>proxystore/stream/events.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-47">47</a></span>
+<span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span> <span class="nf">get_key</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the object key associated with the event.&quot;&quot;&quot;</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="n">key_type</span> <span class="o">=</span> <span class="n">import_class</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">key_type</span><span class="p">)</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="k">return</span> <span class="n">key_type</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">raw_key</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -3292,6 +3303,74 @@ never exposed to client code.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="proxystore.stream.events.event_to_json" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">event_to_json()</span>
+
+
+<a href="#proxystore.stream.events.event_to_json" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">event_to_json</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.Event" href="#proxystore.stream.events.Event">Event</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert event to JSON string.</p>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/stream/events.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-62">62</a></span>
+<span class="normal"><a href="#__codelineno-0-63">63</a></span>
+<span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="k">def</span> <span class="nf">event_to_json</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">Event</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert event to JSON string.&quot;&quot;&quot;</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a>    <span class="n">data</span><span class="p">[</span><span class="s1">&#39;event_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_EventMapping</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">event</span><span class="p">))</span><span class="o">.</span><span class="n">name</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="proxystore.stream.events.json_to_event" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">json_to_event()</span>
+
+
+<a href="#proxystore.stream.events.json_to_event" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">json_to_event</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.Event" href="#proxystore.stream.events.Event">Event</a></span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Convert JSON string to event.</p>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/stream/events.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="k">def</span> <span class="nf">json_to_event</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Event</span><span class="p">:</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert JSON string to event.&quot;&quot;&quot;</span>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="n">event_type</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;event_type&#39;</span><span class="p">)</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="n">event</span> <span class="o">=</span> <span class="n">_EventMapping</span><span class="p">[</span><span class="n">event_type</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="k">return</span> <span class="n">event</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
 
 
 
