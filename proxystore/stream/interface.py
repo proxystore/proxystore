@@ -22,7 +22,9 @@ else:  # pragma: <3.11 cover
 
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
-from proxystore.stream.event import Event
+from proxystore.stream.events import event_to_json
+from proxystore.stream.events import json_to_event
+from proxystore.stream.events import NewObjectEvent
 from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 
@@ -144,8 +146,8 @@ class StreamProducer(Generic[T]):
                 data eviction must be handled manually.
         """
         key = self._store.put(obj)
-        event: Event[Any] = Event.from_key(key, evict=evict)
-        message = event.as_json().encode()
+        event = NewObjectEvent.from_key(key, evict=evict)
+        message = event_to_json(event).encode()
         self._publisher.send(topic, message)
 
 
@@ -258,9 +260,12 @@ class StreamConsumer(Generic[T]):
             StopIteration: when the producer closes the stream.
         """
         message = next(self._subscriber)
-        event: Event[Any] = Event.from_json(message.decode())
-        proxy: Proxy[T] = self._store.proxy_from_key(
-            event.get_key(),
-            evict=event.evict,
-        )
-        return proxy
+        event = json_to_event(message.decode())
+        if isinstance(event, NewObjectEvent):
+            proxy: Proxy[T] = self._store.proxy_from_key(
+                event.get_key(),
+                evict=event.evict,
+            )
+            return proxy
+        else:
+            raise AssertionError('Unreachable.')
