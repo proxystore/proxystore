@@ -74,4 +74,4 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           pip install .[docs]
-          mike deploy --push --update-aliases "${{ env.PACKAGE_VERSION }}" stable
+          mike deploy --push --update-aliases "${{ env.PACKAGE_VERSION }}" latest
