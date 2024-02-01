@@ -139,6 +139,9 @@ nav:
       - publications/index.md
 
 plugins:
+  - mike:
+      alias_type: symlink
+      canonical_version: latest
   - gen-files:
       scripts:
         - docs/generate_api.py
