@@ -8,14 +8,18 @@ Note:
 """
 from __future__ import annotations
 
+import dataclasses
 import logging
 import sys
 import threading
+from collections import defaultdict
 from types import TracebackType
 from typing import Any
+from typing import Callable
 from typing import Generic
 from typing import Iterable
 from typing import Mapping
+from typing import NamedTuple
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -28,10 +32,13 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
+from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
-from proxystore.stream.events import event_to_json
-from proxystore.stream.events import json_to_event
+from proxystore.stream.events import Event
+from proxystore.stream.events import event_to_bytes
+from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.exceptions import TopicClosedError
 from proxystore.stream.filters import NullFilter
 from proxystore.stream.protocols import Filter
 from proxystore.stream.protocols import Publisher
@@ -42,6 +49,19 @@ logger = logging.getLogger(__name__)
 _consumer_get_store_lock = threading.Lock()
 
 T = TypeVar('T')
+
+
+@dataclasses.dataclass(frozen=True)
+class _BufferedObject(Generic[T]):
+    obj: T
+    evict: bool
+    metadata: dict[str, Any]
+
+
+@dataclasses.dataclass
+class _TopicBuffer(Generic[T]):
+    objects: list[_BufferedObject[T]]
+    closed: bool
 
 
 class StreamProducer(Generic[T]):
@@ -57,10 +77,8 @@ class StreamProducer(Generic[T]):
                 stream.send(item)
         ```
 
-    Note:
-        The producer is only thread safe if the underlying
-        [`Publisher`][proxystore.stream.protocols.Publisher] instance
-        is thread safe.
+    Warning:
+        The producer is not thread-safe.
 
     Tip:
         This class is generic, so it is recommended that the type of objects
@@ -85,9 +103,17 @@ class StreamProducer(Generic[T]):
             The `None` topic can be used to specify a default
             [`Store`][proxystore.store.base.Store] used for topics
             not present in this mapping.
+        aggregator: Optional aggregator which takes as input the batch of
+            objects and returns a single object of the same type when invoked.
+            The size of the batch passed to the aggregator is controlled by
+            the `batch_size` parameter. When aggregation is used, the metadata
+            associated with the aggregated object will be the union of each
+            metadata dict from each object in the batch.
+        batch_size: Batch size used for batching and aggregation.
         filter_: Optional filter to apply prior to sending objects to the
             stream. If the filter returns `True` for a given object's
-            metadata, the object will *not* be sent to the stream.
+            metadata, the object will *not* be sent to the stream. The filter
+            is applied before aggregation or batching.
     """
 
     def __init__(
@@ -95,11 +121,20 @@ class StreamProducer(Generic[T]):
         publisher: Publisher,
         stores: Mapping[str | None, Store[Any]],
         *,
+        aggregator: Callable[[list[T]], T] | None = None,
+        batch_size: int = 1,
         filter_: Filter | None = None,
     ) -> None:
         self._publisher = publisher
         self._stores = stores
+        self._aggregator = aggregator
+        self._batch_size = batch_size
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
+
+        # Mapping between topic and buffers
+        self._buffer: dict[str, _TopicBuffer[T]] = defaultdict(
+            lambda: _TopicBuffer([], False),
+        )
 
     def __enter__(self) -> Self:
         return self
@@ -120,6 +155,11 @@ class StreamProducer(Generic[T]):
         stores: bool = True,
     ) -> None:
         """Close the producer.
+
+        Warning:
+            Objects buffered in an incomplete batch will be lost. Call
+            [`flush()`][proxystore.stream.interface.StreamProducer] to ensure
+            that all objects are sent before closing.
 
         Warning:
             By default, this will also call `close()` on the
@@ -152,13 +192,87 @@ class StreamProducer(Generic[T]):
         ordered, however, so all prior sent events will be consumed first
         before the end of stream event is propagated.
 
+        Note:
+            This will flush the topic buffer.
+
         Args:
             topics: Topics to send end of stream events to.
         """
         for topic in topics:
-            event = EndOfStreamEvent()
-            message = event_to_json(event).encode()
-            self._publisher.send(topic, message)
+            self._buffer[topic].closed = True
+            self.flush_topic(topic)
+
+    def flush(self) -> None:
+        """Flush batch buffers for all topics."""
+        for topic in self._buffer:
+            self.flush_topic(topic)
+
+    def flush_topic(self, topic: str) -> None:
+        """Flush the batch buffer for a topic.
+
+        This method:
+
+        1. Pops the current batch of objects off the topic buffer.
+        2. Applies the aggregator to the batch if one was provided.
+        3. Puts the batch of objects in the
+           [`Store`][proxystore.store.base.Store].
+        4. Creates a new batch event using the keys returned by the store and
+           additional metadata.
+        5. Publishes the event to the stream via the
+           [`Publisher`][proxystore.stream.protocols.Publisher].
+
+        Args:
+            topic: Topic to flush.
+
+        ValueError: if a store associated with `topic` is not found
+            in the mapping of topics to stores nor a default store is
+            provided.
+        """
+        objects = self._buffer[topic].objects
+        closed = self._buffer[topic].closed
+
+        if len(objects) == 0 and not closed:
+            # No events to send so quick return
+            return
+
+        # Reset buffer
+        self._buffer[topic].objects = []
+
+        if self._aggregator is not None and len(objects) > 0:
+            obj = self._aggregator([item.obj for item in objects])
+            evict = any([item.evict for item in objects])
+            metadata: dict[str, Any] = {}
+            for item in objects:
+                metadata.update(item.metadata)
+            objects = [_BufferedObject(obj, evict, metadata)]
+
+        if topic in self._stores:
+            store = self._stores[topic]
+        elif None in self._stores:
+            store = self._stores[None]
+        else:
+            raise ValueError(
+                f'No store associated with topic "{topic}" found or '
+                'default store.',
+            )
+
+        keys = store.put_batch([item.obj for item in objects])
+
+        events: list[Event] = [
+            NewObjectEvent.from_key(
+                key,
+                evict=item.evict,
+                metadata=item.metadata,
+            )
+            for key, item in zip(keys, objects)
+        ]
+
+        if closed:
+            events.append(EndOfStreamEvent())
+
+        batch_event = EventBatch(events, topic, store.config())
+        message = event_to_bytes(batch_event)
+        self._publisher.send(topic, message)
 
     def send(
         self,
@@ -174,11 +288,8 @@ class StreamProducer(Generic[T]):
 
         1. Applies the filter to the metadata associated with this event,
            skipping streaming this object if the filter returns `True`.
-        2. Puts the object in the [`Store`][proxystore.store.base.Store] to
-           get back an identifier key.
-        3. Creates a new event using the key and additional metadata.
-        4. Publishes the event to the stream via the
-           [`Publisher`][proxystore.stream.protocols.Publisher].
+        2. Adds the object to the internal event buffer for this topic.
+        3. Flushes the event buffer once the batch size is reached.
 
         Warning:
             Careful consideration should be given to the setting of the
@@ -202,36 +313,34 @@ class StreamProducer(Generic[T]):
                 data eviction must be handled manually.
             metadata: Dictionary containing metadata about the object. This
                 can be used by the producer or consumer to filter new
-                object events.
+                object events. The default value `None` is replaced with an
+                empty [`dict`][dict].
 
         Raises:
+            TopicClosedError: if the `topic` has already been closed via
+                [`close_topics()`][proxystore.stream.interface.StreamProducer.close_topics].
             ValueError: if a store associated with `topic` is not found
                 in the mapping of topics to stores nor a default store is
                 provided.
         """
+        if self._buffer[topic].closed:
+            raise TopicClosedError(f'Topic "{topic}" has been closed.')
+
+        metadata = metadata if metadata is not None else {}
         if self._filter(metadata):
             return
 
-        if topic in self._stores:
-            store = self._stores[topic]
-        elif None in self._stores:
-            store = self._stores[None]
-        else:
-            raise ValueError(
-                f'No store associated with topic "{topic}" found or '
-                'default store.',
-            )
+        item = _BufferedObject(obj, evict, metadata)
+        self._buffer[topic].objects.append(item)
 
-        key = store.put(obj)
-        event = NewObjectEvent.from_key(
-            key,
-            topic,
-            store.config(),
-            evict=evict,
-            metadata=metadata,
-        )
-        message = event_to_json(event).encode()
-        self._publisher.send(topic, message)
+        if len(self._buffer[topic].objects) >= self._batch_size:
+            self.flush_topic(topic)
+
+
+class _EventInfo(NamedTuple):
+    event: NewObjectEvent
+    topic: str
+    store_config: dict[str, Any]
 
 
 class StreamConsumer(Generic[T]):
@@ -279,9 +388,7 @@ class StreamConsumer(Generic[T]):
         proxies before you expect.
 
     Note:
-        The consumer is only thread safe if the underlying
-        [`Subscriber`][proxystore.stream.protocols.Subscriber] instance
-        is thread safe.
+        The consumer is not thread-safe.
 
     Args:
         subscriber: Object which implements the
@@ -304,6 +411,8 @@ class StreamConsumer(Generic[T]):
         self._subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
+
+        self._current_batch: EventBatch | None = None
 
     def __enter__(self) -> Self:
         return self
@@ -345,17 +454,48 @@ class StreamConsumer(Generic[T]):
         if subscriber:
             self._subscriber.close()
 
-    def _get_store(self, event: NewObjectEvent) -> Store[Any]:
-        if event.topic in self._stores:
-            return self._stores[event.topic]
+    def _get_store(self, event_info: _EventInfo) -> Store[Any]:
+        if event_info.topic in self._stores:
+            return self._stores[event_info.topic]
 
         with _consumer_get_store_lock:
-            store = get_store(event.store_config['name'])
+            store = get_store(event_info.store_config['name'])
             if store is None:
-                store = Store.from_config(event.store_config)
+                store = Store.from_config(event_info.store_config)
                 register_store(store)
-            self._stores[event.topic] = store
+            self._stores[event_info.topic] = store
             return store
+
+    def _next_batch(self) -> EventBatch:
+        message = next(self._subscriber)
+        event = bytes_to_event(message)
+        if isinstance(event, EventBatch):
+            return event
+        else:
+            raise AssertionError('Unreachable.')
+
+    def _next_event(self) -> _EventInfo:
+        if self._current_batch is None or len(self._current_batch.events) == 0:
+            # Current batch does not exist or has been exhausted so block
+            # on a new batch.
+            self._current_batch = self._next_batch()
+            # Reverse list of events so we can O(1) pop from end of list to
+            # get the first event in time.
+            self._current_batch.events = list(
+                reversed(self._current_batch.events),
+            )
+
+        event = self._current_batch.events.pop()
+        if isinstance(event, NewObjectEvent):
+            return _EventInfo(
+                event,
+                self._current_batch.topic,
+                self._current_batch.store_config,
+            )
+        elif isinstance(event, EndOfStreamEvent):
+            raise StopIteration
+        else:
+            raise AssertionError('Unreachable.')
 
     def next(self) -> Proxy[T]:
         """Return a proxy of the next object in the stream.
@@ -376,22 +516,22 @@ class StreamConsumer(Generic[T]):
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
         while True:
-            message = next(self._subscriber)
-            event = json_to_event(message.decode())
-            if isinstance(event, NewObjectEvent):
-                store = self._get_store(event)
+            # _next_event() will propagate up a StopIteration exception
+            # if the event was an end of stream event.
+            event_info = self._next_event()
+            store = self._get_store(event_info)
+            event = event_info.event
 
-                if self._filter(event.metadata):
-                    if event.evict:
-                        store.evict(event.get_key())
-                    continue
+            key = event.get_key()
 
-                proxy: Proxy[T] = store.proxy_from_key(
-                    event.get_key(),
-                    evict=event.evict,
-                )
-                return proxy
-            elif isinstance(event, EndOfStreamEvent):
-                raise StopIteration
-            else:
-                raise AssertionError('Unreachable.')
+            if self._filter(event.metadata):
+                # Coverage in Python 3.8/3.9 does not mark the "else"
+                # as covered but if you put else: assert False the some
+                # tests fail there so it does get run
+                if event.evict:  # pragma: no branch
+                    store.evict(key)
+
+                continue
+
+            proxy: Proxy[T] = store.proxy_from_key(key, evict=event.evict)
+            return proxy
