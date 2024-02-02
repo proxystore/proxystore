@@ -27,11 +27,14 @@ import sys
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
+from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
+
+T = TypeVar('T')
 
 
 @runtime_checkable
@@ -80,6 +83,6 @@ class Filter(Protocol):
     out of the stream and lost.
     """
 
-    def __call__(self, metadata: dict[str, Any] | None) -> bool:
+    def __call__(self, metadata: dict[str, Any]) -> bool:
         """Apply the filter to event metadata."""
         ...
