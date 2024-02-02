@@ -158,6 +158,7 @@ class StreamProducer(Generic[T]):
         obj: T,
         *,
         evict: bool = True,
+        metadata: dict[str, Any] | None = None,
     ) -> None:
         """Send an item to the stream.
 
@@ -187,6 +188,9 @@ class StreamProducer(Generic[T]):
                 Set to `False` if a single object in the stream will be
                 consumed by multiple consumers. Note that when set to `False`,
                 data eviction must be handled manually.
+            metadata: Dictionary containing metadata about the object. This
+                can be used by the producer or consumer to filter new
+                object events.
 
         Raises:
             ValueError: if a store associated with `topic` is not found
@@ -209,6 +213,7 @@ class StreamProducer(Generic[T]):
             topic,
             store.config(),
             evict=evict,
+            metadata=metadata,
         )
         message = event_to_json(event).encode()
         self._publisher.send(topic, message)

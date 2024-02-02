@@ -34,6 +34,7 @@ class NewObjectEvent:
     key_type: str
     raw_key: list[Any]
     evict: bool
+    metadata: dict[str, Any]
     topic: str
     store_config: dict[str, Any]
 
@@ -45,12 +46,14 @@ class NewObjectEvent:
         store_config: dict[str, Any],
         *,
         evict: bool = True,
+        metadata: dict[str, Any] | None = None,
     ) -> NewObjectEvent:
         """Create a new event from a key to a stored object."""
         return NewObjectEvent(
             key_type=get_class_path(type(key)),
             raw_key=list(key),
             evict=evict,
+            metadata=metadata if metadata is not None else {},
             topic=topic,
             store_config=store_config,
         )
