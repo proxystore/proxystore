@@ -1,4 +1,6 @@
-"""Publisher and subscriber protocol definitions.
+"""Protocols used by the stream interfaces.
+
+## Publisher/Subscriber
 
 The [`Publisher`][proxystore.stream.protocols.Publisher] and
 [`Subscriber`][proxystore.stream.protocols.Subscriber] are
@@ -10,10 +12,19 @@ besides the interface. For example, implementations could choose to support
 any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
 A set of shims implementing these protocols for third-party message brokers
 are provided in [`proxystore.stream.shims`][proxystore.stream.shims].
+
+## Plugins
+
+Additional protocols, such as the
+[`Filter`][proxystore.stream.protocols.Filter], are plugins used by the
+[`StreamProducer`][proxystore.stream.interface.StreamProducer] and/or
+[`StreamConsumer`][proxystore.stream.interface.StreamConsumer] that alter
+their behavior.
 """
 from __future__ import annotations
 
 import sys
+from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 
@@ -57,4 +68,18 @@ class Subscriber(Protocol):
 
     def close(self) -> None:
         """Close this subscriber."""
+        ...
+
+
+class Filter(Protocol):
+    """Filter protocol.
+
+    A filter takes as input the dictionary of metadata associated with a new
+    object event and returns a boolean indicating if the event should be
+    dropped. I.e., if the filter returns `True`, the event will be filtered
+    out of the stream and lost.
+    """
+
+    def __call__(self, metadata: dict[str, Any] | None) -> bool:
+        """Apply the filter to event metadata."""
         ...

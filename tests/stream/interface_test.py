@@ -4,15 +4,19 @@ import pathlib
 import queue
 import threading
 import uuid
+from typing import Any
 from typing import Generator
 
 import pytest
 
 from proxystore.connectors.file import FileConnector
+from proxystore.proxy import extract
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import Store
 from proxystore.store import store_registration
+from proxystore.stream.events import json_to_event
+from proxystore.stream.events import NewObjectEvent
 from proxystore.stream.interface import StreamConsumer
 from proxystore.stream.interface import StreamProducer
 from proxystore.stream.shims.queue import QueuePublisher
@@ -148,3 +152,70 @@ def test_missing_store_mapping_error(store: Store[FileConnector]) -> None:
             producer.send('other', 'value')
 
     subscriber.close()
+
+
+@pytest.mark.parametrize('toggle_side', (True, False))
+def test_filtering_stream(
+    toggle_side: bool,
+    store: Store[FileConnector],
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    def filter_(metadata: dict[str, Any] | None) -> bool:
+        assert metadata is not None
+        return metadata['index'] % 2 != 0
+
+    producer = StreamProducer[int](
+        publisher,
+        {topic: store},
+        filter_=filter_ if toggle_side else None,
+    )
+    consumer = StreamConsumer[int](
+        subscriber,
+        filter_=filter_ if not toggle_side else None,
+    )
+
+    for i in range(0, 10):
+        producer.send(topic, i, metadata={'index': i}, evict=False)
+
+    producer.close_topics(topic)
+
+    indices = [extract(p) for p in consumer]
+
+    assert indices == list(range(0, 10, 2))
+
+    producer.close()
+    consumer.close()
+
+
+def test_consumer_evicts_filtered_objs(store: Store[FileConnector]) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    def filter_(metadata: dict[str, Any] | None) -> bool:
+        assert metadata is not None
+        return metadata['index'] % 2 != 0
+
+    producer = StreamProducer[int](publisher, {topic: store})
+    consumer = StreamConsumer[int](subscriber, filter_=filter_)
+
+    for i in range(0, 10):
+        producer.send(topic, i, metadata={'index': i}, evict=True)
+
+    events = list(publisher._queues[topic].queue)  # type: ignore[union-attr]
+    assert len(events) == 10
+
+    producer.close_topics(topic)
+
+    indices = [extract(p) for p in consumer]
+    assert len(indices) == 5
+    assert indices == list(range(0, 10, 2))
+
+    for event_str in events:
+        event = json_to_event(event_str)
+        assert isinstance(event, NewObjectEvent)
+        assert not store.exists(event.get_key())
+
+    producer.close()
+    consumer.close()

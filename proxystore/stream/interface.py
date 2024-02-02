@@ -32,6 +32,8 @@ from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import event_to_json
 from proxystore.stream.events import json_to_event
 from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.filters import NullFilter
+from proxystore.stream.protocols import Filter
 from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 
@@ -83,15 +85,21 @@ class StreamProducer(Generic[T]):
             The `None` topic can be used to specify a default
             [`Store`][proxystore.store.base.Store] used for topics
             not present in this mapping.
+        filter_: Optional filter to apply prior to sending objects to the
+            stream. If the filter returns `True` for a given object's
+            metadata, the object will *not* be sent to the stream.
     """
 
     def __init__(
         self,
         publisher: Publisher,
         stores: Mapping[str | None, Store[Any]],
+        *,
+        filter_: Filter | None = None,
     ) -> None:
         self._publisher = publisher
         self._stores = stores
+        self._filter: Filter = filter_ if filter_ is not None else NullFilter()
 
     def __enter__(self) -> Self:
         return self
@@ -162,11 +170,15 @@ class StreamProducer(Generic[T]):
     ) -> None:
         """Send an item to the stream.
 
-        This method (1) puts the object in the
-        [`Store`][proxystore.store.base.Store] to get back an identifier key,
-        (2) creates a new event using the key and additional metadata, and
-        (3) publishes the event to the stream via the
-        [`Publisher`][proxystore.stream.protocols.Publisher].
+        This method:
+
+        1. Applies the filter to the metadata associated with this event,
+           skipping streaming this object if the filter returns `True`.
+        2. Puts the object in the [`Store`][proxystore.store.base.Store] to
+           get back an identifier key.
+        3. Creates a new event using the key and additional metadata.
+        4. Publishes the event to the stream via the
+           [`Publisher`][proxystore.stream.protocols.Publisher].
 
         Warning:
             Careful consideration should be given to the setting of the
@@ -197,6 +209,9 @@ class StreamProducer(Generic[T]):
                 in the mapping of topics to stores nor a default store is
                 provided.
         """
+        if self._filter(metadata):
+            return
+
         if topic in self._stores:
             store = self._stores[topic]
         elif None in self._stores:
@@ -273,11 +288,22 @@ class StreamConsumer(Generic[T]):
             [`Subscriber`][proxystore.stream.protocols.Subscriber] protocol.
             Used to listen for new event messages indicating new objects
             in the stream.
+        filter_: Optional filter to apply to event metadata received from the
+            stream. If the filter returns `True`, the event will be
+            dropped (i.e., not yielded back to the user), and the object
+            associated with that event will be deleted if the `evict` flag
+            was set on the producer side.
     """
 
-    def __init__(self, subscriber: Subscriber) -> None:
+    def __init__(
+        self,
+        subscriber: Subscriber,
+        *,
+        filter_: Filter | None = None,
+    ) -> None:
         self._subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
+        self._filter: Filter = filter_ if filter_ is not None else NullFilter()
 
     def __enter__(self) -> Self:
         return self
@@ -349,16 +375,23 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
-        message = next(self._subscriber)
-        event = json_to_event(message.decode())
-        if isinstance(event, NewObjectEvent):
-            store = self._get_store(event)
-            proxy: Proxy[T] = store.proxy_from_key(
-                event.get_key(),
-                evict=event.evict,
-            )
-            return proxy
-        elif isinstance(event, EndOfStreamEvent):
-            raise StopIteration
-        else:
-            raise AssertionError('Unreachable.')
+        while True:
+            message = next(self._subscriber)
+            event = json_to_event(message.decode())
+            if isinstance(event, NewObjectEvent):
+                store = self._get_store(event)
+
+                if self._filter(event.metadata):
+                    if event.evict:
+                        store.evict(event.get_key())
+                    continue
+
+                proxy: Proxy[T] = store.proxy_from_key(
+                    event.get_key(),
+                    evict=event.evict,
+                )
+                return proxy
+            elif isinstance(event, EndOfStreamEvent):
+                raise StopIteration
+            else:
+                raise AssertionError('Unreachable.')

@@ -34,7 +34,7 @@ class NewObjectEvent:
     key_type: str
     raw_key: list[Any]
     evict: bool
-    metadata: dict[str, Any]
+    metadata: dict[str, Any] | None
     topic: str
     store_config: dict[str, Any]
 
@@ -53,7 +53,7 @@ class NewObjectEvent:
             key_type=get_class_path(type(key)),
             raw_key=list(key),
             evict=evict,
-            metadata=metadata if metadata is not None else {},
+            metadata=metadata,
             topic=topic,
             store_config=store_config,
         )
