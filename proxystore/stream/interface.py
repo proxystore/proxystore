@@ -16,6 +16,8 @@ from collections import defaultdict
 from types import TracebackType
 from typing import Any
 from typing import Callable
+from typing import cast
+from typing import Generator
 from typing import Generic
 from typing import Iterable
 from typing import Mapping
@@ -426,9 +428,11 @@ class StreamConsumer(Generic[T]):
         self.close()
 
     def __iter__(self) -> Self:
+        """Return an iterator that will yield proxies of stream objects."""
         return self
 
     def __next__(self) -> Proxy[T]:
+        """Alias for [`next()`][proxystore.stream.interface.StreamConsumer.next]."""  # noqa: E501
         return self.next()
 
     def close(self, *, stores: bool = True, subscriber: bool = True) -> None:
@@ -497,6 +501,40 @@ class StreamConsumer(Generic[T]):
         else:
             raise AssertionError('Unreachable.')
 
+    def _next_event_with_filter(self) -> _EventInfo:
+        while True:
+            # _next_event() will propagate up a StopIteration exception
+            # if the event was an end of stream event.
+            event_info = self._next_event()
+            event = event_info.event
+
+            if self._filter(event.metadata):
+                # Coverage in Python 3.8/3.9 does not mark the "else"
+                # as covered but if you put else: assert False the some
+                # tests fail there so it does get run
+                if event.evict:  # pragma: no branch
+                    # If an object gets filtered out by the consumer client,
+                    # we still want to respect the evict flag to.
+                    store = self._get_store(event_info)
+                    key = event.get_key()
+                    store.evict(key)
+                continue
+
+            return event_info
+
+    def iter_objects(self) -> Generator[T, None, None]:
+        """Return an iterator that will yield objects from the stream.
+
+        Note:
+            This is different from `iter(consumer)` which will yield
+            proxies of objects in the stream.
+        """
+        while True:
+            try:
+                yield self.next_object()
+            except StopIteration:
+                return
+
     def next(self) -> Proxy[T]:
         """Return a proxy of the next object in the stream.
 
@@ -515,23 +553,40 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
-        while True:
-            # _next_event() will propagate up a StopIteration exception
-            # if the event was an end of stream event.
-            event_info = self._next_event()
-            store = self._get_store(event_info)
-            event = event_info.event
+        event_info = self._next_event_with_filter()
+        store = self._get_store(event_info)
+        event = event_info.event
+        key = event.get_key()
 
-            key = event.get_key()
+        proxy: Proxy[T] = store.proxy_from_key(key, evict=event.evict)
+        return proxy
 
-            if self._filter(event.metadata):
-                # Coverage in Python 3.8/3.9 does not mark the "else"
-                # as covered but if you put else: assert False the some
-                # tests fail there so it does get run
-                if event.evict:  # pragma: no branch
-                    store.evict(key)
+    def next_object(self) -> T:
+        """Return the next object in the stream.
 
-                continue
+        Note:
+            This method has the same potential side effects as
+            [`next()`][proxystore.stream.interface.StreamConsumer.next].
 
-            proxy: Proxy[T] = store.proxy_from_key(key, evict=event.evict)
-            return proxy
+        Raises:
+            StopIteration: when an end of stream event is received from a
+                producer. Note that this does not call
+                [`close()`][proxystore.stream.interface.StreamConsumer.close].
+            ValueError: if the store does not return an object using the key
+                included in the object's event metadata.
+        """
+        event_info = self._next_event_with_filter()
+        store = self._get_store(event_info)
+        event = event_info.event
+        key = event.get_key()
+
+        obj = store.get(key)
+        if obj is None:
+            raise ValueError(
+                f'Store(name="{store.name}") returned None for key={key}.',
+            )
+
+        if event.evict:
+            store.evict(key)
+
+        return cast(T, obj)
