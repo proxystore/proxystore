@@ -24,7 +24,10 @@ from proxystore.utils.imports import import_class
 class EndOfStreamEvent:
     """End of stream event."""
 
-    pass
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> EndOfStreamEvent:
+        """Create a new event instance from its dictionary representation."""
+        return cls()
 
 
 @dataclasses.dataclass
@@ -34,25 +37,26 @@ class NewObjectEvent:
     key_type: str
     raw_key: list[Any]
     evict: bool
-    topic: str
-    store_config: dict[str, Any]
+    metadata: dict[str, Any]
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> NewObjectEvent:
+        """Create a new event instance from its dictionary representation."""
+        return NewObjectEvent(**data)
 
     @classmethod
     def from_key(
         cls,
-        key: Any,
-        topic: str,
-        store_config: dict[str, Any],
-        *,
-        evict: bool = True,
+        key: tuple[Any, ...],
+        evict: bool,
+        metadata: dict[str, Any],
     ) -> NewObjectEvent:
-        """Create a new event from a key to a stored object."""
-        return NewObjectEvent(
+        """Create a new event from a key and metadata."""
+        return cls(
             key_type=get_class_path(type(key)),
             raw_key=list(key),
             evict=evict,
-            topic=topic,
-            store_config=store_config,
+            metadata=metadata,
         )
 
     def get_key(self) -> Any:
@@ -61,25 +65,63 @@ class NewObjectEvent:
         return key_type(*self.raw_key)
 
 
-class _EventMapping(enum.Enum):
-    END_OF_STREAM = EndOfStreamEvent
-    NEW_OBJECT = NewObjectEvent
-
-
 Event = Union[EndOfStreamEvent, NewObjectEvent]
 """Event union type."""
 
 
-def event_to_json(event: Event) -> str:
-    """Convert event to JSON string."""
-    data = dataclasses.asdict(event)
+@dataclasses.dataclass
+class EventBatch:
+    """Batch of stream events."""
+
+    events: list[Event]
+    topic: str
+    store_config: dict[str, Any]
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> EventBatch:
+        """Create a new event instance from its dictionary representation."""
+        events = [dict_to_event(d) for d in data['events']]
+        return cls(
+            events=events,  # type: ignore[arg-type]
+            topic=data['topic'],
+            store_config=data['store_config'],
+        )
+
+
+class _EventMapping(enum.Enum):
+    END_OF_STREAM = EndOfStreamEvent
+    EVENT_BATCH = EventBatch
+    NEW_OBJECT = NewObjectEvent
+
+
+def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
+    """Convert event to dict."""
+    if isinstance(event, EventBatch):
+        data = {
+            'events': [event_to_dict(e) for e in event.events],
+            'topic': event.topic,
+            'store_config': event.store_config,
+        }
+    else:
+        data = dataclasses.asdict(event)
     data['event_type'] = _EventMapping(type(event)).name
-    return json.dumps(data)
+    return data
 
 
-def json_to_event(s: str) -> Event:
-    """Convert JSON string to event."""
-    data = json.loads(s)
+def dict_to_event(data: dict[str, Any]) -> Event | EventBatch:
+    """Convert dict to event."""
     event_type = data.pop('event_type')
-    event = _EventMapping[event_type].value(**data)
+    event = _EventMapping[event_type].value.from_dict(data)
     return event
+
+
+def event_to_bytes(event: Event | EventBatch) -> bytes:
+    """Convert event to byte-string."""
+    data = event_to_dict(event)
+    return json.dumps(data).encode()
+
+
+def bytes_to_event(s: bytes) -> Event | EventBatch:
+    """Convert byte-string to event."""
+    data = json.loads(s.decode())
+    return dict_to_event(data)

@@ -97,7 +97,9 @@ producer.close() # (5)!
    implementations depending on your deployment or data characteristics.
 2. The [`Publisher`][proxystore.stream.protocols.Publisher] is the interface
    to a pub/sub channel which will be used for sending event metadata to
-   consumers.
+   consumers. The
+   [`StreamProducer`][proxystore.stream.interface.StreamProducer] also supports
+   aggregation, batching, and filtering.
 3. In the mapping of topics to stores, the `None` key is considered the
    default for when a topic is not found in the mapping. For example,
    `{None: store}` will use the same store for all topics.
