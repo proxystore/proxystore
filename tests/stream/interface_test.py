@@ -11,7 +11,6 @@ from typing import Generator
 import pytest
 
 from proxystore.connectors.file import FileConnector
-from proxystore.proxy import extract
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import Store
@@ -198,41 +197,17 @@ def test_filtering_stream(
     )
 
     for i in range(0, 10):
-        producer.send(topic, i, metadata={'index': i}, evict=False)
-
-    producer.close_topics(topic)
-
-    indices = [extract(p) for p in consumer]
-
-    assert indices == list(range(0, 10, 2))
-
-    producer.close()
-    consumer.close()
-
-
-def test_consumer_evicts_filtered_objs(store: Store[FileConnector]) -> None:
-    topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
-
-    def filter_(metadata: dict[str, Any] | None) -> bool:
-        assert metadata is not None
-        return metadata['index'] % 2 != 0
-
-    producer = StreamProducer[int](publisher, {topic: store})
-    consumer = StreamConsumer[int](subscriber, filter_=filter_)
-
-    for i in range(0, 10):
         producer.send(topic, i, metadata={'index': i}, evict=True)
 
     events = list(publisher._queues[topic].queue)  # type: ignore[union-attr]
-    assert len(events) == 10
 
     producer.close_topics(topic)
 
-    indices = [extract(p) for p in consumer]
+    indices = list(consumer.iter_objects())
     assert len(indices) == 5
     assert indices == list(range(0, 10, 2))
 
+    # Check all events were evicted regardless of if they were filtered
     for event_bytes in events:
         batch = bytes_to_event(event_bytes)
         assert isinstance(batch, EventBatch)
@@ -262,9 +237,65 @@ def test_aggregator(batch_size: int, store: Store[FileConnector]) -> None:
         producer.send(topic, 1, evict=True)
     producer.close_topics(topic)
 
-    values = [extract(p) for p in consumer]
+    values = list(consumer.iter_objects())
     assert len(values) == math.ceil(count / batch_size)
     assert sum(values) == count
+
+    producer.close()
+    consumer.close()
+
+
+@pytest.mark.parametrize('evict', (True, False))
+def test_consumer_next_object_evicts(
+    evict: bool,
+    store: Store[FileConnector],
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    producer = StreamProducer[str](publisher, {topic: store})
+    consumer = StreamConsumer[str](subscriber)
+
+    producer.send(topic, 'value', evict=evict)
+
+    # This assumes knowledge of the internal details of the publisher
+    # but we need to get the key associated with the event we just published.
+    events = list(publisher._queues[topic].queue)  # type: ignore[union-attr]
+    batch = bytes_to_event(events[0])
+    assert isinstance(batch, EventBatch)
+    (event,) = batch.events
+    assert isinstance(event, NewObjectEvent)
+    key = event.get_key()
+
+    assert store.exists(key)
+    assert consumer.next_object() == 'value'
+    assert store.exists(key) != evict
+
+    producer.close()
+    consumer.close()
+
+
+def test_consumer_next_object_missing(store: Store[FileConnector]) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    producer = StreamProducer[str](publisher, {topic: store})
+    consumer = StreamConsumer[str](subscriber)
+
+    producer.send(topic, 'value')
+
+    # This assumes knowledge of the internal details of the publisher
+    # but we need to get the key associated with the event we just published.
+    events = list(publisher._queues[topic].queue)  # type: ignore[union-attr]
+    batch = bytes_to_event(events[0])
+    assert isinstance(batch, EventBatch)
+    (event,) = batch.events
+    assert isinstance(event, NewObjectEvent)
+    key = event.get_key()
+
+    store.evict(key)
+    with pytest.raises(ValueError, match='returned None'):
+        consumer.next_object()
 
     producer.close()
     consumer.close()
