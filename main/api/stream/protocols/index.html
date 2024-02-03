@@ -2341,6 +2341,46 @@
   
   
     <li class="md-nav__item">
+      <a href="../exceptions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    exceptions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../filters/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    filters
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../interface/" class="md-nav__link">
         
   
@@ -2411,6 +2451,26 @@
     proxystore.stream.protocols
   </a>
   
+    <nav class="md-nav" aria-label="proxystore.stream.protocols">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols--publishersubscriber" class="md-nav__link">
+    Publisher/Subscriber
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols--plugins" class="md-nav__link">
+    Plugins
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2460,6 +2520,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Filter" class="md-nav__link">
+    Filter
+  </a>
+  
+    <nav class="md-nav" aria-label="Filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Filter.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -2484,7 +2564,7 @@
         
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_11_6" >
         
           
           
@@ -2500,14 +2580,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_11_4" id="__nav_4_1_11_4_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_11_6" id="__nav_4_1_11_6_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_11_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_11_4">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_11_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_11_6">
             <span class="md-nav__icon md-icon"></span>
             shims
           </label>
@@ -3020,6 +3100,26 @@
     proxystore.stream.protocols
   </a>
   
+    <nav class="md-nav" aria-label="proxystore.stream.protocols">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols--publishersubscriber" class="md-nav__link">
+    Publisher/Subscriber
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols--plugins" class="md-nav__link">
+    Plugins
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3069,6 +3169,26 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Filter" class="md-nav__link">
+    Filter
+  </a>
+  
+    <nav class="md-nav" aria-label="Filter">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Filter.__call__" class="md-nav__link">
+    __call__()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3100,7 +3220,8 @@
 
   <div class="doc doc-contents first">
   
-      <p>Publisher and subscriber protocol definitions.</p>
+      <p>Protocols used by the stream interfaces.</p>
+<h3 id="proxystore.stream.protocols--publishersubscriber">Publisher/Subscriber<a class="headerlink" href="#proxystore.stream.protocols--publishersubscriber" title="Permanent link">&para;</a></h3>
 <p>The <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> are
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocols</code></a> which define the publisher and subscriber
@@ -3110,6 +3231,12 @@ besides the interface. For example, implementations could choose to support
 any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
 A set of shims implementing these protocols for third-party message brokers
 are provided in <a class="autorefs autorefs-internal" href="../shims/#proxystore.stream.shims"><code>proxystore.stream.shims</code></a>.</p>
+<h3 id="proxystore.stream.protocols--plugins">Plugins<a class="headerlink" href="#proxystore.stream.protocols--plugins" title="Permanent link">&para;</a></h3>
+<p>Additional protocols, such as the
+<a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Filter"><code>Filter</code></a>, are plugins used by the
+<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> and/or
+<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> that alter
+their behavior.</p>
 
   
 
@@ -3171,11 +3298,11 @@ are provided in <a class="autorefs autorefs-internal" href="../shims/#proxystore
 
       <details class="quote">
         <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-30">30</a></span>
-<span class="normal"><a href="#__codelineno-0-31">31</a></span>
-<span class="normal"><a href="#__codelineno-0-32">32</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this publisher.&quot;&quot;&quot;</span>
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a>    <span class="o">...</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-44">44</a></span>
+<span class="normal"><a href="#__codelineno-0-45">45</a></span>
+<span class="normal"><a href="#__codelineno-0-46">46</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this publisher.&quot;&quot;&quot;</span>
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -3222,21 +3349,21 @@ are provided in <a class="autorefs autorefs-internal" href="../shims/#proxystore
 
       <details class="quote">
         <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-34">34</a></span>
-<span class="normal"><a href="#__codelineno-0-35">35</a></span>
-<span class="normal"><a href="#__codelineno-0-36">36</a></span>
-<span class="normal"><a href="#__codelineno-0-37">37</a></span>
-<span class="normal"><a href="#__codelineno-0-38">38</a></span>
-<span class="normal"><a href="#__codelineno-0-39">39</a></span>
-<span class="normal"><a href="#__codelineno-0-40">40</a></span>
-<span class="normal"><a href="#__codelineno-0-41">41</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34"></a><span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish a message to the stream.</span>
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36"></a>
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38"></a><span class="sd">        topic: Stream topic to publish message to.</span>
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39"></a><span class="sd">        message: Message as bytes to publish to the stream.</span>
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a>    <span class="o">...</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-48">48</a></span>
+<span class="normal"><a href="#__codelineno-0-49">49</a></span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span>
+<span class="normal"><a href="#__codelineno-0-51">51</a></span>
+<span class="normal"><a href="#__codelineno-0-52">52</a></span>
+<span class="normal"><a href="#__codelineno-0-53">53</a></span>
+<span class="normal"><a href="#__codelineno-0-54">54</a></span>
+<span class="normal"><a href="#__codelineno-0-55">55</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a><span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish a message to the stream.</span>
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">        topic: Stream topic to publish message to.</span>
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">        message: Message as bytes to publish to the stream.</span>
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
@@ -3303,11 +3430,84 @@ from the stream until the stream is closed.</p>
 
       <details class="quote">
         <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-58">58</a></span>
-<span class="normal"><a href="#__codelineno-0-59">59</a></span>
-<span class="normal"><a href="#__codelineno-0-60">60</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
-</span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>    <span class="o">...</span>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+      </details>
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.stream.protocols.Filter" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">Filter</span>
+
+
+<a href="#proxystore.stream.protocols.Filter" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents ">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
+
+  
+      <p>Filter protocol.</p>
+<p>A filter takes as input the dictionary of metadata associated with a new
+object event and returns a boolean indicating if the event should be
+dropped. I.e., if the filter returns <code>True</code>, the event will be filtered
+out of the stream and lost.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="proxystore.stream.protocols.Filter.__call__" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">__call__()</span>
+
+
+<a href="#proxystore.stream.protocols.Filter.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="fm">__call__</span><span class="p">(</span><span class="n">metadata</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span>
+</span></code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Apply the filter to event metadata.</p>
+
+      <details class="quote">
+        <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+        <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-86">86</a></span>
+<span class="normal"><a href="#__codelineno-0-87">87</a></span>
+<span class="normal"><a href="#__codelineno-0-88">88</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the filter to event metadata.&quot;&quot;&quot;</span>
+</span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
