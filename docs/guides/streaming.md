@@ -150,6 +150,16 @@ consumer.close() # (5)!
    all [`Store`][proxystore.store.base.Store] instances, and
    [`Connector`][proxystore.connectors.protocols.Connector] by default.
 
+!!! tip
+
+    By default, iterating on a
+    [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] yields only
+    a proxy of the next object in the stream. The
+    [`iter_with_metadata()`][proxystore.stream.interface.StreamConsumer.iter_with_metadata],
+    [`iter_objects()`][proxystore.stream.interface.StreamConsumer.iter_objects], and
+    [`iter_objects_with_metadata()`][proxystore.stream.interface.StreamConsumer.iter_objects_with_metadata]
+    methods provide additional mechanisms for iterating over stream data.
+
 ## Multi-Producer/Multi-Consumer
 
 The [`StreamProducer`][proxystore.stream.interface.StreamProducer]
