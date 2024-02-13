@@ -522,8 +522,23 @@ class StreamConsumer(Generic[T]):
 
             return event_info
 
+    def iter_with_metadata(
+        self,
+    ) -> Generator[tuple[dict[str, Any], Proxy[T]], None, None]:
+        """Return an iterator that yields tuples of metadata and proxies.
+
+        Note:
+            This is different from `iter(consumer)` which will yield
+            *only* proxies of objects in the stream.
+        """
+        while True:
+            try:
+                yield self.next_with_metadata()
+            except StopIteration:
+                return
+
     def iter_objects(self) -> Generator[T, None, None]:
-        """Return an iterator that will yield objects from the stream.
+        """Return an iterator that yields objects from the stream.
 
         Note:
             This is different from `iter(consumer)` which will yield
@@ -532,6 +547,21 @@ class StreamConsumer(Generic[T]):
         while True:
             try:
                 yield self.next_object()
+            except StopIteration:
+                return
+
+    def iter_objects_with_metadata(
+        self,
+    ) -> Generator[tuple[dict[str, Any], T], None, None]:
+        """Return an iterator that yields tuples of metadata and objects.
+
+        Note:
+            This is different from `iter(consumer)` which will yield
+            proxies of objects in the stream.
+        """
+        while True:
+            try:
+                yield self.next_object_with_metadata()
             except StopIteration:
                 return
 
@@ -553,13 +583,32 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
+        _, proxy = self.next_with_metadata()
+        return proxy
+
+    def next_with_metadata(self) -> tuple[dict[str, Any], Proxy[T]]:
+        """Return a tuple of metadata and proxy for the next object.
+
+        Note:
+            This method has the same potential side effects as
+            [`next()`][proxystore.stream.interface.StreamConsumer.next].
+
+        Returns:
+            Dictionary of user-provided metadata associated with the object.
+            Proxy of the next object in the stream.
+
+        Raises:
+            StopIteration: when an end of stream event is received from a
+                producer. Note that this does not call
+                [`close()`][proxystore.stream.interface.StreamConsumer.close].
+        """
         event_info = self._next_event_with_filter()
         store = self._get_store(event_info)
         event = event_info.event
         key = event.get_key()
 
         proxy: Proxy[T] = store.proxy_from_key(key, evict=event.evict)
-        return proxy
+        return event.metadata, proxy
 
     def next_object(self) -> T:
         """Return the next object in the stream.
@@ -575,6 +624,25 @@ class StreamConsumer(Generic[T]):
             ValueError: if the store does not return an object using the key
                 included in the object's event metadata.
         """
+        _, obj = self.next_object_with_metadata()
+        return obj
+
+    def next_object_with_metadata(self) -> tuple[dict[str, Any], T]:
+        """Return a tuple of metadata and the next object in the stream.
+
+        Note:
+            This method has the same potential side effects as
+            [`next()`][proxystore.stream.interface.StreamConsumer.next].
+
+        Returns:
+            Dictionary of user-provided metadata associated with the object.
+            Next object in the stream.
+
+        Raises:
+            StopIteration: when an end of stream event is received from a
+                producer. Note that this does not call
+                [`close()`][proxystore.stream.interface.StreamConsumer.close].
+        """
         event_info = self._next_event_with_filter()
         store = self._get_store(event_info)
         event = event_info.event
@@ -589,4 +657,4 @@ class StreamConsumer(Generic[T]):
         if event.evict:
             store.evict(key)
 
-        return cast(T, obj)
+        return event.metadata, cast(T, obj)

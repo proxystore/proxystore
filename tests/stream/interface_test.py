@@ -245,6 +245,44 @@ def test_aggregator(batch_size: int, store: Store[FileConnector]) -> None:
     consumer.close()
 
 
+def test_iter_with_metadata(store: Store[FileConnector]) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    producer = StreamProducer[int](publisher, {topic: store})
+    consumer = StreamConsumer[int](subscriber)
+
+    count = 10
+    for i in range(count):
+        producer.send(topic, i, metadata={'value': i})
+    producer.close_topics(topic)
+
+    for metadata, proxy in consumer.iter_with_metadata():
+        assert metadata['value'] == proxy
+
+    producer.close()
+    consumer.close()
+
+
+def test_iter_objects_with_metadata(store: Store[FileConnector]) -> None:
+    topic = 'default'
+    publisher, subscriber = create_pubsub_pair(topic)
+
+    producer = StreamProducer[int](publisher, {topic: store})
+    consumer = StreamConsumer[int](subscriber)
+
+    count = 10
+    for i in range(count):
+        producer.send(topic, i, metadata={'value': i})
+    producer.close_topics(topic)
+
+    for metadata, obj in consumer.iter_objects_with_metadata():
+        assert metadata['value'] == obj
+
+    producer.close()
+    consumer.close()
+
+
 @pytest.mark.parametrize('evict', (True, False))
 def test_consumer_next_object_evicts(
     evict: bool,
