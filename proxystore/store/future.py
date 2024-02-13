@@ -32,6 +32,10 @@ class Future(Generic[T]):
         self._factory = factory
         self._serializer = serializer
 
+    def done(self) -> bool:
+        """Check if the result has been set yet."""
+        return self._factory.get_store().exists(self._factory.key)
+
     def proxy(self) -> Proxy[T]:
         """Create a proxy which will resolve to the result of this future."""
         return Proxy(self._factory)
