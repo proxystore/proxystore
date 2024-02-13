@@ -143,7 +143,9 @@ def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
 def test_future(store: Store[LocalConnector]) -> None:
     future: Future[str] = store.future()
     proxy = future.proxy()
+    assert not future.done()
     future.set_result('test_value')
+    assert future.done()
     assert future.result() == 'test_value'
     assert proxy == 'test_value'
 
