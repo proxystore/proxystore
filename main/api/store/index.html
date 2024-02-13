@@ -3763,7 +3763,7 @@ proxies have been resolved.</p>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.DeserializerT" href="types/#proxystore.store.types.DeserializerT">DeserializerT</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">polling_interval</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">polling_timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#float">float</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.future.ProxyFuture" href="future/#proxystore.store.future.ProxyFuture">ProxyFuture</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.base.T">T</span></span><span class="p">]</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.future.Future" href="future/#proxystore.store.future.Future">Future</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.base.T">T</span></span><span class="p">]</span>
 </span></code></pre></div>
 
   <div class="doc doc-contents ">
@@ -3774,9 +3774,9 @@ proxies have been resolved.</p>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.future</span> <span class="kn">import</span> <span class="n">ProxyFuture</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.future</span> <span class="kn">import</span> <span class="n">Future</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span> <span class="nf">remote_foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">ProxyFuture</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span> <span class="nf">remote_foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="c1"># Computation that generates a result value needed by</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="c1"># the remote_bar function.</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -3807,7 +3807,7 @@ proxies have been resolved.</p>
 <details class="warning" open>
   <summary>Warning</summary>
   <p>This method and the
-<a class="autorefs autorefs-internal" href="future/#proxystore.store.future.ProxyFuture.proxy"><code>ProxyFuture.proxy()</code></a>
+<a class="autorefs autorefs-internal" href="future/#proxystore.store.future.Future.proxy"><code>Future.proxy()</code></a>
 are experimental features and may change in future releases.</p>
 </details>
 
@@ -3822,7 +3822,7 @@ are experimental features and may change in future releases.</p>
         –
         <div class="doc-md-description">
           <p>If a proxy returned by
-<a class="autorefs autorefs-internal" href="future/#proxystore.store.future.ProxyFuture.proxy"><code>ProxyFuture.proxy()</code></a>
+<a class="autorefs autorefs-internal" href="future/#proxystore.store.future.Future.proxy"><code>Future.proxy()</code></a>
 should evict the object once resolved.</p>
         </div>
       </li>
@@ -3877,7 +3877,7 @@ when getting the result of the future.</p>
   <p>Returns:</p>
   <ul>
       <li class="field-body">
-            <code><a class="autorefs autorefs-internal" title="proxystore.store.future.ProxyFuture" href="future/#proxystore.store.future.ProxyFuture">ProxyFuture</a>[<span title="proxystore.store.base.T">T</span>]</code>
+            <code><a class="autorefs autorefs-internal" title="proxystore.store.future.Future" href="future/#proxystore.store.future.Future">Future</a>[<span title="proxystore.store.base.T">T</span>]</code>
         –
         <div class="doc-md-description">
           <p>Future which can be used to get the result object at a later time             or create a proxy which will resolve to the result of the future.</p>
@@ -4003,16 +4003,16 @@ when getting the result of the future.</p>
 </span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n">DeserializerT</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-220"><a id="__codelineno-0-220" name="__codelineno-0-220"></a>    <span class="n">polling_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
 </span><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a>    <span class="n">polling_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ProxyFuture</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
+</span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Future</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
 </span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a future to an object.</span>
 </span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a>
 </span><span id="__span-0-225"><a id="__codelineno-0-225" name="__codelineno-0-225"></a><span class="sd">    Example:</span>
 </span><span id="__span-0-226"><a id="__codelineno-0-226" name="__codelineno-0-226"></a><span class="sd">        ```python</span>
 </span><span id="__span-0-227"><a id="__codelineno-0-227" name="__codelineno-0-227"></a><span class="sd">        from proxystore.connectors.file import FileConnector</span>
 </span><span id="__span-0-228"><a id="__codelineno-0-228" name="__codelineno-0-228"></a><span class="sd">        from proxystore.store import Store</span>
-</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        from proxystore.store.future import ProxyFuture</span>
+</span><span id="__span-0-229"><a id="__codelineno-0-229" name="__codelineno-0-229"></a><span class="sd">        from proxystore.store.future import Future</span>
 </span><span id="__span-0-230"><a id="__codelineno-0-230" name="__codelineno-0-230"></a>
-</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        def remote_foo(future: ProxyFuture) -&gt; None:</span>
+</span><span id="__span-0-231"><a id="__codelineno-0-231" name="__codelineno-0-231"></a><span class="sd">        def remote_foo(future: Future) -&gt; None:</span>
 </span><span id="__span-0-232"><a id="__codelineno-0-232" name="__codelineno-0-232"></a><span class="sd">            # Computation that generates a result value needed by</span>
 </span><span id="__span-0-233"><a id="__codelineno-0-233" name="__codelineno-0-233"></a><span class="sd">            # the remote_bar function.</span>
 </span><span id="__span-0-234"><a id="__codelineno-0-234" name="__codelineno-0-234"></a><span class="sd">            future.set_result(...)</span>
@@ -4041,12 +4041,12 @@ when getting the result of the future.</p>
 </span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a>
 </span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    Warning:</span>
 </span><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="sd">        This method and the</span>
-</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]</span>
+</span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="sd">        [`Future.proxy()`][proxystore.store.future.Future.proxy]</span>
 </span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="sd">        are experimental features and may change in future releases.</span>
 </span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a>
 </span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="sd">        evict: If a proxy returned by</span>
-</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">            [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]</span>
+</span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="sd">            [`Future.proxy()`][proxystore.store.future.Future.proxy]</span>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="sd">            should evict the object once resolved.</span>
 </span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">        serializer: Optionally override the default serializer for the</span>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">            store instance.</span>
@@ -4070,11 +4070,11 @@ when getting the result of the future.</p>
 </span><span id="__span-0-286"><a id="__codelineno-0-286" name="__codelineno-0-286"></a>            <span class="s1">&#39;The provided connector is type &#39;</span>
 </span><span id="__span-0-287"><a id="__codelineno-0-287" name="__codelineno-0-287"></a>            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connector</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> which does not implement &#39;</span>
 </span><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a>            <span class="sa">f</span><span class="s1">&#39;the </span><span class="si">{</span><span class="n">DeferrableConnector</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> necessary to use the &#39;</span>
-</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">ProxyFuture</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> interface.&#39;</span><span class="p">,</span>
+</span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a>            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">Future</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> interface.&#39;</span><span class="p">,</span>
 </span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a>        <span class="p">)</span>
 </span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a>
 </span><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a>    <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="s1">&#39;The Store.future() and ProxyFuture interfaces are experimental &#39;</span>
+</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a>        <span class="s1">&#39;The Store.future() and Future interfaces are experimental &#39;</span>
 </span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a>        <span class="s1">&#39;and may change in future releases.&#39;</span><span class="p">,</span>
 </span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a>        <span class="n">category</span><span class="o">=</span><span class="n">ExperimentalWarning</span><span class="p">,</span>
 </span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a>        <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
@@ -4089,7 +4089,7 @@ when getting the result of the future.</p>
 </span><span id="__span-0-305"><a id="__codelineno-0-305" name="__codelineno-0-305"></a>        <span class="n">polling_interval</span><span class="o">=</span><span class="n">polling_interval</span><span class="p">,</span>
 </span><span id="__span-0-306"><a id="__codelineno-0-306" name="__codelineno-0-306"></a>        <span class="n">polling_timeout</span><span class="o">=</span><span class="n">polling_timeout</span><span class="p">,</span>
 </span><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a>    <span class="p">)</span>
-</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a>    <span class="k">return</span> <span class="n">ProxyFuture</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">serializer</span><span class="p">)</span>
+</span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a>    <span class="k">return</span> <span class="n">Future</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">serializer</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
   </div>
