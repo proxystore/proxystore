@@ -4,7 +4,7 @@
 
 This guide walks through the use of the
 [`Store.future()`][proxystore.store.base.Store.future] interface and associated
-[`ProxyFuture`][proxystore.store.future.ProxyFuture].
+[`Future`][proxystore.store.future.Future].
 
 !!! note
 
@@ -16,10 +16,10 @@ This guide walks through the use of the
 !!! warning
 
     The [`Store.future()`][proxystore.store.base.Store.future] and
-    [`ProxyFuture`][proxystore.store.future.ProxyFuture] interfaces are
+    [`Future`][proxystore.store.future.Future] interfaces are
     experimental features and may change in future releases.
 
-The [`ProxyFuture`][proxystore.store.future.ProxyFuture] interface enables
+The [`Future`][proxystore.store.future.Future] interface enables
 a data producer to preemptively send a proxy to a data consumer before the
 target data has been created. The consumer of the target data proxy will
 block when the proxy is first used and resolved until the producer
@@ -27,17 +27,17 @@ has created the target data.
 
 Here is a trivial example using a [`Store`][proxystore.store.base.Store] and
 [`LocalConnector`][proxystore.connectors.local.LocalConnector]. The
-[`future.proxy()`][proxystore.store.future.ProxyFuture.proxy] method is used
+[`future.proxy()`][proxystore.store.future.Future.proxy] method is used
 to create a [`Proxy`][proxystore.proxy.Proxy] which will resolve to the
 result of the future.
 
 ```python linenums="1" title="example.py"
 from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
-from proxystore.store.future import ProxyFuture
+from proxystore.store.future import Future
 
 with Store('proxy-future-example', LocalConnector()) as store:
-    future: ProxyFuture[str] = store.future()
+    future: Future[str] = store.future()
     proxy = future.proxy()
 
     future.set_result('value')
@@ -65,11 +65,11 @@ with Store('proxy-future-example', LocalConnector()) as store:
     [`FileConnector`][proxystore.connectors.file.FileConnector], and
     [`RedisConnector`][proxystore.connectors.redis.RedisConnector].
 
-The power of [`ProxyFuture`][proxystore.store.future.ProxyFuture] comes when
+The power of [`Future`][proxystore.store.future.Future] comes when
 the data producer and consumer are executing independently in time and space
 (i.e., execution occurs in different processes, potentially on different
 systems, and in an undefined order). The
-[`ProxyFuture`][proxystore.store.future.ProxyFuture] enables the producer
+[`Future`][proxystore.store.future.Future] enables the producer
 and consumer to share a data dependency, while allowing the consumer to
 eagerly start execution before the data dependencies are fully satisfied.
 
@@ -81,12 +81,12 @@ at the same time. (We could even start `bar()` before `foo()`!)
 ```python linenums="1" title="client.py"
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store import Store
-from proxystore.store.future import ProxyFuture
+from proxystore.store.future import Future
 
 class MyData:
     ...
 
-def foo(future: ProxyFuture[MyData]) -> None:
+def foo(future: Future[MyData]) -> None:
     data: MyData = compute(...)
     future.set_result(data)
 
@@ -99,7 +99,7 @@ def bar(data: MyData) -> None:
 
 
 with Store('proxy-future-example', RedisConnector(...)) as store:
-    future: ProxyFuture[MyData] = store.future()
+    future: Future[MyData] = store.future()
 
     # The invoke_remote function will execute the function with
     # the provided on arguments on an arbitrary remote process.
