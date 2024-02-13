@@ -29,7 +29,7 @@ from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
-from proxystore.store.future import ProxyFuture
+from proxystore.store.future import Future
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
@@ -219,16 +219,16 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         polling_interval: float = 1,
         polling_timeout: float | None = None,
-    ) -> ProxyFuture[T]:
+    ) -> Future[T]:
         """Create a future to an object.
 
         Example:
             ```python
             from proxystore.connectors.file import FileConnector
             from proxystore.store import Store
-            from proxystore.store.future import ProxyFuture
+            from proxystore.store.future import Future
 
-            def remote_foo(future: ProxyFuture) -> None:
+            def remote_foo(future: Future) -> None:
                 # Computation that generates a result value needed by
                 # the remote_bar function.
                 future.set_result(...)
@@ -257,12 +257,12 @@ class Store(Generic[ConnectorT]):
 
         Warning:
             This method and the
-            [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
+            [`Future.proxy()`][proxystore.store.future.Future.proxy]
             are experimental features and may change in future releases.
 
         Args:
             evict: If a proxy returned by
-                [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
+                [`Future.proxy()`][proxystore.store.future.Future.proxy]
                 should evict the object once resolved.
             serializer: Optionally override the default serializer for the
                 store instance.
@@ -286,11 +286,11 @@ class Store(Generic[ConnectorT]):
                 'The provided connector is type '
                 f'{type(self.connector).__name__} which does not implement '
                 f'the {DeferrableConnector.__name__} necessary to use the '
-                f'{ProxyFuture.__name__} interface.',
+                f'{Future.__name__} interface.',
             )
 
         warnings.warn(
-            'The Store.future() and ProxyFuture interfaces are experimental '
+            'The Store.future() and Future interfaces are experimental '
             'and may change in future releases.',
             category=ExperimentalWarning,
             stacklevel=2,
@@ -305,7 +305,7 @@ class Store(Generic[ConnectorT]):
             polling_interval=polling_interval,
             polling_timeout=polling_timeout,
         )
-        return ProxyFuture(factory, serializer=serializer)
+        return Future(factory, serializer=serializer)
 
     def evict(self, key: ConnectorKeyT) -> None:
         """Evict the object associated with the key.

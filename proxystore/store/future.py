@@ -12,8 +12,8 @@ from proxystore.store.types import SerializerT
 T = TypeVar('T')
 
 
-class ProxyFuture(Generic[T]):
-    """Proxy-Future interface to a [`Store`][proxystore.store.base.Store].
+class Future(Generic[T]):
+    """Future interface to a [`Store`][proxystore.store.base.Store].
 
     Args:
         factory: Factory that can resolve the object once it is resolved.

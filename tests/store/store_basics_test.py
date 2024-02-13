@@ -9,7 +9,7 @@ import pytest
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
-from proxystore.store.future import ProxyFuture
+from proxystore.store.future import Future
 
 
 def test_negative_cache_size() -> None:
@@ -141,7 +141,7 @@ def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
 
 
 def test_future(store: Store[LocalConnector]) -> None:
-    future: ProxyFuture[str] = store.future()
+    future: Future[str] = store.future()
     proxy = future.proxy()
     future.set_result('test_value')
     assert future.result() == 'test_value'
@@ -149,10 +149,10 @@ def test_future(store: Store[LocalConnector]) -> None:
 
 
 def test_future_in_threads(store: Store[LocalConnector]) -> None:
-    future: ProxyFuture[str] = store.future()
+    future: Future[str] = store.future()
 
     def _foo(
-        future: ProxyFuture[str],
+        future: Future[str],
         barrier: threading.Barrier,
     ) -> None:
         future.set_result('test_value')
