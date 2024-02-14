@@ -29,19 +29,19 @@ jobs:
         - os: ubuntu-latest
           python: '3.12'
           toxenv: py312
-        - os: macos-latest
+        - os: macos-13
           python: 3.8
           toxenv: py38
-        - os: macos-latest
+        - os: macos-13
           python: 3.9
           toxenv: py39
-        - os: macos-latest
+        - os: macos-13
           python: '3.10'
           toxenv: py310
-        - os: macos-latest
+        - os: macos-14
           python: '3.11'
           toxenv: py311
-        - os: macos-latest
+        - os: macos-14
           python: '3.12'
           toxenv: py312
     runs-on: ${{ matrix.os }}
