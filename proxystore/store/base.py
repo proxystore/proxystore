@@ -884,6 +884,12 @@ class Store(Generic[ConnectorT]):
             This method only works if the `connector` is of type
             [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
 
+        Warning:
+            Associated [`Store`][proxystore.store.base.Store] instances in
+            other processes may still have the old version of the object
+            associated with `key` cached. This method is unable to invalidate
+            those caches.
+
         Args:
             key: Key to set the object on.
             obj: Object to put in the store.
@@ -922,6 +928,8 @@ class Store(Generic[ConnectorT]):
 
         with Timer() as connector_timer:
             self.connector.set(key, obj, **kwargs)
+
+        self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:
