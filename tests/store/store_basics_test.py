@@ -117,11 +117,15 @@ def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
         assert store.exists(key)
 
 
-def test_set(store: Store[LocalConnector]) -> None:
-    key = store.connector.new_key()
-    assert not store.exists(key)
-    store._set(key, 'test_value')
-    assert store.get(key) == 'test_value'
+def test_set() -> None:
+    with Store('test-set', LocalConnector(), cache_size=1) as store:
+        key = store.connector.new_key()
+        assert not store.exists(key)
+        store._set(key, 'test_value')
+        assert store.get(key) == 'test_value'
+        assert store.is_cached(key)
+        store._set(key, 'new_value')
+        assert not store.is_cached(key)
 
 
 def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
