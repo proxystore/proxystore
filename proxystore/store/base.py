@@ -31,6 +31,7 @@ from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import Future
 from proxystore.store.metrics import StoreMetrics
+from proxystore.store.ref import OwnedProxy
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
@@ -754,6 +755,81 @@ class Store(Generic[ConnectorT]):
 
         if isinstance(possible_proxy, Proxy):
             return ProxyLocker(possible_proxy)
+        return possible_proxy
+
+    # This method has the same MyPy complaint as Store.proxy()
+    @overload
+    def owned_proxy(  # type: ignore[overload-overlap]
+        self,
+        obj: NonProxiableT,
+        *,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: Literal[True] = ...,
+        **kwargs: Any,
+    ) -> NonProxiableT:
+        ...
+
+    @overload
+    def owned_proxy(
+        self,
+        obj: T,
+        *,
+        serializer: SerializerT | None = ...,
+        deserializer: DeserializerT | None = ...,
+        skip_nonproxiable: bool = ...,
+        **kwargs: Any,
+    ) -> OwnedProxy[T]:
+        ...
+
+    def owned_proxy(
+        self,
+        obj: T | NonProxiableT,
+        *,
+        serializer: SerializerT | None = None,
+        deserializer: DeserializerT | None = None,
+        skip_nonproxiable: bool = True,
+        **kwargs: Any,
+    ) -> OwnedProxy[T] | NonProxiableT:
+        """Create a proxy that will enforce ownership rules over the object.
+
+        An [`OwnedProxy`][proxystore.store.ref.OwnedProxy] will auto-evict
+        the object once it goes out of scope. This proxy type can also
+        be borrowed.
+
+        Args:
+            obj: The object to place in store and return a proxy for.
+            serializer: Optionally override the default serializer for the
+                store instance.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            skip_nonproxiable: Return non-proxiable types (e.g., built-in
+                constants like `bool` or `None`) rather than raising a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+            kwargs: Additional keyword arguments to pass to
+                [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
+
+        Returns:
+            A proxy of the object unless `obj` is a non-proxiable type \
+            `#!python skip_nonproxiable is True` in which case `obj` is \
+            returned directly.
+
+        Raises:
+            NonProxiableTypeError: If `obj` is a non-proxiable type. This
+                behavior can be overridden by setting
+                `#!python skip_nonproxiable=True`.
+        """
+        possible_proxy = self.proxy(
+            obj,
+            evict=False,
+            serializer=serializer,
+            deserializer=deserializer,
+            skip_nonproxiable=skip_nonproxiable,
+            **kwargs,
+        )
+
+        if isinstance(possible_proxy, Proxy):
+            return OwnedProxy(possible_proxy.__factory__)
         return possible_proxy
 
     def put(
