@@ -18,6 +18,7 @@ from proxystore.store.base import Store
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import StoreFactory
+from proxystore.store.ref import OwnedProxy
 from proxystore.store.utils import get_key
 
 
@@ -242,3 +243,18 @@ def test_locked_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         store.locked_proxy(None, skip_nonproxiable=False)
+
+
+def test_owned_proxy(store: Store[LocalConnector]) -> None:
+    assert isinstance(store.owned_proxy([1, 2, 3]), OwnedProxy)
+
+
+def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
+    p = store.owned_proxy(None, skip_nonproxiable=True)
+    assert not isinstance(p, (Proxy, OwnedProxy))
+    assert p is None
+
+
+def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
+    with pytest.raises(NonProxiableTypeError):
+        store.owned_proxy(None, skip_nonproxiable=False)
