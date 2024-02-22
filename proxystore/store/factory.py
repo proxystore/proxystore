@@ -162,9 +162,15 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         evict: If True, evict the object from the store once
             [`resolve()`][proxystore.store.base.StoreFactory.resolve]
             is called.
-        polling_interval: Seconds to sleep between polling the store for the
-            object.
-        polling_timeout: Optional maximum number of seconds to poll for.
+        polling_interval: Initial seconds to sleep between polling the store
+            for the object.
+        polling_backoff_factor: Multiplicative factor applied to the
+            polling_interval applied after each unsuccessful poll.
+        polling_interval_limit: Maximum polling interval allowed. Prevents
+            the backoff factor from increasing the current polling interval
+            to unreasonable values.
+        polling_timeout: Optional maximum number of seconds to poll for. If
+            the timeout is reached an error is raised.
     """
 
     def __init__(
@@ -175,6 +181,8 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         deserializer: DeserializerT | None = None,
         evict: bool = False,
         polling_interval: float = 1,
+        polling_backoff_factor: float = 1,
+        polling_interval_limit: float | None = None,
         polling_timeout: float | None = None,
     ) -> None:
         super().__init__(
@@ -184,6 +192,8 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
             deserializer=deserializer,
         )
         self._polling_interval = polling_interval
+        self._polling_backoff_factor = polling_backoff_factor
+        self._polling_interval_limit = polling_interval_limit
         self._polling_timeout = polling_timeout
 
     def resolve(self) -> T:
@@ -195,6 +205,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         """
         with Timer() as timer:
             store = self.get_store()
+            sleep_interval = self._polling_interval
             time_waited = 0.0
 
             while True:
@@ -211,8 +222,14 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                 ):
                     break
 
-                time.sleep(self._polling_interval)
-                time_waited += self._polling_interval
+                time.sleep(sleep_interval)
+                time_waited += sleep_interval
+                new_interval = sleep_interval * self._polling_backoff_factor
+                sleep_interval = (
+                    new_interval
+                    if self._polling_interval_limit is None
+                    else min(new_interval, self._polling_interval_limit)
+                )
 
             if obj is _MISSING_OBJECT:
                 raise ProxyResolveMissingKeyError(

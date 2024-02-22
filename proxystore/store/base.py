@@ -219,6 +219,8 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         polling_interval: float = 1,
+        polling_backoff_factor: float = 1,
+        polling_interval_limit: float | None = None,
         polling_timeout: float | None = None,
     ) -> Future[T]:
         """Create a future to an object.
@@ -269,10 +271,15 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            polling_interval: Seconds to sleep between polling the store for
-                the object when getting the result of the future.
-            polling_timeout: Optional maximum number of seconds to poll for
-                when getting the result of the future.
+            polling_interval: Initial seconds to sleep between polling the
+                store for the object.
+            polling_backoff_factor: Multiplicative factor applied to the
+                polling_interval applied after each unsuccessful poll.
+            polling_interval_limit: Maximum polling interval allowed. Prevents
+                the backoff factor from increasing the current polling interval
+                to unreasonable values.
+            polling_timeout: Optional maximum number of seconds to poll for. If
+                the timeout is reached an error is raised.
 
         Returns:
             Future which can be used to get the result object at a later time \
@@ -304,6 +311,8 @@ class Store(Generic[ConnectorT]):
             deserializer=deserializer,
             evict=evict,
             polling_interval=polling_interval,
+            polling_backoff_factor=polling_backoff_factor,
+            polling_interval_limit=polling_interval_limit,
             polling_timeout=polling_timeout,
         )
         return Future(factory, serializer=serializer)

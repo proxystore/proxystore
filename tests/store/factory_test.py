@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from proxystore.connectors.local import LocalConnector
@@ -74,6 +76,30 @@ def test_polling_store_factory_timeout() -> None:
             )
             with pytest.raises(ProxyResolveMissingKeyError):
                 factory.resolve()
+
+
+def test_polling_store_factory_backoff() -> None:
+    with Store('polling-store-factory-backoff', LocalConnector()) as store:
+        with store_registration(store):
+            key = store.connector.new_key()
+            factory: FactoryT = PollingStoreFactory(
+                key=key,
+                store_config=store.config(),
+                evict=True,
+                polling_interval=0.001,
+                polling_backoff_factor=2,
+                polling_interval_limit=0.004,
+                polling_timeout=0.011,
+            )
+            start = time.perf_counter()
+            with pytest.raises(ProxyResolveMissingKeyError):
+                factory.resolve()
+            end = time.perf_counter()
+
+            # polling_timeout is 0.011 so we should sleep for 0.001, 0.002,
+            # 0.004, and 0.004 seconds then timeout
+            min_sleep = 0.011
+            assert (end - start) > min_sleep
 
 
 def test_polling_store_factory_serialize() -> None:
