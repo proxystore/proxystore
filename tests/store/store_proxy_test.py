@@ -7,6 +7,7 @@ import pytest
 
 import proxystore
 from proxystore.connectors.local import LocalConnector
+from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.serialize import deserialize
@@ -109,11 +110,19 @@ def test_factory_serialization_async(store: Store[LocalConnector]) -> None:
 
 def test_proxy(store: Store[LocalConnector]) -> None:
     p = store.proxy([1, 2, 3])
+    assert not is_resolved(p)
     assert isinstance(p, Proxy)
     assert p == [1, 2, 3]
     key = get_key(p)
     assert key is not None
     assert store.get(key) == [1, 2, 3]
+
+
+def test_proxy_populate_target(store: Store[LocalConnector]) -> None:
+    p = store.proxy([1, 2, 3], populate_target=True)
+    assert is_resolved(p)
+    assert isinstance(p, Proxy)
+    assert p == [1, 2, 3]
 
 
 def test_proxy_from_key(store: Store[LocalConnector]) -> None:
@@ -198,6 +207,22 @@ def test_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
 def test_proxy_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
     proxies: list[Proxy[str]] = store.proxy_batch(values)
+    for p, v in zip(proxies, values):
+        assert not is_resolved(p)
+        assert p == v
+        assert is_resolved(p)
+
+
+def test_proxy_batch_populate_target(store: Store[LocalConnector]) -> None:
+    values = ['test_value1', True, 'test_value3']
+    proxies = store.proxy_batch(
+        values,
+        populate_target=True,
+        skip_nonproxiable=True,
+    )
+    assert is_resolved(proxies[0])
+    assert not isinstance(proxies[1], Proxy)
+    assert is_resolved(proxies[2])
     for p, v in zip(proxies, values):
         assert p == v
 
