@@ -467,6 +467,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT:
@@ -480,6 +481,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> Proxy[T]:
@@ -492,6 +494,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        populate_target: bool = False,
         skip_nonproxiable: bool = False,
         **kwargs: Any,
     ) -> Proxy[T] | NonProxiableT:
@@ -504,6 +507,12 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            populate_target: Set the returned proxy to point at `obj`. I.e.,
+                return an already resolved proxy. This is `False` by default
+                because the returned proxy will hold a reference to `obj`
+                which will prevent garbage collecting `obj`. Setting this flag
+                is helpful when serializing the returned proxy on this process
+                will incidentally resolve the proxy.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -541,6 +550,9 @@ class Store(Generic[ConnectorT]):
             )
             proxy = Proxy(factory)
 
+            if populate_target:
+                proxy.__wrapped__ = obj
+
         if self.metrics is not None:
             self.metrics.add_time('store.proxy', key, timer.elapsed_ns)
 
@@ -559,6 +571,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> list[NonProxiableT]:
@@ -572,6 +585,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> list[Proxy[T]]:
@@ -587,6 +601,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        populate_target: bool = False,
         skip_nonproxiable: bool = False,
         **kwargs: Any,
     ) -> list[Proxy[T] | NonProxiableT]:
@@ -599,6 +614,13 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            populate_target: Set each returned proxy to point at its
+                corresponding `obj`. I.e., return an already resolved proxy.
+                This is `False` by default because the returned proxy will
+                hold a reference to `obj` which will prevent garbage collecting
+                `obj`. Setting this flag is helpful when serializing a
+                returned proxy on this process will incidentally resolve the
+                proxy.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -654,6 +676,11 @@ class Store(Generic[ConnectorT]):
             for original_index, original_object in non_proxiable:
                 proxies.insert(original_index, original_object)
 
+            if populate_target:
+                for proxy, obj in zip(proxies, objs):
+                    if isinstance(proxy, Proxy):
+                        proxy.__wrapped__ = obj
+
         if self.metrics is not None:
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ns)
 
@@ -699,6 +726,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT:
@@ -712,6 +740,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> ProxyLocker[T]:
@@ -724,6 +753,7 @@ class Store(Generic[ConnectorT]):
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        populate_target: bool = False,
         skip_nonproxiable: bool = True,
         **kwargs: Any,
     ) -> ProxyLocker[T] | NonProxiableT:
@@ -736,6 +766,12 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            populate_target: Set the returned proxy to point at `obj`. I.e.,
+                return an already resolved proxy. This is `False` by default
+                because the returned proxy will hold a reference to `obj`
+                which will prevent garbage collecting `obj`. Setting this flag
+                is helpful when serializing the returned proxy on this process
+                will incidentally resolve the proxy.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -758,6 +794,7 @@ class Store(Generic[ConnectorT]):
             evict=evict,
             serializer=serializer,
             deserializer=deserializer,
+            populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
             **kwargs,
         )
@@ -774,6 +811,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT:
@@ -786,6 +824,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
+        populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> OwnedProxy[T]:
@@ -797,6 +836,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
+        populate_target: bool = False,
         skip_nonproxiable: bool = True,
         **kwargs: Any,
     ) -> OwnedProxy[T] | NonProxiableT:
@@ -812,6 +852,12 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
+            populate_target: Set the returned proxy to point at `obj`. I.e.,
+                return an already resolved proxy. This is `False` by default
+                because the returned proxy will hold a reference to `obj`
+                which will prevent garbage collecting `obj`. Setting this flag
+                is helpful when serializing the returned proxy on this process
+                will incidentally resolve the proxy.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -833,6 +879,7 @@ class Store(Generic[ConnectorT]):
             evict=False,
             serializer=serializer,
             deserializer=deserializer,
+            populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
             **kwargs,
         )
