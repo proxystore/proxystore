@@ -31,6 +31,7 @@ from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import Future
 from proxystore.store.metrics import StoreMetrics
+from proxystore.store.ref import into_owned
 from proxystore.store.ref import OwnedProxy
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
@@ -885,7 +886,7 @@ class Store(Generic[ConnectorT]):
         )
 
         if isinstance(possible_proxy, Proxy):
-            return OwnedProxy(possible_proxy.__factory__)
+            return into_owned(possible_proxy)
         return possible_proxy
 
     def put(

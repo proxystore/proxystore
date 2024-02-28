@@ -399,6 +399,30 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     return OwnedProxy(new_factory)
 
 
+def into_owned(proxy: Proxy[T]) -> OwnedProxy[T]:
+    """Convert a basic proxy into an owned proxy.
+
+    Warning:
+        It is the caller's responsibility to ensure that `proxy` has not been
+        copied already.
+
+    Note:
+        This will unset the `evict` flag on the proxy.
+
+    Raises:
+        ValueError: if `proxy` is already a
+            [`BaseRefProxy`][proxystore.store.ref.BaseRefProxy] instance.
+    """
+    if type(proxy) in (OwnedProxy, RefProxy, RefMutProxy):
+        # We don't use isinstance to prevent resolving the proxy.
+        raise ValueError(
+            'Only a base proxy can be converted into an owned proxy.',
+        )
+    factory = proxy.__factory__
+    factory.evict = False
+    return OwnedProxy(factory)
+
+
 def update(
     proxy: OwnedProxy[T] | RefMutProxy[T],
     *,

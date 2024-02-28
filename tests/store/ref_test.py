@@ -13,12 +13,14 @@ import pytest
 
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import is_resolved
+from proxystore.proxy import Proxy
 from proxystore.store import Store
 from proxystore.store import store_registration
 from proxystore.store.factory import StoreFactory
 from proxystore.store.ref import _WeakRefFinalizer
 from proxystore.store.ref import borrow
 from proxystore.store.ref import clone
+from proxystore.store.ref import into_owned
 from proxystore.store.ref import mut_borrow
 from proxystore.store.ref import MutableBorrowError
 from proxystore.store.ref import OwnedProxy
@@ -343,3 +345,19 @@ def test_update_already_borrowed(store: Store[FileConnector]) -> None:
 
     with pytest.raises(MutableBorrowError):
         update(proxy)
+
+
+def test_into_owned(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = Proxy(factory)
+    assert not is_resolved(proxy)
+    owned_proxy = into_owned(proxy)
+    assert not is_resolved(proxy)
+    assert isinstance(owned_proxy, OwnedProxy)
+
+
+def test_into_owned_value_error(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    with pytest.raises(ValueError, match='Only a base proxy can be'):
+        into_owned(proxy)
