@@ -11,7 +11,12 @@ from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import Field
-from pydantic import field_validator
+
+try:
+    from pydantic import field_validator
+except ImportError:  # pragma: no cover
+    # Pydantic v1 compatibility
+    from pydantic import validator as field_validator
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.utils.config import dump
