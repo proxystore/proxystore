@@ -100,6 +100,33 @@ def submit(
     invocation method (`submit_func`) that will mark all proxy references in
     `args` and `kwargs` as out of scope once the future completes.
 
+    Example:
+        ```python
+        from concurrent.futures import Future
+        from concurrent.futures import ProcessPoolExecutor
+        from proxystore.store.base import Store
+        from proxystore.store.ref import borrow
+
+        store = Store('example', ...)
+        proxy = store.owned_proxy([1, 2, 3])
+        borrowed = borrow(proxy)
+
+        with ProcessPoolExecutor() as pool:
+            future: Future[int] = submit(pool.submit, args=(sum, borrowed))
+            assert future.result() == 6
+
+        store.close()
+        ```
+
+    Tip:
+        To return a proxy from the invoked function, return a normal
+        [`Proxy`][proxystore.proxy.Proxy] and then call
+        [`into_owned()`][proxystore.store.ref.into_owned] on the received
+        result. Returning an [`OwnedProxy`][proxystore.store.ref.OwnedProxy]
+        directly will often not work because the owned proxy will go out of
+        scope when the function returns and the proxy is serialized causing
+        the destructor of the owned proxy to evict the associated data.
+
     Args:
         submit_func: Function with submits a function with args and kwargs to
             be executed (e.g.,
