@@ -7,6 +7,21 @@ from typing import TypeVar
 
 import tomli_w
 from pydantic import BaseModel
+from pydantic import VERSION
+
+if VERSION.startswith('2'):
+    pydantic_v2 = True
+else:  # pragma: no cover
+    pydantic_v2 = False
+
+    import warnings
+
+    warnings.warn(
+        'Pydantic V1 compatibility is deprecated and will be removed in '
+        'the future.',
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
@@ -30,7 +45,10 @@ def dump(
         fp: File-like bytes stream to write to.
         exclude_none: Skip writing none attributes.
     """
-    data_dict = model.model_dump(exclude_none=exclude_none)
+    if pydantic_v2:
+        data_dict = model.model_dump(exclude_none=exclude_none)
+    else:  # pragma: no cover
+        data_dict = model.dict(exclude_none=exclude_none)
     tomli_w.dump(data_dict, fp)
 
 
@@ -44,7 +62,10 @@ def dumps(model: BaseModel, *, exclude_none: bool = True) -> str:
     Returns:
         TOML string of data class.
     """
-    data_dict = model.model_dump(exclude_none=exclude_none)
+    if pydantic_v2:
+        data_dict = model.model_dump(exclude_none=exclude_none)
+    else:  # pragma: no cover
+        data_dict = model.dict(exclude_none=exclude_none)
     return tomli_w.dumps(data_dict)
 
 
@@ -72,4 +93,7 @@ def loads(model: type[BaseModelT], data: str) -> BaseModelT:
         Model initialized from TOML file.
     """
     data = tomllib.loads(data)
-    return model.model_validate(data, strict=True)
+    if pydantic_v2:
+        return model.model_validate(data, strict=True)
+    else:  # pragma: no cover
+        return model.parse_obj(data)
