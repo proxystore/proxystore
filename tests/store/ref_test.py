@@ -12,6 +12,7 @@ from typing import TypeVar
 import pytest
 
 from proxystore.connectors.file import FileConnector
+from proxystore.proxy import is_resolved
 from proxystore.store import Store
 from proxystore.store import store_registration
 from proxystore.store.factory import StoreFactory
@@ -111,6 +112,28 @@ def test_mut_borrow_behaves_as_value(store: Store[FileConnector]) -> None:
     proxy = OwnedProxy(factory)
 
     borrowed = mut_borrow(proxy)
+    assert borrowed == 'value'
+
+
+def test_borrow_does_not_resolve(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+
+    assert not is_resolved(proxy)
+    borrowed = borrow(proxy)
+    assert not is_resolved(proxy)
+    assert not is_resolved(borrowed)
+    assert borrowed == 'value'
+
+
+def test_mut_borrow_does_not_resolve(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+
+    assert not is_resolved(proxy)
+    borrowed = mut_borrow(proxy)
+    assert not is_resolved(proxy)
+    assert not is_resolved(borrowed)
     assert borrowed == 'value'
 
 
