@@ -258,19 +258,25 @@ class StreamProducer(Generic[T]):
                 'default store.',
             )
 
-        keys = store.put_batch([item.obj for item in objects])
+        events: list[Event] = []
 
-        events: list[Event] = [
-            NewObjectEvent.from_key(
-                key,
-                evict=item.evict,
-                metadata=item.metadata,
-            )
-            for key, item in zip(keys, objects)
-        ]
+        if len(objects) > 0:
+            keys = store.put_batch([item.obj for item in objects])
+
+            for key, item in zip(keys, objects):
+                event = NewObjectEvent.from_key(
+                    key,
+                    evict=item.evict,
+                    metadata=item.metadata,
+                )
+                events.append(event)
 
         if closed:
             events.append(EndOfStreamEvent())
+
+        # If there are no new events and the stream wasn't closed we should
+        # have early exited
+        assert len(events) > 0
 
         batch_event = EventBatch(events, topic, store.config())
         message = event_to_bytes(batch_event)
