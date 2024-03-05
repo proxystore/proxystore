@@ -157,7 +157,7 @@ class StreamProducer(Generic[T]):
         *,
         topics: Iterable[str] = (),
         publisher: bool = True,
-        stores: bool = True,
+        stores: bool = False,
     ) -> None:
         """Close the producer.
 
@@ -167,9 +167,10 @@ class StreamProducer(Generic[T]):
             that all objects are sent before closing.
 
         Warning:
-            By default, this will also call `close()` on the
-            [`Store`][proxystore.store.base.Store] and
-            [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
+            By default, this will close the
+            [`Publisher`][proxystore.stream.protocols.Publisher] interface,
+            but will **not** close the [`Store`][proxystore.store.base.Store]
+            interfaces.
 
         Args:
             topics: Topics to send end of stream events to. Equivalent to
@@ -447,13 +448,14 @@ class StreamConsumer(Generic[T]):
         """Alias for [`next()`][proxystore.stream.interface.StreamConsumer.next]."""  # noqa: E501
         return self.next()
 
-    def close(self, *, stores: bool = True, subscriber: bool = True) -> None:
+    def close(self, *, stores: bool = False, subscriber: bool = True) -> None:
         """Close the consumer.
 
         Warning:
-            By default, this will also call `close()` on the
-            [`Store`][proxystore.store.base.Store] and
-            [`Publisher`][proxystore.stream.protocols.Publisher] interfaces.
+            By default, this will close the
+            [`Subscriber`][proxystore.stream.protocols.Subscriber] interface,
+            but will **not** close the [`Store`][proxystore.store.base.Store]
+            interfaces.
 
         Args:
             stores: Close and [unregister][proxystore.store.unregister_store]
