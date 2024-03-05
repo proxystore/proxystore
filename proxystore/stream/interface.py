@@ -94,6 +94,9 @@ class StreamProducer(Generic[T]):
         producer.send('default', [1, 2, 3])
         ```
 
+    Attributes:
+        publisher: Publisher interface.
+
     Args:
         publisher: Object which implements the
             [`Publisher`][proxystore.stream.protocols.Publisher] protocol.
@@ -127,7 +130,7 @@ class StreamProducer(Generic[T]):
         batch_size: int = 1,
         filter_: Filter | None = None,
     ) -> None:
-        self._publisher = publisher
+        self.publisher = publisher
         self._stores = stores
         self._aggregator = aggregator
         self._batch_size = batch_size
@@ -183,7 +186,7 @@ class StreamProducer(Generic[T]):
                 store.close()
                 unregister_store(store)
         if publisher:
-            self._publisher.close()
+            self.publisher.close()
 
     def close_topics(self, *topics: str) -> None:
         """Send publish an end of stream event to each topic.
@@ -280,7 +283,7 @@ class StreamProducer(Generic[T]):
 
         batch_event = EventBatch(events, topic, store.config())
         message = event_to_bytes(batch_event)
-        self._publisher.send(topic, message)
+        self.publisher.send(topic, message)
 
     def send(
         self,
@@ -398,6 +401,9 @@ class StreamConsumer(Generic[T]):
     Note:
         The consumer is not thread-safe.
 
+    Attributes:
+        subscriber: Subscriber interface.
+
     Args:
         subscriber: Object which implements the
             [`Subscriber`][proxystore.stream.protocols.Subscriber] protocol.
@@ -416,7 +422,7 @@ class StreamConsumer(Generic[T]):
         *,
         filter_: Filter | None = None,
     ) -> None:
-        self._subscriber = subscriber
+        self.subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
 
@@ -462,7 +468,7 @@ class StreamConsumer(Generic[T]):
                 store.close()
                 unregister_store(store)
         if subscriber:
-            self._subscriber.close()
+            self.subscriber.close()
 
     def _get_store(self, event_info: _EventInfo) -> Store[Any]:
         if event_info.topic in self._stores:
@@ -477,7 +483,7 @@ class StreamConsumer(Generic[T]):
             return store
 
     def _next_batch(self) -> EventBatch:
-        message = next(self._subscriber)
+        message = next(self.subscriber)
         event = bytes_to_event(message)
         if isinstance(event, EventBatch):
             return event
