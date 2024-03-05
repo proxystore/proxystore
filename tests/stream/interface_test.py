@@ -151,13 +151,17 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
         FileConnector(str(tmp_path)),
     )
 
-    with StreamProducer[str](publisher, {None: store}) as producer:
-        with StreamConsumer[str](subscriber) as consumer:
-            producer.send(topic, 'value')
+    producer = StreamProducer[str](publisher, {None: store})
+    consumer = StreamConsumer[str](subscriber)
 
-            assert get_store(store.name) is None
-            consumer.next()
-            assert get_store(store.name) is not None
+    producer.send(topic, 'value')
+
+    assert get_store(store.name) is None
+    consumer.next()
+    assert get_store(store.name) is not None
+
+    producer.close(stores=True)
+    consumer.close(stores=True)
 
     # Should get unregistered when closed
     assert get_store(store.name) is None
