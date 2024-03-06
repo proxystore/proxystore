@@ -361,3 +361,51 @@ def test_into_owned_value_error(store: Store[FileConnector]) -> None:
     proxy = OwnedProxy(factory)
     with pytest.raises(ValueError, match='Only a base proxy can be'):
         into_owned(proxy)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_borrow_populate(
+    populate_target: bool,
+    store: Store[FileConnector],
+) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    assert isinstance(proxy, str)
+
+    borrowed = borrow(proxy, populate_target=populate_target)
+    assert is_resolved(borrowed) == populate_target
+
+    del proxy.__wrapped__
+    borrowed = borrow(proxy, populate_target=populate_target)
+    assert not is_resolved(borrowed)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_mut_borrow_populate(
+    populate_target: bool,
+    store: Store[FileConnector],
+) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    assert isinstance(proxy, str)
+
+    borrowed = mut_borrow(proxy, populate_target=populate_target)
+    assert is_resolved(borrowed) == populate_target
+
+    del borrowed
+    del proxy.__wrapped__
+    borrowed = mut_borrow(proxy, populate_target=populate_target)
+    assert not is_resolved(borrowed)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_into_owned_populate(
+    populate_target: bool,
+    store: Store[FileConnector],
+) -> None:
+    factory = put_in_store('value', store)
+    proxy = Proxy(factory)
+    assert isinstance(proxy, str)
+
+    owned = into_owned(proxy, populate_target=populate_target)
+    assert is_resolved(owned) == populate_target
