@@ -128,6 +128,14 @@ class BaseRefProxy(Proxy[T]):
             )
         return super().__wrapped__
 
+    @__wrapped__.deleter
+    def __wrapped__(self) -> None:
+        object.__delattr__(self, '__target__')
+
+    @__wrapped__.setter
+    def __wrapped__(self, target: T) -> None:
+        object.__setattr__(self, '__target__', target)
+
     def __copy__(self) -> NoReturn:
         raise NotImplementedError(
             'Copy is not implemented for reference proxy types to avoid '
@@ -326,11 +334,21 @@ class RefMutProxy(BaseRefProxy[T]):
         return self.__reduce__()
 
 
-def borrow(proxy: OwnedProxy[T]) -> RefProxy[T]:
+def borrow(
+    proxy: OwnedProxy[T],
+    *,
+    populate_target: bool = True,
+) -> RefProxy[T]:
     """Borrow `T` by creating an immutable reference of `T`.
 
     Note:
         This mutates `proxy`.
+
+    Args:
+        proxy: Proxy reference to borrow.
+        populate_target: If the target of `proxy` has already been resolved,
+            copy the reference to the target into the returned proxy such that
+            the returned proxy is already resolved.
 
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
@@ -346,14 +364,27 @@ def borrow(proxy: OwnedProxy[T]) -> RefProxy[T]:
         '__ref_count__',
         object.__getattribute__(proxy, '__ref_count__') + 1,
     )
-    return RefProxy(proxy.__factory__, owner=proxy)
+    ref_proxy = RefProxy(proxy.__factory__, owner=proxy)
+    if populate_target and is_resolved(proxy):
+        ref_proxy.__wrapped__ = proxy.__wrapped__
+    return ref_proxy
 
 
-def mut_borrow(proxy: OwnedProxy[T]) -> RefMutProxy[T]:
+def mut_borrow(
+    proxy: OwnedProxy[T],
+    *,
+    populate_target: bool = True,
+) -> RefMutProxy[T]:
     """Mutably borrow `T` by creating an mutable reference of `T`.
 
     Note:
         This mutates `proxy`.
+
+    Args:
+        proxy: Proxy reference to borrow.
+        populate_target: If the target of `proxy` has already been resolved,
+            copy the reference to the target into the returned proxy such that
+            the returned proxy is already resolved.
 
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
@@ -372,7 +403,10 @@ def mut_borrow(proxy: OwnedProxy[T]) -> RefMutProxy[T]:
         '__ref_mut_count__',
         object.__getattribute__(proxy, '__ref_mut_count__') + 1,
     )
-    return RefMutProxy(proxy.__factory__, owner=proxy)
+    ref_proxy = RefMutProxy(proxy.__factory__, owner=proxy)
+    if populate_target and is_resolved(proxy):
+        ref_proxy.__wrapped__ = proxy.__wrapped__
+    return ref_proxy
 
 
 def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
@@ -399,7 +433,11 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     return OwnedProxy(new_factory)
 
 
-def into_owned(proxy: Proxy[T]) -> OwnedProxy[T]:
+def into_owned(
+    proxy: Proxy[T],
+    *,
+    populate_target: bool = True,
+) -> OwnedProxy[T]:
     """Convert a basic proxy into an owned proxy.
 
     Warning:
@@ -408,6 +446,12 @@ def into_owned(proxy: Proxy[T]) -> OwnedProxy[T]:
 
     Note:
         This will unset the `evict` flag on the proxy.
+
+    Args:
+        proxy: Proxy reference to borrow.
+        populate_target: If the target of `proxy` has already been resolved,
+            copy the reference to the target into the returned proxy such that
+            the returned proxy is already resolved.
 
     Raises:
         ValueError: if `proxy` is already a
@@ -420,7 +464,10 @@ def into_owned(proxy: Proxy[T]) -> OwnedProxy[T]:
         )
     factory = proxy.__factory__
     factory.evict = False
-    return OwnedProxy(factory)
+    owned_proxy = OwnedProxy(factory)
+    if populate_target and is_resolved(proxy):
+        owned_proxy.__wrapped__ = proxy.__wrapped__
+    return owned_proxy
 
 
 def update(
