@@ -244,6 +244,7 @@ class RefProxy(BaseRefProxy[T]):
         super().__init__(factory)
 
     def __del__(self) -> None:
+        atexit.unregister(object.__getattribute__(self, '__finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
@@ -301,6 +302,7 @@ class RefMutProxy(BaseRefProxy[T]):
         super().__init__(factory)
 
     def __del__(self) -> None:
+        atexit.unregister(object.__getattribute__(self, '__finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
