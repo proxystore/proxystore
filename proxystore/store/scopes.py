@@ -150,15 +150,13 @@ def submit(
     refs: list[RefProxy[Any] | RefMutProxy[Any]] = [
         ref
         for ref in register_custom_refs
-        if isinstance(ref, (RefProxy, RefMutProxy))
+        if type(ref) in (RefProxy, RefMutProxy)
     ]
-    refs.extend(
-        arg for arg in args if isinstance(arg, (RefProxy, RefMutProxy))
-    )
+    refs.extend(arg for arg in args if type(arg) in (RefProxy, RefMutProxy))
     refs.extend(
         kwarg
         for kwarg in kwargs.values()
-        if isinstance(kwarg, (RefProxy, RefMutProxy))
+        if type(kwarg) in (RefProxy, RefMutProxy)
     )
 
     fut = submit_func(*args, **kwargs)

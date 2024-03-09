@@ -161,7 +161,7 @@ def test_submit_does_not_resolve(store: Store[FileConnector]) -> None:
     assert not is_resolved(proxy)
     assert not is_resolved(borrowed)
 
-    fut = submit(_test_func, args=(borrowed,))
+    fut = submit(_test_func, args=(proxy, borrowed))
 
     assert not is_resolved(proxy)
     assert not is_resolved(borrowed)
