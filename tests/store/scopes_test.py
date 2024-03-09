@@ -12,6 +12,7 @@ from typing import Generator
 import pytest
 
 from proxystore.connectors.file import FileConnector
+from proxystore.proxy import is_resolved
 from proxystore.store import Store
 from proxystore.store import store_registration
 from proxystore.store.ref import borrow
@@ -84,6 +85,19 @@ def test_mark_refs_out_of_scope(store: Store[FileConnector]) -> None:
     mut_borrow(proxy2)
 
 
+def test_mark_refs_out_of_scope_duplicates(
+    store: Store[FileConnector],
+) -> None:
+    proxy = store.owned_proxy('value')
+
+    borrowed = borrow(proxy)
+
+    mark_refs_out_of_scope(borrowed, borrowed)
+
+    with pytest.raises(ReferenceInvalidError):
+        assert isinstance(borrowed, str)
+
+
 def test_mark_refs_out_of_scope_no_owner(store: Store[FileConnector]) -> None:
     proxy = store.owned_proxy('value')
     borrowed = borrow(proxy)
@@ -133,6 +147,26 @@ def test_submit_registration(store: Store[FileConnector]) -> None:
     for p in (borrow1, borrow2, borrow3):
         with pytest.raises(ReferenceInvalidError):
             assert isinstance(p, int)
+
+
+def test_submit_does_not_resolve(store: Store[FileConnector]) -> None:
+    proxy = store.owned_proxy('value')
+    borrowed = borrow(proxy)
+
+    def _test_func(*args, **kwargs) -> Future[str]:
+        fut: Future[str] = Future()
+        fut.set_result('result')
+        return fut
+
+    assert not is_resolved(proxy)
+    assert not is_resolved(borrowed)
+
+    fut = submit(_test_func, args=(borrowed,))
+
+    assert not is_resolved(proxy)
+    assert not is_resolved(borrowed)
+
+    assert fut.result() == 'result'
 
 
 def test_submit_with_multiprocessing(store: Store[FileConnector]) -> None:

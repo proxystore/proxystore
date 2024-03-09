@@ -51,6 +51,9 @@ def mark_refs_out_of_scope(
             owner.
     """
     for ref in refs:
+        if not object.__getattribute__(ref, '__valid__'):
+            # We've already encountered and handled this reference
+            continue
         owner = object.__getattribute__(ref, '__owner__')
         if owner is None:
             raise RuntimeError(
@@ -144,15 +147,15 @@ def submit(
     """
     kwargs = {} if kwargs is None else kwargs
 
-    refs: set[RefProxy[Any] | RefMutProxy[Any]] = {
+    refs: list[RefProxy[Any] | RefMutProxy[Any]] = [
         ref
         for ref in register_custom_refs
         if isinstance(ref, (RefProxy, RefMutProxy))
-    }
-    refs.update(
+    ]
+    refs.extend(
         arg for arg in args if isinstance(arg, (RefProxy, RefMutProxy))
     )
-    refs.update(
+    refs.extend(
         kwarg
         for kwarg in kwargs.values()
         if isinstance(kwarg, (RefProxy, RefMutProxy))
