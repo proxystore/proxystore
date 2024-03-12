@@ -1,4 +1,5 @@
 """Blob storage interface for endpoints."""
+
 from __future__ import annotations
 
 import pathlib

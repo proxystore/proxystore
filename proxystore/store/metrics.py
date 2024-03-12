@@ -4,6 +4,7 @@ See the [Performance Guide](../../guides/performance.md) to learn more about
 interacting with metrics recorded for
 [`Store`][proxystore.store.base.Store] operations.
 """
+
 from __future__ import annotations
 
 import copy

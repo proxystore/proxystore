@@ -1,4 +1,5 @@
 """Globus Compute and ProxyStore example."""
+
 from __future__ import annotations
 
 import argparse

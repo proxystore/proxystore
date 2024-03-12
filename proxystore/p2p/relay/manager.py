@@ -1,4 +1,5 @@
 """Helper classes for managing clients connected to a relay server."""
+
 from __future__ import annotations
 
 import dataclasses

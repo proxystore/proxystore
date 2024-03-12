@@ -3,6 +3,7 @@
 Source code for:
     https://proxystore.readthedocs.io/en/latest/guides/performance.html
 """
+
 from __future__ import annotations
 
 import dataclasses

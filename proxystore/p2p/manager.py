@@ -1,4 +1,5 @@
 """Manager of many peer-to-peer connections."""
+
 from __future__ import annotations
 
 import asyncio
@@ -96,9 +97,9 @@ class PeerManager:
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
 
-        self._message_queue: asyncio.Queue[
-            tuple[UUID, bytes | str]
-        ] = asyncio.Queue()
+        self._message_queue: asyncio.Queue[tuple[UUID, bytes | str]] = (
+            asyncio.Queue()
+        )
         self._server_task: asyncio.Task[None] | None = None
         self._tasks: dict[frozenset[UUID], asyncio.Task[None]] = {}
 

@@ -3,6 +3,7 @@
 See the CLI Reference for the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) usage instructions.
 """
+
 from __future__ import annotations
 
 import logging

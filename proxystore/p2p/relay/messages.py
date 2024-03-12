@@ -1,4 +1,5 @@
 """Message types for relay client and relay server communication."""
+
 from __future__ import annotations
 
 import dataclasses

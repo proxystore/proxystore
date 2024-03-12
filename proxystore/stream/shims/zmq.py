@@ -6,6 +6,7 @@ Note:
     the publisher. This means that if the publisher is not alive when creating
     the subscriber, the subscriber will fail.
 """
+
 from __future__ import annotations
 
 import sys

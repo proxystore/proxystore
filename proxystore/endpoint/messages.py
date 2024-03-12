@@ -1,4 +1,5 @@
 """Endpoint to endpoint messages."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass

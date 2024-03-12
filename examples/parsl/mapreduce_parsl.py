@@ -1,4 +1,5 @@
 """MapReduce with Parsl and ProxyStore example."""
+
 from __future__ import annotations
 
 import argparse

@@ -4,6 +4,7 @@ The relay server (or signaling server) is a lightweight server accessible by
 all peers (e.g., has a public IP address) that facilitates the establishment
 of peer WebRTC connections.
 """
+
 from __future__ import annotations
 
 import logging

@@ -6,6 +6,7 @@ Note:
     are re-exported in [`proxystore.stream`][proxystore.stream] for
     convenience.
 """
+
 from __future__ import annotations
 
 import dataclasses

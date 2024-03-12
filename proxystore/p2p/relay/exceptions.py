@@ -1,4 +1,5 @@
 """Exception types raised by relay clients and servers."""
+
 from __future__ import annotations
 
 

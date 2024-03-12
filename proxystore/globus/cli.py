@@ -10,6 +10,7 @@ proxystore-globus-auth login --collection COLLECTION_UUID --collection COLLECTIO
 proxystore-globus-auth login --scope SCOPE --scope SCOPE ...
 ```
 """  # noqa: E501
+
 from __future__ import annotations
 
 import click

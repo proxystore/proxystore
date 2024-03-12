@@ -1,4 +1,5 @@
 """Set of common stream filters."""
+
 from __future__ import annotations
 
 import random

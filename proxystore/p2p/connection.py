@@ -1,4 +1,5 @@
 """Representation of peer-to-peer connection."""
+
 from __future__ import annotations
 
 import asyncio
@@ -107,9 +108,9 @@ class PeerConnection:
         self._relay_client = relay_client
         self._max_channels = channels
 
-        self._handshake_success: asyncio.Future[
-            bool
-        ] = asyncio.get_running_loop().create_future()
+        self._handshake_success: asyncio.Future[bool] = (
+            asyncio.get_running_loop().create_future()
+        )
         self._pc = RTCPeerConnection()
 
         self._incoming_queue: asyncio.Queue[bytes | str] = asyncio.Queue()

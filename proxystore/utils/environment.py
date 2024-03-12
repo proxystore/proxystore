@@ -1,4 +1,5 @@
 """Utilities related to the current execution environment."""
+
 from __future__ import annotations
 
 import os

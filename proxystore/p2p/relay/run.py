@@ -1,4 +1,5 @@
 """CLI and serving functions for running a Globus Auth relay server."""
+
 from __future__ import annotations
 
 import asyncio

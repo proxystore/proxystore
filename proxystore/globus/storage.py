@@ -1,4 +1,5 @@
 """Globus Auth token storage."""
+
 from __future__ import annotations
 
 import os

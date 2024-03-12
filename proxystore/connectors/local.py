@@ -1,4 +1,5 @@
 """In-process local storage connector implementation."""
+
 from __future__ import annotations
 
 import logging

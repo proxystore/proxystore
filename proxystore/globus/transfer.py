@@ -1,4 +1,5 @@
 """Create and authenticate a Globus Transfer client."""
+
 from __future__ import annotations
 
 from typing import Iterable

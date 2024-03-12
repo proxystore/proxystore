@@ -56,11 +56,9 @@ async def test_future_protocol() -> None:
     assert isinstance(loop.create_future(), FutureWithCallback)
 
     class _TestFuture:
-        def set_result(self, *args: Any) -> None:
-            ...
+        def set_result(self, *args: Any) -> None: ...
 
-        def add_done_callback(self, fn: Callable[[Any], None]) -> None:
-            ...
+        def add_done_callback(self, fn: Callable[[Any], None]) -> None: ...
 
     assert isinstance(_TestFuture(), FutureWithCallback)
 

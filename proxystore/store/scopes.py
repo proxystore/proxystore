@@ -1,4 +1,5 @@
 """Utilities for managing reference proxy scopes and lifetimes."""
+
 from __future__ import annotations
 
 import sys
@@ -25,8 +26,7 @@ class FutureWithCallback(Protocol):
     def add_done_callback(
         self,
         callback: Callable[[FutureWithCallback], Any],
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 FutureT = TypeVar('FutureT', bound=FutureWithCallback)

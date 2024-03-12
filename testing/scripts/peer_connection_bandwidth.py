@@ -1,4 +1,5 @@
 """Peer connection transfer speed test."""
+
 from __future__ import annotations
 
 import argparse

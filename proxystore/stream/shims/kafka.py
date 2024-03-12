@@ -3,6 +3,7 @@
 Shims to the
 [`kafka-python`](https://github.com/dpkp/kafka-python){target=_blank} package.
 """
+
 from __future__ import annotations
 
 import sys
