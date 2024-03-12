@@ -13,6 +13,7 @@ Note:
     are defined in [`proxystore.stream.interface`][proxystore.stream.interface]
     are re-exported here for convenience.
 """
+
 from __future__ import annotations
 
 import warnings

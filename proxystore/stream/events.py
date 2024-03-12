@@ -8,6 +8,7 @@ Warning:
     [StreamConsumer][proxystore.stream.interface.StreamConsumer] and
     never exposed to client code.
 """
+
 from __future__ import annotations
 
 import dataclasses

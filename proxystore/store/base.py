@@ -1,4 +1,5 @@
 """Store implementation."""
+
 from __future__ import annotations
 
 import logging
@@ -471,8 +472,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
-    ) -> NonProxiableT:
-        ...
+    ) -> NonProxiableT: ...
 
     @overload
     def proxy(
@@ -485,8 +485,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
-    ) -> Proxy[T]:
-        ...
+    ) -> Proxy[T]: ...
 
     def proxy(
         self,
@@ -575,8 +574,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
-    ) -> list[NonProxiableT]:
-        ...
+    ) -> list[NonProxiableT]: ...
 
     @overload
     def proxy_batch(
@@ -589,8 +587,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
-    ) -> list[Proxy[T]]:
-        ...
+    ) -> list[Proxy[T]]: ...
 
     # MyPy raises the following:
     #    Overloaded function implementation cannot produce return type of
@@ -730,8 +727,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
-    ) -> NonProxiableT:
-        ...
+    ) -> NonProxiableT: ...
 
     @overload
     def locked_proxy(
@@ -744,8 +740,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
-    ) -> ProxyLocker[T]:
-        ...
+    ) -> ProxyLocker[T]: ...
 
     def locked_proxy(
         self,
@@ -815,8 +810,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
-    ) -> NonProxiableT:
-        ...
+    ) -> NonProxiableT: ...
 
     @overload
     def owned_proxy(
@@ -828,8 +822,7 @@ class Store(Generic[ConnectorT]):
         populate_target: bool = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
-    ) -> OwnedProxy[T]:
-        ...
+    ) -> OwnedProxy[T]: ...
 
     def owned_proxy(
         self,

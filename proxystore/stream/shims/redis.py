@@ -4,6 +4,7 @@ Shims to the
 [`redis-py`](https://redis-py.readthedocs.io/en/stable/index.html){target=_blank}
 [Publish / Subscribe interface](https://redis-py.readthedocs.io/en/stable/advanced_features.html#publish-subscribe){target=_blank}.
 """
+
 from __future__ import annotations
 
 import sys

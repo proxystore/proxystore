@@ -3,6 +3,7 @@
 This module is a wrapper around the tools provided by
 [pystun3](https://github.com/talkiq/pystun3){target=_blank}.
 """
+
 from __future__ import annotations
 
 import enum

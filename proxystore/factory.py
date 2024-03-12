@@ -5,6 +5,7 @@ to resolve a proxy, where resolving is the process of retrieving the
 object from wherever it is stored such that the proxy can act as the
 object.
 """
+
 from __future__ import annotations
 
 from typing import Any

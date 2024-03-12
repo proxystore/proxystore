@@ -5,6 +5,7 @@ Warning:
     within the same process, or between Python processes on the same machine.
     Each queue topic may only have one subscriber.
 """
+
 from __future__ import annotations
 
 import multiprocessing

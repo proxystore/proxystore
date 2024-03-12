@@ -21,6 +21,7 @@ Additional protocols, such as the
 [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] that alter
 their behavior.
 """
+
 from __future__ import annotations
 
 import sys
@@ -63,11 +64,9 @@ class Subscriber(Protocol):
     from the stream until the stream is closed.
     """
 
-    def __iter__(self) -> Self:
-        ...
+    def __iter__(self) -> Self: ...
 
-    def __next__(self) -> bytes:
-        ...
+    def __next__(self) -> bytes: ...
 
     def close(self) -> None:
         """Close this subscriber."""

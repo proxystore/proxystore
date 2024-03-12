@@ -1,4 +1,5 @@
 """Endpoint constants."""
+
 from __future__ import annotations
 
 MAX_CHUNK_LENGTH = 1000_000

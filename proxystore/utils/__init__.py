@@ -1,4 +1,5 @@
 """General purpose utility functions."""
+
 from __future__ import annotations
 
 from proxystore.utils.data import bytes_to_readable

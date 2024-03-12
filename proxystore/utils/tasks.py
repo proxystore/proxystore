@@ -1,4 +1,5 @@
 """Safely spawn asyncio background tasks with error handling."""
+
 from __future__ import annotations
 
 import asyncio

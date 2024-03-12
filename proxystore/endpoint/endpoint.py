@@ -1,4 +1,5 @@
 """Endpoint implementation."""
+
 from __future__ import annotations
 
 import asyncio
@@ -328,9 +329,9 @@ class Endpoint:
         #   - should some ops be sent to all endpoints that may have
         #     a copy of the data (mostly for evict)?
         assert self.peer_manager is not None
-        self._pending_requests[
-            request.uuid
-        ] = asyncio.get_running_loop().create_future()
+        self._pending_requests[request.uuid] = (
+            asyncio.get_running_loop().create_future()
+        )
         logger.debug(
             f'{self._log_prefix}: sending {request.op} request with '
             f'id={request.uuid} and key={request.key}) to {endpoint}',

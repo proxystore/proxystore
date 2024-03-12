@@ -8,6 +8,7 @@ Note:
     Based on the examples in the
     [Cryptography docs](https://cryptography.io/en/latest/x509/tutorial/#creating-a-self-signed-certificate).
 """
+
 from __future__ import annotations
 
 import datetime

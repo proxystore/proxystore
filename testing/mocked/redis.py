@@ -1,4 +1,5 @@
 """Mocked classes for Redis."""
+
 from __future__ import annotations
 
 import queue

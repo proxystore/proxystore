@@ -1,4 +1,5 @@
 """Proxy-future interface implementation."""
+
 from __future__ import annotations
 
 from typing import Generic

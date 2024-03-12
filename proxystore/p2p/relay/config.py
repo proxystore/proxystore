@@ -1,4 +1,5 @@
 """Relay server configuration file parsing."""
+
 from __future__ import annotations
 
 import logging

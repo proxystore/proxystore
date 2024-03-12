@@ -12,6 +12,7 @@
 C
    $ python testing/scripts/redis_pubsub.py publisher
 """
+
 from __future__ import annotations
 
 import argparse

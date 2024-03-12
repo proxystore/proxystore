@@ -11,6 +11,7 @@
 C
    $ python testing/scripts/kafka_pubsub.py publisher --broker localhost:9092
 """
+
 from __future__ import annotations
 
 import argparse

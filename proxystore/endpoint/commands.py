@@ -5,6 +5,7 @@ These are the implementations of the commands available via the
 Subsequently, all commands log errors and results and return status codes
 (rather than raising errors and returning results).
 """
+
 from __future__ import annotations
 
 import contextlib

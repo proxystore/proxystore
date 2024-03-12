@@ -1,4 +1,5 @@
 """The ProxyStore [`Store`][proxystore.store.base.Store] interface."""
+
 from __future__ import annotations
 
 import contextlib

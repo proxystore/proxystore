@@ -40,6 +40,7 @@ All three reference types ([`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy],
 of `T`, forwarding operations on themselves to a locally cached instance of
 `T`.
 """
+
 from __future__ import annotations
 
 import atexit

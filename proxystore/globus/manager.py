@@ -1,4 +1,5 @@
 """Globus Auth credential managers."""
+
 from __future__ import annotations
 
 import platform

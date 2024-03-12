@@ -10,4 +10,5 @@ between clients behind different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
 to start your own endpoints.
 """
+
 from __future__ import annotations

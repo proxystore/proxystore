@@ -1,4 +1,5 @@
 """Read and write TOML config files using Pydantic BaseClasses."""
+
 from __future__ import annotations
 
 import sys

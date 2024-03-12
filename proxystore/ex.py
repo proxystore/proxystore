@@ -23,6 +23,7 @@ Warning:
     See the [Installation](../installation.md) page for installation
     instructions.
 """
+
 from __future__ import annotations
 
 from typing import Any

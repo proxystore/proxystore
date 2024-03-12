@@ -1,4 +1,5 @@
 """Resolve imports by string paths."""
+
 from __future__ import annotations
 
 import importlib
