@@ -31,6 +31,18 @@ class MockStrictRedis:
             queue.Queue() if pubsub_queue is None else pubsub_queue
         )
 
+    def blpop(
+        self,
+        *keys: str,
+        timeout: int = 0,
+    ) -> tuple[str | bytes, ...] | None:
+        result: list[str | bytes] = []
+        for key in keys:
+            if key not in self.data or len(self.data[key]) == 0:
+                return None
+            result.extend([key, self.data[key].pop(0)])
+        return tuple(result)
+
     def close(self) -> None:
         """Close the client."""
         pass
@@ -76,6 +88,12 @@ class MockStrictRedis:
     def pubsub(self) -> MockPubSub:
         """Create a pubsub client."""
         return MockPubSub(self)
+
+    def rpush(self, key: str, *values: bytes) -> None:
+        """Push values onto list."""
+        if key not in self.data:
+            self.data[key] = []
+        self.data[key].extend(values)
 
     def set(self, key: str, value: bytes) -> None:
         """Set value in MockStrictRedis."""
