@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import sys
+import uuid
 from types import TracebackType
 from typing import Any
 from typing import Protocol
@@ -21,6 +23,8 @@ from proxystore.store.types import ConnectorKeyT
 
 if TYPE_CHECKING:
     from proxystore.store.base import Store
+
+logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
@@ -78,18 +82,47 @@ class Lifetime(Protocol):
 class ContextLifetime:
     """Basic lifetime manager.
 
-    Basic object lifetime manager with context manager support.
+    Object lifetime manager with context manager support.
+
+    Example:
+        ```python
+        from proxystore.store.base import Store
+        from proxystore.store.lifetimes import ContextLifetime
+
+        store = Store(...)
+
+        with ContextLifetime(store) as lifetime:
+            # Objects in the store can be associated with this lifetime.
+            key = store.put('value', lifetime=lifetime)
+            proxy = store.proxy('value', lifetime=lifetime)
+
+        # Objects associated with the lifetime are evicted once the
+        # lifetime ends.
+        assert not store.exists(key)
+
+        store.close()
+        ```
 
     Args:
         store: [`Store`][proxystore.store.base.Store] instance use to create
             the objects associated with this lifetime and that will be used
             to evict them when the lifetime has ended.
+        name: Specify a name for this lifetime used in logging. Otherwise,
+            a unique ID will be generated.
     """
 
-    def __init__(self, store: Store[Any]) -> None:
+    def __init__(
+        self,
+        store: Store[Any],
+        *,
+        name: str | None = None,
+    ) -> None:
         self.store = store
+        self.name = name if name is not None else str(uuid.uuid4())
         self._done = False
         self._keys: set[ConnectorKeyT] = set()
+
+        logger.info(f'Initialized lifetime manager (name={self.name})')
 
     def __enter__(self) -> Self:
         return self
@@ -107,6 +140,11 @@ class ContextLifetime:
         for key in self._keys:
             self.store.evict(key)
         self._done = True
+        logger.info(
+            f'Closed lifetime manager and evicted {len(self._keys)} '
+            f'associated objects (name={self.name})',
+        )
+        self._keys.clear()
 
     def done(self) -> bool:
         """Check if lifetime has ended."""
@@ -124,6 +162,10 @@ class ContextLifetime:
             keys: One or more keys of objects to associate with this lifetime.
         """
         self._keys.update(keys)
+        logger.debug(
+            f'Added keys to lifetime manager (name={self.name}): '
+            f'{", ".join(repr(key) for key in keys)}',
+        )
 
     def add_proxy(self, *proxies: Proxy[Any]) -> None:
         """Associate a new object with the lifetime.
