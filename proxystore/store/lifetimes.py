@@ -7,6 +7,7 @@ from types import TracebackType
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
+from typing import TYPE_CHECKING
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -14,10 +15,12 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from proxystore.proxy import Proxy
-from proxystore.store.base import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import ConnectorKeyT
+
+if TYPE_CHECKING:
+    from proxystore.store.base import Store
 
 
 @runtime_checkable

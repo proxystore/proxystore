@@ -19,6 +19,7 @@ from proxystore.store.base import Store
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import StoreFactory
+from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.ref import OwnedProxy
 from proxystore.store.utils import get_key
 
@@ -132,6 +133,25 @@ def test_proxy_from_key(store: Store[LocalConnector]) -> None:
     assert p == [1, 2, 3]
 
 
+def test_proxy_from_key_lifetime(store: Store[LocalConnector]) -> None:
+    key = store.put('test_value')
+
+    with ContextLifetime(store) as lifetime:
+        _proxy: Proxy[str] = store.proxy_from_key(key, lifetime=lifetime)
+
+    assert not store.exists(key)
+
+
+def test_proxy_from_key_mutex_options_error(
+    store: Store[LocalConnector],
+) -> None:
+    key = store.put('test_value')
+
+    with ContextLifetime(store) as lifetime:
+        with pytest.raises(ValueError, match='The evict and lifetime'):
+            store.proxy_from_key(key, evict=True, lifetime=lifetime)
+
+
 def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
     proxy = store.proxy([1, 2, 3])
     key = get_key(proxy)
@@ -204,6 +224,19 @@ def test_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
             store.proxy(t, skip_nonproxiable=False)
 
 
+def test_proxy_lifetime(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store) as lifetime:
+        proxy = store.proxy('test_value', lifetime=lifetime)
+
+    assert not store.exists(get_key(proxy))
+
+
+def test_proxy_mutex_options_error(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store) as lifetime:
+        with pytest.raises(ValueError, match='The evict and lifetime'):
+            store.proxy('test_value', evict=True, lifetime=lifetime)
+
+
 def test_proxy_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
     proxies: list[Proxy[str]] = store.proxy_batch(values)
@@ -255,6 +288,22 @@ def test_proxy_batch_nonproxiable_error(store: Store[LocalConnector]) -> None:
         store.proxy_batch(['string', None, 'string'], skip_nonproxiable=False)
 
 
+def test_proxy_batch_lifetime(store: Store[LocalConnector]) -> None:
+    values = ['test_value1', 'test_value2', 'test_value3']
+
+    with ContextLifetime(store) as lifetime:
+        proxies = store.proxy_batch(values, lifetime=lifetime)
+
+    for proxy in proxies:
+        assert not store.exists(get_key(proxy))
+
+
+def test_proxy_batch_mutex_options_error(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store) as lifetime:
+        with pytest.raises(ValueError, match='The evict and lifetime'):
+            store.proxy_batch(['test_value'], evict=True, lifetime=lifetime)
+
+
 def test_locked_proxy(store: Store[LocalConnector]) -> None:
     assert isinstance(store.locked_proxy([1, 2, 3]), ProxyLocker)
 
@@ -268,6 +317,21 @@ def test_locked_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         store.locked_proxy(None, skip_nonproxiable=False)
+
+
+def test_locked_proxy_lifetime(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store) as lifetime:
+        proxy = store.locked_proxy('test_value', lifetime=lifetime)
+
+    assert not store.exists(get_key(proxy.unlock()))
+
+
+def test_locked_proxy_mutex_options_error(
+    store: Store[LocalConnector],
+) -> None:
+    with ContextLifetime(store) as lifetime:
+        with pytest.raises(ValueError, match='The evict and lifetime'):
+            store.locked_proxy('test_value', evict=True, lifetime=lifetime)
 
 
 def test_owned_proxy(store: Store[LocalConnector]) -> None:
