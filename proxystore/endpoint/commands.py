@@ -337,8 +337,9 @@ def start_endpoint(
     else:
         context = _attached_pid_manager(pid_file)
 
-    # TODO: handle sigterm/sigkill exit codes/graceful shutdown.
     with context:
+        # Note: serve will handle most interrupts which can be reasonably
+        # handled and return gracefully.
         serve(cfg, log_level=log_level, log_file=log_file)
 
     return 0
