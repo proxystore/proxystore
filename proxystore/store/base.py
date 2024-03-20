@@ -31,6 +31,7 @@ from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import Future
+from proxystore.store.lifetimes import Lifetime
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.ref import into_owned
 from proxystore.store.ref import OwnedProxy
@@ -467,6 +468,7 @@ class Store(Generic[ConnectorT]):
         obj: NonProxiableT,
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -480,6 +482,7 @@ class Store(Generic[ConnectorT]):
         obj: T,
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -492,6 +495,7 @@ class Store(Generic[ConnectorT]):
         obj: T | NonProxiableT,
         *,
         evict: bool = False,
+        lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool = False,
@@ -503,6 +507,10 @@ class Store(Generic[ConnectorT]):
         Args:
             obj: The object to place in store and return a proxy for.
             evict: If the proxy should evict the object once resolved.
+                Mutually exclusive with the `lifetime` parameter.
+            lifetime: Attach the proxy to this lifetime. The object associated
+                with the proxy will be evicted when the lifetime ends.
+                Mutually exclusive with the `evict` parameter.
             serializer: Optionally override the default serializer for the
                 store instance.
             deserializer: Optionally override the default deserializer for the
@@ -528,7 +536,15 @@ class Store(Generic[ConnectorT]):
             NonProxiableTypeError: If `obj` is a non-proxiable type. This
                 behavior can be overridden by setting
                 `#!python skip_nonproxiable=True`.
+            ValueError: If `evict` is `True` and `lifetime` is not `None`
+                because these parameters are mutually exclusive.
         """
+        if evict and lifetime is not None:
+            raise ValueError(
+                'The evict and lifetime parameters are mutually exclusive. '
+                'Only set one of evict or lifetime.',
+            )
+
         if isinstance(obj, _NON_PROXIABLE_TYPES):
             if skip_nonproxiable:
                 # MyPy raises the following error which is not correct:
@@ -550,6 +566,9 @@ class Store(Generic[ConnectorT]):
             )
             proxy = Proxy(factory)
 
+            if lifetime is not None:
+                lifetime.add_proxy(proxy)
+
             if populate_target:
                 proxy.__wrapped__ = obj
 
@@ -569,6 +588,7 @@ class Store(Generic[ConnectorT]):
         objs: Sequence[NonProxiableT],
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -582,6 +602,7 @@ class Store(Generic[ConnectorT]):
         objs: Sequence[T],
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -597,6 +618,7 @@ class Store(Generic[ConnectorT]):
         objs: Sequence[T | NonProxiableT],
         *,
         evict: bool = False,
+        lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool = False,
@@ -608,6 +630,10 @@ class Store(Generic[ConnectorT]):
         Args:
             objs: The objects to place in store and return a proxies for.
             evict: If a proxy should evict its object once resolved.
+                Mutually exclusive with the `lifetime` parameter.
+            lifetime: Attach the proxies to this lifetime. The objects
+                associated with each proxy will be evicted when the lifetime
+                ends. Mutually exclusive with the `evict` parameter.
             serializer: Optionally override the default serializer for the
                 store instance.
             deserializer: Optionally override the default deserializer for the
@@ -633,7 +659,15 @@ class Store(Generic[ConnectorT]):
             NonProxiableTypeError: If `obj` is a non-proxiable type. This
                 behavior can be overridden by setting
                 `#!python skip_nonproxiable=True`.
+            ValueError: If `evict` is `True` and `lifetime` is not `None`
+                because these parameters are mutually exclusive.
         """
+        if evict and lifetime is not None:
+            raise ValueError(
+                'The evict and lifetime parameters are mutually exclusive. '
+                'Only set one of evict or lifetime.',
+            )
+
         with Timer() as timer:
             # Find if there are non-proxiable types and if that's okay
             non_proxiable: list[tuple[int, Any]] = []
@@ -664,6 +698,7 @@ class Store(Generic[ConnectorT]):
                 self.proxy_from_key(
                     key,
                     evict=evict,
+                    lifetime=lifetime,
                     deserializer=deserializer,
                 )
                 for key in keys
@@ -693,6 +728,7 @@ class Store(Generic[ConnectorT]):
         key: ConnectorKeyT,
         *,
         evict: bool = False,
+        lifetime: Lifetime | None = None,
         deserializer: DeserializerT | None = None,
     ) -> Proxy[T]:
         """Create a proxy that will resolve to an object already in the store.
@@ -700,20 +736,40 @@ class Store(Generic[ConnectorT]):
         Args:
             key: The key associated with an object already in the store.
             evict: If the proxy should evict the object once resolved.
+                Mutually exclusive with the `lifetime` parameter.
+            lifetime: Attach the proxy to this lifetime. The object associated
+                with the proxy will be evicted when the lifetime ends.
+                Mutually exclusive with the `evict` parameter.
             deserializer: Optionally override the default deserializer for the
                 store instance.
 
         Returns:
             A proxy of the object.
+
+        Raises:
+            ValueError: If `evict` is `True` and `lifetime` is not `None`
+                because these parameters are mutually exclusive.
         """
+        if evict and lifetime is not None:
+            raise ValueError(
+                'The evict and lifetime parameters are mutually exclusive. '
+                'Only set one of evict or lifetime.',
+            )
+
         factory: StoreFactory[ConnectorT, T] = StoreFactory(
             key,
             store_config=self.config(),
             deserializer=deserializer,
             evict=evict,
         )
+        proxy = Proxy(factory)
+
         logger.debug(f'Store(name="{self.name}"): PROXY_FROM_KEY {key}')
-        return Proxy(factory)
+
+        if lifetime is not None:
+            lifetime.add_proxy(proxy)
+
+        return proxy
 
     # This method has the same MyPy complaint as Store.proxy()
     @overload
@@ -722,6 +778,7 @@ class Store(Generic[ConnectorT]):
         obj: NonProxiableT,
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -735,6 +792,7 @@ class Store(Generic[ConnectorT]):
         obj: T,
         *,
         evict: bool = ...,
+        lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
         populate_target: bool = ...,
@@ -747,6 +805,7 @@ class Store(Generic[ConnectorT]):
         obj: T | NonProxiableT,
         *,
         evict: bool = False,
+        lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool = False,
@@ -758,6 +817,10 @@ class Store(Generic[ConnectorT]):
         Args:
             obj: The object to place in store and return a proxy for.
             evict: If the proxy should evict the object once resolved.
+                Mutually exclusive with the `lifetime` parameter.
+            lifetime: Attach the proxy to this lifetime. The object associated
+                with the proxy will be evicted when the lifetime ends.
+                Mutually exclusive with the `evict` parameter.
             serializer: Optionally override the default serializer for the
                 store instance.
             deserializer: Optionally override the default deserializer for the
@@ -784,10 +847,13 @@ class Store(Generic[ConnectorT]):
             NonProxiableTypeError: If `obj` is a non-proxiable type. This
                 behavior can be overridden by setting
                 `#!python skip_nonproxiable=True`.
+            ValueError: If `evict` is `True` and `lifetime` is not `None`
+                because these parameters are mutually exclusive.
         """  # noqa: E501
         possible_proxy = self.proxy(
             obj,
             evict=evict,
+            lifetime=lifetime,
             serializer=serializer,
             deserializer=deserializer,
             populate_target=populate_target,
@@ -886,6 +952,7 @@ class Store(Generic[ConnectorT]):
         self,
         obj: Any,
         *,
+        lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         **kwargs: Any,
     ) -> ConnectorKeyT:
@@ -895,6 +962,8 @@ class Store(Generic[ConnectorT]):
             obj: Object to put in the store.
             serializer: Optionally override the default serializer for the
                 store instance.
+            lifetime: Attach the key to this lifetime. The object associated
+                with the key will be evicted when the lifetime ends.
             kwargs: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -919,6 +988,9 @@ class Store(Generic[ConnectorT]):
         with Timer() as connector_timer:
             key = self.connector.put(obj, **kwargs)
 
+        if lifetime is not None:
+            lifetime.add_key(key)
+
         timer.stop()
         if self.metrics is not None:
             ctime = connector_timer.elapsed_ns
@@ -938,6 +1010,7 @@ class Store(Generic[ConnectorT]):
         self,
         objs: Sequence[Any],
         *,
+        lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         **kwargs: Any,
     ) -> list[ConnectorKeyT]:
@@ -947,6 +1020,8 @@ class Store(Generic[ConnectorT]):
             objs: Sequence of objects to put in the store.
             serializer: Optionally override the default serializer for the
                 store instance.
+            lifetime: Attach the keys to this lifetime. The objects associated
+                with each key will be evicted when the lifetime ends.
             kwargs: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
@@ -975,6 +1050,9 @@ class Store(Generic[ConnectorT]):
 
         with Timer() as connector_timer:
             keys = self.connector.put_batch(_objs, **kwargs)
+
+        if lifetime is not None:
+            lifetime.add_key(*keys)
 
         timer.stop()
         if self.metrics is not None:

@@ -10,6 +10,7 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 from proxystore.store.future import Future
+from proxystore.store.lifetimes import ContextLifetime
 
 
 def test_negative_cache_size() -> None:
@@ -183,3 +184,20 @@ def test_future_bad_connector_type(store: Store[LocalConnector]) -> None:
     with mock.patch.object(store, 'connector', object()):
         with pytest.raises(NotImplementedError, match='DeferrableConnector'):
             store.future()
+
+
+def test_put_lifetime(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store) as lifetime:
+        key = store.put('test_value', lifetime=lifetime)
+
+    assert not store.exists(key)
+
+
+def test_put_batch_lifetime(store: Store[LocalConnector]) -> None:
+    values = ['test_value1', 'test_value2', 'test_value3']
+
+    with ContextLifetime(store) as lifetime:
+        keys = store.put_batch(values, lifetime=lifetime)
+
+    for key in keys:
+        assert not store.exists(key)
