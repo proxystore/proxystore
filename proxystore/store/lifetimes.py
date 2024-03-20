@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import atexit
 import functools
 import logging
 import sys
@@ -51,6 +52,7 @@ class Lifetime(Protocol):
             to evict them when the lifetime has ended.
     """
 
+    name: str
     store: Store[Any]
 
     def add_key(self, *keys: ConnectorKeyT) -> None:
@@ -339,3 +341,46 @@ class LeaseLifetime(ContextLifetime):
             self._expiry += expiry
         else:
             raise AssertionError('Unreachable.')
+
+
+def register_lifetime_atexit(
+    lifetime: Lifetime,
+    close_store: bool = True,
+) -> Callable[[], None]:
+    """Register atexit callback to cleanup the lifetime.
+
+    Registers an atexit callback which will close the lifetime on normal
+    program exit and optionally close the associated store as well.
+
+    Tip:
+        Do not close the [`Store`][proxystore.store.base.Store] associated
+        with the lifetime when registering an atexit callback. Using a
+        [`Store`][proxystore.store.base.Store] after closing it is undefined
+        behaviour. Rather, let the callback handle closing after it is
+        safe to do so.
+
+    Warning:
+        Callbacks are not guaranteed to be called in all cases. See the
+        [`atexit`][atexit] docs for more details.
+
+    Args:
+        lifetime: Lifetime to be closed at exit.
+        close_store: Close the [`Store`][proxystore.store.base.Store] after
+            the lifetime.
+
+    Returns:
+        The registered callback function which can be used with \
+        [`atexit.unregister()`][atexit.unregister] if needed.
+    """
+
+    def _lifetime_atexit_callback() -> None:
+        lifetime.close()
+        if close_store:
+            lifetime.store.close()
+
+    atexit.register(_lifetime_atexit_callback)
+    logger.debug(
+        'Registered atexit callback for lifetime '
+        f'(lifetime: {lifetime.name}, store: {lifetime.store.name})',
+    )
+    return _lifetime_atexit_callback

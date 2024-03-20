@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import atexit
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -14,6 +15,7 @@ from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.lifetimes import LeaseLifetime
 from proxystore.store.lifetimes import Lifetime
+from proxystore.store.lifetimes import register_lifetime_atexit
 
 
 def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
@@ -107,3 +109,23 @@ def test_lease_lifetime_extend(
     lifetime.extend(expiry)
     time.sleep(0.003)
     assert lifetime.done()
+
+
+@pytest.mark.parametrize('close_store', (True, False))
+def test_register_lifetime_atexit(
+    store: Store[LocalConnector],
+    close_store: bool,
+) -> None:
+    key = store.put('value')
+
+    lifetime = ContextLifetime(store)
+    lifetime.add_key(key)
+
+    callback = register_lifetime_atexit(lifetime, close_store=close_store)
+
+    assert not lifetime.done()
+    callback()
+    assert lifetime.done()
+    assert not store.exists(key)
+
+    atexit.unregister(callback)
