@@ -35,3 +35,14 @@
 .md-tabs__link {
   font-weight: 600;
 }
+
+/* Center Markdown Tables (requires md_in_html extension) */
+/* https://github.com/squidfunk/mkdocs-material/issues/3430#issuecomment-1005973474 */
+.center-table {
+    text-align: center;
+}
+
+.md-typeset .center-table :is(td,th):not([align]) {
+    /* Reset alignment for table cells */
+    text-align: initial;
+}

@@ -1,4 +1,8 @@
-"""Lifetime managers for objects in shared stores."""
+"""Lifetime managers for objects in shared stores.
+
+Learn more about managing object lifetimes in the
+[Object Lifetimes](../../guides/object-lifetimes.md) guide.
+"""
 
 from __future__ import annotations
 

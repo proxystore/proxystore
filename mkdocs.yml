@@ -123,6 +123,7 @@ nav:
       - Globus Compute: guides/globus-compute.md
       - Endpoints Overview: guides/endpoints.md
       - Endpoints Debugging: guides/endpoints-debugging.md
+      - Object Lifetimes: guides/object-lifetimes.md
       - Performance Tracking: guides/performance.md
       - Proxy Futures: guides/proxy-futures.md
       - Relay Serving: guides/relay-serving.md
