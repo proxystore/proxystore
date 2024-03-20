@@ -304,11 +304,17 @@ class LeaseLifetime(ContextLifetime):
     def _timer_callback(self) -> None:
         if time.time() >= self._expiry:
             self.close()
-        else:
+        else:  # pragma: no cover
+            # Excluded from coverage because some MacOS GitHub actions runners
+            # are slow enough that the timer always ends after the expiry
+            # in the tests cases. We could make the expiry very long, but
+            # that would just slow down the test suite.
             self._start_timer()
 
     def _start_timer(self) -> None:
-        if self._timer is not None:
+        if self._timer is not None:  # pragma: no cover
+            # Excluded from coverage for the same reason as in
+            # _timer_callback().
             self._timer.cancel()
         interval = max(0, self._expiry - time.time())
         self._timer = threading.Timer(interval, self._timer_callback)

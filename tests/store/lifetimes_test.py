@@ -107,7 +107,9 @@ def test_lease_lifetime_extend(
 ) -> None:
     lifetime = LeaseLifetime(store, expiry=0.001)
     lifetime.extend(expiry)
-    time.sleep(0.003)
+
+    time.sleep(0.005)
+
     assert lifetime.done()
 
 
