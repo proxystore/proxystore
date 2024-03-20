@@ -306,6 +306,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/latest/api/store/lifetimes/</loc>
+         <lastmod>2024-03-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/latest/api/store/metrics/</loc>
          <lastmod>2024-03-20</lastmod>
          <changefreq>daily</changefreq>
@@ -482,6 +487,11 @@
     </url>
     <url>
          <loc>https://proxystore.dev/latest/guides/globus-compute/</loc>
+         <lastmod>2024-03-20</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://proxystore.dev/latest/guides/object-lifetimes/</loc>
          <lastmod>2024-03-20</lastmod>
          <changefreq>daily</changefreq>
     </url>

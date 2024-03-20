@@ -12,13 +12,13 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://proxystore.dev/latest/guides/endpoints/">
+        <link rel="canonical" href="https://proxystore.dev/latest/guides/object-lifetimes/">
       
       
-        <link rel="prev" href="../globus-compute/">
+        <link rel="prev" href="../endpoints-debugging/">
       
       
-        <link rel="next" href="../endpoints-debugging/">
+        <link rel="next" href="../performance/">
       
       
       <link rel="icon" href="../../static/favicon.png">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Endpoints Overview - ProxyStore</title>
+        <title>Object Lifetimes - ProxyStore</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#peer-to-peer-endpoints" class="md-skip">
+        <a href="#object-lifetimes" class="md-skip">
           Skip to content
         </a>
       
@@ -124,7 +124,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Endpoints Overview
+              Object Lifetimes
             
           </span>
         </div>
@@ -752,29 +752,9 @@
                 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Endpoints Overview
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../endpoints/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -783,61 +763,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    Overview
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#endpoint-cli" class="md-nav__link">
-    Endpoint CLI
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#endpointconnector" class="md-nav__link">
-    EndpointConnector
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxy-lifecycle" class="md-nav__link">
-    Proxy Lifecycle
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hosting-a-relay-server" class="md-nav__link">
-    Hosting a Relay Server
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -867,9 +792,29 @@
                 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../object-lifetimes/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Object Lifetimes
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -878,6 +823,74 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ephemeral-proxies" class="md-nav__link">
+    Ephemeral Proxies
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lifetimes" class="md-nav__link">
+    Lifetimes
+  </a>
+  
+    <nav class="md-nav" aria-label="Lifetimes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contextual-lifetime" class="md-nav__link">
+    Contextual Lifetime
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leased-lifetime" class="md-nav__link">
+    Leased Lifetime
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-lifetime" class="md-nav__link">
+    Static Lifetime
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ownership" class="md-nav__link">
+    Ownership
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3111,36 +3124,49 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    Overview
+  <a href="#ephemeral-proxies" class="md-nav__link">
+    Ephemeral Proxies
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#endpoint-cli" class="md-nav__link">
-    Endpoint CLI
+  <a href="#lifetimes" class="md-nav__link">
+    Lifetimes
   </a>
+  
+    <nav class="md-nav" aria-label="Lifetimes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#contextual-lifetime" class="md-nav__link">
+    Contextual Lifetime
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#leased-lifetime" class="md-nav__link">
+    Leased Lifetime
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#static-lifetime" class="md-nav__link">
+    Static Lifetime
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#endpointconnector" class="md-nav__link">
-    EndpointConnector
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxy-lifecycle" class="md-nav__link">
-    Proxy Lifecycle
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#hosting-a-relay-server" class="md-nav__link">
-    Hosting a Relay Server
+  <a href="#ownership" class="md-nav__link">
+    Ownership
   </a>
   
 </li>
@@ -3163,101 +3189,134 @@
   
 
 
-<h1 id="peer-to-peer-endpoints">Peer-to-Peer Endpoints<a class="headerlink" href="#peer-to-peer-endpoints" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 26 September 2023</em></p>
-<p>ProxyStore Endpoints are in-memory object stores
-with peering capabilities. Endpoints enable data transfer with proxies
-between multiple sites using NAT traversal.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Endpoints are experimental and the interfaces and underlying
-implementations may change. Refer to the API docs for the most
-up-to-date information.</p>
+<h1 id="object-lifetimes">Object Lifetimes<a class="headerlink" href="#object-lifetimes" title="Permanent link">&para;</a></h1>
+<p><em>Last updated 20 March 2024</em></p>
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, leaves the responsibility of manageing shared objects to the application.
+For example, a object put into a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will persist there until the key is manually evicted.
+Some <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connectors</code></a>, and therefore <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Stores</code></a>, delete all of their objects when closed but this is not a specified requirement of the protocol.</p>
+<p>ProxyStore, however, provides optional mechanisms for more automated management of shared objects.</p>
+<div class="center-table">
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: center;">Supports keys?</th>
+<th style="text-align: center;">Supports proxies?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><a href="#ephemeral-proxies">Ephemeral Proxies</a></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="#lifetimes">Lifetimes</a></td>
+<td style="text-align: center;">✓</td>
+<td style="text-align: center;">✓</td>
+</tr>
+<tr>
+<td style="text-align: left;"><a href="#ownership">Ownership</a></td>
+<td style="text-align: center;">✗</td>
+<td style="text-align: center;">✓</td>
+</tr>
+</tbody>
+</table>
 </div>
-<h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>At its core, the <a class="autorefs autorefs-internal" href="../../api/endpoint/endpoint/#proxystore.endpoint.endpoint.Endpoint"><code>Endpoint</code></a> is
-an in-memory data store built on asyncio. Endpoints provide a REST API, served
-using <a href="https://pgjones.gitlab.io/quart/">Quart</a>, and ProxyStore provides the
-<a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> as
-the primary interface for clients to interact with endpoints.</p>
-<p><img alt="ProxyStore Endpoints" src="../../static/endpoint-peering.svg" width="100%" /></p>
-<blockquote>
-<p><b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
-any endpoint and those request will be forwarded to the correct endpoint.
-Endpoints establish peer-to-peer connections using UDP hole-punching and a
-publicly accessible relay server.</p>
-</blockquote>
-<p>Unlike popular in-memory data stores (Redis, Memcached, etc.), ProxyStore
-endpoints can operate as peers even from behind different NATs without the need
-to open ports or SSH tunnels. To achieve direct data transfer between peers,
-endpoints use the <a href="https://webrtc.org/">WebRTC</a> standard to determine
-how the peers can connect.</p>
-<p>As shown in <strong>Fig. 1</strong>, endpoints use a commonly accessible <em>relay server</em>
-to facilitate peer connections. When an endpoint is started, the Endpoint
-registers with the relay server. Then, when an endpoint needs to make a
-request from a peer, (1) the endpoint creates an <em>offer</em> and asks the
-relay server to forward the offer to the peer endpoint. The relay
-server forwards the offer (2) and the peer endpoint creates an <em>answer</em> to the
-received offer. The peer endpoint returns the <em>answer</em> to the original
-endpoint via the relay server (3, 4).</p>
-<p>The offer and answer contain information about the local and remote sessions
-of the endpoints which can be used to complete the peer-to-peer connection (5).
-(<em>Note</em>: this is a great simplification and more details can be found at
-<a href="https://webrtc.org/getting-started/peer-connections">https://webrtc.org/getting-started/peer-connections</a>.) The peers will then
-keep a data channel open between themselves for the remainder of their
-lifetime.</p>
-<p>Clients interacting with an endpoint via the REST API and typical object store
-operations (<em>get</em>, <em>set</em>, etc.) specify a <em>key</em> and an <em>endpoint UUID</em>.
-Endpoints that receive a request with a different endpoint UUID will attempt
-a peer connection to the endpoint if one does not exist already and forward
-the request along and facilitate returning the response back to the client.</p>
-<h2 id="endpoint-cli">Endpoint CLI<a class="headerlink" href="#endpoint-cli" title="Permanent link">&para;</a></h2>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Peer-to-peer connections between two Endpoints are not supported on
-all network types. The NAT traversal techniques used to establish
-peer-to-peer connections are unreliable across symmetric NATs or poorly
-behaved legacy NATs. To check the compatibility of your network, use the
-<a href="../../api/cli/#proxystore-endpoint-check-nat"><code>proxystore-endpoint check-nat</code></a>
-CLI tool.</p>
-</div>
-<p>Endpoints can be configure and started with the
-<a href="../../api/cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a>
-command. By default, an Endpoint is configured to connect to ProxyStore's
-cloud-hosted relay server. This relay server uses
-<a href="https://www.globus.org/globus-auth-service">Globus Auth</a> for identity and
-access management. To use the provided relay server, authenticate using the
-<a href="../../api/cli/#proxystore-globus-auth-login"><code>proxystore-globus-auth login</code></a>
-CLI. Authentication only needs to be performed once per system.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Endpoints can be started using a client identity, rather than as a user,
-by exporting the <code>PROXYSTORE_GLOBUS_CLIENT_ID</code> and
-<code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code> environment variables. This is similar
-to how
-<a href="https://funcx.readthedocs.io/en/latest/sdk.html#client-credentials-with-clients" target="_blank">Globus Compute supports client login</a>.</p>
-</div>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-globus-auth<span class="w"> </span>login
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>my-endpoint<span class="w"> </span>&lt;a6c7f036-3e29-4a7a-bf90-5a5f21056e39&gt;
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>INFO:<span class="w"> </span>Config<span class="w"> </span>and<span class="w"> </span>log<span class="w"> </span>file<span class="w"> </span>directory:<span class="w"> </span>~/.local/share/proxystore/my-endpoint
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w"> </span>Start<span class="w"> </span>the<span class="w"> </span>endpoint<span class="w"> </span>with:
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
-</span></code></pre></div>
-<p>Endpoint configurations are stored in <code>$PROXYSTORE_HOME/{endpoint-name}</code>
-or <code>$XDG_DATA_HOME/proxystore/{endpoint-name}</code>
-(see <a class="autorefs autorefs-internal" href="../../api/utils/environment/#proxystore.utils.environment.home_dir"><code>home_dir()</code></a>) and contain the
-name, UUID, host address, port, relay server address, and more.</p>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>By default, <code>$XDG_DATA_HOME/proxystore</code> will usually resolve to
-<code>~/.local/share/proxystore</code>. You can change this behavior by setting
-<code>$PROXYSTORE_HOME</code> in your <code>~/.bashrc</code> or similar configuration file.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">PROXYSTORE_HOME</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HOME</span><span class="s2">/.proxystore&quot;</span>
-</span></code></pre></div></p>
-</div>
-<p>A typical configuration looks like the following.</p>
-<div class="language-toml highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">config.toml</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
+<p><em>Note: Currently, these methods are mutually exclusive with each other.</em></p>
+<h2 id="ephemeral-proxies">Ephemeral Proxies<a class="headerlink" href="#ephemeral-proxies" title="Permanent link">&para;</a></h2>
+<p>Setting the <code>evict=True</code> flag when creating a proxy of an object with
+<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.proxy_batch"><code>Store.proxy_batch()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.proxy_from_key"><code>Store.proxy_from_key()</code></a>, or
+<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.locked_proxy"><code>Store.locked_proxy()</code></a>
+marks the proxy as ephemeral (one-time use).
+The factory will evict the object from the store when the proxy's factory is invoked for the first time to resolve the proxy.
+This is useful when the a proxy will be created once and consumed once by an application.</p>
+<p>A common side-effect of <code>evict=True</code> is obscure <a class="autorefs autorefs-internal" href="../../api/store/exceptions/#proxystore.store.exceptions.ProxyResolveMissingKeyError"><code>ProxyResolveMissingKeyError</code></a> tracebacks.
+This commonly happens when a proxy is unintentionally resolved by another component of the program.
+For example, certain serializers may attempt to inspect the proxy to optimize serialization but resolve the proxy in the process, or datastructures like <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#set"><code>set()</code></a> access the <code>__hash__</code> method of the proxy which will resolve the proxy.
+These accidental resolves will automatically evict the target object so later resolves of the proxy will fail.</p>
+<p>If you run into these errors, try:</p>
+<ul>
+<li>Enabling <code>DEBUG</code> level logging to determine where unintentional proxy resolution is occurring.
+  The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will log every <code>GET</code> and <code>EVICT</code> operation on a key.</li>
+<li>Avoid use of datastructures or functions which unnecessarily resolve proxies.</li>
+<li>If avoiding use of the datastructures or functions causing the problem is not possible, consider using the <code>populate_target=True</code> flag when creating the proxy.
+  The <code>populate_target</code> flag will return a proxy that is already resolved so the factory, which would evict the target object, does not need to be called until the proxy is serialized and then deserialized and resolved on a different process.</li>
+</ul>
+<h2 id="lifetimes">Lifetimes<a class="headerlink" href="#lifetimes" title="Permanent link">&para;</a></h2>
+<p>Shared objects in a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can be associated with a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.Lifetime"><code>Lifetime</code></a>.
+Lifetimes provide a management mechanism for keeping track of objects and cleaning them up when appropriate.</p>
+<h3 id="contextual-lifetime">Contextual Lifetime<a class="headerlink" href="#contextual-lifetime" title="Permanent link">&para;</a></h3>
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> provides a simple interface for managing shared objects.
+Objects added to a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can be associated with the lifetime via the <code>lifetime</code> parameter supported by most <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> methods.
+Objects associated with the lifetime are evicted when the lifetime is closed/ended.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Contextual Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">ContextLifetime</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="n">lifetime</span> <span class="o">=</span> <span class="n">ContextLifetime</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>  <span class="c1"># (3)!</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="n">lifetime</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (4)!</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (5)!</span>
+</span></code></pre></div></td></tr></table></div>
+<ol>
+<li>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> and all its associated objects must be associated with the same <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.</li>
+<li>A new key can be automatically associated with a lifetime.</li>
+<li>The target object of a proxy can be automatically associated with a lifetime.</li>
+<li>Ending a lifetime will cause all of its associated objects to be evicted.</li>
+<li>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> should be closed after any associated lifetimes because lifetimes use the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> for cleanup.</li>
+</ol>
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> can be used as a context manager.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Contextual Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-1-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-1-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-1-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-1-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span>
+<span class="normal"><a href="#__codelineno-1-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">ContextLifetime</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="k">with</span> <span class="n">ContextLifetime</span><span class="p">(</span><span class="n">store</span><span class="p">)</span> <span class="k">as</span> <span class="n">lifetime</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a>    <span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (5)!</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="leased-lifetime">Leased Lifetime<a class="headerlink" href="#leased-lifetime" title="Permanent link">&para;</a></h3>
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime"><code>LeaseLifetime</code></a> provides time-based object lifetimes.
+Each <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime"><code>LeaseLifetime</code></a> has an associated expiration time after which any associated objects will be evicted.
+The lease can be extended as needed with <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime.extend"><code>extend()</code></a> or ended early <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime.close"><code>close()</code></a>.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Leased Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-2-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-2-3"> 3</a></span>
 <span class="normal"><a href="#__codelineno-2-4"> 4</a></span>
@@ -3271,71 +3330,88 @@ name, UUID, host address, port, relay server address, and more.</p>
 <span class="normal"><a href="#__codelineno-2-12">12</a></span>
 <span class="normal"><a href="#__codelineno-2-13">13</a></span>
 <span class="normal"><a href="#__codelineno-2-14">14</a></span>
-<span class="normal"><a href="#__codelineno-2-15">15</a></span>
-<span class="normal"><a href="#__codelineno-2-16">16</a></span>
-<span class="normal"><a href="#__codelineno-2-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-endpoint&quot;</span><span class="w">  </span><span class="c1"># (1)!</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;d27cf8cb-45fa-46b0-b907-27c830da62e3&quot;</span><span class="w">  </span><span class="c1"># (2)!</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (3)!</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="k">[relay]</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;wss://relay.proxystore.dev&quot;</span><span class="w">  </span><span class="c1"># (4)!</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (5)!</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (6)!</span>
+<span class="normal"><a href="#__codelineno-2-15">15</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">LeaseLifetime</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a>    <span class="n">lifetime</span> <span class="o">=</span> <span class="n">LeaseLifetime</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">expiry</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a>    <span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
 </span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="k">[relay.auth]</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;globus&quot;</span><span class="w">  </span><span class="c1"># (7)!</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="k">[relay.auth.kwargs]</span><span class="w">  </span><span class="c1"># (8)!</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[storage]</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/.local/share/proxystore/my-endpoint/blobs.db&quot;</span><span class="w">  </span><span class="c1"># (9)!</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (10)!</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a>    <span class="n">lifetime</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a>    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>  <span class="c1">#(3)!</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>    <span class="k">assert</span> <span class="n">lifetime</span><span class="o">.</span><span class="n">done</span><span class="p">()</span>  <span class="c1">#(4)!</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a>    <span class="k">assert</span> <span class="ow">not</span> <span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
-<li>Human-readable name of this endpoint. Only used for logging and CLI
-   operations.</li>
-<li>Unique identifier of this endpoint.</li>
-<li>Change the default port if running multiple endpoints on the same system.</li>
-<li>Comment out the relay address if you want to start the endpoint in SOLO
-   mode. Peering will not be available, but all other functionality will
-   remain.</li>
-<li>Number of channels to multiplex peer communications over. Increasing this
-   to two or four may improve performance on certain networks.</li>
-<li>Only disable this when connecting to a local relay server using self-signed
-   certificates for testing and development purposes.</li>
-<li>Authentication method to use with the relay server. Comment this out when
-   using a local relay server without authentication.</li>
-<li>Optional keyword arguments to use when creating the authorization headers.
-   Typically only used for testing and development purposes.</li>
-<li>Optional path to a SQLite database for persisting endpoint objects. See
-   the tip below for more details.</li>
-<li>Maximum object size. Comment out to disable object size limits.</li>
+<li>Create a new lifetime with a current lease of ten seconds.</li>
+<li>Extend the lease by another five seconds.</li>
+<li>Sleep for longer than our current lease.</li>
+<li>Lease has expired so the lifetime has ended and associated objects have been evicted.</li>
 </ol>
-<div class="admonition tip">
-<p class="admonition-title">Tip</p>
-<p>Endpoints provide no data persistence by default, but this can be enabled
-by passing the <code>--persist</code> flag when configuring the endpoint or by
-setting <code>"database_path"</code> in the <code>[storage]</code> section of the config. When
-set, blobs stored by the endpoint will be written to a SQLite database
-file. Note this will result in slower performance.</p>
-</div>
-<p>An up-to-date configuration description can found in the
-<a class="autorefs autorefs-internal" href="../../api/endpoint/config/#proxystore.endpoint.config.EndpointConfig"><code>EndpointConfig</code></a> docstring.</p>
-<p>Starting the endpoint will load the configuration from the ProxyStore home
-directory, initialize the endpoint, and start a Quart app using the host and
-port.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
-</span></code></pre></div>
-<h2 id="endpointconnector">EndpointConnector<a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h2>
-<p>The primary interface to endpoints is the
-<a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>This section assumes familiarity with proxies and the
-<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface. See the
-<a href="../../get-started/">Get Started</a> guide before getting started with endpoints.</p>
-</div>
-<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Endpoint Client Example</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<h3 id="static-lifetime">Static Lifetime<a class="headerlink" href="#static-lifetime" title="Permanent link">&para;</a></h3>
+<p>A static lifetime indicates that the associated objects should live for the remainder of the lifetime of the running process which created the object.
+ProxyStore does not yet support a <code>StaticLifetime</code> class, but static lifetimes can be achieved with the use of a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> and an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Static Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">ContextLifetime</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">register_lifetime_atexit</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="n">lifetime</span> <span class="o">=</span> <span class="n">ContextLifetime</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="n">register_lifetime_atexit</span><span class="p">(</span><span class="n">lifetime</span><span class="p">,</span> <span class="n">close_store</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>  <span class="c1"># (3)!</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<ol>
+<li>Create and use a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> as normal.</li>
+<li>Register an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler with <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.register_lifetime_atexit"><code>register_lifetime_atexit</code></a>.
+   The <code>close_store</code> flag is <code>True</code> by default and will close the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> after the lifetime has been cleaned up.</li>
+<li>Objects associated with the lifetime will be cleaned up when the program exits.</li>
+</ol>
+<p>Additional tips:</p>
+<ol>
+<li>The lifetime can be closed early if needed.</li>
+<li>Closing the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> at the end of the program but before the <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler has executed can cause undefined behaviour.
+   Let the handler perform all cleanup.</li>
+<li><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> does not guarantee that the handler will be called in some unexpected process shutdown cases.</li>
+</ol>
+<h2 id="ownership">Ownership<a class="headerlink" href="#ownership" title="Permanent link">&para;</a></h2>
+<p>An <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a>, created by <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.owned_proxy"><code>Store.owned_proxy()</code></a>, provides an alternative to the default <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> which enforces Rust-like ownership and borrowing rules for objects in a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.</p>
+<ol>
+<li>Each <em>target</em> object of type <code>T</code> in the global store has an associated <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a>.</li>
+<li>There can only be one <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> for any <em>target</em> in the global store.</li>
+<li>When an <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> goes out of scope (e.g., gets garbage collected), the associated <em>target</em> is removed from the global store.</li>
+</ol>
+<p>An <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> can be borrowed without relinquishing ownership.
+This requires two additional rules.</p>
+<ol>
+<li>At any given time, you can have either one mutable reference to the <em>target</em>, a <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.RefMutProxy"><code>RefMutProxy[T]</code></a>, or any number of immutable references, a <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.RefProxy"><code>RefProxy[T]</code></a>.</li>
+<li>References must always be valid. I.e., you cannot delete an <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> while it has been borrowed via a <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.RefProxy"><code>RefProxy[T]</code></a> or <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.RefMutProxy"><code>RefMutProxy[T]</code></a>.</li>
+</ol>
+<p>Reference proxy types can be created and used using:
+<a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.borrow"><code>borrow()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.mut_borrow"><code>mut_borrow()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.clone"><code>clone()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.into_owned"><code>into_owned()</code></a>, and
+<a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.update"><code>update()</code></a>.</p>
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/scopes/#proxystore.store.scopes.submit"><code>submit()</code></a> associates proxy references with the scope of a function executed by a function executor, such as a <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor"><code>ProcessPoolExecutor</code></a> or FaaS system.
+This wrapper function ensures that immutable or mutable borrows of a value passed to a function are appropriately removed once the function completes.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Reference Lifetime Scopes</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
 <span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
@@ -3347,69 +3423,40 @@ port.</p>
 <span class="normal"><a href="#__codelineno-4-10">10</a></span>
 <span class="normal"><a href="#__codelineno-4-11">11</a></span>
 <span class="normal"><a href="#__codelineno-4-12">12</a></span>
-<span class="normal"><a href="#__codelineno-4-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.endpoint</span> <span class="kn">import</span> <span class="n">EndpointConnector</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a>   <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a>       <span class="s1">&#39;5349ffce-edeb-4a8b-94a6-ab16ade1c1a1&#39;</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a>       <span class="s1">&#39;d62910f6-0d29-452e-80b7-e0cd601949db&#39;</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a>       <span class="o">...</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>   <span class="p">],</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="p">)</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-4-13">13</a></span>
+<span class="normal"><a href="#__codelineno-4-14">14</a></span>
+<span class="normal"><a href="#__codelineno-4-15">15</a></span>
+<span class="normal"><a href="#__codelineno-4-16">16</a></span>
+<span class="normal"><a href="#__codelineno-4-17">17</a></span>
+<span class="normal"><a href="#__codelineno-4-18">18</a></span>
+<span class="normal"><a href="#__codelineno-4-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">Future</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span> <span class="nn">concurrent.futures</span> <span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span> <span class="nn">proxystore.store.ref</span> <span class="kn">import</span> <span class="n">borrow</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">owned_proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="n">borrowed</span> <span class="o">=</span> <span class="n">borrow</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">pool</span><span class="p">:</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a>    <span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">submit</span><span class="p">(</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a>        <span class="n">pool</span><span class="o">.</span><span class="n">submit</span><span class="p">,</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a>        <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="nb">sum</span><span class="p">,</span> <span class="n">borrowed</span><span class="p">),</span>  <span class="c1"># (3)!</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a>    <span class="p">)</span>
+</span><span id="__span-4-15"><a id="__codelineno-4-15" name="__codelineno-4-15"></a>    <span class="k">assert</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="o">==</span> <span class="mi">6</span>  <span class="c1"># (4)!</span>
+</span><span id="__span-4-16"><a id="__codelineno-4-16" name="__codelineno-4-16"></a>
+</span><span id="__span-4-17"><a id="__codelineno-4-17" name="__codelineno-4-17"></a><span class="k">del</span> <span class="n">proxy</span>  <span class="c1"># (5)!</span>
+</span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a>
+</span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
-<p>The <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> takes
-a list of endpoint UUIDs. This list represents any endpoint that proxies
-created by this store may interact with to resolve themselves. The
-<a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> will use this
-list to find its <em>home</em> endpoint, the endpoint that will be used to issue
-operations to. To find the <em>home</em> endpoint, the ProxyStore home directory
-will be scanned for any endpoint configurations matching
-the one of the UUIDs. If a match is found, the
-<a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> will attempt
-to connect to the endpoint using the host and port in the configuration. This
-process is repeated until a reachable endpoint is found. While the user could
-specify the home endpoint directly, the home endpoint may change when a proxy
-travels to a different machine.</p>
-<h2 id="proxy-lifecycle">Proxy Lifecycle<a class="headerlink" href="#proxy-lifecycle" title="Permanent link">&para;</a></h2>
-<p><img alt="Dataflow with Proxies and Endpoints" src="../../static/endpoint-overview.svg" style="display: block; margin: 0 auto" width="75%" /></p>
-<blockquote>
-<p><b>Figure 2:</b> Flow of data when transferring objects via proxies and endpoints.</p>
-</blockquote>
-<p>In distributed systems, proxies created from an
-<a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> can be used
-to facilitate simple and fast data communication.
-The flow of data and their associated proxies are shown in <strong>Fig. 2</strong>.</p>
 <ol>
-<li>Host A creates a proxy of the <em>target</em> object. The serialized <em>target</em>
-   is placed in Host A's home/local endpoint (Endpoint 1).
-   The proxy contains the key referencing the <em>target</em>, the endpoint UUID with
-   the <em>target</em> data (Endpoint 1's UUID), and the list of
-   all endpoint UUIDs configured with the
-   <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>
-   (the UUIDs of Endpoints 1 and 2).</li>
-<li>Host A communicates the proxy object to Host B. This communication is
-   cheap because the proxy is just a thin reference to the object.</li>
-<li>Host B receives the proxy and attempts to use the proxy initiating the
-   proxy <em>resolve</em> process. The proxy requests the data from Host B's
-   home endpoint (Endpoint 2).</li>
-<li>Endpoint 2 sees that the proxy is requesting data from a different endpoint
-   (Endpoint 1) so Endpoint 2 initiates a peer connection to Endpoint 1 and
-   requests the data.</li>
-<li>Endpoint 1 sends the data to Endpoint 2.</li>
-<li>Endpoint 2 replies to Host B's request for the data with the data received
-   from Endpoint 2. Host B deserializes the target object and the proxy
-   is resolved.</li>
+<li>Borrow an <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a> as a <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.RefProxy"><code>RefProxy</code></a>.</li>
+<li><a class="autorefs autorefs-internal" href="../../api/store/scopes/#proxystore.store.scopes.submit"><code>submit()</code></a> will call <code>pool.submit()</code> with the specified <code>args</code> and <code>kwargs</code>.
+   Here, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#sum"><code>sum</code></a> will be the function invoked on a single argument <code>borrowed</code> which is a proxy of a list of integers.</li>
+<li>The <code>args</code> and <code>kwargs</code> will be scanned for any proxy reference types, and a callback will be added to the returned future that marks the input proxy references as out-of-scope once the future completes.</li>
+<li>Once the future is completed, the <code>borrowed</code> reference is marked out-of-scope and the reference count of borrows managed internally in <code>proxy</code> is decremented.</li>
+<li>The <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a>, <code>proxy</code>, which owns the target value is safe to delete and get garbage collected because there are no remaining reference proxies which have borrowed the target value.</li>
 </ol>
-<h2 id="hosting-a-relay-server">Hosting a Relay Server<a class="headerlink" href="#hosting-a-relay-server" title="Permanent link">&para;</a></h2>
-<p>The <a href="../../api/cli/#proxystore-endpoint-configure"><code>proxystore-endpoint configure</code></a>
-CLI will configure endpoints to use a relay server hosted by the ProxyStore
-team.  If this is not suitable (or the ProxyStore relay is unavailable) we
-provide all of the tools to host your own relay server. See the
-<a href="../relay-serving/">Relay Serving Guide</a> to learn more.</p>
 
 
 
