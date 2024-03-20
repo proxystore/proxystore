@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import os
+import signal
 import uuid
 from typing import Any
 from typing import Literal
@@ -216,6 +217,13 @@ def serve(
             'Not installing uvloop. Uvicorn may override and install anyways',
         )
 
+    # Convert SIGTERM to SIGINT which will be handled by Uvicorn first,
+    # then passed on by this function.
+    signal.signal(
+        signal.SIGTERM,
+        lambda *_args: signal.raise_signal(signal.SIGINT),
+    )
+
     # The remaining set up and serving code is deferred to within the
     # _serve_async helper function which will be executed within an event loop.
     try:
@@ -226,6 +234,15 @@ def serve(
         # the exception.
         logger.exception(f'Caught unhandled exception: {e!r}')
         raise
+    except KeyboardInterrupt:  # pragma: no cover
+        # Uvicorn<0.29.0 captures SIGINT and does not propagate is.
+        # Uvicorn>=0.29.1 changes this behavior to propagate the SIGINT after
+        # Uvicorn has done it's cleanup, so we need to catch the exception
+        # here and pass on it since we let Uvicorn handle our clean up in
+        # the "after_app_serving" shutdown callback. This is excluded from
+        # coverage because it depends on the Uvicorn version.
+        # Relevant PR: https://github.com/encode/uvicorn/pull/1600
+        pass
     finally:
         logger.info(f'Finished serving endpoint: {config.name}')
 
