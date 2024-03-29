@@ -292,6 +292,9 @@ class Store(Generic[ConnectorT]):
             NotImplementedError: If the `connector` is not of type
                 [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
         """
+        timer = Timer()
+        timer.start()
+
         if not isinstance(self.connector, DeferrableConnector):
             raise NotImplementedError(
                 'The provided connector is type '
@@ -307,7 +310,13 @@ class Store(Generic[ConnectorT]):
             stacklevel=2,
         )
 
-        key = self.connector.new_key()
+        with Timer() as connector_timer:
+            key = self.connector.new_key()
+
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ns
+            self.metrics.add_time('store.future.connector', key, ctime)
+
         factory: PollingStoreFactory[ConnectorT, T] = PollingStoreFactory(
             key,
             store_config=self.config(),
@@ -318,7 +327,17 @@ class Store(Generic[ConnectorT]):
             polling_interval_limit=polling_interval_limit,
             polling_timeout=polling_timeout,
         )
-        return Future(factory, serializer=serializer)
+        future = Future(factory, serializer=serializer)
+
+        timer.stop()
+        if self.metrics is not None:
+            self.metrics.add_time('store.future', key, timer.elapsed_ns)
+
+        logger.debug(
+            f'Store(name="{self.name}"): FUTURE {key} in '
+            f'{timer.elapsed_ms:.3f} ms',
+        )
+        return future
 
     def evict(self, key: ConnectorKeyT) -> None:
         """Evict the object associated with the key.
