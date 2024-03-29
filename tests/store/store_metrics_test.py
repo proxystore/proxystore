@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+from typing import Any
 from typing import Generator
 
 import pytest
@@ -9,6 +10,7 @@ from proxystore.connectors.file import FileConnector
 from proxystore.serialize import serialize
 from proxystore.store import store_registration
 from proxystore.store.base import Store
+from proxystore.store.future import Future
 
 
 @pytest.fixture()
@@ -72,6 +74,12 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     assert proxy_metrics.times['store.proxy'].count == 1
     assert proxy_metrics.times['factory.call'].count == 1
     assert proxy_metrics.times['factory.resolve'].count == 1
+
+    future: Future[Any] = store.future()
+    future_metrics = store.metrics.get_metrics(future._factory.key)
+    assert future_metrics is not None
+    assert future_metrics.times['store.future'].count == 1
+    assert future_metrics.times['store.future.connector'].count == 1
 
 
 def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
