@@ -106,9 +106,21 @@ def test_lease_lifetime_extend(
     expiry: Any,
 ) -> None:
     lifetime = LeaseLifetime(store, expiry=0.001)
+
+    assert lifetime._timer is not None
+    first_timer = lifetime._timer
+
     lifetime.extend(expiry)
 
-    time.sleep(0.005)
+    first_timer.join()
+    time.sleep(0.001)
+
+    try:
+        # Wait on possible second timer
+        lifetime._timer.join()
+    except AttributeError:  # pragma: no cover
+        # Raised if lifetime._timer is None because it has already been closed.
+        pass
 
     assert lifetime.done()
 
