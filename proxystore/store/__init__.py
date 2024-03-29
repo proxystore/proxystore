@@ -151,4 +151,4 @@ def unregister_store(name_or_store: str | Store[Any]) -> None:
     )
     if name in _stores:
         del _stores[name]
-        logger.debug(f'Unregistered a store named {name}')
+        logger.info(f'Unregistered a store named {name}')
