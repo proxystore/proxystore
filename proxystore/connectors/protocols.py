@@ -21,7 +21,11 @@ class Connector(Protocol[KeyT]):
     """
 
     def close(self) -> None:
-        """Close the connector and clean up."""
+        """Close the connector and clean up.
+
+        Note:
+            Implementations should make this idempotent.
+        """
         ...
 
     def config(self) -> dict[str, Any]:
