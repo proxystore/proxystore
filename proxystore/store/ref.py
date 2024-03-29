@@ -180,16 +180,19 @@ class OwnedProxy(BaseRefProxy[T]):
 
     def __del__(self) -> None:
         atexit.unregister(object.__getattribute__(self, '__finalizer__'))
-        ref_count = object.__getattribute__(self, '__ref_count__')
-        ref_mut_count = object.__getattribute__(self, '__ref_mut_count__')
-        if ref_count > 0 or ref_mut_count > 0:
-            raise RuntimeError(
-                'Cannot safely delete OwnedProxy because there still exists '
-                f'{ref_count} RefProxy and {ref_mut_count} RefMutProxy.',
-            )
-        factory = object.__getattribute__(self, '__factory__')
-        store = factory.get_store()
-        store.evict(factory.key)
+        if object.__getattribute__(self, '__valid__'):
+            ref_count = object.__getattribute__(self, '__ref_count__')
+            ref_mut_count = object.__getattribute__(self, '__ref_mut_count__')
+            if ref_count > 0 or ref_mut_count > 0:
+                raise RuntimeError(
+                    'Cannot safely delete OwnedProxy because there still '
+                    f'exists {ref_count} RefProxy and {ref_mut_count} '
+                    'RefMutProxy.',
+                )
+            factory = object.__getattribute__(self, '__factory__')
+            store = factory.get_store()
+            store.evict(factory.key)
+            object.__setattr__(self, '__valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,
@@ -254,6 +257,8 @@ class RefProxy(BaseRefProxy[T]):
             ref_count = object.__getattribute__(owner, '__ref_count__')
             assert ref_count >= 1
             object.__setattr__(owner, '__ref_count__', ref_count - 1)
+        object.__setattr__(self, '__owner__', None)
+        object.__setattr__(self, '__valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,
@@ -315,6 +320,8 @@ class RefMutProxy(BaseRefProxy[T]):
             )
             assert ref_mut_count == 1
             object.__setattr__(owner, '__ref_mut_count__', 0)
+        object.__setattr__(self, '__owner__', None)
+        object.__setattr__(self, '__valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,

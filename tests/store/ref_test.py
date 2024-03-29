@@ -409,3 +409,16 @@ def test_into_owned_populate(
 
     owned = into_owned(proxy, populate_target=populate_target)
     assert is_resolved(owned) == populate_target
+
+
+def test_del_invalid_owned_proxy(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+
+    proxy_pkl = pickle.dumps(proxy)
+    new_proxy = pickle.loads(proxy_pkl)
+
+    # Should do nothing because old proxy was made invalid
+    del proxy
+
+    assert new_proxy == 'value'
