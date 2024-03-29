@@ -85,7 +85,7 @@ class FileConnector:
         """
         clear = self.clear if clear is None else clear
         if clear and os.path.isdir(self.store_dir):
-            shutil.rmtree(self.store_dir)
+            shutil.rmtree(self.store_dir, ignore_errors=True)
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
