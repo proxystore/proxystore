@@ -2,7 +2,7 @@
 
 *Last updated 20 March 2024*
 
-The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of manageing shared objects to the application.
+The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
 For example, a object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
 Some [`Connectors`][proxystore.connectors.protocols.Connector], and therefore [`Stores`][proxystore.store.base.Store], delete all of their objects when closed but this is not a specified requirement of the protocol.
 
