@@ -92,27 +92,35 @@ class EndpointConnector:
         found_endpoint: EndpointConfig | None = None
         for endpoint in available_endpoints:
             endpoint_uuid = UUID(endpoint.uuid)
-            if endpoint_uuid in self.endpoints:
-                logger.debug(f'Attempting connection to {endpoint_uuid}')
-                response = self._session.get(
-                    f'http://{endpoint.host}:{endpoint.port}/endpoint',
+            if endpoint_uuid not in self.endpoints:
+                continue
+            if endpoint.host is None:
+                logger.warning(
+                    'Found valid configuration for endpoint '
+                    f'"{endpoint.name}" ({endpoint_uuid}), but the endpoint '
+                    'has not been started',
                 )
-                if response.status_code == 200:
-                    uuid_ = response.json()['uuid']
-                    if endpoint_uuid == UUID(uuid_):
-                        logger.debug(
-                            f'Connection to {endpoint_uuid} successful, using '
-                            'as local endpoint',
-                        )
-                        found_endpoint = endpoint
-                        break
-                    else:
-                        logger.debug(
-                            f'Connection to {endpoint_uuid} returned '
-                            'different UUID',
-                        )
+                continue
+            logger.debug(f'Attempting connection to {endpoint_uuid}')
+            response = self._session.get(
+                f'http://{endpoint.host}:{endpoint.port}/endpoint',
+            )
+            if response.status_code == 200:
+                uuid_ = response.json()['uuid']
+                if endpoint_uuid == UUID(uuid_):
+                    logger.debug(
+                        f'Connection to {endpoint_uuid} successful, using '
+                        'as local endpoint',
+                    )
+                    found_endpoint = endpoint
+                    break
                 else:
-                    logger.debug(f'Connection to {endpoint_uuid} failed')
+                    logger.debug(
+                        f'Connection to {endpoint_uuid} returned '
+                        'different UUID',
+                    )
+            else:
+                logger.debug(f'Connection to {endpoint_uuid} failed')
 
         if found_endpoint is None:
             self._session.close()

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+import pathlib
 import uuid
 from unittest import mock
 
@@ -8,6 +10,8 @@ import requests
 
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.endpoint import EndpointConnectorError
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import write_config
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from testing.compat import randbytes
 
@@ -32,6 +36,31 @@ def test_no_endpoints_accessible(endpoint_connector) -> None:
     with mock.patch('requests.Session.get', return_value=response):
         with pytest.raises(EndpointConnectorError, match='Failed to find'):
             EndpointConnector.from_config(endpoint_connector.config())
+
+
+def test_endpoint_not_started(tmp_path: pathlib.Path, caplog) -> None:
+    endpoint_uuid = uuid.uuid4()
+    config = EndpointConfig(
+        name='test',
+        uuid=str(endpoint_uuid),
+        port=1,
+        host=None,
+    )
+    config_path = tmp_path / 'test'
+    write_config(config, str(config_path))
+
+    caplog.set_level(logging.INFO)
+    with pytest.raises(EndpointConnectorError, match='Failed to find'):
+        EndpointConnector(
+            endpoints=[endpoint_uuid],
+            proxystore_dir=str(tmp_path),
+        )
+
+    message = (
+        f'Found valid configuration for endpoint "test" ({endpoint_uuid}), '
+        'but the endpoint has not been started'
+    )
+    assert any([message == record.message for record in caplog.records])
 
 
 def test_endpoint_uuid_mismatch(endpoint_connector) -> None:
