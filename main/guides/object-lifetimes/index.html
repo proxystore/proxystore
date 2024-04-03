@@ -3191,7 +3191,7 @@
 
 <h1 id="object-lifetimes">Object Lifetimes<a class="headerlink" href="#object-lifetimes" title="Permanent link">&para;</a></h1>
 <p><em>Last updated 20 March 2024</em></p>
-<p>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, leaves the responsibility of manageing shared objects to the application.
+<p>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, leaves the responsibility of managing shared objects to the application.
 For example, a object put into a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will persist there until the key is manually evicted.
 Some <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connectors</code></a>, and therefore <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Stores</code></a>, delete all of their objects when closed but this is not a specified requirement of the protocol.</p>
 <p>ProxyStore, however, provides optional mechanisms for more automated management of shared objects.</p>
