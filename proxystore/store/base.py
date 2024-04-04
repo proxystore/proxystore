@@ -39,8 +39,8 @@ from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
-from proxystore.utils.imports import get_class_path
-from proxystore.utils.imports import import_class
+from proxystore.utils.imports import get_object_path
+from proxystore.utils.imports import import_from_path
 from proxystore.utils.timer import Timer
 from proxystore.warnings import ExperimentalWarning
 
@@ -190,7 +190,7 @@ class Store(Generic[ConnectorT]):
         """
         return {
             'name': self.name,
-            'connector_type': get_class_path(type(self.connector)),
+            'connector_type': get_object_path(type(self.connector)),
             'connector_config': self.connector.config(),
             'serializer': self._serializer,
             'deserializer': self._deserializer,
@@ -211,7 +211,7 @@ class Store(Generic[ConnectorT]):
         config = config.copy()  # Avoid messing with callers version
         connector_type = config.pop('connector_type')
         connector_config = config.pop('connector_config')
-        connector = import_class(connector_type)
+        connector = import_from_path(connector_type)
         config['connector'] = connector.from_config(connector_config)
         return cls(**config)
 

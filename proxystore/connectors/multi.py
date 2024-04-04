@@ -24,8 +24,8 @@ else:  # pragma: <3.11 cover
 
 from proxystore import utils
 from proxystore.connectors.protocols import Connector
-from proxystore.utils.imports import get_class_path
-from proxystore.utils.imports import import_class
+from proxystore.utils.imports import get_object_path
+from proxystore.utils.imports import import_from_path
 from proxystore.warnings import ExperimentalWarning
 
 warnings.warn(
@@ -305,7 +305,7 @@ class MultiConnector:
         configs.update(
             {
                 name: (
-                    get_class_path(type(connector)),
+                    get_object_path(type(connector)),
                     connector.config(),
                     policy.as_dict(),
                 )
@@ -329,7 +329,7 @@ class MultiConnector:
         for name, (conn_path, conn_config, policy_dict) in config.items():
             policy = Policy(**policy_dict)
             if policy.is_valid_on_host():
-                connector_type = import_class(conn_path)
+                connector_type = import_from_path(conn_path)
                 connector = connector_type.from_config(conn_config)
                 connectors[name] = (connector, policy)
             else:

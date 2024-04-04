@@ -6,8 +6,8 @@ import pytest
 
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
-from proxystore.utils.imports import get_class_path
-from proxystore.utils.imports import import_class
+from proxystore.utils.imports import get_object_path
+from proxystore.utils.imports import import_from_path
 
 
 @pytest.mark.parametrize(
@@ -17,8 +17,8 @@ from proxystore.utils.imports import import_class
         (LocalConnector, 'proxystore.connectors.local.LocalConnector'),
     ),
 )
-def test_get_class_path(cls: type[Any], expected: str) -> None:
-    assert get_class_path(cls) == expected
+def test_get_object_path(cls: type[Any], expected: str) -> None:
+    assert get_object_path(cls) == expected
 
 
 @pytest.mark.parametrize(
@@ -29,10 +29,10 @@ def test_get_class_path(cls: type[Any], expected: str) -> None:
         ('typing.Any', Any),
     ),
 )
-def test_import_class(path: str, expected: type[Any]) -> None:
-    assert import_class(path) == expected
+def test_import_from_path(path: str, expected: type[Any]) -> None:
+    assert import_from_path(path) == expected
 
 
-def test_import_class_missing_path() -> None:
+def test_import_from_path_missing_path() -> None:
     with pytest.raises(ImportError):
-        import_class('FileConnector')
+        import_from_path('FileConnector')
