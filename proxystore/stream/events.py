@@ -17,8 +17,8 @@ import json
 from typing import Any
 from typing import Union
 
-from proxystore.utils.imports import get_class_path
-from proxystore.utils.imports import import_class
+from proxystore.utils.imports import get_object_path
+from proxystore.utils.imports import import_from_path
 
 
 @dataclasses.dataclass
@@ -54,7 +54,7 @@ class NewObjectEvent:
     ) -> NewObjectEvent:
         """Create a new event from a key and metadata."""
         return cls(
-            key_type=get_class_path(type(key)),
+            key_type=get_object_path(type(key)),
             raw_key=list(key),
             evict=evict,
             metadata=metadata,
@@ -62,7 +62,7 @@ class NewObjectEvent:
 
     def get_key(self) -> Any:
         """Get the object key associated with the event."""
-        key_type = import_class(self.key_type)
+        key_type = import_from_path(self.key_type)
         return key_type(*self.raw_key)
 
 

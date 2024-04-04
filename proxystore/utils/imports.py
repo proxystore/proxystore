@@ -6,47 +6,47 @@ import importlib
 from typing import Any
 
 
-def get_class_path(cls: type[Any]) -> str:
-    """Get the fully qualified path of a type.
+def get_object_path(obj: Any) -> str:
+    """Get the fully qualified path of an object.
 
     Example:
         ```python
         >>> from proxystore.connectors.protocols import Connector
-        >>> get_class_path(Connector)
+        >>> get_object_path(Connector)
         'proxystore.connectors.protocols.Connector'
         ```
 
     Args:
-        cls: Class type to get fully qualified path of.
+        obj: Object to get fully qualified path of.
 
     Returns:
-        Fully qualified path of `cls`.
+        Fully qualified path of `obj`.
     """
-    return f'{cls.__module__}.{cls.__qualname__}'
+    return f'{obj.__module__}.{obj.__qualname__}'
 
 
-def import_class(path: str) -> type[Any]:
-    """Import class via its fully qualified path.
+def import_from_path(path: str) -> type[Any]:
+    """Import object via its fully qualified path.
 
     Example:
         ```python
-        >>> import_class('proxystore.connectors.protocols.Connector')
+        >>> import_from_path('proxystore.connectors.protocols.Connector')
         <class 'proxystore.connectors.protocols.Connector'>
         ```
 
     Args:
-        path: Fully qualified path of class to import.
+        path: Fully qualified path of object to import.
 
     Returns:
-        Imported class.
+        Imported object.
 
     Raises:
-        ImportError: If a class at the `path` is not found.
+        ImportError: If an object at the `path` is not found.
     """
     module_path, _, name = path.rpartition('.')
     if len(module_path) == 0:
         raise ImportError(
-            f'Class path must contain at least one module. Got {path}',
+            f'Object path must contain at least one module. Got {path}',
         )
     module = importlib.import_module(module_path)
     return getattr(module, name)
