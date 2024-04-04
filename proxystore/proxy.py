@@ -15,9 +15,7 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
 else:  # pragma: <3.10 cover
     from typing_extensions import TypeAlias
 
-from lazy_object_proxy import slots
-
-import proxystore
+from lazy_object_proxy.slots import Proxy as BaseProxy
 
 T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
@@ -41,7 +39,7 @@ def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     return Proxy(factory)
 
 
-class Proxy(slots.Proxy, Generic[T]):
+class Proxy(BaseProxy, Generic[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from
@@ -142,7 +140,7 @@ class Proxy(slots.Proxy, Generic[T]):
 ProxyType: TypeAlias = Union[Proxy[T], T]
 
 
-def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
+def extract(proxy: Proxy[T]) -> T:
     """Return object wrapped by proxy.
 
     If the proxy has not been resolved yet, this will force
@@ -157,7 +155,7 @@ def extract(proxy: proxystore.proxy.Proxy[T]) -> T:
     return proxy.__wrapped__
 
 
-def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
+def is_resolved(proxy: Proxy[T]) -> bool:
     """Check if a proxy is resolved.
 
     Args:
@@ -170,7 +168,7 @@ def is_resolved(proxy: proxystore.proxy.Proxy[T]) -> bool:
     return proxy.__resolved__
 
 
-def resolve(proxy: proxystore.proxy.Proxy[T]) -> None:
+def resolve(proxy: Proxy[T]) -> None:
     """Force a proxy to resolve itself.
 
     Args:
