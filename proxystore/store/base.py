@@ -26,6 +26,7 @@ import proxystore.serialize
 from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.serialize import SerializationError
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.factory import PollingStoreFactory
@@ -409,6 +410,10 @@ class Store(Generic[ConnectorT]):
 
         Returns:
             Object or `None` if the object does not exist.
+
+        Raises:
+            SerializationError: If an exception is caught when deserializing
+                the object associated with the key.
         """
         timer = Timer()
         timer.start()
@@ -437,10 +442,19 @@ class Store(Generic[ConnectorT]):
 
         if value is not None:
             with Timer() as deserializer_timer:
-                if deserializer is not None:
+                deserializer = (
+                    deserializer
+                    if deserializer is not None
+                    else self.deserializer
+                )
+                try:
                     result = deserializer(value)
-                else:
-                    result = self.deserializer(value)
+                except Exception as e:
+                    name = get_object_path(deserializer)
+                    raise SerializationError(
+                        'Failed to deserialize object '
+                        f'(deserializer={name}, key={key}).',
+                    ) from e
 
             if self.metrics is not None:
                 dtime = deserializer_timer.elapsed_ns

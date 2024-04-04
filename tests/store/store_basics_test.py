@@ -8,6 +8,7 @@ import pytest
 
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
+from proxystore.serialize import SerializationError
 from proxystore.store import Store
 from proxystore.store.future import Future
 from proxystore.store.lifetimes import ContextLifetime
@@ -99,6 +100,19 @@ def test_custom_serializer(store: Store[LocalConnector]) -> None:
     with pytest.raises(TypeError, match='bytes'):
         # Should fail because the array is not already serialized
         store.put_batch([[1, 2, 3]], serializer=lambda s: s)
+
+
+def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
+    key = store.put('value')
+
+    def _deserialize(x: bytes) -> Any:
+        raise Exception()
+
+    with pytest.raises(
+        SerializationError,
+        match='Failed to deserialize object',
+    ):
+        store.get(key, deserializer=_deserialize)
 
 
 def test_put_batch(store: Store[LocalConnector]) -> None:
