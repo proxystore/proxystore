@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest import mock
+
 import pytest
 
 from proxystore.serialize import deserialize
@@ -35,3 +37,32 @@ def test_serialization() -> None:
     with pytest.raises(SerializationError):
         # Fake identifier 'xxx'
         deserialize(b'99\nxxx')
+
+
+def test_cloudpickle_dumps_error() -> None:
+    with mock.patch('cloudpickle.dumps', side_effect=Exception()):
+        with pytest.raises(
+            SerializationError,
+            match="Object of type <class 'function'> is not serializable.",
+        ):
+            serialize(lambda x: x + x)  # pragma: no cover
+
+
+def test_pickle_loads_error() -> None:
+    v = serialize([1, 2, 3])
+    with mock.patch('pickle.loads', side_effect=Exception()):
+        with pytest.raises(
+            SerializationError,
+            match='Failed to deserialize object with pickle.',
+        ):
+            deserialize(v)
+
+
+def test_cloudpickle_loads_error() -> None:
+    v = serialize(lambda x: x + x)  # pragma: no cover
+    with mock.patch('cloudpickle.loads', side_effect=Exception()):
+        with pytest.raises(
+            SerializationError,
+            match='Failed to deserialize object with cloudpickle.',
+        ):
+            deserialize(v)
