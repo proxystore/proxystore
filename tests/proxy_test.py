@@ -4,13 +4,23 @@ import pickle as pkl
 
 import pytest
 
-import proxystore as ps
 from proxystore.factory import SimpleFactory
+from proxystore.proxy import extract
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.proxy import resolve
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
+
+
+def test_proxy_attributes() -> None:
+    assert Proxy.__module__ == 'proxystore.proxy'
+    assert Proxy.__name__ == 'Proxy'
+
+    p = Proxy(SimpleFactory(list))
+    assert isinstance(p, Proxy)
+    assert p.__module__ == 'builtins'
 
 
 def test_proxy() -> None:
@@ -22,20 +32,20 @@ def test_proxy() -> None:
     f = SimpleFactory(x)
     p = Proxy(f)
 
-    assert not ps.proxy.is_resolved(p)
+    assert not is_resolved(p)
 
     # Test pickleable
     p_pkl = pkl.dumps(p)
     p = pkl.loads(p_pkl)
 
-    assert not ps.proxy.is_resolved(p)
+    assert not is_resolved(p)
 
     assert isinstance(p, Proxy)
     assert isinstance(p, list)
-    assert ps.proxy.is_resolved(p)
+    assert is_resolved(p)
 
     # Test extracting
-    x_ = ps.proxy.extract(p)
+    x_ = extract(p)
     assert isinstance(x_, list)
     assert not isinstance(x_, Proxy)
     assert x == x_
@@ -65,9 +75,9 @@ def test_proxy() -> None:
     assert isinstance(p, list)
 
     p = Proxy(SimpleFactory('hello'))
-    assert not ps.proxy.is_resolved(p)
-    ps.proxy.resolve(p)
-    assert ps.proxy.is_resolved(p)
+    assert not is_resolved(p)
+    resolve(p)
+    assert is_resolved(p)
 
 
 def test_proxy_locker():
