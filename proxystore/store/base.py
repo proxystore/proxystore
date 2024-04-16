@@ -315,7 +315,7 @@ class Store(Generic[ConnectorT]):
             key = self.connector.new_key()
 
         if self.metrics is not None:
-            ctime = connector_timer.elapsed_ns
+            ctime = connector_timer.elapsed_ms
             self.metrics.add_time('store.future.connector', key, ctime)
 
         factory: PollingStoreFactory[ConnectorT, T] = PollingStoreFactory(
@@ -332,7 +332,7 @@ class Store(Generic[ConnectorT]):
 
         timer.stop()
         if self.metrics is not None:
-            self.metrics.add_time('store.future', key, timer.elapsed_ns)
+            self.metrics.add_time('store.future', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): FUTURE {key} in '
@@ -351,13 +351,13 @@ class Store(Generic[ConnectorT]):
                 self.connector.evict(key)
 
             if self.metrics is not None:
-                ctime = connector_timer.elapsed_ns
+                ctime = connector_timer.elapsed_ms
                 self.metrics.add_time('store.evict.connector', key, ctime)
 
             self.cache.evict(key)
 
         if self.metrics is not None:
-            self.metrics.add_time('store.evict', key, timer.elapsed_ns)
+            self.metrics.add_time('store.evict', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): EVICT {key} in '
@@ -380,11 +380,11 @@ class Store(Generic[ConnectorT]):
                     res = self.connector.exists(key)
 
                 if self.metrics is not None:
-                    ctime = connector_timer.elapsed_ns
+                    ctime = connector_timer.elapsed_ms
                     self.metrics.add_time('store.exists.connector', key, ctime)
 
         if self.metrics is not None:
-            self.metrics.add_time('store.exists', key, timer.elapsed_ns)
+            self.metrics.add_time('store.exists', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): EXISTS {key} in '
@@ -424,7 +424,7 @@ class Store(Generic[ConnectorT]):
             timer.stop()
             if self.metrics is not None:
                 self.metrics.add_counter('store.get.cache_hits', key, 1)
-                self.metrics.add_time('store.get', key, timer.elapsed_ns)
+                self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
             logger.debug(
                 f'Store(name="{self.name}"): GET {key} in '
@@ -436,7 +436,7 @@ class Store(Generic[ConnectorT]):
             value = self.connector.get(key)
 
         if self.metrics is not None:
-            ctime = connector_timer.elapsed_ns
+            ctime = connector_timer.elapsed_ms
             self.metrics.add_counter('store.get.cache_misses', key, 1)
             self.metrics.add_time('store.get.connector', key, ctime)
 
@@ -457,7 +457,7 @@ class Store(Generic[ConnectorT]):
                     ) from e
 
             if self.metrics is not None:
-                dtime = deserializer_timer.elapsed_ns
+                dtime = deserializer_timer.elapsed_ms
                 obj_size = len(value)
                 self.metrics.add_time('store.get.deserialize', key, dtime)
                 self.metrics.add_attribute(
@@ -472,7 +472,7 @@ class Store(Generic[ConnectorT]):
 
         timer.stop()
         if self.metrics is not None:
-            self.metrics.add_time('store.get', key, timer.elapsed_ns)
+            self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): GET {key} in '
@@ -606,7 +606,7 @@ class Store(Generic[ConnectorT]):
                 proxy.__wrapped__ = obj
 
         if self.metrics is not None:
-            self.metrics.add_time('store.proxy', key, timer.elapsed_ns)
+            self.metrics.add_time('store.proxy', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): PROXY {key} in '
@@ -748,7 +748,7 @@ class Store(Generic[ConnectorT]):
                         proxy.__wrapped__ = obj
 
         if self.metrics is not None:
-            self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ns)
+            self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
@@ -1026,12 +1026,12 @@ class Store(Generic[ConnectorT]):
 
         timer.stop()
         if self.metrics is not None:
-            ctime = connector_timer.elapsed_ns
-            stime = serialize_timer.elapsed_ns
+            ctime = connector_timer.elapsed_ms
+            stime = serialize_timer.elapsed_ms
             self.metrics.add_attribute('store.put.object_size', key, len(obj))
             self.metrics.add_time('store.put.serialize', key, stime)
             self.metrics.add_time('store.put.connector', key, ctime)
-            self.metrics.add_time('store.put', key, timer.elapsed_ns)
+            self.metrics.add_time('store.put', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): PUT {key} in '
@@ -1089,8 +1089,8 @@ class Store(Generic[ConnectorT]):
 
         timer.stop()
         if self.metrics is not None:
-            ctime = connector_timer.elapsed_ns
-            stime = serialize_timer.elapsed_ns
+            ctime = connector_timer.elapsed_ms
+            stime = serialize_timer.elapsed_ms
             sizes = sum(len(obj) for obj in _objs)
             self.metrics.add_attribute(
                 'store.put_batch.object_sizes',
@@ -1099,7 +1099,7 @@ class Store(Generic[ConnectorT]):
             )
             self.metrics.add_time('store.put_batch.serialize', keys, stime)
             self.metrics.add_time('store.put_batch.connector', keys, ctime)
-            self.metrics.add_time('store.put_batch', keys, timer.elapsed_ns)
+            self.metrics.add_time('store.put_batch', keys, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): PUT_BATCH ({len(keys)} items) in '
@@ -1170,12 +1170,12 @@ class Store(Generic[ConnectorT]):
 
         timer.stop()
         if self.metrics is not None:
-            ctime = connector_timer.elapsed_ns
-            stime = serialize_timer.elapsed_ns
+            ctime = connector_timer.elapsed_ms
+            stime = serialize_timer.elapsed_ms
             self.metrics.add_attribute('store.set.object_size', key, len(obj))
             self.metrics.add_time('store.set.serialize', key, stime)
             self.metrics.add_time('store.set.connector', key, ctime)
-            self.metrics.add_time('store.set', key, timer.elapsed_ns)
+            self.metrics.add_time('store.set', key, timer.elapsed_ms)
 
         logger.debug(
             f'Store(name="{self.name}"): SET {key} in '

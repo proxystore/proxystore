@@ -148,18 +148,18 @@ class StoreMetrics:
         else:
             counters[name] = value
 
-    def add_time(self, name: str, key: KeyT, time_ns: int) -> None:
+    def add_time(self, name: str, key: KeyT, time_ms: float) -> None:
         """Record a new time for an event.
 
         Args:
             name: Event or operation the time is for.
             key: Key associated with the event.
-            time_ns: The time in nanoseconds of the event.
+            time_ms: The time in milliseconds of the event.
         """
         times = self._metrics[_hash_key(key)].times
         if name not in times:
             times[name] = TimeStats()
-        times[name].add_time(time_ns / 1000)
+        times[name].add_time(time_ms)
 
     def aggregate_times(self) -> dict[str, TimeStats]:
         """Aggregate time statistics over all keys.
