@@ -64,8 +64,8 @@ def test_store_metrics_by_key() -> None:
         metrics.add_attribute('test-attribute', key, 'value')
         metrics.add_counter('test-counter', key, 1)
         metrics.add_counter('test-counter', key, 1)
-        metrics.add_time('test-timer', key, 1000)
-        metrics.add_time('test-timer', key, 2000)
+        metrics.add_time('test-timer', key, 1)
+        metrics.add_time('test-timer', key, 2)
 
         key_metrics = metrics.get_metrics(key)
         assert key_metrics is not None
@@ -108,8 +108,8 @@ def test_store_metrics_aggregate_times() -> None:
     keys = [('key1',), ('key2',), ('key3',)]
 
     for i, key in enumerate(keys):
-        metrics.add_time('time1', key, (1 + i) * 1000)
-        metrics.add_time('time2', key, (1 + i) * 10000)
+        metrics.add_time('time1', key, (1 + i) * 1)
+        metrics.add_time('time2', key, (1 + i) * 10)
 
     times = metrics.aggregate_times()
     assert times['time1'].count == len(keys)
