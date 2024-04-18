@@ -91,13 +91,6 @@ def identity(obj):
     return obj
 
 
-def make_proxy_method(code):
-    def proxy_wrapper(self, *args):
-        return code(self.__wrapped__, *args)
-
-    return proxy_wrapper
-
-
 def _with_proxy_metaclass(meta, *bases):
     return meta('ProxyMetaClass', bases, {})
 
@@ -232,7 +225,7 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
         return self.__wrapped__.__class__
 
     @__class__.setter
-    def __class__(self, value):
+    def __class__(self, value):  # pragma: no cover
         self.__wrapped__.__class__ = value
 
     @property
@@ -304,9 +297,6 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
 
     def __hash__(self):
         return hash(self.__wrapped__)
-
-    def __nonzero__(self):
-        return bool(self.__wrapped__)
 
     def __bool__(self):
         return bool(self.__wrapped__)
@@ -382,9 +372,6 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
 
     def __rmatmul__(self, other):
         return other @ self.__wrapped__
-
-    def __rdiv__(self, other):
-        return operator.div(other, self.__wrapped__)
 
     def __rtruediv__(self, other):
         return operator.truediv(other, self.__wrapped__)
@@ -486,12 +473,6 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
     def __float__(self):
         return float(self.__wrapped__)
 
-    def __oct__(self):
-        return oct(self.__wrapped__)
-
-    def __hex__(self):
-        return hex(self.__wrapped__)
-
     def __index__(self):
         if hasattr(self.__wrapped__, '__index__'):
             return operator.index(self.__wrapped__)
@@ -513,15 +494,6 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
     def __delitem__(self, key):
         del self.__wrapped__[key]
 
-    def __getslice__(self, i, j):
-        return self.__wrapped__[i:j]
-
-    def __setslice__(self, i, j, value):
-        self.__wrapped__[i:j] = value
-
-    def __delslice__(self, i, j):
-        del self.__wrapped__[i:j]
-
     def __enter__(self):
         return self.__wrapped__.__enter__()
 
@@ -537,7 +509,7 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
     def __call__(self, *args, **kwargs):
         return self.__wrapped__(*args, **kwargs)
 
-    def __reduce__(self):
+    def __reduce__(self):  # pragma: no cover
         return identity, (self.__wrapped__,)
 
     def __reduce_ex__(self, protocol):
