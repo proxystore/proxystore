@@ -23,6 +23,10 @@ for path in sorted(Path('proxystore').rglob('**/*.py')):
     elif parts[-1].endswith('__main__'):
         continue
 
+    mod_name = parts[-1].split('.')[-1]
+    if mod_name.startswith('_'):
+        continue
+
     nav_parts: tuple[str, ...]
     if len(parts) == 1:
         nav_parts = parts
