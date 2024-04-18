@@ -12,6 +12,11 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
 else:  # pragma: <3.10 cover
     from typing_extensions import ParamSpec
 
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
+
 T = TypeVar('T')
 P = ParamSpec('P')
 
@@ -62,7 +67,8 @@ class ProxyProperty(Generic[T]):
     def __get__(self, obj: Any, objtype: Any = None) -> T:
         if obj is None and self.default is None:
             raise AttributeError(
-                f'property {self._name!r} has no default value',
+                f'property {self._name!r} has of {objtype.__name__!r} '
+                'no default value',
             )
         elif obj is None and self.default is not None:
             return self.default
@@ -85,18 +91,29 @@ class ProxyProperty(Generic[T]):
             )
         self.fdel(obj)
 
-    # https://github.com/python/mypy/issues/3004#issuecomment-1807107181
-    def setter(
-        self,
-        fset: Callable[[Any, T], None],
-    ) -> Callable[[Any, T], None]:
+    def setter(self, fset: Callable[[Any, T], None]) -> Self:
         self.fset = fset
-        return fset
+        prop = type(self)(
+            self.fget,
+            fset,
+            self.fdel,
+            self.default,
+            self.__doc__,
+        )
+        prop._name = self._name
+        return prop
 
-    # https://github.com/python/mypy/issues/3004#issuecomment-1807107181
-    def deleter(self, fdel: Callable[[Any], None]) -> Callable[[Any], None]:
+    def deleter(self, fdel: Callable[[Any], None]) -> Self:
         self.fdel = fdel
-        return fdel
+        prop = type(self)(
+            self.fget,
+            self.fset,
+            fdel,
+            self.default,
+            self.__doc__,
+        )
+        prop._name = self._name
+        return prop
 
 
 @overload

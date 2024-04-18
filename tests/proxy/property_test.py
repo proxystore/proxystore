@@ -76,7 +76,7 @@ def test_set_attribute_error() -> None:
     class _Foo:
         @proxy_property(default='class')
         def _bar(self) -> str:
-            return 'instance'
+            raise AssertionError
 
     match = "property '_bar' of '_Foo' object has no setter"
     with pytest.raises(AttributeError, match=match):
@@ -87,7 +87,7 @@ def test_del_attribute_error() -> None:
     class _Foo:
         @proxy_property(default='class')
         def _bar(self) -> str:
-            return 'instance'
+            raise AssertionError
 
     match = "property '_bar' of '_Foo' object has no deleter"
     with pytest.raises(AttributeError, match=match):
