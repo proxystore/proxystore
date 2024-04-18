@@ -15,7 +15,7 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
 else:  # pragma: <3.10 cover
     from typing_extensions import TypeAlias
 
-from lazy_object_proxy.slots import Proxy as BaseProxy
+from proxystore.proxy._slots import SlotsProxy as _SlotsProxy
 
 T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
@@ -39,7 +39,7 @@ def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     return Proxy(factory)
 
 
-class Proxy(BaseProxy, Generic[T]):
+class Proxy(_SlotsProxy, Generic[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from
