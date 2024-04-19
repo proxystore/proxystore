@@ -6,8 +6,8 @@ build-backend = "setuptools.build_meta"
 name = "proxystore"
 version = "0.6.5dev1"
 authors = [
-    {name = "Globus Labs"},
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+    {name = "Globus Labs"},
 ]
 maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
@@ -16,7 +16,7 @@ maintainers = [
 description = "Lazy object proxy interface for distributed stores."
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "FILE"}
+license = { text = "MIT" }
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3.8",
@@ -33,14 +33,13 @@ dependencies = [
     "cloudpickle>=1.6.0",
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
-    "lazy-object-proxy>=1.6.0",
     "typing-extensions>=4.3.0",
 ]
 
 [project.urls]
-homepage = "https://proxystore.dev"
-documentation = "https://docs.proxystore.dev"
-repository = "https://github.com/proxystore/proxystore"
+Homepage = "https://proxystore.dev"
+Documentation = "https://docs.proxystore.dev"
+Source = "https://github.com/proxystore/proxystore"
 
 [project.optional-dependencies]
 all = ["proxystore[endpoints,extensions,kafka,redis,zmq]"]
