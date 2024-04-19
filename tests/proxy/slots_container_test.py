@@ -76,19 +76,19 @@ def test_index() -> None:
         def __index__(self):
             return 1
 
-    value = SlotsProxy(lambda: TestClass1())
-    items = [0, 1, 2]
+    value1 = SlotsProxy(lambda: TestClass1())
+    items1 = [0, 1, 2]
 
-    assert items[value] == items[1]
+    assert items1[value1] == items1[1]
 
     class TestClass2:
         def __int__(self):
             return 1
 
-    value = SlotsProxy(lambda: TestClass2())
-    items = [0, 1, 2]
+    value2 = SlotsProxy(lambda: TestClass2())
+    items2 = [0, 1, 2]
 
-    assert items[value] == items[1]
+    assert items2[value2] == items2[1]
 
 
 def test_length() -> None:

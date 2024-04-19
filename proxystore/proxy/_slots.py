@@ -33,32 +33,45 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-
-# mypy: ignore-errors
 from __future__ import annotations
 
 import operator
+import sys
 from collections.abc import Awaitable
 from inspect import CO_ITERABLE_COROUTINE
 from types import CoroutineType
 from types import GeneratorType
+from typing import Any
+from typing import Callable
+from typing import cast
+from typing import Generic
+from typing import Iterator
+from typing import SupportsIndex
+from typing import TypeVar
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import Self
+else:  # pragma: <3.11 cover
+    from typing_extensions import Self
 
 from proxystore.proxy._property import proxy_property
 
+T = TypeVar('T')
 
-async def _do_await(obj):  # pragma: no cover
+
+async def _do_await(obj):  # type: ignore[no-untyped-def] # pragma: no cover
     return await obj
 
 
-def _do_yield_from(gen):  # pragma: no cover
+def _do_yield_from(gen):  # type: ignore[no-untyped-def] # pragma: no cover
     return (yield from gen)
 
 
-def _identity(obj):
+def _identity(obj: T) -> T:
     return obj
 
 
-def _with_proxy_metaclass(meta, *bases):
+def _with_proxy_metaclass(meta: Any, *bases: Any) -> Any:
     return meta('ProxyMetaClass', bases, {})
 
 
@@ -71,9 +84,10 @@ class _ProxyMethods:
     # that, we copy the properties into the derived class type itself
     # via a meta class. In that way the properties will always take
     # precedence.
+    __wrapped__: Any
 
     @proxy_property(default='proxystore.proxy')
-    def __module__(self) -> str:
+    def __module__(self) -> str:  # type: ignore[override]
         return self.__wrapped__.__module__
 
     @__module__.setter
@@ -81,7 +95,7 @@ class _ProxyMethods:
         self.__wrapped__.__module__ = value
 
     @proxy_property(default='<Proxy Placeholder Docstring>')
-    def __doc__(self) -> str:
+    def __doc__(self) -> str:  # type: ignore[override]
         return self.__wrapped__.__doc__
 
     @__doc__.setter
@@ -92,7 +106,7 @@ class _ProxyMethods:
     # explicit to ensure that vars() works as expected.
 
     @property
-    def __dict__(self):
+    def __dict__(self) -> Any:  # type: ignore[override]
         return self.__wrapped__.__dict__
 
     # Need to also propagate the special __weakref__ attribute for case
@@ -101,12 +115,17 @@ class _ProxyMethods:
     # class it will fail. This can't be in the derived classes.
 
     @property
-    def __weakref__(self):
+    def __weakref__(self) -> Any:
         return self.__wrapped__.__weakref__
 
 
 class _ProxyMetaType(type):
-    def __new__(cls, name, bases, dictionary):
+    def __new__(
+        cls,
+        name: str,
+        bases: tuple[Any, ...],
+        dictionary: dict[Any, Any],
+    ) -> Any:
         # Copy our special properties into the class so that they
         # always take precedence over attributes of the same name added
         # during construction of a derived class. This is to save
@@ -118,7 +137,7 @@ class _ProxyMetaType(type):
         return type.__new__(cls, name, bases, dictionary)
 
 
-class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
+class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType), Generic[T]):  # type: ignore[misc]
     """A proxy implementation in pure Python, using slots.
 
     You can subclass this to add local methods or attributes, or enable
@@ -139,82 +158,77 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
 
     __slots__ = '__target__', '__factory__'
 
-    def __init__(self, factory):
+    def __init__(self, factory: Callable[[], T]) -> None:
         object.__setattr__(self, '__factory__', factory)
 
     @property
-    def __resolved__(self, __getattr__=object.__getattribute__):
+    def __resolved__(self) -> bool:
         try:
-            __getattr__(self, '__target__')
+            object.__getattribute__(self, '__target__')
         except AttributeError:
             return False
         else:
             return True
 
     @property
-    def __wrapped__(
-        self,
-        __getattr__=object.__getattribute__,
-        __setattr__=object.__setattr__,
-        __delattr__=object.__delattr__,
-    ):
+    def __wrapped__(self) -> T:
         try:
-            return __getattr__(self, '__target__')
+            return cast(T, object.__getattribute__(self, '__target__'))
         except AttributeError:
             try:
-                factory = __getattr__(self, '__factory__')
+                factory = object.__getattribute__(self, '__factory__')
             except AttributeError as exc:
                 raise ValueError(
                     "Proxy hasn't been initiated: __factory__ is missing.",
                 ) from exc
             target = factory()
-            __setattr__(self, '__target__', target)
+            object.__setattr__(self, '__target__', target)
             return target
 
     @__wrapped__.deleter
-    def __wrapped__(self, __delattr__=object.__delattr__):
-        __delattr__(self, '__target__')
+    def __wrapped__(self) -> None:
+        object.__delattr__(self, '__target__')
 
     @__wrapped__.setter
-    def __wrapped__(self, target, __setattr__=object.__setattr__):
-        __setattr__(self, '__target__', target)
+    def __wrapped__(self, target: T) -> None:
+        object.__setattr__(self, '__target__', target)
 
     @property
-    def __name__(self):
-        return self.__wrapped__.__name__
+    def __name__(self) -> str:
+        return self.__wrapped__.__name__  # type: ignore[attr-defined]
 
     @__name__.setter
-    def __name__(self, value):
-        self.__wrapped__.__name__ = value
+    def __name__(self, value: str) -> None:
+        self.__wrapped__.__name__ = value  # type: ignore[attr-defined]
 
     @property
-    def __class__(self):
+    def __class__(self) -> Any:
         return self.__wrapped__.__class__
 
     @__class__.setter
-    def __class__(self, value):  # pragma: no cover
+    def __class__(self, value: Any) -> None:  # pragma: no cover
         self.__wrapped__.__class__ = value
 
     @property
-    def __annotations__(self):
-        return self.__wrapped__.__anotations__
+    def __annotations__(self) -> Any:
+        return self.__wrapped__.__annotations__
 
     @__annotations__.setter
-    def __annotations__(self, value):
+    def __annotations__(self, value: Any) -> None:
         self.__wrapped__.__annotations__ = value
 
-    def __dir__(self):
+    def __dir__(self) -> Any:
         return dir(self.__wrapped__)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.__wrapped__)
 
-    def __bytes__(self):
-        return bytes(self.__wrapped__)
+    def __bytes__(self) -> bytes:
+        return bytes(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __repr__(self, __getattr__=object.__getattribute__):
+    def __repr__(self) -> str:
         try:
-            target = __getattr__(self, '__target__')
+            target = object.__getattribute__(self, '__target__')
         except AttributeError:
             return (
                 f'<{type(self).__name__} at 0x{id(self):x} with '
@@ -227,7 +241,7 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
                 f'factory {self.__factory__!r}>'
             )
 
-    def __fspath__(self):
+    def __fspath__(self) -> Any:
         wrapped = self.__wrapped__
         if isinstance(wrapped, (bytes, str)):
             return wrapped
@@ -238,270 +252,273 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
             else:
                 return fspath()
 
-    def __reversed__(self):
-        return reversed(self.__wrapped__)
+    def __reversed__(self) -> Any:
+        return reversed(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __round__(self):
-        return round(self.__wrapped__)
+    def __round__(self) -> Any:
+        return round(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __lt__(self, other):
+    def __lt__(self, other: Any) -> bool:
         return self.__wrapped__ < other
 
-    def __le__(self, other):
+    def __le__(self, other: Any) -> bool:
         return self.__wrapped__ <= other
 
-    def __eq__(self, other):
+    def __eq__(self, other: Any) -> bool:
         return self.__wrapped__ == other
 
-    def __ne__(self, other):
+    def __ne__(self, other: Any) -> bool:
         return self.__wrapped__ != other
 
-    def __gt__(self, other):
+    def __gt__(self, other: Any) -> bool:
         return self.__wrapped__ > other
 
-    def __ge__(self, other):
+    def __ge__(self, other: Any) -> bool:
         return self.__wrapped__ >= other
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash(self.__wrapped__)
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return bool(self.__wrapped__)
 
-    def __setattr__(self, name, value, __setattr__=object.__setattr__):
+    def __setattr__(self, name: str, value: Any) -> None:
         if hasattr(type(self), name):
-            __setattr__(self, name, value)
+            object.__setattr__(self, name, value)
         else:
             setattr(self.__wrapped__, name, value)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if name in ('__wrapped__', '__factory__'):
             raise AttributeError(name)
         else:
             return getattr(self.__wrapped__, name)
 
-    def __delattr__(self, name, __delattr__=object.__delattr__):
+    def __delattr__(self, name: str) -> None:
         if hasattr(type(self), name):
-            __delattr__(self, name)
+            object.__delattr__(self, name)
         else:
             delattr(self.__wrapped__, name)
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> Any:
         return self.__wrapped__ + other
 
-    def __sub__(self, other):
+    def __sub__(self, other: Any) -> Any:
         return self.__wrapped__ - other
 
-    def __mul__(self, other):
+    def __mul__(self, other: Any) -> Any:
         return self.__wrapped__ * other
 
-    def __matmul__(self, other):
+    def __matmul__(self, other: Any) -> Any:
         return self.__wrapped__ @ other
 
-    def __truediv__(self, other):
+    def __truediv__(self, other: Any) -> Any:
         return operator.truediv(self.__wrapped__, other)
 
-    def __floordiv__(self, other):
+    def __floordiv__(self, other: Any) -> Any:
         return self.__wrapped__ // other
 
-    def __mod__(self, other):
+    def __mod__(self, other: Any) -> Any:
         return self.__wrapped__ % other
 
-    def __divmod__(self, other):
+    def __divmod__(self, other: Any) -> Any:
         return divmod(self.__wrapped__, other)
 
-    def __pow__(self, other, *args):
-        return pow(self.__wrapped__, other, *args)
+    def __pow__(self, other: Any, *args: Any) -> Any:
+        return pow(self.__wrapped__, other, *args)  # type: ignore[call-overload]
 
-    def __lshift__(self, other):
+    def __lshift__(self, other: Any) -> Any:
         return self.__wrapped__ << other
 
-    def __rshift__(self, other):
+    def __rshift__(self, other: Any) -> Any:
         return self.__wrapped__ >> other
 
-    def __and__(self, other):
+    def __and__(self, other: Any) -> Any:
         return self.__wrapped__ & other
 
-    def __xor__(self, other):
+    def __xor__(self, other: Any) -> Any:
         return self.__wrapped__ ^ other
 
-    def __or__(self, other):
+    def __or__(self, other: Any) -> Any:
         return self.__wrapped__ | other
 
-    def __radd__(self, other):
+    def __radd__(self, other: Any) -> Any:
         return other + self.__wrapped__
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: Any) -> Any:
         return other - self.__wrapped__
 
-    def __rmul__(self, other):
+    def __rmul__(self, other: Any) -> Any:
         return other * self.__wrapped__
 
-    def __rmatmul__(self, other):
+    def __rmatmul__(self, other: Any) -> Any:
         return other @ self.__wrapped__
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other: Any) -> Any:
         return operator.truediv(other, self.__wrapped__)
 
-    def __rfloordiv__(self, other):
+    def __rfloordiv__(self, other: Any) -> Any:
         return other // self.__wrapped__
 
-    def __rmod__(self, other):
+    def __rmod__(self, other: Any) -> Any:
         return other % self.__wrapped__
 
-    def __rdivmod__(self, other):
+    def __rdivmod__(self, other: Any) -> Any:
         return divmod(other, self.__wrapped__)
 
-    def __rpow__(self, other, *args):
+    def __rpow__(self, other: Any, *args: Any) -> Any:
         return pow(other, self.__wrapped__, *args)
 
-    def __rlshift__(self, other):
+    def __rlshift__(self, other: Any) -> Any:
         return other << self.__wrapped__
 
-    def __rrshift__(self, other):
+    def __rrshift__(self, other: Any) -> Any:
         return other >> self.__wrapped__
 
-    def __rand__(self, other):
+    def __rand__(self, other: Any) -> Any:
         return other & self.__wrapped__
 
-    def __rxor__(self, other):
+    def __rxor__(self, other: Any) -> Any:
         return other ^ self.__wrapped__
 
-    def __ror__(self, other):
+    def __ror__(self, other: Any) -> Any:
         return other | self.__wrapped__
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: Any) -> Self:
         self.__wrapped__ += other
         return self
 
-    def __isub__(self, other):
+    def __isub__(self, other: Any) -> Self:
         self.__wrapped__ -= other
         return self
 
-    def __imul__(self, other):
+    def __imul__(self, other: Any) -> Self:
         self.__wrapped__ *= other
         return self
 
-    def __imatmul__(self, other):
+    def __imatmul__(self, other: Any) -> Self:
         self.__wrapped__ @= other
         return self
 
-    def __itruediv__(self, other):
+    def __itruediv__(self, other: Any) -> Self:
         self.__wrapped__ = operator.itruediv(self.__wrapped__, other)
         return self
 
-    def __ifloordiv__(self, other):
+    def __ifloordiv__(self, other: Any) -> Self:
         self.__wrapped__ //= other
         return self
 
-    def __imod__(self, other):
+    def __imod__(self, other: Any) -> Self:
         self.__wrapped__ %= other
         return self
 
-    def __ipow__(self, other):
+    def __ipow__(self, other: Any) -> Self:  # type: ignore[misc]
         self.__wrapped__ **= other
         return self
 
-    def __ilshift__(self, other):
+    def __ilshift__(self, other: Any) -> Self:
         self.__wrapped__ <<= other
         return self
 
-    def __irshift__(self, other):
+    def __irshift__(self, other: Any) -> Self:
         self.__wrapped__ >>= other
         return self
 
-    def __iand__(self, other):
+    def __iand__(self, other: Any) -> Self:
         self.__wrapped__ &= other
         return self
 
-    def __ixor__(self, other):
+    def __ixor__(self, other: Any) -> Self:
         self.__wrapped__ ^= other
         return self
 
-    def __ior__(self, other):
+    def __ior__(self, other: Any) -> Self:
         self.__wrapped__ |= other
         return self
 
-    def __neg__(self):
-        return -self.__wrapped__
+    def __neg__(self) -> Any:
+        return -self.__wrapped__  # type: ignore[operator]
 
-    def __pos__(self):
-        return +self.__wrapped__
+    def __pos__(self) -> Any:
+        return +self.__wrapped__  # type: ignore[operator]
 
-    def __abs__(self):
-        return abs(self.__wrapped__)
+    def __abs__(self) -> Any:
+        return abs(self.__wrapped__)  # type: ignore[arg-type]
 
-    def __invert__(self):
-        return ~self.__wrapped__
+    def __invert__(self) -> Any:
+        return ~self.__wrapped__  # type: ignore[operator]
 
-    def __int__(self):
-        return int(self.__wrapped__)
+    def __int__(self) -> int:
+        return int(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __float__(self):
-        return float(self.__wrapped__)
+    def __float__(self) -> float:
+        return float(self.__wrapped__)  # type: ignore[arg-type]
 
-    def __index__(self):
+    def __index__(self) -> int:
         if hasattr(self.__wrapped__, '__index__'):
             return operator.index(self.__wrapped__)
         else:
-            return int(self.__wrapped__)
+            return int(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __len__(self):
-        return len(self.__wrapped__)
+    def __len__(self) -> int:
+        return len(self.__wrapped__)  # type: ignore[arg-type]
 
-    def __contains__(self, value):
-        return value in self.__wrapped__
+    def __contains__(self, value: Any) -> bool:
+        return value in self.__wrapped__  # type: ignore[operator]
 
-    def __getitem__(self, key):
-        return self.__wrapped__[key]
+    def __getitem__(self, key: Any) -> Any:
+        return self.__wrapped__[key]  # type: ignore[index]
 
-    def __setitem__(self, key, value):
-        self.__wrapped__[key] = value
+    def __setitem__(self, key: Any, value: Any) -> None:
+        self.__wrapped__[key] = value  # type: ignore[index]
 
-    def __delitem__(self, key):
-        del self.__wrapped__[key]
+    def __delitem__(self, key: Any) -> None:
+        del self.__wrapped__[key]  # type: ignore[attr-defined]
 
-    def __enter__(self):
-        return self.__wrapped__.__enter__()
+    def __enter__(self) -> Any:
+        return self.__wrapped__.__enter__()  # type: ignore[attr-defined]
 
-    def __exit__(self, *args, **kwargs):
-        return self.__wrapped__.__exit__(*args, **kwargs)
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
+        return self.__wrapped__.__exit__(*args, **kwargs)  # type: ignore[attr-defined]
 
-    def __iter__(self):
-        return iter(self.__wrapped__)
+    def __iter__(self) -> Iterator[Any]:
+        return iter(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __next__(self):
-        return next(self.__wrapped__)
+    def __next__(self) -> Any:
+        return next(self.__wrapped__)  # type: ignore[call-overload]
 
-    def __call__(self, *args, **kwargs):
-        return self.__wrapped__(*args, **kwargs)
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__wrapped__(*args, **kwargs)  # type: ignore[operator]
 
-    def __reduce__(self):  # pragma: no cover
+    def __reduce__(self) -> tuple[Any, Any]:  # pragma: no cover
         return _identity, (self.__wrapped__,)
 
-    def __reduce_ex__(self, protocol):
+    def __reduce_ex__(self, protocol: SupportsIndex) -> tuple[Any, Any]:
         return _identity, (self.__wrapped__,)
 
-    def __aiter__(self):
-        return self.__wrapped__.__aiter__()
+    def __aiter__(self) -> Any:
+        return self.__wrapped__.__aiter__()  # type: ignore[attr-defined]
 
-    async def __anext__(self):  # pragma: no cover
-        return await self.__wrapped__.__anext__()
+    async def __anext__(self) -> Any:  # pragma: no cover
+        return await self.__wrapped__.__anext__()  # type: ignore[attr-defined]
 
-    def __await__(self):  # pragma: no cover
+    def __await__(self) -> Any:  # pragma: no cover
         obj_type = type(self.__wrapped__)
         if (
             obj_type is CoroutineType
             or obj_type is GeneratorType
-            and bool(self.__wrapped__.gi_code.co_flags & CO_ITERABLE_COROUTINE)
+            and bool(
+                self.__wrapped__.gi_code.co_flags  # type: ignore[attr-defined]
+                & CO_ITERABLE_COROUTINE,
+            )
             or isinstance(self.__wrapped__, Awaitable)
         ):
             return _do_await(self.__wrapped__).__await__()
         else:
             return _do_yield_from(self.__wrapped__)
 
-    def __aenter__(self):
-        return self.__wrapped__.__aenter__()
+    def __aenter__(self) -> Any:
+        return self.__wrapped__.__aenter__()  # type: ignore[attr-defined]
 
-    def __aexit__(self, *args, **kwargs):
-        return self.__wrapped__.__aexit__(*args, **kwargs)
+    def __aexit__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.__wrapped__.__aexit__(*args, **kwargs)  # type: ignore[attr-defined]

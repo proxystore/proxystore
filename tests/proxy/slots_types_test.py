@@ -91,7 +91,7 @@ def test_set_wrapped() -> None:
 
     assert function2.__qualname__ == function1.__qualname__
 
-    function2.__wrapped__ = None
+    function2.__wrapped__ = None  # type: ignore[assignment]
 
     assert not hasattr(function1, '__wrapped__')
 
@@ -209,7 +209,7 @@ def test_isinstance_class_comparision() -> None:
 
 
 def test_revert_class_proxying() -> None:
-    class ProxyWithOldStyleIsInstance(SlotsProxy):
+    class ProxyWithOldStyleIsInstance(SlotsProxy[Any]):
         __class__ = object.__dict__['__class__']
 
     target = objects.Target()
@@ -394,8 +394,8 @@ def test_iteration() -> None:
             return self.value
 
     # Manual iteration with next
-    wrapper = SlotsProxy(lambda: TestClass())
-    assert next(wrapper) == 1
+    wrapper_next = SlotsProxy(lambda: TestClass())
+    assert next(wrapper_next) == 1
 
     # Construct iterator directly
     iter(SlotsProxy(lambda: [1, 2]))
@@ -418,17 +418,17 @@ def test_context_manager() -> None:
 
 
 def test_str() -> None:
-    value = SlotsProxy(lambda: 10)
-    assert str(value) == str(10)
+    value1 = SlotsProxy(lambda: 10)
+    assert str(value1) == str(10)
 
-    value = SlotsProxy(lambda: (10,))
-    assert str(value) == str((10,))
+    value2 = SlotsProxy(lambda: (10,))
+    assert str(value2) == str((10,))
 
-    value = SlotsProxy(lambda: [10])
-    assert str(value) == str([10])
+    value3 = SlotsProxy(lambda: [10])
+    assert str(value3) == str([10])
 
-    value = SlotsProxy(lambda: {10: 10})
-    assert str(value) == str({10: 10})
+    value4 = SlotsProxy(lambda: {10: 10})
+    assert str(value4) == str({10: 10})
 
 
 def test_str_format() -> None:
@@ -441,22 +441,22 @@ def test_repr() -> None:
     class TestClass:
         pass
 
-    value = SlotsProxy(lambda: TestClass())
-    str(value)
-    representation = repr(value)
+    value1 = SlotsProxy(lambda: TestClass())
+    str(value1)
+    representation = repr(value1)
     assert 'Proxy at' in representation
     assert 'lambda' in representation
     assert 'TestClass' in representation
 
     # Validate calling repr does not invoke the factory
     consumed = []
-    value = SlotsProxy(lambda: consumed.append(1))  # pragma: no cover
-    _repr = repr(value)
+    value2 = SlotsProxy(lambda: consumed.append(1))  # pragma: no cover
+    _repr = repr(value2)
     assert not consumed
 
 
 def test_derived_new() -> None:
-    class DerivedObjectProxy(SlotsProxy):
+    class DerivedObjectProxy(SlotsProxy[Any]):
         def __new__(cls, wrapped):
             instance = super().__new__(cls)
             instance.__init__(wrapped)
@@ -476,7 +476,7 @@ def test_setup_class_attributes() -> None:
     def function():  # pragma: no cover
         pass
 
-    class DerivedObjectProxy(SlotsProxy):
+    class DerivedObjectProxy(SlotsProxy[Any]):
         pass
 
     obj = DerivedObjectProxy(lambda: function)
@@ -497,7 +497,7 @@ def test_override_class_attributes() -> None:
     def function():  # pragma: no cover
         pass
 
-    class DerivedObjectProxy(SlotsProxy):
+    class DerivedObjectProxy(SlotsProxy[Any]):
         ATTRIBUTE = 1
 
     obj = DerivedObjectProxy(lambda: function)  # pragma: no cover
@@ -534,7 +534,7 @@ def test_override_getattr() -> None:
 
     accessed = []
 
-    class DerivedObjectProxy(SlotsProxy):
+    class DerivedObjectProxy(SlotsProxy[Any]):
         def __getattr__(self, name):
             accessed.append(name)
             try:
@@ -604,7 +604,7 @@ def test_patching_the_factory() -> None:
 
 
 def test_deleting_the_factory() -> None:
-    proxy = SlotsProxy(None)
+    proxy = SlotsProxy(None)  # type: ignore
     assert proxy.__factory__ is None
     proxy.__factory__ = None
     assert proxy.__factory__ is None
@@ -615,7 +615,7 @@ def test_deleting_the_factory() -> None:
 
 
 def test_patching_the_factory_with_none() -> None:
-    proxy = SlotsProxy(None)
+    proxy = SlotsProxy(None)  # type: ignore
     assert proxy.__factory__ is None
     proxy.__factory__ = None
     assert proxy.__factory__ is None
@@ -646,7 +646,7 @@ def test_set_wrapped_via_new() -> None:
 
 
 def test_set_wrapped_regular() -> None:
-    obj = SlotsProxy(None)
+    obj = SlotsProxy(None)  # type: ignore
     obj.__wrapped__ = 1
     assert str(obj) == '1'
     assert obj + 1 == 2
@@ -711,7 +711,7 @@ def test_garbage_collection_count() -> None:
 
 
 def test_subclassing_with_local_attr() -> None:
-    class LazyProxy(SlotsProxy):
+    class LazyProxy(SlotsProxy[Any]):
         name = None
 
         def __init__(self, func, **lazy_attr):
@@ -729,7 +729,7 @@ def test_subclassing_with_local_attr() -> None:
 
 
 def test_subclassing_dynamic_with_local_attr() -> None:
-    class LazyProxy(SlotsProxy):
+    class LazyProxy(SlotsProxy[Any]):
         def __init__(self, func, **lazy_attr):
             super().__init__(func)
             for attr, val in lazy_attr.items():

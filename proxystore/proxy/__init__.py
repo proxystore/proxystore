@@ -39,7 +39,7 @@ def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
     return Proxy(factory)
 
 
-class Proxy(_SlotsProxy, Generic[T]):
+class Proxy(_SlotsProxy[T]):
     """Lazy Object Proxy.
 
     An extension of the Proxy from

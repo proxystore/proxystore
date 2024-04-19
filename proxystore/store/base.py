@@ -745,7 +745,7 @@ class Store(Generic[ConnectorT]):
             if populate_target:
                 for proxy, obj in zip(proxies, objs):
                     if isinstance(proxy, Proxy):
-                        proxy.__wrapped__ = obj
+                        proxy.__wrapped__ = cast(T, obj)
 
         if self.metrics is not None:
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
