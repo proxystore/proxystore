@@ -3,6 +3,7 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/proxystore)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore)
 ![GitHub License](https://img.shields.io/github/license/proxystore/proxystore)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
 [![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml)
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions)
@@ -94,7 +95,7 @@ guide to learn more!
 
 ## Citation
 
-[![DOI](https://zenodo.org/badge/357984234.svg)](https://zenodo.org/badge/latestdoi/357984234)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
 If you use ProxyStore or any of this code in your work, please cite our [SC '23 paper](https://dl.acm.org/doi/10.1145/3581784.3607047).
 ```bibtex
