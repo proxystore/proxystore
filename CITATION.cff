@@ -1,19 +1,4 @@
 cff-version: 1.2.0
-title: ProxyStore
-message: 'If you use this software, please cite it as below.'
-type: software
-authors:
-  - given-names: Greg
-    family-names: Pauloski
-    orcid: 'https://orcid.org/0000-0002-6547-6902'
-  - name: Globus Labs
-repository-code: 'https://github.com/proxystore/proxystore'
-url: 'https://docs.proxystore.dev'
-abstract: >-
-  ProxyStore provides pass-by-reference semantics for
-  distributed Python applications through transparent object
-  proxies.
-license: MIT
 preferred-citation:
   type: conference-paper
   authors:
