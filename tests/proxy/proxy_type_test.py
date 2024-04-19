@@ -70,6 +70,18 @@ objects = types.ModuleType('objects')
 exec(OBJECTS_CODE, objects.__dict__, objects.__dict__)
 
 
+def test_proxy_type_vs_instance_module() -> None:
+    # The most important difference between this Proxy implementation
+    # and that of lazy-object-proxy is that __module__ behaves differently
+    # depending on if its the type or an instance.
+    assert Proxy.__module__ == 'proxystore.proxy'
+    assert Proxy.__name__ == 'Proxy'
+
+    p = Proxy(SimpleFactory(list))
+    assert isinstance(p, Proxy)
+    assert p.__module__ == 'builtins'
+
+
 def test_get_wrapped() -> None:
     def function1(*args, **kwargs):  # pragma: no cover
         return args, kwargs

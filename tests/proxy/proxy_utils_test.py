@@ -14,16 +14,7 @@ from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
 
-def test_proxy_attributes() -> None:
-    assert Proxy.__module__ == 'proxystore.proxy'
-    assert Proxy.__name__ == 'Proxy'
-
-    p = Proxy(SimpleFactory(list))
-    assert isinstance(p, Proxy)
-    assert p.__module__ == 'builtins'
-
-
-def test_proxy() -> None:
+def test_proxy_utils() -> None:
     with pytest.raises(TypeError):
         # Proxy requires a callable type
         Proxy('not a factory')  # type: ignore
