@@ -135,7 +135,7 @@ def test_register_lifetime_atexit(
     lifetime = ContextLifetime(store)
     lifetime.add_key(key)
 
-    callback = register_lifetime_atexit(lifetime, close_store=close_store)
+    callback = register_lifetime_atexit(lifetime, close_stores=close_store)
 
     assert not lifetime.done()
     callback()
