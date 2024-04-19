@@ -50,6 +50,7 @@ import pytest
 
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
+from testing.compat import randbytes
 
 OBJECTS_CODE = """
 class TargetBaseClass(object):
@@ -688,6 +689,30 @@ def test_pickling(obj):
             ) from e
 
         assert obj == result
+
+
+def bytes_factory() -> bytes:
+    return randbytes(1_000)
+
+
+def test_pickling_factory_only():
+    # The actually size of the pickled proxy is around 130, but pickle
+    # protocols could be added in the futures changing this slightly so
+    # this value includes some buffer. Nonetheless it is much less than
+    # the 1000 byte target object returned by bytes_factory.
+    max_pickle_size = 200
+
+    for level in range(pickle.HIGHEST_PROTOCOL + 1):
+        proxy = Proxy(bytes_factory)
+        assert isinstance(proxy, bytes)
+
+        try:
+            dump = pickle.dumps(proxy, protocol=level)
+            assert sys.getsizeof(dump) < max_pickle_size
+        except Exception as e:  # pragma: no cover
+            raise RuntimeError(
+                f'Failed to pickle with pickle protocol {level}:',
+            ) from e
 
 
 def test_garbage_collection() -> None:

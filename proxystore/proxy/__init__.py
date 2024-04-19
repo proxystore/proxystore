@@ -73,23 +73,6 @@ T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
 
 
-def _proxy_trampoline(factory: FactoryType[T]) -> Proxy[T]:
-    """Trampoline for helping Proxy pickling.
-
-    The Proxy types defines a property for `__module__` which confuses
-    pickle when trying to locate the class in the module. The trampoline
-    is a top-level function so pickle can correctly find it in this module.
-
-    Args:
-        factory: Factory to pass to the [`Proxy`][proxystore.proxy.Proxy]
-            constructor.
-
-    Returns:
-        Proxy initialized with `factory`.
-    """
-    return Proxy(factory)
-
-
 class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     """Lazy object proxy.
 
@@ -509,12 +492,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __reduce__(
         self,
     ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
-        # Use trampoline function for pickling and
-        # override `Proxy.__reduce__` so that we only pickle the Factory
-        # and not the object itself to reduce size of the pickle.
-        return _proxy_trampoline, (
-            object.__getattribute__(self, '__factory__'),
-        )
+        return Proxy, (object.__getattribute__(self, '__factory__'),)
 
     def __reduce_ex__(
         self,
