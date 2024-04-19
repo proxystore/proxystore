@@ -161,7 +161,6 @@ def test_special_writeable_attributes(kind: str) -> None:
     if kind != 'instance':
         assert wrapper.__name__ == target.__name__
         assert wrapper.__qualname__ == target.__qualname__
-        assert wrapper.__annotations__ == target.__annotations__
 
     if kind != 'function':
         assert wrapper.__weakref__ == target.__weakref__
@@ -185,6 +184,38 @@ def test_special_writeable_attributes(kind: str) -> None:
     new_doc = 'new-doc'
     wrapper.__doc__ = new_doc
     assert wrapper.__doc__ == target.__doc__ == new_doc
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason='Requires Python 3.10 or later',
+)
+@pytest.mark.parametrize('kind', ('class', 'function'))
+def test_annotations(kind: str) -> None:  # pragma: >=3.10 cover
+    class TestClass:
+        """Test class."""
+
+        pass
+
+    def test_function() -> None:  # pragma: no cover
+        """Test function."""
+        pass
+
+    target: Any
+    if kind == 'class':
+        target = TestClass
+    elif kind == 'function':
+        target = test_function
+    else:
+        raise AssertionError()
+
+    wrapper = Proxy(lambda: target)
+
+    assert wrapper.__annotations__ == target.__annotations__
+
+    new_ann: dict[Any, Any] = {}
+    wrapper.__annotations__ = new_ann
+    assert wrapper.__annotations__ == target.__annotations__ == new_ann
 
 
 def test_isinstance_class_comparision() -> None:

@@ -102,6 +102,14 @@ class _ProxyMethods:
     def __doc__set(self, value: str) -> None:
         self.__wrapped__.__doc__ = value
 
+    @property
+    def __annotations__(self) -> Any:
+        return self.__wrapped__.__annotations__
+
+    @__annotations__.setter
+    def __annotations__(self, value: Any) -> None:
+        self.__wrapped__.__annotations__ = value
+
     # We similar use a property for __dict__. We need __dict__ to be
     # explicit to ensure that vars() works as expected.
 
@@ -208,14 +216,6 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType), Generic[T]):  # type: ig
     @__class__.setter
     def __class__(self, value: Any) -> None:  # pragma: no cover
         self.__wrapped__.__class__ = value
-
-    @property
-    def __annotations__(self) -> Any:
-        return self.__wrapped__.__annotations__
-
-    @__annotations__.setter
-    def __annotations__(self, value: Any) -> None:
-        self.__wrapped__.__annotations__ = value
 
     def __dir__(self) -> Any:
         return dir(self.__wrapped__)
