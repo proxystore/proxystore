@@ -46,48 +46,15 @@ from types import GeneratorType
 from proxystore.proxy._property import proxy_property
 
 
-async def do_await(obj):
+async def _do_await(obj):  # pragma: no cover
     return await obj
 
 
-def do_yield_from(gen):
+def _do_yield_from(gen):  # pragma: no cover
     return (yield from gen)
 
 
-def await_(obj):
-    obj_type = type(obj)
-    if (
-        obj_type is CoroutineType
-        or obj_type is GeneratorType
-        and bool(obj.gi_code.co_flags & CO_ITERABLE_COROUTINE)
-        or isinstance(obj, Awaitable)
-    ):
-        return do_await(obj).__await__()
-    else:
-        return do_yield_from(obj)
-
-
-def __aiter__(self):  # noqa: N807
-    return self.__wrapped__.__aiter__()
-
-
-async def __anext__(self):  # noqa: N807
-    return await self.__wrapped__.__anext__()
-
-
-def __await__(self):  # noqa: N807
-    return await_(self.__wrapped__)
-
-
-def __aenter__(self):  # noqa: N807
-    return self.__wrapped__.__aenter__()
-
-
-def __aexit__(self, *args, **kwargs):  # noqa: N807
-    return self.__wrapped__.__aexit__(*args, **kwargs)
-
-
-def identity(obj):
+def _identity(obj):
     return obj
 
 
@@ -510,14 +477,31 @@ class SlotsProxy(_with_proxy_metaclass(_ProxyMetaType)):
         return self.__wrapped__(*args, **kwargs)
 
     def __reduce__(self):  # pragma: no cover
-        return identity, (self.__wrapped__,)
+        return _identity, (self.__wrapped__,)
 
     def __reduce_ex__(self, protocol):
-        return identity, (self.__wrapped__,)
+        return _identity, (self.__wrapped__,)
 
-    if await_:
-        __aiter__  # noqa: B018
-        __anext__  # noqa: B018
-        __await__  # noqa: B018
-        __aenter__  # noqa: B018
-        __aexit__  # noqa: B018
+    def __aiter__(self):
+        return self.__wrapped__.__aiter__()
+
+    async def __anext__(self):  # pragma: no cover
+        return await self.__wrapped__.__anext__()
+
+    def __await__(self):  # pragma: no cover
+        obj_type = type(self.__wrapped__)
+        if (
+            obj_type is CoroutineType
+            or obj_type is GeneratorType
+            and bool(self.__wrapped__.gi_code.co_flags & CO_ITERABLE_COROUTINE)
+            or isinstance(self.__wrapped__, Awaitable)
+        ):
+            return _do_await(self.__wrapped__).__await__()
+        else:
+            return _do_yield_from(self.__wrapped__)
+
+    def __aenter__(self):
+        return self.__wrapped__.__aenter__()
+
+    def __aexit__(self, *args, **kwargs):
+        return self.__wrapped__.__aexit__(*args, **kwargs)
