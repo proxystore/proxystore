@@ -39,13 +39,13 @@ from __future__ import annotations
 import decimal
 import fractions
 
-from proxystore.proxy._slots import SlotsProxy
+from proxystore.proxy import Proxy
 
 
 def test_comparison() -> None:
-    one = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    one = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert two > 1
     assert two >= 1
@@ -73,20 +73,20 @@ def test_comparison() -> None:
 
 
 def test_numeric_conversion() -> None:
-    one = SlotsProxy(lambda: 1)
+    one = Proxy(lambda: 1)
     assert int(one) == 1
     assert float(one) == 1.0
 
-    value = SlotsProxy(lambda: 0)
+    value = Proxy(lambda: 0)
     assert not bool(value)
 
-    proxy = SlotsProxy(lambda: 1.2)
+    proxy = Proxy(lambda: 1.2)
     assert round(proxy) == 1
 
 
 def test_add() -> None:
-    one = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
+    one = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
 
     assert one + two == 1 + 2
     assert 1 + two == 1 + 2
@@ -94,8 +94,8 @@ def test_add() -> None:
 
 
 def test_sub() -> None:
-    one = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
+    one = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
 
     assert one - two == 1 - 2
     assert 1 - two == 1 - 2
@@ -103,8 +103,8 @@ def test_sub() -> None:
 
 
 def test_mul() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert two * three == 2 * 3
     assert 2 * three == 2 * 3
@@ -126,20 +126,20 @@ def test_matmul() -> None:
     two = MatmulClass(234)
     assert one @ two == 28782
 
-    one = SlotsProxy(lambda: MatmulClass(123))
-    two = SlotsProxy(lambda: MatmulClass(234))
+    one = Proxy(lambda: MatmulClass(123))
+    two = Proxy(lambda: MatmulClass(234))
     assert one @ two == 28782
 
-    one = SlotsProxy(lambda: MatmulClass(123))
+    one = Proxy(lambda: MatmulClass(123))
     two = MatmulClass(234)
     assert one @ two == 28782
 
     a = 123
-    b = SlotsProxy(lambda: MatmulClass(234))
+    b = Proxy(lambda: MatmulClass(234))
     assert a @ b == 357
 
-    a = SlotsProxy(lambda: 123)
-    b = SlotsProxy(lambda: MatmulClass(234))
+    a = Proxy(lambda: 123)
+    b = Proxy(lambda: MatmulClass(234))
     assert a @ b == 357
 
 
@@ -147,8 +147,8 @@ def test_div() -> None:
     # On Python 2 this will pick up div and on Python
     # 3 it will pick up truediv.
 
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert two / three == 2 / 3
     assert 2 / three == 2 / 3
@@ -156,8 +156,8 @@ def test_div() -> None:
 
 
 def test_divdiv() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three // two == 3 // 2
     assert 3 // two == 3 // 2
@@ -165,8 +165,8 @@ def test_divdiv() -> None:
 
 
 def test_mod() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three % two == 3 % 2
     assert 3 % two == 3 % 2
@@ -174,8 +174,8 @@ def test_mod() -> None:
 
 
 def test_divmod() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert divmod(three, two)
     assert divmod(3, two)
@@ -183,8 +183,8 @@ def test_divmod() -> None:
 
 
 def test_pow() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three**two == pow(3, 2)
     assert 3**two == pow(3, 2)
@@ -198,8 +198,8 @@ def test_pow() -> None:
 
 
 def test_lshift() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three << two == 3 << 2
     assert 3 << two == 3 << 2
@@ -207,8 +207,8 @@ def test_lshift() -> None:
 
 
 def test_rshift() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three >> two == 3 >> 2
     assert 3 >> two == 3 >> 2
@@ -216,8 +216,8 @@ def test_rshift() -> None:
 
 
 def test_and() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three & two == 3 & 2
     assert 3 & two == 3 & 2
@@ -225,8 +225,8 @@ def test_and() -> None:
 
 
 def test_xor() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three ^ two == 3 ^ 2
     assert 3 ^ two == 3 ^ 2
@@ -234,8 +234,8 @@ def test_xor() -> None:
 
 
 def test_or() -> None:
-    two = SlotsProxy(lambda: 2)
-    three = SlotsProxy(lambda: 3)
+    two = Proxy(lambda: 2)
+    three = Proxy(lambda: 3)
 
     assert three | two == 3 | 2
     assert 3 | two == 3 | 2
@@ -243,42 +243,42 @@ def test_or() -> None:
 
 
 def test_iadd() -> None:
-    value = SlotsProxy(lambda: 1)
-    one = SlotsProxy(lambda: 1)
+    value = Proxy(lambda: 1)
+    one = Proxy(lambda: 1)
 
     value += 1
     assert value == 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value += one
     assert value == 3
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_isub() -> None:
-    value = SlotsProxy(lambda: 1)
-    one = SlotsProxy(lambda: 1)
+    value = Proxy(lambda: 1)
+    one = Proxy(lambda: 1)
 
     value -= 1
     assert value == 0
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value -= one
     assert value == -1
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_imul() -> None:
-    value = SlotsProxy(lambda: 2)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 2)
+    two = Proxy(lambda: 2)
 
     value *= 2
     assert value == 4
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value *= two
     assert value == 8
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_imatmul() -> None:
@@ -294,152 +294,152 @@ def test_imatmul() -> None:
     value @= 123
     assert value.value == 123
 
-    value = SlotsProxy(InplaceMatmul)
+    value = Proxy(InplaceMatmul)
     value @= 234
     assert value.value == 234
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_idiv() -> None:
     # On Python 2 this will pick up div and on Python
     # 3 it will pick up truediv.
 
-    value = SlotsProxy(lambda: 2)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 2)
+    two = Proxy(lambda: 2)
 
     value /= 2
     assert value == 2 / 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value /= two
     assert value == 2 / 2 / 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_ifloordiv() -> None:
-    value = SlotsProxy(lambda: 2)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 2)
+    two = Proxy(lambda: 2)
 
     value //= 2
     assert value == 2 // 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value //= two
     assert value == 2 // 2 // 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_imod() -> None:
-    value = SlotsProxy(lambda: 10)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 10)
+    two = Proxy(lambda: 2)
 
     value %= 2
     assert value == 10 % 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value %= two
     assert value == 10 % 2 % 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_ipow() -> None:
-    value = SlotsProxy(lambda: 10)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 10)
+    two = Proxy(lambda: 2)
 
     value **= 2
     assert value == 10**2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value **= two
     assert value == 10**2**2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_ilshift() -> None:
-    value = SlotsProxy(lambda: 256)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 256)
+    two = Proxy(lambda: 2)
 
     value <<= 2
     assert value == 256 << 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value <<= two
     assert value == 256 << 2 << 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_irshift() -> None:
-    value = SlotsProxy(lambda: 2)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 2)
+    two = Proxy(lambda: 2)
 
     value >>= 2
     assert value == 2 >> 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value >>= two
     assert value == 2 >> 2 >> 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_iand() -> None:
-    value = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
 
     value &= 2
     assert value == 1 & 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value &= two
     assert value == 1 & 2 & 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_ixor() -> None:
-    value = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
 
     value ^= 2
     assert value == 1 ^ 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value ^= two
     assert value == 1 ^ 2 ^ 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_ior() -> None:
-    value = SlotsProxy(lambda: 1)
-    two = SlotsProxy(lambda: 2)
+    value = Proxy(lambda: 1)
+    two = Proxy(lambda: 2)
 
     value |= 2
     assert value == 1 | 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
     value |= two
     assert value == 1 | 2 | 2
-    assert type(value) == SlotsProxy
+    assert type(value) == Proxy
 
 
 def test_neg() -> None:
-    value = SlotsProxy(lambda: 1)
+    value = Proxy(lambda: 1)
 
     assert -value == -1
 
 
 def test_pos() -> None:
-    value = SlotsProxy(lambda: 1)
+    value = Proxy(lambda: 1)
 
     assert +value == 1
 
 
 def test_abs() -> None:
-    value = SlotsProxy(lambda: -1)
+    value = Proxy(lambda: -1)
 
     assert abs(value) == 1
 
 
 def test_invert() -> None:
-    value = SlotsProxy(lambda: 1)
+    value = Proxy(lambda: 1)
 
     assert ~value == ~1
 
@@ -447,7 +447,7 @@ def test_invert() -> None:
 def test_decimal_complex() -> None:
     instance = decimal.Decimal(123)
 
-    proxy = SlotsProxy(lambda: instance)
+    proxy = Proxy(lambda: instance)
 
     assert complex(instance) == complex(proxy)
 
@@ -455,6 +455,6 @@ def test_decimal_complex() -> None:
 def test_fractions_round() -> None:
     instance = fractions.Fraction('1/2')
 
-    proxy = SlotsProxy(lambda: instance)
+    proxy = Proxy(lambda: instance)
 
     assert round(instance) == round(proxy)

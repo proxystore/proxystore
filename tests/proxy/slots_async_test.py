@@ -10,7 +10,7 @@ else:  # pragma: <3.11 cover
 
 import pytest
 
-from proxystore.proxy._slots import SlotsProxy
+from proxystore.proxy import Proxy
 
 
 @pytest.mark.asyncio()
@@ -20,7 +20,7 @@ async def test_awaitable() -> None:
     async def test_coro() -> None:
         event.set()
 
-    wrapped = SlotsProxy(lambda: test_coro)
+    wrapped = Proxy(lambda: test_coro)
     assert not event.is_set()
 
     await wrapped()
@@ -45,7 +45,7 @@ async def test_asyn_iterator() -> None:
 
     values = [1, 2, 3]
     target = TestAsyncIterator(values)
-    wrapped = SlotsProxy(lambda: target)
+    wrapped = Proxy(lambda: target)
 
     found = []
     async for value in wrapped:  # pragma: no cover
@@ -68,7 +68,7 @@ async def test_async_context_manager() -> None:
             self.exited = True
 
     manager = TestAsyncContextManager()
-    wrapped = SlotsProxy(lambda: manager)
+    wrapped = Proxy(lambda: manager)
 
     assert not wrapped.entered
     assert not wrapped.exited

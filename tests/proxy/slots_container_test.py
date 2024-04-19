@@ -36,7 +36,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
-from proxystore.proxy._slots import SlotsProxy
+from proxystore.proxy import Proxy
 
 
 def test_class_bytes() -> None:
@@ -46,7 +46,7 @@ def test_class_bytes() -> None:
 
     instance = Class()
 
-    proxy = SlotsProxy(lambda: instance)
+    proxy = Proxy(lambda: instance)
 
     assert bytes(instance) == bytes(proxy)
 
@@ -55,7 +55,7 @@ def test_object_hash() -> None:
     def function1(*args, **kwargs):  # pragma: no cover
         return args, kwargs
 
-    function2 = SlotsProxy(lambda: function1)
+    function2 = Proxy(lambda: function1)
     assert hash(function2) == hash(function1)
 
 
@@ -63,7 +63,7 @@ def test_mapping_key() -> None:
     def function1(*args, **kwargs):  # pragma: no cover
         return args, kwargs
 
-    function2 = SlotsProxy(lambda: function1)
+    function2 = Proxy(lambda: function1)
     table = {function1: True}
     assert table.get(function2)
 
@@ -76,7 +76,7 @@ def test_index() -> None:
         def __index__(self):
             return 1
 
-    value1 = SlotsProxy(lambda: TestClass1())
+    value1 = Proxy(lambda: TestClass1())
     items1 = [0, 1, 2]
 
     assert items1[value1] == items1[1]
@@ -85,36 +85,36 @@ def test_index() -> None:
         def __int__(self):
             return 1
 
-    value2 = SlotsProxy(lambda: TestClass2())
+    value2 = Proxy(lambda: TestClass2())
     items2 = [0, 1, 2]
 
     assert items2[value2] == items2[1]
 
 
 def test_length() -> None:
-    value = SlotsProxy(lambda: list(range(3)))
+    value = Proxy(lambda: list(range(3)))
     assert len(value) == 3
 
 
 def test_contains() -> None:
-    value = SlotsProxy(lambda: list(range(3)))
+    value = Proxy(lambda: list(range(3)))
     assert 2 in value
     assert -2 not in value
 
 
 def test_getitem() -> None:
-    value = SlotsProxy(lambda: list(range(3)))
+    value = Proxy(lambda: list(range(3)))
     assert value[1] == 1
 
 
 def test_setitem() -> None:
-    value = SlotsProxy(lambda: list(range(3)))
+    value = Proxy(lambda: list(range(3)))
     value[1] = -1
     assert value[1] == -1
 
 
 def test_delitem() -> None:
-    value = SlotsProxy(lambda: list(range(3)))
+    value = Proxy(lambda: list(range(3)))
     assert len(value) == 3
 
     del value[1]
@@ -124,7 +124,7 @@ def test_delitem() -> None:
 
 def test_slicing() -> None:
     # Get slice
-    value = SlotsProxy(lambda: list(range(5)))
+    value = Proxy(lambda: list(range(5)))
     assert value[1:4] == [1, 2, 3]
 
     # Set slice
@@ -138,33 +138,33 @@ def test_slicing() -> None:
 
 
 def test_dict_length() -> None:
-    value = SlotsProxy(lambda: dict.fromkeys(range(3), False))
+    value = Proxy(lambda: dict.fromkeys(range(3), False))
 
     assert len(value) == 3
 
 
 def test_dict_contains() -> None:
-    value = SlotsProxy(lambda: dict.fromkeys(range(3), False))
+    value = Proxy(lambda: dict.fromkeys(range(3), False))
 
     assert 2 in value
     assert -2 not in value
 
 
 def test_dict_getitem() -> None:
-    value = SlotsProxy(lambda: dict.fromkeys(range(3), False))
+    value = Proxy(lambda: dict.fromkeys(range(3), False))
 
     assert value[1] is False
 
 
 def test_dict_setitem() -> None:
-    value = SlotsProxy(lambda: dict.fromkeys(range(3), False))
+    value = Proxy(lambda: dict.fromkeys(range(3), False))
     value[1] = True
 
     assert value[1] is True
 
 
 def test_dict_delitem() -> None:
-    value = SlotsProxy(lambda: dict.fromkeys(range(3), False))
+    value = Proxy(lambda: dict.fromkeys(range(3), False))
 
     assert len(value) == 3
 
@@ -175,5 +175,5 @@ def test_dict_delitem() -> None:
 
 def test_list_reversed() -> None:
     instance = [1, 2]
-    proxy = SlotsProxy(lambda: instance)
+    proxy = Proxy(lambda: instance)
     assert list(reversed(instance)) == list(reversed(proxy))
