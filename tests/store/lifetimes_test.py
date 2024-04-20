@@ -16,6 +16,7 @@ from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.lifetimes import LeaseLifetime
 from proxystore.store.lifetimes import Lifetime
 from proxystore.store.lifetimes import register_lifetime_atexit
+from proxystore.store.lifetimes import StaticLifetime
 
 
 def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
@@ -135,7 +136,7 @@ def test_register_lifetime_atexit(
     lifetime = ContextLifetime(store)
     lifetime.add_key(key)
 
-    callback = register_lifetime_atexit(lifetime, close_store=close_store)
+    callback = register_lifetime_atexit(lifetime, close_stores=close_store)
 
     assert not lifetime.done()
     callback()
@@ -143,3 +144,57 @@ def test_register_lifetime_atexit(
     assert not store.exists(key)
 
     atexit.unregister(callback)
+
+
+def test_static_lifetime_is_singleton() -> None:
+    assert StaticLifetime() is StaticLifetime()
+
+
+def test_add_key_without_store_error() -> None:
+    with pytest.raises(ValueError, match='requires the store parameter'):
+        StaticLifetime().add_key(())
+
+
+def test_static_lifetime_add_bad_proxy() -> None:
+    proxy: Proxy[list[Any]] = Proxy(list)
+
+    with pytest.raises(ProxyStoreFactoryError):
+        StaticLifetime().add_proxy(proxy)
+
+
+def test_static_lifetime_cleanup(store: Store[LocalConnector]) -> None:
+    key1 = store.put('value1')
+    key2 = store.put('value2')
+    key3 = store.put('value3')
+    key4 = store.put('value4')
+    proxy1: Proxy[str] = store.proxy_from_key(key3)
+    proxy2: Proxy[str] = store.proxy_from_key(key4)
+
+    lifetime = StaticLifetime()
+    assert not lifetime.done()
+
+    lifetime.add_key(key1, key2, store=store)
+    lifetime.add_proxy(proxy1, proxy2)
+
+    # Will get back same lifetime object so both options to close work
+    # and are idempotent.
+    StaticLifetime().close()
+    lifetime.close()
+    assert lifetime.done()
+
+    assert not store.exists(key1)
+    assert not store.exists(key2)
+    assert not store.exists(key3)
+    assert not store.exists(key4)
+
+    # Cleanup singleton instance
+    StaticLifetime._instance = None
+
+
+def test_static_lifetime_close_store(store: Store[LocalConnector]) -> None:
+    store.put('value', lifetime=StaticLifetime())
+
+    StaticLifetime().close(close_stores=True)
+
+    # Cleanup singleton instance
+    StaticLifetime._instance = None

@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import uuid
+from collections import defaultdict
 from datetime import datetime
 from datetime import timedelta
 from types import TracebackType
@@ -48,18 +49,13 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class Lifetime(Protocol):
-    """Lifetime protocol.
+    """Lifetime protocol."""
 
-    Attributes:
-        store: [`Store`][proxystore.store.base.Store] instance use to create
-            the objects associated with this lifetime and that will be used
-            to evict them when the lifetime has ended.
-    """
-
-    name: str
-    store: Store[Any]
-
-    def add_key(self, *keys: ConnectorKeyT) -> None:
+    def add_key(
+        self,
+        *keys: ConnectorKeyT,
+        store: Store[Any] | None = None,
+    ) -> None:
         """Associate a new object with the lifetime.
 
         Warning:
@@ -69,6 +65,8 @@ class Lifetime(Protocol):
 
         Args:
             keys: One or more keys of objects to associate with this lifetime.
+            store: Optional [`Store`][proxystore.store.base.Store] that `keys`
+                belongs to.
         """
         ...
 
@@ -90,8 +88,13 @@ class Lifetime(Protocol):
         """
         ...
 
-    def close(self) -> None:
-        """End the lifetime and evict all associated objects."""
+    def close(self, *, close_stores: bool = False) -> None:
+        """End the lifetime and evict all associated objects.
+
+        Args:
+            close_stores: Close any [`Store`][proxystore.store.base.Store]
+                store instances associated with the lifetime.
+        """
         ...
 
     def done(self) -> bool:
@@ -172,8 +175,15 @@ class ContextLifetime:
     ) -> None:
         self.close()
 
+    def __repr__(self) -> str:
+        return f'Lifetime(name={self.name}, store={self.store!r})'
+
     @_error_if_done
-    def add_key(self, *keys: ConnectorKeyT) -> None:
+    def add_key(
+        self,
+        *keys: ConnectorKeyT,
+        store: Store[Any] | None = None,
+    ) -> None:
         """Associate a new object with the lifetime.
 
         Warning:
@@ -183,6 +193,8 @@ class ContextLifetime:
 
         Args:
             keys: One or more keys of objects to associate with this lifetime.
+            store: Optional [`Store`][proxystore.store.base.Store] that `keys`
+                belongs to. Ignored by this implementation.
 
         Raises:
             RuntimeError: If this lifetime has ended.
@@ -224,8 +236,13 @@ class ContextLifetime:
                 )
         self.add_key(*keys)
 
-    def close(self) -> None:
-        """End the lifetime and evict all associated objects."""
+    def close(self, *, close_stores: bool = False) -> None:
+        """End the lifetime and evict all associated objects.
+
+        Args:
+            close_stores: Close any [`Store`][proxystore.store.base.Store]
+                store instances associated with the lifetime.
+        """
         if self.done():
             return
 
@@ -237,6 +254,9 @@ class ContextLifetime:
             f'associated objects (name={self.name})',
         )
         self._keys.clear()
+
+        if close_stores:
+            self.store.close()
 
     def done(self) -> bool:
         """Check if lifetime has ended."""
@@ -320,17 +340,21 @@ class LeaseLifetime(ContextLifetime):
         self._timer = threading.Timer(interval, self._timer_callback)
         self._timer.start()
 
-    def close(self) -> None:
+    def close(self, *, close_stores: bool = False) -> None:
         """End the lifetime and evict all associated objects.
 
         This can be called before the specified expiry time to end the
         lifetime early.
+
+        Args:
+            close_stores: Close any [`Store`][proxystore.store.base.Store]
+                store instances associated with the lifetime.
         """
         if self._timer is not None:
             self._timer.cancel()
             self._timer = None
 
-        super().close()
+        super().close(close_stores=close_stores)
 
     @_error_if_done
     def extend(self, expiry: datetime | timedelta | float) -> None:
@@ -353,9 +377,161 @@ class LeaseLifetime(ContextLifetime):
             raise AssertionError('Unreachable.')
 
 
+class StaticLifetime:
+    """Static lifetime manager.
+
+    Keeps associated objects alive for the remainder of the program.
+
+    Note:
+        This is a singleton class.
+
+    Warning:
+        This class registers an [atexit][atexit] handler which will close
+        the lifetime at the end of the program, evicting all objects associated
+        with the lifetime. Therefore, [`Store`][proxystore.store.base.Store]
+        instances used to created objects associated with the static lifetime
+        **should not** be closed prior to program exit. The handler will close
+        all of these stores. It is possible to call `StaticLifetime().close()`
+        manually, after which it is safe to also close the stores.
+
+    Example:
+        ```python linenums="1" title="Static Lifetime"
+        from proxystore.connectors.local import LocalConnector
+        from proxystore.store import Store
+        from proxystore.store import register_store
+        from proxystore.store.lifetimes import StaticLifetime
+
+        store = Store('default', LocalConnector())  # (1)!
+        register_store(store)  # (2)!
+
+        key = store.put('value', lifetime=StaticLifetime())  # (3)!
+        proxy = store.proxy('value', lifetime=StaticLifetime())  # (4)!
+        ```
+
+        1. The atexit handler will call `store.close()` at the end of the
+           program.
+        2. Registering `store` is recommended to prevent another instance
+           being created internally.
+        3. The object associated with `key` will be evicted at the end of
+           the program.
+        4. The object associated with `proxy` will be evicted at the end of
+           the program.
+    """
+
+    _instance: StaticLifetime | None = None
+    name = 'static'
+
+    def __new__(cls) -> StaticLifetime:
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._initialized = False
+        return cls._instance
+
+    def __init__(self) -> None:
+        if not self._initialized:
+            self._done = False
+            self._keys: dict[Store[Any], set[ConnectorKeyT]] = defaultdict(set)
+            self._callback = register_lifetime_atexit(self, close_stores=True)
+            self._initialized = True
+
+    @_error_if_done
+    def add_key(
+        self,
+        *keys: ConnectorKeyT,
+        store: Store[Any] | None = None,
+    ) -> None:
+        """Associate a new object with the lifetime.
+
+        Args:
+            keys: One or more keys of objects to associate with this lifetime.
+            store: [`Store`][proxystore.store.base.Store] that `keys`
+                belongs to. Required by this implementation.
+
+        Raises:
+            RuntimeError: If this lifetime has ended.
+            ValueError: If `store` is `None`.
+        """
+        if store is None:
+            raise ValueError(
+                f'The {self.__class__.__name__} requires the store parameter.',
+            )
+        self._keys[store].update(keys)
+        logger.debug(
+            f'Added keys to lifetime manager (name={self.name}): '
+            f'{", ".join(repr(key) for key in keys)}',
+        )
+
+    @_error_if_done
+    def add_proxy(self, *proxies: Proxy[Any]) -> None:
+        """Associate a new object with the lifetime.
+
+        Warning:
+            This method will initialized new
+            [`Store`][proxystore.store.base.Store] instances if the stores
+            which were used to create the input proxies have not been
+            registered with
+            [`register_store()`][proxystore.store.register_store].
+
+        Args:
+            proxies: One or more proxies of objects to associate with this
+                lifetime.
+
+        Raises:
+            ProxyStoreFactoryError: If the proxy's factory is not an instance
+                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+            RuntimeError: If this lifetime has ended.
+        """
+        for proxy in proxies:
+            factory = proxy.__factory__
+            if isinstance(factory, StoreFactory):
+                self.add_key(factory.key, store=factory.get_store())
+            else:
+                raise ProxyStoreFactoryError(
+                    'The proxy must contain a factory with type '
+                    f'{type(StoreFactory).__name__}. {type(factory).__name__} '
+                    'is not supported.',
+                )
+
+    def close(self, *, close_stores: bool = False) -> None:
+        """End the lifetime and evict all associated objects.
+
+        Warning:
+            Because this class is a singleton this operation can only
+            be performed once.
+
+        Args:
+            close_stores: Close any [`Store`][proxystore.store.base.Store]
+                store instances associated with the lifetime.
+        """
+        if self.done():
+            return
+
+        count = 0
+        for store, keys in self._keys.items():
+            for key in keys:
+                store.evict(key)
+                count += 1
+
+            if close_stores:
+                store.close()
+
+        atexit.unregister(self._callback)
+
+        self._done = True
+        logger.info(
+            f'Closed lifetime manager and evicted {count} '
+            f'associated objects (name={self.name})',
+        )
+        self._keys.clear()
+
+    def done(self) -> bool:
+        """Check if lifetime has ended."""
+        return self._done
+
+
 def register_lifetime_atexit(
     lifetime: Lifetime,
-    close_store: bool = True,
+    close_stores: bool = True,
 ) -> Callable[[], None]:
     """Register atexit callback to cleanup the lifetime.
 
@@ -375,8 +551,8 @@ def register_lifetime_atexit(
 
     Args:
         lifetime: Lifetime to be closed at exit.
-        close_store: Close the [`Store`][proxystore.store.base.Store] after
-            the lifetime.
+        close_stores: Close any [`Store`][proxystore.store.base.Store]
+            instances associated with the lifetime.
 
     Returns:
         The registered callback function which can be used with \
@@ -384,13 +560,10 @@ def register_lifetime_atexit(
     """
 
     def _lifetime_atexit_callback() -> None:
-        lifetime.close()
-        if close_store:
-            lifetime.store.close()
+        lifetime.close(close_stores=close_stores)
 
     atexit.register(_lifetime_atexit_callback)
     logger.debug(
-        'Registered atexit callback for lifetime '
-        f'(lifetime: {lifetime.name}, store: {lifetime.store.name})',
+        f'Registered atexit callback for {lifetime!r}',
     )
     return _lifetime_atexit_callback

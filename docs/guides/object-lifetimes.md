@@ -128,33 +128,39 @@ with Store(...) as store:
 ### Static Lifetime
 
 A static lifetime indicates that the associated objects should live for the remainder of the lifetime of the running process which created the object.
-ProxyStore does not yet support a `StaticLifetime` class, but static lifetimes can be achieved with the use of a [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] and an [atexit][atexit] handler.
+The [`StaticLifetime`][proxystore.store.lifetimes.StaticLifetime], a singleton class, will evict all associated objects at the end of the program via an [atexit][atexit] handler.
 
 ```python linenums="1" title="Static Lifetime"
-from proxystore.store.base import Store
-from proxystore.store.lifetimes import ContextLifetime
-from proxystore.store.lifetimes import register_lifetime_atexit
+from proxystore.connectors.local import LocalConnector
+from proxystore.store import Store
+from proxystore.store import register_store
+from proxystore.store.lifetimes import StaticLifetime
 
-store = Store(...)
+store = Store('default', LocalConnector())  # (1)!
+register_store(store)  # (2)!
 
-lifetime = ContextLifetime(store)  # (1)!
-register_lifetime_atexit(lifetime, close_store=True)  # (2)!
-
-key = store.put('value', lifetime=lifetime)  # (3)!
-proxy = store.proxy('value', lifetime=lifetime)
+key = store.put('value', lifetime=StaticLifetime())  # (3)!
+proxy = store.proxy('value', lifetime=StaticLifetime())  # (4)!
 ```
 
-1. Create and use a [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] as normal.
-2. Register an [atexit][atexit] handler with [`register_lifetime_atexit`][proxystore.store.lifetimes.register_lifetime_atexit].
-   The `close_store` flag is `True` by default and will close the [`Store`][proxystore.store.base.Store] after the lifetime has been cleaned up.
-3. Objects associated with the lifetime will be cleaned up when the program exits.
+1. The atexit handler will call `store.close()` at the end of the
+   program.
+2. Registering `store` is recommended to prevent another instance
+   being created internally.
+3. The object associated with `key` will be evicted at the end of
+   the program.
+4. The object associated with `proxy` will be evicted at the end of
+   the program.
 
 Additional tips:
 
-1. The lifetime can be closed early if needed.
-2. Closing the [`Store`][proxystore.store.base.Store] at the end of the program but before the [atexit][atexit] handler has executed can cause undefined behaviour.
+1. Closing the [`Store`][proxystore.store.base.Store] at the end of the program but before the [atexit][atexit] handler has executed can cause undefined behaviour.
    Let the handler perform all cleanup.
+2. The [`StaticLifetime`][proxystore.store.lifetimes.StaticLifetime] can be closed manually, but only once.
+   This may be useful if the the associated stores need to be closed manually or outside of the atexit handler.
+   (Close the lifetime before the stores.)
 3. [atexit][atexit] does not guarantee that the handler will be called in some unexpected process shutdown cases.
+   This can lead to a memory leak in the connector(s).
 
 ## Ownership
 
