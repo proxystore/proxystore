@@ -1022,7 +1022,7 @@ class Store(Generic[ConnectorT]):
             key = self.connector.put(obj, **kwargs)
 
         if lifetime is not None:
-            lifetime.add_key(key)
+            lifetime.add_key(key, store=self)
 
         timer.stop()
         if self.metrics is not None:
@@ -1085,7 +1085,7 @@ class Store(Generic[ConnectorT]):
             keys = self.connector.put_batch(_objs, **kwargs)
 
         if lifetime is not None:
-            lifetime.add_key(*keys)
+            lifetime.add_key(*keys, store=self)
 
         timer.stop()
         if self.metrics is not None:
