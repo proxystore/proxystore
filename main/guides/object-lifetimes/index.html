@@ -3354,7 +3354,7 @@ The lease can be extended as needed with <a class="autorefs autorefs-internal" h
 </ol>
 <h3 id="static-lifetime">Static Lifetime<a class="headerlink" href="#static-lifetime" title="Permanent link">&para;</a></h3>
 <p>A static lifetime indicates that the associated objects should live for the remainder of the lifetime of the running process which created the object.
-ProxyStore does not yet support a <code>StaticLifetime</code> class, but static lifetimes can be achieved with the use of a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> and an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler.</p>
+The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.StaticLifetime"><code>StaticLifetime</code></a>, a singleton class, will evict all associated objects at the end of the program via an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Static Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
@@ -3364,31 +3364,36 @@ ProxyStore does not yet support a <code>StaticLifetime</code> class, but static 
 <span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
 <span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-3-10">10</a></span>
-<span class="normal"><a href="#__codelineno-3-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">ContextLifetime</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">register_lifetime_atexit</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="n">lifetime</span> <span class="o">=</span> <span class="n">ContextLifetime</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>  <span class="c1"># (1)!</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="n">register_lifetime_atexit</span><span class="p">(</span><span class="n">lifetime</span><span class="p">,</span> <span class="n">close_store</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># (2)!</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>  <span class="c1"># (3)!</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">lifetime</span><span class="p">)</span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.local</span> <span class="kn">import</span> <span class="n">LocalConnector</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">register_store</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">StaticLifetime</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">LocalConnector</span><span class="p">())</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="n">register_store</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (3)!</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (4)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
-<li>Create and use a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.ContextLifetime"><code>ContextLifetime</code></a> as normal.</li>
-<li>Register an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler with <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.register_lifetime_atexit"><code>register_lifetime_atexit</code></a>.
-   The <code>close_store</code> flag is <code>True</code> by default and will close the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> after the lifetime has been cleaned up.</li>
-<li>Objects associated with the lifetime will be cleaned up when the program exits.</li>
+<li>The atexit handler will call <code>store.close()</code> at the end of the
+   program.</li>
+<li>Registering <code>store</code> is recommended to prevent another instance
+   being created internally.</li>
+<li>The object associated with <code>key</code> will be evicted at the end of
+   the program.</li>
+<li>The object associated with <code>proxy</code> will be evicted at the end of
+   the program.</li>
 </ol>
 <p>Additional tips:</p>
 <ol>
-<li>The lifetime can be closed early if needed.</li>
 <li>Closing the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> at the end of the program but before the <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler has executed can cause undefined behaviour.
    Let the handler perform all cleanup.</li>
-<li><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> does not guarantee that the handler will be called in some unexpected process shutdown cases.</li>
+<li>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.StaticLifetime"><code>StaticLifetime</code></a> can be closed manually, but only once.
+   This may be useful if the the associated stores need to be closed manually or outside of the atexit handler.
+   (Close the lifetime before the stores.)</li>
+<li><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> does not guarantee that the handler will be called in some unexpected process shutdown cases.
+   This can lead to a memory leak in the connector(s).</li>
 </ol>
 <h2 id="ownership">Ownership<a class="headerlink" href="#ownership" title="Permanent link">&para;</a></h2>
 <p>An <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref.OwnedProxy"><code>OwnedProxy</code></a>, created by <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.owned_proxy"><code>Store.owned_proxy()</code></a>, provides an alternative to the default <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> which enforces Rust-like ownership and borrowing rules for objects in a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.</p>
