@@ -16,6 +16,7 @@ from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 from proxystore.store import store_registration
+from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.ref import _WeakRefFinalizer
 from proxystore.store.ref import borrow
@@ -360,6 +361,18 @@ def test_into_owned_value_error(store: Store[FileConnector]) -> None:
     factory = put_in_store('value', store)
     proxy = OwnedProxy(factory)
     with pytest.raises(ValueError, match='Only a base proxy can be'):
+        into_owned(proxy)
+
+
+def test_into_owned_factory_error(store: Store[FileConnector]) -> None:
+    def factory() -> str:  # pragma: no cover
+        return 'value'
+
+    proxy = Proxy(factory)
+    with pytest.raises(
+        ProxyStoreFactoryError,
+        match='The proxy must contain a factory with type StoreFactory.',
+    ):
         into_owned(proxy)
 
 
