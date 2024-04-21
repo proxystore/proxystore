@@ -603,6 +603,9 @@ class Store(Generic[ConnectorT]):
                 lifetime.add_proxy(proxy)
 
             if populate_target:
+                # If obj were None, we would have escaped early when
+                # checking _NON_PROXIABLE_TYPES.
+                assert obj is not None
                 proxy.__wrapped__ = obj
 
         if self.metrics is not None:

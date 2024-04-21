@@ -651,7 +651,7 @@ def test_patching_the_factory() -> None:
 def test_deleting_the_factory() -> None:
     proxy = Proxy(lambda: 'value')  # pragma: no cover
     assert proxy.__factory__ is not None
-    proxy.__factory__ = None
+    proxy.__factory__ = None  # type: ignore[assignment]
     assert proxy.__factory__ is None
     del proxy.__factory__
     pytest.raises(ValueError, str, proxy)

@@ -32,7 +32,9 @@ repos:
           - click >= 8.1.0, != 8.1.4
           - globus-sdk
           - parsl
+          - pydantic
           - quart
+          - types-psutil
           - types-redis
           - types-requests
           - uvicorn
