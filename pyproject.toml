@@ -110,12 +110,16 @@ dist,
 [tool.coverage.run]
 plugins = ["covdefaults"]
 concurrency = ["multiprocessing", "thread"]
-omit = ["version_check.py", "testing/scripts/*"]
+omit = [
+    "proxystore/mypy.py",
+    "testing/scripts/*",
+    "version_check.py",
+]
 parallel = true
 
 [tool.mypy]
 python_version = "3.10"
-plugins = ["pydantic.mypy"]
+plugins = ["proxystore.mypy", "pydantic.mypy"]
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
