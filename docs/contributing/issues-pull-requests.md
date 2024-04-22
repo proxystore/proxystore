@@ -24,7 +24,8 @@ made via pull requests (including code owners!).
         * include related issue numbers at end of subject line,
         * wrap body at 72 characters, and
         * use the body to explain what/why rather than how.
-      Example: `Fix concurrency bug in Store (#42)`
+        * *Example*: `Fix concurrency bug in Store (#42)`
+
 3. Push commits to your fork.
     - Please squash commits fixing mistakes to keep the git history clean.
       For example, if commit "b" follows commit "a" and only fixes a small typo

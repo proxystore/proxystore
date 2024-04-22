@@ -85,17 +85,20 @@ object, additional functions are provided for interacting with the proxy
 directly.
 
 ```python
-from proxystore import proxy
+from proxystore.proxy import Proxy
+from proxystore.proxy import extract
+from proxystore.proxy import is_resolved
+from proxystore.proxy import resolve
 
-p = proxy.Proxy(...)
+p = Proxy(...)
 
 # Check if a proxy has been resolved yet
-proxy.is_resolved(p)
+is_resolved(p)
 
 # Force a proxy to resolve itself
-proxy.resolve(p)
+resolve(p)
 
 # Extract the wrapped object from the proxy
-x = proxy.extract(p)
-assert not isinstance(x, proxy.Proxy)
+x = extract(p)
+assert not isinstance(x, Proxy)
 ```

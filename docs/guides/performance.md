@@ -1,6 +1,6 @@
 # Performance Tracking
 
-*Last updated 2 May 2023*
+*Last updated 20 April 2024*
 
 The [`Store`][proxystore.store.base.Store] can record metrics on executed operations (e.g., `get` and `put`).
 Metric collection is disabled by default and can be enabled by passing `#!python metrics=True` to a [`Store`][proxystore.store.base.Store] constructor.
@@ -34,6 +34,13 @@ will be `None` when metrics are disabled.
     [`Store`][proxystore.store.base.Store] instances,
     [`Store.metrics`][proxystore.store.base.Store.metrics] will only represent
     a partial view of the overall performance.
+
+!!! warning
+    ProxyStore v0.6.4 and older have a bug that causes the conversion from
+    nanoseconds to milliseconds in the
+    [`Metrics`][proxystore.store.metrics.Metrics] class to be incorrect.
+    This was fixed in v0.6.5 (see
+    [PR #538](https://github.com/proxystore/proxystore/pull/538){target=_blank}).
 
 Three types of metrics are collected.
 
