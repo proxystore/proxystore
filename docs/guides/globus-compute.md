@@ -1,6 +1,6 @@
 # Globus Compute with ProxyStore
 
-*Last updated 2 May 2023*
+*Last updated 20 April 2024*
 
 This guide walks through integrating ProxyStore into a
 [Globus Compute](https://www.globus.org/compute){target=_blank} application.
@@ -29,7 +29,7 @@ and ProxyStore.
 ```bash
 $ python -m venv venv
 $ . venv/bin/activate
-$ pip install globus-compute-sdk==2.0.1 globus-compute-endpoint==2.0.1 proxystore==0.5.*
+$ pip install globus-compute-sdk==2.18.1 globus-compute-endpoint==2.18.1 proxystore==0.6.5
 ```
 
 ## Using Globus Compute

@@ -1,8 +1,8 @@
 The ProxyStore source code contains source code governed by the following
 open source licenses.
 
-1) License Notice for python proxystore/proxy/_proxy.py adapted from
-   https://github.com/ionelmc/python-lazy-object-proxy/tree/v1.10.0
+1) License Notice for code in proxystore/proxy/ and tests/proxy adapted
+   from https://github.com/ionelmc/python-lazy-object-proxy/tree/v1.10.0
 -----------------------------------------------------------------------------
 
 BSD 2-Clause License

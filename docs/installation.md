@@ -22,7 +22,9 @@ ProxyStore provides many features with extra dependencies that can be installed 
 | `#!bash pip install proxystore[all]` | Install all extras except `dev` and `docs` |
 | `#!bash pip install proxystore[endpoints]` | Use [ProxyStore Endpoints](guides/endpoints.md) |
 | `#!bash pip install proxystore[extensions]` | Install the [`proxystore-ex`](https://github.com/proxystore/extensions){target=_blank} package |
-| `#!bash pip install proxystore[redis]` | Use the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
+| `#!bash pip install proxystore[kafka]` | Use [Kafka stream shims][proxystore.stream.shims.kafka] |
+| `#!bash pip install proxystore[redis]` | Use [Redis stream shims][proxystore.stream.shims.redis] or the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
+| `#!bash pip install proxystore[zmq]` | Use [ZeroMQ stream shims][proxystore.stream.shims.zmq] |
 | `#!bash pip install proxystore[dev]` | Development dependencies |
 | `#!bash pip install proxystore[docs]` | Documentation dependencies |
 

@@ -145,4 +145,12 @@ The ProxyStore model can improve application performance in many ways:
    patterns.
 4. Proxies have built-in caching for frequently used objects.
 
-See the [Concepts](concepts/index.md) to learn more!
+## Learn More
+
+See the [Concepts](concepts/index.md) to learn more about ProxyStore's core concepts.
+
+ProxyStore provides many higher level interfaces for advanced application design patterns.
+
+* [Distributed Futures](guides/proxy-futures.md)
+* [Distributed Memory Management](guides/object-lifetimes.md)
+* [Stream by Proxy](guides/streaming.md)

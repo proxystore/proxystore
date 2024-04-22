@@ -20,7 +20,7 @@ an endpoint can be configure with this URI and will connect this instance
 when started.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --relay-server ws://localhost:8700`
+$ proxystore-endpoint configure my-endpoint --relay-server ws://localhost:8700
 $ proxystore-endpoint start my-endpoint --no-detach
 ```
 
@@ -82,7 +82,7 @@ current_client_limit = 32
 ## User Authentication
 
 A relay provides no user authentication by default. This means that any client
-can connect to any other client as long as they know the clients UUID. This
+can connect to any other client as long as they know the client's UUID. This
 may be suitable for internal or development purposes, but users should take
 extra precautions to ensure sensitive data is not exposed.
 

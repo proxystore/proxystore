@@ -111,7 +111,8 @@ nav:
       - Installation: installation.md
       - Get Started: get-started.md
       - Examples: examples.md
-      - Known Issues: known-issues.md
+      - FAQ: faq.md
+      - Issues (GitHub): https://github.com/proxystore/proxystore/issues
       - Changelog (GitHub): https://github.com/proxystore/proxystore/releases
   - Concepts:
       - concepts/index.md

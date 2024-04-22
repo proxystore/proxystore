@@ -10,7 +10,7 @@
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
 
 ProxyStore is a library that facilitates efficient data management in distributed Python applications.
-At the core of ProxyStore is the [*proxy*](https://docs.proxystore.dev/main/concepts/proxy/) object which acts as a transparent reference to an object living in a global object store.
+At the core of ProxyStore is the [*proxy*](https://docs.proxystore.dev/latest/concepts/proxy/) object which acts as a transparent reference to an object living in a global object store.
 This pass-by-reference interface with just-in-time object resolution works across processes, machines, and sites, and enables data producers to change the low-level communication method dynamically without altering application code or behavior.
 
 ProxyStore accelerates the development of dynamic task-based workflows, serverless applications, and more by (1) decoupling control flow from data flow, (2) abstracting low-level communication mechanisms, and (3) eliminating the need for shims, wrapper functions, and boilerplate code.
@@ -18,9 +18,9 @@ ProxyStore accelerates the development of dynamic task-based workflows, serverle
 ProxyStore supports a diverse set of programming paradigms:
 
 * [Task-based Workflows](https://arxiv.org/abs/2303.08803)
-* [Function-as-a-Service/Serverless Applications](https://docs.proxystore.dev/main/guides/globus-compute/)
-* [Distributed Futures](https://docs.proxystore.dev/main/guides/proxy-futures/)
-* [Bulk Data Streaming](https://docs.proxystore.dev/main/guides/streaming/)
+* [Function-as-a-Service/Serverless Applications](https://docs.proxystore.dev/latest/guides/globus-compute/)
+* [Distributed Futures](https://docs.proxystore.dev/latest/guides/proxy-futures/)
+* [Bulk Data Streaming](https://docs.proxystore.dev/latest/guides/streaming/)
 * and more!
 
 ProxyStore provides support for many third-party mediated communication methods
@@ -37,7 +37,7 @@ Custom communication methods built on
 [ZeroMQ](https://zeromq.org/)
 are provided for high-performance and peer-to-peer applications.
 
-Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/main/concepts/).
+Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/latest/concepts/).
 Complete documentation for ProxyStore is available at
 [docs.proxystore.dev](https://docs.proxystore.dev).
 
@@ -59,9 +59,9 @@ package which contains extension and experimental features.
 The extensions package can also be installed with `pip` using
 `proxystore[extensions]` or `proxystore-ex`.
 
-See the [Installation](https://docs.proxystore.dev/main/installation) guide
+See the [Installation](https://docs.proxystore.dev/latest/installation) guide
 for more information about the available extras installation options.
-See the [Contributing](https://docs.proxystore.dev/main/contributing) guide
+See the [Contributing](https://docs.proxystore.dev/latest/contributing) guide
 to get started for local development.
 
 ## Example
@@ -90,7 +90,7 @@ def my_function(x: MyDataType) -> ...:
 my_function(proxy)  # Succeeds
 ```
 
-Check out the [Get Started](https://docs.proxystore.dev/main/get-started)
+Check out the [Get Started](https://docs.proxystore.dev/latest/get-started)
 guide to learn more!
 
 ## Citation

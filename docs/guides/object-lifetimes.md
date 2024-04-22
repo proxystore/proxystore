@@ -1,6 +1,6 @@
 # Object Lifetimes
 
-*Last updated 20 March 2024*
+*Last updated 20 April 2024*
 
 The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
 For example, a object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
@@ -92,7 +92,7 @@ with ContextLifetime(store) as lifetime:
 
 assert not store.exists(key)
 
-store.close()  # (5)!
+store.close()
 ```
 
 ### Leased Lifetime
