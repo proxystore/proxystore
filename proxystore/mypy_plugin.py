@@ -35,18 +35,19 @@ bar = proxy.bar()
 reveal_type(bar)  # Revealed type is "int"
 ```
 
-Enable the plugin by adding `proxystore.mypy` to the list of plugins in your
+Enable the plugin by adding `proxystore.mypy_plugin` to the list of plugins
+in your
 [mypy config file](https://mypy.readthedocs.io/en/latest/config_file.html){target=_blank}.
 
 * `pyproject.toml`
   ```toml
   [tools.mypy]
-  plugins = ["proxystore.mypy"]
+  plugins = ["proxystore.mypy_plugin"]
   ```
 * `mypy.ini` and `setup.cfg`
   ```ini
   [mypy]
-  plugins = proxystore.mypy
+  plugins = proxystore.mypy_plugin
   ```
 """
 
@@ -58,6 +59,7 @@ from mypy.checkmember import analyze_member_access
 from mypy.options import Options
 from mypy.plugin import AttributeContext
 from mypy.plugin import Plugin
+from mypy.types import get_proper_type
 from mypy.types import Instance
 from mypy.types import Type
 from mypy.types import TypeVarType
@@ -94,7 +96,7 @@ def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
         return ctx.default_attr_type
     elif len(ctx.type.args) > 1:
         raise AssertionError(f'Got more than one type arg: {ctx.type.args}')
-    instance = ctx.type.args[0]
+    instance = get_proper_type(ctx.type.args[0])
 
     if isinstance(instance, TypeVarType):
         # Don't change anything the we have an unbound Proxy[T].
