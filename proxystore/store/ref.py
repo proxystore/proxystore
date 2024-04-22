@@ -59,6 +59,7 @@ else:  # pragma: <3.10 cover
 
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
+from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import SerializerT
 
@@ -115,6 +116,8 @@ class BaseRefProxy(Proxy[T]):
        [`borrow()`][proxystore.store.ref.borrow] or
        [`clone()`][proxystore.store.ref.clone] should be used instead.
     """
+
+    __factory__: FactoryType[T]
 
     def __init__(self, factory: FactoryType[T]) -> None:
         object.__setattr__(self, '__valid__', True)
@@ -466,6 +469,8 @@ def into_owned(
     Raises:
         ValueError: if `proxy` is already a
             [`BaseRefProxy`][proxystore.store.ref.BaseRefProxy] instance.
+        ProxyStoreFactoryError: If the proxy's factory is not an instance of
+            [`StoreFactory`][proxystore.store.base.StoreFactory].
     """
     if type(proxy) in (OwnedProxy, RefProxy, RefMutProxy):
         # We don't use isinstance to prevent resolving the proxy.
@@ -473,6 +478,12 @@ def into_owned(
             'Only a base proxy can be converted into an owned proxy.',
         )
     factory = proxy.__factory__
+    if not isinstance(factory, StoreFactory):
+        raise ProxyStoreFactoryError(
+            'The proxy must contain a factory with type '
+            f'{StoreFactory.__name__}. {type(factory).__name__} '
+            'is not supported.',
+        )
     factory.evict = False
     owned_proxy = OwnedProxy(factory)
     if populate_target and is_resolved(proxy):

@@ -17,6 +17,7 @@ else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 
 from proxystore.utils.config import load
@@ -31,6 +32,8 @@ class RelayAuthConfig(BaseModel):
             The kwargs are excluded from the [`repr()`][repr] of this
             class because they often contain secrets.
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     method: Optional[Literal['globus']] = None  # noqa: UP007
     kwargs: Dict[str, Any] = Field(  # noqa: UP006

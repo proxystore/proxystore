@@ -11,13 +11,14 @@ from typing import Literal
 from typing import Optional
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 
 try:
     from pydantic import field_validator
 except ImportError:  # pragma: no cover
     # Pydantic v1 compatibility
-    from pydantic import validator as field_validator
+    from pydantic import validator as field_validator  # type: ignore[no-redef]
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.utils.config import dump
@@ -36,6 +37,8 @@ class EndpointRelayAuthConfig(BaseModel):
         method: Relay server authentication method.
         kwargs: Arbitrary options used by the authentication method.
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     method: Optional[Literal['globus']] = None  # noqa: UP007
     kwargs: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006

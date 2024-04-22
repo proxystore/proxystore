@@ -48,18 +48,18 @@ class _ProxyMethods:
         self.__wrapped__.__doc__ = value
 
     @property
-    def __annotations__(self) -> Any:
+    def __annotations__(self) -> dict[str, Any]:
         return self.__wrapped__.__annotations__
 
     @__annotations__.setter
-    def __annotations__(self, value: Any) -> None:
+    def __annotations__(self, value: dict[str, Any]) -> None:
         self.__wrapped__.__annotations__ = value
 
     # We similar use a property for __dict__. We need __dict__ to be
     # explicit to ensure that vars() works as expected.
 
     @property
-    def __dict__(self) -> Any:  # type: ignore[override]
+    def __dict__(self) -> dict[str, Any]:  # type: ignore[override]
         return self.__wrapped__.__dict__
 
     # Need to also propagate the special __weakref__ attribute for case

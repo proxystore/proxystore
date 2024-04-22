@@ -46,7 +46,7 @@ def ssl_context(tmp_path_factory: pytest.TempPathFactory) -> SSLContextFixture:
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
     ssl_context.load_cert_chain(certfile, keyfile=keyfile)
 
-    return SSLContextFixture(certfile, keyfile, ssl_context)
+    return SSLContextFixture(str(certfile), str(keyfile), ssl_context)
 
 
 def create_self_signed_cert() -> tuple[Certificate, RSAPrivateKey]:

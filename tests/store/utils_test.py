@@ -42,3 +42,13 @@ def test_async_resolve() -> None:
         # Now async resolve should be a no-op
         resolve_async(p)
         assert p == value
+
+
+def test_async_resolve_factory_error() -> None:
+    p = Proxy(SimpleFactory('value'))
+
+    with pytest.raises(
+        ProxyStoreFactoryError,
+        match='The proxy must contain a factory with type StoreFactory.',
+    ):
+        resolve_async(p)

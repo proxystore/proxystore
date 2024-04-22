@@ -160,8 +160,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     __slots__ = '__target__', '__factory__'
 
     __target__: T
-    #  This type annotations confuses mypy.
-    # __factory__: FactoryType[T]
+    __factory__: FactoryType[T]
 
     def __init__(self, factory: FactoryType[T]) -> None:
         if not callable(factory):

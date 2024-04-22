@@ -74,6 +74,7 @@ dev = [
     "pytest-timeout",
     "ruff>=0.2.0",
     "tox",
+    "types-psutil",
     "types-redis",
     "types-requests",
     "virtualenv",
@@ -110,11 +111,20 @@ dist,
 [tool.coverage.run]
 plugins = ["covdefaults"]
 concurrency = ["multiprocessing", "thread"]
-omit = ["version_check.py", "testing/scripts/*"]
+omit = [
+    "proxystore/mypy_plugin.py",
+    "testing/scripts/*",
+    "version_check.py",
+]
 parallel = true
 
 [tool.mypy]
 python_version = "3.10"
+plugins = [
+    "mypy.plugins.proper_plugin",
+    "proxystore/mypy_plugin.py",
+    "pydantic.mypy",
+]
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true

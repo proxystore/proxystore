@@ -158,6 +158,7 @@ def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
     store.evict(key)
     assert not store.exists(key)
 
+    assert isinstance(proxy.__factory__, StoreFactory)
     with pytest.raises(ProxyResolveMissingKeyError):
         proxy.__factory__.resolve()
 

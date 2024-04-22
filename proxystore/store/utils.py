@@ -36,7 +36,7 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
     else:
         raise ProxyStoreFactoryError(
             'The proxy must contain a factory with type '
-            f'{type(base.StoreFactory).__name__}. {type(factory).__name__} '
+            f'{base.StoreFactory.__name__}. {type(factory).__name__} '
             'is not supported.',
         )
 
@@ -63,6 +63,18 @@ def resolve_async(proxy: Proxy[T]) -> None:
 
     Args:
         proxy: Proxy instance to begin asynchronously resolving.
+
+    Raises:
+        ProxyStoreFactoryError: If the proxy's factory is not an instance of
+            [`StoreFactory`][proxystore.store.base.StoreFactory].
     """
-    if not is_resolved(proxy):
-        proxy.__factory__.resolve_async()
+    factory = proxy.__factory__
+    if isinstance(factory, base.StoreFactory):
+        if not is_resolved(proxy):
+            factory.resolve_async()
+    else:
+        raise ProxyStoreFactoryError(
+            'The proxy must contain a factory with type '
+            f'{base.StoreFactory.__name__}. {type(factory).__name__} '
+            'is not supported.',
+        )
