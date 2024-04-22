@@ -524,11 +524,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../../known-issues/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3277,7 +3297,7 @@ the ProxyStore package and is used to serve a relay server instance.</p>
 <p>This relay server would be accessible at <code>ws://localhost:8700</code>. For example,
 an endpoint can be configure with this URI and will connect this instance
 when started.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--relay-server<span class="w"> </span>ws://localhost:8700<span class="sb">`</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--relay-server<span class="w"> </span>ws://localhost:8700
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint<span class="w"> </span>--no-detach
 </span></code></pre></div>
 <p>Here you would see the endpoint register with the relay server instance. See
@@ -3325,7 +3345,7 @@ configurations are optional with defaults defined in
 </span></code></pre></div>
 <h2 id="user-authentication">User Authentication<a class="headerlink" href="#user-authentication" title="Permanent link">&para;</a></h2>
 <p>A relay provides no user authentication by default. This means that any client
-can connect to any other client as long as they know the clients UUID. This
+can connect to any other client as long as they know the client's UUID. This
 may be suitable for internal or development purposes, but users should take
 extra precautions to ensure sensitive data is not exposed.</p>
 <p>The relay implementation supports serving with

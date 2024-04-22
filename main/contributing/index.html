@@ -524,11 +524,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../known-issues/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3121,15 +3141,15 @@ environment with all of the required packages installed
 and ProxyStore installed in editable mode with the necessary extras options.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/proxystore/proxystore
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span><span class="nb">cd</span><span class="w"> </span>proxystore
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>tox<span class="w"> </span>--devenv<span class="w"> </span>venv<span class="w"> </span>-e<span class="w"> </span>py310
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>tox<span class="w"> </span>--devenv<span class="w"> </span>venv<span class="w"> </span>-e<span class="w"> </span>py311
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>$<span class="w"> </span>.<span class="w"> </span>venv/bin/activate
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Running Tox in a Conda environment is possible but it may conflict with
 Tox's ability to find the correct Python versions. E.g., if your
-Conda environment is Python 3.9, running <code class="language-bash highlight">$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>p38</code> may still use
-Python 3.9.</p>
+Conda environment is Python 3.12, running <code class="language-bash highlight">$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>p311</code> may still
+use Python 3.12.</p>
 </div>
 <p>To install manually:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/proxystore/proxystore
@@ -3160,9 +3180,9 @@ the code, and tests should not be dependent on the order in which they are run.<
 <p>Code that is useful for building tests but is not a test itself belongs in the
 <code>testing/</code> directory.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Run all tests in tests/</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>py39
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>py311
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Run a specific test</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>py39<span class="w"> </span>--<span class="w"> </span>tests/factory_test.py::test_lambda_factory
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>$<span class="w"> </span>tox<span class="w"> </span>-e<span class="w"> </span>py311<span class="w"> </span>--<span class="w"> </span>tests/factory_test.py::test_lambda_factory
 </span></code></pre></div>
 <p>Many of the tests are asyncio tests.
 The asyncio default event loop is used by default, but uvloop can be used

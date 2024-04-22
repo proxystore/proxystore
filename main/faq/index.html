@@ -12,7 +12,7 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://proxystore.dev/latest/known-issues/">
+        <link rel="canonical" href="https://proxystore.dev/latest/faq/">
       
       
         <link rel="prev" href="../examples/">
@@ -26,7 +26,7 @@
     
     
       
-        <title>Known Issues - ProxyStore</title>
+        <title>FAQ - ProxyStore</title>
       
     
     
@@ -87,7 +87,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#bugs" class="md-skip">
+        <a href="#frequently-asked-questions" class="md-skip">
           Skip to content
         </a>
       
@@ -124,7 +124,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Known Issues
+              FAQ
             
           </span>
         </div>
@@ -532,12 +532,14 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
+        
+      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
           
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
   </span>
   
 
@@ -548,7 +550,7 @@
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
   </span>
   
 
@@ -560,6 +562,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -568,30 +572,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
-    Bugs
+  <a href="#working-with-proxies" class="md-nav__link">
+    Working with Proxies
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#compatibility" class="md-nav__link">
-    Compatibility
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mypy" class="md-nav__link">
-    MyPy
-  </a>
-  
-    <nav class="md-nav" aria-label="MyPy">
+    <nav class="md-nav" aria-label="Working with Proxies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#implicit-re-exports" class="md-nav__link">
-    Implicit re-exports
+  <a href="#how-do-i-check-the-type-of-a-proxy" class="md-nav__link">
+    How do I check the type of a proxy?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-resolving-my-proxy" class="md-nav__link">
+    What is resolving my proxy?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-i-serialize-a-proxy" class="md-nav__link">
+    How to I serialize a proxy?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#static-type-checking" class="md-nav__link">
+    Static Type Checking
+  </a>
+  
+    <nav class="md-nav" aria-label="Static Type Checking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-annotate-a-proxy-type" class="md-nav__link">
+    How do I annotate a proxy type?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can-mypy-infer-attributes-of-a-proxied-type" class="md-nav__link">
+    Can mypy infer attributes of a proxied type?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-endpoints" class="md-nav__link">
+    ProxyStore Endpoints
+  </a>
+  
+    <nav class="md-nav" aria-label="ProxyStore Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-are-my-endpoints-not-working" class="md-nav__link">
+    Why are my endpoints not working?
   </a>
   
 </li>
@@ -605,6 +656,26 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -3116,6 +3187,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -3124,30 +3197,77 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#bugs" class="md-nav__link">
-    Bugs
+  <a href="#working-with-proxies" class="md-nav__link">
+    Working with Proxies
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#compatibility" class="md-nav__link">
-    Compatibility
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#mypy" class="md-nav__link">
-    MyPy
-  </a>
-  
-    <nav class="md-nav" aria-label="MyPy">
+    <nav class="md-nav" aria-label="Working with Proxies">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#implicit-re-exports" class="md-nav__link">
-    Implicit re-exports
+  <a href="#how-do-i-check-the-type-of-a-proxy" class="md-nav__link">
+    How do I check the type of a proxy?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-resolving-my-proxy" class="md-nav__link">
+    What is resolving my proxy?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-to-i-serialize-a-proxy" class="md-nav__link">
+    How to I serialize a proxy?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#static-type-checking" class="md-nav__link">
+    Static Type Checking
+  </a>
+  
+    <nav class="md-nav" aria-label="Static Type Checking">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-do-i-annotate-a-proxy-type" class="md-nav__link">
+    How do I annotate a proxy type?
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#can-mypy-infer-attributes-of-a-proxied-type" class="md-nav__link">
+    Can mypy infer attributes of a proxied type?
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore-endpoints" class="md-nav__link">
+    ProxyStore Endpoints
+  </a>
+  
+    <nav class="md-nav" aria-label="ProxyStore Endpoints">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-are-my-endpoints-not-working" class="md-nav__link">
+    Why are my endpoints not working?
   </a>
   
 </li>
@@ -3175,49 +3295,225 @@
   
 
 
-  <h1>Known Issues</h1>
-
-<h2 id="bugs">Bugs<a class="headerlink" href="#bugs" title="Permanent link">&para;</a></h2>
+<h1 id="frequently-asked-questions">Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
+<p><em><a href="https://github.com/proxystore/proxystore/issues" target="_bank">Open a new issue</a> if you have a question not answered in the FAQ, Guides, or API docs.</em></p>
+<h2 id="working-with-proxies">Working with Proxies<a class="headerlink" href="#working-with-proxies" title="Permanent link">&para;</a></h2>
+<h3 id="how-do-i-check-the-type-of-a-proxy">How do I check the type of a proxy?<a class="headerlink" href="#how-do-i-check-the-type-of-a-proxy" title="Permanent link">&para;</a></h3>
+<p>To check if an object is a proxy, use <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span></code>.
+This will not resolve the proxy.</p>
+<p>Checking the type of a proxy's target object requires more care because <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">MyType</span><span class="p">)</span></code> will resolve the proxy.
+This can be avoided by doing a direct type comparisons (e.g., <code class="language-python highlight"><span class="nb">type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span> <span class="o">==</span> <span class="n">MyType</span><span class="p">)</span></code>) but this will mean that type comparisons with subclasses will not work.
+Otherwise, resolving a proxy when using <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance()</code></a> is unavoidable.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-0-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-0-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-0-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-0-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-0-10">10</a></span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span>
+<span class="normal"><a href="#__codelineno-0-12">12</a></span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span>
+<span class="normal"><a href="#__codelineno-0-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">is_resolved</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">str</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="k">assert</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="what-is-resolving-my-proxy">What is resolving my proxy?<a class="headerlink" href="#what-is-resolving-my-proxy" title="Permanent link">&para;</a></h3>
+<p>Certain data structures can unintenionally resolve a proxy.
+This is because the <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> type forwards <em>all</em> special methods to the target object.
+For example, data structures which use the hash of an object, such as <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#set"><code>set()</code></a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict"><code>dict()</code></a>, will cause a proxy to resolve because <code>proxy.__hash__()</code> is forwarded to the target object's <code>__hash__()</code>.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1">1</a></span>
+<span class="normal"><a href="#__codelineno-1-2">2</a></span>
+<span class="normal"><a href="#__codelineno-1-3">3</a></span>
+<span class="normal"><a href="#__codelineno-1-4">4</a></span>
+<span class="normal"><a href="#__codelineno-1-5">5</a></span>
+<span class="normal"><a href="#__codelineno-1-6">6</a></span>
+<span class="normal"><a href="#__codelineno-1-7">7</a></span>
+<span class="normal"><a href="#__codelineno-1-8">8</a></span>
+<span class="normal"><a href="#__codelineno-1-9">9</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">is_resolved</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="n">my_set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="n">my_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="k">assert</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>There are a few mechanisms for determining when a proxy is getting resolved while debugging.</p>
 <ul>
-<li>The <a class="autorefs autorefs-external" href="https://extensions.proxystore.dev/main/api/connectors/dim/zmq/#proxystore_ex.connectors.dim.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a> will raise a <code>_pickle.UnpicklingError: pickle data was truncated</code> error if the serialized data is larger than the chunk size (64 MiB by default).<ul>
-<li>Affected versions: <code>==0.4.1</code></li>
-<li>Fixed in <code>0.5.0</code> by <a href="https://github.com/proxystore/proxystore/pull/219" target="_blank">PR #219</a>.</li>
+<li>Use <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.is_resolved"><code>is_resolved()</code></a>.</li>
+<li>Use a fake factory which raises an error to halt the program and get a traceback at the point the proxy was resolved.
+  <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span>
+<span class="normal"><a href="#__codelineno-2-5">5</a></span>
+<span class="normal"><a href="#__codelineno-2-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="k">def</span> <span class="nf">alert_factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a>    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s1">&#39;Proxy was resolved!&#39;</span><span class="p">)</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">alert_factory</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div></li>
+<li>Proxies created via a <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will produce <code>DEBUG</code> level logs when a proxy is created and resolved.
+  Enabling <code>DEBUG</code> level logging can help determine when or how often a proxy is getting resolved.
+  Look for the <code>PUT</code> and <code>GET</code> messages indicating a target object was put in the store when creating the proxy and when the target object is retrieved when the proxy is resolved, respectively.</li>
 </ul>
-</li>
-</ul>
-<h2 id="compatibility">Compatibility<a class="headerlink" href="#compatibility" title="Permanent link">&para;</a></h2>
-<ul>
-<li><a href="../guides/endpoints/">ProxyStore Endpoints</a> are not supported for
-  Python 3.7 on ARM-based Macs because
-  <a href="https://aiortc.readthedocs.io" target="_blank">aiortc</a> does not have the corresponding
-  wheels. The base ProxyStore package can still be installed on this
-  software/hardware configurations---just not with the <code>endpoints</code> extras.<ul>
-<li>Affected versions: <code>&gt;=0.4.0,&lt;0.6.0</code></li>
-<li>Python 3.7 support will be removed in <code>0.6.0</code>. See <a href="https://github.com/proxystore/proxystore/issues/236" target="_blank">Issue #236</a>.</li>
-</ul>
-</li>
-<li>Newer versions of <a href="https://github.com/rapidsai/ucx-py" target="_blank">UCX-Py</a>
-  no longer support Python 3.7.<ul>
-<li>We test against and recommend using UCX-Py <code>0.30.00</code>.</li>
-<li>Affected versions: <code>&gt;=0.4.0,&lt;0.6.0</code></li>
-<li>Python 3.7 support will be removed in <code>0.6.0</code>. See <a href="https://github.com/proxystore/proxystore/issues/236" target="_blank">Issue #236</a>.</li>
-</ul>
-</li>
-</ul>
-<h2 id="mypy">MyPy<a class="headerlink" href="#mypy" title="Permanent link">&para;</a></h2>
-<h3 id="implicit-re-exports">Implicit re-exports<a class="headerlink" href="#implicit-re-exports" title="Permanent link">&para;</a></h3>
-<p><em>Affected versions:</em> <code>&lt;=0.5.1</code></p>
-<p>Examples throughout the documentation generally suggest importing
-<a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> like the following.
-<div class="language-python highlight"><span class="filename">example.py</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span></code></pre></div></p>
-<p>MyPy will raise an attribute defined error if run with <code>--no-implicit-reexport</code>.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>mypy<span class="w"> </span>example.py<span class="w"> </span>--no-implicit-reexport
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>example.py:1:<span class="w"> </span>error:<span class="w"> </span>Module<span class="w"> </span><span class="s2">&quot;proxystore.store&quot;</span><span class="w"> </span>does<span class="w"> </span>not<span class="w"> </span>explicitly<span class="w"> </span><span class="nb">export</span><span class="w"> </span>attribute<span class="w"> </span><span class="s2">&quot;Store&quot;</span><span class="w">  </span><span class="o">[</span>attr-defined<span class="o">]</span>
-</span></code></pre></div></p>
-<p>This can be fixed by using the explicit import.
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
-</span></code></pre></div></p>
+<h3 id="how-to-i-serialize-a-proxy">How to I serialize a proxy?<a class="headerlink" href="#how-to-i-serialize-a-proxy" title="Permanent link">&para;</a></h3>
+<p>A <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> can be serialized using most common serializers.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-3-10">10</a></span>
+<span class="normal"><a href="#__codelineno-3-11">11</a></span>
+<span class="normal"><a href="#__codelineno-3-12">12</a></span>
+<span class="normal"><a href="#__codelineno-3-13">13</a></span>
+<span class="normal"><a href="#__codelineno-3-14">14</a></span>
+<span class="normal"><a href="#__codelineno-3-15">15</a></span>
+<span class="normal"><a href="#__codelineno-3-16">16</a></span>
+<span class="normal"><a href="#__codelineno-3-17">17</a></span>
+<span class="normal"><a href="#__codelineno-3-18">18</a></span>
+<span class="normal"><a href="#__codelineno-3-19">19</a></span>
+<span class="normal"><a href="#__codelineno-3-20">20</a></span>
+<span class="normal"><a href="#__codelineno-3-21">21</a></span>
+<span class="normal"><a href="#__codelineno-3-22">22</a></span>
+<span class="normal"><a href="#__codelineno-3-23">23</a></span>
+<span class="normal"><a href="#__codelineno-3-24">24</a></span>
+<span class="normal"><a href="#__codelineno-3-25">25</a></span>
+<span class="normal"><a href="#__codelineno-3-26">26</a></span>
+<span class="normal"><a href="#__codelineno-3-27">27</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="k">def</span> <span class="nf">factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>    <span class="k">return</span> <span class="mi">42</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="c1"># Cloudpickle</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="kn">import</span> <span class="nn">cloudpickle</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="n">dump</span> <span class="o">=</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11"></a><span class="n">new_proxy</span> <span class="o">=</span> <span class="n">cloudpickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
+</span><span id="__span-3-13"><a id="__codelineno-3-13" name="__codelineno-3-13"></a><span class="k">assert</span> <span class="n">new_proxy</span> <span class="o">==</span> <span class="mi">42</span>
+</span><span id="__span-3-14"><a id="__codelineno-3-14" name="__codelineno-3-14"></a>
+</span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="c1"># Dill</span>
+</span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16"></a><span class="kn">import</span> <span class="nn">dill</span>
+</span><span id="__span-3-17"><a id="__codelineno-3-17" name="__codelineno-3-17"></a><span class="n">dump</span> <span class="o">=</span> <span class="n">dill</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-3-18"><a id="__codelineno-3-18" name="__codelineno-3-18"></a><span class="n">new_proxy</span> <span class="o">=</span> <span class="n">dill</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span>
+</span><span id="__span-3-19"><a id="__codelineno-3-19" name="__codelineno-3-19"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
+</span><span id="__span-3-20"><a id="__codelineno-3-20" name="__codelineno-3-20"></a><span class="k">assert</span> <span class="n">new_proxy</span> <span class="o">==</span> <span class="mi">42</span>
+</span><span id="__span-3-21"><a id="__codelineno-3-21" name="__codelineno-3-21"></a>
+</span><span id="__span-3-22"><a id="__codelineno-3-22" name="__codelineno-3-22"></a><span class="c1"># Pickle</span>
+</span><span id="__span-3-23"><a id="__codelineno-3-23" name="__codelineno-3-23"></a><span class="kn">import</span> <span class="nn">pickle</span>
+</span><span id="__span-3-24"><a id="__codelineno-3-24" name="__codelineno-3-24"></a><span class="n">dump</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-3-25"><a id="__codelineno-3-25" name="__codelineno-3-25"></a><span class="n">new_proxy</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span>
+</span><span id="__span-3-26"><a id="__codelineno-3-26" name="__codelineno-3-26"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
+</span><span id="__span-3-27"><a id="__codelineno-3-27" name="__codelineno-3-27"></a><span class="k">assert</span> <span class="n">new_proxy</span> <span class="o">==</span> <span class="mi">42</span>
+</span></code></pre></div></td></tr></table></div>
+<p>Importantly, only the factory of the proxy will be serialized, not the target object.
+This means that the factory must be serializable (lambda functions, for example, are not serializable with <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/pickle.html#module-pickle">pickle</a>), and the serialized size of the proxy is a function of the factory and not the target object.
+This typically means that proxies can be very efficiently serialized.
+For example, here the target object is a large 10,000 character string but the serialized proxy is less than 200 bytes.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-4-10">10</a></span>
+<span class="normal"><a href="#__codelineno-4-11">11</a></span>
+<span class="normal"><a href="#__codelineno-4-12">12</a></span>
+<span class="normal"><a href="#__codelineno-4-13">13</a></span>
+<span class="normal"><a href="#__codelineno-4-14">14</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">import</span> <span class="nn">sys</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">import</span> <span class="nn">pickle</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="n">target</span> <span class="o">=</span> <span class="s1">&#39;x&#39;</span> <span class="o">*</span> <span class="mi">10000</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a><span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">target</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">10000</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a><span class="k">def</span> <span class="nf">factory</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>    <span class="k">return</span> <span class="n">target</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a>
+</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">dump</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-4-14"><a id="__codelineno-4-14" name="__codelineno-4-14"></a><span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">200</span>
+</span></code></pre></div></td></tr></table></div>
+<h2 id="static-type-checking">Static Type Checking<a class="headerlink" href="#static-type-checking" title="Permanent link">&para;</a></h2>
+<h3 id="how-do-i-annotate-a-proxy-type">How do I annotate a proxy type?<a class="headerlink" href="#how-do-i-annotate-a-proxy-type" title="Permanent link">&para;</a></h3>
+<p>The <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> is a generic type on its target object, and mypy will infer the correct type of the target from the provided factory function.
+For example, the <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.extract"><code>extract()</code></a> function is annotated as follows.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span>
+<span class="normal"><a href="#__codelineno-5-12">12</a></span>
+<span class="normal"><a href="#__codelineno-5-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a><span class="k">def</span> <span class="nf">extract</span><span class="p">(</span><span class="n">proxy</span><span class="p">:</span> <span class="n">Proxy</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a>    <span class="o">...</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="mi">42</span><span class="p">)</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Revealed type is Proxy[int]</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a><span class="n">target</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>  <span class="c1"># Revealed type is int</span>
+</span></code></pre></div></td></tr></table></div>
+<p>In the event a proxy's type is ambiguous, an annotation can be provided directly.
+For example, this is the case with <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store.proxy_from_key"><code>Store.proxy_from_key()</code></a> because the type system cannot infer the target type from a key which is a tuple of metadata.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-6-1">1</a></span>
+<span class="normal"><a href="#__codelineno-6-2">2</a></span>
+<span class="normal"><a href="#__codelineno-6-3">3</a></span>
+<span class="normal"><a href="#__codelineno-6-4">4</a></span>
+<span class="normal"><a href="#__codelineno-6-5">5</a></span>
+<span class="normal"><a href="#__codelineno-6-6">6</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.local</span> <span class="kn">import</span> <span class="n">LocalConnector</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3"></a>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;example&#39;</span><span class="p">,</span> <span class="n">LocalConnector</span><span class="p">())</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5"></a>    <span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">)</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n">Proxy</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy_from_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<h3 id="can-mypy-infer-attributes-of-a-proxied-type">Can mypy infer attributes of a proxied type?<a class="headerlink" href="#can-mypy-infer-attributes-of-a-proxied-type" title="Permanent link">&para;</a></h3>
+<p>In general, no.
+Attributes and methods of an object of type <code>T</code>, accessed indirectly via a <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy[T]</code></a>, are ambiguous to mypy and will typically resolve to <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Any"><code>Any</code></a>.</p>
+<p>However, ProxyStore provides a mypy plugin that, when enabled, will help mypy resolve types related to proxies correctly.
+Check out the <a class="autorefs autorefs-internal" href="../api/mypy_plugin/#proxystore.mypy_plugin">mypy plugin</a> to learn more.</p>
+<h2 id="proxystore-endpoints">ProxyStore Endpoints<a class="headerlink" href="#proxystore-endpoints" title="Permanent link">&para;</a></h2>
+<h3 id="why-are-my-endpoints-not-working">Why are my endpoints not working?<a class="headerlink" href="#why-are-my-endpoints-not-working" title="Permanent link">&para;</a></h3>
+<p>Check out the <a href="../guides/endpoints-debugging/">Endpoints Debugging Guide</a>.</p>
 
 
 

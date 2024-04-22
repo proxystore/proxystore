@@ -11,17 +11,17 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/latest/faq/</loc>
+         <lastmod>2024-04-22</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/latest/get-started/</loc>
          <lastmod>2024-04-22</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://proxystore.dev/latest/installation/</loc>
-         <lastmod>2024-04-22</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://proxystore.dev/latest/known-issues/</loc>
          <lastmod>2024-04-22</lastmod>
          <changefreq>daily</changefreq>
     </url>

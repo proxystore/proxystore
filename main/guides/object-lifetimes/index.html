@@ -524,11 +524,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../../known-issues/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3210,7 +3230,7 @@
 
 
 <h1 id="object-lifetimes">Object Lifetimes<a class="headerlink" href="#object-lifetimes" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 20 March 2024</em></p>
+<p><em>Last updated 20 April 2024</em></p>
 <p>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, leaves the responsibility of managing shared objects to the application.
 For example, a object put into a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will persist there until the key is manually evicted.
 Some <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connectors</code></a>, and therefore <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Stores</code></a>, delete all of their objects when closed but this is not a specified requirement of the protocol.</p>
@@ -3330,7 +3350,7 @@ Objects associated with the lifetime are evicted when the lifetime is closed/end
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">store</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (5)!</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
 <h3 id="leased-lifetime">Leased Lifetime<a class="headerlink" href="#leased-lifetime" title="Permanent link">&para;</a></h3>
 <p>The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.LeaseLifetime"><code>LeaseLifetime</code></a> provides time-based object lifetimes.

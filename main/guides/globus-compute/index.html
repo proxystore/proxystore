@@ -524,11 +524,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../../known-issues/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3170,7 +3190,7 @@
 
 
 <h1 id="globus-compute-with-proxystore">Globus Compute with ProxyStore<a class="headerlink" href="#globus-compute-with-proxystore" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 2 May 2023</em></p>
+<p><em>Last updated 20 April 2024</em></p>
 <p>This guide walks through integrating ProxyStore into a
 <a href="https://www.globus.org/compute" target="_blank">Globus Compute</a> application.
 A more complete example of using ProxyStore with Globus Compute can be found
@@ -3194,7 +3214,7 @@ work with newer versions as well.</p>
 </div>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>.<span class="w"> </span>venv/bin/activate
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>globus-compute-sdk<span class="o">==</span><span class="m">2</span>.0.1<span class="w"> </span>globus-compute-endpoint<span class="o">==</span><span class="m">2</span>.0.1<span class="w"> </span><span class="nv">proxystore</span><span class="o">==</span><span class="m">0</span>.5.*
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>globus-compute-sdk<span class="o">==</span><span class="m">2</span>.18.1<span class="w"> </span>globus-compute-endpoint<span class="o">==</span><span class="m">2</span>.18.1<span class="w"> </span><span class="nv">proxystore</span><span class="o">==</span><span class="m">0</span>.6.5
 </span></code></pre></div>
 <h2 id="using-globus-compute">Using Globus Compute<a class="headerlink" href="#using-globus-compute" title="Permanent link">&para;</a></h2>
 <p>We will first configure and start a Globus Compute endpoint.</p>

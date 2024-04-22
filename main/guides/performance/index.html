@@ -524,11 +524,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../../known-issues/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3184,7 +3204,7 @@
 
 
 <h1 id="performance-tracking">Performance Tracking<a class="headerlink" href="#performance-tracking" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 2 May 2023</em></p>
+<p><em>Last updated 20 April 2024</em></p>
 <p>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can record metrics on executed operations (e.g., <code>get</code> and <code>put</code>).
 Metric collection is disabled by default and can be enabled by passing <code class="language-python highlight"><span class="n">metrics</span><span class="o">=</span><span class="kc">True</span></code> to a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> constructor.</p>
 <h2 id="enabling-metrics">Enabling Metrics<a class="headerlink" href="#enabling-metrics" title="Permanent link">&para;</a></h2>
@@ -3225,6 +3245,14 @@ In multi-process applications or applications that instantiate multiple
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instances,
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store.metrics"><code>Store.metrics</code></a> will only represent
 a partial view of the overall performance.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>ProxyStore v0.6.4 and older have a bug that causes the conversion from
+nanoseconds to milliseconds in the
+<a class="autorefs autorefs-internal" href="../../api/store/metrics/#proxystore.store.metrics.Metrics"><code>Metrics</code></a> class to be incorrect.
+This was fixed in v0.6.5 (see
+<a href="https://github.com/proxystore/proxystore/pull/538" target="_blank">PR #538</a>).</p>
 </div>
 <p>Three types of metrics are collected.</p>
 <ul>

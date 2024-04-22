@@ -583,11 +583,31 @@
   
   
     <li class="md-nav__item">
-      <a href="../known-issues/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Known Issues
+    FAQ
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="https://github.com/proxystore/proxystore/issues" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Issues (GitHub)
   </span>
   
 
@@ -3184,8 +3204,16 @@ ProxyStore provides many features with extra dependencies that can be installed 
 <td style="text-align: left;">Install the <a href="https://github.com/proxystore/extensions" target="_blank"><code>proxystore-ex</code></a> package</td>
 </tr>
 <tr>
+<td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>kafka<span class="o">]</span></code></td>
+<td style="text-align: left;">Use <a class="autorefs autorefs-internal" href="../api/stream/shims/kafka/#proxystore.stream.shims.kafka">Kafka stream shims</a></td>
+</tr>
+<tr>
 <td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>redis<span class="o">]</span></code></td>
-<td style="text-align: left;">Use the <a class="autorefs autorefs-internal" href="../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a></td>
+<td style="text-align: left;">Use <a class="autorefs autorefs-internal" href="../api/stream/shims/redis/#proxystore.stream.shims.redis">Redis stream shims</a> or the <a class="autorefs autorefs-internal" href="../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>zmq<span class="o">]</span></code></td>
+<td style="text-align: left;">Use <a class="autorefs autorefs-internal" href="../api/stream/shims/zmq/#proxystore.stream.shims.zmq">ZeroMQ stream shims</a></td>
 </tr>
 <tr>
 <td style="text-align: left;"><code class="language-bash highlight">pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>dev<span class="o">]</span></code></td>
