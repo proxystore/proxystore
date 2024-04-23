@@ -3218,19 +3218,17 @@ Metric collection is disabled by default and can be enabled by passing <code cla
 <span class="normal"><a href="#__codelineno-0-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
 <span class="normal"><a href="#__codelineno-0-10">10</a></span>
-<span class="normal"><a href="#__codelineno-0-11">11</a></span>
-<span class="normal"><a href="#__codelineno-0-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">dataclasses</span>
+<span class="normal"><a href="#__codelineno-0-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">dataclasses</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">register_store</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;example-store&#39;</span><span class="p">,</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>   <span class="n">connector</span><span class="o">=</span><span class="n">FileConnector</span><span class="p">(</span><span class="s1">&#39;/tmp/proxystore-dump&#39;</span><span class="p">),</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>   <span class="n">metrics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.base</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>   <span class="n">name</span><span class="o">=</span><span class="s1">&#39;example-store&#39;</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>   <span class="n">connector</span><span class="o">=</span><span class="n">FileConnector</span><span class="p">(</span><span class="s1">&#39;/tmp/proxystore-dump&#39;</span><span class="p">),</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>   <span class="n">metrics</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>   <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="p">)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="n">register_store</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a><span class="k">assert</span> <span class="n">store</span><span class="o">.</span><span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="k">assert</span> <span class="n">store</span><span class="o">.</span><span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>Metric tracking is not enabled by default.</li>
@@ -3356,6 +3354,7 @@ proxy internally resolved the factory so we also see metrics about the
 <p class="admonition-title">Warning</p>
 <p>For metrics to appropriately be tracked when a proxy is resolved, the
 <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> needs to be registered globally
+by setting <code>register=True</code> in the constructor or by manually registering
 with <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.register_store"><code>register_store()</code></a>. Otherwise,
 the factory will initialize a second <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>
 to register and record its metrics to the second instance.</p>

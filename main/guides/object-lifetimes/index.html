@@ -3395,31 +3395,25 @@ The lease can be extended as needed with <a class="autorefs autorefs-internal" h
 <h3 id="static-lifetime">Static Lifetime<a class="headerlink" href="#static-lifetime" title="Permanent link">&para;</a></h3>
 <p>A static lifetime indicates that the associated objects should live for the remainder of the lifetime of the running process which created the object.
 The <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.StaticLifetime"><code>StaticLifetime</code></a>, a singleton class, will evict all associated objects at the end of the program via an <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/atexit.html#module-atexit">atexit</a> handler.</p>
-<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Static Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-3-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-3-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-3-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-3-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-3-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-3-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-3-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-3-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-3-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.local</span> <span class="kn">import</span> <span class="n">LocalConnector</span>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Static Lifetime</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span>
+<span class="normal"><a href="#__codelineno-3-7">7</a></span>
+<span class="normal"><a href="#__codelineno-3-8">8</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.local</span> <span class="kn">import</span> <span class="n">LocalConnector</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">register_store</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">StaticLifetime</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">LocalConnector</span><span class="p">())</span>  <span class="c1"># (1)!</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="n">register_store</span><span class="p">(</span><span class="n">store</span><span class="p">)</span>  <span class="c1"># (2)!</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (3)!</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (4)!</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.lifetimes</span> <span class="kn">import</span> <span class="n">StaticLifetime</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;default&#39;</span><span class="p">,</span> <span class="n">LocalConnector</span><span class="p">(),</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="n">lifetime</span><span class="o">=</span><span class="n">StaticLifetime</span><span class="p">())</span>  <span class="c1"># (3)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
-<li>The atexit handler will call <code>store.close()</code> at the end of the
-   program.</li>
-<li>Registering <code>store</code> is recommended to prevent another instance
-   being created internally.</li>
+<li>The atexit handler will call <code>store.close()</code> at the end of the program.
+   Setting <code>register=True</code> is recommended to prevent another instance being created internally when a proxy is resolved.</li>
 <li>The object associated with <code>key</code> will be evicted at the end of
    the program.</li>
 <li>The object associated with <code>proxy</code> will be evicted at the end of
