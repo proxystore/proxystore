@@ -10,15 +10,14 @@ Metric collection is disabled by default and can be enabled by passing `#!python
 ```python linenums="1"
 import dataclasses
 from proxystore.connectors.file import FileConnector
-from proxystore.store import register_store
 from proxystore.store.base import Store
 
 store = Store(
    name='example-store',
    connector=FileConnector('/tmp/proxystore-dump'),
    metrics=True,  # (1)!
+   register=True,
 )
-register_store(store)
 assert store.metrics is not None
 ```
 
@@ -159,6 +158,7 @@ proxy internally resolved the factory so we also see metrics about the
 
     For metrics to appropriately be tracked when a proxy is resolved, the
     [`Store`][proxystore.store.base.Store] needs to be registered globally
+    by setting `register=True` in the constructor or by manually registering
     with [`register_store()`][proxystore.store.register_store]. Otherwise,
     the factory will initialize a second [`Store`][proxystore.store.base.Store]
     to register and record its metrics to the second instance.

@@ -93,7 +93,9 @@ def get_or_create_store(
         if store is None:
             store = Store.from_config(store_config)
             if register:
-                register_store(store)
+                # Set exists_ok here because the store may have initialized
+                # itself if register=True.
+                register_store(store, exist_ok=True)
         return store
 
 
@@ -118,11 +120,11 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
     with _stores_lock:
         if store.name in _stores and not exist_ok:
             raise StoreExistsError(
-                f'A store named {store.name} already exists.',
+                f'A store named "{store.name}" already exists.',
             )
 
         _stores[store.name] = store
-        logger.info(f'Registered a store named {store.name}')
+        logger.info(f'Registered a store named "{store.name}"')
 
 
 @contextlib.contextmanager

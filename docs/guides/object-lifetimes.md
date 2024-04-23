@@ -133,23 +133,19 @@ The [`StaticLifetime`][proxystore.store.lifetimes.StaticLifetime], a singleton c
 ```python linenums="1" title="Static Lifetime"
 from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
-from proxystore.store import register_store
 from proxystore.store.lifetimes import StaticLifetime
 
-store = Store('default', LocalConnector())  # (1)!
-register_store(store)  # (2)!
+store = Store('default', LocalConnector(), register=True)  # (1)!
 
-key = store.put('value', lifetime=StaticLifetime())  # (3)!
-proxy = store.proxy('value', lifetime=StaticLifetime())  # (4)!
+key = store.put('value', lifetime=StaticLifetime())  # (2)!
+proxy = store.proxy('value', lifetime=StaticLifetime())  # (3)!
 ```
 
-1. The atexit handler will call `store.close()` at the end of the
-   program.
-2. Registering `store` is recommended to prevent another instance
-   being created internally.
-3. The object associated with `key` will be evicted at the end of
+1. The atexit handler will call `store.close()` at the end of the program.
+   Setting `register=True` is recommended to prevent another instance being created internally when a proxy is resolved.
+2. The object associated with `key` will be evicted at the end of
    the program.
-4. The object associated with `proxy` will be evicted at the end of
+3. The object associated with `proxy` will be evicted at the end of
    the program.
 
 Additional tips:

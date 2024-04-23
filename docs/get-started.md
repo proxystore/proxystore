@@ -63,11 +63,13 @@ with an already running Redis server using proxies.
 ```python title="Basic ProxyStore Usage" linenums="1"
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store import get_store
-from proxystore.store import register_store
 from proxystore.store import Store
 
-store = Store('my-store', RedisConnector(hostname='localhost', port=1234))
-register_store(store)
+store = Store(
+    'my-store',
+    RedisConnector(hostname='localhost', port=1234),
+    register=True,
+)
 
 store = get_store('my-store')  # (1)!
 
@@ -79,7 +81,7 @@ p = store.proxy(my_object)  # (3)!
 assert isinstance(p, type(my_object))  # (4)!
 ```
 
-1. A registered store can be retrieved by name.
+1. Passing `register=True` adds the store by name to a global registry, and registered store can be retrieved by name.
 2. Stores have basic get/put functionality.
 3. Place an object in the store and return a proxy.
 4. The proxy, when used, will behave as the target.

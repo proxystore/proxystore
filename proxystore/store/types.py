@@ -51,6 +51,7 @@ class StoreConfig(TypedDict):
         deserializer: Optional deserializer.
         cache_size: Cache size.
         metrics: Enable recording operation metrics.
+        register: Auto-register the store.
     """
 
     name: str
@@ -60,3 +61,4 @@ class StoreConfig(TypedDict):
     deserializer: NotRequired[DeserializerT | None]
     cache_size: NotRequired[int]
     metrics: NotRequired[bool]
+    register: NotRequired[bool]
