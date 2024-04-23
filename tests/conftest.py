@@ -12,6 +12,8 @@ from unittest import mock
 import pytest
 import uvloop
 
+import proxystore
+
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
 from testing.connectors import connectors
@@ -69,3 +71,14 @@ def event_loop_policy(
     policy = asyncio.get_event_loop_policy()
     with context:
         yield policy
+
+
+@pytest.fixture(autouse=True)
+def _verify_no_registered_stores() -> Generator[None, None, None]:
+    yield
+
+    if len(proxystore.store._stores) > 0:  # pragma: no cover
+        raise RuntimeError(
+            'Test left at least one store registered: '
+            f'{tuple(proxystore.store._stores.keys())}.',
+        )

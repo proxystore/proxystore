@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import threading
 from typing import Any
 from typing import Generator
 from typing import Sequence
@@ -16,6 +17,7 @@ from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import ConnectorT
+from proxystore.store.types import StoreConfig
 
 __all__ = [
     'Store',
@@ -29,11 +31,12 @@ __all__ = [
 T = TypeVar('T')
 
 _stores: dict[str, Store[Any]] = {}
+_stores_lock = threading.RLock()
 logger = logging.getLogger(__name__)
 
 
 def get_store(val: str | Proxy[T]) -> Store[Any] | None:
-    """Get the backend store with name.
+    """Get a registered store by name.
 
     Args:
         val: name of the store to get or a [`Proxy`][proxystore.proxy.Proxy]
@@ -63,9 +66,37 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
     else:
         name = val
 
-    if name in _stores:
-        return _stores[name]
-    return None
+    with _stores_lock:
+        if name in _stores:
+            return _stores[name]
+        return None
+
+
+def get_or_create_store(
+    store_config: StoreConfig,
+    *,
+    register: bool = True,
+) -> Store[Any]:
+    """Get a registered store or initialize a new instance from the config.
+
+    Args:
+        store_config: Store configuration used to reinitialize the store if
+            needed.
+        register: Optionally register the store if a new instance was
+            initialized.
+
+    Returns:
+        [`Store`][proxystore.store.base.Store] instance.
+    """
+    with _stores_lock:
+        store = get_store(store_config['name'])
+        if store is None:
+            store = Store.from_config(store_config)
+            if register:
+                # Set exists_ok here because the store may have initialized
+                # itself if register=True.
+                register_store(store, exist_ok=True)
+        return store
 
 
 def register_store(store: Store[Any], exist_ok: bool = False) -> None:
@@ -86,11 +117,14 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
         StoreExistsError: If a store with the same name is already registered
             and `exist_ok` is false.
     """
-    if store.name in _stores and not exist_ok:
-        raise StoreExistsError(f'A store named {store.name} already exists.')
+    with _stores_lock:
+        if store.name in _stores and not exist_ok:
+            raise StoreExistsError(
+                f'A store named "{store.name}" already exists.',
+            )
 
-    _stores[store.name] = store
-    logger.info(f'Registered a store named {store.name}')
+        _stores[store.name] = store
+        logger.info(f'Registered a store named "{store.name}"')
 
 
 @contextlib.contextmanager
@@ -149,6 +183,7 @@ def unregister_store(name_or_store: str | Store[Any]) -> None:
     name = (
         name_or_store if isinstance(name_or_store, str) else name_or_store.name
     )
-    if name in _stores:
-        del _stores[name]
-        logger.info(f'Unregistered a store named {name}')
+    with _stores_lock:
+        if name in _stores:
+            del _stores[name]
+            logger.info(f'Unregistered a store named {name}')

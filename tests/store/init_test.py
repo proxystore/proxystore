@@ -5,6 +5,7 @@ import pytest
 from proxystore.connectors.local import LocalConnector
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
+from proxystore.store import get_or_create_store
 from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import store_registration
@@ -29,6 +30,25 @@ def test_register_unregister_store() -> None:
 
     # does not raise error
     unregister_store('not a valid store name')
+
+
+def test_get_or_create_store() -> None:
+    store = Store('test', connector=LocalConnector())
+
+    assert get_store(store.name) is None
+    new_store = get_or_create_store(store.config(), register=True)
+    assert get_store(store.name) is new_store
+    assert get_or_create_store(store.config()) is new_store
+
+    unregister_store(new_store)
+
+
+def test_get_or_create_store_no_register() -> None:
+    store = Store('test', connector=LocalConnector())
+
+    assert get_store(store.name) is None
+    get_or_create_store(store.config(), register=False)
+    assert get_store(store.name) is None
 
 
 def test_unregister_with_store() -> None:

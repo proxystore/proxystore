@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 import time
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
@@ -18,6 +17,7 @@ from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
+from proxystore.store.types import StoreConfig
 from proxystore.utils.timer import Timer
 
 if TYPE_CHECKING:
@@ -26,7 +26,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _default_pool = ThreadPoolExecutor()
-_factory_get_store_lock = threading.Lock()
 _MISSING_OBJECT = object()
 
 T = TypeVar('T')
@@ -57,7 +56,7 @@ class StoreFactory(Generic[ConnectorT, T]):
     def __init__(
         self,
         key: ConnectorKeyT,
-        store_config: dict[str, Any],
+        store_config: StoreConfig,
         *,
         evict: bool = False,
         deserializer: DeserializerT | None = None,
@@ -95,18 +94,11 @@ class StoreFactory(Generic[ConnectorT, T]):
         self.__dict__.update(state)
 
     def get_store(self) -> Store[ConnectorT]:
-        """Get store and reinitialize if necessary.
-
-        Raises:
-            ValueError: If the type of the returned store does not match the
-                expected store type passed to the factory constructor.
-        """
-        with _factory_get_store_lock:
-            store = proxystore.store.get_store(self.store_config['name'])
-            if store is None:
-                store = proxystore.store.Store.from_config(self.store_config)
-                proxystore.store.register_store(store)
-            return store
+        """Get store and reinitialize if necessary."""
+        return proxystore.store.get_or_create_store(
+            self.store_config,
+            register=True,
+        )
 
     def resolve(self) -> T:
         """Get object associated with key from store.
@@ -177,7 +169,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
     def __init__(
         self,
         key: ConnectorKeyT,
-        store_config: dict[str, Any],
+        store_config: StoreConfig,
         *,
         deserializer: DeserializerT | None = None,
         evict: bool = False,

@@ -9,7 +9,9 @@ import pytest
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.serialize import SerializationError
+from proxystore.store import get_store
 from proxystore.store import Store
+from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.future import Future
 from proxystore.store.lifetimes import ContextLifetime
 
@@ -17,6 +19,19 @@ from proxystore.store.lifetimes import ContextLifetime
 def test_negative_cache_size() -> None:
     with pytest.raises(ValueError):
         Store('test', LocalConnector(), cache_size=-1)
+
+
+def test_init_and_register() -> None:
+    name = 'test-store'
+    assert get_store(name) is None
+    with Store(name, LocalConnector(), register=True) as store:
+        assert get_store(name) is store
+
+        with pytest.raises(StoreExistsError):
+            Store(name, LocalConnector(), register=True)
+
+    # Context manager close should unregister the store.
+    assert get_store(name) is None
 
 
 @pytest.mark.parametrize(

@@ -17,6 +17,7 @@ import json
 from typing import Any
 from typing import Union
 
+from proxystore.store.types import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
 
@@ -76,7 +77,7 @@ class EventBatch:
 
     events: list[Event]
     topic: str
-    store_config: dict[str, Any]
+    store_config: StoreConfig
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EventBatch:

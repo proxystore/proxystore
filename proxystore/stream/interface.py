@@ -35,6 +35,7 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
+from proxystore.store.types import StoreConfig
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import Event
@@ -353,7 +354,7 @@ class StreamProducer(Generic[T]):
 class _EventInfo(NamedTuple):
     event: NewObjectEvent
     topic: str
-    store_config: dict[str, Any]
+    store_config: StoreConfig
 
 
 class StreamConsumer(Generic[T]):

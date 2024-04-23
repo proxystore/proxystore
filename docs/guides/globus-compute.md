@@ -88,10 +88,9 @@ Now we will update our script to use ProxyStore. This takes three steps:
    open connections, etc.).
 3. Proxy the function inputs.
 
-```python linenums="1" title="example.py" hl_lines="2 3 4 11 12 16 21"
+```python linenums="1" title="example.py" hl_lines="2 3 10 14 19"
 from globus_compute_sdk import Executor
 from proxystore.connectors.file import FileConnector
-from proxystore.store import register_store
 from proxystore.store import Store
 
 ENDPOINT_UUID = '5b994a7d-8d7c-48d1-baa1-0fda09ea1687'
@@ -99,23 +98,22 @@ ENDPOINT_UUID = '5b994a7d-8d7c-48d1-baa1-0fda09ea1687'
 def average(x: list[float]) -> float:
     return sum(x) / len(x)
 
-store = Store('my-store', FileConnector('./proxystore-cache'))  # (1)!
-register_store(store) # (2)!
+store = Store('my-store', FileConnector('./proxystore-cache'), register=True)  # (1)!
 
 with Executor(endpoint_id=ENDPOINT_UUID) as gce:
     x = list(range(1, 100000))
-    p = store.proxy(x) # (3)!
+    p = store.proxy(x) # (2)!
     future = gce.submit(average, p)
 
     print(future.result())
 
-store.close() # (4)!
+store.close() # (3)!
 ```
 
 1. Create a new store using the file system for mediated communication.
-2. Register the store instance so states (e.g., caches, etc.) can be shared.
-3. Proxy the input data.
-4. Close the `Store` to cleanup any resources.
+   Register the store instance so states (e.g., caches, etc.) can be shared.
+2. Proxy the input data.
+3. Close the `Store` to cleanup any resources.
 
 !!! tip
 

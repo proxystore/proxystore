@@ -25,14 +25,13 @@ is generated, and then a new proxy, internalized with the factory, is returned.
 from proxystore.connectors.redis import RedisConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
-from proxystore.store import register_store
 
 def my_function(x: MyDataType) -> ...:
     assert isinstance(x, MyDataType)  # (1)!
     # More computation...
 
-store = Store('my-store', RedisConnector(...)) # (2)!
-register_store(store)  # (3)!
+connector = RedisConnector()  # (2)!
+store = Store('my-store', connector, register=True)  # (3)!
 
 my_object = MyDataType(...) # (4)!
 p = store.proxy(my_object)
@@ -43,8 +42,8 @@ my_function(p) # (5)!
 
 1. `x` is resolved from "my-store" on the first use of `x`.
 2. The `Connector` defines the low-level communication method used by the `Store`.
-3. Registering `store` globally enables proxies to reuse the same instance
-   to improve performance.
+3. Passing the `register=True` will call [`register_store()`][proxystore.store.register_store] automatically to register the instance globally by name.
+   This enables proxies to reuse the same store instance to improve performance.
 4. Store the object and get a proxy.
 5. Always succeeds regardless of if `p` is the true object or a proxy.
 

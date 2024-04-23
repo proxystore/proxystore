@@ -29,6 +29,7 @@ from proxystore.proxy import ProxyLocker
 from proxystore.serialize import SerializationError
 from proxystore.store.cache import LRUCache
 from proxystore.store.exceptions import NonProxiableTypeError
+from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import Future
@@ -40,6 +41,7 @@ from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
+from proxystore.store.types import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
 from proxystore.utils.timer import Timer
@@ -81,9 +83,12 @@ class Store(Generic[ConnectorT]):
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         metrics: Enable recording operation metrics.
+        register: Register the store instance after initialization.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
+        StoreExistsError: If `register=True` and a store with `name` already
+            exists.
     """
 
     def __init__(
@@ -95,6 +100,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         metrics: bool = False,
+        register: bool = False,
     ) -> None:
         if cache_size < 0:
             raise ValueError(
@@ -108,6 +114,20 @@ class Store(Generic[ConnectorT]):
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
+        self._register = register
+
+        if self._register:
+            try:
+                proxystore.store.register_store(self)
+            except StoreExistsError as e:
+                if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+                    e.add_note(
+                        'Consider using get_store(name) rather than '
+                        'initializing a new instance with register=True.',
+                    )
+                else:  # pragma: <3.11 cover
+                    pass
+                raise
 
         logger.info(f'Initialized {self}')
 
@@ -163,6 +183,9 @@ class Store(Generic[ConnectorT]):
     def close(self, *args: Any, **kwargs: Any) -> None:
         """Close the connector associated with the store.
 
+        This will (1) close the connector and (2) unregister the store if
+        `register=True` was set during initialization.
+
         Warning:
             This method should only be called at the end of the program
             when the store will no longer be used, for example once all
@@ -174,9 +197,11 @@ class Store(Generic[ConnectorT]):
             kwargs: Keyword arguments to pass to
                 [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
         """
+        if self._register:
+            proxystore.store.unregister_store(self.name)
         self.connector.close(*args, **kwargs)
 
-    def config(self) -> dict[str, Any]:
+    def config(self) -> StoreConfig:
         """Get the store configuration.
 
         Example:
@@ -189,18 +214,19 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store configuration.
         """
-        return {
-            'name': self.name,
-            'connector_type': get_object_path(type(self.connector)),
-            'connector_config': self.connector.config(),
-            'serializer': self._serializer,
-            'deserializer': self._deserializer,
-            'cache_size': self._cache_size,
-            'metrics': self.metrics is not None,
-        }
+        return StoreConfig(
+            name=self.name,
+            connector_type=get_object_path(type(self.connector)),
+            connector_config=self.connector.config(),
+            serializer=self._serializer,
+            deserializer=self._deserializer,
+            cache_size=self._cache_size,
+            metrics=self.metrics is not None,
+            register=self._register,
+        )
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Store[Any]:
+    def from_config(cls, config: StoreConfig) -> Store[Any]:
         """Create a new store instance from a configuration.
 
         Args:
@@ -209,12 +235,14 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store instance.
         """
-        config = config.copy()  # Avoid messing with callers version
-        connector_type = config.pop('connector_type')
-        connector_config = config.pop('connector_config')
+        # Avoid messing with callers version and splat into new dict otherwise
+        # mypy will error that we are popping required keys from a TypedDict.
+        mut_config: dict[str, Any] = dict(**config.copy())
+        connector_type = mut_config.pop('connector_type')
+        connector_config = mut_config.pop('connector_config')
         connector = import_from_path(connector_type)
-        config['connector'] = connector.from_config(connector_config)
-        return cls(**config)
+        mut_config['connector'] = connector.from_config(connector_config)
+        return cls(**mut_config)
 
     def future(
         self,

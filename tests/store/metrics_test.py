@@ -7,6 +7,7 @@ from proxystore.store.factory import StoreFactory
 from proxystore.store.metrics import Metrics
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.metrics import TimeStats
+from proxystore.store.types import StoreConfig
 
 
 def test_time_stats() -> None:
@@ -87,7 +88,16 @@ def test_metrics_by_proxy() -> None:
     metrics = StoreMetrics()
 
     key = ('test-key',)
-    proxy: Proxy[Any] = Proxy(StoreFactory(key, {}))
+    proxy: Proxy[Any] = Proxy(
+        StoreFactory(
+            key,
+            StoreConfig(
+                name='test',
+                connector_type='test',
+                connector_config={},
+            ),
+        ),
+    )
 
     metrics.add_attribute('test-attribute', key, 'value')
     assert metrics.get_metrics(proxy) == metrics.get_metrics(key)
@@ -97,7 +107,19 @@ def test_metrics_by_proxies() -> None:
     metrics = StoreMetrics()
 
     keys = [('key1',), ('key2',), ('key3',)]
-    proxies: list[Proxy[Any]] = [Proxy(StoreFactory(key, {})) for key in keys]
+    proxies: list[Proxy[Any]] = [
+        Proxy(
+            StoreFactory(
+                key,
+                StoreConfig(
+                    name='test',
+                    connector_type='test',
+                    connector_config={},
+                ),
+            ),
+        )
+        for key in keys
+    ]
 
     metrics.add_attribute('test-attribute', proxies, 'value')
     assert metrics.get_metrics(proxies) == metrics.get_metrics(keys)
