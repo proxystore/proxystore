@@ -17,6 +17,7 @@ from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
+from proxystore.store.types import StoreConfig
 from proxystore.utils.timer import Timer
 
 if TYPE_CHECKING:
@@ -55,7 +56,7 @@ class StoreFactory(Generic[ConnectorT, T]):
     def __init__(
         self,
         key: ConnectorKeyT,
-        store_config: dict[str, Any],
+        store_config: StoreConfig,
         *,
         evict: bool = False,
         deserializer: DeserializerT | None = None,
@@ -168,7 +169,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
     def __init__(
         self,
         key: ConnectorKeyT,
-        store_config: dict[str, Any],
+        store_config: StoreConfig,
         *,
         deserializer: DeserializerT | None = None,
         evict: bool = False,

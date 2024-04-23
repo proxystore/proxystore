@@ -40,6 +40,7 @@ from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
+from proxystore.store.types import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
 from proxystore.utils.timer import Timer
@@ -176,7 +177,7 @@ class Store(Generic[ConnectorT]):
         """
         self.connector.close(*args, **kwargs)
 
-    def config(self) -> dict[str, Any]:
+    def config(self) -> StoreConfig:
         """Get the store configuration.
 
         Example:
@@ -189,18 +190,18 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store configuration.
         """
-        return {
-            'name': self.name,
-            'connector_type': get_object_path(type(self.connector)),
-            'connector_config': self.connector.config(),
-            'serializer': self._serializer,
-            'deserializer': self._deserializer,
-            'cache_size': self._cache_size,
-            'metrics': self.metrics is not None,
-        }
+        return StoreConfig(
+            name=self.name,
+            connector_type=get_object_path(type(self.connector)),
+            connector_config=self.connector.config(),
+            serializer=self._serializer,
+            deserializer=self._deserializer,
+            cache_size=self._cache_size,
+            metrics=self.metrics is not None,
+        )
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Store[Any]:
+    def from_config(cls, config: StoreConfig) -> Store[Any]:
         """Create a new store instance from a configuration.
 
         Args:
@@ -209,12 +210,14 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store instance.
         """
-        config = config.copy()  # Avoid messing with callers version
-        connector_type = config.pop('connector_type')
-        connector_config = config.pop('connector_config')
+        # Avoid messing with callers version and splat into new dict otherwise
+        # mypy will error that we are popping required keys from a TypedDict.
+        mut_config: dict[str, Any] = dict(**config.copy())
+        connector_type = mut_config.pop('connector_type')
+        connector_config = mut_config.pop('connector_config')
         connector = import_from_path(connector_type)
-        config['connector'] = connector.from_config(connector_config)
-        return cls(**config)
+        mut_config['connector'] = connector.from_config(connector_config)
+        return cls(**mut_config)
 
     def future(
         self,

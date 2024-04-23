@@ -17,6 +17,7 @@ from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import ConnectorT
+from proxystore.store.types import StoreConfig
 
 __all__ = [
     'Store',
@@ -72,7 +73,7 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
 
 
 def get_or_create_store(
-    store_config: dict[str, Any],
+    store_config: StoreConfig,
     *,
     register: bool = True,
 ) -> Store[Any]:
