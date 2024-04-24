@@ -435,3 +435,31 @@ def test_del_invalid_owned_proxy(store: Store[FileConnector]) -> None:
     del proxy
 
     assert new_proxy == 'value'
+
+
+def test_clone_deepcopy(store: Store[FileConnector]) -> None:
+    value = [1, 2, 3]
+    factory = put_in_store(value, store)
+    proxy = OwnedProxy(factory, target=value)
+    assert is_resolved(proxy)
+
+    cloned = clone(proxy)
+    assert is_resolved(cloned)
+    cloned.append(4)
+    assert cloned == [1, 2, 3, 4]
+    assert proxy == [1, 2, 3]
+
+
+def test_owned_proxy_cache_defaults(store: Store[FileConnector]) -> None:
+    value = 'value'
+    factory = put_in_store(value, store)
+    proxy = OwnedProxy(factory, cache_defaults=True, target=value)
+    del proxy.__proxy_wrapped__
+
+    assert not is_resolved(proxy)
+    assert isinstance(proxy, str)
+    assert not is_resolved(proxy)
+
+    assert not is_resolved(proxy)
+    assert hash(proxy) == hash(value)
+    assert not is_resolved(proxy)

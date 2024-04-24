@@ -114,6 +114,12 @@ def test_proxy_populate_target(store: Store[LocalConnector]) -> None:
     assert isinstance(p, Proxy)
     assert p == [1, 2, 3]
 
+    # populate_target should also set cache_defaults on the proxy
+    del p.__proxy_wrapped__
+    assert not is_resolved(p)
+    assert isinstance(p, list)
+    assert not is_resolved(p)
+
 
 def test_proxy_from_key(store: Store[LocalConnector]) -> None:
     key = store.put([1, 2, 3])
@@ -249,6 +255,13 @@ def test_proxy_batch_populate_target(store: Store[LocalConnector]) -> None:
     for p, v in zip(proxies, values):
         assert p == v
 
+    # populate_target should also set cache_defaults on the proxy
+    del proxies[0].__proxy_wrapped__
+    assert not is_resolved(proxies[0])
+    assert isinstance(proxies[0], str)
+    assert hash(proxies[0]) == hash(values[0])
+    assert not is_resolved(proxies[0])
+
 
 def test_proxy_batch_custom_serializer(store: Store[LocalConnector]) -> None:
     values = [b'test_value1', b'test_value2', b'test_value3']
@@ -326,6 +339,21 @@ def test_locked_proxy_mutex_options_error(
 
 def test_owned_proxy(store: Store[LocalConnector]) -> None:
     assert isinstance(store.owned_proxy([1, 2, 3]), OwnedProxy)
+
+
+def test_owned_proxy_populate_target(store: Store[LocalConnector]) -> None:
+    value = 'test_value'
+    p = store.owned_proxy(value, populate_target=True)
+    assert is_resolved(p)
+    assert isinstance(p, Proxy)
+    assert p == value
+
+    # populate_target should also set cache_defaults on the proxy
+    del p.__proxy_wrapped__
+    assert not is_resolved(p)
+    assert isinstance(p, str)
+    assert hash(p) == hash(value)
+    assert not is_resolved(p)
 
 
 def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:

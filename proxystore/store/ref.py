@@ -44,6 +44,7 @@ of `T`, forwarding operations on themselves to a locally cached instance of
 from __future__ import annotations
 
 import atexit
+import copy
 import sys
 import weakref
 from typing import Any
@@ -117,12 +118,20 @@ class BaseRefProxy(Proxy[T]):
        [`clone()`][proxystore.store.ref.clone] should be used instead.
     """
 
+    __slots__ = '__proxy_valid__'
+
     __proxy_factory__: FactoryType[T]
     __proxy_valid__: bool
 
-    def __init__(self, factory: FactoryType[T]) -> None:
+    def __init__(
+        self,
+        factory: FactoryType[T],
+        *,
+        cache_defaults: bool = False,
+        target: T | None = None,
+    ) -> None:
         object.__setattr__(self, '__proxy_valid__', True)
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     @property
     def __proxy_wrapped__(self) -> T:
@@ -170,13 +179,29 @@ class OwnedProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
+        target: Optionally preset the target object.
     """
+
+    __slots__ = (
+        '__proxy_ref_count__',
+        '__proxy_ref_mut_count__',
+        '__proxy_finalizer__',
+    )
 
     __proxy_ref_count__: int
     __proxy_ref_mut_count__: int
     __proxy_finalizer__: Any
 
-    def __init__(self, factory: FactoryType[T]) -> None:
+    def __init__(
+        self,
+        factory: FactoryType[T],
+        *,
+        cache_defaults: bool = False,
+        target: T | None = None,
+    ) -> None:
         object.__setattr__(self, '__proxy_ref_count__', 0)
         object.__setattr__(self, '__proxy_ref_mut_count__', 0)
         object.__setattr__(
@@ -184,7 +209,7 @@ class OwnedProxy(BaseRefProxy[T]):
             '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
         atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
@@ -237,12 +262,18 @@ class RefProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
         owner: Proxy which has ownership over the target object. This reference
             will keep the owner alive while this borrowed reference is alive.
             In the event this borrowed reference was initialized in a different
             address space from the proxy with ownership, then `owner` will
             be `None`.
+        target: Optionally preset the target object.
     """
+
+    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
 
     __proxy_finalizer__: Any
     __proxy_owner__: OwnedProxy[T]
@@ -251,7 +282,9 @@ class RefProxy(BaseRefProxy[T]):
         self,
         factory: FactoryType[T],
         *,
+        cache_defaults: bool = False,
         owner: OwnedProxy[T] | None = None,
+        target: T | None = None,
     ) -> None:
         object.__setattr__(self, '__proxy_owner__', owner)
         object.__setattr__(
@@ -259,7 +292,7 @@ class RefProxy(BaseRefProxy[T]):
             '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
         atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
@@ -300,12 +333,18 @@ class RefMutProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
         owner: Proxy which has ownership over the target object. This reference
             will keep the owner alive while this borrowed reference is alive.
             In the event this borrowed reference was initialized in a different
             address space from the proxy with ownership, then `owner` will
             be `None`.
+        target: Optionally preset the target object.
     """  # noqa: E501
+
+    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
 
     __proxy_finalizer__: Any
     __proxy_owner__: OwnedProxy[T]
@@ -314,7 +353,9 @@ class RefMutProxy(BaseRefProxy[T]):
         self,
         factory: FactoryType[T],
         *,
+        cache_defaults: bool = False,
         owner: OwnedProxy[T] | None = None,
+        target: T | None = None,
     ) -> None:
         object.__setattr__(self, '__proxy_owner__', owner)
         object.__setattr__(
@@ -322,7 +363,7 @@ class RefMutProxy(BaseRefProxy[T]):
             '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
         atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
@@ -361,6 +402,25 @@ class RefMutProxy(BaseRefProxy[T]):
         return self.__reduce__()
 
 
+def _copy_attributes(
+    source: Proxy[T],
+    dest: Proxy[T],
+    *,
+    deepcopy: bool = False,
+) -> None:
+    if source.__proxy_resolved__:
+        target = source.__proxy_wrapped__
+        if deepcopy:
+            target = copy.deepcopy(target)
+        dest.__proxy_wrapped__ = target
+
+    default_class = object.__getattribute__(source, '__proxy_default_class__')
+    default_hash = object.__getattribute__(source, '__proxy_default_hash__')
+
+    object.__setattr__(dest, '__proxy_default_class__', default_class)
+    object.__setattr__(dest, '__proxy_default_hash__', default_hash)
+
+
 def borrow(
     proxy: OwnedProxy[T],
     *,
@@ -392,8 +452,8 @@ def borrow(
         object.__getattribute__(proxy, '__proxy_ref_count__') + 1,
     )
     ref_proxy = RefProxy(proxy.__proxy_factory__, owner=proxy)
-    if populate_target and is_resolved(proxy):
-        ref_proxy.__proxy_wrapped__ = proxy.__proxy_wrapped__
+    if populate_target:
+        _copy_attributes(proxy, ref_proxy)
     return ref_proxy
 
 
@@ -431,15 +491,17 @@ def mut_borrow(
         object.__getattribute__(proxy, '__proxy_ref_mut_count__') + 1,
     )
     ref_proxy = RefMutProxy(proxy.__proxy_factory__, owner=proxy)
-    if populate_target and is_resolved(proxy):
-        ref_proxy.__proxy_wrapped__ = proxy.__proxy_wrapped__
+    if populate_target:
+        _copy_attributes(proxy, ref_proxy)
     return ref_proxy
 
 
 def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     """Clone the target object.
 
-    Creates a new copy of `T` in the global store.
+    Creates a new copy of `T` in the global store. If `proxy` is in
+    the resolved state, the local version of `T` belonging to `proxy` will
+    be deepcopied into the cloned proxy.
 
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
@@ -457,7 +519,9 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
         evict=factory.evict,
         deserializer=factory.deserializer,
     )
-    return OwnedProxy(new_factory)
+    owned = OwnedProxy(new_factory)
+    _copy_attributes(proxy, owned, deepcopy=True)
+    return owned
 
 
 def into_owned(
@@ -500,8 +564,8 @@ def into_owned(
         )
     factory.evict = False
     owned_proxy = OwnedProxy(factory)
-    if populate_target and is_resolved(proxy):
-        owned_proxy.__proxy_wrapped__ = proxy.__proxy_wrapped__
+    if populate_target:
+        _copy_attributes(proxy, owned_proxy)
     return owned_proxy
 
 
