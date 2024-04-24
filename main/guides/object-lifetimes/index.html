@@ -3283,7 +3283,8 @@ These accidental resolves will automatically evict the target object so later re
   The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will log every <code>GET</code> and <code>EVICT</code> operation on a key.</li>
 <li>Avoid use of datastructures or functions which unnecessarily resolve proxies.</li>
 <li>If avoiding use of the datastructures or functions causing the problem is not possible, consider using the <code>populate_target=True</code> flag when creating the proxy.
-  The <code>populate_target</code> flag will return a proxy that is already resolved so the factory, which would evict the target object, does not need to be called until the proxy is serialized and then deserialized and resolved on a different process.</li>
+  The <code>populate_target</code> flag will return a proxy that is already resolved so the factory, which would evict the target object, does not need to be called until the proxy is serialized and then deserialized and resolved on a different process.
+  The flag will also cache the class type and hash value of the target such that the proxy can be used in datastructures which rely on <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#hash"><code>hash()</code></a> or in <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance</code></a> checks without needing to resolve the proxy.</li>
 </ul>
 <h2 id="lifetimes">Lifetimes<a class="headerlink" href="#lifetimes" title="Permanent link">&para;</a></h2>
 <p>Shared objects in a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can be associated with a <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes.Lifetime"><code>Lifetime</code></a>.
