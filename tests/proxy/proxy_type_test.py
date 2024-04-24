@@ -87,10 +87,10 @@ def test_get_wrapped() -> None:
         return args, kwargs
 
     function2 = Proxy(lambda: function1)
-    assert function2.__wrapped__ == function1
+    assert function2.__proxy_wrapped__ == function1
 
     function3 = Proxy(lambda: function2)
-    assert function3.__wrapped__ == function1
+    assert function3.__proxy_wrapped__ == function1
 
 
 def test_set_wrapped() -> None:
@@ -100,17 +100,17 @@ def test_set_wrapped() -> None:
     function2 = Proxy(lambda: function1)
 
     assert function2 == function1
-    assert function2.__wrapped__ is function1
+    assert function2.__proxy_wrapped__ is function1
     assert function2.__name__ == function1.__name__
 
     assert function2.__qualname__ == function1.__qualname__
 
-    function2.__wrapped__ = None  # type: ignore[assignment]
+    function2.__proxy_wrapped__ = None  # type: ignore[assignment]
 
-    assert not hasattr(function1, '__wrapped__')
+    assert not hasattr(function1, '__proxy_wrapped__')
 
     assert function2 == None  # noqa
-    assert function2.__wrapped__ is None
+    assert function2.__proxy_wrapped__ is None
     assert not hasattr(function2, '__name__')
 
     assert not hasattr(function2, '__qualname__')
@@ -118,10 +118,10 @@ def test_set_wrapped() -> None:
     def function3(*args, **kwargs):  # pragma: no cover
         return args, kwargs
 
-    function2.__wrapped__ = function3
+    function2.__proxy_wrapped__ = function3
 
     assert function2 == function3
-    assert function2.__wrapped__ == function3
+    assert function2.__proxy_wrapped__ == function3
     assert function2.__name__ == function3.__name__
 
     assert function2.__qualname__ == function3.__qualname__
@@ -138,7 +138,7 @@ def test_wrapped_attribute() -> None:
     assert hasattr(function1, 'variable')
     assert hasattr(function2, 'variable')
 
-    assert function2.variable is True
+    assert function2.variable
 
     del function2.variable
 
@@ -619,8 +619,8 @@ def test_del_wrapped() -> None:
     proxy = Proxy(make_foo)
     str(proxy)
     assert called == [1]
-    assert proxy.__wrapped__ is foo
-    del proxy.__wrapped__
+    assert proxy.__proxy_wrapped__ is foo
+    del proxy.__proxy_wrapped__
     str(proxy)
     assert called == [1, 1]
 
@@ -631,8 +631,8 @@ def test_raise_attribute_error() -> None:
 
     proxy = Proxy(foo)
     pytest.raises(AttributeError, str, proxy)
-    pytest.raises(AttributeError, lambda: proxy.__wrapped__)
-    assert proxy.__factory__ is foo
+    pytest.raises(AttributeError, lambda: proxy.__proxy_wrapped__)
+    assert proxy.__proxy_factory__ is foo
 
 
 def test_patching_the_factory() -> None:
@@ -640,20 +640,20 @@ def test_patching_the_factory() -> None:
         raise AttributeError('boom!')
 
     proxy = Proxy(foo)
-    pytest.raises(AttributeError, lambda: proxy.__wrapped__)
-    assert proxy.__factory__ is foo
+    pytest.raises(AttributeError, lambda: proxy.__proxy_wrapped__)
+    assert proxy.__proxy_factory__ is foo
 
-    proxy.__factory__ = lambda: foo
+    proxy.__proxy_factory__ = lambda: foo
     pytest.raises(AttributeError, proxy)
-    assert proxy.__wrapped__ is foo
+    assert proxy.__proxy_wrapped__ is foo
 
 
 def test_deleting_the_factory() -> None:
     proxy = Proxy(lambda: 'value')  # pragma: no cover
-    assert proxy.__factory__ is not None
-    proxy.__factory__ = None  # type: ignore[assignment]
-    assert proxy.__factory__ is None
-    del proxy.__factory__
+    assert proxy.__proxy_factory__ is not None
+    proxy.__proxy_factory__ = None  # type: ignore[assignment]
+    assert proxy.__proxy_factory__ is None
+    del proxy.__proxy_factory__
     pytest.raises(ValueError, str, proxy)
 
 
@@ -661,19 +661,19 @@ def test_new() -> None:
     a = Proxy.__new__(Proxy)
     b = Proxy.__new__(Proxy)
     pytest.raises(ValueError, lambda: a + b)
-    pytest.raises(ValueError, lambda: a.__wrapped__)
+    pytest.raises(ValueError, lambda: a.__proxy_wrapped__)
 
 
 def test_set_wrapped_via_new() -> None:
     obj = Proxy.__new__(Proxy)
-    obj.__wrapped__ = 1
+    obj.__proxy_wrapped__ = 1
     assert str(obj) == '1'
     assert obj + 1 == 2
 
 
 def test_set_wrapped_regular() -> None:
     obj = Proxy(lambda: 'value')  # pragma: no cover
-    obj.__wrapped__ = 1  # type: ignore[assignment]
+    obj.__proxy_wrapped__ = 1  # type: ignore[assignment]
     assert str(obj) == '1'
     assert obj + 1 == 2
 
@@ -803,27 +803,27 @@ def test_fspath_method() -> None:
 
 def test_resolved_new() -> None:
     obj = Proxy.__new__(Proxy)
-    assert obj.__resolved__ is False
+    assert not obj.__proxy_resolved__
 
 
 def test_resolved() -> None:
     obj = Proxy(lambda: None)
-    assert obj.__resolved__ is False
-    assert obj.__wrapped__ is None
-    assert obj.__resolved__ is True
+    assert not obj.__proxy_resolved__
+    assert obj.__proxy_wrapped__ is None
+    assert obj.__proxy_resolved__
 
 
 def test_resolved_str() -> None:
     obj = Proxy(lambda: None)
-    assert obj.__resolved__ is False
+    assert not obj.__proxy_resolved__
     str(obj)
-    assert obj.__resolved__ is True
+    assert obj.__proxy_resolved__
 
 
 def test_preset_target() -> None:
     target = 'value'
     proxy = Proxy(lambda: target, target=target)  # pragma: no cover
-    assert proxy.__resolved__
+    assert proxy.__proxy_resolved__
 
 
 def test_precompute_defaults() -> None:
@@ -834,15 +834,15 @@ def test_precompute_defaults() -> None:
         cache_defaults=True,
         target=target,
     )
-    del proxy.__wrapped__
+    del proxy.__proxy_wrapped__
 
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
     assert hash(proxy) == hash(target)
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
     assert isinstance(proxy, str)
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
     assert not isinstance(proxy, list)
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
 
 
 def test_precompute_unhashable() -> None:
@@ -853,13 +853,13 @@ def test_precompute_unhashable() -> None:
         cache_defaults=True,
         target=target,
     )
-    del proxy.__wrapped__
+    del proxy.__proxy_wrapped__
 
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
     try:
         hash(proxy)
     except TypeError:
         pass
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__
     assert isinstance(proxy, list)
-    assert not proxy.__resolved__
+    assert not proxy.__proxy_resolved__

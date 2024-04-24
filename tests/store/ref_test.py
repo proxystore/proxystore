@@ -214,7 +214,7 @@ def test_pickle_ref_proxy(store: Store[FileConnector]) -> None:
     # new_borrowed, because it was pickled and unpickled, does not have a
     # reference to is owned proxy so deleting new_borrowed will not
     # decrement the ref count on proxy.
-    assert object.__getattribute__(proxy, '__ref_count__') == 1
+    assert object.__getattribute__(proxy, '__proxy_ref_count__') == 1
 
 
 def test_pickle_ref_mut_proxy(store: Store[FileConnector]) -> None:
@@ -235,7 +235,7 @@ def test_pickle_ref_mut_proxy(store: Store[FileConnector]) -> None:
     # new_borrowed, because it was pickled and unpickled, does not have a
     # reference to is owned proxy so deleting new_borrowed will not
     # decrement the ref count on proxy.
-    assert object.__getattribute__(proxy, '__ref_mut_count__') == 1
+    assert object.__getattribute__(proxy, '__proxy_ref_mut_count__') == 1
 
 
 def test_copy_not_implemented_error(store: Store[FileConnector]) -> None:
@@ -388,7 +388,7 @@ def test_borrow_populate(
     borrowed = borrow(proxy, populate_target=populate_target)
     assert is_resolved(borrowed) == populate_target
 
-    del proxy.__wrapped__
+    del proxy.__proxy_wrapped__
     borrowed = borrow(proxy, populate_target=populate_target)
     assert not is_resolved(borrowed)
 
@@ -406,7 +406,7 @@ def test_mut_borrow_populate(
     assert is_resolved(borrowed) == populate_target
 
     del borrowed
-    del proxy.__wrapped__
+    del proxy.__proxy_wrapped__
     borrowed = mut_borrow(proxy, populate_target=populate_target)
     assert not is_resolved(borrowed)
 

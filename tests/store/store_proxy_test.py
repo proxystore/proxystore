@@ -7,9 +7,11 @@ import pytest
 
 import proxystore
 from proxystore.connectors.local import LocalConnector
+from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.proxy import resolve
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store import get_store
@@ -158,9 +160,9 @@ def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
     store.evict(key)
     assert not store.exists(key)
 
-    assert isinstance(proxy.__factory__, StoreFactory)
+    assert isinstance(get_factory(proxy), StoreFactory)
     with pytest.raises(ProxyResolveMissingKeyError):
-        proxy.__factory__.resolve()
+        resolve(proxy)
 
     proxy = store.proxy_from_key(key=key)
     with pytest.raises(ProxyResolveMissingKeyError):

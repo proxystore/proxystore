@@ -36,6 +36,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
@@ -225,7 +226,7 @@ class ContextLifetime:
         """
         keys: list[ConnectorKeyT] = []
         for proxy in proxies:
-            factory = proxy.__factory__
+            factory = get_factory(proxy)
             if isinstance(factory, StoreFactory):
                 keys.append(factory.key)
             else:
@@ -479,7 +480,7 @@ class StaticLifetime:
             RuntimeError: If this lifetime has ended.
         """
         for proxy in proxies:
-            factory = proxy.__factory__
+            factory = get_factory(proxy)
             if isinstance(factory, StoreFactory):
                 self.add_key(factory.key, store=factory.get_store())
             else:

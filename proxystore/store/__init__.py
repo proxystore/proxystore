@@ -11,6 +11,7 @@ from typing import Sequence
 from typing import TypeVar
 
 from proxystore.connectors.protocols import Connector
+from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
@@ -54,7 +55,7 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
     """
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
-        factory = val.__factory__
+        factory = get_factory(val)
         if isinstance(factory, StoreFactory):
             return factory.get_store()
         else:
