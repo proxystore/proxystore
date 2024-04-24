@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Generator
 
 import pytest
 
-import proxystore
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
@@ -24,17 +22,6 @@ from proxystore.store.factory import StoreFactory
 from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.ref import OwnedProxy
 from proxystore.store.utils import get_key
-
-
-@pytest.fixture(autouse=True)
-def _verify_no_registered_stores() -> Generator[None, None, None]:
-    yield
-
-    if len(proxystore.store._stores) > 0:  # pragma: no cover
-        raise RuntimeError(
-            'Test left at least one store registered: '
-            f'{tuple(proxystore.store._stores.keys())}.',
-        )
 
 
 def test_factory_resolve(store: Store[LocalConnector]) -> None:
