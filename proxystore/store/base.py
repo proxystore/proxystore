@@ -147,14 +147,22 @@ class Store(Generic[ConnectorT]):
         self.close()
 
     def __repr__(self) -> str:
-        serializer = 'default' if self._serializer is None else 'custom'
-        deserializer = 'default' if self._deserializer is None else 'custom'
-        return (
-            f'Store("{self.name}", connector={self.connector}, '
-            f'serializer={serializer}, deserializer={deserializer}, '
-            f'cache_size={self.cache.maxsize}, '
-            f'metrics={self.metrics is not None})'
+        config = dict(**self.config())
+
+        del config['name']
+        del config['connector_type']
+        del config['connector_config']
+
+        config['serializer'] = (
+            'default' if config['serializer'] is None else 'custom'
         )
+        config['deserializer'] = (
+            'default' if config['deserializer'] is None else 'custom'
+        )
+        config['metrics'] = self.metrics is not None
+
+        params = ', '.join(f'{k}={v}' for k, v in config.items())
+        return f'Store(name={self.name}, connector={self.connector}, {params})'
 
     @property
     def name(self) -> str:
