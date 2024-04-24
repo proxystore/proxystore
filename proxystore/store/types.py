@@ -51,6 +51,8 @@ class StoreConfig(TypedDict):
         deserializer: Optional deserializer.
         cache_size: Cache size.
         metrics: Enable recording operation metrics.
+        populate_target: Set the default value for the `populate_target`
+            parameter of proxy methods.
         register: Auto-register the store.
     """
 
@@ -61,4 +63,5 @@ class StoreConfig(TypedDict):
     deserializer: NotRequired[DeserializerT | None]
     cache_size: NotRequired[int]
     metrics: NotRequired[bool]
+    populate_target: NotRequired[bool]
     register: NotRequired[bool]

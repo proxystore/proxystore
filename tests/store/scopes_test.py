@@ -99,13 +99,13 @@ def test_mark_refs_out_of_scope_duplicates(
 def test_mark_refs_out_of_scope_no_owner(store: Store[FileConnector]) -> None:
     proxy = store.owned_proxy('value')
     borrowed = borrow(proxy)
-    object.__setattr__(borrowed, '__owner__', None)
+    object.__setattr__(borrowed, '__proxy_owner__', None)
 
     with pytest.raises(RuntimeError, match='no reference to its owner'):
         mark_refs_out_of_scope(borrowed)
 
     # Restore owner so cleanup can be done correctly
-    object.__setattr__(borrowed, '__owner__', proxy)
+    object.__setattr__(borrowed, '__proxy_owner__', proxy)
 
 
 def test_make_out_of_scope_callback(store: Store[FileConnector]) -> None:

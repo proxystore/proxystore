@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from typing import Any
-from typing import Generator
 
 import pytest
 
-import proxystore
 from proxystore.connectors.local import LocalConnector
+from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.proxy import resolve
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store import get_store
@@ -22,17 +22,6 @@ from proxystore.store.factory import StoreFactory
 from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.ref import OwnedProxy
 from proxystore.store.utils import get_key
-
-
-@pytest.fixture(autouse=True)
-def _verify_no_registered_stores() -> Generator[None, None, None]:
-    yield
-
-    if len(proxystore.store._stores) > 0:  # pragma: no cover
-        raise RuntimeError(
-            'Test left at least one store registered: '
-            f'{tuple(proxystore.store._stores.keys())}.',
-        )
 
 
 def test_factory_resolve(store: Store[LocalConnector]) -> None:
@@ -125,6 +114,12 @@ def test_proxy_populate_target(store: Store[LocalConnector]) -> None:
     assert isinstance(p, Proxy)
     assert p == [1, 2, 3]
 
+    # populate_target should also set cache_defaults on the proxy
+    del p.__proxy_wrapped__
+    assert not is_resolved(p)
+    assert isinstance(p, list)
+    assert not is_resolved(p)
+
 
 def test_proxy_from_key(store: Store[LocalConnector]) -> None:
     key = store.put([1, 2, 3])
@@ -158,9 +153,9 @@ def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
     store.evict(key)
     assert not store.exists(key)
 
-    assert isinstance(proxy.__factory__, StoreFactory)
+    assert isinstance(get_factory(proxy), StoreFactory)
     with pytest.raises(ProxyResolveMissingKeyError):
-        proxy.__factory__.resolve()
+        resolve(proxy)
 
     proxy = store.proxy_from_key(key=key)
     with pytest.raises(ProxyResolveMissingKeyError):
@@ -260,6 +255,13 @@ def test_proxy_batch_populate_target(store: Store[LocalConnector]) -> None:
     for p, v in zip(proxies, values):
         assert p == v
 
+    # populate_target should also set cache_defaults on the proxy
+    del proxies[0].__proxy_wrapped__
+    assert not is_resolved(proxies[0])
+    assert isinstance(proxies[0], str)
+    assert hash(proxies[0]) == hash(values[0])
+    assert not is_resolved(proxies[0])
+
 
 def test_proxy_batch_custom_serializer(store: Store[LocalConnector]) -> None:
     values = [b'test_value1', b'test_value2', b'test_value3']
@@ -339,6 +341,21 @@ def test_owned_proxy(store: Store[LocalConnector]) -> None:
     assert isinstance(store.owned_proxy([1, 2, 3]), OwnedProxy)
 
 
+def test_owned_proxy_populate_target(store: Store[LocalConnector]) -> None:
+    value = 'test_value'
+    p = store.owned_proxy(value, populate_target=True)
+    assert is_resolved(p)
+    assert isinstance(p, Proxy)
+    assert p == value
+
+    # populate_target should also set cache_defaults on the proxy
+    del p.__proxy_wrapped__
+    assert not is_resolved(p)
+    assert isinstance(p, str)
+    assert hash(p) == hash(value)
+    assert not is_resolved(p)
+
+
 def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     p = store.owned_proxy(None, skip_nonproxiable=True)
     assert not isinstance(p, (Proxy, OwnedProxy))
@@ -348,3 +365,20 @@ def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
 def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         store.owned_proxy(None, skip_nonproxiable=False)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_default_populate_target(populate_target: bool) -> None:
+    with Store(
+        'test-default-populate-target',
+        LocalConnector(),
+        populate_target=populate_target,
+    ) as store:
+        proxy = store.proxy('value')
+        assert is_resolved(proxy) == populate_target
+
+        proxy = store.proxy('value', populate_target=True)
+        assert is_resolved(proxy)
+
+        proxy = store.proxy('value', populate_target=False)
+        assert not is_resolved(proxy)

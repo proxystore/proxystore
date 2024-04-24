@@ -44,6 +44,7 @@ of `T`, forwarding operations on themselves to a locally cached instance of
 from __future__ import annotations
 
 import atexit
+import copy
 import sys
 import weakref
 from typing import Any
@@ -117,28 +118,37 @@ class BaseRefProxy(Proxy[T]):
        [`clone()`][proxystore.store.ref.clone] should be used instead.
     """
 
-    __factory__: FactoryType[T]
+    __slots__ = '__proxy_valid__'
 
-    def __init__(self, factory: FactoryType[T]) -> None:
-        object.__setattr__(self, '__valid__', True)
-        super().__init__(factory)
+    __proxy_factory__: FactoryType[T]
+    __proxy_valid__: bool
+
+    def __init__(
+        self,
+        factory: FactoryType[T],
+        *,
+        cache_defaults: bool = False,
+        target: T | None = None,
+    ) -> None:
+        object.__setattr__(self, '__proxy_valid__', True)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     @property
-    def __wrapped__(self) -> T:
-        if not object.__getattribute__(self, '__valid__'):
+    def __proxy_wrapped__(self) -> T:
+        if not object.__getattribute__(self, '__proxy_valid__'):
             raise ReferenceInvalidError(
                 'Reference has been invalidated. This is likely because it '
                 'was pickled and transferred to a different process.',
             )
-        return super().__wrapped__
+        return super().__proxy_wrapped__
 
-    @__wrapped__.deleter
-    def __wrapped__(self) -> None:
-        object.__delattr__(self, '__target__')
+    @__proxy_wrapped__.deleter
+    def __proxy_wrapped__(self) -> None:
+        object.__delattr__(self, '__proxy_target__')
 
-    @__wrapped__.setter
-    def __wrapped__(self, target: T) -> None:
-        object.__setattr__(self, '__target__', target)
+    @__proxy_wrapped__.setter
+    def __proxy_wrapped__(self, target: T) -> None:
+        object.__setattr__(self, '__proxy_target__', target)
 
     def __copy__(self) -> NoReturn:
         raise NotImplementedError(
@@ -169,33 +179,56 @@ class OwnedProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
+        target: Optionally preset the target object.
     """
 
-    def __init__(self, factory: FactoryType[T]) -> None:
-        object.__setattr__(self, '__ref_count__', 0)
-        object.__setattr__(self, '__ref_mut_count__', 0)
+    __slots__ = (
+        '__proxy_ref_count__',
+        '__proxy_ref_mut_count__',
+        '__proxy_finalizer__',
+    )
+
+    __proxy_ref_count__: int
+    __proxy_ref_mut_count__: int
+    __proxy_finalizer__: Any
+
+    def __init__(
+        self,
+        factory: FactoryType[T],
+        *,
+        cache_defaults: bool = False,
+        target: T | None = None,
+    ) -> None:
+        object.__setattr__(self, '__proxy_ref_count__', 0)
+        object.__setattr__(self, '__proxy_ref_mut_count__', 0)
         object.__setattr__(
             self,
-            '__finalizer__',
+            '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__finalizer__'))
-        if object.__getattribute__(self, '__valid__'):
-            ref_count = object.__getattribute__(self, '__ref_count__')
-            ref_mut_count = object.__getattribute__(self, '__ref_mut_count__')
+        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
+        if object.__getattribute__(self, '__proxy_valid__'):
+            ref_count = object.__getattribute__(self, '__proxy_ref_count__')
+            ref_mut_count = object.__getattribute__(
+                self,
+                '__proxy_ref_mut_count__',
+            )
             if ref_count > 0 or ref_mut_count > 0:
                 raise RuntimeError(
                     'Cannot safely delete OwnedProxy because there still '
                     f'exists {ref_count} RefProxy and {ref_mut_count} '
                     'RefMutProxy.',
                 )
-            factory = object.__getattribute__(self, '__factory__')
+            factory = object.__getattribute__(self, '__proxy_factory__')
             store = factory.get_store()
             store.evict(factory.key)
-            object.__setattr__(self, '__valid__', False)
+            object.__setattr__(self, '__proxy_valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,
@@ -203,9 +236,9 @@ class OwnedProxy(BaseRefProxy[T]):
         Callable[[FactoryType[T]], OwnedProxy[T]],
         tuple[FactoryType[T]],
     ]:
-        object.__setattr__(self, '__valid__', False)
+        object.__setattr__(self, '__proxy_valid__', False)
         return _owned_proxy_trampoline, (
-            object.__getattribute__(self, '__factory__'),
+            object.__getattribute__(self, '__proxy_factory__'),
         )
 
     def __reduce_ex__(  # type: ignore[override]
@@ -229,46 +262,57 @@ class RefProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
         owner: Proxy which has ownership over the target object. This reference
             will keep the owner alive while this borrowed reference is alive.
             In the event this borrowed reference was initialized in a different
             address space from the proxy with ownership, then `owner` will
             be `None`.
+        target: Optionally preset the target object.
     """
+
+    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
+
+    __proxy_finalizer__: Any
+    __proxy_owner__: OwnedProxy[T]
 
     def __init__(
         self,
         factory: FactoryType[T],
         *,
+        cache_defaults: bool = False,
         owner: OwnedProxy[T] | None = None,
+        target: T | None = None,
     ) -> None:
-        object.__setattr__(self, '__owner__', owner)
+        object.__setattr__(self, '__proxy_owner__', owner)
         object.__setattr__(
             self,
-            '__finalizer__',
+            '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__finalizer__'))
+        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
-        owner = object.__getattribute__(self, '__owner__')
+        owner = object.__getattribute__(self, '__proxy_owner__')
         if owner is not None:
-            ref_count = object.__getattribute__(owner, '__ref_count__')
+            ref_count = object.__getattribute__(owner, '__proxy_ref_count__')
             assert ref_count >= 1
-            object.__setattr__(owner, '__ref_count__', ref_count - 1)
-        object.__setattr__(self, '__owner__', None)
-        object.__setattr__(self, '__valid__', False)
+            object.__setattr__(owner, '__proxy_ref_count__', ref_count - 1)
+        object.__setattr__(self, '__proxy_owner__', None)
+        object.__setattr__(self, '__proxy_valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,
     ) -> tuple[Callable[[FactoryType[T]], RefProxy[T]], tuple[FactoryType[T]]]:
-        object.__setattr__(self, '__valid__', False)
+        object.__setattr__(self, '__proxy_valid__', False)
         return _ref_proxy_trampoline, (
-            object.__getattribute__(self, '__factory__'),
+            object.__getattribute__(self, '__proxy_factory__'),
         )
 
     def __reduce_ex__(  # type: ignore[override]
@@ -289,42 +333,53 @@ class RefMutProxy(BaseRefProxy[T]):
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
+        cache_defaults: Precompute and cache the `__proxy_default_class__` and
+            `__proxy_default_hash__` attributes of the proxy instance from
+            `target`. Ignored if `target` is not provided.
         owner: Proxy which has ownership over the target object. This reference
             will keep the owner alive while this borrowed reference is alive.
             In the event this borrowed reference was initialized in a different
             address space from the proxy with ownership, then `owner` will
             be `None`.
+        target: Optionally preset the target object.
     """  # noqa: E501
+
+    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
+
+    __proxy_finalizer__: Any
+    __proxy_owner__: OwnedProxy[T]
 
     def __init__(
         self,
         factory: FactoryType[T],
         *,
+        cache_defaults: bool = False,
         owner: OwnedProxy[T] | None = None,
+        target: T | None = None,
     ) -> None:
-        object.__setattr__(self, '__owner__', owner)
+        object.__setattr__(self, '__proxy_owner__', owner)
         object.__setattr__(
             self,
-            '__finalizer__',
+            '__proxy_finalizer__',
             atexit.register(_WeakRefFinalizer(self, '__del__')),
         )
-        super().__init__(factory)
+        super().__init__(factory, cache_defaults=cache_defaults, target=target)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__finalizer__'))
+        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
-        owner = object.__getattribute__(self, '__owner__')
+        owner = object.__getattribute__(self, '__proxy_owner__')
         if owner is not None:
             ref_mut_count = object.__getattribute__(
                 owner,
-                '__ref_mut_count__',
+                '__proxy_ref_mut_count__',
             )
             assert ref_mut_count == 1
-            object.__setattr__(owner, '__ref_mut_count__', 0)
-        object.__setattr__(self, '__owner__', None)
-        object.__setattr__(self, '__valid__', False)
+            object.__setattr__(owner, '__proxy_ref_mut_count__', 0)
+        object.__setattr__(self, '__proxy_owner__', None)
+        object.__setattr__(self, '__proxy_valid__', False)
 
     def __reduce__(  # type: ignore[override]
         self,
@@ -332,9 +387,9 @@ class RefMutProxy(BaseRefProxy[T]):
         Callable[[FactoryType[T]], RefMutProxy[T]],
         tuple[FactoryType[T]],
     ]:
-        object.__setattr__(self, '__valid__', False)
+        object.__setattr__(self, '__proxy_valid__', False)
         return _ref_mut_proxy_trampoline, (
-            object.__getattribute__(self, '__factory__'),
+            object.__getattribute__(self, '__proxy_factory__'),
         )
 
     def __reduce_ex__(  # type: ignore[override]
@@ -345,6 +400,25 @@ class RefMutProxy(BaseRefProxy[T]):
         tuple[FactoryType[T]],
     ]:
         return self.__reduce__()
+
+
+def _copy_attributes(
+    source: Proxy[T],
+    dest: Proxy[T],
+    *,
+    deepcopy: bool = False,
+) -> None:
+    if source.__proxy_resolved__:
+        target = source.__proxy_wrapped__
+        if deepcopy:
+            target = copy.deepcopy(target)
+        dest.__proxy_wrapped__ = target
+
+    default_class = object.__getattribute__(source, '__proxy_default_class__')
+    default_hash = object.__getattribute__(source, '__proxy_default_hash__')
+
+    object.__setattr__(dest, '__proxy_default_class__', default_class)
+    object.__setattr__(dest, '__proxy_default_hash__', default_hash)
 
 
 def borrow(
@@ -370,16 +444,16 @@ def borrow(
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be borrowed.')
-    if object.__getattribute__(proxy, '__ref_mut_count__') > 0:
+    if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
         raise MutableBorrowError('Proxy was already borrowed as mutable.')
     object.__setattr__(
         proxy,
-        '__ref_count__',
-        object.__getattribute__(proxy, '__ref_count__') + 1,
+        '__proxy_ref_count__',
+        object.__getattribute__(proxy, '__proxy_ref_count__') + 1,
     )
-    ref_proxy = RefProxy(proxy.__factory__, owner=proxy)
-    if populate_target and is_resolved(proxy):
-        ref_proxy.__wrapped__ = proxy.__wrapped__
+    ref_proxy = RefProxy(proxy.__proxy_factory__, owner=proxy)
+    if populate_target:
+        _copy_attributes(proxy, ref_proxy)
     return ref_proxy
 
 
@@ -407,25 +481,27 @@ def mut_borrow(
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be borrowed.')
-    if object.__getattribute__(proxy, '__ref_mut_count__') > 0:
+    if object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0:
         raise MutableBorrowError('Proxy was already borrowed as mutable.')
-    if object.__getattribute__(proxy, '__ref_count__') > 0:
+    if object.__getattribute__(proxy, '__proxy_ref_count__') > 0:
         raise MutableBorrowError('Proxy was already borrowed as immutable.')
     object.__setattr__(
         proxy,
-        '__ref_mut_count__',
-        object.__getattribute__(proxy, '__ref_mut_count__') + 1,
+        '__proxy_ref_mut_count__',
+        object.__getattribute__(proxy, '__proxy_ref_mut_count__') + 1,
     )
-    ref_proxy = RefMutProxy(proxy.__factory__, owner=proxy)
-    if populate_target and is_resolved(proxy):
-        ref_proxy.__wrapped__ = proxy.__wrapped__
+    ref_proxy = RefMutProxy(proxy.__proxy_factory__, owner=proxy)
+    if populate_target:
+        _copy_attributes(proxy, ref_proxy)
     return ref_proxy
 
 
 def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     """Clone the target object.
 
-    Creates a new copy of `T` in the global store.
+    Creates a new copy of `T` in the global store. If `proxy` is in
+    the resolved state, the local version of `T` belonging to `proxy` will
+    be deepcopied into the cloned proxy.
 
     Raises:
         ReferenceNotOwnedError: if `proxy` is not an
@@ -433,7 +509,7 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
     """
     if not isinstance(proxy, OwnedProxy):
         raise ReferenceNotOwnedError('Only owned references can be cloned.')
-    factory = proxy.__factory__
+    factory = proxy.__proxy_factory__
     store = factory.get_store()
     data = store.connector.get(factory.key)
     new_key = store.connector.put(data)
@@ -443,7 +519,9 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
         evict=factory.evict,
         deserializer=factory.deserializer,
     )
-    return OwnedProxy(new_factory)
+    owned = OwnedProxy(new_factory)
+    _copy_attributes(proxy, owned, deepcopy=True)
+    return owned
 
 
 def into_owned(
@@ -477,7 +555,7 @@ def into_owned(
         raise ValueError(
             'Only a base proxy can be converted into an owned proxy.',
         )
-    factory = proxy.__factory__
+    factory = proxy.__proxy_factory__
     if not isinstance(factory, StoreFactory):
         raise ProxyStoreFactoryError(
             'The proxy must contain a factory with type '
@@ -486,8 +564,8 @@ def into_owned(
         )
     factory.evict = False
     owned_proxy = OwnedProxy(factory)
-    if populate_target and is_resolved(proxy):
-        owned_proxy.__wrapped__ = proxy.__wrapped__
+    if populate_target:
+        _copy_attributes(proxy, owned_proxy)
     return owned_proxy
 
 
@@ -524,8 +602,8 @@ def update(
     if not isinstance(proxy, (OwnedProxy, RefMutProxy)):
         raise ReferenceNotOwnedError('Reference is an immutable borrow.')
     if isinstance(proxy, OwnedProxy) and (
-        object.__getattribute__(proxy, '__ref_mut_count__') > 0
-        or object.__getattribute__(proxy, '__ref_count__') > 0
+        object.__getattribute__(proxy, '__proxy_ref_mut_count__') > 0
+        or object.__getattribute__(proxy, '__proxy_ref_count__') > 0
     ):
         raise MutableBorrowError(
             'OwnedProxy has been borrowed. Cannot mutate.',
@@ -533,11 +611,11 @@ def update(
     if not is_resolved(proxy):
         return
 
-    store = proxy.__factory__.get_store()
+    store = proxy.__proxy_factory__.get_store()
     try:
         store._set(
-            proxy.__factory__.key,
-            proxy.__wrapped__,
+            proxy.__proxy_factory__.key,
+            proxy.__proxy_wrapped__,
             serializer=serializer,
         )
     except NotImplementedError as e:  # pragma: no cover

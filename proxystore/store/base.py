@@ -83,6 +83,8 @@ class Store(Generic[ConnectorT]):
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         metrics: Enable recording operation metrics.
+        populate_target: Set the default value of `populate_target` for
+            proxy methods of the store.
         register: Register the store instance after initialization.
 
     Raises:
@@ -100,6 +102,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         metrics: bool = False,
+        populate_target: bool = False,
         register: bool = False,
     ) -> None:
         if cache_size < 0:
@@ -114,6 +117,7 @@ class Store(Generic[ConnectorT]):
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
+        self._populate_target = populate_target
         self._register = register
 
         if self._register:
@@ -222,6 +226,7 @@ class Store(Generic[ConnectorT]):
             deserializer=self._deserializer,
             cache_size=self._cache_size,
             metrics=self.metrics is not None,
+            populate_target=self._populate_target,
             register=self._register,
         )
 
@@ -532,7 +537,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT: ...
@@ -546,7 +551,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> Proxy[T]: ...
@@ -559,7 +564,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        populate_target: bool = False,
+        populate_target: bool | None = None,
         skip_nonproxiable: bool = False,
         **kwargs: Any,
     ) -> Proxy[T] | NonProxiableT:
@@ -576,12 +581,15 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            populate_target: Set the returned proxy to point at `obj`. I.e.,
-                return an already resolved proxy. This is `False` by default
-                because the returned proxy will hold a reference to `obj`
-                which will prevent garbage collecting `obj`. Setting this flag
-                is helpful when serializing the returned proxy on this process
-                will incidentally resolve the proxy.
+            populate_target: Pass `cache_defaults=True` and `target=obj` to
+                the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
+                return a proxy that (1) is already resolved, (2) can be used
+                in [`isinstance`][isinstance] checks without resolving, and (3)
+                is hashable without resolving if `obj` is a hashable type.
+                This is `False` by default because the returned proxy will
+                hold a reference to `obj` which will prevent garbage
+                collecting `obj`. If `None`, defaults to the store-wide
+                setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -625,16 +633,21 @@ class Store(Generic[ConnectorT]):
                 deserializer=deserializer,
                 evict=evict,
             )
-            proxy = Proxy(factory)
-
-            if lifetime is not None:
-                lifetime.add_proxy(proxy)
-
+            populate_target = (
+                self._populate_target
+                if populate_target is None
+                else populate_target
+            )
             if populate_target:
                 # If obj were None, we would have escaped early when
                 # checking _NON_PROXIABLE_TYPES.
                 assert obj is not None
-                proxy.__wrapped__ = obj
+                proxy = Proxy(factory, cache_defaults=True, target=obj)
+            else:
+                proxy = Proxy(factory)
+
+            if lifetime is not None:
+                lifetime.add_proxy(proxy)
 
         if self.metrics is not None:
             self.metrics.add_time('store.proxy', key, timer.elapsed_ms)
@@ -655,7 +668,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> list[NonProxiableT]: ...
@@ -669,7 +682,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> list[Proxy[T]]: ...
@@ -685,7 +698,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        populate_target: bool = False,
+        populate_target: bool | None = None,
         skip_nonproxiable: bool = False,
         **kwargs: Any,
     ) -> list[Proxy[T] | NonProxiableT]:
@@ -702,13 +715,15 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            populate_target: Set each returned proxy to point at its
-                corresponding `obj`. I.e., return an already resolved proxy.
+            populate_target: Pass `cache_defaults=True` and `target=obj` to
+                the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
+                return a proxy that (1) is already resolved, (2) can be used
+                in [`isinstance`][isinstance] checks without resolving, and (3)
+                is hashable without resolving if `obj` is a hashable type.
                 This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage collecting
-                `obj`. Setting this flag is helpful when serializing a
-                returned proxy on this process will incidentally resolve the
-                proxy.
+                hold a reference to `obj` which will prevent garbage
+                collecting `obj`. If `None`, defaults to the store-wide
+                setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -758,25 +773,37 @@ class Store(Generic[ConnectorT]):
                 serializer=serializer,
                 **kwargs,
             )
-            proxies: list[Proxy[T]] = [
-                self.proxy_from_key(
+            factories: list[StoreFactory[ConnectorT, T]] = [
+                StoreFactory(
                     key,
+                    store_config=self.config(),
                     evict=evict,
-                    lifetime=lifetime,
                     deserializer=deserializer,
                 )
                 for key in keys
             ]
 
+            populate_target = (
+                self._populate_target
+                if populate_target is None
+                else populate_target
+            )
+
+            proxies: list[Proxy[T]] = []
+            for factory, obj in zip(factories, proxiable_objs):
+                if populate_target:
+                    proxy = Proxy(factory, cache_defaults=True, target=obj)
+                else:
+                    proxy = Proxy(factory)
+                proxies.append(proxy)
+
+            if lifetime is not None:
+                lifetime.add_proxy(*proxies)
+
             # Put non-proxiable objects back in their original positions.
             # The indices of non_proxiable must still be sorted
             for original_index, original_object in non_proxiable:
                 proxies.insert(original_index, original_object)
-
-            if populate_target:
-                for proxy, obj in zip(proxies, objs):
-                    if isinstance(proxy, Proxy):
-                        proxy.__wrapped__ = cast(T, obj)
 
         if self.metrics is not None:
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
@@ -845,7 +872,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT: ...
@@ -859,7 +886,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = ...,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> ProxyLocker[T]: ...
@@ -872,7 +899,7 @@ class Store(Generic[ConnectorT]):
         lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        populate_target: bool = False,
+        populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         **kwargs: Any,
     ) -> ProxyLocker[T] | NonProxiableT:
@@ -889,12 +916,15 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            populate_target: Set the returned proxy to point at `obj`. I.e.,
-                return an already resolved proxy. This is `False` by default
-                because the returned proxy will hold a reference to `obj`
-                which will prevent garbage collecting `obj`. Setting this flag
-                is helpful when serializing the returned proxy on this process
-                will incidentally resolve the proxy.
+            populate_target: Pass `cache_defaults=True` and `target=obj` to
+                the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
+                return a proxy that (1) is already resolved, (2) can be used
+                in [`isinstance`][isinstance] checks without resolving, and (3)
+                is hashable without resolving if `obj` is a hashable type.
+                This is `False` by default because the returned proxy will
+                hold a reference to `obj` which will prevent garbage
+                collecting `obj`. If `None`, defaults to the store-wide
+                setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -937,7 +967,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         **kwargs: Any,
     ) -> NonProxiableT: ...
@@ -949,7 +979,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = ...,
         deserializer: DeserializerT | None = ...,
-        populate_target: bool = ...,
+        populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         **kwargs: Any,
     ) -> OwnedProxy[T]: ...
@@ -960,7 +990,7 @@ class Store(Generic[ConnectorT]):
         *,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        populate_target: bool = False,
+        populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         **kwargs: Any,
     ) -> OwnedProxy[T] | NonProxiableT:
@@ -976,12 +1006,15 @@ class Store(Generic[ConnectorT]):
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            populate_target: Set the returned proxy to point at `obj`. I.e.,
-                return an already resolved proxy. This is `False` by default
-                because the returned proxy will hold a reference to `obj`
-                which will prevent garbage collecting `obj`. Setting this flag
-                is helpful when serializing the returned proxy on this process
-                will incidentally resolve the proxy.
+            populate_target: Pass `cache_defaults=True` and `target=obj` to
+                the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
+                return a proxy that (1) is already resolved, (2) can be used
+                in [`isinstance`][isinstance] checks without resolving, and (3)
+                is hashable without resolving if `obj` is a hashable type.
+                This is `False` by default because the returned proxy will
+                hold a reference to `obj` which will prevent garbage
+                collecting `obj`. If `None`, defaults to the store-wide
+                setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -1009,7 +1042,12 @@ class Store(Generic[ConnectorT]):
         )
 
         if isinstance(possible_proxy, Proxy):
-            return into_owned(possible_proxy)
+            populate_target = (
+                self._populate_target
+                if populate_target is None
+                else populate_target
+            )
+            return into_owned(possible_proxy, populate_target=populate_target)
         return possible_proxy
 
     def put(

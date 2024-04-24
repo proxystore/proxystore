@@ -6,6 +6,7 @@ import pytest
 
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import extract
+from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
@@ -69,6 +70,12 @@ def test_proxy_utils() -> None:
     assert not is_resolved(p)
     resolve(p)
     assert is_resolved(p)
+
+
+def test_get_factory() -> None:
+    factory = SimpleFactory('value')
+    proxy = Proxy(factory)
+    assert get_factory(proxy) is factory
 
 
 def test_proxy_locker():

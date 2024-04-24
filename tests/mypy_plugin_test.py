@@ -27,15 +27,15 @@ def test_proxy_slots_types() -> None:
     proxy = Proxy(factory_int)
 
     assert_type(proxy, Proxy[int])
-    assert_type(proxy.__factory__, Callable[[], int])
-    assert_type(proxy.__resolved__, bool)
-    assert_type(proxy.__wrapped__, int)
+    assert_type(proxy.__proxy_factory__, Callable[[], int])
+    assert_type(proxy.__proxy_resolved__, bool)
+    assert_type(proxy.__proxy_wrapped__, int)
 
     if TYPE_CHECKING:
-        # Accessing __target__ directly will raise an AttributeError because
-        # at runtime because it must be done through
-        # object.__getattribute__(proxy, '__target__').
-        assert_type(proxy.__target__, int)
+        # Accessing __proxy_target__ directly will raise an AttributeError
+        # because at runtime because it must be done through
+        # object.__getattribute__(proxy, '__proxy_target__').
+        assert_type(proxy.__proxy_target__, int)
 
 
 def test_proxy_class_attribute_types() -> None:

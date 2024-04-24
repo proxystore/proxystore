@@ -6,6 +6,7 @@ from typing import Any
 from typing import Tuple
 from typing import TypeVar
 
+from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import base
@@ -30,7 +31,7 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
             [`StoreFactory`][proxystore.store.base.StoreFactory].
     """
-    factory = proxy.__factory__
+    factory = get_factory(proxy)
     if isinstance(factory, base.StoreFactory):
         return factory.key
     else:
@@ -68,7 +69,7 @@ def resolve_async(proxy: Proxy[T]) -> None:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
             [`StoreFactory`][proxystore.store.base.StoreFactory].
     """
-    factory = proxy.__factory__
+    factory = get_factory(proxy)
     if isinstance(factory, base.StoreFactory):
         if not is_resolved(proxy):
             factory.resolve_async()

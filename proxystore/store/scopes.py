@@ -51,10 +51,10 @@ def mark_refs_out_of_scope(
             owner.
     """
     for ref in refs:
-        if not object.__getattribute__(ref, '__valid__'):
+        if not object.__getattribute__(ref, '__proxy_valid__'):
             # We've already encountered and handled this reference
             continue
-        owner = object.__getattribute__(ref, '__owner__')
+        owner = object.__getattribute__(ref, '__proxy_owner__')
         if owner is None:
             raise RuntimeError(
                 f'Cannot mark {owner!r} as out of scope because it has '
@@ -62,19 +62,22 @@ def mark_refs_out_of_scope(
             )
 
         if isinstance(ref, RefProxy):
-            ref_count = object.__getattribute__(owner, '__ref_count__')
-            object.__setattr__(owner, '__ref_count__', ref_count - 1)
+            ref_count = object.__getattribute__(owner, '__proxy_ref_count__')
+            object.__setattr__(owner, '__proxy_ref_count__', ref_count - 1)
         elif isinstance(ref, RefMutProxy):
-            ref_count = object.__getattribute__(owner, '__ref_mut_count__')
-            object.__setattr__(owner, '__ref_mut_count__', ref_count - 1)
+            ref_count = object.__getattribute__(
+                owner,
+                '__proxy_ref_mut_count__',
+            )
+            object.__setattr__(owner, '__proxy_ref_mut_count__', ref_count - 1)
         else:
             raise AssertionError('Unreachable.')
 
         # Remove ref's reference to owner so it no longer keeps owner alive
-        object.__setattr__(ref, '__owner__', None)
+        object.__setattr__(ref, '__proxy_owner__', None)
         # Mark ref as invalid in case the user tries to use it after it
         # has already "gone out of scope."
-        object.__setattr__(ref, '__valid__', False)
+        object.__setattr__(ref, '__proxy_valid__', False)
 
 
 def _make_out_of_scope_callback(

@@ -43,6 +43,7 @@ If you run into these errors, try:
 * Avoid use of datastructures or functions which unnecessarily resolve proxies.
 * If avoiding use of the datastructures or functions causing the problem is not possible, consider using the `populate_target=True` flag when creating the proxy.
   The `populate_target` flag will return a proxy that is already resolved so the factory, which would evict the target object, does not need to be called until the proxy is serialized and then deserialized and resolved on a different process.
+  The flag will also cache the class type and hash value of the target such that the proxy can be used in datastructures which rely on [`hash()`][hash] or in [`isinstance`][isinstance] checks without needing to resolve the proxy.
 
 ## Lifetimes
 

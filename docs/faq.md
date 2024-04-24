@@ -11,7 +11,6 @@ This will not resolve the proxy.
 
 Checking the type of a proxy's target object requires more care because `#!python isinstance(proxy, MyType)` will resolve the proxy.
 This can be avoided by doing a direct type comparisons (e.g., `#!python type(proxy) == MyType)`) but this will mean that type comparisons with subclasses will not work.
-Otherwise, resolving a proxy when using [`isinstance()`][isinstance] is unavoidable.
 
 ```python linenums="1"
 from proxystore.proxy import Proxy
@@ -30,6 +29,25 @@ assert not isinstance(proxy, str)
 assert is_resolved(proxy)
 ```
 
+If the target object is known when creating a proxy, the `cache_defaults` and `target` parameters can be used to cache the type of the target so that [`isinstance`][isinstance] checks do not need to resolve the proxy.
+
+```python linenums="1"
+from proxystore.proxy import Proxy
+from proxystore.proxy import is_resolved
+
+value = 'value'
+proxy = Proxy(lambda: value, cache_defaults=True, target=value)
+del proxy.__proxy_wrapped__  # (1)!
+assert not is_resolved(proxy)
+
+assert isinstance(proxy, str)  # (2)!
+assert not is_resolved(proxy)
+```
+
+1. Passing `target=value` will create a proxy that is already resolved.
+   Deleting the wrapped target object will "unresolve" the proxy.
+2. [`isinstance`][isinstance] can be used safely because the `__class__` value of the target was cached inside the proxy instance.
+
 ### What is resolving my proxy?
 
 Certain data structures can unintenionally resolve a proxy.
@@ -47,6 +65,12 @@ my_set = set()
 my_set.add(proxy)
 assert is_resolved(proxy)
 ```
+
+!!! tip
+
+    The `#!python cache_defaults=True` and `target` flags can be used inside the [`Proxy`][proxystore.proxy.Proxy] constructor to cache the `__hash__` value of the target which will make the proxy hashable without needing to be resolved first.
+    This only applies to hashable target objects.
+    Similarly, passing `#!python populate_target=True` to [`Store.proxy()`][proxystore.store.base.Store.proxy] will automatically set these flags on the returned proxy.
 
 There are a few mechanisms for determining when a proxy is getting resolved while debugging.
 

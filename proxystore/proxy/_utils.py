@@ -26,41 +26,41 @@ class _ProxyMethods:
     # that, we copy the properties into the derived class type itself
     # via a meta class. In that way the properties will always take
     # precedence.
-    __wrapped__: Any
+    __proxy_wrapped__: Any
 
     # The Proxy class is re-exported from proxystore/proxy/__init__.py
     # and this module is hidden from the docs so we set the Proxy class's
     # module to proxystore.proxy.
     @proxy_property(default='proxystore.proxy')
     def __module__(self) -> str:  # type: ignore[override]
-        return self.__wrapped__.__module__
+        return self.__proxy_wrapped__.__module__
 
     @__module__.setter
     def __module__set(self, value: str) -> None:
-        self.__wrapped__.__module__ = value
+        self.__proxy_wrapped__.__module__ = value
 
     @proxy_property(default='<Proxy Placeholder Docstring>')
     def __doc__(self) -> str:  # type: ignore[override]
-        return self.__wrapped__.__doc__
+        return self.__proxy_wrapped__.__doc__
 
     @__doc__.setter
     def __doc__set(self, value: str) -> None:
-        self.__wrapped__.__doc__ = value
+        self.__proxy_wrapped__.__doc__ = value
 
     @property
     def __annotations__(self) -> dict[str, Any]:
-        return self.__wrapped__.__annotations__
+        return self.__proxy_wrapped__.__annotations__
 
     @__annotations__.setter
     def __annotations__(self, value: dict[str, Any]) -> None:
-        self.__wrapped__.__annotations__ = value
+        self.__proxy_wrapped__.__annotations__ = value
 
     # We similar use a property for __dict__. We need __dict__ to be
     # explicit to ensure that vars() works as expected.
 
     @property
     def __dict__(self) -> dict[str, Any]:  # type: ignore[override]
-        return self.__wrapped__.__dict__
+        return self.__proxy_wrapped__.__dict__
 
     # Need to also propagate the special __weakref__ attribute for case
     # where decorating classes which will define this. If do not define
@@ -69,7 +69,7 @@ class _ProxyMethods:
 
     @property
     def __weakref__(self) -> Any:
-        return self.__wrapped__.__weakref__
+        return self.__proxy_wrapped__.__weakref__
 
 
 class ProxyMetaType(type):
