@@ -481,6 +481,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/latest/guides/dask-distributed/</loc>
+         <lastmod>2024-04-24</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/latest/guides/endpoints-debugging/</loc>
          <lastmod>2024-04-24</lastmod>
          <changefreq>daily</changefreq>
