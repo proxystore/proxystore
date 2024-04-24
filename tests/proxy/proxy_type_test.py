@@ -818,3 +818,48 @@ def test_resolved_str() -> None:
     assert obj.__resolved__ is False
     str(obj)
     assert obj.__resolved__ is True
+
+
+def test_preset_target() -> None:
+    target = 'value'
+    proxy = Proxy(lambda: target, target=target)  # pragma: no cover
+    assert proxy.__resolved__
+
+
+def test_precompute_defaults() -> None:
+    target = 'value'
+
+    proxy = Proxy(
+        lambda: target,  # pragma: no cover
+        cache_defaults=True,
+        target=target,
+    )
+    del proxy.__wrapped__
+
+    assert not proxy.__resolved__
+    assert hash(proxy) == hash(target)
+    assert not proxy.__resolved__
+    assert isinstance(proxy, str)
+    assert not proxy.__resolved__
+    assert not isinstance(proxy, list)
+    assert not proxy.__resolved__
+
+
+def test_precompute_unhashable() -> None:
+    target = [1, 2, 3]
+
+    proxy = Proxy(
+        lambda: target,  # pragma: no cover
+        cache_defaults=True,
+        target=target,
+    )
+    del proxy.__wrapped__
+
+    assert not proxy.__resolved__
+    try:
+        hash(proxy)
+    except TypeError:
+        pass
+    assert not proxy.__resolved__
+    assert isinstance(proxy, list)
+    assert not proxy.__resolved__

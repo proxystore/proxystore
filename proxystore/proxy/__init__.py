@@ -71,6 +71,19 @@ from proxystore.proxy._utils import ProxyMetaType
 
 T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
+DefaultClassType: TypeAlias = type | None
+DefaultHashType: TypeAlias = Exception | int | None
+
+
+def _proxy_trampoline(
+    factory: FactoryType[T],
+    default_class: DefaultClassType = None,
+    default_hash: DefaultHashType = None,
+) -> Proxy[T]:
+    proxy = Proxy(factory)
+    object.__setattr__(proxy, '__default_class__', default_class)
+    object.__setattr__(proxy, '__default_hash__', default_hash)
+    return proxy
 
 
 class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
@@ -82,22 +95,20 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
 
     An object proxy acts as a thin wrapper around a Python object, i.e.
     the proxy behaves identically to the underlying object. The proxy is
-    initialized with a callable factory object. The factory returns the
-    underlying object when called, i.e. 'resolves' the proxy. The does
-    just-in-time resolution, i.e., the proxy
-    does not call the factory until the first access to the proxy (hence, the
-    lazy aspect of the proxy).
+    initialized with a callable *factory* object. The factory returns the
+    underlying object when called, i.e. *resolves* the proxy. This means a
+    proxy performs lazy/just-in-time resolution, i.e., the proxy
+    does not call the factory until the first access to the proxy.
 
-    The factory contains the mechanisms to appropriately resolve the object,
-    e.g., which in the case for ProxyStore means requesting the correct
-    object from the backend store.
+    ```python linenums="1"
+    from proxystore.proxy import Proxy
 
-    ```python
-    x = np.array([1, 2, 3])
-    f = ps.factory.SimpleFactory(x)
-    p = ps.proxy.Proxy(f)
-    assert isinstance(p, np.ndarray)
-    assert np.array_equal(p, [1, 2, 3])
+    def factory() -> list[int]:
+        return [1, 2, 3]
+
+    proxy = Proxy(factory)
+    assert isinstance(proxy, list)
+    assert proxy == [1, 2, 3]
     ```
 
     Note:
@@ -109,6 +120,45 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         the wrapped object. Thus, proxy instances can be pickled and passed
         around cheaply, and once the proxy is unpickled and used, the `factory`
         will be called again to resolve the object.
+
+    Tip:
+        Common data structures (e.g., [`dict`][dict] or [`set`][set]) and
+        operations (e.g., [`isinstance`][isinstance]) will resolve an
+        unresolved proxy. This can result in unintentional performance
+        degradation for expensive factories, such as those that require
+        significant I/O or produce target objects that require a lot of memory.
+        The `target` and `cache_defaults` parameters of
+        [`Proxy`][proxystore.proxy.Proxy] can prevent these unintenional
+        proxy resolves by caching the `__class__` and `__hash__` values of the
+        target object in the proxy.
+
+        ```python linenums="1"
+        from proxystore.proxy import Proxy
+        from proxystore.proxy import is_resolved
+
+        proxy = Proxy(lambda: 'value')
+        assert not is_resolved(proxy)
+
+        assert isinstance(proxy, str)  # (1)!
+        assert is_resolved(proxy)
+
+        value = 'value'
+        proxy = Proxy(lambda: value, cache_defaults=True, target=value)  # (2)!
+        assert not is_resolved(proxy)
+
+        assert isinstance(proxy, str)  # (3)!
+        assert not is_resolved(proxy)
+        ```
+
+        1. Using [`isinstance`][isinstance] calls `__class__` on the target
+           object which requires the proxy to be resolved. In many cases,
+           it may be desirable to check the type of a proxy's target object
+           without incurring the cost of resolving the target.
+        2. If the target is available when constructing the proxy, the
+           proxy can precompute and cache the `__class__` and `__hash__` values
+           of the target.
+        3. Using [`isinstance`][isinstance] no longer requires the proxy
+           to be resolved, instead using the precomputed value.
 
     Warning:
         A proxy of a singleton type (e.g., `True`, `False`, and `None`) will
@@ -148,24 +198,68 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         __wrapped__: A property that either returns `__target__` if it
             exists else calls `__factory__`, saving the result to `__target__`
             and returning said result.
+        __default_class__: Optional default class type value to use when a
+            proxy is in the unresolved state. This avoids needing to resolve
+            the proxy to perform [`isinstance`][isinstance] checks. This value
+            is always ignored while the proxy is resolved because `__class__`
+            is a writable property of the cached target and could be altered.
+        __default_hash__: Optional default hash value to use when a proxy is
+            in the unresolved state and [`hash()`][hash] is called. This
+            avoids needing to resolve the proxy for simple operations like
+            dictionary updates. This value is always ignored while the proxy
+            is resolved because the cached target may be modified which
+            can alter the value of the hash.
 
     Args:
         factory: Callable object that returns the underlying object when
-            called.
+            called. The factory should be pure meaning that every call
+            of the factory returns the same object.
+        cache_defaults: Precompute and cache the `__default_class__` and
+            `__default_hash__` attributes of the proxy instance from `target`.
+            Ignored if `target` is not provided.
+        target: Optionally preset the target object.
 
     Raises:
         TypeError: If `factory` is not callable.
     """
 
-    __slots__ = '__target__', '__factory__'
+    __slots__ = (
+        '__target__',
+        '__factory__',
+        '__default_class__',
+        '__default_hash__',
+    )
 
     __target__: T
     __factory__: FactoryType[T]
+    __default_class__: DefaultClassType
+    __default_hash__: DefaultHashType
 
-    def __init__(self, factory: FactoryType[T]) -> None:
+    def __init__(
+        self,
+        factory: FactoryType[T],
+        *,
+        cache_defaults: bool = False,
+        target: T | None = None,
+    ) -> None:
         if not callable(factory):
             raise TypeError('Factory must be callable.')
         object.__setattr__(self, '__factory__', factory)
+
+        default_class: DefaultClassType = None
+        default_hash: DefaultHashType = None
+
+        if target is not None:
+            object.__setattr__(self, '__target__', target)
+            if cache_defaults:
+                default_class = target.__class__
+                try:
+                    default_hash = hash(target)
+                except TypeError as e:
+                    default_hash = e
+
+        object.__setattr__(self, '__default_class__', default_class)
+        object.__setattr__(self, '__default_hash__', default_hash)
 
     @property
     def __resolved__(self) -> bool:
@@ -209,7 +303,11 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
 
     @property
     def __class__(self) -> Any:
-        return self.__wrapped__.__class__
+        default = object.__getattribute__(self, '__default_class__')
+        if not self.__resolved__ and default is not None:
+            return default
+        else:
+            return self.__wrapped__.__class__
 
     @__class__.setter
     def __class__(self, value: Any) -> None:  # pragma: no cover
@@ -275,7 +373,14 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         return self.__wrapped__ >= other
 
     def __hash__(self) -> int:
-        return hash(self.__wrapped__)
+        default = object.__getattribute__(self, '__default_hash__')
+        if not self.__resolved__ and default is not None:
+            if isinstance(default, Exception):
+                raise default
+            else:
+                return default
+        else:
+            return hash(self.__wrapped__)
 
     def __bool__(self) -> bool:
         return bool(self.__wrapped__)
@@ -490,13 +595,28 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
 
     def __reduce__(
         self,
-    ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
-        return Proxy, (object.__getattribute__(self, '__factory__'),)
+    ) -> tuple[
+        Callable[
+            [FactoryType[T], DefaultClassType, DefaultHashType],
+            Proxy[T],
+        ],
+        tuple[FactoryType[T], DefaultClassType, DefaultHashType],
+    ]:
+        factory = object.__getattribute__(self, '__factory__')
+        default_class = object.__getattribute__(self, '__default_class__')
+        default_hash = object.__getattribute__(self, '__default_hash__')
+        return _proxy_trampoline, (factory, default_class, default_hash)
 
     def __reduce_ex__(
         self,
         protocol: SupportsIndex,
-    ) -> tuple[Callable[[FactoryType[T]], Proxy[T]], tuple[FactoryType[T]]]:
+    ) -> tuple[
+        Callable[
+            [FactoryType[T], DefaultClassType, DefaultHashType],
+            Proxy[T],
+        ],
+        tuple[FactoryType[T], DefaultClassType, DefaultHashType],
+    ]:
         return self.__reduce__()
 
     def __aiter__(self) -> Any:
