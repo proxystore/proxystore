@@ -121,6 +121,7 @@ nav:
       - Store: concepts/store.md
   - Guides:
       - guides/index.md
+      - Dask Distributed: guides/dask-distributed.md
       - Globus Compute: guides/globus-compute.md
       - Endpoints Overview: guides/endpoints.md
       - Endpoints Debugging: guides/endpoints-debugging.md
@@ -167,6 +168,7 @@ plugins:
             - https://extensions.proxystore.dev/main/objects.inv
             - https://redis-py.readthedocs.io/en/stable/objects.inv
             - https://kafka-python.readthedocs.io/en/master/objects.inv
+            - https://distributed.dask.org/en/latest/objects.inv
           options:
             annotations_path: brief
             docstring_section_style: list

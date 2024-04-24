@@ -5,6 +5,7 @@
     More guides are available on the
     [ProxyStore Extensions page](https://extensions.proxystore.dev/latest/guides/){target=_blank}.
 
+* [Dask Distributed](dask-distributed.md)
 * [Globus Compute](globus-compute.md)
 * [Endpoints Overview](endpoints.md)
 * [Endpoints Debugging](endpoints-debugging.md)
