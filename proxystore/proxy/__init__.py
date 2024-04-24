@@ -50,6 +50,7 @@ from typing import Callable
 from typing import cast
 from typing import Generic
 from typing import Iterator
+from typing import Optional
 from typing import SupportsIndex
 from typing import TypeVar
 from typing import Union
@@ -71,8 +72,8 @@ from proxystore.proxy._utils import ProxyMetaType
 
 T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
-DefaultClassType: TypeAlias = type | None
-DefaultHashType: TypeAlias = Exception | int | None
+DefaultClassType: TypeAlias = Optional[type]
+DefaultHashType: TypeAlias = Optional[Union[Exception, int]]
 
 
 def _proxy_trampoline(

@@ -365,3 +365,20 @@ def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
 def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
     with pytest.raises(NonProxiableTypeError):
         store.owned_proxy(None, skip_nonproxiable=False)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_default_populate_target(populate_target: bool) -> None:
+    with Store(
+        'test-default-populate-target',
+        LocalConnector(),
+        populate_target=populate_target,
+    ) as store:
+        proxy = store.proxy('value')
+        assert is_resolved(proxy) == populate_target
+
+        proxy = store.proxy('value', populate_target=True)
+        assert is_resolved(proxy)
+
+        proxy = store.proxy('value', populate_target=False)
+        assert not is_resolved(proxy)
