@@ -53,16 +53,29 @@ in your
 
 from __future__ import annotations
 
+import functools
+import sys
 from typing import Callable
+from typing import TypeVar
+
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
+    from typing import ParamSpec
+else:  # pragma: <3.10 cover
+    from typing_extensions import ParamSpec
 
 from mypy.checkmember import analyze_member_access
 from mypy.options import Options
 from mypy.plugin import AttributeContext
 from mypy.plugin import Plugin
+from mypy.types import AnyType
 from mypy.types import get_proper_type
 from mypy.types import Instance
 from mypy.types import Type
+from mypy.types import TypeOfAny
 from mypy.types import TypeVarType
+
+P = ParamSpec('P')
+T = TypeVar('T')
 
 PROXY_FULLNAME = 'proxystore.proxy.Proxy'
 
@@ -83,6 +96,22 @@ class ProxyStoreMypyPlugin(Plugin):  # noqa: D101
         return None
 
 
+def _assertion_fallback(function: Callable[P, Type]) -> Callable[P, Type]:
+    # Decorator which catches AssertionErrors and returns AnyType
+    # to indicate that the plugin does not know how to handle that case
+    # and will default back to Any.
+    # https://github.com/dry-python/returns/blob/dda187d78fe405d7d1234ffaffc99d8264f854dc/returns/contrib/mypy/_typeops/fallback.py
+    @functools.wraps(function)
+    def decorator(*args: P.args, **kwargs: P.kwargs) -> Type:
+        try:
+            return function(*args, **kwargs)
+        except AssertionError:
+            return AnyType(TypeOfAny.implementation_artifact)
+
+    return decorator
+
+
+@_assertion_fallback
 def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
     # These assertions should be covered by
     # ProxyStoreMyPyPlugin.get_attribute_hook, the only function which

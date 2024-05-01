@@ -138,3 +138,19 @@ def test_proxy_bad_attribute_use() -> None:
 
     # Will fail because mypy should have inferred x is an int.
     expects_str(x)  # type: ignore[arg-type]
+
+
+def test_union_type_bad_attribute_crash() -> None:
+    # https://github.com/proxystore/proxystore/issues/559
+    def foo(x: T | Proxy[T]) -> T | Callable[[], T]:  # pragma: no cover
+        # Note: this function should not actually be called! It will error!
+        if isinstance(x, Proxy):
+            return x.__factory__  # In #559, mypy crashes on this line
+        else:
+            return x
+
+    x = Proxy(lambda: 42)
+    try:
+        _ = x.__factory__  # type: ignore[attr-defined]
+    except AttributeError:
+        pass
