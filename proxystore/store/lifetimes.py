@@ -232,7 +232,7 @@ class ContextLifetime:
             else:
                 raise ProxyStoreFactoryError(
                     'The proxy must contain a factory with type '
-                    f'{type(StoreFactory).__name__}. {type(factory).__name__} '
+                    f'{StoreFactory.__name__}. {type(factory).__name__} '
                     'is not supported.',
                 )
         self.add_key(*keys)
@@ -486,7 +486,7 @@ class StaticLifetime:
             else:
                 raise ProxyStoreFactoryError(
                     'The proxy must contain a factory with type '
-                    f'{type(StoreFactory).__name__}. {type(factory).__name__} '
+                    f'{StoreFactory.__name__}. {type(factory).__name__} '
                     'is not supported.',
                 )
 
