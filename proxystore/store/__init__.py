@@ -61,7 +61,7 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
         else:
             raise ProxyStoreFactoryError(
                 'The proxy must contain a factory with type '
-                f'{type(StoreFactory).__name__}. {type(factory).__name__} '
+                f'{StoreFactory.__name__}. {type(factory).__name__} '
                 'is not supported.',
             )
     else:
