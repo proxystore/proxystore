@@ -88,7 +88,7 @@ There are a few mechanisms for determining when a proxy is getting resolved whil
   Enabling `DEBUG` level logging can help determine when or how often a proxy is getting resolved.
   Look for the `PUT` and `GET` messages indicating a target object was put in the store when creating the proxy and when the target object is retrieved when the proxy is resolved, respectively.
 
-### How to I serialize a proxy?
+### How do I serialize a proxy?
 
 A [`Proxy`][proxystore.proxy.Proxy] can be serialized using most common serializers.
 
