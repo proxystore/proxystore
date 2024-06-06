@@ -60,7 +60,7 @@ endpoints = [
 extensions = [
     "proxystore-ex",
 ]
-kafka = ["kafka-python>=2.0.2"]
+kafka = ["confluent-kafka"]
 redis = ["redis>=3.4"]
 zmq = ["pyzmq"]
 dev = [
