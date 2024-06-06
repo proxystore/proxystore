@@ -5,44 +5,42 @@ import sys
 from typing import NamedTuple
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
+    pass
 else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+    pass
 
-import kafka
+import confluent_kafka
 
 
-class Message(NamedTuple):
+class MockMessage(NamedTuple):
     topic: str
-    value: bytes
+    message: bytes
+    exception: confluent_kafka.KafkaError | None
+
+    def error(self) -> confluent_kafka.KafkaError | None:
+        return self.exception
+
+    def value(self) -> bytes:
+        return self.message
 
 
-class Future:
-    def get(self) -> None:
-        pass
-
-
-class MockKafkaProducer(kafka.KafkaProducer):
-    def __init__(self, queues: dict[str, queue.Queue[Message]]) -> None:
+class MockKafkaProducer(confluent_kafka.Producer):
+    def __init__(self, queues: dict[str, queue.Queue[MockMessage]]) -> None:
         self._queues = queues
 
-    def close(self) -> None:
+    def flush(self, timeout: float | None = None) -> None:
         pass
 
-    def send(self, topic: str, data: bytes) -> Future:
-        message = Message(topic, data)
+    def produce(self, topic: str, data: bytes) -> None:
+        message = MockMessage(topic, data, None)
         self._queues[topic].put(message)
-        return Future()
 
 
-class MockKafkaConsumer(kafka.KafkaConsumer):
-    def __init__(self, queue_: queue.Queue[Message]) -> None:
+class MockKafkaConsumer(confluent_kafka.Consumer):
+    def __init__(self, queue_: queue.Queue[MockMessage]) -> None:
         self._queue = queue_
 
-    def __iter__(self) -> Self:  # pragma: no cover
-        return self
-
-    def __next__(self) -> Message:
+    def poll(self, timeout: float | None = None) -> MockMessage:
         return self._queue.get()
 
     def close(self) -> None:
@@ -52,5 +50,5 @@ class MockKafkaConsumer(kafka.KafkaConsumer):
 def make_producer_consumer_pair(
     topic: str = 'default',
 ) -> tuple[MockKafkaProducer, MockKafkaConsumer]:
-    queue_: queue.Queue[Message] = queue.Queue()
+    queue_: queue.Queue[MockMessage] = queue.Queue()
     return MockKafkaProducer({topic: queue_}), MockKafkaConsumer(queue_)

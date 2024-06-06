@@ -19,7 +19,7 @@ import sys
 import time
 from typing import Sequence
 
-import kafka
+import confluent_kafka
 
 from proxystore.stream.shims.kafka import KafkaPublisher
 from proxystore.stream.shims.kafka import KafkaSubscriber
@@ -29,7 +29,7 @@ MESSAGES = [f'message_{i}'.encode() for i in range(10)]
 
 def publish(broker: str, delay: float) -> None:
     """Publish messages to the stream."""
-    producer = kafka.KafkaProducer(bootstrap_servers=[broker])
+    producer = confluent_kafka.Producer({'bootstrap.servers': broker})
     publisher = KafkaPublisher(producer)
 
     for message in MESSAGES:
@@ -43,7 +43,10 @@ def publish(broker: str, delay: float) -> None:
 
 def subscribe(broker: str) -> None:
     """Subscribe to messages from the stream."""
-    consumer = kafka.KafkaConsumer('default', bootstrap_servers=[broker])
+    consumer = confluent_kafka.Consumer(
+        {'bootstrap.servers': broker, 'group.id': 'default'},
+    )
+    consumer.subscribe(['default'])
     subscriber = KafkaSubscriber(consumer)
 
     print('Listening for messages...')
