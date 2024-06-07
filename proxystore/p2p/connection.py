@@ -20,9 +20,6 @@ try:
     from aiortc.contrib.signaling import BYE
     from aiortc.contrib.signaling import object_from_string
     from aiortc.contrib.signaling import object_to_string
-    from cryptography.utils import CryptographyDeprecationWarning
-
-    warnings.simplefilter('ignore', CryptographyDeprecationWarning)
 except ImportError as e:  # pragma: no cover
     warnings.warn(
         f'{e}. To enable endpoint serving, install proxystore with '

@@ -150,7 +150,6 @@ timeout = 30
 
 [tool.pytest.ini_options]
 filterwarnings = [
-    "ignore::cryptography.utils.CryptographyDeprecationWarning",
     "ignore::proxystore.warnings.ExperimentalWarning",
     "ignore::DeprecationWarning:proxystore.*",
     "ignore::DeprecationWarning:testing.*",
