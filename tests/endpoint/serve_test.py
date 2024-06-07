@@ -29,8 +29,7 @@ from testing.compat import randbytes
 from testing.utils import open_port
 
 
-@pytest_asyncio.fixture
-@pytest.mark.asyncio()
+@pytest_asyncio.fixture()
 async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
     async with Endpoint(
         name='my-endpoint',
