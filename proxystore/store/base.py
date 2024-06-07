@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import sys
-import warnings
 from types import TracebackType
 from typing import Any
 from typing import cast
@@ -45,7 +44,6 @@ from proxystore.store.types import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
 from proxystore.utils.timer import Timer
-from proxystore.warnings import ExperimentalWarning
 
 logger = logging.getLogger(__name__)
 
@@ -344,13 +342,6 @@ class Store(Generic[ConnectorT]):
                 f'the {DeferrableConnector.__name__} necessary to use the '
                 f'{Future.__name__} interface.',
             )
-
-        warnings.warn(
-            'The Store.future() and Future interfaces are experimental '
-            'and may change in future releases.',
-            category=ExperimentalWarning,
-            stacklevel=2,
-        )
 
         with Timer() as connector_timer:
             key = self.connector.new_key()

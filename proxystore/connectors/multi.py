@@ -6,7 +6,6 @@ import dataclasses
 import logging
 import re
 import sys
-import warnings
 from types import TracebackType
 from typing import Any
 from typing import Dict
@@ -26,13 +25,6 @@ from proxystore import utils
 from proxystore.connectors.protocols import Connector
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
-from proxystore.warnings import ExperimentalWarning
-
-warnings.warn(
-    'MultiConnector is an experimental feature and may change in the future.',
-    category=ExperimentalWarning,
-    stacklevel=2,
-)
 
 logger = logging.getLogger(__name__)
 KeyT = TypeVar('KeyT', bound=NamedTuple)
