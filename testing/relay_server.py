@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import AsyncGenerator
 from typing import NamedTuple
 
-import pytest
 import pytest_asyncio
 import websockets
 from websockets.server import WebSocketServer
@@ -27,7 +26,6 @@ class RelayServerInfo(NamedTuple):
 
 
 @pytest_asyncio.fixture()
-@pytest.mark.asyncio()
 async def relay_server() -> AsyncGenerator[RelayServerInfo, None]:
     """Fixture that runs relay server locally.
 
