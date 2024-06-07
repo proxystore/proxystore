@@ -16,6 +16,7 @@ else:  # pragma: <3.11 cover
 import pytest
 
 from proxystore.proxy import Proxy
+from proxystore.proxy import ProxyOr
 
 T = TypeVar('T')
 
@@ -154,3 +155,18 @@ def test_union_type_bad_attribute_crash() -> None:
         _ = x.__factory__  # type: ignore[attr-defined]
     except AttributeError:
         pass
+
+
+def test_proxy_or_type() -> None:
+    class TestClass:
+        value = 42
+
+    def get_value(x: ProxyOr[TestClass]) -> int:
+        assert_type(x.value, int)
+        return x.value
+
+    class_instance = TestClass()
+    proxy_instance = Proxy(lambda: TestClass())
+
+    assert get_value(class_instance) == 42
+    assert get_value(proxy_instance) == 42

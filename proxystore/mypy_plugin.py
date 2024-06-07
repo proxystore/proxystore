@@ -73,6 +73,7 @@ from mypy.types import Instance
 from mypy.types import Type
 from mypy.types import TypeOfAny
 from mypy.types import TypeVarType
+from mypy.types import UnionType
 
 P = ParamSpec('P')
 T = TypeVar('T')
@@ -111,22 +112,11 @@ def _assertion_fallback(function: Callable[P, Type]) -> Callable[P, Type]:
     return decorator
 
 
-@_assertion_fallback
-def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
-    # These assertions should be covered by
-    # ProxyStoreMyPyPlugin.get_attribute_hook, the only function which
-    # calls this function.
-    assert isinstance(ctx.type, Instance)
-    assert any(t.fullname == PROXY_FULLNAME for t in ctx.type.type.mro)
-
-    # Code somewhat based on:
-    # https://github.com/dry-python/returns/blob/560858ec46e529d90267c0c69efdbbce4d417178/returns/contrib/mypy/_features/kind.py#L23
-    if len(ctx.type.args) == 0:
-        return ctx.default_attr_type
-    elif len(ctx.type.args) > 1:
-        raise AssertionError(f'Got more than one type arg: {ctx.type.args}')
-    instance = get_proper_type(ctx.type.args[0])
-
+def attribute_access(  # noqa: D103
+    instance: Type,
+    ctx: AttributeContext,
+) -> Type:
+    instance = get_proper_type(instance)
     if isinstance(instance, TypeVarType):
         # Don't change anything the we have an unbound Proxy[T].
         return ctx.default_attr_type
@@ -145,6 +135,27 @@ def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
             chk=ctx.api,  # type: ignore
             in_literal_context=exprchecker.is_literal_context(),
         )
+    else:
+        return ctx.default_attr_type
+
+
+@_assertion_fallback
+def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
+    if isinstance(ctx.type, UnionType):
+        resolved = tuple(
+            attribute_access(instance, ctx) for instance in ctx.type.items
+        )
+        return UnionType(resolved)
+    elif isinstance(ctx.type, Instance):
+        # Code somewhat based on:
+        # https://github.com/dry-python/returns/blob/560858ec46e529d90267c0c69efdbbce4d417178/returns/contrib/mypy/_features/kind.py#L23
+        if len(ctx.type.args) == 0:
+            return ctx.default_attr_type
+        elif len(ctx.type.args) > 1:
+            raise AssertionError(
+                f'Got more than one type arg: {ctx.type.args}',
+            )
+        return attribute_access(ctx.type.args[0], ctx)
     else:
         return ctx.default_attr_type
 
