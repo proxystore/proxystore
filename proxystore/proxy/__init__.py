@@ -65,6 +65,11 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
+    from typing import TypeAliasType
+else:  # pragma: <3.12 cover
+    from typing_extensions import TypeAliasType
+
 from proxystore.proxy._utils import _do_await
 from proxystore.proxy._utils import _do_yield_from
 from proxystore.proxy._utils import as_metaclass
@@ -655,7 +660,24 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         return self.__proxy_wrapped__.__aexit__(*args, **kwargs)  # type: ignore[attr-defined]
 
 
-ProxyType: TypeAlias = Union[Proxy[T], T]
+_ProxyOr: TypeAlias = Union[Proxy[T], T]
+ProxyOr = TypeAliasType('ProxyOr', Union[Proxy[T], T], type_params=(T,))
+"""Type alias for a union of a type `T` or a `Proxy[T]`.
+
+This type alias is useful for typing functions that operate on or
+return mixed types involving proxies.
+
+Example:
+    ```python
+    from typing import TypeVar
+    from proxystore.proxy import Proxy, ProxyOr, extract
+
+    T = TypeVar('T')
+
+    def extract_if_proxy(value: ProxyOr[T]) -> T:
+        return extract(value) if isinstance(value, Proxy) else value
+    ```
+"""
 
 
 def get_factory(proxy: Proxy[T]) -> FactoryType[T]:
