@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import pathlib
 from concurrent.futures import Executor
 from concurrent.futures import ProcessPoolExecutor
@@ -57,11 +58,16 @@ def test_default_behavior(
 
 
 @pytest.mark.parametrize(
-    'base_executor_type',
-    (ThreadPoolExecutor, ProcessPoolExecutor),
+    ('base_executor_type', 'ownership'),
+    (
+        (ThreadPoolExecutor, True),
+        (ProcessPoolExecutor, True),
+        (ProcessPoolExecutor, False),
+    ),
 )
 def test_proxy_behavior(
     base_executor_type: type[Executor],
+    ownership: bool,
     tmp_path: pathlib.Path,
 ) -> None:
     base_executor = base_executor_type()
@@ -71,7 +77,13 @@ def test_proxy_behavior(
         register=True,
     )
 
-    with StoreExecutor(base_executor, store, ProxyAlways()) as executor:
+    with StoreExecutor(
+        base_executor,
+        store,
+        should_proxy=ProxyAlways(),
+        ownership=ownership,
+        close_store=False,
+    ) as executor:
         future = executor.submit(sum, [1, 2, 3], start=-6)
         result = future.result()
         assert isinstance(result, Proxy)
@@ -84,6 +96,19 @@ def test_proxy_behavior(
         assert all(isinstance(value, Proxy) for value in results)
         assert results == [1, 1, 4]
 
+    # Delete any proxies before we close the store. This is to prevent
+    # the __del__ method of any OwnedProxies from reinitializing the store.
+    del future
+    del result
+    del results
+
+    # If ownership is enabled, all of the proxied data should have been
+    # evicted at this point so the FileConnector directory should
+    # be empty.
+    assert (len(os.listdir(tmp_path)) == 0) == ownership
+
+    store.close()
+
 
 def test_function_wrapper() -> None:
     with Store(
@@ -95,6 +120,7 @@ def test_function_wrapper() -> None:
             power,
             store_config=store.config(),
             should_proxy=ProxyNever(),
+            return_owned_proxy=False,
         )
         assert wrapped(2, exp=3) == 8
 
@@ -102,6 +128,7 @@ def test_function_wrapper() -> None:
             power,
             store_config=store.config(),
             should_proxy=ProxyAlways(),
+            return_owned_proxy=False,
         )
         assert wrapped(2, exp=3) == 8
 
