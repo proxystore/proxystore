@@ -49,6 +49,7 @@ import sys
 import weakref
 from typing import Any
 from typing import Callable
+from typing import cast
 from typing import NoReturn
 from typing import SupportsIndex
 from typing import TypeVar
@@ -58,6 +59,8 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
 else:  # pragma: <3.10 cover
     from typing_extensions import TypeAlias
 
+from proxystore.proxy import DefaultClassType
+from proxystore.proxy import DefaultHashType
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store.exceptions import ProxyStoreFactoryError
@@ -101,6 +104,26 @@ class _WeakRefFinalizer:
         obj = self.wr()
         if obj is not None:
             getattr(obj, self.method)()
+
+
+def _proxy_trampoline(
+    kind: str,
+    factory: FactoryType[T],
+    default_class: DefaultClassType = None,
+    default_hash: DefaultHashType = None,
+) -> BaseRefProxy[T]:
+    if kind == 'OwnedProxy':
+        proxy = OwnedProxy(factory)
+    elif kind == 'RefProxy':
+        proxy = RefProxy(factory)
+    elif kind == 'RefMutProxy':
+        proxy = RefMutProxy(factory)
+    else:
+        raise AssertionError(f'Unknown proxy kind: {kind}')
+
+    object.__setattr__(proxy, '__proxy_default_class__', default_class)
+    object.__setattr__(proxy, '__proxy_default_hash__', default_hash)
+    return proxy
 
 
 class BaseRefProxy(Proxy[T]):
@@ -162,10 +185,35 @@ class BaseRefProxy(Proxy[T]):
             'incidental misuse of the API. Use clone() instead.',
         )
 
+    def __reduce__(  # type: ignore[override]
+        self,
+    ) -> tuple[
+        Callable[
+            [str, FactoryType[T], DefaultClassType, DefaultHashType],
+            BaseRefProxy[T],
+        ],
+        tuple[str, FactoryType[T], DefaultClassType, DefaultHashType],
+    ]:
+        object.__setattr__(self, '__proxy_valid__', False)
+        args = (
+            cast(str, type(self).__name__),
+            object.__getattribute__(self, '__proxy_factory__'),
+            object.__getattribute__(self, '__proxy_default_class__'),
+            object.__getattribute__(self, '__proxy_default_hash__'),
+        )
+        return _proxy_trampoline, args
 
-def _owned_proxy_trampoline(factory: FactoryType[T]) -> OwnedProxy[T]:
-    # See proxystore.proxy._proxy_trampoline for purpose
-    return OwnedProxy(factory)
+    def __reduce_ex__(  # type: ignore[override]
+        self,
+        protocol: SupportsIndex,
+    ) -> tuple[
+        Callable[
+            [str, FactoryType[T], DefaultClassType, DefaultHashType],
+            BaseRefProxy[T],
+        ],
+        tuple[str, FactoryType[T], DefaultClassType, DefaultHashType],
+    ]:
+        return self.__reduce__()
 
 
 class OwnedProxy(BaseRefProxy[T]):
@@ -230,31 +278,6 @@ class OwnedProxy(BaseRefProxy[T]):
             store.evict(factory.key)
             object.__setattr__(self, '__proxy_valid__', False)
 
-    def __reduce__(  # type: ignore[override]
-        self,
-    ) -> tuple[
-        Callable[[FactoryType[T]], OwnedProxy[T]],
-        tuple[FactoryType[T]],
-    ]:
-        object.__setattr__(self, '__proxy_valid__', False)
-        return _owned_proxy_trampoline, (
-            object.__getattribute__(self, '__proxy_factory__'),
-        )
-
-    def __reduce_ex__(  # type: ignore[override]
-        self,
-        protocol: SupportsIndex,
-    ) -> tuple[
-        Callable[[FactoryType[T]], OwnedProxy[T]],
-        tuple[FactoryType[T]],
-    ]:
-        return self.__reduce__()
-
-
-def _ref_proxy_trampoline(factory: FactoryType[T]) -> RefProxy[T]:
-    # See proxystore.proxy._proxy_trampoline for purpose
-    return RefProxy(factory)
-
 
 class RefProxy(BaseRefProxy[T]):
     """Represents a borrowed reference to an object in the global store.
@@ -306,25 +329,6 @@ class RefProxy(BaseRefProxy[T]):
             object.__setattr__(owner, '__proxy_ref_count__', ref_count - 1)
         object.__setattr__(self, '__proxy_owner__', None)
         object.__setattr__(self, '__proxy_valid__', False)
-
-    def __reduce__(  # type: ignore[override]
-        self,
-    ) -> tuple[Callable[[FactoryType[T]], RefProxy[T]], tuple[FactoryType[T]]]:
-        object.__setattr__(self, '__proxy_valid__', False)
-        return _ref_proxy_trampoline, (
-            object.__getattribute__(self, '__proxy_factory__'),
-        )
-
-    def __reduce_ex__(  # type: ignore[override]
-        self,
-        protocol: SupportsIndex,
-    ) -> tuple[Callable[[FactoryType[T]], RefProxy[T]], tuple[FactoryType[T]]]:
-        return self.__reduce__()
-
-
-def _ref_mut_proxy_trampoline(factory: FactoryType[T]) -> RefMutProxy[T]:
-    # See proxystore.proxy._proxy_trampoline for purpose
-    return RefMutProxy(factory)
 
 
 class RefMutProxy(BaseRefProxy[T]):
@@ -380,26 +384,6 @@ class RefMutProxy(BaseRefProxy[T]):
             object.__setattr__(owner, '__proxy_ref_mut_count__', 0)
         object.__setattr__(self, '__proxy_owner__', None)
         object.__setattr__(self, '__proxy_valid__', False)
-
-    def __reduce__(  # type: ignore[override]
-        self,
-    ) -> tuple[
-        Callable[[FactoryType[T]], RefMutProxy[T]],
-        tuple[FactoryType[T]],
-    ]:
-        object.__setattr__(self, '__proxy_valid__', False)
-        return _ref_mut_proxy_trampoline, (
-            object.__getattribute__(self, '__proxy_factory__'),
-        )
-
-    def __reduce_ex__(  # type: ignore[override]
-        self,
-        protocol: SupportsIndex,
-    ) -> tuple[
-        Callable[[FactoryType[T]], RefMutProxy[T]],
-        tuple[FactoryType[T]],
-    ]:
-        return self.__reduce__()
 
 
 def _copy_attributes(
