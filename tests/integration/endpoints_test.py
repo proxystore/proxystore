@@ -191,7 +191,10 @@ def _produce_remote(
     ):
         store = Store('store', EndpointConnector(endpoints))
         # Send port to other process to compare
-        proxy: Proxy[Any] = store.proxy(store.connector.endpoint_port)
+        proxy: Proxy[Any] = store.proxy(
+            store.connector.endpoint_port,
+            populate_target=False,
+        )
         queue.put(proxy)
 
 

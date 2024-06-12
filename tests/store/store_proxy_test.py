@@ -99,7 +99,7 @@ def test_factory_serialization_async(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy(store: Store[LocalConnector]) -> None:
-    p = store.proxy([1, 2, 3])
+    p = store.proxy([1, 2, 3], populate_target=False)
     assert not is_resolved(p)
     assert isinstance(p, Proxy)
     assert p == [1, 2, 3]
@@ -148,7 +148,7 @@ def test_proxy_from_key_mutex_options_error(
 
 
 def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
-    proxy = store.proxy([1, 2, 3])
+    proxy = store.proxy([1, 2, 3], populate_target=False)
     key = get_key(proxy)
     store.evict(key)
     assert not store.exists(key)
@@ -184,7 +184,12 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy_recreates_store() -> None:
-    with Store('test', LocalConnector(), cache_size=0) as store:
+    with Store(
+        'test',
+        LocalConnector(),
+        cache_size=0,
+        populate_target=False,
+    ) as store:
         register_store(store)
 
         p: Proxy[list[int]] = store.proxy([1, 2, 3])
@@ -235,7 +240,10 @@ def test_proxy_mutex_options_error(store: Store[LocalConnector]) -> None:
 
 def test_proxy_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
-    proxies: list[Proxy[str]] = store.proxy_batch(values)
+    proxies: list[Proxy[str]] = store.proxy_batch(
+        values,
+        populate_target=False,
+    )
     for p, v in zip(proxies, values):
         assert not is_resolved(p)
         assert p == v

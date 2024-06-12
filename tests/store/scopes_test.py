@@ -32,6 +32,7 @@ def store(
         'stream-test-fixture',
         FileConnector(str(tmp_path)),
         cache_size=0,
+        populate_target=False,
     ) as store:
         with store_registration(store):
             yield store

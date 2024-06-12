@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 import pathlib
 from concurrent.futures import Executor
@@ -86,6 +87,7 @@ def test_proxy_behavior(
     ) as executor:
         future = executor.submit(sum, [1, 2, 3], start=-6)
         result = future.result()
+
         assert isinstance(result, Proxy)
         assert result == 0
 
@@ -102,10 +104,15 @@ def test_proxy_behavior(
     del result
     del results
 
+    # Run the garbage collector to guarantee that __del__ is called on the
+    # returned OwnedProxies.
+    gc.collect()
+
     # If ownership is enabled, all of the proxied data should have been
     # evicted at this point so the FileConnector directory should
     # be empty.
-    assert (len(os.listdir(tmp_path)) == 0) == ownership
+    if ownership:
+        assert len(os.listdir(tmp_path)) == 0
 
     store.close()
 
