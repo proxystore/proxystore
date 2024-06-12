@@ -100,7 +100,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         metrics: bool = False,
-        populate_target: bool = False,
+        populate_target: bool = True,
         register: bool = False,
     ) -> None:
         if cache_size < 0:

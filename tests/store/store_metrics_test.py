@@ -20,7 +20,12 @@ def store(
     # We use FileConnector here instead of LocalConnector (as in the rest of
     # the tests) because FileConnector operations take *some* amount of time.
     path = str(tmp_path)
-    with Store('test', connector=FileConnector(path), metrics=True) as store:
+    with Store(
+        'test',
+        connector=FileConnector(path),
+        metrics=True,
+        populate_target=False,
+    ) as store:
         with store_registration(store):
             yield store
 
