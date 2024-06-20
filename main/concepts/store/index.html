@@ -3328,7 +3328,7 @@ multiple proxies refer to the same object.</p>
 (e.g., inputs and outputs of functions) which is typically write-once,
 read-many. Thus, ProxyStore does not provide <code>update</code> semantics on keys.</p>
 <h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
-<p>All <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> operation uses ProxyStore's provided
+<p>All <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> operations use ProxyStore's provided
 serialization utilities (<a class="autorefs autorefs-internal" href="../../api/serialize/#proxystore.serialize"><code>proxystore.serialize</code></a>) by default.
 However, the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can be initialized with
 custom default serializers or deserializers of the form:</p>
@@ -3336,9 +3336,7 @@ custom default serializers or deserializers of the form:</p>
 <span class="normal"><a href="#__codelineno-3-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="n">serializer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">]</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="n">deserializer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
 </span></code></pre></div></td></tr></table></div>
-Most methods also support specifying an alternative serializer or deserializer to the default.</p>
-<p>In some cases, data may already be serialized in which case an identity
-function can be passed as the serializer/deserializer (e.g., <code class="language-python highlight"><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span></code>).
+Most methods also support specifying an alternative serializer or deserializer to the default.
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
 innefficient. E.g.,</p>
@@ -3380,6 +3378,12 @@ innefficient. E.g.,</p>
 </span><span id="__span-4-18"><a id="__codelineno-4-18" name="__codelineno-4-18"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </span><span id="__span-4-19"><a id="__codelineno-4-19" name="__codelineno-4-19"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">mymodel</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="n">serialize_torch_model</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>In some cases, data may already be serialized in which case an identity function can be passed as the serializer (e.g., <code class="language-python highlight"><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span></code>).
+However, <code>populate_target=False</code> should also be set in this case to avoid prepopulating the proxy with the serialized target object.
+See the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> docstring for more information.</p>
+</div>
 <p>Rather than providing a custom serializer or deserializer to each method
 invocation, a default serializer and deserializer can be provided when
 initializing a new <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.
