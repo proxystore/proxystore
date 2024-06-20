@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import pickle
 from typing import Any
 
 import pytest
@@ -390,3 +391,29 @@ def test_default_populate_target(populate_target: bool) -> None:
 
         proxy = store.proxy('value', populate_target=False)
         assert not is_resolved(proxy)
+
+
+@pytest.mark.parametrize('populate_target', (True, False))
+def test_proxy_already_serialized_object(populate_target: bool) -> None:
+    with Store(
+        'test-proxy-already-serialized-objects',
+        LocalConnector(),
+        register=True,
+    ) as store:
+        value = [1, 2, 3]
+        value_bytes = pickle.dumps(value)
+        value_proxy = store.proxy(
+            value_bytes,
+            serializer=lambda s: s,
+            deserializer=pickle.loads,
+            populate_target=populate_target,
+        )
+
+        if populate_target:
+            # populate_target=True caches the input object and will not
+            # deserialize it even if a custom deserilaizer was given.
+            assert isinstance(value_bytes, bytes)
+            assert value_proxy != value
+        else:
+            assert isinstance(value_proxy, list)
+            assert value_proxy == value
