@@ -36,6 +36,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 from __future__ import annotations
 
+import collections
 import datetime
 import decimal
 import gc
@@ -43,6 +44,7 @@ import os
 import pickle
 import sys
 import types
+import typing
 import weakref
 from typing import Any
 
@@ -863,3 +865,15 @@ def test_precompute_unhashable() -> None:
     assert not proxy.__proxy_resolved__
     assert isinstance(proxy, list)
     assert not proxy.__proxy_resolved__
+
+
+def test_generic_alias_type_checking() -> None:
+    my_dict_proxy = Proxy(lambda: {'a': 1, 'b': 2})
+    assert isinstance(my_dict_proxy, dict)
+    assert not isinstance(my_dict_proxy, typing.Mapping)
+    assert isinstance(my_dict_proxy, collections.abc.Mapping)
+
+    my_list_proxy = Proxy(lambda: [1, 2, 3])
+    assert isinstance(my_list_proxy, list)
+    assert not isinstance(my_list_proxy, typing.Sequence)
+    assert isinstance(my_list_proxy, collections.abc.Sequence)

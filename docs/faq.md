@@ -4,50 +4,6 @@
 
 ## Working with Proxies
 
-### How do I check the type of a proxy?
-
-To check if an object is a proxy, use `#!python isinstance(obj, Proxy)`.
-This will not resolve the proxy.
-
-Checking the type of a proxy's target object requires more care because `#!python isinstance(proxy, MyType)` will resolve the proxy.
-This can be avoided by doing a direct type comparisons (e.g., `#!python type(proxy) == MyType)`) but this will mean that type comparisons with subclasses will not work.
-
-```python linenums="1"
-from proxystore.proxy import Proxy
-from proxystore.proxy import is_resolved
-
-proxy = Proxy(lambda: 42)
-assert not is_resolved(proxy)
-
-assert isinstance(proxy, Proxy)
-assert not is_resolved(proxy)
-
-assert type(proxy) != str
-assert not is_resolved(proxy)
-
-assert not isinstance(proxy, str)
-assert is_resolved(proxy)
-```
-
-If the target object is known when creating a proxy, the `cache_defaults` and `target` parameters can be used to cache the type of the target so that [`isinstance`][isinstance] checks do not need to resolve the proxy.
-
-```python linenums="1"
-from proxystore.proxy import Proxy
-from proxystore.proxy import is_resolved
-
-value = 'value'
-proxy = Proxy(lambda: value, cache_defaults=True, target=value)
-del proxy.__proxy_wrapped__  # (1)!
-assert not is_resolved(proxy)
-
-assert isinstance(proxy, str)  # (2)!
-assert not is_resolved(proxy)
-```
-
-1. Passing `target=value` will create a proxy that is already resolved.
-   Deleting the wrapped target object will "unresolve" the proxy.
-2. [`isinstance`][isinstance] can be used safely because the `__class__` value of the target was cached inside the proxy instance.
-
 ### What is resolving my proxy?
 
 Certain data structures can unintenionally resolve a proxy.
@@ -143,6 +99,97 @@ proxy = Proxy(factory)
 dump = pickle.dumps(proxy)
 assert sys.getsizeof(dump) < 200
 ```
+
+## Runtime Type Checking
+
+### How do I check the type of a proxy?
+
+To check if an object is a proxy, use `#!python isinstance(obj, Proxy)`.
+This will not resolve the proxy.
+
+Checking the type of a proxy's target object requires more care because `#!python isinstance(proxy, MyType)` will resolve the proxy.
+This can be avoided by doing a direct type comparisons (e.g., `#!python type(proxy) == MyType)`) but this will mean that type comparisons with subclasses will not work.
+
+```python linenums="1"
+from proxystore.proxy import Proxy
+from proxystore.proxy import is_resolved
+
+proxy = Proxy(lambda: 42)
+assert not is_resolved(proxy)
+
+assert isinstance(proxy, Proxy)
+assert not is_resolved(proxy)
+
+assert type(proxy) != str
+assert not is_resolved(proxy)
+
+assert not isinstance(proxy, str)
+assert is_resolved(proxy)
+```
+
+If the target object is known when creating a proxy, the `cache_defaults` and `target` parameters can be used to cache the type of the target so that [`isinstance`][isinstance] checks do not need to resolve the proxy.
+
+```python linenums="1"
+from proxystore.proxy import Proxy
+from proxystore.proxy import is_resolved
+
+value = 'value'
+proxy = Proxy(lambda: value, cache_defaults=True, target=value)
+del proxy.__proxy_wrapped__  # (1)!
+assert not is_resolved(proxy)
+
+assert isinstance(proxy, str)  # (2)!
+assert not is_resolved(proxy)
+```
+
+1. Passing `target=value` will create a proxy that is already resolved.
+   Deleting the wrapped target object will "unresolve" the proxy.
+2. [`isinstance`][isinstance] can be used safely because the `__class__` value of the target was cached inside the proxy instance.
+
+### Why does `isinstance()` behave differently with proxies?
+
+Generally, [`isinstance()`][isinstance] works the same with proxies as with other types.
+However, there are some edge cases where behavior is different.
+This is most common with special generic alias types such as [`typing.Mapping`][typing.Mapping] or [`typing.Sequence`][typing.Sequence].
+Consider the following example, where a [`Proxy`][proxystore.proxy.Proxy] with a [`dict`][dict] target object is an instance of [`dict`][dict] but not [`typing.Mapping`][typing.Mapping].
+
+```python linenums="1"
+import collections
+import typing
+from proxystore.proxy import Proxy
+
+my_dict = {}
+assert isinstance(my_dict, dict)
+assert isinstance(my_dict, typing.Mapping)
+assert isinstance(my_dict, collections.abc.Mapping)
+
+my_dict_proxy = Proxy(lambda: my_dict)
+assert isinstance(my_dict_proxy, dict)
+assert not isinstance(my_dict_proxy, typing.Mapping)
+assert isinstance(my_dict_proxy, collections.abc.Mapping)
+```
+
+Here, the [`isinstance()`][isinstance] check fails with the aliased type [`typing.Mapping`][typing.Mapping] but succeeds with the ABC [`collections.abc.Mapping`][collections.abc.Mapping].
+If you encounter a similar issue, try replacing the deprecated [`typing`][typing] aliases with the types defined in [`collections.abc`][collections.abc].
+
+An alternative solution is to [`extract()`][proxystore.proxy.extract] the proxy before type checking.
+This will incur the cost of resolving the proxy, if it was not already resolved, but [`isinstance()`][isinstance] checks will often resolve a proxy anyways.
+See the related discussion on [checking the type of a proxy](#how-do-i-check-the-type-of-a-proxy).
+
+```python linenums="1"
+import typing
+from proxystore.proxy import extract, Proxy
+
+my_dict = Proxy(lambda: {})
+
+if isinstance(my_dict, Proxy):
+    my_dict = extract(my_dict)
+
+assert isinstance(my_dict, typing.Mapping)
+```
+
+The `#!python isinstance(my_dict, Proxy)` check is not necessary in this specific example as we know `my_dict` is a [`Proxy`][proxystore.proxy.Proxy] instance.
+However, this pattern is useful in the general case where you may have a type `T` or a [`Proxy[T]`][proxystore.proxy.Proxy].
 
 ## Static Type Checking
 
