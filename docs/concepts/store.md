@@ -88,7 +88,7 @@ read-many. Thus, ProxyStore does not provide `update` semantics on keys.
 
 ## Serialization
 
-All [`Store`][proxystore.store.base.Store] operation uses ProxyStore's provided
+All [`Store`][proxystore.store.base.Store] operations use ProxyStore's provided
 serialization utilities ([`proxystore.serialize`][proxystore.serialize]) by default.
 However, the [`Store`][proxystore.store.base.Store] can be initialized with
 custom default serializers or deserializers of the form:
@@ -98,9 +98,6 @@ serializer = Callable[[Any], bytes]
 deserializer = Callable[[bytes], Any]
 ```
 Most methods also support specifying an alternative serializer or deserializer to the default.
-
-In some cases, data may already be serialized in which case an identity
-function can be passed as the serializer/deserializer (e.g., `#!python lambda x: x`).
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
 innefficient. E.g.,
@@ -126,6 +123,12 @@ mymodel = torch.nn.Module()
 store = Store(...)
 key = store.put(mymodel, serializer=serialize_torch_model)
 ```
+
+!!! tip
+
+    In some cases, data may already be serialized in which case an identity function can be passed as the serializer (e.g., `#!python lambda x: x`).
+    However, `populate_target=False` should also be set in this case to avoid prepopulating the proxy with the serialized target object.
+    See the [`Store`][proxystore.store.base.Store] docstring for more information.
 
 Rather than providing a custom serializer or deserializer to each method
 invocation, a default serializer and deserializer can be provided when

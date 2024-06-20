@@ -55,7 +55,7 @@ _NON_PROXIABLE_TYPES = (bool, type(None))
 
 
 class Store(Generic[ConnectorT]):
-    """Key-value store interface for proxies.
+    r"""Key-value store interface for proxies.
 
     Tip:
         A [`Store`][proxystore.store.base.Store] instance can be used as a
@@ -67,6 +67,38 @@ class Store(Generic[ConnectorT]):
             key = store.put('value')
             store.get(key)
         ```
+
+    Warning:
+        The default value of `populate_target=True` can cause unexpected
+        behavior when providing custom serializer/deserializers because
+        neither the serializer nor deserializer will be applied to the target
+        object being cached in the resulting [`Proxy`][proxystore.proxy.Proxy].
+
+        ```python linenums="1"
+        import pickle
+        from proxystore.store import Store
+        from proxystore.connectors.local import LocalConnector
+
+        with Store('example', LocalConnector(), register=True) as store:
+            data = [1, 2, 3]
+            data_bytes = pickle.dumps(data)
+
+            data_proxy = store.proxy(
+                data_bytes,
+                serializer=lambda s: s,
+                deserializer=pickle.loads,
+                populate_target=True,
+            )
+
+            print(data_proxy)
+            # b'\x80\x04\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
+        ```
+
+        In this example, the serialized `data_bytes` was populated as the
+        target object in the resulting proxy so the proxy looks like a proxy
+        of bytes rather than the intended list of integers. To fix this, set
+        `populate_target=False` so the custom deserializer is correctly
+        applied to `data_bytes` when the proxy is resolved.
 
     Args:
         name: Name of the store instance.
@@ -89,7 +121,7 @@ class Store(Generic[ConnectorT]):
         ValueError: If `cache_size` is less than zero.
         StoreExistsError: If `register=True` and a store with `name` already
             exists.
-    """
+    """  # noqa: E501
 
     def __init__(
         self,
@@ -719,10 +751,7 @@ class Store(Generic[ConnectorT]):
                 return a proxy that (1) is already resolved, (2) can be used
                 in [`isinstance`][isinstance] checks without resolving, and (3)
                 is hashable without resolving if `obj` is a hashable type.
-                This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage
-                collecting `obj`. If `None`, defaults to the store-wide
-                setting.
+                If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -920,10 +949,7 @@ class Store(Generic[ConnectorT]):
                 return a proxy that (1) is already resolved, (2) can be used
                 in [`isinstance`][isinstance] checks without resolving, and (3)
                 is hashable without resolving if `obj` is a hashable type.
-                This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage
-                collecting `obj`. If `None`, defaults to the store-wide
-                setting.
+                If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -1010,10 +1036,7 @@ class Store(Generic[ConnectorT]):
                 return a proxy that (1) is already resolved, (2) can be used
                 in [`isinstance`][isinstance] checks without resolving, and (3)
                 is hashable without resolving if `obj` is a hashable type.
-                This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage
-                collecting `obj`. If `None`, defaults to the store-wide
-                setting.
+                If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
