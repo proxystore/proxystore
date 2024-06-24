@@ -160,7 +160,7 @@ plugins:
             - pytkdocs_tweaks.main()
           import:
             - https://docs.python.org/3/objects.inv
-            - https://pgjones.gitlab.io/quart/objects.inv
+            - https://quart.palletsprojects.com/en/latest/objects.inv
             - https://aiortc.readthedocs.io/en/latest/objects.inv
             - https://globus-sdk-python.readthedocs.io/en/stable/objects.inv
             - https://websockets.readthedocs.io/en/stable/objects.inv
