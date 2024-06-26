@@ -2227,6 +2227,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../../store/config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../store/exceptions/" class="md-nav__link">
         
   
@@ -3736,7 +3756,7 @@ never exposed to client code.</p>
 <div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">EventBatch</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">events</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.Event" href="#proxystore.stream.events.Event">Event</a></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">topic</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.StoreConfig" href="../../store/types/#proxystore.store.types.StoreConfig">StoreConfig</a></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.config.StoreConfig" href="../../store/config/#proxystore.store.config.StoreConfig">StoreConfig</a></span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span>
 </span></code></pre></div>
 
@@ -3795,7 +3815,7 @@ never exposed to client code.</p>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>        <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">,</span>  <span class="c1"># type: ignore[arg-type]</span>
 </span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>        <span class="n">topic</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;topic&#39;</span><span class="p">],</span>
-</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>        <span class="n">store_config</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;store_config&#39;</span><span class="p">],</span>
+</span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>        <span class="n">store_config</span><span class="o">=</span><span class="n">StoreConfig</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">[</span><span class="s1">&#39;store_config&#39;</span><span class="p">]),</span>
 </span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
       </details>
@@ -3848,7 +3868,7 @@ never exposed to client code.</p>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a>            <span class="s1">&#39;events&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">event_to_dict</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">event</span><span class="o">.</span><span class="n">events</span><span class="p">],</span>
 </span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>            <span class="s1">&#39;topic&#39;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">topic</span><span class="p">,</span>
-</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>            <span class="s1">&#39;store_config&#39;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">store_config</span><span class="p">,</span>
+</span><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a>            <span class="s1">&#39;store_config&#39;</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">store_config</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>        <span class="p">}</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="k">else</span><span class="p">:</span>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>        <span class="n">data</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">asdict</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>

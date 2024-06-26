@@ -296,6 +296,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://proxystore.dev/latest/api/store/config/</loc>
+         <lastmod>2024-06-26</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://proxystore.dev/latest/api/store/exceptions/</loc>
          <lastmod>2024-06-26</lastmod>
          <changefreq>daily</changefreq>

@@ -2229,6 +2229,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../exceptions/" class="md-nav__link">
         
   
@@ -2465,13 +2485,6 @@
         <li class="md-nav__item">
   <a href="#proxystore.store.types.DeserializerT" class="md-nav__link">
     DeserializerT
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#proxystore.store.types.StoreConfig" class="md-nav__link">
-    StoreConfig
   </a>
   
 </li>
@@ -3238,13 +3251,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#proxystore.store.types.StoreConfig" class="md-nav__link">
-    StoreConfig
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3380,141 +3386,6 @@
 
 </div>
 
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="proxystore.store.types.StoreConfig" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">StoreConfig</span>
-
-
-<a href="#proxystore.store.types.StoreConfig" class="headerlink" title="Permanent link">&para;</a></h2>
-
-
-  <div class="doc doc-contents ">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-external" title="typing.TypedDict" href="https://docs.python.org/3/library/typing.html#typing.TypedDict">TypedDict</a></code></p>
-
-  
-      <p>Store configuration dictionary.</p>
-
-<details class="warning" open>
-  <summary>Warning</summary>
-  <p>Configuration dictionaries should not be constructed manually, but
-instead created via
-<a class="autorefs autorefs-internal" href="../base/#proxystore.store.base.Store.config"><code>Store.config()</code></a>.</p>
-</details>
-<details class="tip" open>
-  <summary>Tip</summary>
-  <p>See the <a class="autorefs autorefs-internal" href="../base/#proxystore.store.base.Store"><code>Store</code></a> parameters for more
-information about each configuration option.</p>
-</details>
-
-
-  <p>Attributes:</p>
-  <ul>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.name">name</span></code></b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>Store name.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.connector_type">connector_type</span></code></b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>)
-        –
-        <div class="doc-md-description">
-          <p>Fully qualified path to the
-<a class="autorefs autorefs-internal" href="../../connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
-implementation.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.connector_config">connector_config</span></code></b>
-            (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Config created by
-<a class="autorefs autorefs-internal" href="../../connectors/protocols/#proxystore.connectors.protocols.Connector.config"><code>Connector.config()</code></a>
-used to initialize a new connector instance with
-<a class="autorefs autorefs-internal" href="../../connectors/protocols/#proxystore.connectors.protocols.Connector.from_config"><code>Connector.from_config()</code></a>.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.serializer">serializer</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-internal" title="proxystore.store.types.SerializerT" href="#proxystore.store.types.SerializerT">SerializerT</a> | None]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Optional serializer.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.deserializer">deserializer</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-internal" title="proxystore.store.types.DeserializerT" href="#proxystore.store.types.DeserializerT">DeserializerT</a> | None]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Optional deserializer.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.cache_size">cache_size</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Cache size.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.metrics">metrics</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Enable recording operation metrics.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.populate_target">populate_target</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Set the default value for the <code>populate_target</code>
-parameter of proxy methods.</p>
-        </div>
-      </li>
-      <li class="field-body">
-        <b><code><span title="proxystore.store.types.StoreConfig.register">register</span></code></b>
-            (<code><span title="typing_extensions.NotRequired">NotRequired</span>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a>]</code>)
-        –
-        <div class="doc-md-description">
-          <p>Auto-register the store.</p>
-        </div>
-      </li>
-  </ul>
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-
-</div>
 
 
 

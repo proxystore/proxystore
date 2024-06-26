@@ -2229,6 +2229,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    config
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../exceptions/" class="md-nav__link">
         
   
@@ -3366,7 +3386,7 @@
 <a href="#proxystore.store.factory.StoreFactory" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">StoreFactory</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.ConnectorKeyT" href="../types/#proxystore.store.types.ConnectorKeyT">ConnectorKeyT</a></span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.StoreConfig" href="../types/#proxystore.store.types.StoreConfig">StoreConfig</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.config.StoreConfig" href="../config/#proxystore.store.config.StoreConfig">StoreConfig</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">evict</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.DeserializerT" href="../types/#proxystore.store.types.DeserializerT">DeserializerT</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3399,7 +3419,7 @@ process where the store has not already been initialized.</p>
       </li>
       <li class="field-body">
         <b><code>store_config</code></b>
-            (<code><a class="autorefs autorefs-internal" title="proxystore.store.types.StoreConfig" href="../types/#proxystore.store.types.StoreConfig">StoreConfig</a></code>)
+            (<code><a class="autorefs autorefs-internal" title="proxystore.store.config.StoreConfig" href="../config/#proxystore.store.config.StoreConfig">StoreConfig</a></code>)
         –
         <div class="doc-md-description">
           <p>Store configuration used to reinitialize the store if
@@ -3663,7 +3683,7 @@ factory does not exist in the store.</p>
 <a href="#proxystore.store.factory.PollingStoreFactory" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">PollingStoreFactory</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">key</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.ConnectorKeyT" href="../types/#proxystore.store.types.ConnectorKeyT">ConnectorKeyT</a></span><span class="p">,</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.StoreConfig" href="../types/#proxystore.store.types.StoreConfig">StoreConfig</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">store_config</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.config.StoreConfig" href="../config/#proxystore.store.config.StoreConfig">StoreConfig</a></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">deserializer</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.store.types.DeserializerT" href="../types/#proxystore.store.types.DeserializerT">DeserializerT</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">evict</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3699,7 +3719,7 @@ overridden to poll the store until the target object is available.</p>
       </li>
       <li class="field-body">
         <b><code>store_config</code></b>
-            (<code><a class="autorefs autorefs-internal" title="proxystore.store.types.StoreConfig" href="../types/#proxystore.store.types.StoreConfig">StoreConfig</a></code>)
+            (<code><a class="autorefs autorefs-internal" title="proxystore.store.config.StoreConfig" href="../config/#proxystore.store.config.StoreConfig">StoreConfig</a></code>)
         –
         <div class="doc-md-description">
           <p>Store configuration used to reinitialize the store if
