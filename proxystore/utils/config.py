@@ -12,7 +12,7 @@ from pydantic import BaseModel
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     import tomllib
 else:  # pragma: <3.11 cover
-    import tomli as tomllib
+    import tomli as tomllib  # type: ignore[import-not-found,unused-ignore]
 
 
 BaseModelT = TypeVar('BaseModelT', bound=BaseModel)
@@ -72,5 +72,5 @@ def loads(model: type[BaseModelT], data: str) -> BaseModelT:
     Returns:
         Model initialized from TOML file.
     """
-    data = tomllib.loads(data)
-    return model.model_validate(data, strict=True)
+    data_dict = tomllib.loads(data)
+    return model.model_validate(data_dict, strict=True)
