@@ -73,8 +73,8 @@ else:  # pragma: <3.10 cover
 from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.base import Store
+from proxystore.store.config import StoreConfig
 from proxystore.store.types import ConnectorKeyT
-from proxystore.store.types import StoreConfig
 from proxystore.store.utils import get_key
 
 P = ParamSpec('P')
@@ -109,7 +109,7 @@ class _FunctionWrapper(Generic[P, R]):
             return result
 
     def get_store(self) -> Store[Any]:
-        store = get_store(self.store_config['name'])
+        store = get_store(self.store_config.name)
         if store is None:
             store = Store.from_config(self.store_config)
         return store

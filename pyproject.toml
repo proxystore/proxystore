@@ -33,6 +33,9 @@ dependencies = [
     "cloudpickle>=1.6.0",
     "cryptography>=39.0.1",
     "globus-sdk>=3.3.0",
+    "pydantic>=2",
+    "tomli ; python_version<'3.11'",
+    "tomli-w",
     "typing-extensions>=4.3.0",
 ]
 
@@ -48,18 +51,13 @@ endpoints = [
     "aiosqlite",
     "uvicorn[standard]",
     "psutil",
-    "pydantic>=2",
     "pystun3",
     "python-daemon",
     "quart>=0.18.0",
     "requests>=2.27.1",
-    "tomli ; python_version<'3.11'",
-    "tomli-w",
     "websockets>=10.0",
 ]
-extensions = [
-    "proxystore-ex",
-]
+extensions = ["proxystore-ex"]
 kafka = ["confluent-kafka"]
 redis = ["redis>=3.4"]
 zmq = ["pyzmq"]

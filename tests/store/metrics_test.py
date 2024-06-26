@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import Any
 
 from proxystore.proxy import Proxy
+from proxystore.store.config import ConnectorConfig
+from proxystore.store.config import StoreConfig
 from proxystore.store.factory import StoreFactory
 from proxystore.store.metrics import Metrics
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.metrics import TimeStats
-from proxystore.store.types import StoreConfig
 
 
 def test_time_stats() -> None:
@@ -91,11 +92,7 @@ def test_metrics_by_proxy() -> None:
     proxy: Proxy[Any] = Proxy(
         StoreFactory(
             key,
-            StoreConfig(
-                name='test',
-                connector_type='test',
-                connector_config={},
-            ),
+            StoreConfig(name='test', connector=ConnectorConfig(kind='test')),
         ),
     )
 
@@ -113,8 +110,7 @@ def test_metrics_by_proxies() -> None:
                 key,
                 StoreConfig(
                     name='test',
-                    connector_type='test',
-                    connector_config={},
+                    connector=ConnectorConfig(kind='test'),
                 ),
             ),
         )

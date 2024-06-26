@@ -35,7 +35,7 @@ from proxystore.store import get_store
 from proxystore.store import register_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
-from proxystore.store.types import StoreConfig
+from proxystore.store.config import StoreConfig
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import Event
@@ -479,7 +479,7 @@ class StreamConsumer(Generic[T]):
             return self._stores[event_info.topic]
 
         with _consumer_get_store_lock:
-            store = get_store(event_info.store_config['name'])
+            store = get_store(event_info.store_config.name)
             if store is None:
                 store = Store.from_config(event_info.store_config)
                 register_store(store)

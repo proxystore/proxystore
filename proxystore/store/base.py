@@ -27,6 +27,8 @@ from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
 from proxystore.serialize import SerializationError
 from proxystore.store.cache import LRUCache
+from proxystore.store.config import ConnectorConfig
+from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import PollingStoreFactory
@@ -40,9 +42,7 @@ from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
-from proxystore.store.types import StoreConfig
 from proxystore.utils.imports import get_object_path
-from proxystore.utils.imports import import_from_path
 from proxystore.utils.timer import Timer
 
 logger = logging.getLogger(__name__)
@@ -177,11 +177,10 @@ class Store(Generic[ConnectorT]):
         self.close()
 
     def __repr__(self) -> str:
-        config = dict(**self.config())
+        config = self.config().model_dump()
 
         del config['name']
-        del config['connector_type']
-        del config['connector_config']
+        del config['connector']
 
         config['serializer'] = (
             'default' if config['serializer'] is None else 'custom'
@@ -258,14 +257,16 @@ class Store(Generic[ConnectorT]):
         """
         return StoreConfig(
             name=self.name,
-            connector_type=get_object_path(type(self.connector)),
-            connector_config=self.connector.config(),
+            connector=ConnectorConfig(
+                kind=get_object_path(type(self.connector)),
+                options=self.connector.config(),
+            ),
             serializer=self._serializer,
             deserializer=self._deserializer,
             cache_size=self._cache_size,
             metrics=self.metrics is not None,
             populate_target=self._populate_target,
-            register=self._register,
+            auto_register=self._register,
         )
 
     @classmethod
@@ -278,14 +279,17 @@ class Store(Generic[ConnectorT]):
         Returns:
             Store instance.
         """
-        # Avoid messing with callers version and splat into new dict otherwise
-        # mypy will error that we are popping required keys from a TypedDict.
-        mut_config: dict[str, Any] = dict(**config.copy())
-        connector_type = mut_config.pop('connector_type')
-        connector_config = mut_config.pop('connector_config')
-        connector = import_from_path(connector_type)
-        mut_config['connector'] = connector.from_config(connector_config)
-        return cls(**mut_config)
+        connector = cast(ConnectorT, config.connector.get_connector())
+        return cls(
+            name=config.name,
+            connector=connector,
+            serializer=config.serializer,
+            deserializer=config.deserializer,
+            cache_size=config.cache_size,
+            metrics=config.metrics,
+            populate_target=config.populate_target,
+            register=config.auto_register,
+        )
 
     def future(
         self,
