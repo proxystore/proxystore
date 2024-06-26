@@ -17,7 +17,7 @@ import json
 from typing import Any
 from typing import Union
 
-from proxystore.store.types import StoreConfig
+from proxystore.store.config import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
 
@@ -86,7 +86,7 @@ class EventBatch:
         return cls(
             events=events,  # type: ignore[arg-type]
             topic=data['topic'],
-            store_config=data['store_config'],
+            store_config=StoreConfig(**data['store_config']),
         )
 
 
@@ -102,7 +102,7 @@ def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
         data = {
             'events': [event_to_dict(e) for e in event.events],
             'topic': event.topic,
-            'store_config': event.store_config,
+            'store_config': event.store_config.model_dump(),
         }
     else:
         data = dataclasses.asdict(event)

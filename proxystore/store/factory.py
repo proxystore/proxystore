@@ -13,11 +13,11 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 
 import proxystore
+from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
-from proxystore.store.types import StoreConfig
 from proxystore.utils.timer import Timer
 
 if TYPE_CHECKING:

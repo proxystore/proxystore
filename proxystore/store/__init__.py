@@ -14,15 +14,16 @@ from proxystore.connectors.protocols import Connector
 from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy
 from proxystore.store.base import Store
+from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import ConnectorT
-from proxystore.store.types import StoreConfig
 
 __all__ = [
     'Store',
     'StoreFactory',
+    'StoreConfig',
     'get_store',
     'register_store',
     'store_registration',
@@ -90,7 +91,7 @@ def get_or_create_store(
         [`Store`][proxystore.store.base.Store] instance.
     """
     with _stores_lock:
-        store = get_store(store_config['name'])
+        store = get_store(store_config.name)
         if store is None:
             store = Store.from_config(store_config)
             if register:

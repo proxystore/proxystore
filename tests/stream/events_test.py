@@ -4,7 +4,8 @@ from typing import NamedTuple
 
 import pytest
 
-from proxystore.store.types import StoreConfig
+from proxystore.store.config import ConnectorConfig
+from proxystore.store.config import StoreConfig
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import Event
@@ -31,8 +32,7 @@ class _TestKey(NamedTuple):
             topic='default',
             store_config=StoreConfig(
                 name='test',
-                connector_type='test',
-                connector_config={},
+                connector=ConnectorConfig(kind='test'),
             ),
         ),
         NewObjectEvent.from_key(_TestKey('a', 123), True, {}),
