@@ -146,7 +146,7 @@ def test_union_type_bad_attribute_crash() -> None:
     def foo(x: T | Proxy[T]) -> T | Callable[[], T]:  # pragma: no cover
         # Note: this function should not actually be called! It will error!
         if isinstance(x, Proxy):
-            return x.__factory__  # In #559, mypy crashes on this line
+            return x.__factory__  # In Issue #559, mypy crashes on this line
         else:
             return x
 
@@ -157,7 +157,32 @@ def test_union_type_bad_attribute_crash() -> None:
         pass
 
 
+def test_union_type_partial_attr() -> None:
+    class Foo:
+        x = 0
+
+    class Bar:
+        y = ''
+
+    union: Proxy[Foo] | Bar = Proxy(lambda: Foo())
+
+    try:
+        # Item "Proxy[Foo]" of "Proxy[Foo] | Bar" has no attribute "y"
+        assert isinstance(union.y, str)  # type: ignore[union-attr]
+    except AttributeError:
+        pass
+
+    # Item "Bar" of "Proxy[Foo] | Bar" has no attribute "x"  [union-attr]
+    assert isinstance(union.x, int)  # type: ignore[union-attr]
+
+
 def test_proxy_or_type() -> None:
+    value: ProxyOr[str] = 'hello'
+    assert value.startswith('hello')
+
+    value = Proxy(lambda: 'hello')
+    assert value.startswith('hello')
+
     class TestClass:
         value = 42
 

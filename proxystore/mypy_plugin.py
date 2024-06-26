@@ -63,10 +63,13 @@ if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
 else:  # pragma: <3.10 cover
     from typing_extensions import ParamSpec
 
-from mypy.checkmember import analyze_member_access
+from mypy.errorcodes import ATTR_DEFINED
+from mypy.errorcodes import UNION_ATTR
+from mypy.messages import format_type
 from mypy.options import Options
 from mypy.plugin import AttributeContext
 from mypy.plugin import Plugin
+from mypy.subtypes import find_member
 from mypy.types import AnyType
 from mypy.types import get_proper_type
 from mypy.types import Instance
@@ -78,7 +81,13 @@ from mypy.types import UnionType
 P = ParamSpec('P')
 T = TypeVar('T')
 
-PROXY_FULLNAME = 'proxystore.proxy.Proxy'
+PROXY_TYPES = (
+    'proxystore.proxy.Proxy',
+    'proxystore.store.ref.BaseRefProxy',
+    'proxystore.store.ref.OwnedProxy',
+    'proxystore.store.ref.RefProxy',
+    'proxystore.store.ref.RefMutProxy',
+)
 
 
 class ProxyStoreMypyPlugin(Plugin):  # noqa: D101
@@ -91,9 +100,12 @@ class ProxyStoreMypyPlugin(Plugin):  # noqa: D101
     ) -> Callable[[AttributeContext], Type] | None:
         sym = self.lookup_fully_qualified(fullname)
         # Note the dot at the end of the name check to make sure this
-        # is an attribute access on proxystore.proxy.Proxy.
-        if sym is None and fullname.startswith(f'{PROXY_FULLNAME}.'):
-            return proxy_attribute_access
+        # is an attribute access on Proxy type.
+        if sym is None and any(
+            fullname.startswith(f'{name}.') for name in PROXY_TYPES
+        ):
+            _, attr = fullname.rsplit('.', 1)
+            return functools.partial(proxy_attribute_access, attr=attr)
         return None
 
 
@@ -112,50 +124,65 @@ def _assertion_fallback(function: Callable[P, Type]) -> Callable[P, Type]:
     return decorator
 
 
-def attribute_access(  # noqa: D103
+def _proxy_attribute_access(
     instance: Type,
+    attr: str,
     ctx: AttributeContext,
 ) -> Type:
     instance = get_proper_type(instance)
-    if isinstance(instance, TypeVarType):
-        # Don't change anything the we have an unbound Proxy[T].
+    if not isinstance(instance, Instance):
         return ctx.default_attr_type
-    elif isinstance(instance, Instance):
-        accessed = instance.copy_modified(args=instance.args)
-        exprchecker = ctx.api.expr_checker  # type: ignore
-        return analyze_member_access(
-            ctx.context.name,  # type: ignore
-            accessed,
-            ctx.context,
-            is_lvalue=False,
-            is_super=False,
-            is_operator=False,
-            msg=ctx.api.msg,
-            original_type=instance,
-            chk=ctx.api,  # type: ignore
-            in_literal_context=exprchecker.is_literal_context(),
-        )
+
+    # Instance is not a Proxy type so handle it normally. This case happens
+    # when checking the T branch of a type annotated as Proxy[T] | T.
+    fullname = instance.type.fullname
+    if not any(fullname.startswith(name) for name in PROXY_TYPES):
+        member = find_member(attr, instance, instance)
+        if member is None:
+            return ctx.default_attr_type
+        else:
+            return member
+
+    # After the above check, we know instance is a Proxy type and Proxy
+    # types are generic with one generic type.
+    assert len(instance.args) == 1
+    generic_type = get_proper_type(instance.args[0])
+
+    if isinstance(generic_type, TypeVarType):
+        # We have an unbound Proxy[T] so return the default type.
+        return ctx.default_attr_type
+    elif isinstance(generic_type, Instance):
+        # We have a bound Proxy[T] so lookup the attr on T.
+        member = find_member(attr, generic_type, generic_type)
+        if member is None:
+            type_ = format_type(instance, ctx.api.options)
+            code = ATTR_DEFINED
+            if isinstance(ctx.type, UnionType):
+                union = format_type(ctx.type, ctx.api.options)
+                type_ = f'Item {type_} of {union}'
+                code = UNION_ATTR
+            ctx.api.fail(
+                f'{type_} has no attribute "{attr}"',
+                ctx.context,
+                code=code,
+            )
+            return ctx.default_attr_type
+        else:
+            return member
     else:
         return ctx.default_attr_type
 
 
 @_assertion_fallback
-def proxy_attribute_access(ctx: AttributeContext) -> Type:  # noqa: D103
+def proxy_attribute_access(ctx: AttributeContext, *, attr: str) -> Type:  # noqa: D103
     if isinstance(ctx.type, UnionType):
         resolved = tuple(
-            attribute_access(instance, ctx) for instance in ctx.type.items
+            _proxy_attribute_access(instance, attr, ctx)
+            for instance in ctx.type.items
         )
         return UnionType(resolved)
     elif isinstance(ctx.type, Instance):
-        # Code somewhat based on:
-        # https://github.com/dry-python/returns/blob/560858ec46e529d90267c0c69efdbbce4d417178/returns/contrib/mypy/_features/kind.py#L23
-        if len(ctx.type.args) == 0:
-            return ctx.default_attr_type
-        elif len(ctx.type.args) > 1:
-            raise AssertionError(
-                f'Got more than one type arg: {ctx.type.args}',
-            )
-        return attribute_access(ctx.type.args[0], ctx)
+        return _proxy_attribute_access(ctx.type, attr, ctx)
     else:
         return ctx.default_attr_type
 
