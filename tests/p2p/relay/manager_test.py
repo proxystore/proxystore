@@ -36,7 +36,7 @@ def test_client_equality() -> None:
     )
     assert client1 == client2
 
-    assert client1 != object
+    assert client1 != 'client'
 
 
 def test_client_repr() -> None:
