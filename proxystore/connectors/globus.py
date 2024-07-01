@@ -74,14 +74,12 @@ class GlobusEndpoint:
     def __eq__(self, endpoint: object) -> bool:
         if not isinstance(endpoint, GlobusEndpoint):
             raise NotImplementedError
-        if (
+        return (
             self.uuid == endpoint.uuid
             and self.endpoint_path == endpoint.endpoint_path
             and self.local_path == endpoint.local_path
             and self.host_regex == endpoint.host_regex
-        ):
-            return True
-        return False
+        )
 
     def __repr__(self) -> str:
         return (
