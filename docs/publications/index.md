@@ -4,11 +4,18 @@
 
 [![DOI](https://zenodo.org/badge/357984234.svg)](https://zenodo.org/badge/latestdoi/357984234)
 
-If you use ProxyStore or any of this code in your work, please cite the following paper.
+If you use ProxyStore or any of this code in your work, please cite the following two papers.
 
-> J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Nathaniel Hudson, Charlie Sabino, Matt Baughman, Kyle Chard, and Ian Foster. 2023. Accelerating Communications in Federated Applications with Transparent Object Proxies. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '23). Association for Computing Machinery, New York, NY, USA, Article 59, 1–15. https://doi.org/10.1145/3581784.3607047
+* **[Accelerating Communications in Federated Applications with Transparent Object Proxies](https://dl.acm.org/doi/10.1145/3581784.3607047).**
+  *The original ProxyStore paper. Introduces the core proxy model for distributed object management and the ProxyStore framework stack.*
+  > J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Nathaniel Hudson, Charlie Sabino, Matt Baughman, Kyle Chard, and Ian Foster. 2023. Accelerating Communications in Federated Applications with Transparent Object Proxies. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC '23). Association for Computing Machinery, New York, NY, USA, Article 59, 1–15. https://doi.org/10.1145/3581784.3607047
+* **[Object Proxy Patterns for Accelerating Distributed Applications](https://arxiv.org/abs/2407.01764).**
+  *Extends ProxyStore with higher-level proxy-based patterns for distributed futures, streaming, and ownership.*
+  > J. Gregory Pauloski, Valerie Hayot-Sasson, Logan Ward, Alexander Brace, André Bauer, Kyle Chard, Ian Foster. 2024. Object Proxy Patterns for Accelerating Distributed Applications. arXiv Preprint.
 
-```
+**BibTeX Citations**
+
+```bib
 @inproceedings{pauloski2023proxystore,
     author = {Pauloski, J. Gregory and Hayot-Sasson, Valerie and Ward, Logan and Hudson, Nathaniel and Sabino, Charlie and Baughman, Matt and Chard, Kyle and Foster, Ian},
     title = {{Accelerating Communications in Federated Applications with Transparent Object Proxies}},
@@ -23,6 +30,16 @@ If you use ProxyStore or any of this code in your work, please cite the followin
     series = {SC '23},
     url = {https://doi.org/10.1145/3581784.3607047},
     year = {2023}
+}
+
+@misc{pauloski2024proxystore,
+    author = {J. Gregory Pauloski and Valerie Hayot-Sasson and Logan Ward and Alexander Brace and André Bauer and Kyle Chard and Ian Foster},
+    title = {{Object Proxy Patterns for Accelerating Distributed Applications}},
+    archiveprefix = {arXiv},
+    eprint = {2407.01764},
+    primaryclass = {cs.DC},
+    url = {https://arxiv.org/abs/2407.01764},
+    year = {2024}
 }
 ```
 

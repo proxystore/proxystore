@@ -97,8 +97,8 @@ guide to learn more!
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
-If you use ProxyStore or any of this code in your work, please cite our [SC '23 paper](https://dl.acm.org/doi/10.1145/3581784.3607047).
-```bibtex
+If you use ProxyStore or any of this code in your work, please cite our ProxyStore ([SC '23](https://dl.acm.org/doi/10.1145/3581784.3607047)) and Proxy Patterns ([arXiv preprint](https://arxiv.org/abs/2407.01764)) papers.
+```bib
 @inproceedings{pauloski2023proxystore,
     author = {Pauloski, J. Gregory and Hayot-Sasson, Valerie and Ward, Logan and Hudson, Nathaniel and Sabino, Charlie and Baughman, Matt and Chard, Kyle and Foster, Ian},
     title = {{Accelerating Communications in Federated Applications with Transparent Object Proxies}},
@@ -113,5 +113,15 @@ If you use ProxyStore or any of this code in your work, please cite our [SC '23 
     series = {SC '23},
     url = {https://doi.org/10.1145/3581784.3607047},
     year = {2023}
+}
+
+@misc{pauloski2024proxystore,
+    author = {J. Gregory Pauloski and Valerie Hayot-Sasson and Logan Ward and Alexander Brace and André Bauer and Kyle Chard and Ian Foster},
+    title = {{Object Proxy Patterns for Accelerating Distributed Applications}},
+    archiveprefix = {arXiv},
+    eprint = {2407.01764},
+    primaryclass = {cs.DC},
+    url = {https://arxiv.org/abs/2407.01764},
+    year = {2024}
 }
 ```
