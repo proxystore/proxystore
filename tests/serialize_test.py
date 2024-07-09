@@ -43,7 +43,7 @@ def test_cloudpickle_dumps_error() -> None:
     with mock.patch('cloudpickle.dumps', side_effect=Exception()):
         with pytest.raises(
             SerializationError,
-            match="Object of type <class 'function'> is not serializable.",
+            match="Object of type <class 'function'> is not supported.",
         ):
             serialize(lambda x: x + x)  # pragma: no cover
 
@@ -53,7 +53,7 @@ def test_pickle_loads_error() -> None:
     with mock.patch('pickle.loads', side_effect=Exception()):
         with pytest.raises(
             SerializationError,
-            match='Failed to deserialize object with pickle.',
+            match="Failed to deserialize object with identifier b'03'.",
         ):
             deserialize(v)
 
@@ -63,6 +63,6 @@ def test_cloudpickle_loads_error() -> None:
     with mock.patch('cloudpickle.loads', side_effect=Exception()):
         with pytest.raises(
             SerializationError,
-            match='Failed to deserialize object with cloudpickle.',
+            match="Failed to deserialize object with identifier b'04'.",
         ):
             deserialize(v)
