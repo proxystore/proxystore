@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import pickle
+from collections import OrderedDict
 from typing import Any
+from typing import Protocol
 
 import cloudpickle
 
@@ -14,15 +16,101 @@ class SerializationError(Exception):
     pass
 
 
+class _Serializer(Protocol):
+    """Serializer protocol."""
+
+    def supported(self, obj: Any) -> bool:
+        """Check if the serializer is compatible with the object.
+
+        The `supported` check is designed to fast way to determine if this
+        serializer may be compatible with a given `obj`. If `supported(obj)`
+        returns `False`, then it is guaranteed that `serialize(obj)` will
+        fail. However, the contrapositive is not true. `serialize(obj)`
+        can still fail even if `supported(obj)` return `True`.
+        """
+        ...
+
+    def serialize(self, obj: Any) -> bytes:
+        """Serialize the object to bytes."""
+        ...
+
+    def deserialize(self, data: bytes) -> Any:
+        """Deserialize bytes to an object."""
+        ...
+
+
+class _BytesSerializer:
+    def supported(self, obj: Any) -> bool:
+        return isinstance(obj, bytes)
+
+    def serialize(self, obj: Any) -> bytes:
+        return obj
+
+    def deserialize(self, data: bytes) -> Any:
+        return data
+
+
+class _StrSerializer:
+    def supported(self, obj: Any) -> bool:
+        return isinstance(obj, str)
+
+    def serialize(self, obj: Any) -> bytes:
+        return obj.encode()
+
+    def deserialize(self, data: bytes) -> Any:
+        return data.decode()
+
+
+class _PickleSerializer:
+    def supported(self, obj: Any) -> bool:
+        # Assume this serializer can handle any type. This is not explicitly
+        # true but checking every exception is non-trivial and essentially
+        # requires attempting serialization and seeing if it fails.
+        return True
+
+    def serialize(self, obj: Any) -> bytes:
+        return pickle.dumps(obj, protocol=5)
+
+    def deserialize(self, data: bytes) -> Any:
+        return pickle.loads(data)
+
+
+class _CloudPickleSerializer:
+    def supported(self, obj: Any) -> bool:
+        # Assume this serializer can handle any type. This is not explicitly
+        # true but checking every exception is non-trivial and essentially
+        # requires attempting serialization and seeing if it fails.
+        return True
+
+    def serialize(self, obj: Any) -> bytes:
+        return cloudpickle.dumps(obj)
+
+    def deserialize(self, data: bytes) -> Any:
+        return cloudpickle.loads(data)
+
+
+_SERIALIZERS: dict[bytes, _Serializer] = OrderedDict(
+    [
+        (b'01', _BytesSerializer()),
+        (b'02', _StrSerializer()),
+        (b'03', _PickleSerializer()),
+        (b'04', _CloudPickleSerializer()),
+    ],
+)
+
+
 def serialize(obj: Any) -> bytes:
     """Serialize object.
 
-    Objects are serialized using
-    [pickle](https://docs.python.org/3/library/pickle.html){target=_blank}
-    (protocol 4) except for [bytes][] or [str][] objects.
-    If pickle fails,
-    [cloudpickle](https://github.com/cloudpipe/cloudpickle){target=_blank}
-    is used as a fallback.
+    Objects are serialized with different mechanisms depending on their type.
+
+      - [bytes][] types are not serialized.
+      - [str][] types are encoded to bytes.
+      - Other types are
+        [pickled](https://docs.python.org/3/library/pickle.html){target=_blank}.
+        If pickle fails,
+        [cloudpickle](https://github.com/cloudpipe/cloudpickle){target=_blank}
+        is used as a fallback.
 
     Args:
         obj: Object to serialize.
@@ -36,30 +124,19 @@ def serialize(obj: Any) -> bytes:
             serializers. Cloudpickle is the last resort, so this error will
             typically be raised from a cloudpickle error.
     """
-    if isinstance(obj, bytes):
-        identifier = b'01\n'
-    elif isinstance(obj, str):
-        identifier = b'02\n'
-        obj = obj.encode()
-    else:
-        # Use cloudpickle if pickle fails
-        try:
-            identifier = b'03\n'
-            # Pickle protocol 5 is available in Python 3.8 and later
-            obj = pickle.dumps(obj, protocol=5)
-        except Exception:
-            identifier = b'04\n'
+    last_exception: Exception | None = None
+    for identifier, serializer in _SERIALIZERS.items():
+        if serializer.supported(obj):
             try:
-                obj = cloudpickle.dumps(obj)
+                data = serializer.serialize(obj)
+                return identifier + b'\n' + data
             except Exception as e:
-                raise SerializationError(
-                    f'Object of type {type(obj)} is not serializable.',
-                ) from e
+                last_exception = e
 
-    assert isinstance(identifier, bytes)
-    assert isinstance(obj, bytes)
-
-    return identifier + obj
+    assert last_exception is not None
+    raise SerializationError(
+        f'Object of type {type(obj)} is not supported.',
+    ) from last_exception
 
 
 def deserialize(data: bytes) -> Any:
@@ -86,30 +163,15 @@ def deserialize(data: bytes) -> Any:
         raise ValueError(
             f'Expected data to be of type bytes, not {type(data)}.',
         )
-    identifier, separator, data = data.partition(b'\n')
-    if separator == b'' or len(identifier) != len(b'00'):
+    identifier, _, data = data.partition(b'\n')
+    if identifier not in _SERIALIZERS:
         raise SerializationError(
-            'Data does not have required identifier for deserialization.',
+            f'Unknown identifier {identifier!r} for deserialization.',
         )
-    if identifier == b'01':
-        return data
-    elif identifier == b'02':
-        return data.decode()
-    elif identifier == b'03':
-        try:
-            return pickle.loads(data)
-        except Exception as e:
-            raise SerializationError(
-                'Failed to deserialize object with pickle.',
-            ) from e
-    elif identifier == b'04':
-        try:
-            return cloudpickle.loads(data)
-        except Exception as e:
-            raise SerializationError(
-                'Failed to deserialize object with cloudpickle.',
-            ) from e
-    else:
+    serializer = _SERIALIZERS[identifier]
+    try:
+        return serializer.deserialize(data)
+    except Exception as e:
         raise SerializationError(
-            f'Unknown identifier {identifier!r} for deserialization,',
-        )
+            f'Failed to deserialize object with identifier {identifier!r}.',
+        ) from e
