@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import io
 import pickle
 from collections import OrderedDict
 from typing import Any
 from typing import Protocol
 
 import cloudpickle
+
+# Pickle protocol 5 is available in Python 3.8 version so that is ProxyStore's
+# minimum version. If higher version come out in the future, prefer those.
+_PICKLE_PROTOCOL = max(pickle.HIGHEST_PROTOCOL, 5)
 
 
 class SerializationError(Exception):
@@ -22,7 +27,7 @@ class _Serializer(Protocol):
     def supported(self, obj: Any) -> bool:
         """Check if the serializer is compatible with the object.
 
-        The `supported` check is designed to fast way to determine if this
+        The `supported` check is designed to be a fast way to determine if this
         serializer may be compatible with a given `obj`. If `supported(obj)`
         returns `False`, then it is guaranteed that `serialize(obj)` will
         fail. However, the contrapositive is not true. `serialize(obj)`
@@ -30,12 +35,12 @@ class _Serializer(Protocol):
         """
         ...
 
-    def serialize(self, obj: Any) -> bytes:
-        """Serialize the object to bytes."""
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        """Serialize the object and write to a buffer."""
         ...
 
-    def deserialize(self, data: bytes) -> Any:
-        """Deserialize bytes to an object."""
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        """Deserialize bytes from a buffer to an object."""
         ...
 
 
@@ -43,22 +48,61 @@ class _BytesSerializer:
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, bytes)
 
-    def serialize(self, obj: Any) -> bytes:
-        return obj
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        buffer.write(obj)
 
-    def deserialize(self, data: bytes) -> Any:
-        return data
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return buffer.read()
 
 
 class _StrSerializer:
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, str)
 
-    def serialize(self, obj: Any) -> bytes:
-        return obj.encode()
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        buffer.write(obj.encode())
 
-    def deserialize(self, data: bytes) -> Any:
-        return data.decode()
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return buffer.read().decode()
+
+
+class _NumpySerializer:
+    def supported(self, obj: Any) -> bool:
+        return isinstance(obj, numpy.ndarray)
+
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        # Must allow_pickle=True for the case where the numpy array contains
+        # non-numeric data.
+        numpy.save(buffer, obj, allow_pickle=True)
+
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return numpy.load(buffer, allow_pickle=True)
+
+
+class _PandasSerializer:
+    def supported(self, obj: Any) -> bool:
+        return isinstance(obj, pandas.DataFrame)
+
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        # Pandas with pickle protocol 5 is the suggested serialization
+        # method for best efficiency. We tested feather IPC and parquet and
+        # both were slower than pickle.
+        # https://github.com/dask/distributed/issues/614#issuecomment-631033227
+        obj.to_pickle(buffer, protocol=_PICKLE_PROTOCOL)
+
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return pandas.read_pickle(buffer)
+
+
+class _PolarsSerializer:
+    def supported(self, obj: Any) -> bool:
+        return isinstance(obj, polars.DataFrame)
+
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        obj.write_ipc(buffer)
+
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return polars.read_ipc(buffer.read())
 
 
 class _PickleSerializer:
@@ -68,11 +112,11 @@ class _PickleSerializer:
         # requires attempting serialization and seeing if it fails.
         return True
 
-    def serialize(self, obj: Any) -> bytes:
-        return pickle.dumps(obj, protocol=5)
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        pickle.dump(obj, buffer, protocol=_PICKLE_PROTOCOL)
 
-    def deserialize(self, data: bytes) -> Any:
-        return pickle.loads(data)
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return pickle.load(buffer)
 
 
 class _CloudPickleSerializer:
@@ -82,21 +126,43 @@ class _CloudPickleSerializer:
         # requires attempting serialization and seeing if it fails.
         return True
 
-    def serialize(self, obj: Any) -> bytes:
-        return cloudpickle.dumps(obj)
+    def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        cloudpickle.dump(obj, buffer, protocol=_PICKLE_PROTOCOL)
 
-    def deserialize(self, data: bytes) -> Any:
-        return cloudpickle.loads(data)
+    def deserialize(self, buffer: io.BytesIO) -> Any:
+        return cloudpickle.load(buffer)
 
 
 _SERIALIZERS: dict[bytes, _Serializer] = OrderedDict(
     [
         (b'01', _BytesSerializer()),
         (b'02', _StrSerializer()),
-        (b'03', _PickleSerializer()),
-        (b'04', _CloudPickleSerializer()),
     ],
 )
+
+try:
+    import numpy
+
+    _SERIALIZERS[b'03'] = _NumpySerializer()
+except ImportError:  # pragma: no cover
+    pass
+
+try:
+    import pandas
+
+    _SERIALIZERS[b'04'] = _PandasSerializer()
+except ImportError:  # pragma: no cover
+    pass
+
+try:
+    import polars
+
+    _SERIALIZERS[b'05'] = _PolarsSerializer()
+except ImportError:  # pragma: no cover
+    pass
+
+_SERIALIZERS[b'06'] = _PickleSerializer()
+_SERIALIZERS[b'07'] = _CloudPickleSerializer()
 
 
 def serialize(obj: Any) -> bytes:
@@ -106,6 +172,15 @@ def serialize(obj: Any) -> bytes:
 
       - [bytes][] types are not serialized.
       - [str][] types are encoded to bytes.
+      - [numpy.ndarray](https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html){target=_blank}
+        types are serialized using
+        [numpy.save](https://numpy.org/doc/stable/reference/generated/numpy.save.html){target=_blank}.
+      - [pandas.DataFrame](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html){target=_blank}
+        types are serialized using
+        [to_pickle](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_pickle.html){target=_blank}.
+      - [polars.DataFrame](https://pola-rs.github.io/polars/py-polars/html/reference/dataframe/index.html){target=_blank}
+        types are serialized using
+        [write_ipc](https://docs.pola.rs/api/python/stable/reference/api/polars.DataFrame.write_ipc.html){target=_blank}.
       - Other types are
         [pickled](https://docs.python.org/3/library/pickle.html){target=_blank}.
         If pickle fails,
@@ -128,8 +203,10 @@ def serialize(obj: Any) -> bytes:
     for identifier, serializer in _SERIALIZERS.items():
         if serializer.supported(obj):
             try:
-                data = serializer.serialize(obj)
-                return identifier + b'\n' + data
+                with io.BytesIO() as buffer:
+                    buffer.write(identifier + b'\n')
+                    serializer.serialize(obj, buffer)
+                    return buffer.getvalue()
             except Exception as e:
                 last_exception = e
 
@@ -141,6 +218,10 @@ def serialize(obj: Any) -> bytes:
 
 def deserialize(data: bytes) -> Any:
     """Deserialize object.
+
+    Warning:
+        Pickled data is not secure, and malicious pickled object can execute
+        arbitrary code when upickled. Only unpickle data you trust.
 
     Args:
         data: Bytes produced by
@@ -163,15 +244,19 @@ def deserialize(data: bytes) -> Any:
         raise ValueError(
             f'Expected data to be of type bytes, not {type(data)}.',
         )
-    identifier, _, data = data.partition(b'\n')
-    if identifier not in _SERIALIZERS:
-        raise SerializationError(
-            f'Unknown identifier {identifier!r} for deserialization.',
-        )
-    serializer = _SERIALIZERS[identifier]
-    try:
-        return serializer.deserialize(data)
-    except Exception as e:
-        raise SerializationError(
-            f'Failed to deserialize object with identifier {identifier!r}.',
-        ) from e
+
+    with io.BytesIO(data) as buffer:
+        identifier = buffer.readline().strip()
+        if identifier not in _SERIALIZERS:
+            raise SerializationError(
+                f'Unknown identifier {identifier!r} for deserialization.',
+            )
+
+        serializer = _SERIALIZERS[identifier]
+        try:
+            return serializer.deserialize(buffer)
+        except Exception as e:
+            raise SerializationError(
+                f'Failed to deserialize object with'
+                f' identifier {identifier!r}.',
+            ) from e
