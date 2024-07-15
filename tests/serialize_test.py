@@ -12,9 +12,29 @@ import pytest
 from proxystore.serialize import _NumpySerializer
 from proxystore.serialize import _PandasSerializer
 from proxystore.serialize import _PolarsSerializer
+from proxystore.serialize import _register_serializer
 from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
+
+
+def test_register_duplicate_identifiers() -> None:
+    class _TestSerializer:
+        identifier = _NumpySerializer.identifier
+        name = 'test'
+
+        def supported(self, obj: Any) -> bool:
+            raise NotImplementedError
+
+        def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+            raise NotImplementedError
+
+        def deserialize(self, buffer: io.BytesIO) -> Any:
+            raise NotImplementedError
+
+    error = "Serializer named 'numpy' with identifier b'NP' already exists."
+    with pytest.raises(AssertionError, match=error):
+        _register_serializer(_TestSerializer)
 
 
 @pytest.mark.parametrize(
@@ -73,20 +93,16 @@ def test_propagate_cloudpickle_dumps_error() -> None:
 def test_propagate_pickle_loads_error() -> None:
     v = serialize([1, 2, 3])
     with mock.patch('pickle.load', side_effect=Exception()):
-        with pytest.raises(
-            SerializationError,
-            match="Failed to deserialize object with identifier b'06'.",
-        ):
+        msg = 'Failed to deserialize object using the pickle serializer.'
+        with pytest.raises(SerializationError, match=msg):
             deserialize(v)
 
 
 def test_propagate_cloudpickle_loads_error() -> None:
     v = serialize(lambda x: x + x)  # pragma: no cover
     with mock.patch('cloudpickle.load', side_effect=Exception()):
-        with pytest.raises(
-            SerializationError,
-            match="Failed to deserialize object with identifier b'07'.",
-        ):
+        msg = 'Failed to deserialize object using the cloudpickle serializer.'
+        with pytest.raises(SerializationError, match=msg):
             deserialize(v)
 
 

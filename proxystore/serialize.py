@@ -22,7 +22,15 @@ class SerializationError(Exception):
 
 
 class _Serializer(Protocol):
-    """Serializer protocol."""
+    """Serializer protocol.
+
+    The `identifier` attribute, by convention, is a two-byte string containing
+    a unique identifier for the serializer type. The name is the human-readable
+    name of the serializer used in logging and error messages.
+    """
+
+    identifier: bytes
+    name: str
 
     def supported(self, obj: Any) -> bool:
         """Check if the serializer is compatible with the object.
@@ -45,6 +53,9 @@ class _Serializer(Protocol):
 
 
 class _BytesSerializer:
+    identifier = b'BS'
+    name = 'bytes'
+
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, bytes)
 
@@ -56,6 +67,9 @@ class _BytesSerializer:
 
 
 class _StrSerializer:
+    identifier = b'US'
+    name = 'string'
+
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, str)
 
@@ -67,6 +81,9 @@ class _StrSerializer:
 
 
 class _NumpySerializer:
+    identifier = b'NP'
+    name = 'numpy'
+
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, numpy.ndarray)
 
@@ -80,6 +97,9 @@ class _NumpySerializer:
 
 
 class _PandasSerializer:
+    identifier = b'PD'
+    name = 'pandas'
+
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, pandas.DataFrame)
 
@@ -95,6 +115,9 @@ class _PandasSerializer:
 
 
 class _PolarsSerializer:
+    identifier = b'PL'
+    name = 'polars'
+
     def supported(self, obj: Any) -> bool:
         return isinstance(obj, polars.DataFrame)
 
@@ -106,6 +129,9 @@ class _PolarsSerializer:
 
 
 class _PickleSerializer:
+    identifier = b'PK'
+    name = 'pickle'
+
     def supported(self, obj: Any) -> bool:
         # Assume this serializer can handle any type. This is not explicitly
         # true but checking every exception is non-trivial and essentially
@@ -120,6 +146,9 @@ class _PickleSerializer:
 
 
 class _CloudPickleSerializer:
+    identifier = b'CP'
+    name = 'cloudpickle'
+
     def supported(self, obj: Any) -> bool:
         # Assume this serializer can handle any type. This is not explicitly
         # true but checking every exception is non-trivial and essentially
@@ -133,36 +162,47 @@ class _CloudPickleSerializer:
         return cloudpickle.load(buffer)
 
 
-_SERIALIZERS: dict[bytes, _Serializer] = OrderedDict(
-    [
-        (b'01', _BytesSerializer()),
-        (b'02', _StrSerializer()),
-    ],
-)
+_SERIALIZERS: dict[bytes, _Serializer] = OrderedDict()
+
+
+def _register_serializer(serializer: type[_Serializer]) -> None:
+    if serializer.identifier in _SERIALIZERS:
+        current = _SERIALIZERS[serializer.identifier]
+        raise AssertionError(
+            f'Serializer named {current.name!r} with identifier '
+            f'{current.identifier!r} already exists.',
+        )
+    _SERIALIZERS[serializer.identifier] = serializer()
+
+
+# Registration order determines priority so we register in the order
+# we want serialization to be tried.
+_register_serializer(_BytesSerializer)
+_register_serializer(_StrSerializer)
 
 try:
     import numpy
 
-    _SERIALIZERS[b'03'] = _NumpySerializer()
+    _register_serializer(_NumpySerializer)
 except ImportError:  # pragma: no cover
     pass
 
 try:
     import pandas
 
-    _SERIALIZERS[b'04'] = _PandasSerializer()
+    _register_serializer(_PandasSerializer)
 except ImportError:  # pragma: no cover
     pass
 
 try:
     import polars
 
-    _SERIALIZERS[b'05'] = _PolarsSerializer()
+    _register_serializer(_PolarsSerializer)
 except ImportError:  # pragma: no cover
     pass
 
-_SERIALIZERS[b'06'] = _PickleSerializer()
-_SERIALIZERS[b'07'] = _CloudPickleSerializer()
+_register_serializer(_PickleSerializer)
+_register_serializer(_CloudPickleSerializer)
 
 
 def serialize(obj: Any) -> bytes:
@@ -257,6 +297,6 @@ def deserialize(data: bytes) -> Any:
             return serializer.deserialize(buffer)
         except Exception as e:
             raise SerializationError(
-                f'Failed to deserialize object with'
-                f' identifier {identifier!r}.',
+                'Failed to deserialize object using the '
+                f'{serializer.name} serializer.',
             ) from e
