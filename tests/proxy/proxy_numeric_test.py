@@ -248,11 +248,11 @@ def test_iadd() -> None:
 
     value += 1
     assert value == 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value += one
     assert value == 3
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_isub() -> None:
@@ -261,11 +261,11 @@ def test_isub() -> None:
 
     value -= 1
     assert value == 0
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value -= one
     assert value == -1
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_imul() -> None:
@@ -274,11 +274,11 @@ def test_imul() -> None:
 
     value *= 2
     assert value == 4
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value *= two
     assert value == 8
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_imatmul() -> None:
@@ -297,7 +297,7 @@ def test_imatmul() -> None:
     value = Proxy(InplaceMatmul)
     value @= 234
     assert value.value == 234
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_idiv() -> None:
@@ -309,11 +309,11 @@ def test_idiv() -> None:
 
     value /= 2
     assert value == 2 / 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value /= two
     assert value == 2 / 2 / 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_ifloordiv() -> None:
@@ -322,11 +322,11 @@ def test_ifloordiv() -> None:
 
     value //= 2
     assert value == 2 // 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value //= two
     assert value == 2 // 2 // 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_imod() -> None:
@@ -335,11 +335,11 @@ def test_imod() -> None:
 
     value %= 2
     assert value == 10 % 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value %= two
     assert value == 10 % 2 % 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_ipow() -> None:
@@ -348,11 +348,11 @@ def test_ipow() -> None:
 
     value **= 2
     assert value == 10**2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value **= two
     assert value == 10**2**2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_ilshift() -> None:
@@ -361,11 +361,11 @@ def test_ilshift() -> None:
 
     value <<= 2
     assert value == 256 << 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value <<= two
     assert value == 256 << 2 << 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_irshift() -> None:
@@ -374,11 +374,11 @@ def test_irshift() -> None:
 
     value >>= 2
     assert value == 2 >> 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value >>= two
     assert value == 2 >> 2 >> 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_iand() -> None:
@@ -387,11 +387,11 @@ def test_iand() -> None:
 
     value &= 2
     assert value == 1 & 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value &= two
     assert value == 1 & 2 & 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_ixor() -> None:
@@ -400,11 +400,11 @@ def test_ixor() -> None:
 
     value ^= 2
     assert value == 1 ^ 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value ^= two
     assert value == 1 ^ 2 ^ 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_ior() -> None:
@@ -413,11 +413,11 @@ def test_ior() -> None:
 
     value |= 2
     assert value == 1 | 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
     value |= two
     assert value == 1 | 2 | 2
-    assert type(value) == Proxy
+    assert type(value) is Proxy
 
 
 def test_neg() -> None:

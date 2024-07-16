@@ -47,7 +47,7 @@ def test_connector_config(connectors: Connector[Any]) -> None:
     new_connector = type(connector).from_config(config)
 
     assert isinstance(new_connector, Connector)
-    assert type(connector) == type(new_connector)
+    assert type(connector) is type(new_connector)
 
 
 def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:
