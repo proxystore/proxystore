@@ -49,4 +49,4 @@ def test_new_object_to_from_key() -> None:
     event = NewObjectEvent.from_key(key, True, {})
     new_key = event.get_key()
     assert key == new_key
-    assert type(key) == type(new_key)
+    assert type(key) is type(new_key)
