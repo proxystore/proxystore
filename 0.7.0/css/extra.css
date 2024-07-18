@@ -1,0 +1,48 @@
+/*
+ * Logo colors:
+ *   purple: #5B2A86
+ *   blue: #7785AC
+ *   green: #A5E6BA
+ *
+ * Alternates:
+ *   red: #D16666
+ *   light-purple: #C19EE1
+ *
+ */
+:root > * {
+  --md-primary-fg-color: #5B2A86;
+  --md-accent-fg-color: #D16666;
+  --md-accent-bg-color: #D16666;
+  --md-code-hl-color: #EBE0F5;
+}
+
+[data-md-color-primary="proxystore-light"] {
+  --md-typeset-a-color: #5B2A86;
+}
+
+[data-md-color-primary="proxystore-dark"] {
+  --md-typeset-a-color: #C19EE1;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 230;
+}
+
+.md-typeset h1 {
+  font-weight: 400;
+}
+
+.md-tabs__link {
+  font-weight: 600;
+}
+
+/* Center Markdown Tables (requires md_in_html extension) */
+/* https://github.com/squidfunk/mkdocs-material/issues/3430#issuecomment-1005973474 */
+.center-table {
+    text-align: center;
+}
+
+.md-typeset .center-table :is(td,th):not([align]) {
+    /* Reset alignment for table cells */
+    text-align: initial;
+}
