@@ -24,8 +24,8 @@ def multi_connector_from_policies(
     None,
     None,
 ]:
-    connector1 = LocalConnector()
-    connector2 = LocalConnector()
+    connector1 = LocalConnector(include_data_in_config=True)
+    connector2 = LocalConnector(include_data_in_config=True)
 
     connectors: dict[str, tuple[Connector[Any], Policy]] = {
         'c1': (connector1, p1),
