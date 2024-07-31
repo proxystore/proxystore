@@ -37,15 +37,21 @@ class LocalConnector:
     Args:
         store_dict: Dictionary to store data in. If not specified,
             a new empty dict will be generated.
+        include_data_in_config: Include the data in the connector in the
+            connector's state. This is very innefficient and only useful for
+            testing.
     """
 
     def __init__(
         self,
         store_dict: dict[LocalKey, bytes] | None = None,
+        *,
+        include_data_in_config: bool = False,
     ) -> None:
-        self._store: dict[LocalKey, bytes] = {}
-        if store_dict is not None:
-            self._store = store_dict
+        self._store: dict[LocalKey, bytes] = (
+            {} if store_dict is None else store_dict
+        )
+        self._include_data_in_config = include_data_in_config
 
     def __enter__(self) -> Self:
         return self
@@ -71,7 +77,12 @@ class LocalConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'store_dict': self._store}
+        config: dict[str, Any] = {
+            'include_data_in_config': self._include_data_in_config,
+        }
+        if self._include_data_in_config:
+            config['store_dict'] = self._store
+        return config
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> LocalConnector:

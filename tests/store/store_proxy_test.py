@@ -47,7 +47,7 @@ def test_factory_evicts_on_resolve(store: Store[LocalConnector]) -> None:
 
 
 def test_factory_recreates_store() -> None:
-    with Store('test', LocalConnector()) as store:
+    with Store('test', LocalConnector(include_data_in_config=True)) as store:
         key = store.put([1, 2, 3])
         f: StoreFactory[Any, list[int]] = StoreFactory(
             key,
@@ -187,7 +187,7 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
 def test_proxy_recreates_store() -> None:
     with Store(
         'test',
-        LocalConnector(),
+        LocalConnector(include_data_in_config=True),
         cache_size=0,
         populate_target=False,
     ) as store:
