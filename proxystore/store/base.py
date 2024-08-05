@@ -559,12 +559,8 @@ class Store(Generic[ConnectorT]):
         """
         return self.cache.exists(key)
 
-    # MyPy raises the following error which seems more of a lint than a type
-    # error because NonProxiableT is a subset of T.
-    #     Overloaded function signatures 1 and 2 overlap with
-    #     incompatible return types  [overload-overlap]
     @overload
-    def proxy(  # type: ignore[overload-overlap]
+    def proxy(
         self,
         obj: NonProxiableT,
         *,
@@ -693,9 +689,8 @@ class Store(Generic[ConnectorT]):
         )
         return proxy
 
-    # This method has the same MyPy complaint as Store.proxy()
     @overload
-    def proxy_batch(  # type: ignore[overload-overlap]
+    def proxy_batch(
         self,
         objs: Sequence[NonProxiableT],
         *,
@@ -894,9 +889,8 @@ class Store(Generic[ConnectorT]):
 
         return proxy
 
-    # This method has the same MyPy complaint as Store.proxy()
     @overload
-    def locked_proxy(  # type: ignore[overload-overlap]
+    def locked_proxy(
         self,
         obj: NonProxiableT,
         *,
@@ -988,9 +982,8 @@ class Store(Generic[ConnectorT]):
             return ProxyLocker(possible_proxy)
         return possible_proxy
 
-    # This method has the same MyPy complaint as Store.proxy()
     @overload
-    def owned_proxy(  # type: ignore[overload-overlap]
+    def owned_proxy(
         self,
         obj: NonProxiableT,
         *,
