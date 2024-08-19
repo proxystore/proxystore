@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from types import TracebackType
 from typing import Any
 from typing import cast
@@ -53,6 +54,8 @@ NonProxiableT = TypeVar('NonProxiableT', bool, None)
 # These should be kept in sync with NonProxiableT
 _NON_PROXIABLE_TYPES = (bool, type(None))
 
+_MISSING_OBJECT = object()
+
 
 class Store(Generic[ConnectorT]):
     r"""Key-value store interface for proxies.
@@ -99,6 +102,10 @@ class Store(Generic[ConnectorT]):
         of bytes rather than the intended list of integers. To fix this, set
         `populate_target=False` so the custom deserializer is correctly
         applied to `data_bytes` when the proxy is resolved.
+
+    Note:
+        This class is generally thread-safe, with cache access and connector
+        operations guarded by a lock that is local to each store instance.
 
     Args:
         name: Name of the store instance.
@@ -162,6 +169,8 @@ class Store(Generic[ConnectorT]):
                 else:  # pragma: <3.11 cover
                     pass
                 raise
+
+        self._lock = threading.Lock()
 
         logger.info(f'Initialized {self}')
 
@@ -240,7 +249,8 @@ class Store(Generic[ConnectorT]):
         """
         if self._register:
             proxystore.store.unregister_store(self.name)
-        self.connector.close(*args, **kwargs)
+        with self._lock:
+            self.connector.close(*args, **kwargs)
 
     def config(self) -> StoreConfig:
         """Get the store configuration.
@@ -414,7 +424,10 @@ class Store(Generic[ConnectorT]):
         Args:
             key: Key associated with object to evict.
         """
-        with Timer() as timer:
+        timer = Timer()
+        timer.start()
+
+        with self._lock:
             with Timer() as connector_timer:
                 self.connector.evict(key)
 
@@ -424,6 +437,7 @@ class Store(Generic[ConnectorT]):
 
             self.cache.evict(key)
 
+        timer.stop()
         if self.metrics is not None:
             self.metrics.add_time('store.evict', key, timer.elapsed_ms)
 
@@ -441,7 +455,10 @@ class Store(Generic[ConnectorT]):
         Returns:
             If an object associated with the key exists.
         """
-        with Timer() as timer:
+        timer = Timer()
+        timer.start()
+
+        with self._lock:
             res = self.cache.exists(key)
             if not res:
                 with Timer() as connector_timer:
@@ -451,6 +468,7 @@ class Store(Generic[ConnectorT]):
                     ctime = connector_timer.elapsed_ms
                     self.metrics.add_time('store.exists.connector', key, ctime)
 
+        timer.stop()
         if self.metrics is not None:
             self.metrics.add_time('store.exists', key, timer.elapsed_ms)
 
@@ -486,57 +504,57 @@ class Store(Generic[ConnectorT]):
         timer = Timer()
         timer.start()
 
-        if self.is_cached(key):
-            value = self.cache.get(key)
+        with self._lock:
+            cached = self.cache.get(key, _MISSING_OBJECT)
+            if cached is not _MISSING_OBJECT:
+                timer.stop()
+                if self.metrics is not None:
+                    self.metrics.add_counter('store.get.cache_hits', key, 1)
+                    self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
-            timer.stop()
-            if self.metrics is not None:
-                self.metrics.add_counter('store.get.cache_hits', key, 1)
-                self.metrics.add_time('store.get', key, timer.elapsed_ms)
-
-            logger.debug(
-                f'Store(name="{self.name}"): GET {key} in '
-                f'{timer.elapsed_ms:.3f} ms (cached=True)',
-            )
-            return value
-
-        with Timer() as connector_timer:
-            value = self.connector.get(key)
-
-        if self.metrics is not None:
-            ctime = connector_timer.elapsed_ms
-            self.metrics.add_counter('store.get.cache_misses', key, 1)
-            self.metrics.add_time('store.get.connector', key, ctime)
-
-        if value is not None:
-            with Timer() as deserializer_timer:
-                deserializer = (
-                    deserializer
-                    if deserializer is not None
-                    else self.deserializer
+                logger.debug(
+                    f'Store(name="{self.name}"): GET {key} in '
+                    f'{timer.elapsed_ms:.3f} ms (cached=True)',
                 )
-                try:
-                    result = deserializer(value)
-                except Exception as e:
-                    name = get_object_path(deserializer)
-                    raise SerializationError(
-                        'Failed to deserialize object '
-                        f'(deserializer={name}, key={key}).',
-                    ) from e
+                return cached
+
+            with Timer() as connector_timer:
+                value = self.connector.get(key)
 
             if self.metrics is not None:
-                dtime = deserializer_timer.elapsed_ms
-                obj_size = len(value)
-                self.metrics.add_time('store.get.deserialize', key, dtime)
-                self.metrics.add_attribute(
-                    'store.get.object_size',
-                    key,
-                    obj_size,
-                )
+                ctime = connector_timer.elapsed_ms
+                self.metrics.add_counter('store.get.cache_misses', key, 1)
+                self.metrics.add_time('store.get.connector', key, ctime)
 
-            self.cache.set(key, result)
-        else:
-            result = default
+            if value is not None:
+                with Timer() as deserializer_timer:
+                    deserializer = (
+                        deserializer
+                        if deserializer is not None
+                        else self.deserializer
+                    )
+                    try:
+                        result = deserializer(value)
+                    except Exception as e:
+                        name = get_object_path(deserializer)
+                        raise SerializationError(
+                            'Failed to deserialize object '
+                            f'(deserializer={name}, key={key}).',
+                        ) from e
+
+                if self.metrics is not None:
+                    dtime = deserializer_timer.elapsed_ms
+                    obj_size = len(value)
+                    self.metrics.add_time('store.get.deserialize', key, dtime)
+                    self.metrics.add_attribute(
+                        'store.get.object_size',
+                        key,
+                        obj_size,
+                    )
+
+                self.cache.set(key, result)
+            else:
+                result = default
 
         timer.stop()
         if self.metrics is not None:
@@ -557,7 +575,8 @@ class Store(Generic[ConnectorT]):
         Returns:
             If the object is cached.
         """
-        return self.cache.exists(key)
+        with self._lock:
+            return self.cache.exists(key)
 
     @overload
     def proxy(
@@ -1106,8 +1125,9 @@ class Store(Generic[ConnectorT]):
         if not isinstance(obj, bytes):
             raise TypeError('Serializer must produce bytes.')
 
-        with Timer() as connector_timer:
-            key = self.connector.put(obj, **kwargs)
+        with self._lock:
+            with Timer() as connector_timer:
+                key = self.connector.put(obj, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(key, store=self)
@@ -1169,8 +1189,9 @@ class Store(Generic[ConnectorT]):
         with Timer() as serialize_timer:
             _objs = list(map(_serialize, objs))
 
-        with Timer() as connector_timer:
-            keys = self.connector.put_batch(_objs, **kwargs)
+        with self._lock:
+            with Timer() as connector_timer:
+                keys = self.connector.put_batch(_objs, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(*keys, store=self)
@@ -1251,10 +1272,11 @@ class Store(Generic[ConnectorT]):
         if not isinstance(obj, bytes):
             raise TypeError('Serializer must produce bytes.')
 
-        with Timer() as connector_timer:
-            self.connector.set(key, obj, **kwargs)
+        with self._lock:
+            with Timer() as connector_timer:
+                self.connector.set(key, obj, **kwargs)
 
-        self.cache.evict(key)
+            self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:
