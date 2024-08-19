@@ -85,10 +85,10 @@ docs = [
     "mkdocs-click",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
-    "mkdocs-material==9.4.7",
+    "mkdocs-material==9.5.32",
     "mkdocs-section-index",
-    "mkdocstrings==0.23.0",
-    "mkdocstrings-python==1.8.0",
+    "mkdocstrings==0.25.2",
+    "mkdocstrings-python==1.10.8",
     "mike",
     # Needed for generating CLI docs
     "proxystore[all]",
