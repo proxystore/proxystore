@@ -378,8 +378,7 @@ class Store(Generic[ConnectorT]):
             NotImplementedError: If the `connector` is not of type
                 [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         if not isinstance(self.connector, DeferrableConnector):
             raise NotImplementedError(
@@ -424,8 +423,7 @@ class Store(Generic[ConnectorT]):
         Args:
             key: Key associated with object to evict.
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         with self._lock:
             with Timer() as connector_timer:
@@ -455,8 +453,7 @@ class Store(Generic[ConnectorT]):
         Returns:
             If an object associated with the key exists.
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         with self._lock:
             res = self.cache.exists(key)
@@ -501,8 +498,7 @@ class Store(Generic[ConnectorT]):
             SerializationError: If an exception is caught when deserializing
                 the object associated with the key.
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         with self._lock:
             cached = self.cache.get(key, _MISSING_OBJECT)
@@ -1113,8 +1109,7 @@ class Store(Generic[ConnectorT]):
         Raises:
             TypeError: If the output of `serializer` is not bytes.
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         with Timer() as serialize_timer:
             if serializer is not None:
@@ -1172,8 +1167,7 @@ class Store(Generic[ConnectorT]):
         Raises:
             TypeError: If the output of `serializer` is not bytes.
         """
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         def _serialize(obj: Any) -> bytes:
             if serializer is not None:
@@ -1260,8 +1254,7 @@ class Store(Generic[ConnectorT]):
                 'set method.',
             )
 
-        timer = Timer()
-        timer.start()
+        timer = Timer().start()
 
         with Timer() as serialize_timer:
             if serializer is not None:
