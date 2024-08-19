@@ -76,12 +76,14 @@ class Timer:
         """Elapsed time in seconds."""
         return self.elapsed_ns / 1e9
 
-    def start(self) -> None:
+    def start(self) -> Self:
         """Start the timer."""
         self._running = True
         self._start = time.perf_counter_ns()
+        return self
 
-    def stop(self) -> None:
+    def stop(self) -> Self:
         """Stop the timer."""
         self._end = time.perf_counter_ns()
         self._running = False
+        return self
