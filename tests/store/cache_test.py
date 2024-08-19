@@ -26,9 +26,12 @@ def test_lru_cache() -> None:
     assert c.get('Fake Key', None) is None
     assert c.get('Fake Key', 1) == 1
 
-    c = LRUCache(1)
+
+def test_lru_cache_evict_missing() -> None:
+    c: LRUCache[str, int] = LRUCache(1)
     c.set('1', 1)
     assert c.exists('1')
     c.evict('1')
     assert not c.exists('1')
+    # Should not fail
     c.evict('1')
