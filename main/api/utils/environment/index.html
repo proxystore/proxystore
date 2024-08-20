@@ -3028,7 +3028,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment" class="md-nav__link">
     <span class="md-ellipsis">
-      proxystore.utils.environment
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;environment
     </span>
   </a>
   
@@ -3037,7 +3037,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment.home_dir" class="md-nav__link">
     <span class="md-ellipsis">
-      home_dir()
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;home_dir
     </span>
   </a>
   
@@ -3046,7 +3046,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment.hostname" class="md-nav__link">
     <span class="md-ellipsis">
-      hostname()
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;hostname
     </span>
   </a>
   
@@ -3356,7 +3356,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment" class="md-nav__link">
     <span class="md-ellipsis">
-      proxystore.utils.environment
+      <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;environment
     </span>
   </a>
   
@@ -3365,7 +3365,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment.home_dir" class="md-nav__link">
     <span class="md-ellipsis">
-      home_dir()
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;home_dir
     </span>
   </a>
   
@@ -3374,7 +3374,7 @@
         <li class="md-nav__item">
   <a href="#proxystore.utils.environment.hostname" class="md-nav__link">
     <span class="md-ellipsis">
-      hostname()
+      <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;hostname
     </span>
   </a>
   
@@ -3404,13 +3404,18 @@
 <div class="doc doc-object doc-module">
 
 
+
 <a id="proxystore.utils.environment"></a>
-  <div class="doc doc-contents">
-      <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/utils/environment.py"><code>proxystore/utils/environment.py</code></a>
+    <div class="doc doc-contents first">
+  <div style="display:flex; align-items: center">
+  <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-github" viewBox="0 0 16 16" style="padding-right: 8px">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+  </svg>
+  <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/utils/environment.py">
+      <code>proxystore/utils/environment.py</code>
+  </a>
   </div>
-
-  <div class="doc doc-contents first">
-
+  
       <p>Utilities related to the current execution environment.</p>
 
 
@@ -3428,25 +3433,24 @@
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="proxystore.utils.environment.home_dir" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">home_dir()</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">home_dir</span>
 
 
 <a href="#proxystore.utils.environment.home_dir" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">home_dir</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
+    <div class="doc doc-contents ">
 
       <p>Return the absolute path to the proxystore home directory.</p>
 <p>If set, <code>$PROXYSTORE_HOME</code> is preferred. Otherwise,
 <code>$XDG_DATA_HOME/proxystore</code> is returned where <code>$XDG_DATA_HOME</code> defaults
 to <code>$HOME/.local/share</code> if unset.</p>
 
-      <details class="quote">
-        <summary>Source code in <code>proxystore/utils/environment.py</code></summary>
-        <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
+            <details class="quote">
+              <summary>Source code in <code>proxystore/utils/environment.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-9"> 9</a></span>
 <span class="normal"><a href="#__codelineno-0-10">10</a></span>
 <span class="normal"><a href="#__codelineno-0-11">11</a></span>
 <span class="normal"><a href="#__codelineno-0-12">12</a></span>
@@ -3474,37 +3478,36 @@ to <code>$HOME/.local/share</code> if unset.</p>
 </span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21"></a>        <span class="n">path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="s1">&#39;proxystore&#39;</span><span class="p">)</span>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22"></a>    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
-      </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
 <div class="doc doc-object doc-function">
 
 
-
 <h2 id="proxystore.utils.environment.hostname" class="doc doc-heading">
-        <span class="doc doc-object-name doc-function-name">hostname()</span>
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">hostname</span>
 
 
 <a href="#proxystore.utils.environment.hostname" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">hostname</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span>
 </span></code></pre></div>
 
-  <div class="doc doc-contents ">
+    <div class="doc doc-contents ">
 
       <p>Return current hostname.</p>
 
-      <details class="quote">
-        <summary>Source code in <code>proxystore/utils/environment.py</code></summary>
-        <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-25">25</a></span>
+            <details class="quote">
+              <summary>Source code in <code>proxystore/utils/environment.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-25">25</a></span>
 <span class="normal"><a href="#__codelineno-0-26">26</a></span>
 <span class="normal"><a href="#__codelineno-0-27">27</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25"></a><span class="k">def</span> <span class="nf">hostname</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return current hostname.&quot;&quot;&quot;</span>
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a>    <span class="k">return</span> <span class="n">socket</span><span class="o">.</span><span class="n">gethostname</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
-      </details>
-  </div>
+            </details>
+    </div>
 
 </div>
 
@@ -3512,7 +3515,8 @@ to <code>$HOME/.local/share</code> if unset.</p>
 
   </div>
 
-  </div>
+
+    </div>
 
 </div>
 
