@@ -85,8 +85,8 @@ class RelayClient:
             Otherwise, reconnections will only be attempted when sending or
             receiving a message.
         ssl_context: Custom SSL context to pass to
-            [`websockets.connect()`][websockets.client.connect]. A TLS context
-            is created with
+            [`websockets.connect()`][websockets.legacy.client.connect]. A TLS
+            context is created with
             [`ssl.create_default_context()`][ssl.create_default_context]
             when connecting to a `wss://` URI and `ssl_context` is not
             provided.
