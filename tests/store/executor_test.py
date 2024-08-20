@@ -3,11 +3,21 @@ from __future__ import annotations
 import gc
 import os
 import pathlib
+import sys
 from concurrent.futures import Executor
+from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from typing import Callable
+from typing import Iterable
+from typing import Iterator
+from typing import TypeVar
+
+if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
+    from typing import ParamSpec
+else:  # pragma: <3.10 cover
+    from typing_extensions import ParamSpec
 
 import pytest
 
@@ -21,6 +31,9 @@ from proxystore.store.executor import ProxyAlways
 from proxystore.store.executor import ProxyNever
 from proxystore.store.executor import ProxyType
 from proxystore.store.executor import StoreExecutor
+
+P = ParamSpec('P')
+R = TypeVar('R')
 
 
 def power(x: int, exp: int = 2) -> int:
@@ -158,3 +171,79 @@ def test_should_proxy(
     should: bool,
 ) -> None:
     assert should_proxy(obj) == should
+
+
+class DaskLikeClient:
+    def submit(
+        self,
+        function: Callable[P, R],
+        /,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> Future[R]:
+        future: Future[R] = Future()
+        future.set_result(function(*args, **kwargs))
+        return future
+
+    def map(
+        self,
+        function: Callable[P, R],
+        *iterables: Iterable[P.args],
+        timeout: float | None = None,
+        chunksize: int = 1,
+    ) -> Iterator[Future[R]]:
+        futures: list[Future[R]] = []
+        for result in map(function, *iterables):
+            future: Future[R] = Future()
+            future.set_result(result)
+            futures.append(future)
+
+        return iter(futures)
+
+    def close(self) -> None:
+        pass
+
+
+def test_dask_like_client(tmp_path: pathlib.Path) -> None:
+    store = Store(
+        'test-dask-like-client',
+        FileConnector(str(tmp_path)),
+        register=True,
+    )
+
+    with StoreExecutor(
+        DaskLikeClient(),  # type: ignore[arg-type]
+        store,
+    ) as executor:
+        future = executor.submit(sum, [1, 2, 3], start=-6)
+        assert future.result() == 0
+
+        results = executor.map(power, [1, -1, 2])
+        assert list(results) == [1, 1, 4]
+
+
+class BadExecutor:
+    def submit(
+        self,
+        function: Callable[P, R],
+        /,
+        *args: P.args,
+        **kwargs: P.kwargs,
+    ) -> Future[R]:
+        raise NotImplementedError()
+
+    def map(
+        self,
+        function: Callable[P, R],
+        *iterables: Iterable[P.args],
+        timeout: float | None = None,
+        chunksize: int = 1,
+    ) -> Iterator[Future[R]]:
+        raise NotImplementedError()
+
+
+def test_warn_unsupported_shutdown_method() -> None:
+    store = Store('test-function-wrapper', LocalConnector(), register=False)
+    executor = StoreExecutor(BadExecutor(), store)  # type: ignore[arg-type]
+    with pytest.warns(RuntimeWarning, match='Cannot shutdown BadExecutor'):
+        executor.shutdown()
