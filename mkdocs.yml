@@ -151,7 +151,7 @@ plugins:
   - literate-nav:
       nav_file: SUMMARY.md
   - mkdocstrings:
-      custom_templates: docs/_templates
+      custom_templates: docs/templates
       enable_inventory: true
       handlers:
         python:
@@ -178,11 +178,15 @@ plugins:
             members_order: source
             merge_init_into_class: yes
             separate_signature: yes
-            show_root_members_full_path: no
             show_object_full_path: no
             show_root_full_path: yes
+            show_root_heading: no
+            show_root_members_full_path: no
+            show_root_toc_entry: yes
             show_signature_annotations: yes
             show_submodules: no
+            show_symbol_type_heading: yes
+            show_symbol_type_toc: yes
             signature_crossrefs: yes
   - search
   - section-index
