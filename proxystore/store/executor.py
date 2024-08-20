@@ -53,6 +53,7 @@ an array is larger than some threshold.
 from __future__ import annotations
 
 import sys
+import warnings
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
@@ -63,6 +64,8 @@ from typing import Generic
 from typing import Iterable
 from typing import Iterator
 from typing import Mapping
+from typing import Protocol
+from typing import runtime_checkable
 from typing import TypeVar
 
 if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
@@ -153,6 +156,48 @@ def _proxy_mapping(
     return output, keys
 
 
+@runtime_checkable
+class _FutureProtocol(Protocol[R]):
+    """Protocol for future-like objects.
+
+    This [`Protocol`][typing.Protocol] defines an interface that is
+    similar to [`concurrent.futures.Future`][concurrent.futures.Future].
+    This is helpful for annotating methods that use futures that may not
+    inherit from [`concurrent.futures.Future`][concurrent.futures.Future]
+    such as Dask's `Future`.
+
+    This protocol does not require `running()` because Dask does not provide
+    that method.
+    """
+
+    def add_done_callback(
+        self,
+        callback: Callable[[_FutureProtocol[R]], Any],
+    ) -> None:
+        """Add a done callback to the future."""
+        ...
+
+    def cancel(self) -> bool:
+        """Attempt to cancel the task."""
+        ...
+
+    def cancelled(self) -> bool:
+        """Check if the task was cancelled."""
+        ...
+
+    def done(self) -> bool:
+        """Check if the task is done."""
+        ...
+
+    def exception(self, timeout: float | None = None) -> BaseException | None:
+        """Get the exception raised by the task."""
+        ...
+
+    def result(self, timeout: float | None = None) -> R:
+        """Get the result of the task."""
+        ...
+
+
 class ProxyAlways:
     """Should-proxy callable which always returns `True`."""
 
@@ -211,6 +256,27 @@ class StoreExecutor(Executor):
     proxied inputs after execution has completed (via callbacks on the
     futures) and using [Ownership](../../guides/object-lifetimes.md) for
     result values.
+
+    Tip:
+        This class is also compatible with some executor-like clients such
+        as the Dask Distributed
+        [`Client`](https://distributed.dask.org/en/stable/api.html#client).
+        While functionally compatible, mypy may consider the usage invalid
+        if the specific client does not inherit from
+        [`Executor`][concurrent.futures.Executor].
+
+    Warning:
+        Proxy [Ownership](../../guides/object-lifetimes.md) may not be
+        compatible with every executor type. If you encounter errors such as
+        [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError],
+        set `ownership=False` and consider using alternate mechanisms for
+        evicted data associated with proxies.
+
+        For example, `ownership=True` is not currently compatible with the
+        Dask Distributed `Client` because Dask will maintain multiple
+        references to the resulting
+        [`OwnedProxy`][proxystore.store.ref.OwnedProxy] which breaks
+        the ownership rules.
 
     Args:
         executor: Executor to use for scheduling callables. This class
@@ -301,12 +367,11 @@ class StoreExecutor(Executor):
         future.add_done_callback(_evict_callback(self.store, keys1 + keys2))
         return future
 
-    def map(
+    def map(  # type: ignore[override]
         self,
         function: Callable[P, R],
         *iterables: Iterable[P.args],
-        timeout: float | None = None,
-        chunksize: int = 1,
+        **kwargs: Any,
     ) -> Iterator[R | Proxy[R]]:
         """Map a function onto iterables of arguments.
 
@@ -314,9 +379,7 @@ class StoreExecutor(Executor):
             function: A callable that will take as many arguments as there are
                 passed iterables.
             iterables: Variable number of iterables.
-            timeout: The maximum number of seconds to wait. If None, then there
-                is no limit on the wait time.
-            chunksize: Sets the Dask batch size.
+            kwargs: Keyword arguments to pass to `self.executor.map()`.
 
         Returns:
             An iterator equivalent to: `map(func, *iterables)` but the calls \
@@ -329,15 +392,17 @@ class StoreExecutor(Executor):
         )
 
         wrapped = self._wrapped(function)
-        results = self.executor.map(
-            wrapped,
-            *iterables,
-            timeout=timeout,
-            chunksize=chunksize,
-        )
+        results = self.executor.map(wrapped, *iterables, **kwargs)
 
         def _result_iterator() -> Generator[R, None, None]:
-            yield from results
+            for result in results:
+                if isinstance(result, _FutureProtocol):
+                    # Some Executor-like classes return futures from map()
+                    # so we internally handle that here.
+                    timeout = kwargs.get('timeout', None)
+                    yield result.result(timeout=timeout)
+                else:
+                    yield result
 
             # Wait to evict input proxies until all results have been received.
             # Waiting is needed because there is no guarantee what order tasks
@@ -368,15 +433,35 @@ class StoreExecutor(Executor):
             collection processes can inadvertently reinitialize and register
             a store that was previously closed.
 
+        Note:
+            Arguments are only used if the wrapped executor is an instance
+            of Python's [`Executor`][concurrent.futures.Executor].
+
         Args:
             wait: Wait on all pending futures to complete.
             cancel_futures: Cancel all pending futures that the executor
                 has not started running. Only used in Python 3.9 and later.
         """
-        if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
-            self.executor.shutdown(wait=wait, cancel_futures=cancel_futures)
-        else:  # pragma: <3.9 cover
-            self.executor.shutdown(wait=wait)
+        if isinstance(self.executor, Executor):
+            if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
+                self.executor.shutdown(
+                    wait=wait,
+                    cancel_futures=cancel_futures,
+                )
+            else:  # pragma: <3.9 cover
+                self.executor.shutdown(wait=wait)
+        elif hasattr(self.executor, 'close'):
+            # Handle Executor-like classes that don't quite follow the
+            # Executor protocol, such as the Dask Distributed Client.
+            self.executor.close()
+        else:
+            warnings.warn(
+                f'Cannot shutdown {type(self.executor).__name__} because it '
+                f'is not a subclass of {Executor.__name__} nor does it have '
+                'a close() method.',
+                category=RuntimeWarning,
+                stacklevel=2,
+            )
 
         if self.close_store:
             self.store.close()
