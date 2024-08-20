@@ -170,7 +170,7 @@ class Store(Generic[ConnectorT]):
                     pass
                 raise
 
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         logger.info(f'Initialized {self}')
 
