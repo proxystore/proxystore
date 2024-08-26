@@ -1,5 +1,5 @@
 site_name: ProxyStore
-site_url: https://proxystore.dev
+site_url: https://docs.proxystore.dev
 site_author: Globus Labs
 site_description: Documentation for ProxyStore.
 
@@ -30,33 +30,24 @@ theme:
   palette:
     # Palette toggle for automatic mode
     - media: "(prefers-color-scheme)"
-      scheme: default
-      primary: proxystore-light
-      accent: proxystore-light
       toggle:
         icon: material/brightness-auto
         name: Switch to light mode
-
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
-      scheme: default
       primary: proxystore-light
-      accent: proxystore-light
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
-
     # Palette toggle for dark mode
     - media: "(prefers-color-scheme: dark)"
-      scheme: slate
       primary: proxystore-dark
-      accent: proxystore-dark
+      scheme: slate
       toggle:
         icon: material/brightness-4
         name: Switch to system preference
-  overrides: docs/_overrides
   favicon: static/favicon.png
-  logo: static/icon.png
+  logo: static/icon-white.svg
 
 watch:
   - mkdocs.yml
