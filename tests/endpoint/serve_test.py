@@ -22,8 +22,8 @@ from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
-from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME
-from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME
+from proxystore.globus.app import PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME
+from proxystore.globus.app import PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME
 from proxystore.utils.data import chunk_bytes
 from testing.compat import randbytes
 from testing.utils import open_port

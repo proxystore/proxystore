@@ -6,8 +6,6 @@ proxystore-globus-auth login
 proxystore-globus-auth logout
 # give consent for specific collections
 proxystore-globus-auth login --collection COLLECTION_UUID --collection COLLECTION_UUID ...
-# specify additional scopes
-proxystore-globus-auth login --scope SCOPE --scope SCOPE ...
 ```
 """  # noqa: E501
 
@@ -15,7 +13,8 @@ from __future__ import annotations
 
 import click
 
-from proxystore.globus.manager import NativeAppAuthManager
+from proxystore.globus.app import get_user_app
+from proxystore.globus.client import get_native_app_auth_client
 from proxystore.globus.scopes import get_all_scopes_by_resource_server
 
 
@@ -33,36 +32,38 @@ def cli() -> None:  # pragma: no cover
     multiple=True,
     help='Globus Collection UUID to request transfer scopes for.',
 )
-@click.option(
-    '--scope',
-    '-s',
-    metavar='SCOPE',
-    multiple=True,
-    help='Additional scope to request.',
-)
-def login(collection: list[str], scope: list[str]) -> None:
+def login(collection: list[str]) -> None:
     """Authenticate with Globus Auth.
 
     This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
-    relay server. Collections or scopes options can be strung together. E.g.,
-    request transfer scope for multiple collections with:
+    relay server. Collections can be strung together. E.g., request transfer
+    scopes for multiple collections with:
 
     $ proxystore-globus-auth -c UUID -c UUID -c UUID
     """
-    basic_scopes = get_all_scopes_by_resource_server(collection)
-    manager = NativeAppAuthManager(resource_server_scopes=basic_scopes)
+    app = get_user_app()
+    scopes = get_all_scopes_by_resource_server(collection)
+    app.add_scope_requirements(scopes)  # type: ignore[arg-type]
 
-    if manager.logged_in:
+    token_data = app._token_storage.get_token_data_by_resource_server()
+    if all(server in token_data for server in scopes):
         click.echo(
             'Globus authentication tokens already exist. '
             'To recreate, logout and login again.',
         )
     else:
-        manager.login(additional_scopes=scope)
+        app.run_login_flow()
 
 
 @cli.command()
 def logout() -> None:
     """Revoke and remove all Globus tokens."""
-    manager = NativeAppAuthManager()
-    manager.logout()
+    app = get_user_app()
+    client = get_native_app_auth_client()
+    token_data = app._token_storage.get_token_data_by_resource_server()
+
+    for server, data in token_data.items():
+        client.oauth2_revoke_token(data.access_token)
+        if data.refresh_token is not None:
+            client.oauth2_revoke_token(data.refresh_token)
+        app._token_storage.remove_token_data(server)

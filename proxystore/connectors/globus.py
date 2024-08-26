@@ -26,7 +26,7 @@ else:  # pragma: <3.11 cover
 
 import globus_sdk
 
-from proxystore.globus.transfer import get_transfer_client_flow
+from proxystore.globus.client import get_transfer_client
 from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
@@ -333,8 +333,8 @@ class GlobusConnector:
         self.timeout = timeout
         self.clear = clear
 
-        self._transfer_client = get_transfer_client_flow(
-            check_collections=[ep.uuid for ep in self.endpoints],
+        self._transfer_client = get_transfer_client(
+            collections=[ep.uuid for ep in self.endpoints],
         )
 
     def __enter__(self) -> Self:
