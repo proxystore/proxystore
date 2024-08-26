@@ -1,31 +1,38 @@
-/*
- * Logo colors:
- *   purple: #5B2A86
- *   blue: #7785AC
- *   green: #A5E6BA
- *
- * Alternates:
- *   red: #D16666
- *   light-purple: #C19EE1
- *
- */
 :root > * {
-  --md-primary-fg-color: #5B2A86;
-  --md-accent-fg-color: #D16666;
-  --md-accent-bg-color: #D16666;
-  --md-code-hl-color: #EBE0F5;
+  --md-primary-fg-color: #4D3886;
+  --md-primary-bg-color: #F8F8F8;
+
+  /* Symbol type colors */
+  /* https://mkdocstrings.github.io/python/usage/customization/#symbol-types */
+  --doc-symbol-function-bg-color: #BDAEE5D0;
+  --doc-symbol-parameter-bg-color: #FFEBADD0;
+  --doc-symbol-method-bg-color: #BDAEE5D0;
+  --doc-symbol-attribute-bg-color: #F6C58DD0;
+  --doc-symbol-class-bg-color: #C2D3EBD0;
+  --doc-symbol-module-bg-color: #B5F7E3D0;
+
+  --doc-symbol-function-fg-color: #2D214B;
+  --doc-symbol-paramter-fg-color: #F2B701;
+  --doc-symbol-method-fg-color: #2D214B;
+  --doc-symbol-attribute-fg-color: #99560B;
+  --doc-symbol-class-fg-color: #1F385C;
+  --doc-symbol-module-fg-color: #084937;
 }
 
 [data-md-color-primary="proxystore-light"] {
-  --md-typeset-a-color: #5B2A86;
+  --md-accent-fg-color: #2D214B;
+  --md-accent-bg-color: #2D214B;
+  --md-typeset-a-color: #4D3886;
 }
 
 [data-md-color-primary="proxystore-dark"] {
-  --md-typeset-a-color: #C19EE1;
+  --md-accent-fg-color: #4D3886;
+  --md-accent-bg-color: #4D3886;
+  --md-typeset-a-color: #BDAEE5;
 }
 
 [data-md-color-scheme="slate"] {
-  --md-hue: 230;
+  --md-hue: 240;
 }
 
 .md-typeset h1 {
