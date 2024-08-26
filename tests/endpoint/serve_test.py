@@ -14,6 +14,7 @@ import pytest
 import pytest_asyncio
 import quart
 import requests
+from globus_sdk.tokenstorage import TokenValidationError
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
@@ -22,10 +23,9 @@ from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
-from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME
-from proxystore.globus.client import PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME
 from proxystore.utils.data import chunk_bytes
 from testing.compat import randbytes
+from testing.mocked.globus import get_testing_app
 from testing.utils import open_port
 
 
@@ -390,17 +390,22 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     assert os.path.exists(log_file2)
 
 
-def test_get_auth_headers_native() -> None:
+def test_get_auth_headers_none() -> None:
     assert _get_auth_headers(None) == {}
 
+
+def test_get_auth_headers_globus() -> None:
+    globus_app = get_testing_app()
     mock_authorizer = mock.MagicMock()
     header = 'Bearer <TOKEN>'
-    # Note: patch environment here in case client identity env vars are set.
-    with mock.patch.dict(os.environ, clear=True), mock.patch(
-        'proxystore.globus.manager.NativeAppAuthManager.get_authorizer',
+
+    with mock.patch(
+        'proxystore.endpoint.serve.get_globus_app',
+        return_value=globus_app,
+    ), mock.patch.object(
+        globus_app,
+        'get_authorizer',
         return_value=mock_authorizer,
-    ), mock.patch(
-        'proxystore.globus.manager.get_token_storage_adapter',
     ), mock.patch.object(
         mock_authorizer,
         'get_authorization_header',
@@ -409,39 +414,16 @@ def test_get_auth_headers_native() -> None:
         assert _get_auth_headers('globus')['Authorization'] == header
 
 
-def test_get_auth_headers_client() -> None:
-    assert _get_auth_headers(None) == {}
+def test_get_auth_headers_globus_missing() -> None:
+    globus_app = get_testing_app()
 
-    mock_authorizer = mock.MagicMock()
-    header = 'Bearer <TOKEN>'
-    env = {
-        PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME: str(uuid.uuid4()),
-        PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME: '<SECRET>',
-    }
-
-    with mock.patch.dict(os.environ, env), mock.patch(
-        'proxystore.globus.manager.ConfidentialAppAuthManager.get_authorizer',
-        return_value=mock_authorizer,
-    ), mock.patch(
-        'proxystore.globus.manager.get_token_storage_adapter',
+    with mock.patch(
+        'proxystore.endpoint.serve.get_globus_app',
+        return_value=globus_app,
     ), mock.patch.object(
-        mock_authorizer,
-        'get_authorization_header',
-        return_value=header,
-    ):
-        assert _get_auth_headers('globus')['Authorization'] == header
-
-
-def test_get_auth_headers_missing() -> None:
-    assert _get_auth_headers(None) == {}
-
-    mock.MagicMock()
-    # Note: patch environment here in case client identity env vars are set.
-    with mock.patch.dict(os.environ, clear=True), mock.patch(
-        'proxystore.globus.manager.NativeAppAuthManager.get_authorizer',
-        side_effect=LookupError,
-    ), mock.patch(
-        'proxystore.globus.manager.get_token_storage_adapter',
+        globus_app,
+        'get_authorizer',
+        side_effect=TokenValidationError(),
     ), pytest.raises(
         SystemExit,
     ):

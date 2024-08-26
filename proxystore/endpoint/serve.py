@@ -25,6 +25,8 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     ) from e
 
+from globus_sdk.tokenstorage import TokenValidationError
+
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
 from proxystore.endpoint.endpoint import Endpoint
@@ -32,11 +34,8 @@ from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
-from proxystore.globus.client import is_client_login
-from proxystore.globus.manager import ConfidentialAppAuthManager
-from proxystore.globus.manager import GlobusAuthManager
-from proxystore.globus.manager import NativeAppAuthManager
-from proxystore.globus.scopes import ProxyStoreRelayScopes
+from proxystore.globus.app import get_globus_app
+from proxystore.globus.scopes import get_relay_scopes_by_resource_server
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.p2p.relay.client import RelayClient
@@ -82,26 +81,20 @@ def _get_auth_headers(
     if method is None:
         return {}
     elif method == 'globus':
-        manager: GlobusAuthManager
-        if is_client_login():
-            logger.info('Using confidential app Globus Auth client')
-            manager = ConfidentialAppAuthManager()
-        else:
-            logger.info('Using native app Globus Auth client')
-            manager = NativeAppAuthManager()
-        resource_server = kwargs.get(
-            'resource_server',
-            ProxyStoreRelayScopes.resource_server,
-        )
+        app = get_globus_app()
+        scopes = get_relay_scopes_by_resource_server()
+        assert len(scopes) == 1
+        app.add_scope_requirements(scopes)
+        logger.info('Initialized Globus app')
         try:
-            authorizer = manager.get_authorizer(resource_server)
-        except LookupError as e:
-            logger.error(
-                'Failed to find Globus Auth tokens for the specified relay '
+            authorizer = app.get_authorizer(*scopes.keys())
+        except TokenValidationError:
+            logger.exception(
+                'Failed to find valid tokens for the specified relay '
                 'resource server. Have you logged in yet? If not, login then '
                 'try again.\n  $ proxystore-globus-auth login',
             )
-            raise SystemExit(1) from e
+            raise SystemExit(1) from None
         bearer = authorizer.get_authorization_header()
         assert bearer is not None
         return {'Authorization': bearer}
