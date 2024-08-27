@@ -84,7 +84,7 @@ def globus_connector(
         'globus_sdk.TransferData',
         MockTransferData,
     ), mock.patch(
-        'proxystore.connectors.globus.get_transfer_client_flow',
+        'proxystore.connectors.globus.get_transfer_client',
         MockTransferClient,
     ):
         with globus.GlobusConnector(endpoints=endpoints) as connector:

@@ -301,7 +301,7 @@ def test_delete_local_paths_on_close(
     )
 
     with mock.patch(
-        'proxystore.connectors.globus.get_transfer_client_flow',
+        'proxystore.connectors.globus.get_transfer_client',
     ), mock.patch(
         'proxystore.connectors.globus._submit_transfer_action',
         return_value={'task_id': 'ABCD'},
