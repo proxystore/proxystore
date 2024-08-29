@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import socket
 import ssl
 import sys
 import uuid
@@ -301,9 +302,12 @@ class RelayClient:
                         )
                         self._reconnect_task.set_name('relay-client-reconnect')
                 except (
-                    # Exceptions that we should wait and retry again for
+                    # May occur if relay is unavailable
                     ConnectionRefusedError,
+                    # May occur if relay is too slow to respond
                     asyncio.TimeoutError,
+                    # May occur if client experiences temporary DNS failure
+                    socket.gaierror,
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
                     if not retry:
