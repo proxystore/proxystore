@@ -135,6 +135,11 @@ class RelayClient:
         self._create_reconnect_task = reconnect_task
 
         self._initial_backoff_seconds = 1.0
+        # HTTP status codes from the relay server that are unrecoverable
+        # from when connecting.
+        #   - 4001: UnauthorizedError
+        #   - 4002: ForbiddenError
+        self._unrecoverable_status_codes = (4001, 4002)
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -267,7 +272,15 @@ class RelayClient:
 
         Args:
             retry: Retry the connection with exponential backoff starting at
-                one second and increasing to a max of 60 seconds.
+                one second and increasing to a max of 60 seconds. Retrying is
+                only performed for certain connection error types:
+                [`ConnectionRefusedError`][ConnectionRefusedError],
+                [`TimeoutError`][asyncio.TimeoutError], and certain
+                [`ConnectionClosed`][websockets.exceptions.ConnectionClosed]
+                types. Specifically, retrying will not be performed if the
+                connection closed status code indicates forbidden or
+                unauthorized errors. These typically cannot be recovered
+                from and must be addressed by the user.
         """
         async with self._connect_lock:
             if self._websocket is not None and self._websocket.open:
@@ -294,6 +307,12 @@ class RelayClient:
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
                     if not retry:
+                        raise
+
+                    if (
+                        isinstance(e, websockets.exceptions.ConnectionClosed)
+                        and e.code in self._unrecoverable_status_codes
+                    ):
                         raise
 
                     logger.warning(

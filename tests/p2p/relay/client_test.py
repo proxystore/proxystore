@@ -8,6 +8,7 @@ from unittest import mock
 from unittest.mock import AsyncMock
 
 import pytest
+import websockets
 
 from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.exceptions import RelayNotConnectedError
@@ -131,7 +132,7 @@ async def test_connect_unknown_response(relay_server) -> None:
 
 
 @pytest.mark.asyncio()
-async def test_relay_server_backoff(relay_server, caplog) -> None:
+async def test_relay_server_retry_backoff(relay_server, caplog) -> None:
     caplog.set_level(logging.WARNING)
     client = RelayClient(relay_server.address, reconnect_task=False)
     client._initial_backoff_seconds = 0.01
@@ -143,7 +144,7 @@ async def test_relay_server_backoff(relay_server, caplog) -> None:
             side_effect=[asyncio.TimeoutError, asyncio.TimeoutError, None],
         ),
     ):
-        await client.connect()
+        await client.connect(retry=True)
 
     records = [
         record.message
@@ -153,6 +154,25 @@ async def test_relay_server_backoff(relay_server, caplog) -> None:
     assert len(records) == 2
     assert '0.01 seconds' in records[0]
     assert '0.02 seconds' in records[1]
+
+    await client.close()
+
+
+@pytest.mark.asyncio()
+async def test_relay_server_connect_fatal_error(relay_server) -> None:
+    error = websockets.exceptions.ConnectionClosedError(
+        # Mimic a ForbiddenError from the relay server that caused
+        # the connection to close.
+        rcvd=websockets.frames.Close(code=4001, reason='ForbiddenError'),
+        sent=None,
+    )
+    client = RelayClient(relay_server.address, reconnect_task=False)
+    with mock.patch.object(
+        client,
+        '_register',
+        AsyncMock(side_effect=error),
+    ), pytest.raises(type(error), match='ForbiddenError'):
+        await client.connect(retry=True)
 
     await client.close()
 
