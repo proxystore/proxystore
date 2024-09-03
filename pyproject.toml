@@ -13,7 +13,7 @@ maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
     {name = "Valerie Hayot-Sasson", email = "vhayot@uchicago.edu"},
 ]
-description = "Lazy object proxy interface for distributed stores."
+description = "Advanced data flow management for distributed Python applications"
 readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
