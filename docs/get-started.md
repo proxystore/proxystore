@@ -1,18 +1,18 @@
 # Get Started
 
 ![ProxyStore Overview](static/proxystore-overview.svg){ width="75%" style="display: block; margin: 0 auto" }
-> **Figure 1:** ProxyStore allows developers to communicate objects via *proxies*.
+> **Figure 1:** ProxyStore enables developers to communicate objects via *proxies*.
 > Proxies act as lightweight references that resolve to a *target* object upon use.
 > Communication via proxies gives applications the illusion that objects are
 > moving through a specified path (e.g., through a network socket, cloud
 > server, workflow engine, etc.) while the true path the data takes is
 > different. Transporting the lightweight proxies through the application or
-> systems can be far more efficient and reduce overheads.
+> systems can be more efficient---reduce overheads in the system.
 
 ## Overview
 
-ProxyStore provides a unique interface to object stores through transparent
-object proxies that is designed to simplify the use of object stores for
+ProxyStore provides a unique interface to object stores, the transparent
+object proxy, that is designed to simplify the use of object stores for
 transferring large objects in distributed applications.
 
 *Proxies* are used to intercept and redefine operations on a *target* object.
@@ -41,17 +41,16 @@ to create powerful just-in-time resolution functionality for Python objects.
 
 ## Usage
 
-ProxyStore is intended to be used via the
-[`Store`][proxystore.store.base.Store] interface which provide the
+ProxyStore's main interface is the [`Store`][proxystore.store.base.Store] which provides the
 [`Store.proxy()`][proxystore.store.base.Store.proxy] method for placing objects
 in stores and creating proxies that will resolve to the associated object in
 the store.
 
 A [`Store`][proxystore.store.base.Store] is initialized with a
 [`Connector`][proxystore.connectors.protocols.Connector] which serves as the
-low-level interface to an byte-level object store.
+low-level interface to a byte-level object store.
 ProxyStore provides many
-[`Connector`][proxystore.connectors.protocols.Connector] implementations and
+[`Connector`][proxystore.connectors.protocols.Connector] implementations, and
 third-party code can provide custom implementations provided they meet the
 [`Connector`][proxystore.connectors.protocols.Connector] protocol
 specification.
@@ -83,7 +82,7 @@ assert isinstance(p, type(my_object))  # (4)!
 
 1. Passing `register=True` adds the store by name to a global registry, and registered store can be retrieved by name.
 2. Stores have basic get/put functionality.
-3. Place an object in the store and return a proxy.
+3. Create a proxy of an object, putting it into the store.
 4. The proxy, when used, will behave as the target.
 
 This proxy, `p`, can be cheaply serialized and communicated to any
@@ -91,13 +90,13 @@ arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.
 
-Using the [`Store`][proxystore.store.base.Store] store interface allows
+Using the [`Store`][proxystore.store.base.Store] interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.
 
 For example, if you want to execute a function and the input data may be
-passed directly, via a key to an object in Redis, or as a filepath to a
+passed directly, via a key to an object in Redis or as a filepath to a
 serialized object on disk, you will need boilerplate code that looks like:
 
 ```python linenums="1"
@@ -131,20 +130,17 @@ def my_function(input: MyDataType) -> None:
 1. Always true even if input is a proxy.
 
 In this model, only the producer of the data needs to be aware of which
-ProxyStore backend to use, and no modification to consumer code are ever
-required.
+communication and storage system is being used, and no modification to the consumer code are required.
 
 **How is this more efficient?**
 
 The ProxyStore model can improve application performance in many ways:
 
-1. Unused proxies are not resolved so not resources/time were wasted on the
-   communication.
-2. Object communication always takes place between the producer, the store, and
-   the consumer meaning communication is not wasted on intermediate processes
-   which have a proxy but do not use it.
-3. Different backends can be used that are optimized for specific usage
-   patterns.
+1. Just-in-time resolution amortizes communication costs and avoids communication of unused objects.
+2. Pass-by-reference reduces transfer overheads.
+   Object communication always takes place between the producer, the store, and
+   the consumer meaning the target object is not transferred through intermediate processes which have, but do not use, a proxy.
+3. No external information is required to resolve a proxy so it is easy to use different communication channels that are optimized for specific usage patterns.
 4. Proxies have built-in caching for frequently used objects.
 
 ## Learn More

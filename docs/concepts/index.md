@@ -7,7 +7,7 @@ ProxyStore is composed of three main components: the
 and [`Store`][proxystore.store.base.Store].
 
 The [`Proxy`][proxystore.proxy.Proxy] model provides *pass-by-reference*
-semantics and *just-in-time* object resolution transparently to consumers.
+semantics with the illusion of *pass-by-value*.
 
 The [`Connector`][proxystore.connectors.protocols.Connector] is a
 [`Protocol`][typing.Protocol] that defines the low-level
@@ -17,7 +17,7 @@ are provided in the [`proxystore.connectors`][proxystore.connectors] module,
 and users can easily create their own.
 
 The [`Store`][proxystore.store.base.Store] is a high-level abstraction of an
-object store and the intended means by which an application uses ProxyStore.
+object store and is used by application to create proxies.
 The [`Store`][proxystore.store.base.Store] is initialized with
 a [`Connector`][proxystore.connectors.protocols.Connector] and provides
 extra functionality like caching and serialization. Most important is that the
