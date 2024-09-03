@@ -67,16 +67,14 @@ assert np.array_equal(y, [2, 4, 6])
 1. A proxy is an instance of its wrapped object.
 2. The proxy can do everything the numpy array can.
 
-The ProxyStore [`Proxy`][proxystore.proxy.Proxy] is built on the proxy from
-[`lazy-object-proxy`](https://github.com/ionelmc/python-lazy-object-proxy){target=_blank}
-which intercepts all calls to the object's magic functions
-(`#!python __func_name__()` functions) and forwards the calls to the
-factory that was passed to the proxy constructor to retrieve the object that
-should be wrapped.
+The [`Proxy`][proxystore.proxy.Proxy] intercepts all calls to the object's magic functions
+(`#!python __func_name__()` functions) and forwards the calls to target object.
+If the target object has not yet been resolved and cached inside the proxy, the factory is invoked to retrieve the target object.
 
 Generally, a proxy is only ever resolved once. However, when a proxy is
 serialized, only the factory is serialized, and when the proxy is deserialized
 again and used, the factory will be called again to resolve the object.
+In other words, only the factory of the proxy is serialized, not the cached target object.
 
 ## Interacting with Proxies
 

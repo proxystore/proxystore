@@ -3,13 +3,13 @@
 We always recommend installing packages inside of your virtual environment of choice.
 E.g.,
 ```bash
-$ python -m venv venv
-$ . venv/bin/activate
+python -m venv venv
+. venv/bin/activate
 ```
 
 Once your virtual environment is activated, install ProxyStore with `pip`.
 ```bash
-$ pip install proxystore
+pip install proxystore
 ```
 
 ## Extras Options
@@ -31,13 +31,13 @@ ProxyStore provides many features with extra dependencies that can be installed 
 Multiple extras options can be install at the same time.
 
 ```bash
-$ pip install proxystore[endpoints,redis]
+pip install proxystore[endpoints,redis]
 ```
 
 Or everything can be installed at once (this does not install the development packages).
 
 ```bash
-$ pip install proxystore[all]
+pip install proxystore[all]
 ```
 
 ## ProxyStore Extensions
@@ -51,11 +51,11 @@ not pip-installable dependencies.
 
 The extensions package can be installed alongside ProxyStore.
 ```bash
-$ pip install proxystore[extensions]
+pip install proxystore[extensions]
 ```
 Or standalone.
 ```bash
-$ pip install proxystore-ex
+pip install proxystore-ex
 ```
 
 Rather than importing from `proxystore_ex` directly, ProxyStore re-exports

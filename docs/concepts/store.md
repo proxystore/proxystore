@@ -30,14 +30,17 @@ def my_function(x: MyDataType) -> ...:
     assert isinstance(x, MyDataType)  # (1)!
     # More computation...
 
-connector = RedisConnector()  # (2)!
-store = Store('my-store', connector, register=True)  # (3)!
+my_object = MyDataType(...)
 
-my_object = MyDataType(...) # (4)!
-p = store.proxy(my_object)
-isinstance(p, Proxy)
+with Store(
+    'example',
+    connector=RedisConnector('localhost',  6379)  # (2)!
+    register=True,  # (3)!
+) as store:
+    p = store.proxy(my_object)  # (4)!
+    isinstance(p, Proxy)
 
-my_function(p) # (5)!
+    my_function(p) # (5)!
 ```
 
 1. `x` is resolved from "my-store" on the first use of `x`.
@@ -77,7 +80,7 @@ multiple proxies refer to the same object.
 from proxystore.store import Store
 
 # Cache size of 16 is the default
-Store('mystore', connector=..., cache_size=16)
+Store('example', connector=..., cache_size=16)
 ```
 
 ## Transactional Guarantees
