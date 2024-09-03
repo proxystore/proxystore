@@ -3400,11 +3400,15 @@
 <p><a href="https://github.com/proxystore/proxystore/actions/workflows/docs.yml"><img alt="docs" src="https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg" /></a>
 <a href="https://github.com/proxystore/proxystore/actions"><img alt="tests" src="https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests" /></a>
 <a href="https://results.pre-commit.ci/latest/github/proxystore/proxystore/main"><img alt="pre-commit.ci status" src="https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg" /></a></p>
-<p>ProxyStore is a library that facilitates efficient data management in distributed Python applications.
-At the core of ProxyStore is the <a href="https://docs.proxystore.dev/latest/concepts/proxy/"><em>proxy</em></a> object which acts as a transparent reference to an object living in a global object store.
-This pass-by-reference interface with just-in-time object resolution works across processes, machines, and sites, and enables data producers to change the low-level communication method dynamically without altering application code or behavior.</p>
-<p>ProxyStore accelerates the development of dynamic task-based workflows, serverless applications, and more by (1) decoupling control flow from data flow, (2) abstracting low-level communication mechanisms, and (3) eliminating the need for shims, wrapper functions, and boilerplate code.</p>
-<p>ProxyStore supports a diverse set of programming paradigms:</p>
+<p>ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.
+The transparent object proxy provide lightweight, wide-area references to objects in arbitrary data stores—references that can be communicated cheaply and resolved just-in-time via performant bulk transfer methods.</p>
+<p>The <a href="https://docs.proxystore.dev/latest/concepts/proxy/"><em>transparent object proxy</em></a> is the core building block of ProxyStore, and, unlike traditional references that are only valid within the virtual address space of a single process, the proxy refers to an object in distributed storage and can be implicitly dereferenced in arbitrary processes, even on remote machines.
+The proxy is transparent in that it dereferences its target object when used—referred to a <em>just-in-time resolution</em>—and it forwards all operations on itself to its target object.
+This paradigm results in the best of both pass-by-reference and pass-by-value semantics.</p>
+<p>A proxy is initialized with a <em>factory</em>, a self-contained callable object that returns the target object when invoked, such as when the proxy is resolved.
+This self-contained, transparent nature of the proxy means a consumer is not aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.
+This paradigm improves performance and portability by reducing transfer overheads through intermediaries, abstracting low-level communication methods, and reducing code-complexity.</p>
+<p>ProxyStore supports a diverse set of programming patterns built on the proxy paradigm:</p>
 <ul>
 <li><a href="https://arxiv.org/abs/2303.08803">Task-based Workflows</a></li>
 <li><a href="https://docs.proxystore.dev/latest/guides/globus-compute/">Function-as-a-Service/Serverless Applications</a></li>
@@ -3412,8 +3416,7 @@ This pass-by-reference interface with just-in-time object resolution works acros
 <li><a href="https://docs.proxystore.dev/latest/guides/streaming/">Bulk Data Streaming</a></li>
 <li>and more!</li>
 </ul>
-<p>ProxyStore provides support for many third-party mediated communication methods
-out-of-the-box including
+<p>ProxyStore can leverage many popular mediated data transfer and storage systems:
 <a href="https://docs.daos.io/v2.4/">DAOS</a>,
 <a href="https://www.globus.org/data-transfer">Globus Transfer</a>,
 <a href="https://kafka.apache.org/">Kafka</a>,
@@ -3432,13 +3435,12 @@ Complete documentation for ProxyStore is available at
 <p>The base ProxyStore package can be installed with <a href="https://pip.pypa.io/en/stable/"><code>pip</code></a>.
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore
 </span></code></pre></div></p>
-<p>Many features require dependencies that are not installed by default but can
-be enabled via extras installation options such as <code>endpoints</code>, <code>kafka</code>, or <code>redis</code>.
-<em>All</em> optional dependencies can be installed with:
+<p>Leveraging third-party libraries may require dependencies not installed by default but can be enabled via extras installation options (e.g., <code>endpoints</code>, <code>kafka</code>, or <code>redis</code>).
+<em>All</em> additional dependencies can be installed with:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span>
 </span></code></pre></div>
 This will also install the <a href="https://extensions.proxystore.dev/"><code>proxystore-ex</code></a>
-package which contains extension and experimental features.
+package which contains extensions and experimental features.
 The extensions package can also be installed with <code>pip</code> using
 <code>proxystore[extensions]</code> or <code>proxystore-ex</code>.</p>
 <p>See the <a href="https://docs.proxystore.dev/latest/installation">Installation</a> guide
@@ -3446,26 +3448,31 @@ for more information about the available extras installation options.
 See the <a href="https://docs.proxystore.dev/latest/contributing">Contributing</a> guide
 to get started for local development.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<p>Getting started with ProxyStore requires a few lines of code.</p>
+<p>Using ProxyStore to store and transfer objects only requires a few lines of code.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.redis</span> <span class="kn">import</span> <span class="n">RedisConnector</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">register_store</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;my-store&#39;</span><span class="p">,</span> <span class="n">RedisConnector</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">6379</span><span class="p">))</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Store the object and get a proxy. The proxy acts</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># like a reference to the object.</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">MyDataType</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">MyDataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="o">...</span><span class="p">:</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="c1"># x is resolved my-store on first use transparently to the</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="c1"># function. Then x behaves as an instance of MyDataType.</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">MyDataType</span><span class="p">)</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="n">my_function</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Succeeds</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">data</span> <span class="o">=</span> <span class="n">MyDataType</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">MyDataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="o">...</span><span class="p">:</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="c1"># x is transparently resolved when first used by the function.</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="c1"># Then the proxy, x, behaves as an instance of MyDataType</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>    <span class="c1"># for the rest of its existence.</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">MyDataType</span><span class="p">)</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="s1">&#39;example&#39;</span><span class="p">,</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">connector</span><span class="o">=</span><span class="n">RedisConnector</span><span class="p">(</span><span class="s1">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">6379</span><span class="p">),</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="c1"># Store the object in Redis (or any other connector).</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="c1"># The returned Proxy acts like a reference to the object.</span>
+</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">proxy</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
+</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>
+</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>    <span class="c1"># Invoking a function with proxy works without function changes.</span>
+</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>    <span class="n">my_function</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Check out the <a href="https://docs.proxystore.dev/latest/get-started">Get Started</a>
 guide to learn more!</p>

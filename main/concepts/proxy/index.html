@@ -3453,15 +3453,13 @@ an object while emulating the rest of the objects behavior.</p>
 <li>A proxy is an instance of its wrapped object.</li>
 <li>The proxy can do everything the numpy array can.</li>
 </ol>
-<p>The ProxyStore <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> is built on the proxy from
-<a href="https://github.com/ionelmc/python-lazy-object-proxy" target="_blank"><code>lazy-object-proxy</code></a>
-which intercepts all calls to the object's magic functions
-(<code class="language-python highlight"><span class="n">__func_name__</span><span class="p">()</span></code> functions) and forwards the calls to the
-factory that was passed to the proxy constructor to retrieve the object that
-should be wrapped.</p>
+<p>The <a class="autorefs autorefs-internal" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> intercepts all calls to the object's magic functions
+(<code class="language-python highlight"><span class="n">__func_name__</span><span class="p">()</span></code> functions) and forwards the calls to target object.
+If the target object has not yet been resolved and cached inside the proxy, the factory is invoked to retrieve the target object.</p>
 <p>Generally, a proxy is only ever resolved once. However, when a proxy is
 serialized, only the factory is serialized, and when the proxy is deserialized
-again and used, the factory will be called again to resolve the object.</p>
+again and used, the factory will be called again to resolve the object.
+In other words, only the factory of the proxy is serialized, not the cached target object.</p>
 <h2 id="interacting-with-proxies">Interacting with Proxies<a class="headerlink" href="#interacting-with-proxies" title="Permanent link">&para;</a></h2>
 <p>While a proxy can be used just as one would normally use the proxy's target
 object, additional functions are provided for interacting with the proxy

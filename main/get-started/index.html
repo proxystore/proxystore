@@ -3392,17 +3392,17 @@
 <h1 id="get-started">Get Started<a class="headerlink" href="#get-started" title="Permanent link">&para;</a></h1>
 <p><img alt="ProxyStore Overview" src="../static/proxystore-overview.svg" style="display: block; margin: 0 auto" width="75%" /></p>
 <blockquote>
-<p><strong>Figure 1:</strong> ProxyStore allows developers to communicate objects via <em>proxies</em>.
+<p><strong>Figure 1:</strong> ProxyStore enables developers to communicate objects via <em>proxies</em>.
 Proxies act as lightweight references that resolve to a <em>target</em> object upon use.
 Communication via proxies gives applications the illusion that objects are
 moving through a specified path (e.g., through a network socket, cloud
 server, workflow engine, etc.) while the true path the data takes is
 different. Transporting the lightweight proxies through the application or
-systems can be far more efficient and reduce overheads.</p>
+systems can be more efficient---reduce overheads in the system.</p>
 </blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
-<p>ProxyStore provides a unique interface to object stores through transparent
-object proxies that is designed to simplify the use of object stores for
+<p>ProxyStore provides a unique interface to object stores, the transparent
+object proxy, that is designed to simplify the use of object stores for
 transferring large objects in distributed applications.</p>
 <p><em>Proxies</em> are used to intercept and redefine operations on a <em>target</em> object.
 A <em>transparent</em> proxy behaves identically to its target object
@@ -3426,16 +3426,15 @@ stores as well as the <a class="autorefs autorefs-internal" href="../api/proxy/#
 <a class="autorefs autorefs-internal" href="../api/factory/#proxystore.factory.Factory"><code>Factory</code></a> building blocks to allow developers
 to create powerful just-in-time resolution functionality for Python objects.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>ProxyStore is intended to be used via the
-<a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface which provide the
+<p>ProxyStore's main interface is the <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> which provides the
 <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> method for placing objects
 in stores and creating proxies that will resolve to the associated object in
 the store.</p>
 <p>A <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with a
 <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> which serves as the
-low-level interface to an byte-level object store.
+low-level interface to a byte-level object store.
 ProxyStore provides many
-<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations and
+<a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations, and
 third-party code can provide custom implementations provided they meet the
 <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol
 specification.</p>
@@ -3481,19 +3480,19 @@ with an already running Redis server using proxies.</p>
 <ol>
 <li>Passing <code>register=True</code> adds the store by name to a global registry, and registered store can be retrieved by name.</li>
 <li>Stores have basic get/put functionality.</li>
-<li>Place an object in the store and return a proxy.</li>
+<li>Create a proxy of an object, putting it into the store.</li>
 <li>The proxy, when used, will behave as the target.</li>
 </ol>
 <p>This proxy, <code>p</code>, can be cheaply serialized and communicated to any
 arbitrary Python process as if it were the target object itself. Once the
 proxy is used on the remote process, the underlying factory function will
 be executed to retrieve the target object from the Redis server.</p>
-<p>Using the <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> store interface allows
+<p>Using the <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
 when adding or changing the communication methods.</p>
 <p>For example, if you want to execute a function and the input data may be
-passed directly, via a key to an object in Redis, or as a filepath to a
+passed directly, via a key to an object in Redis or as a filepath to a
 serialized object on disk, you will need boilerplate code that looks like:</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
@@ -3537,18 +3536,15 @@ necessary code to resolve the object.</p>
 <li>Always true even if input is a proxy.</li>
 </ol>
 <p>In this model, only the producer of the data needs to be aware of which
-ProxyStore backend to use, and no modification to consumer code are ever
-required.</p>
+communication and storage system is being used, and no modification to the consumer code are required.</p>
 <p><strong>How is this more efficient?</strong></p>
 <p>The ProxyStore model can improve application performance in many ways:</p>
 <ol>
-<li>Unused proxies are not resolved so not resources/time were wasted on the
-   communication.</li>
-<li>Object communication always takes place between the producer, the store, and
-   the consumer meaning communication is not wasted on intermediate processes
-   which have a proxy but do not use it.</li>
-<li>Different backends can be used that are optimized for specific usage
-   patterns.</li>
+<li>Just-in-time resolution amortizes communication costs and avoids communication of unused objects.</li>
+<li>Pass-by-reference reduces transfer overheads.
+   Object communication always takes place between the producer, the store, and
+   the consumer meaning the target object is not transferred through intermediate processes which have, but do not use, a proxy.</li>
+<li>No external information is required to resolve a proxy so it is easy to use different communication channels that are optimized for specific usage patterns.</li>
 <li>Proxies have built-in caching for frequently used objects.</li>
 </ol>
 <h2 id="learn-more">Learn More<a class="headerlink" href="#learn-more" title="Permanent link">&para;</a></h2>

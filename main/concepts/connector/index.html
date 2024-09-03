@@ -3371,7 +3371,7 @@
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a> that defines the low-level
 interface to a mediated communication channel or object store.
 The <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> methods operate
-of <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes"><code>bytes</code></a> of data and keys which are tuples of metadata that can
+on <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes"><code>bytes</code></a> of data and keys which are tuples of metadata that can
 identify a unique object.</p>
 <p>The protocol is as follows:
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Connector Protocol</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
@@ -3408,7 +3408,7 @@ the custom class does not need to inherit from
 are provided in the <a class="autorefs autorefs-internal" href="../../api/connectors/#proxystore.connectors"><code>proxystore.connectors</code></a> module,
 and users can easily create their own.
 A <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instance is used
-by the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> to interact with the store.</p>
+by the <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> to store and retrieve serialized objects.</p>
 <h2 id="extensions">Extensions<a class="headerlink" href="#extensions" title="Permanent link">&para;</a></h2>
 <p>A <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementation
 can be extended to implement the

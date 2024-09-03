@@ -3388,11 +3388,11 @@
 <h2 id="base-install">Base Install<a class="headerlink" href="#base-install" title="Permanent link">&para;</a></h2>
 <p>We always recommend installing packages inside of your virtual environment of choice.
 E.g.,
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>.<span class="w"> </span>venv/bin/activate
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>.<span class="w"> </span>venv/bin/activate
 </span></code></pre></div></p>
 <p>Once your virtual environment is activated, install ProxyStore with <code>pip</code>.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore
 </span></code></pre></div></p>
 <h2 id="extras-options">Extras Options<a class="headerlink" href="#extras-options" title="Permanent link">&para;</a></h2>
 <p>The base installation is designed to be as lightweight as possible, but
@@ -3440,10 +3440,10 @@ ProxyStore provides many features with extra dependencies that can be installed 
 </tbody>
 </table>
 <p>Multiple extras options can be install at the same time.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>endpoints,redis<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>endpoints,redis<span class="o">]</span>
 </span></code></pre></div>
 <p>Or everything can be installed at once (this does not install the development packages).</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>all<span class="o">]</span>
 </span></code></pre></div>
 <h2 id="proxystore-extensions">ProxyStore Extensions<a class="headerlink" href="#proxystore-extensions" title="Permanent link">&para;</a></h2>
 <p>Additional features are available in the
@@ -3453,10 +3453,10 @@ and <a href="https://extensions.proxystore.dev" target="_blank">docs</a>).
 Features in the extensions package tend to be more experimental or have heavier
 not pip-installable dependencies.</p>
 <p>The extensions package can be installed alongside ProxyStore.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>extensions<span class="o">]</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore<span class="o">[</span>extensions<span class="o">]</span>
 </span></code></pre></div>
 Or standalone.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>proxystore-ex
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pip<span class="w"> </span>install<span class="w"> </span>proxystore-ex
 </span></code></pre></div></p>
 <p>Rather than importing from <code>proxystore_ex</code> directly, ProxyStore re-exports
 all packages and modules via the <a class="autorefs autorefs-internal" href="../api/ex/#proxystore.ex"><code>proxystore.ex</code></a> submodule.</p>

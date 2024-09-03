@@ -3291,7 +3291,7 @@
 <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>,
 and <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>.</p>
 <p>The <a class="autorefs autorefs-internal" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> model provides <em>pass-by-reference</em>
-semantics and <em>just-in-time</em> object resolution transparently to consumers.</p>
+semantics with the illusion of <em>pass-by-value</em>.</p>
 <p>The <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is a
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a> that defines the low-level
 interface to a mediated communication channel or object store.
@@ -3299,7 +3299,7 @@ Many <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#pr
 are provided in the <a class="autorefs autorefs-internal" href="../api/connectors/#proxystore.connectors"><code>proxystore.connectors</code></a> module,
 and users can easily create their own.</p>
 <p>The <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is a high-level abstraction of an
-object store and the intended means by which an application uses ProxyStore.
+object store and is used by application to create proxies.
 The <a class="autorefs autorefs-internal" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> is initialized with
 a <a class="autorefs autorefs-internal" href="../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> and provides
 extra functionality like caching and serialization. Most important is that the
