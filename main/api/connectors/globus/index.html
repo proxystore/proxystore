@@ -3740,7 +3740,7 @@
   </a>
   </div>
   
-      <p>Globus transfer connector implementation.</p>
+        <p>Globus transfer connector implementation.</p>
 
 
 
@@ -3773,7 +3773,7 @@
     <div class="doc doc-contents ">
 
 
-      <p>Globus endpoint representation.</p>
+        <p>Globus endpoint representation.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3896,7 +3896,7 @@ can figure out what the local endpoint is when they are resolved.</p>
     <div class="doc doc-contents ">
 
 
-      <p>A collection of Globus endpoints.</p>
+        <p>A collection of Globus endpoints.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3988,7 +3988,7 @@ instances.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Construct an endpoints collection from a dictionary.</p>
+        <p>Construct an endpoints collection from a dictionary.</p>
 <p>Example:</p>
 <div class="language-text highlight"><pre><span></span><code>```python
 {
@@ -4100,7 +4100,7 @@ instances.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Construct a GlobusEndpoints object from a json file.</p>
+        <p>Construct a GlobusEndpoints object from a json file.</p>
 <p>The <code>dict</code> read from the JSON file will be passed to
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusEndpoints.from_dict"><code>from_dict()</code></a>
 and should match the format expected by
@@ -4150,7 +4150,7 @@ and should match the format expected by
 
     <div class="doc doc-contents ">
 
-      <p>Convert the GlobusEndpoints to a dict.</p>
+        <p>Convert the GlobusEndpoints to a dict.</p>
 <p>Note that the
 <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusEndpoints"><code>GlobusEndpoints</code></a>
 object can be reconstructed by passing the <code>dict</code> to.
@@ -4212,7 +4212,7 @@ object can be reconstructed by passing the <code>dict</code> to.
 
     <div class="doc doc-contents ">
 
-      <p>Get endpoint by host.</p>
+        <p>Get endpoint by host.</p>
 <p>Searches the endpoints for a endpoint who's <code>host_regex</code> matches
 <code>host</code>.</p>
 
@@ -4322,7 +4322,7 @@ object can be reconstructed by passing the <code>dict</code> to.
               Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
 
-      <p>Key to object transferred with Globus.</p>
+        <p>Key to object transferred with Globus.</p>
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -4371,7 +4371,7 @@ object can be reconstructed by passing the <code>dict</code> to.
 
     <div class="doc doc-contents ">
 
-      <p>Match keys by filename only.</p>
+        <p>Match keys by filename only.</p>
 <p>This is a hack around the fact that the task_id is not created until
 after the filename is so there can be a state where the task_id
 is empty.</p>
@@ -4438,7 +4438,7 @@ is empty.</p>
     <div class="doc doc-contents ">
 
 
-      <p>Globus transfer connector.</p>
+        <p>Globus transfer connector.</p>
 <p>The <a class="autorefs autorefs-internal" href="#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a> is
 similar to a <a class="autorefs autorefs-internal" href="../file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a>
 in that objects are saved to disk but allows for the transfer of objects
@@ -4642,7 +4642,7 @@ deleting the <code>local_path</code> of each endpoint.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Close the connector and clean up.</p>
+        <p>Close the connector and clean up.</p>
 
 
 <details class="warning" open>
@@ -4765,7 +4765,7 @@ was instantiated.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Get the connector configuration.</p>
+        <p>Get the connector configuration.</p>
 <p>The configuration contains all the information needed to reconstruct
 the connector object.</p>
 
@@ -4819,7 +4819,7 @@ the connector object.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Create a new connector instance from a configuration.</p>
+        <p>Create a new connector instance from a configuration.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4870,7 +4870,7 @@ the connector object.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Evict the object associated with the key.</p>
+        <p>Evict the object associated with the key.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4929,7 +4929,7 @@ the connector object.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Check if an object associated with the key exists.</p>
+        <p>Check if an object associated with the key exists.</p>
 
 
 <details class="note" open>
@@ -5016,7 +5016,7 @@ method will wait to make sure the transfers is successful.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Get the serialized object associated with the key.</p>
+        <p>Get the serialized object associated with the key.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5093,7 +5093,7 @@ method will wait to make sure the transfers is successful.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Get a batch of serialized objects associated with the keys.</p>
+        <p>Get a batch of serialized objects associated with the keys.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5162,7 +5162,7 @@ method will wait to make sure the transfers is successful.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Put a serialized object in the store.</p>
+        <p>Put a serialized object in the store.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -5249,7 +5249,7 @@ method will wait to make sure the transfers is successful.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Put a batch of serialized objects in the store.</p>
+        <p>Put a batch of serialized objects in the store.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

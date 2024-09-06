@@ -3590,7 +3590,7 @@
   </a>
   </div>
   
-      <p>Protocols used by the stream interfaces.</p>
+        <p>Protocols used by the stream interfaces.</p>
 <h3 id="proxystore.stream.protocols--publishersubscriber">Publisher/Subscriber<a class="headerlink" href="#proxystore.stream.protocols--publishersubscriber" title="Permanent link">&para;</a></h3>
 <p>The <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> are
@@ -3635,7 +3635,7 @@ their behavior.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
 
-      <p>Publisher interface to message stream.</p>
+        <p>Publisher interface to message stream.</p>
 
 
 
@@ -3663,7 +3663,7 @@ their behavior.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Close this publisher.</p>
+        <p>Close this publisher.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
@@ -3691,7 +3691,7 @@ their behavior.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Publish a message to the stream.</p>
+        <p>Publish a message to the stream.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3761,7 +3761,7 @@ their behavior.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
 
-      <p>Subscriber interface to message stream.</p>
+        <p>Subscriber interface to message stream.</p>
 <p>The subscriber protocol is an iterable object which yields objects
 from the stream until the stream is closed.</p>
 
@@ -3791,7 +3791,7 @@ from the stream until the stream is closed.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Close this subscriber.</p>
+        <p>Close this subscriber.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
@@ -3830,7 +3830,7 @@ from the stream until the stream is closed.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
 
-      <p>Filter protocol.</p>
+        <p>Filter protocol.</p>
 <p>A filter takes as input the dictionary of metadata associated with a new
 object event and returns a boolean indicating if the event should be
 dropped. I.e., if the filter returns <code>True</code>, the event will be filtered
@@ -3862,7 +3862,7 @@ out of the stream and lost.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Apply the filter to event metadata.</p>
+        <p>Apply the filter to event metadata.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>

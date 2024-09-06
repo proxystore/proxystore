@@ -3710,7 +3710,7 @@
   </a>
   </div>
   
-      <p>Stream producer and consumer interfaces.</p>
+        <p>Stream producer and consumer interfaces.</p>
 
 
 <details class="note" open>
@@ -3755,7 +3755,7 @@ convenience.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<span title="proxystore.stream.interface.T">T</span>]</code></p>
 
 
-      <p>Proxy stream producer interface.</p>
+        <p>Proxy stream producer interface.</p>
 
 
 <details class="note" open>
@@ -3936,7 +3936,7 @@ is applied before aggregation or batching.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Close the producer.</p>
+        <p>Close the producer.</p>
 
 
 <details class="warning" open>
@@ -4084,7 +4084,7 @@ the <a class="autorefs autorefs-internal" href="../../store/base/#proxystore.sto
 
     <div class="doc doc-contents ">
 
-      <p>Send publish an end of stream event to each topic.</p>
+        <p>Send publish an end of stream event to each topic.</p>
 <p>A <a class="autorefs autorefs-internal" href="#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a>
 will raise a <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#StopIteration"><code>StopIteration</code></a> exception when an
 end of stream event is received. The end of stream event is still
@@ -4167,7 +4167,7 @@ before the end of stream event is propagated.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Flush batch buffers for all topics.</p>
+        <p>Flush batch buffers for all topics.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/interface.py</code></summary>
@@ -4197,7 +4197,7 @@ before the end of stream event is propagated.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Flush the batch buffer for a topic.</p>
+        <p>Flush the batch buffer for a topic.</p>
 <p>This method:</p>
 <ol>
 <li>Pops the current batch of objects off the topic buffer.</li>
@@ -4399,7 +4399,7 @@ provided.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Send an item to the stream.</p>
+        <p>Send an item to the stream.</p>
 <p>This method:</p>
 <ol>
 <li>Applies the filter to the metadata associated with this event,
@@ -4648,7 +4648,7 @@ provided.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Generic" href="https://docs.python.org/3/library/typing.html#typing.Generic">Generic</a>[<span title="proxystore.stream.interface.T">T</span>]</code></p>
 
 
-      <p>Proxy stream consumer interface.</p>
+        <p>Proxy stream consumer interface.</p>
 <p>This interface acts as an iterator that will yield items from the stream
 until the stream is closed.</p>
 
@@ -4790,7 +4790,7 @@ was set on the producer side.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return an iterator that will yield proxies of stream objects.</p>
+        <p>Return an iterator that will yield proxies of stream objects.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/interface.py</code></summary>
@@ -4818,7 +4818,7 @@ was set on the producer side.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Alias for <a class="autorefs autorefs-internal" href="#proxystore.stream.interface.StreamConsumer.next"><code>next()</code></a>.</p>
+        <p>Alias for <a class="autorefs autorefs-internal" href="#proxystore.stream.interface.StreamConsumer.next"><code>next()</code></a>.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/interface.py</code></summary>
@@ -4848,7 +4848,7 @@ was set on the producer side.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Close the consumer.</p>
+        <p>Close the consumer.</p>
 
 
 <details class="warning" open>
@@ -4955,7 +4955,7 @@ interface.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return an iterator that yields tuples of metadata and proxies.</p>
+        <p>Return an iterator that yields tuples of metadata and proxies.</p>
 
 
 <details class="note" open>
@@ -5011,7 +5011,7 @@ interface.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return an iterator that yields objects from the stream.</p>
+        <p>Return an iterator that yields objects from the stream.</p>
 
 
 <details class="note" open>
@@ -5065,7 +5065,7 @@ proxies of objects in the stream.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return an iterator that yields tuples of metadata and objects.</p>
+        <p>Return an iterator that yields tuples of metadata and objects.</p>
 
 
 <details class="note" open>
@@ -5121,7 +5121,7 @@ proxies of objects in the stream.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return a proxy of the next object in the stream.</p>
+        <p>Return a proxy of the next object in the stream.</p>
 
 
 <details class="note" open>
@@ -5209,7 +5209,7 @@ producer. Note that this does not call
 
     <div class="doc doc-contents ">
 
-      <p>Return a tuple of metadata and proxy for the next object.</p>
+        <p>Return a tuple of metadata and proxy for the next object.</p>
 
 
 <details class="note" open>
@@ -5316,7 +5316,7 @@ producer. Note that this does not call
 
     <div class="doc doc-contents ">
 
-      <p>Return the next object in the stream.</p>
+        <p>Return the next object in the stream.</p>
 
 
 <details class="note" open>
@@ -5398,7 +5398,7 @@ included in the object's event metadata.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Return a tuple of metadata and the next object in the stream.</p>
+        <p>Return a tuple of metadata and the next object in the stream.</p>
 
 
 <details class="note" open>

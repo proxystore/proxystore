@@ -3614,13 +3614,13 @@
   </a>
   </div>
   
-      <p>Object ownership and borrowing with proxies.</p>
+        <p>Object ownership and borrowing with proxies.</p>
 
 
 <details class="warning" open>
   <summary>Warning</summary>
   <p>These features are experimental and may change in future releases.</p>
-</details>      <p>This module implements Rust-like ownership and borrowing rules for Python
+</details>        <p>This module implements Rust-like ownership and borrowing rules for Python
 objects in shared memory using transparent object proxies. Thus, these
 proxy reference types are similar to the type returned by
 <a class="autorefs autorefs-internal" href="../base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a>---they will resolve
@@ -3641,7 +3641,7 @@ additional rules.</p>
   <summary>Tip</summary>
   <p>The docstrings often use <code>T</code> to refer to both the <em>target</em> object in the
 global store and the type of the <em>target</em> object.</p>
-</details>      <p>An <a class="autorefs autorefs-internal" href="#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> can be borrowed without
+</details>        <p>An <a class="autorefs autorefs-internal" href="#proxystore.store.ref.OwnedProxy"><code>OwnedProxy[T]</code></a> can be borrowed without
 relinquishing ownership. This requires two additional rules.</p>
 <ol>
 <li>At any given time, you can have either one mutable reference to the
@@ -3686,7 +3686,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
 
 
-      <p>Base exception type for proxy references.</p>
+        <p>Base exception type for proxy references.</p>
 
 
     </div>
@@ -3709,7 +3709,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxyError" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
-      <p>Exception raised when violating borrowing rules.</p>
+        <p>Exception raised when violating borrowing rules.</p>
 
 
     </div>
@@ -3732,7 +3732,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxyError" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
-      <p>Exception raised when invoking an operation on a non-owned reference.</p>
+        <p>Exception raised when invoking an operation on a non-owned reference.</p>
 
 
     </div>
@@ -3755,7 +3755,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxyError" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
-      <p>Exception raised when a reference instance has been invalidated.</p>
+        <p>Exception raised when a reference instance has been invalidated.</p>
 
 
     </div>
@@ -3784,7 +3784,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
 
 
-      <p>Base reference proxy type.</p>
+        <p>Base reference proxy type.</p>
 <p>This base type adds some features to <a class="autorefs autorefs-internal" href="../../proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a>
 that are shared by all the reference types:</p>
 <ol>
@@ -3861,7 +3861,7 @@ that are shared by all the reference types:</p>
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxy" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
 
 
-      <p>Represents ownership over an object in a global store.</p>
+        <p>Represents ownership over an object in a global store.</p>
 <p>This class maintains reference counts of the number of immutable and
 mutable borrows of this proxy. The target object will be evicted from
 the store once this proxy goes out of scope (this is handled via
@@ -3980,7 +3980,7 @@ to resolve the target object from the store.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxy" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
 
 
-      <p>Represents a borrowed reference to an object in the global store.</p>
+        <p>Represents a borrowed reference to an object in the global store.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4109,7 +4109,7 @@ be <code>None</code>.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="proxystore.store.ref.BaseRefProxy" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
 
 
-      <p>Represents a borrowed mutable reference to an object in the global store.</p>
+        <p>Represents a borrowed mutable reference to an object in the global store.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4231,7 +4231,7 @@ be <code>None</code>.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Borrow <code>T</code> by creating an immutable reference of <code>T</code>.</p>
+        <p>Borrow <code>T</code> by creating an immutable reference of <code>T</code>.</p>
 
 
 <details class="note" open>
@@ -4373,7 +4373,7 @@ the returned proxy is already resolved.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Mutably borrow <code>T</code> by creating an mutable reference of <code>T</code>.</p>
+        <p>Mutably borrow <code>T</code> by creating an mutable reference of <code>T</code>.</p>
 
 
 <details class="note" open>
@@ -4520,7 +4520,7 @@ the returned proxy is already resolved.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Clone the target object.</p>
+        <p>Clone the target object.</p>
 <p>Creates a new copy of <code>T</code> in the global store. If <code>proxy</code> is in
 the resolved state, the local version of <code>T</code> belonging to <code>proxy</code> will
 be deepcopied into the cloned proxy.</p>
@@ -4612,7 +4612,7 @@ be deepcopied into the cloned proxy.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert a basic proxy into an owned proxy.</p>
+        <p>Convert a basic proxy into an owned proxy.</p>
 
 
 <details class="warning" open>
@@ -4781,7 +4781,7 @@ the returned proxy is already resolved.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Update the global copy of the target.</p>
+        <p>Update the global copy of the target.</p>
 
 
 <details class="note" open>

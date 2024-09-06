@@ -3400,14 +3400,13 @@
 <p><a href="https://github.com/proxystore/proxystore/actions/workflows/docs.yml"><img alt="docs" src="https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg" /></a>
 <a href="https://github.com/proxystore/proxystore/actions"><img alt="tests" src="https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests" /></a>
 <a href="https://results.pre-commit.ci/latest/github/proxystore/proxystore/main"><img alt="pre-commit.ci status" src="https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg" /></a></p>
-<p>ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.
-The transparent object proxy provide lightweight, wide-area references to objects in arbitrary data stores—references that can be communicated cheaply and resolved just-in-time via performant bulk transfer methods.</p>
-<p>The <a href="https://docs.proxystore.dev/latest/concepts/proxy/"><em>transparent object proxy</em></a> is the core building block of ProxyStore, and, unlike traditional references that are only valid within the virtual address space of a single process, the proxy refers to an object in distributed storage and can be implicitly dereferenced in arbitrary processes, even on remote machines.
-The proxy is transparent in that it dereferences its target object when used—referred to a <em>just-in-time resolution</em>—and it forwards all operations on itself to its target object.
-This paradigm results in the best of both pass-by-reference and pass-by-value semantics.</p>
-<p>A proxy is initialized with a <em>factory</em>, a self-contained callable object that returns the target object when invoked, such as when the proxy is resolved.
-This self-contained, transparent nature of the proxy means a consumer is not aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.
-This paradigm improves performance and portability by reducing transfer overheads through intermediaries, abstracting low-level communication methods, and reducing code-complexity.</p>
+<p>ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.</p>
+<p>The <a href="https://docs.proxystore.dev/latest/concepts/proxy/"><em>transparent object proxy</em></a>, the core building block within ProxyStore, acts like a wide-area reference that can be cheaply communicated.
+Unlike traditional references that are only valid within the virtual address space of a single process, the proxy references an object in remote storage and can be implicitly dereferenced in arbitrary processes—even on remote machines.
+The proxy is transparent in that it implicitly dereferences its target object when used—referred to a <em>just-in-time resolution</em>—and afterwards forwards all operations on itself to the cached target object.</p>
+<p>This paradigm results in the best of both pass-by-reference and pass-by-value semantics, improves performance and portability by reducing transfer overheads through intermediaries, and abstracts low-level communication methods which reduces code complexity.
+A proxy contains within itself all the information and logic necessary to resolve the target object.
+This self-contained nature means a proxy consumer need not be aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.</p>
 <p>ProxyStore supports a diverse set of programming patterns built on the proxy paradigm:</p>
 <ul>
 <li><a href="https://arxiv.org/abs/2303.08803">Task-based Workflows</a></li>
