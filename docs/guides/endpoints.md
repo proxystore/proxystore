@@ -65,12 +65,12 @@ the request along and facilitate returning the response back to the client.
     CLI tool.
 
 Endpoints can be configure and started with the
-[`proxystore-endpoint`](../../api/cli/#proxystore-endpoint)
+[`proxystore-endpoint`](../api/cli.md#proxystore-endpoint)
 command. By default, an Endpoint is configured to connect to ProxyStore's
 cloud-hosted relay server. This relay server uses
 [Globus Auth](https://www.globus.org/globus-auth-service) for identity and
 access management. To use the provided relay server, authenticate using the
-[`proxystore-globus-auth login`](../../api/cli/#proxystore-globus-auth-login)
+[`proxystore-globus-auth login`](../api/cli.md#proxystore-globus-auth-login)
 CLI. Authentication only needs to be performed once per system.
 
 !!! tip
@@ -236,7 +236,7 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 
 ## Hosting a Relay Server
 
-The [`proxystore-endpoint configure`](../../api/cli/#proxystore-endpoint-configure)
+The [`proxystore-endpoint configure`](../api/cli.md#proxystore-endpoint-configure)
 CLI will configure endpoints to use a relay server hosted by the ProxyStore
 team.  If this is not suitable (or the ProxyStore relay is unavailable) we
 provide all of the tools to host your own relay server. See the

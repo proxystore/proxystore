@@ -10,15 +10,14 @@
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
 
 ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.
-The transparent object proxy provide lightweight, wide-area references to objects in arbitrary data stores—references that can be communicated cheaply and resolved just-in-time via performant bulk transfer methods.
 
-The [*transparent object proxy*](https://docs.proxystore.dev/latest/concepts/proxy/) is the core building block of ProxyStore, and, unlike traditional references that are only valid within the virtual address space of a single process, the proxy refers to an object in distributed storage and can be implicitly dereferenced in arbitrary processes, even on remote machines.
-The proxy is transparent in that it dereferences its target object when used—referred to a *just-in-time resolution*—and it forwards all operations on itself to its target object.
-This paradigm results in the best of both pass-by-reference and pass-by-value semantics.
+The [*transparent object proxy*](https://docs.proxystore.dev/latest/concepts/proxy/), the core building block within ProxyStore, acts like a wide-area reference that can be cheaply communicated.
+Unlike traditional references that are only valid within the virtual address space of a single process, the proxy references an object in remote storage and can be implicitly dereferenced in arbitrary processes—even on remote machines.
+The proxy is transparent in that it implicitly dereferences its target object when used—referred to a *just-in-time resolution*—and afterwards forwards all operations on itself to the cached target object.
 
-A proxy is initialized with a *factory*, a self-contained callable object that returns the target object when invoked, such as when the proxy is resolved.
-This self-contained, transparent nature of the proxy means a consumer is not aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.
-This paradigm improves performance and portability by reducing transfer overheads through intermediaries, abstracting low-level communication methods, and reducing code-complexity.
+This paradigm results in the best of both pass-by-reference and pass-by-value semantics, improves performance and portability by reducing transfer overheads through intermediaries, and abstracts low-level communication methods which reduces code complexity.
+A proxy contains within itself all the information and logic necessary to resolve the target object.
+This self-contained nature means a proxy consumer need not be aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.
 
 ProxyStore supports a diverse set of programming patterns built on the proxy paradigm:
 
