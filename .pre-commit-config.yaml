@@ -30,7 +30,7 @@ repos:
       - id: mypy
         additional_dependencies:
           - click >= 8.1.0, != 8.1.4
-          - globus-sdk
+          - globus-sdk >= 3.45.0
           - parsl
           - pydantic
           - quart

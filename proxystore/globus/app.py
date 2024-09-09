@@ -28,12 +28,17 @@ _TOKENS_FILE = 'storage.db'
 
 
 class _CustomLoginFlowManager(CommandLineLoginFlowManager):
-    def _print_and_prompt(self, authorize_url: str) -> str:  # pragma: no cover
+    def print_authorize_url(
+        self,
+        authorize_url: str,
+    ) -> None:  # pragma: no cover
         click.secho(
             'Please visit the following url to authenticate:',
             fg='cyan',
         )
         click.echo(authorize_url)
+
+    def prompt_for_code(self) -> str:  # pragma: no cover
         auth_code = click.prompt(
             click.style('Enter the auth code:', fg='cyan'),
             prompt_suffix=' ',

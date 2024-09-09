@@ -94,7 +94,6 @@ def get_transfer_client(
         globus_app = get_user_app()
 
     client = globus_sdk.TransferClient(app=globus_app)
-    for collection in collections:
-        client.add_app_data_access_scope(collection)
+    client.add_app_data_access_scope(collections)
 
     return client

@@ -84,7 +84,7 @@ def _get_auth_headers(
         app = get_globus_app()
         scopes = get_relay_scopes_by_resource_server()
         assert len(scopes) == 1
-        app.add_scope_requirements(scopes)  # type: ignore[arg-type]
+        app.add_scope_requirements(scopes)
         logger.info('Initialized Globus app')
         try:
             authorizer = app.get_authorizer(*scopes.keys())

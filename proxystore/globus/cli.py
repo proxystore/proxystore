@@ -14,7 +14,6 @@ from __future__ import annotations
 import click
 
 from proxystore.globus.app import get_user_app
-from proxystore.globus.client import get_native_app_auth_client
 from proxystore.globus.scopes import get_all_scopes_by_resource_server
 
 
@@ -43,27 +42,19 @@ def login(collection: list[str]) -> None:
     """
     app = get_user_app()
     scopes = get_all_scopes_by_resource_server(collection)
-    app.add_scope_requirements(scopes)  # type: ignore[arg-type]
+    app.add_scope_requirements(scopes)
 
-    token_data = app._token_storage.get_token_data_by_resource_server()
-    if all(server in token_data for server in scopes):
+    if app.login_required():
+        app.login()
+    else:
         click.echo(
             'Globus authentication tokens already exist. '
             'To recreate, logout and login again.',
         )
-    else:
-        app.run_login_flow()
 
 
 @cli.command()
 def logout() -> None:
     """Revoke and remove all Globus tokens."""
     app = get_user_app()
-    client = get_native_app_auth_client()
-    token_data = app._token_storage.get_token_data_by_resource_server()
-
-    for server, data in token_data.items():
-        client.oauth2_revoke_token(data.access_token)
-        if data.refresh_token is not None:
-            client.oauth2_revoke_token(data.refresh_token)
-        app._token_storage.remove_token_data(server)
+    app.logout()
