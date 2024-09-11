@@ -107,6 +107,17 @@ class Store(Generic[ConnectorT]):
         This class is generally thread-safe, with cache access and connector
         operations guarded by a lock that is local to each store instance.
 
+    Warning:
+        This class cannot be pickled. If you need to recreate a
+        [`Store`][proxystore.store.base.Store] within another process, share
+        a [`StoreConfig`][proxystore.store.config.StoreConfig], a serializable
+        and pickle-compatbile type, that can be created using
+        [`Store.config()`][proxystore.store.base.Store.config].
+
+        To reconstruct the instance from the config, use
+        [`Store.from_config()`][proxystore.store.base.Store.from_config] or
+        [`get_or_create_store()`][proxystore.store.get_or_create_store].
+
     Args:
         name: Name of the store instance.
         connector: Connector instance to use for object storage.
