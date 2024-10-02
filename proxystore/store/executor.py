@@ -399,7 +399,7 @@ class StoreExecutor(Executor):
                 if isinstance(result, _FutureProtocol):
                     # Some Executor-like classes return futures from map()
                     # so we internally handle that here.
-                    timeout = kwargs.get('timeout', None)
+                    timeout = kwargs.get('timeout')
                     yield result.result(timeout=timeout)
                 else:
                     yield result
