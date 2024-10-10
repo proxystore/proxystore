@@ -63,7 +63,7 @@ redis = ["redis>=3.4"]
 zmq = ["pyzmq"]
 dev = [
     "covdefaults>=2.2",
-    "coverage",
+    "coverage!=7.6.2",
     "mypy",
     "numpy",
     "pandas",
