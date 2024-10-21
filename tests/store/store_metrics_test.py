@@ -13,7 +13,7 @@ from proxystore.store.base import Store
 from proxystore.store.future import Future
 
 
-@pytest.fixture()
+@pytest.fixture
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:

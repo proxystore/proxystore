@@ -12,7 +12,7 @@ from proxystore.store import Store
 from proxystore.store import store_registration
 
 
-@pytest.fixture()
+@pytest.fixture
 def store() -> Generator[Store[LocalConnector], None, None]:
     """Fixture which yields a store suitable for testing.
 

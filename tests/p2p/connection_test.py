@@ -15,7 +15,7 @@ from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.messages import PeerConnectionRequest
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection(relay_server) -> None:
     client1 = RelayClient(relay_server.address)
     await client1.connect()
@@ -59,7 +59,7 @@ async def test_p2p_connection(relay_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection_multichannel(relay_server) -> None:
     client1 = RelayClient(relay_server.address)
     await client1.connect()
@@ -91,7 +91,7 @@ async def test_p2p_connection_multichannel(relay_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection_timeout(relay_server) -> None:
     client1 = RelayClient(relay_server.address)
     await client1.connect()
@@ -113,7 +113,7 @@ async def test_p2p_connection_timeout(relay_server) -> None:
     await connection2.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection_error(relay_server) -> None:
     client = RelayClient(relay_server.address)
     await client.connect()
@@ -139,7 +139,7 @@ async def test_p2p_connection_error(relay_server) -> None:
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_closed_by_offerer_callback(relay_server) -> None:
     closed_event_1 = asyncio.Event()
     closed_event_2 = asyncio.Event()
@@ -194,7 +194,7 @@ async def test_p2p_closed_by_offerer_callback(relay_server) -> None:
     await client2.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_closed_by_answerer_callback(relay_server) -> None:
     closed_event_1 = asyncio.Event()
     closed_event_2 = asyncio.Event()

@@ -105,7 +105,7 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     tmp_dir.cleanup()
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_endpoint_transfer(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 
@@ -154,7 +154,7 @@ def _consume_local(queue: Queue[Any]) -> None:
     assert obj == [1, 2, 3]
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_endpoint_proxy_transfer(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 
@@ -214,7 +214,7 @@ def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
         assert store.connector.endpoint_port != port
 
 
-@pytest.mark.integration()
+@pytest.mark.integration
 def test_proxy_detects_endpoint(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 

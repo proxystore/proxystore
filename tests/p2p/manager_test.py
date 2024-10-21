@@ -15,7 +15,7 @@ from proxystore.p2p.relay.messages import RelayResponse
 from testing.mocking import async_mock_once
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_awaitable(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # Calling async_init again should do nothing
@@ -23,7 +23,7 @@ async def test_awaitable(relay_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_not_awaited(relay_server) -> None:
     manager = PeerManager(RelayClient(relay_server.address))
     with pytest.raises(RuntimeError, match='await'):
@@ -32,7 +32,7 @@ async def test_not_awaited(relay_server) -> None:
         await manager.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_uuid_name_properties(relay_server) -> None:
     uuid_ = uuid.uuid4()
     name = 'pm'
@@ -46,7 +46,7 @@ async def test_uuid_name_properties(relay_server) -> None:
         assert manager.name == name
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection(relay_server) -> None:
     async with PeerManager(
         RelayClient(relay_server.address),
@@ -63,7 +63,7 @@ async def test_p2p_connection(relay_server) -> None:
         assert connection2.state == 'connected'
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
     relay_client = RelayClient(relay_server.address)
     async with PeerManager(relay_client) as manager:
@@ -74,7 +74,7 @@ async def test_p2p_connection_error_unknown_peer(relay_server) -> None:
             await manager.send(uuid.uuid4(), 'hello', timeout=0.2)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_connection_error_from_server(relay_server) -> None:
     # Record current tasks so we know which not to clean up
     task_names = {task.get_name() for task in asyncio.all_tasks()}
@@ -118,7 +118,7 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
                 pass
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_p2p_messaging(relay_server) -> None:
     async with PeerManager(
         RelayClient(relay_server.address),
@@ -131,7 +131,7 @@ async def test_p2p_messaging(relay_server) -> None:
         assert message == 'hello hello'
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_expected_server_disconnect(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
@@ -141,7 +141,7 @@ async def test_expected_server_disconnect(relay_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unexpected_server_disconnect(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # TODO(gpauloski): should we log something or set a flag in the manager?
@@ -151,7 +151,7 @@ async def test_unexpected_server_disconnect(relay_server) -> None:
     await manager.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_serialization_error(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
@@ -176,7 +176,7 @@ async def test_serialization_error(relay_server, caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unexpected_server_response(relay_server, caplog) -> None:
     # PeerManager should log an exception and skip the message but
     # not raise an exception.
@@ -196,7 +196,7 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unknown_message_type(relay_server, caplog) -> None:
     # PeerManager should log an error and skip the message but
     # not raise an exception.
@@ -216,7 +216,7 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_close_connection(relay_server) -> None:
     async with PeerManager(
         RelayClient(relay_server.address),

@@ -32,7 +32,7 @@ from proxystore.store.ref import update
 T = TypeVar('T')
 
 
-@pytest.fixture()
+@pytest.fixture
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:

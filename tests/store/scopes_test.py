@@ -24,7 +24,7 @@ from proxystore.store.scopes import mark_refs_out_of_scope
 from proxystore.store.scopes import submit
 
 
-@pytest.fixture()
+@pytest.fixture
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
@@ -47,7 +47,7 @@ def store_is_empty(store: Store[FileConnector]) -> bool:
     return len(files) == 0
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_future_protocol() -> None:
     # Test a few future implementations to make sure they match the
     # FutureWithCallback protocol.

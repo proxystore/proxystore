@@ -29,7 +29,7 @@ from testing.ssl import SSLContextFixture
 from testing.utils import open_port
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_periodic_client_logger(caplog) -> None:
     caplog.set_level(logging.INFO)
 
@@ -152,7 +152,7 @@ def _serve(config: RelayServingConfig) -> None:
 
 @pytest.mark.parametrize('use_ssl', (True, False))
 @pytest.mark.timeout(5)
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_serve_in_subprocess(
     use_ssl: bool,
     ssl_context: SSLContextFixture,

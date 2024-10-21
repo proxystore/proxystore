@@ -20,7 +20,7 @@ from proxystore.p2p.nat import NatType
 from proxystore.p2p.nat import Result
 
 
-@pytest.fixture()
+@pytest.fixture
 def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
     with mock.patch(
         'proxystore.utils.environment.home_dir',
