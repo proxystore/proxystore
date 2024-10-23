@@ -27,13 +27,13 @@ def test_invalid_address_protocol() -> None:
         RelayClient('myserver.com')
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_default_ssl_context() -> None:
     client = RelayClient('wss://myserver.com', ssl_context=None)
     assert client._ssl_context is not None
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_default_ssl_context_no_verify() -> None:
     client = RelayClient(
         'wss://myserver.com',
@@ -45,20 +45,20 @@ async def test_default_ssl_context_no_verify() -> None:
     assert client._ssl_context.verify_mode == ssl.CERT_NONE
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_open_and_close() -> None:
     client = RelayClient('ws://localhost')
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_and_ping_server(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         pong_waiter = await client.websocket.ping()
         await asyncio.wait_for(pong_waiter, _WAIT_FOR)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_send_recv(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         message = RelayRegistrationRequest(name=client.name, uuid=client.uuid)
@@ -67,7 +67,7 @@ async def test_send_recv(relay_server) -> None:
         assert isinstance(response, RelayResponse)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_recv_wrong_type(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         with mock.patch.object(
@@ -79,7 +79,7 @@ async def test_recv_wrong_type(relay_server) -> None:
                 await client.recv()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_received_non_string(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
@@ -90,7 +90,7 @@ async def test_connect_received_non_string(relay_server) -> None:
                 await client._register(_WAIT_FOR)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_received_bad_message(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
@@ -104,7 +104,7 @@ async def test_connect_received_bad_message(relay_server) -> None:
                 await client._register(_WAIT_FOR)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_failure(relay_server) -> None:
     message = RelayResponse(success=False, message='test error', error=True)
     async with RelayClient(relay_server.address) as client:
@@ -116,7 +116,7 @@ async def test_connect_failure(relay_server) -> None:
                 await client._register(_WAIT_FOR)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_unknown_response(relay_server) -> None:
     message = RelayRegistrationRequest('name', uuid.uuid4())
     async with RelayClient(relay_server.address) as client:
@@ -131,7 +131,7 @@ async def test_connect_unknown_response(relay_server) -> None:
                 await client._register(_WAIT_FOR)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_relay_server_retry_backoff(relay_server, caplog) -> None:
     caplog.set_level(logging.WARNING)
     client = RelayClient(relay_server.address, reconnect_task=False)
@@ -158,7 +158,7 @@ async def test_relay_server_retry_backoff(relay_server, caplog) -> None:
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_relay_server_connect_fatal_error(relay_server) -> None:
     error = websockets.exceptions.ConnectionClosedError(
         # Mimic a ForbiddenError from the relay server that caused
@@ -177,7 +177,7 @@ async def test_relay_server_connect_fatal_error(relay_server) -> None:
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_on_send(relay_server) -> None:
     client = RelayClient(relay_server.address)
     with pytest.raises(RelayNotConnectedError):
@@ -195,7 +195,7 @@ async def test_connect_on_send(relay_server) -> None:
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_connect_on_recv(relay_server) -> None:
     client = RelayClient(relay_server.address)
     with pytest.raises(RelayNotConnectedError):
@@ -210,7 +210,7 @@ async def test_connect_on_recv(relay_server) -> None:
     await client.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_relay_server_manual_reconnection(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         old_websocket = client.websocket
@@ -220,7 +220,7 @@ async def test_relay_server_manual_reconnection(relay_server) -> None:
         assert client.websocket != old_websocket
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_relay_server_auto_reconnection(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         old_websocket = client.websocket

@@ -37,7 +37,7 @@ def create_pubsub_pair(
     return publisher, subscriber
 
 
-@pytest.fixture()
+@pytest.fixture
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:

@@ -36,7 +36,7 @@ def get_mock_websocket() -> websockets.server.WebSocketServerProtocol:
         return websocket
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_send() -> None:
     server = RelayServer(NullAuthenticator())
     message = RelayRegistrationRequest('name', uuid.uuid4())
@@ -51,7 +51,7 @@ async def test_server_send() -> None:
         mock_send.assert_awaited_once()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_send_encoding_error(caplog) -> None:
     caplog.set_level(logging.ERROR)
     server = RelayServer(NullAuthenticator())
@@ -62,7 +62,7 @@ async def test_server_send_encoding_error(caplog) -> None:
     assert 'Failed to encode message' in caplog.records[0].message
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_send_connection_closed(caplog) -> None:
     caplog.set_level(logging.ERROR)
     server = RelayServer(NullAuthenticator())
@@ -82,7 +82,7 @@ async def test_server_send_connection_closed(caplog) -> None:
     assert 'Connection closed while' in caplog.records[0].message
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_register() -> None:
     server = RelayServer(NullAuthenticator())
     request = RelayRegistrationRequest('name', uuid.uuid4())
@@ -98,7 +98,7 @@ async def test_server_register() -> None:
     assert client.uuid == request.uuid
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_register_override_same_websocket(caplog) -> None:
     caplog.set_level(logging.INFO)
     server = RelayServer(NullAuthenticator())
@@ -127,7 +127,7 @@ async def test_server_register_override_same_websocket(caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_register_override_different_websocket(caplog) -> None:
     caplog.set_level(logging.INFO)
     server = RelayServer(NullAuthenticator())
@@ -157,7 +157,7 @@ async def test_server_register_override_different_websocket(caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_register_with_different_users_uuid(caplog) -> None:
     caplog.set_level(logging.INFO)
     server = RelayServer(NullAuthenticator())
@@ -178,7 +178,7 @@ async def test_server_register_with_different_users_uuid(caplog) -> None:
         await server.register(client.websocket, new_request)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_server_unregister(caplog) -> None:
     caplog.set_level(logging.INFO)
     server = RelayServer(NullAuthenticator())
@@ -202,7 +202,7 @@ async def test_server_unregister(caplog) -> None:
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_forward_request_to_peer() -> None:
     server = RelayServer(NullAuthenticator())
     client = Client('client', uuid.uuid4(), NullUser(), get_mock_websocket())
@@ -227,7 +227,7 @@ async def test_forward_request_to_peer() -> None:
         mock_send.assert_awaited_once()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_forward_request_to_unknown_peer() -> None:
     server = RelayServer(NullAuthenticator())
     client = Client('client', uuid.uuid4(), NullUser(), get_mock_websocket())
@@ -256,7 +256,7 @@ async def test_forward_request_to_unknown_peer() -> None:
         await server.forward(client, request)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_forward_request_to_peer_owned_by_different_user() -> None:
     server = RelayServer(NullAuthenticator())
     client = Client('client', uuid.uuid4(), NullUser(), get_mock_websocket())
@@ -289,7 +289,7 @@ async def test_forward_request_to_peer_owned_by_different_user() -> None:
         await server.forward(client, request)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_register_and_connect(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -343,7 +343,7 @@ async def test_handler_register_and_connect(
         assert client_manager.get_client_by_uuid(client_uuid) is None
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_bad_message_type_closes_socket(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -355,7 +355,7 @@ async def test_handler_bad_message_type_closes_socket(
     assert websocket.close_reason == 'Unknown message type.'
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_unauthorized_error(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -380,7 +380,7 @@ async def test_handler_unauthorized_error(
             )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_forbidden_error(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -406,7 +406,7 @@ async def test_handler_forbidden_error(
             )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_bad_request_error(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -435,7 +435,7 @@ async def test_handler_bad_request_error(
             )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_message_size_exceeded(
     relay_server: RelayServerInfo,
 ) -> None:
@@ -465,7 +465,7 @@ async def test_handler_message_size_exceeded(
             assert websocket.close_reason == 'Message length exceeds limit.'
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_handler_forward_request_before_registration(
     relay_server: RelayServerInfo,
 ) -> None:

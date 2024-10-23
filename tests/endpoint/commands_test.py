@@ -31,7 +31,7 @@ _PORT = 1234
 _SERVER = None
 
 
-@pytest.fixture()
+@pytest.fixture
 def _patch_hostname() -> Generator[None, None, None]:
     # Tests which call start_endpoint will sometimes fail on MacOS
     # in the call to socket.gethostbyname(utils.hostname()).

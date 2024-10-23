@@ -36,7 +36,7 @@ async def endpoints(
             yield (ep1, ep2)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_init(relay_server) -> None:
     relay_client = RelayClient(
         relay_server.address,
@@ -50,7 +50,7 @@ async def test_init(relay_server) -> None:
     await endpoint.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_set(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     key = str(uuid.uuid4())
@@ -59,7 +59,7 @@ async def test_set(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint2.get(key)) == data
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_get(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data1 = randbytes(100)
@@ -76,7 +76,7 @@ async def test_get(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint2.get('missingkey', endpoint=endpoint1.uuid)) is None
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_evict(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data = randbytes(100)
@@ -90,7 +90,7 @@ async def test_evict(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert (await endpoint1.get(key)) is None
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_exists(endpoints: tuple[Endpoint, Endpoint]) -> None:
     endpoint1, endpoint2 = endpoints
     data = randbytes(100)
@@ -100,7 +100,7 @@ async def test_exists(endpoints: tuple[Endpoint, Endpoint]) -> None:
     assert await endpoint2.exists(key)
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_remote_error_propogation(
     endpoints: tuple[Endpoint, Endpoint],
 ) -> None:
@@ -110,7 +110,7 @@ async def test_remote_error_propogation(
         await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_peering_not_available(relay_server) -> None:
     relay_client = RelayClient(
         relay_server.address,
@@ -125,7 +125,7 @@ async def test_peering_not_available(relay_server) -> None:
     await peer_manager.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_delayed_peer_manager_async_init(relay_server) -> None:
     relay_client = RelayClient(
         relay_server.address,
@@ -141,7 +141,7 @@ async def test_delayed_peer_manager_async_init(relay_server) -> None:
         assert peer_manager.relay_client is not None
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unknown_peer(relay_server) -> None:
     relay_client = RelayClient(
         relay_server.address,
@@ -156,7 +156,7 @@ async def test_unknown_peer(relay_server) -> None:
             await endpoint.get('key', endpoint=uuid.uuid4())
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unsupported_peer_message(
     endpoints: tuple[Endpoint, Endpoint],
     caplog,
@@ -181,7 +181,7 @@ async def test_unsupported_peer_message(
     )
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_unexpected_response(
     endpoints: tuple[Endpoint, Endpoint],
     caplog,

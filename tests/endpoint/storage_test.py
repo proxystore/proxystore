@@ -27,7 +27,7 @@ async def storage(request) -> AsyncGenerator[Storage, None]:
     await s.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_storage_basics(storage: Storage) -> None:
     key = 'key'
     data = b'data'
@@ -46,7 +46,7 @@ async def test_storage_basics(storage: Storage) -> None:
     assert await storage.get(key, b'123') == b'123'
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_sqlite_storage_persists(tmp_path: pathlib.Path) -> None:
     key = 'key'
     data = b'data'
@@ -61,13 +61,13 @@ async def test_sqlite_storage_persists(tmp_path: pathlib.Path) -> None:
     await storage.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_sqlite_storage_close() -> None:
     storage = SQLiteStorage(':memory:')
     await storage.close()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_max_object_size_exceeded() -> None:
     dict_storage = DictStorage(max_object_size=100)
     with pytest.raises(ObjectSizeExceededError):

@@ -22,7 +22,7 @@ CLIENT_IDENTITY_ENV = {
 }
 
 
-@pytest.fixture()
+@pytest.fixture
 def storage(tmp_path: pathlib.Path) -> SQLiteAdapter:
     return SQLiteAdapter(':memory:')
 

@@ -13,7 +13,7 @@ import pytest
 from proxystore.proxy import Proxy
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_awaitable() -> None:
     event = asyncio.Event()
 
@@ -28,7 +28,7 @@ async def test_awaitable() -> None:
     assert event.is_set()
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_asyn_iterator() -> None:
     class TestAsyncIterator:
         def __init__(self, value: list[int]) -> None:
@@ -54,7 +54,7 @@ async def test_asyn_iterator() -> None:
     assert values == found
 
 
-@pytest.mark.asyncio()
+@pytest.mark.asyncio
 async def test_async_context_manager() -> None:
     class TestAsyncContextManager:
         def __init__(self) -> None:
