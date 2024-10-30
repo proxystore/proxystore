@@ -85,7 +85,7 @@ producer = StreamProducer(publisher, {'my-topic': store}) # (3)!
 for item in ...:
     producer.send('my-topic', item, evict=True) # (4)!
 
-producer.close() # (5)!
+producer.close(topics=['my-topic']) # (5)!
 ```
 
 1. The [`Store`][proxystore.store.base.Store] configuration is determined by
@@ -109,6 +109,11 @@ producer.close() # (5)!
    will close the [`Publisher`][proxystore.stream.protocols.Publisher],
    all [`Store`][proxystore.store.base.Store] instances, and
    [`Connector`][proxystore.connectors.protocols.Connector] by default.
+   Topics are not closed by default and must be explicitly closed using the
+   `topics` parameter or
+   [`close_topics()`][proxystore.stream.interface.StreamProducer.close_topics].
+   Closing a topic will send a special end-of-stream event to the stream causing
+   any consumers waiting on the stream to stop.
 
 ```python title="consumer.py" linenums="1"
 from proxystore.connector.file import FileConnector
@@ -138,8 +143,7 @@ consumer.close() # (5)!
 3. Iterating on a
    [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] will
    block until new proxies are available and yield those proxies. Iteration
-   will stop once the [`Publisher`][proxystore.stream.protocols.Publisher]
-   is closed via the
+   will stop once the topic is closed by the
    [`StreamProducer`][proxystore.stream.interface.StreamProducer].
 4. The yielded proxies point to objects in the
    [`Store`][proxystore.store.base.Store], and the state of the `evict` flag
