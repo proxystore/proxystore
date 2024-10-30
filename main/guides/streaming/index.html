@@ -3478,7 +3478,7 @@ event notifications via a message broker.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="o">...</span><span class="p">:</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a>    <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;my-topic&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">evict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># (4)!</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">producer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span> <span class="c1"># (5)!</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">producer</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my-topic&#39;</span><span class="p">])</span> <span class="c1"># (5)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> configuration is determined by
@@ -3501,7 +3501,12 @@ event notifications via a message broker.</p>
 <li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>
    will close the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>,
    all <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instances, and
-   <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.</li>
+   <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.
+   Topics are not closed by default and must be explicitly closed using the
+   <code>topics</code> parameter or
+   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer.close_topics"><code>close_topics()</code></a>.
+   Closing a topic will send a special end-of-stream event to the stream causing
+   any consumers waiting on the stream to stop.</li>
 </ol>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">consumer.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-1-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-1-2"> 2</a></span>
@@ -3541,8 +3546,7 @@ event notifications via a message broker.</p>
 <li>Iterating on a
    <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> will
    block until new proxies are available and yield those proxies. Iteration
-   will stop once the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>
-   is closed via the
+   will stop once the topic is closed by the
    <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>.</li>
 <li>The yielded proxies point to objects in the
    <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, and the state of the <code>evict</code> flag
