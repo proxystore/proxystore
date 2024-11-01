@@ -27,17 +27,20 @@ from proxystore.utils.imports import import_from_path
 class EndOfStreamEvent:
     """End of stream event."""
 
+    topic: str
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EndOfStreamEvent:
         """Create a new event instance from its dictionary representation."""
-        return cls()
+        return cls(**data)
 
 
 @dataclasses.dataclass
 class NewObjectEvent:
-    """New object in stream event metadata."""
+    """New object in stream event."""
 
-    data: Any
+    topic: str
+    obj: Any
     metadata: dict[str, Any]
 
     @classmethod
@@ -48,12 +51,20 @@ class NewObjectEvent:
 
 @dataclasses.dataclass
 class NewObjectKeyEvent:
-    """New object key in stream event metadata."""
+    """New object key in stream event.
 
+    Note:
+        The store configuration associated with the key is stored in the
+        [`EventBatch`][proxystore.stream.events.EventBatch] that will contain
+        this event.
+    """
+
+    topic: str
     key_type: str
     raw_key: list[Any]
     evict: bool
     metadata: dict[str, Any]
+    store_config: StoreConfig
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NewObjectKeyEvent:
@@ -64,15 +75,20 @@ class NewObjectKeyEvent:
     def from_key(
         cls,
         key: tuple[Any, ...],
+        *,
         evict: bool,
         metadata: dict[str, Any],
+        store_config: StoreConfig,
+        topic: str,
     ) -> NewObjectKeyEvent:
         """Create a new event from a key and metadata."""
         return cls(
+            topic=topic,
             key_type=get_object_path(type(key)),
             raw_key=list(key),
             evict=evict,
             metadata=metadata,
+            store_config=store_config,
         )
 
     def get_key(self) -> Any:
@@ -87,26 +103,20 @@ Event = Union[EndOfStreamEvent, NewObjectEvent, NewObjectKeyEvent]
 
 @dataclasses.dataclass
 class EventBatch:
-    """Batch of stream events."""
+    """Batch of stream events.
 
-    events: list[Event]
+    Warning:
+        All events must be for the same topic.
+    """
+
     topic: str
-    store_config: StoreConfig | None
+    events: list[Event]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EventBatch:
         """Create a new event instance from its dictionary representation."""
         events = [dict_to_event(d) for d in data['events']]
-        store_config = (
-            StoreConfig(**data['store_config'])
-            if data['store_config'] is not None
-            else None
-        )
-        return cls(
-            events=events,  # type: ignore[arg-type]
-            topic=data['topic'],
-            store_config=store_config,
-        )
+        return cls(events=events, topic=data['topic'])  # type: ignore[arg-type]
 
 
 class _EventMapping(enum.Enum):
@@ -122,9 +132,6 @@ def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
         data = {
             'events': [event_to_dict(e) for e in event.events],
             'topic': event.topic,
-            'store_config': event.store_config.model_dump()
-            if event.store_config is not None
-            else None,
         }
     else:
         data = dataclasses.asdict(event)

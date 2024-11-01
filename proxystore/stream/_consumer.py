@@ -8,7 +8,6 @@ from typing import Any
 from typing import cast
 from typing import Generator
 from typing import Generic
-from typing import NamedTuple
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
@@ -16,11 +15,11 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyOr
 from proxystore.store import get_or_create_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
-from proxystore.store.config import StoreConfig
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import EventBatch
@@ -37,12 +36,6 @@ logger = logging.getLogger(__name__)
 _consumer_get_store_lock = threading.Lock()
 
 T = TypeVar('T')
-
-
-class _EventInfo(NamedTuple):
-    event: NewObjectEvent | NewObjectKeyEvent
-    topic: str
-    store_config: StoreConfig | None
 
 
 class StreamConsumer(Generic[T]):
@@ -162,13 +155,13 @@ class StreamConsumer(Generic[T]):
         if subscriber:
             self.subscriber.close()
 
-    def _get_store(self, topic: str, config: StoreConfig) -> Store[Any]:
+    def _get_store(self, event: NewObjectKeyEvent) -> Store[Any]:
         with _consumer_get_store_lock:
-            if topic in self._stores:
-                return self._stores[topic]
+            if event.topic in self._stores:
+                return self._stores[event.topic]
 
-            store = get_or_create_store(config, register=True)
-            self._stores[topic] = store
+            store = get_or_create_store(event.store_config, register=True)
+            self._stores[event.topic] = store
             return store
 
     def _next_batch(self) -> EventBatch:
@@ -182,7 +175,7 @@ class StreamConsumer(Generic[T]):
         else:
             raise AssertionError('Unreachable.')
 
-    def _next_event(self) -> _EventInfo:
+    def _next_event(self) -> NewObjectEvent | NewObjectKeyEvent:
         if self._current_batch is None or len(self._current_batch.events) == 0:
             # Current batch does not exist or has been exhausted so block
             # on a new batch.
@@ -195,22 +188,17 @@ class StreamConsumer(Generic[T]):
 
         event = self._current_batch.events.pop()
         if isinstance(event, (NewObjectEvent, NewObjectKeyEvent)):
-            return _EventInfo(
-                event,
-                self._current_batch.topic,
-                self._current_batch.store_config,
-            )
+            return event
         elif isinstance(event, EndOfStreamEvent):
             raise StopIteration
         else:
             raise AssertionError('Unreachable.')
 
-    def _next_event_with_filter(self) -> _EventInfo:
+    def _next_event_with_filter(self) -> NewObjectEvent | NewObjectKeyEvent:
         while True:
             # _next_event() will propagate up a StopIteration exception
             # if the event was an end of stream event.
-            info = self._next_event()
-            event = info.event
+            event = self._next_event()
 
             if self._filter(event.metadata):
                 # Coverage in Python 3.8/3.9 does not mark the "else"
@@ -219,18 +207,14 @@ class StreamConsumer(Generic[T]):
                 if (  # pragma: no branch
                     isinstance(event, NewObjectKeyEvent) and event.evict
                 ):
-                    # It should always hold that an EventBatch containing
-                    # a NewObjectKeyEvent should have a non-empty store_config
-                    # attribute which gets added to this _EventInfo.
-                    assert info.store_config is not None
                     # If an object gets filtered out by the consumer client,
                     # we still want to respect the evict flag to.
-                    store = self._get_store(info.topic, info.store_config)
+                    store = self._get_store(event)
                     store.evict(event.get_key())
 
                 continue
 
-            return info
+            return event
 
     def iter_with_metadata(
         self,
@@ -312,22 +296,19 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
         """
-        info = self._next_event_with_filter()
+        event = self._next_event_with_filter()
 
-        data: ProxyOr[T]
-        if isinstance(info.event, NewObjectEvent):
-            data = info.event.data
-        elif isinstance(info.event, NewObjectKeyEvent):
-            assert info.store_config is not None
-            store = self._get_store(info.topic, info.store_config)
-            data = store.proxy_from_key(
-                info.event.get_key(),
-                evict=info.event.evict,
+        if isinstance(event, NewObjectEvent):
+            return event.metadata, cast(T, event.obj)
+        elif isinstance(event, NewObjectKeyEvent):
+            store = self._get_store(event)
+            proxy: Proxy[T] = store.proxy_from_key(
+                event.get_key(),
+                evict=event.evict,
             )
+            return event.metadata, proxy
         else:
             raise AssertionError('Unreachable.')
-
-        return info.event.metadata, data
 
     def next_object(self) -> T:
         """Return the next object in the stream.
@@ -362,23 +343,20 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
         """
-        info = self._next_event_with_filter()
+        event = self._next_event_with_filter()
 
-        data: Any
-        if isinstance(info.event, NewObjectEvent):
-            data = info.event.data
-        elif isinstance(info.event, NewObjectKeyEvent):
-            assert info.store_config is not None
-            store = self._get_store(info.topic, info.store_config)
-            key = info.event.get_key()
-            data = store.get(key)
-            if data is None:
+        if isinstance(event, NewObjectEvent):
+            return event.metadata, cast(T, event.obj)
+        elif isinstance(event, NewObjectKeyEvent):
+            store = self._get_store(event)
+            key = event.get_key()
+            obj = store.get(key)
+            if obj is None:
                 raise ValueError(
                     f'Store(name="{store.name}") returned None for key={key}.',
                 )
-            if info.event.evict:
+            if event.evict:
                 store.evict(key)
+            return event.metadata, cast(T, obj)
         else:
             raise AssertionError('Unreachable.')
-
-        return info.event.metadata, cast(T, data)

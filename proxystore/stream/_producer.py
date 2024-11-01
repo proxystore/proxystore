@@ -260,6 +260,7 @@ class StreamProducer(Generic[T]):
 
         if len(objects) > 0 and store is not None:
             keys = store.put_batch([item.obj for item in objects])
+            config = store.config()
 
             for key, item in zip(keys, objects):
                 events.append(
@@ -267,23 +268,27 @@ class StreamProducer(Generic[T]):
                         key,
                         evict=item.evict,
                         metadata=item.metadata,
+                        store_config=config,
+                        topic=topic,
                     ),
                 )
         elif len(objects) > 0 and store is None:
             for item in objects:
                 events.append(
-                    NewObjectEvent(data=item.obj, metadata=item.metadata),
+                    NewObjectEvent(
+                        topic=topic,
+                        obj=item.obj,
+                        metadata=item.metadata,
+                    ),
                 )
 
         if closed:
-            events.append(EndOfStreamEvent())
+            events.append(EndOfStreamEvent(topic))
 
         # If there are no new events and the stream wasn't closed we should
         # have early exited
         assert len(events) > 0
-
-        config = store.config() if store is not None else None
-        batch_event = EventBatch(events, topic, config)
+        batch_event = EventBatch(topic, events)
         self._send_event(batch_event)
 
     def send(
