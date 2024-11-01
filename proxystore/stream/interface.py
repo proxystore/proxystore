@@ -30,9 +30,8 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-from proxystore.proxy import Proxy
-from proxystore.store import get_store
-from proxystore.store import register_store
+from proxystore.proxy import ProxyOr
+from proxystore.store import get_or_create_store
 from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
@@ -42,8 +41,11 @@ from proxystore.stream.events import Event
 from proxystore.stream.events import event_to_bytes
 from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.events import NewObjectKeyEvent
 from proxystore.stream.exceptions import TopicClosedError
 from proxystore.stream.filters import NullFilter
+from proxystore.stream.protocols import EventPublisher
+from proxystore.stream.protocols import EventSubscriber
 from proxystore.stream.protocols import Filter
 from proxystore.stream.protocols import MessagePublisher
 from proxystore.stream.protocols import MessageSubscriber
@@ -106,12 +108,6 @@ class StreamProducer(Generic[T]):
             [`Publisher`][proxystore.stream.protocols.Publisher] protocol.
             Used to publish event messages when new objects are added to
             the stream.
-        stores: Mapping from topic names to the
-            [`Store`][proxystore.store.base.Store] instance used to store
-            and communicate serialized objects streamed to that topic.
-            The `None` topic can be used to specify a default
-            [`Store`][proxystore.store.base.Store] used for topics
-            not present in this mapping.
         aggregator: Optional aggregator which takes as input the batch of
             objects and returns a single object of the same type when invoked.
             The size of the batch passed to the aggregator is controlled by
@@ -119,27 +115,37 @@ class StreamProducer(Generic[T]):
             associated with the aggregated object will be the union of each
             metadata dict from each object in the batch.
         batch_size: Batch size used for batching and aggregation.
+        default_store: Specify the default
+            [`Store`][proxystore.store.base.Store] to be used with topics
+            not explicitly set in `stores`. If no default is provided, objects
+            are included directly in the event.
         filter_: Optional filter to apply prior to sending objects to the
             stream. If the filter returns `True` for a given object's
             metadata, the object will *not* be sent to the stream. The filter
             is applied before aggregation or batching.
+        stores: Mapping from topic names to an optional
+            [`Store`][proxystore.store.base.Store] instance used to store
+            and communicate serialized objects streamed to that topic.
+            If the value associated with a topic is `None`, the object is
+            included directly in the event.
     """
 
     def __init__(
         self,
         publisher: Publisher,
-        stores: Mapping[str | None, Store[Any]],
         *,
         aggregator: Callable[[list[T]], T] | None = None,
         batch_size: int = 1,
+        default_store: Store[Any] | None = None,
         filter_: Filter | None = None,
+        stores: Mapping[str, Store[Any] | None] | None = None,
     ) -> None:
-        assert isinstance(publisher, MessagePublisher)
         self.publisher = publisher
-        self._stores = stores
+        self._default_store = default_store
         self._aggregator = aggregator
         self._batch_size = batch_size
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
+        self._stores = stores
 
         # Mapping between topic and buffers
         self._buffer: dict[str, _TopicBuffer[T]] = defaultdict(
@@ -156,6 +162,20 @@ class StreamProducer(Generic[T]):
         exc_traceback: TracebackType | None,
     ) -> None:
         self.close()
+
+    def _get_store(self, topic: str) -> Store[Any] | None:
+        if self._stores is not None and topic in self._stores:
+            return self._stores[topic]
+        return self._default_store
+
+    def _send_event(self, batch: EventBatch) -> None:
+        if isinstance(self.publisher, EventPublisher):
+            self.publisher.send_events(batch)
+        elif isinstance(self.publisher, MessagePublisher):
+            message = event_to_bytes(batch)
+            self.publisher.send_message(batch.topic, message)
+        else:
+            raise AssertionError('Unreachable.')
 
     def close(
         self,
@@ -188,9 +208,13 @@ class StreamProducer(Generic[T]):
         """  # noqa: E501
         self.close_topics(*topics)
         if stores:
-            for store in self._stores.values():
-                store.close()
-                unregister_store(store)
+            known_stores = {self._default_store}
+            if self._stores is not None:
+                known_stores.update(self._stores.values())
+            for store in known_stores:
+                if store is not None:
+                    store.close()
+                    unregister_store(store)
         if publisher:
             self.publisher.close()
 
@@ -234,10 +258,6 @@ class StreamProducer(Generic[T]):
 
         Args:
             topic: Topic to flush.
-
-        ValueError: if a store associated with `topic` is not found
-            in the mapping of topics to stores nor a default store is
-            provided.
         """
         objects = self._buffer[topic].objects
         closed = self._buffer[topic].closed
@@ -257,28 +277,25 @@ class StreamProducer(Generic[T]):
                 metadata.update(item.metadata)
             objects = [_BufferedObject(obj, evict, metadata)]
 
-        if topic in self._stores:
-            store = self._stores[topic]
-        elif None in self._stores:
-            store = self._stores[None]
-        else:
-            raise ValueError(
-                f'No store associated with topic "{topic}" found or '
-                'default store.',
-            )
-
         events: list[Event] = []
+        store = self._get_store(topic)
 
-        if len(objects) > 0:
+        if len(objects) > 0 and store is not None:
             keys = store.put_batch([item.obj for item in objects])
 
             for key, item in zip(keys, objects):
-                event = NewObjectEvent.from_key(
-                    key,
-                    evict=item.evict,
-                    metadata=item.metadata,
+                events.append(
+                    NewObjectKeyEvent.from_key(
+                        key,
+                        evict=item.evict,
+                        metadata=item.metadata,
+                    ),
                 )
-                events.append(event)
+        elif len(objects) > 0 and store is None:
+            for item in objects:
+                events.append(
+                    NewObjectEvent(data=item.obj, metadata=item.metadata),
+                )
 
         if closed:
             events.append(EndOfStreamEvent())
@@ -287,9 +304,9 @@ class StreamProducer(Generic[T]):
         # have early exited
         assert len(events) > 0
 
-        batch_event = EventBatch(events, topic, store.config())
-        message = event_to_bytes(batch_event)
-        self.publisher.send_message(topic, message)
+        config = store.config() if store is not None else None
+        batch_event = EventBatch(events, topic, config)
+        self._send_event(batch_event)
 
     def send(
         self,
@@ -355,9 +372,9 @@ class StreamProducer(Generic[T]):
 
 
 class _EventInfo(NamedTuple):
-    event: NewObjectEvent
+    event: NewObjectEvent | NewObjectKeyEvent
     topic: str
-    store_config: StoreConfig
+    store_config: StoreConfig | None
 
 
 class StreamConsumer(Generic[T]):
@@ -428,7 +445,6 @@ class StreamConsumer(Generic[T]):
         *,
         filter_: Filter | None = None,
     ) -> None:
-        assert isinstance(subscriber, MessageSubscriber)
         self.subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
@@ -450,7 +466,7 @@ class StreamConsumer(Generic[T]):
         """Return an iterator that will yield proxies of stream objects."""
         return self
 
-    def __next__(self) -> Proxy[T]:
+    def __next__(self) -> ProxyOr[T]:
         """Alias for [`next()`][proxystore.stream.interface.StreamConsumer.next]."""  # noqa: E501
         return self.next()
 
@@ -478,22 +494,22 @@ class StreamConsumer(Generic[T]):
         if subscriber:
             self.subscriber.close()
 
-    def _get_store(self, event_info: _EventInfo) -> Store[Any]:
-        if event_info.topic in self._stores:
-            return self._stores[event_info.topic]
-
+    def _get_store(self, topic: str, config: StoreConfig) -> Store[Any]:
         with _consumer_get_store_lock:
-            store = get_store(event_info.store_config.name)
-            if store is None:
-                store = Store.from_config(event_info.store_config)
-                register_store(store)
-            self._stores[event_info.topic] = store
+            if topic in self._stores:
+                return self._stores[topic]
+
+            store = get_or_create_store(config, register=True)
+            self._stores[topic] = store
             return store
 
     def _next_batch(self) -> EventBatch:
-        message = next(self.subscriber)
-        event = bytes_to_event(message)
-        if isinstance(event, EventBatch):
+        if isinstance(self.subscriber, EventSubscriber):
+            return next(self.subscriber)
+        elif isinstance(self.subscriber, MessageSubscriber):
+            message = next(self.subscriber)
+            event = bytes_to_event(message)
+            assert isinstance(event, EventBatch)
             return event
         else:
             raise AssertionError('Unreachable.')
@@ -510,7 +526,7 @@ class StreamConsumer(Generic[T]):
             )
 
         event = self._current_batch.events.pop()
-        if isinstance(event, NewObjectEvent):
+        if isinstance(event, (NewObjectEvent, NewObjectKeyEvent)):
             return _EventInfo(
                 event,
                 self._current_batch.topic,
@@ -525,27 +541,33 @@ class StreamConsumer(Generic[T]):
         while True:
             # _next_event() will propagate up a StopIteration exception
             # if the event was an end of stream event.
-            event_info = self._next_event()
-            event = event_info.event
+            info = self._next_event()
+            event = info.event
 
             if self._filter(event.metadata):
                 # Coverage in Python 3.8/3.9 does not mark the "else"
                 # as covered but if you put else: assert False the some
                 # tests fail there so it does get run
-                if event.evict:  # pragma: no branch
+                if (  # pragma: no branch
+                    isinstance(event, NewObjectKeyEvent) and event.evict
+                ):
+                    # It should always hold that an EventBatch containing
+                    # a NewObjectKeyEvent should have a non-empty store_config
+                    # attribute which gets added to this _EventInfo.
+                    assert info.store_config is not None
                     # If an object gets filtered out by the consumer client,
                     # we still want to respect the evict flag to.
-                    store = self._get_store(event_info)
-                    key = event.get_key()
-                    store.evict(key)
+                    store = self._get_store(info.topic, info.store_config)
+                    store.evict(event.get_key())
+
                 continue
 
-            return event_info
+            return info
 
     def iter_with_metadata(
         self,
-    ) -> Generator[tuple[dict[str, Any], Proxy[T]], None, None]:
-        """Return an iterator that yields tuples of metadata and proxies.
+    ) -> Generator[tuple[dict[str, Any], ProxyOr[T]], None, None]:
+        """Return an iterator that yields tuples of metadata and data.
 
         Note:
             This is different from `iter(consumer)` which will yield
@@ -561,7 +583,7 @@ class StreamConsumer(Generic[T]):
         """Return an iterator that yields objects from the stream.
 
         Note:
-            This is different from `iter(consumer)` which will yield
+            This is different from `iter(consumer)` which can yield
             proxies of objects in the stream.
         """
         while True:
@@ -576,7 +598,7 @@ class StreamConsumer(Generic[T]):
         """Return an iterator that yields tuples of metadata and objects.
 
         Note:
-            This is different from `iter(consumer)` which will yield
+            This is different from `iter(consumer)` which can yield
             proxies of objects in the stream.
         """
         while True:
@@ -585,7 +607,7 @@ class StreamConsumer(Generic[T]):
             except StopIteration:
                 return
 
-    def next(self) -> Proxy[T]:
+    def next(self) -> ProxyOr[T]:
         """Return a proxy of the next object in the stream.
 
         Note:
@@ -606,7 +628,7 @@ class StreamConsumer(Generic[T]):
         _, proxy = self.next_with_metadata()
         return proxy
 
-    def next_with_metadata(self) -> tuple[dict[str, Any], Proxy[T]]:
+    def next_with_metadata(self) -> tuple[dict[str, Any], ProxyOr[T]]:
         """Return a tuple of metadata and proxy for the next object.
 
         Note:
@@ -622,13 +644,22 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
-        event_info = self._next_event_with_filter()
-        store = self._get_store(event_info)
-        event = event_info.event
-        key = event.get_key()
+        info = self._next_event_with_filter()
 
-        proxy: Proxy[T] = store.proxy_from_key(key, evict=event.evict)
-        return event.metadata, proxy
+        data: ProxyOr[T]
+        if isinstance(info.event, NewObjectEvent):
+            data = info.event.data
+        elif isinstance(info.event, NewObjectKeyEvent):
+            assert info.store_config is not None
+            store = self._get_store(info.topic, info.store_config)
+            data = store.proxy_from_key(
+                info.event.get_key(),
+                evict=info.event.evict,
+            )
+        else:
+            raise AssertionError('Unreachable.')
+
+        return info.event.metadata, data
 
     def next_object(self) -> T:
         """Return the next object in the stream.
@@ -663,18 +694,23 @@ class StreamConsumer(Generic[T]):
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.interface.StreamConsumer.close].
         """
-        event_info = self._next_event_with_filter()
-        store = self._get_store(event_info)
-        event = event_info.event
-        key = event.get_key()
+        info = self._next_event_with_filter()
 
-        obj = store.get(key)
-        if obj is None:
-            raise ValueError(
-                f'Store(name="{store.name}") returned None for key={key}.',
-            )
+        data: Any
+        if isinstance(info.event, NewObjectEvent):
+            data = info.event.data
+        elif isinstance(info.event, NewObjectKeyEvent):
+            assert info.store_config is not None
+            store = self._get_store(info.topic, info.store_config)
+            key = info.event.get_key()
+            data = store.get(key)
+            if data is None:
+                raise ValueError(
+                    f'Store(name="{store.name}") returned None for key={key}.',
+                )
+            if info.event.evict:
+                store.evict(key)
+        else:
+            raise AssertionError('Unreachable.')
 
-        if event.evict:
-            store.evict(key)
-
-        return event.metadata, cast(T, obj)
+        return info.event.metadata, cast(T, data)

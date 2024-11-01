@@ -36,7 +36,7 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
-from proxystream.stream.events import Event
+from proxystore.stream.events import EventBatch
 
 T = TypeVar('T')
 
@@ -54,12 +54,11 @@ class EventPublisher(Protocol):
         """Close this publisher."""
         ...
 
-    def send_event(self, topic: str, event: Event) -> None:
+    def send_events(self, events: EventBatch) -> None:
         """Publish event with optional data to the stream.
 
         Args:
-            topic: Stream topic to publish message to.
-            event: Event to publish.
+            events: Batch of events to publish.
         """
         ...
 
@@ -74,14 +73,14 @@ class EventSubscriber(Protocol):
 
     def __iter__(self) -> Self: ...
 
-    def __next__(self) -> bytes: ...
+    def __next__(self) -> EventBatch: ...
 
     def close(self) -> None:
         """Close this subscriber."""
         ...
 
-    def next_event(self) -> tuple[Event]:
-        """Get the next event."""
+    def next_events(self) -> EventBatch:
+        """Get the next event batch."""
         ...
 
 

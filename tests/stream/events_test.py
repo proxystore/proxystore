@@ -12,6 +12,7 @@ from proxystore.stream.events import Event
 from proxystore.stream.events import event_to_bytes
 from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.events import NewObjectKeyEvent
 
 
 class _TestKey(NamedTuple):
@@ -25,8 +26,8 @@ class _TestKey(NamedTuple):
         EndOfStreamEvent(),
         EventBatch(
             [
-                NewObjectEvent.from_key(_TestKey('a', 123), True, {}),
-                NewObjectEvent.from_key(_TestKey('b', 234), True, {}),
+                NewObjectKeyEvent.from_key(_TestKey('a', 123), True, {}),
+                NewObjectKeyEvent.from_key(_TestKey('b', 234), True, {}),
                 EndOfStreamEvent(),
             ],
             topic='default',
@@ -35,7 +36,8 @@ class _TestKey(NamedTuple):
                 connector=ConnectorConfig(kind='test'),
             ),
         ),
-        NewObjectEvent.from_key(_TestKey('a', 123), True, {}),
+        NewObjectEvent(123, {}),
+        NewObjectKeyEvent.from_key(_TestKey('a', 123), True, {}),
     ),
 )
 def test_encode_decode(event: Event) -> None:
@@ -44,9 +46,9 @@ def test_encode_decode(event: Event) -> None:
     assert event == new_event
 
 
-def test_new_object_to_from_key() -> None:
+def test_new_object_key() -> None:
     key = _TestKey('a', 123)
-    event = NewObjectEvent.from_key(key, True, {})
+    event = NewObjectKeyEvent.from_key(key, True, {})
     new_key = event.get_key()
     assert key == new_key
     assert type(key) is type(new_key)
