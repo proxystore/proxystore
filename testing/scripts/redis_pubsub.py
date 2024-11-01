@@ -31,7 +31,7 @@ def publish(host: str, port: int, delay: float) -> None:
     publisher = RedisPublisher(host, port)
 
     for message in MESSAGES:
-        publisher.send('default', message)
+        publisher.send_message('default', message)
         print(f'Sent: {message!r}')
         time.sleep(delay)
 

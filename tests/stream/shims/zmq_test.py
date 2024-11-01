@@ -17,7 +17,7 @@ def test_basic_publish_subscribe() -> None:
 
     with mock.patch.object(publisher._socket, 'send_multipart'):
         for message in messages:
-            publisher.send('default', message)
+            publisher.send_message('default', message)
 
         publisher.close()
 

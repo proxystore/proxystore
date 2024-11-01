@@ -6,8 +6,8 @@ import threading
 
 import pytest
 
-from proxystore.stream.protocols import Publisher
-from proxystore.stream.protocols import Subscriber
+from proxystore.stream.protocols import MessagePublisher
+from proxystore.stream.protocols import MessageSubscriber
 from proxystore.stream.shims.queue import QueuePublisher
 from proxystore.stream.shims.queue import QueueSubscriber
 
@@ -27,21 +27,21 @@ def test_unknown_topic() -> None:
     publisher = QueuePublisher({'default': queue.Queue()})
 
     with pytest.raises(ValueError, match='Unknown topic "other".'):
-        publisher.send('other', b'message')
+        publisher.send_message('other', b'message')
 
 
 def test_multiprocessing_implements_protocol() -> None:
     publisher, subscriber = create_pubsub_pair(multiprocessing.Queue())
 
-    assert isinstance(publisher, Publisher)
-    assert isinstance(subscriber, Subscriber)
+    assert isinstance(publisher, MessagePublisher)
+    assert isinstance(subscriber, MessageSubscriber)
 
 
 def test_threading_implements_protocol() -> None:
     publisher, subscriber = create_pubsub_pair(queue.Queue())
 
-    assert isinstance(publisher, Publisher)
-    assert isinstance(subscriber, Subscriber)
+    assert isinstance(publisher, MessagePublisher)
+    assert isinstance(subscriber, MessageSubscriber)
 
 
 def test_multiprocessing_open_close() -> None:
@@ -57,7 +57,7 @@ def test_multiprocessing_open_close() -> None:
 
 def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
     for message in messages:
-        publisher.send('default', message)
+        publisher.send_message('default', message)
     publisher.close()
 
 

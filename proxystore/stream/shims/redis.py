@@ -51,7 +51,7 @@ class RedisPublisher:
         """Close this publisher."""
         self._redis_client.close()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -96,6 +96,10 @@ class RedisSubscriber:
         return self
 
     def __next__(self) -> bytes:
+        return self.next_message()
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         while True:
             message = self._pubsub_client.get_message(
                 ignore_subscribe_messages=True,
@@ -163,7 +167,7 @@ class RedisQueuePublisher:
         """Close this publisher."""
         self._redis_client.close()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -211,6 +215,10 @@ class RedisQueueSubscriber:
         return self
 
     def __next__(self) -> bytes:
+        return self.next_message()
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         timeout = self._timeout if self._timeout is not None else 1
         while True:
             output = self._redis_client.blpop(self._topic, timeout=timeout)

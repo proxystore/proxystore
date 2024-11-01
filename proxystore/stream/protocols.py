@@ -29,24 +29,71 @@ from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
+from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystream.stream.events import Event
+
 T = TypeVar('T')
+
+Publisher = Union['EventPublisher', 'MessagePublisher']
+"""Publisher union type."""
+Subscriber = Union['EventSubscriber', 'MessageSubscriber']
+"""Subscriber union type."""
 
 
 @runtime_checkable
-class Publisher(Protocol):
+class EventPublisher(Protocol):
+    """Publisher interface to an event stream."""
+
+    def close(self) -> None:
+        """Close this publisher."""
+        ...
+
+    def send_event(self, topic: str, event: Event) -> None:
+        """Publish event with optional data to the stream.
+
+        Args:
+            topic: Stream topic to publish message to.
+            event: Event to publish.
+        """
+        ...
+
+
+@runtime_checkable
+class EventSubscriber(Protocol):
+    """Subscriber interface to an event stream.
+
+    The subscriber protocol is an iterable object which yields objects
+    from the stream until the stream is closed.
+    """
+
+    def __iter__(self) -> Self: ...
+
+    def __next__(self) -> bytes: ...
+
+    def close(self) -> None:
+        """Close this subscriber."""
+        ...
+
+    def next_event(self) -> tuple[Event]:
+        """Get the next event."""
+        ...
+
+
+@runtime_checkable
+class MessagePublisher(Protocol):
     """Publisher interface to message stream."""
 
     def close(self) -> None:
         """Close this publisher."""
         ...
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -57,7 +104,7 @@ class Publisher(Protocol):
 
 
 @runtime_checkable
-class Subscriber(Protocol):
+class MessageSubscriber(Protocol):
     """Subscriber interface to message stream.
 
     The subscriber protocol is an iterable object which yields objects
@@ -70,6 +117,10 @@ class Subscriber(Protocol):
 
     def close(self) -> None:
         """Close this subscriber."""
+        ...
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         ...
 
 

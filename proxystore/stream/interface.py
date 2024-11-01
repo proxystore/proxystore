@@ -45,6 +45,8 @@ from proxystore.stream.events import NewObjectEvent
 from proxystore.stream.exceptions import TopicClosedError
 from proxystore.stream.filters import NullFilter
 from proxystore.stream.protocols import Filter
+from proxystore.stream.protocols import MessagePublisher
+from proxystore.stream.protocols import MessageSubscriber
 from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 
@@ -132,6 +134,7 @@ class StreamProducer(Generic[T]):
         batch_size: int = 1,
         filter_: Filter | None = None,
     ) -> None:
+        assert isinstance(publisher, MessagePublisher)
         self.publisher = publisher
         self._stores = stores
         self._aggregator = aggregator
@@ -286,7 +289,7 @@ class StreamProducer(Generic[T]):
 
         batch_event = EventBatch(events, topic, store.config())
         message = event_to_bytes(batch_event)
-        self.publisher.send(topic, message)
+        self.publisher.send_message(topic, message)
 
     def send(
         self,
@@ -425,6 +428,7 @@ class StreamConsumer(Generic[T]):
         *,
         filter_: Filter | None = None,
     ) -> None:
+        assert isinstance(subscriber, MessageSubscriber)
         self.subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
         self._filter: Filter = filter_ if filter_ is not None else NullFilter()
