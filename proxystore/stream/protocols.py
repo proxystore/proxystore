@@ -1,4 +1,4 @@
-"""Protocols used by the stream interfaces.
+"""Protocols used by the streams.
 
 ## Publisher/Subscriber
 
@@ -17,8 +17,8 @@ are provided in [`proxystore.stream.shims`][proxystore.stream.shims].
 
 Additional protocols, such as the
 [`Filter`][proxystore.stream.protocols.Filter], are plugins used by the
-[`StreamProducer`][proxystore.stream.interface.StreamProducer] and/or
-[`StreamConsumer`][proxystore.stream.interface.StreamConsumer] that alter
+[`StreamProducer`][proxystore.stream.StreamProducer] and/or
+[`StreamConsumer`][proxystore.stream.StreamConsumer] that alter
 their behavior.
 """
 

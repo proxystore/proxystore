@@ -10,8 +10,8 @@ common pub/sub systems like Kafka, Redis, and ZeroMQ. Generally, these
 shims are very lightweight and mostly serve to adapt the third-party
 interface to match the [`Publisher`][proxystore.stream.protocols.Publisher] and
 [`Subscriber`][proxystore.stream.protocols.Subscriber] protocols expected
-by the [StreamProducer][proxystore.stream.interface.StreamProducer]
-and [StreamConsumer][proxystore.stream.interface.StreamConsumer].
+by the [StreamProducer][proxystore.stream.StreamProducer]
+and [StreamConsumer][proxystore.stream.StreamConsumer].
 
 Warning:
     Most of the provided shims have a external dependency that may not be

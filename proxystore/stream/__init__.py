@@ -6,20 +6,14 @@ Warning:
 
 Tip:
     Checkout the [Streaming Guide](../../guides/streaming.md) to learn more!
-
-Note:
-    The [StreamProducer][proxystore.stream.interface.StreamProducer]
-    and [StreamConsumer][proxystore.stream.interface.StreamConsumer]
-    are defined in [`proxystore.stream.interface`][proxystore.stream.interface]
-    are re-exported here for convenience.
 """
 
 from __future__ import annotations
 
 import warnings
 
-from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.interface import StreamProducer
+from proxystore.stream._consumer import StreamConsumer
+from proxystore.stream._producer import StreamProducer
 from proxystore.warnings import ExperimentalWarning
 
 warnings.warn(
@@ -27,3 +21,5 @@ warnings.warn(
     category=ExperimentalWarning,
     stacklevel=2,
 )
+
+__all__ = ['StreamProducer', 'StreamConsumer']

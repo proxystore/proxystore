@@ -12,8 +12,8 @@ streaming interface.
     [Concepts](../concepts/index.md){target=_blank} page to learn more about
     ProxyStore's core concepts.
 
-The [`StreamProducer`][proxystore.stream.interface.StreamProducer]
-and [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] interfaces
+The [`StreamProducer`][proxystore.stream.StreamProducer]
+and [`StreamConsumer`][proxystore.stream.StreamConsumer] interfaces
 decouple bulk object communication from event notifications through the use of
 object proxies. This enables users to mix and match bulk object communication
 methods (via the [`Connector`][proxystore.connectors.protocols.Connector]
@@ -50,7 +50,7 @@ the dispatcher does not need to have the actual chunk of data; rather,
 it only needs to know that a chunk is ready in order to dispatch a task
 which will actually consume the chunk. This is where a stream of proxies
 is beneficial---the processes reading from the
-[`StreamConsumer`][proxystore.stream.interface.StreamConsumer] is receiving
+[`StreamConsumer`][proxystore.stream.StreamConsumer] is receiving
 lightweight proxies from the stream and passing those proxies along to later
 computation stages. The bulk data are only transmitted between the data
 generator and the process/node computing on the proxy of the chunk, bypassing
@@ -59,8 +59,8 @@ the intermediate dispatching process.
 ## Example
 
 Here is an example of using the
-[`StreamProducer`][proxystore.stream.interface.StreamProducer]
-and [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] interfaces
+[`StreamProducer`][proxystore.stream.StreamProducer]
+and [`StreamConsumer`][proxystore.stream.StreamConsumer] interfaces
 to stream objects using a file system and Redis server.
 This configuration is optimized for storage of large objects using the
 file system while maintaining low latency event notifications via Redis
@@ -90,7 +90,7 @@ producer.close(topics=['my-topic']) # (5)!
 
 1. The [`Store`][proxystore.store.base.Store] configuration is determined by
    the producer. The
-   [`StreamProducer`][proxystore.stream.interface.StreamProducer] is
+   [`StreamProducer`][proxystore.stream.StreamProducer] is
    initialized with a mapping of topics to stores such that different
    communication protocols can be used for different topics. Consider using
    different [`Connector`][proxystore.connectors.protocols.Connector]
@@ -98,20 +98,20 @@ producer.close(topics=['my-topic']) # (5)!
 2. The [`Publisher`][proxystore.stream.protocols.Publisher] is the interface
    to a pub/sub channel which will be used for sending event metadata to
    consumers. The
-   [`StreamProducer`][proxystore.stream.interface.StreamProducer] also supports
+   [`StreamProducer`][proxystore.stream.StreamProducer] also supports
    aggregation, batching, and filtering.
 3. In the mapping of topics to stores, the `None` key is considered the
    default for when a topic is not found in the mapping. For example,
    `{None: store}` will use the same store for all topics.
 4. The state of the `evict` flag will alter if proxies yielded by a
    consumer are one-time use or not.
-5. Closing the [`StreamProducer`][proxystore.stream.interface.StreamProducer]
+5. Closing the [`StreamProducer`][proxystore.stream.StreamProducer]
    will close the [`Publisher`][proxystore.stream.protocols.Publisher],
    all [`Store`][proxystore.store.base.Store] instances, and
    [`Connector`][proxystore.connectors.protocols.Connector] by default.
    Topics are not closed by default and must be explicitly closed using the
    `topics` parameter or
-   [`close_topics()`][proxystore.stream.interface.StreamProducer.close_topics].
+   [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
    Closing a topic will send a special end-of-stream event to the stream causing
    any consumers waiting on the stream to stop.
 
@@ -133,22 +133,22 @@ consumer.close() # (5)!
 1. The [`Subscriber`][proxystore.stream.protocols.Subscriber] is the interface
    to the same pub/sub channel that the producer is publishing event metadata
    to. These events are consumed by the
-   [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] and used to
+   [`StreamConsumer`][proxystore.stream.StreamConsumer] and used to
    generate proxies of the objects in the stream.
-2. The [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] does not
+2. The [`StreamConsumer`][proxystore.stream.StreamConsumer] does not
    need to be initialized with a [`Store`][proxystore.store.base.Store]. Stream
    events will contain the necessary metadata for the consumer to get the
    appropriate [`Store`][proxystore.store.base.Store] to use for resolving
    objects in the stream.
 3. Iterating on a
-   [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] will
+   [`StreamConsumer`][proxystore.stream.StreamConsumer] will
    block until new proxies are available and yield those proxies. Iteration
    will stop once the topic is closed by the
-   [`StreamProducer`][proxystore.stream.interface.StreamProducer].
+   [`StreamProducer`][proxystore.stream.StreamProducer].
 4. The yielded proxies point to objects in the
    [`Store`][proxystore.store.base.Store], and the state of the `evict` flag
    inside the proxy's factory is determined in
-   [`StreamProducer.send()`][proxystore.stream.interface.StreamProducer.send].
+   [`StreamProducer.send()`][proxystore.stream.StreamProducer.send].
 4. Closing the [`StreamConsumer`][proxystore.stream.StreamConsumer] will close
    the [`Subscriber`][proxystore.stream.protocols.Subscriber],
    all [`Store`][proxystore.store.base.Store] instances, and
@@ -157,17 +157,17 @@ consumer.close() # (5)!
 !!! tip
 
     By default, iterating on a
-    [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] yields only
+    [`StreamConsumer`][proxystore.stream.StreamConsumer] yields only
     a proxy of the next object in the stream. The
-    [`iter_with_metadata()`][proxystore.stream.interface.StreamConsumer.iter_with_metadata],
-    [`iter_objects()`][proxystore.stream.interface.StreamConsumer.iter_objects], and
-    [`iter_objects_with_metadata()`][proxystore.stream.interface.StreamConsumer.iter_objects_with_metadata]
+    [`iter_with_metadata()`][proxystore.stream.StreamConsumer.iter_with_metadata],
+    [`iter_objects()`][proxystore.stream.StreamConsumer.iter_objects], and
+    [`iter_objects_with_metadata()`][proxystore.stream.StreamConsumer.iter_objects_with_metadata]
     methods provide additional mechanisms for iterating over stream data.
 
 ## Multi-Producer/Multi-Consumer
 
-The [`StreamProducer`][proxystore.stream.interface.StreamProducer]
-and [`StreamConsumer`][proxystore.stream.interface.StreamConsumer] can support
+The [`StreamProducer`][proxystore.stream.StreamProducer]
+and [`StreamConsumer`][proxystore.stream.StreamConsumer] can support
 multi-producer and multi-consumer deployments, respectively.
 However, it is *not* a requirement that the
 [`Publisher`][proxystore.stream.protocols.Publisher] or
@@ -183,17 +183,17 @@ produce the behavior they want.
 **Multi-producer.** If a [`Publisher`][proxystore.stream.protocols.Publisher]
 supports multiple producers, typically no changes are required on
 when initializing the corresponding
-[`StreamProducer`][proxystore.stream.interface.StreamProducer]. Each producer
+[`StreamProducer`][proxystore.stream.StreamProducer]. Each producer
 process can simply initialize the
 [`Publisher`][proxystore.stream.protocols.Publisher]
-and [`StreamProducer`][proxystore.stream.interface.StreamProducer] and begin
+and [`StreamProducer`][proxystore.stream.StreamProducer] and begin
 sending objects to the stream.
 
 **Multi-consumer.** If a [`Subscriber`][proxystore.stream.protocols.Subscriber]
 support multiple consumers, attention should be given to the manner in which
 the consumers behave. If all consumers receive the full stream (i.e., each
 consumer receives each object in the stream), then the the `evict` flag of
-[`StreamProducer.send()`][proxystore.stream.interface.StreamProducer.send]
+[`StreamProducer.send()`][proxystore.stream.StreamProducer.send]
 should be set to `False`. This ensures that the first consumer to resolve a
 proxy from the stream does not delete the object data for the other consumers,
 but this also means that object cleanup must be handled manually by the

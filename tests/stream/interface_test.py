@@ -14,12 +14,12 @@ from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import Store
 from proxystore.store import store_registration
+from proxystore.stream import StreamConsumer
+from proxystore.stream import StreamProducer
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectKeyEvent
 from proxystore.stream.exceptions import TopicClosedError
-from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.interface import StreamProducer
 from proxystore.stream.protocols import Publisher
 from proxystore.stream.protocols import Subscriber
 from testing.stream import create_event_pubsub_pair
