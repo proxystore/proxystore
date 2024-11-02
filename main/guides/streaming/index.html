@@ -2737,27 +2737,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/interface/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    interface
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api/stream/protocols/" class="md-nav__link">
         
   
@@ -2791,7 +2770,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_5" >
         
           
           
@@ -2807,14 +2786,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12_6" id="__nav_4_1_12_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12_5" id="__nav_4_1_12_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12_6">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12_5">
             <span class="md-nav__icon md-icon"></span>
             shims
           </label>
@@ -3390,7 +3369,7 @@
 
 
 <h1 id="streaming-objects-with-proxystore">Streaming Objects with ProxyStore<a class="headerlink" href="#streaming-objects-with-proxystore" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 29 January 2024</em></p>
+<p><em>Last updated 11 November 2024</em></p>
 <p>This guide describes the motivation for and usage of ProxyStore's
 streaming interface.</p>
 <div class="admonition note">
@@ -3400,15 +3379,15 @@ streaming interface.</p>
 <a href="../../concepts/" target="_blank">Concepts</a> page to learn more about
 ProxyStore's core concepts.</p>
 </div>
-<p>The <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>
-and <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> interfaces
+<p>The <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>
+and <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> interfaces
 decouple bulk object communication from event notifications through the use of
 object proxies. This enables users to mix and match bulk object communication
 methods (via the <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
 interface) and message stream brokers (via the
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> interfaces).
-Additionally, because the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a>
+Additionally, because the <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a>
 yields proxies of objects from the stream, bulk data transfer only occurs
 between the source and <em>true</em> destination of the object from the stream
 (i.e., the process which <em>resolves</em> the proxy from the stream).</p>
@@ -3435,23 +3414,23 @@ the dispatcher does not need to have the actual chunk of data; rather,
 it only needs to know that a chunk is ready in order to dispatch a task
 which will actually consume the chunk. This is where a stream of proxies
 is beneficial---the processes reading from the
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> is receiving
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> is receiving
 lightweight proxies from the stream and passing those proxies along to later
 computation stages. The bulk data are only transmitted between the data
 generator and the process/node computing on the proxy of the chunk, bypassing
 the intermediate dispatching process.</p>
 <h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
 <p>Here is an example of using the
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>
-and <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> interfaces
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>
+and <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> interfaces
 to stream objects using a file system and Redis server.
 This configuration is optimized for storage of large objects using the
 file system while maintaining low latency event notifications via Redis
 pub/sub. However, the configuration can easily be optimized for different
 applications or deployments but using a different
 <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> with the
-<a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> for data storage and/or a different
-<a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>/
+<a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> for data storage and/or a different
+<a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> implementation for
 event notifications via a message broker.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">producer.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
@@ -3473,7 +3452,7 @@ event notifications via a message broker.</p>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;example&#39;</span><span class="p">,</span> <span class="n">FileConnector</span><span class="p">(</span><span class="o">...</span><span class="p">))</span> <span class="c1"># (1)!</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a><span class="n">publisher</span> <span class="o">=</span> <span class="n">RedisPublisher</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="c1"># (2)!</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="n">producer</span> <span class="o">=</span> <span class="n">StreamProducer</span><span class="p">(</span><span class="n">publisher</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;my-topic&#39;</span><span class="p">:</span> <span class="n">store</span><span class="p">})</span> <span class="c1"># (3)!</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a><span class="n">producer</span> <span class="o">=</span> <span class="n">StreamProducer</span><span class="p">(</span><span class="n">publisher</span><span class="p">,</span> <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;my-topic&#39;</span><span class="p">:</span> <span class="n">store</span><span class="p">})</span> <span class="c1"># (3)!</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="o">...</span><span class="p">:</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a>    <span class="n">producer</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="s1">&#39;my-topic&#39;</span><span class="p">,</span> <span class="n">item</span><span class="p">,</span> <span class="n">evict</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="c1"># (4)!</span>
@@ -3481,9 +3460,9 @@ event notifications via a message broker.</p>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">producer</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">topics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;my-topic&#39;</span><span class="p">])</span> <span class="c1"># (5)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
-<li>The <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> configuration is determined by
+<li>The <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> configuration is determined by
    the producer. The
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> is
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a> is
    initialized with a mapping of topics to stores such that different
    communication protocols can be used for different topics. Consider using
    different <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
@@ -3491,20 +3470,19 @@ event notifications via a message broker.</p>
 <li>The <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> is the interface
    to a pub/sub channel which will be used for sending event metadata to
    consumers. The
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> also supports
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a> also supports
    aggregation, batching, and filtering.</li>
-<li>In the mapping of topics to stores, the <code>None</code> key is considered the
-   default for when a topic is not found in the mapping. For example,
-   <code>{None: store}</code> will use the same store for all topics.</li>
+<li>Instruct the producer to use a specific store for this topic name.
+   Alternatively, <code>default_store</code> can be passed to use a specific store for all topics.</li>
 <li>The state of the <code>evict</code> flag will alter if proxies yielded by a
    consumer are one-time use or not.</li>
-<li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>
+<li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>
    will close the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>,
-   all <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instances, and
+   all <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> instances, and
    <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.
    Topics are not closed by default and must be explicitly closed using the
    <code>topics</code> parameter or
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer.close_topics"><code>close_topics()</code></a>.
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer.close_topics"><code>close_topics()</code></a>.
    Closing a topic will send a special end-of-stream event to the stream causing
    any consumers waiting on the stream to stop.</li>
 </ol>
@@ -3536,40 +3514,48 @@ event notifications via a message broker.</p>
 <li>The <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> is the interface
    to the same pub/sub channel that the producer is publishing event metadata
    to. These events are consumed by the
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> and used to
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> and used to
    generate proxies of the objects in the stream.</li>
-<li>The <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> does not
-   need to be initialized with a <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>. Stream
+<li>The <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> does not
+   need to be initialized with a <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a>. Stream
    events will contain the necessary metadata for the consumer to get the
-   appropriate <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> to use for resolving
+   appropriate <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> to use for resolving
    objects in the stream.</li>
-<li>Iterating on a
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> will
-   block until new proxies are available and yield those proxies. Iteration
+<li>Iterating on a <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> will
+   block until a new event is published to the stream and then yields a proxy
+   of the object associated with the event. Iteration
    will stop once the topic is closed by the
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>.</li>
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>.</li>
 <li>The yielded proxies point to objects in the
-   <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, and the state of the <code>evict</code> flag
+   <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a>, and the state of the <code>evict</code> flag
    inside the proxy's factory is determined in
-   <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer.send"><code>StreamProducer.send()</code></a>.</li>
-<li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> will close
+   <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer.send"><code>StreamProducer.send()</code></a>.</li>
+<li>Closing the <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> will close
    the <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a>,
-   all <a class="autorefs autorefs-internal" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instances, and
+   all <a class="autorefs autorefs-internal" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> instances, and
    <a class="autorefs autorefs-internal" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.</li>
 </ol>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>By default, iterating on a
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> yields only
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> yields
 a proxy of the next object in the stream. The
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer.iter_with_metadata"><code>iter_with_metadata()</code></a>,
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer.iter_objects"><code>iter_objects()</code></a>, and
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer.iter_objects_with_metadata"><code>iter_objects_with_metadata()</code></a>
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer.iter_with_metadata"><code>iter_with_metadata()</code></a>,
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer.iter_objects"><code>iter_objects()</code></a>, and
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer.iter_objects_with_metadata"><code>iter_objects_with_metadata()</code></a>
 methods provide additional mechanisms for iterating over stream data.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If a topic does not have an associated store and a default store is not provided, then objects will be sent directly to the
+<a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
+<a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a>.
+This can be more performant when objects are small (e.g., <em>O(kB)</em>).
+In this case, the <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> will yield objects directly rather than proxies of the objects.</p>
+</div>
 <h2 id="multi-producermulti-consumer">Multi-Producer/Multi-Consumer<a class="headerlink" href="#multi-producermulti-consumer" title="Permanent link">&para;</a></h2>
-<p>The <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>
-and <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> can support
+<p>The <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>
+and <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> can support
 multi-producer and multi-consumer deployments, respectively.
 However, it is <em>not</em> a requirement that the
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> or
@@ -3584,16 +3570,16 @@ produce the behavior they want.</p>
 <p><strong>Multi-producer.</strong> If a <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>
 supports multiple producers, typically no changes are required on
 when initializing the corresponding
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a>. Each producer
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a>. Each producer
 process can simply initialize the
 <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>
-and <a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> and begin
+and <a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer"><code>StreamProducer</code></a> and begin
 sending objects to the stream.</p>
 <p><strong>Multi-consumer.</strong> If a <a class="autorefs autorefs-internal" href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a>
 support multiple consumers, attention should be given to the manner in which
 the consumers behave. If all consumers receive the full stream (i.e., each
 consumer receives each object in the stream), then the the <code>evict</code> flag of
-<a class="autorefs autorefs-internal" href="../../api/stream/interface/#proxystore.stream.interface.StreamProducer.send"><code>StreamProducer.send()</code></a>
+<a class="autorefs autorefs-internal" href="../../api/stream/#proxystore.stream.StreamProducer.send"><code>StreamProducer.send()</code></a>
 should be set to <code>False</code>. This ensures that the first consumer to resolve a
 proxy from the stream does not delete the object data for the other consumers,
 but this also means that object cleanup must be handled manually by the

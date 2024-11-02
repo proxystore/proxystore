@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://docs.proxystore.dev/latest/api/stream/protocols/">
       
       
-        <link rel="prev" href="../interface/">
+        <link rel="prev" href="../filters/">
       
       
         <link rel="next" href="../shims/">
@@ -2676,27 +2676,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../interface/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    interface
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -2781,15 +2760,33 @@
         <li class="md-nav__item">
   <a href="#proxystore.stream.protocols.Publisher" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Publisher
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Publisher
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Publisher">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Subscriber" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Subscriber
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.EventPublisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventPublisher
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" EventPublisher">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Publisher.close" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventPublisher.close" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
     </span>
@@ -2798,9 +2795,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Publisher.send" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventPublisher.send_events" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_events
     </span>
   </a>
   
@@ -2812,19 +2809,94 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Subscriber" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventSubscriber" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Subscriber
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventSubscriber
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Subscriber">
+    <nav class="md-nav" aria-label=" EventSubscriber">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Subscriber.close" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventSubscriber.close" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.EventSubscriber.next_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MessagePublisher
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MessagePublisher">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher.close" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher.send_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_message
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MessageSubscriber
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MessageSubscriber">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber.close" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber.next_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_message
     </span>
   </a>
   
@@ -2887,7 +2959,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_5" >
         
           
           
@@ -2903,14 +2975,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12_6" id="__nav_4_1_12_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12_5" id="__nav_4_1_12_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_1_12_6">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_12_5">
             <span class="md-nav__icon md-icon"></span>
             shims
           </label>
@@ -3476,15 +3548,33 @@
         <li class="md-nav__item">
   <a href="#proxystore.stream.protocols.Publisher" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Publisher
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Publisher
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Publisher">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.Subscriber" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;Subscriber
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.EventPublisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventPublisher
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" EventPublisher">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Publisher.close" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventPublisher.close" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
     </span>
@@ -3493,9 +3583,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Publisher.send" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventPublisher.send_events" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_events
     </span>
   </a>
   
@@ -3507,19 +3597,94 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Subscriber" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventSubscriber" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;Subscriber
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EventSubscriber
     </span>
   </a>
   
-    <nav class="md-nav" aria-label=" Subscriber">
+    <nav class="md-nav" aria-label=" EventSubscriber">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.protocols.Subscriber.close" class="md-nav__link">
+  <a href="#proxystore.stream.protocols.EventSubscriber.close" class="md-nav__link">
     <span class="md-ellipsis">
       <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.EventSubscriber.next_events" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MessagePublisher
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MessagePublisher">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher.close" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessagePublisher.send_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_message
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;MessageSubscriber
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" MessageSubscriber">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber.close" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.protocols.MessageSubscriber.next_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_message
     </span>
   </a>
   
@@ -3590,22 +3755,32 @@
   </a>
   </div>
   
-        <p>Protocols used by the stream interfaces.</p>
+        <p>Stream interface protocols.</p>
 <h3 id="proxystore.stream.protocols--publishersubscriber">Publisher/Subscriber<a class="headerlink" href="#proxystore.stream.protocols--publishersubscriber" title="Permanent link">&para;</a></h3>
 <p>The <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> and
 <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> are
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocols</code></a> which define the publisher and subscriber
-interfaces to a pub/sub-like messaging system.</p>
+interfaces to a pub/sub-like message broker system.</p>
 <p>In general, these protocols do not enforce any other implementation details
 besides the interface. For example, implementations could choose to support
-any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
-A set of shims implementing these protocols for third-party message brokers
-are provided in <a class="autorefs autorefs-internal" href="../shims/#proxystore.stream.shims"><code>proxystore.stream.shims</code></a>.</p>
+any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).</p>
+<p>There are two variants of publisher/subscribers:</p>
+<ul>
+<li><code>Event</code>: The lower-level variant that are responsible for publishing and
+  retrieving <a class="autorefs autorefs-internal" href="../events/#proxystore.stream.events.EventBatch"><code>EventBatch</code></a> types.
+  These require more complexity to implement but can support finer
+  optimization.</li>
+<li><code>Message</code>: The higher-level variant that publishes pre-serialized messages
+  in the form of bytes-strings and receives messages on the subscriber side.
+  These are simple to implement.</li>
+</ul>
+<p>A set of shims to third-party message brokers are provided in
+<a class="autorefs autorefs-internal" href="../shims/#proxystore.stream.shims"><code>proxystore.stream.shims</code></a>.</p>
 <h3 id="proxystore.stream.protocols--plugins">Plugins<a class="headerlink" href="#proxystore.stream.protocols--plugins" title="Permanent link">&para;</a></h3>
 <p>Additional protocols, such as the
 <a class="autorefs autorefs-internal" href="#proxystore.stream.protocols.Filter"><code>Filter</code></a>, are plugins used by the
-<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamProducer"><code>StreamProducer</code></a> and/or
-<a class="autorefs autorefs-internal" href="../interface/#proxystore.stream.interface.StreamConsumer"><code>StreamConsumer</code></a> that alter
+<a class="autorefs autorefs-internal" href="../#proxystore.stream.StreamProducer"><code>StreamProducer</code></a> and/or
+<a class="autorefs autorefs-internal" href="../#proxystore.stream.StreamConsumer"><code>StreamConsumer</code></a> that alter
 their behavior.</p>
 
 
@@ -3618,16 +3793,275 @@ their behavior.</p>
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="proxystore.stream.protocols.Publisher" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">Publisher</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#proxystore.stream.protocols.Publisher" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Publisher</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="s1">&#39;EventPublisher&#39;</span><span class="p">,</span> <span class="s1">&#39;MessagePublisher&#39;</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Publisher union type.</p>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="proxystore.stream.protocols.Subscriber" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">Subscriber</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#proxystore.stream.protocols.Subscriber" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">Subscriber</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a></span><span class="p">[</span><span class="s1">&#39;EventSubscriber&#39;</span><span class="p">,</span> <span class="s1">&#39;MessageSubscriber&#39;</span><span class="p">]</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Subscriber union type.</p>
+    </div>
+
+</div>
+
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="proxystore.stream.protocols.Publisher" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Publisher</span>
+<h2 id="proxystore.stream.protocols.EventPublisher" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">EventPublisher</span>
 
 
-<a href="#proxystore.stream.protocols.Publisher" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#proxystore.stream.protocols.EventPublisher" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
+
+
+        <p>Publisher interface to an event stream.</p>
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.stream.protocols.EventPublisher.close" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close</span>
+
+
+<a href="#proxystore.stream.protocols.EventPublisher.close" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Close this publisher.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-64">64</a></span>
+<span class="normal"><a href="#__codelineno-0-65">65</a></span>
+<span class="normal"><a href="#__codelineno-0-66">66</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this publisher.&quot;&quot;&quot;</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.stream.protocols.EventPublisher.send_events" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send_events</span>
+
+
+<a href="#proxystore.stream.protocols.EventPublisher.send_events" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send_events</span><span class="p">(</span><span class="n">events</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.EventBatch" href="../events/#proxystore.stream.events.EventBatch">EventBatch</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Publish event with optional data to the stream.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+          <b><code>events</code></b>
+              (<code><a class="autorefs autorefs-internal" title="proxystore.stream.events.EventBatch" href="../events/#proxystore.stream.events.EventBatch">EventBatch</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Batch of events to publish.</p>
+          </div>
+        </li>
+    </ul>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-68">68</a></span>
+<span class="normal"><a href="#__codelineno-0-69">69</a></span>
+<span class="normal"><a href="#__codelineno-0-70">70</a></span>
+<span class="normal"><a href="#__codelineno-0-71">71</a></span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span>
+<span class="normal"><a href="#__codelineno-0-73">73</a></span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a><span class="k">def</span> <span class="nf">send_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">events</span><span class="p">:</span> <span class="n">EventBatch</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish event with optional data to the stream.</span>
+</span><span id="__span-0-70"><a id="__codelineno-0-70" name="__codelineno-0-70"></a>
+</span><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="sd">        events: Batch of events to publish.</span>
+</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.stream.protocols.EventSubscriber" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">EventSubscriber</span>
+
+
+<a href="#proxystore.stream.protocols.EventSubscriber" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
+
+
+        <p>Subscriber interface to an event stream.</p>
+<p>The subscriber protocol is an iterable object which yields objects
+from the stream until the stream is closed.</p>
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.stream.protocols.EventSubscriber.close" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close</span>
+
+
+<a href="#proxystore.stream.protocols.EventSubscriber.close" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Close this subscriber.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-89">89</a></span>
+<span class="normal"><a href="#__codelineno-0-90">90</a></span>
+<span class="normal"><a href="#__codelineno-0-91">91</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-90"><a id="__codelineno-0-90" name="__codelineno-0-90"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
+</span><span id="__span-0-91"><a id="__codelineno-0-91" name="__codelineno-0-91"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.stream.protocols.EventSubscriber.next_events" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">next_events</span>
+
+
+<a href="#proxystore.stream.protocols.EventSubscriber.next_events" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">next_events</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.stream.events.EventBatch" href="../events/#proxystore.stream.events.EventBatch">EventBatch</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get the next event batch.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-93">93</a></span>
+<span class="normal"><a href="#__codelineno-0-94">94</a></span>
+<span class="normal"><a href="#__codelineno-0-95">95</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="k">def</span> <span class="nf">next_events</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EventBatch</span><span class="p">:</span>
+</span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the next event batch.&quot;&quot;&quot;</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.stream.protocols.MessagePublisher" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">MessagePublisher</span>
+
+
+<a href="#proxystore.stream.protocols.MessagePublisher" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3653,11 +4087,11 @@ their behavior.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="proxystore.stream.protocols.Publisher.close" class="doc doc-heading">
+<h3 id="proxystore.stream.protocols.MessagePublisher.close" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close</span>
 
 
-<a href="#proxystore.stream.protocols.Publisher.close" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#proxystore.stream.protocols.MessagePublisher.close" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -3667,11 +4101,11 @@ their behavior.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45">45</a></span>
-<span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this publisher.&quot;&quot;&quot;</span>
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a>    <span class="o">...</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-102">102</a></span>
+<span class="normal"><a href="#__codelineno-0-103">103</a></span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this publisher.&quot;&quot;&quot;</span>
+</span><span id="__span-0-104"><a id="__codelineno-0-104" name="__codelineno-0-104"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3681,12 +4115,12 @@ their behavior.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="proxystore.stream.protocols.Publisher.send" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send</span>
+<h3 id="proxystore.stream.protocols.MessagePublisher.send_message" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send_message</span>
 
 
-<a href="#proxystore.stream.protocols.Publisher.send" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send</span><span class="p">(</span><span class="n">topic</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a href="#proxystore.stream.protocols.MessagePublisher.send_message" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send_message</span><span class="p">(</span><span class="n">topic</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3716,21 +4150,21 @@ their behavior.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span>
-<span class="normal"><a href="#__codelineno-0-51">51</a></span>
-<span class="normal"><a href="#__codelineno-0-52">52</a></span>
-<span class="normal"><a href="#__codelineno-0-53">53</a></span>
-<span class="normal"><a href="#__codelineno-0-54">54</a></span>
-<span class="normal"><a href="#__codelineno-0-55">55</a></span>
-<span class="normal"><a href="#__codelineno-0-56">56</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish a message to the stream.</span>
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a>
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="sd">        topic: Stream topic to publish message to.</span>
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">        message: Message as bytes to publish to the stream.</span>
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    &quot;&quot;&quot;</span>
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>    <span class="o">...</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-106">106</a></span>
+<span class="normal"><a href="#__codelineno-0-107">107</a></span>
+<span class="normal"><a href="#__codelineno-0-108">108</a></span>
+<span class="normal"><a href="#__codelineno-0-109">109</a></span>
+<span class="normal"><a href="#__codelineno-0-110">110</a></span>
+<span class="normal"><a href="#__codelineno-0-111">111</a></span>
+<span class="normal"><a href="#__codelineno-0-112">112</a></span>
+<span class="normal"><a href="#__codelineno-0-113">113</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a><span class="k">def</span> <span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish a message to the stream.</span>
+</span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>
+</span><span id="__span-0-109"><a id="__codelineno-0-109" name="__codelineno-0-109"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-110"><a id="__codelineno-0-110" name="__codelineno-0-110"></a><span class="sd">        topic: Stream topic to publish message to.</span>
+</span><span id="__span-0-111"><a id="__codelineno-0-111" name="__codelineno-0-111"></a><span class="sd">        message: Message as bytes to publish to the stream.</span>
+</span><span id="__span-0-112"><a id="__codelineno-0-112" name="__codelineno-0-112"></a><span class="sd">    &quot;&quot;&quot;</span>
+</span><span id="__span-0-113"><a id="__codelineno-0-113" name="__codelineno-0-113"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3749,11 +4183,11 @@ their behavior.</p>
 
 
 
-<h2 id="proxystore.stream.protocols.Subscriber" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Subscriber</span>
+<h2 id="proxystore.stream.protocols.MessageSubscriber" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">MessageSubscriber</span>
 
 
-<a href="#proxystore.stream.protocols.Subscriber" class="headerlink" title="Permanent link">&para;</a></h2>
+<a href="#proxystore.stream.protocols.MessageSubscriber" class="headerlink" title="Permanent link">&para;</a></h2>
 
 
     <div class="doc doc-contents ">
@@ -3781,11 +4215,11 @@ from the stream until the stream is closed.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="proxystore.stream.protocols.Subscriber.close" class="doc doc-heading">
+<h3 id="proxystore.stream.protocols.MessageSubscriber.close" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close</span>
 
 
-<a href="#proxystore.stream.protocols.Subscriber.close" class="headerlink" title="Permanent link">&para;</a></h3>
+<a href="#proxystore.stream.protocols.MessageSubscriber.close" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -3795,11 +4229,39 @@ from the stream until the stream is closed.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span>
-<span class="normal"><a href="#__codelineno-0-73">73</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
-</span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="o">...</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-128">128</a></span>
+<span class="normal"><a href="#__codelineno-0-129">129</a></span>
+<span class="normal"><a href="#__codelineno-0-130">130</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-128"><a id="__codelineno-0-128" name="__codelineno-0-128"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-129"><a id="__codelineno-0-129" name="__codelineno-0-129"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
+</span><span id="__span-0-130"><a id="__codelineno-0-130" name="__codelineno-0-130"></a>    <span class="o">...</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.stream.protocols.MessageSubscriber.next_message" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">next_message</span>
+
+
+<a href="#proxystore.stream.protocols.MessageSubscriber.next_message" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">next_message</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get the next message.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-132">132</a></span>
+<span class="normal"><a href="#__codelineno-0-133">133</a></span>
+<span class="normal"><a href="#__codelineno-0-134">134</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="k">def</span> <span class="nf">next_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+</span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the next message.&quot;&quot;&quot;</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3866,11 +4328,11 @@ out of the stream and lost.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/protocols.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-85">85</a></span>
-<span class="normal"><a href="#__codelineno-0-86">86</a></span>
-<span class="normal"><a href="#__codelineno-0-87">87</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the filter to event metadata.&quot;&quot;&quot;</span>
-</span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="o">...</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-146">146</a></span>
+<span class="normal"><a href="#__codelineno-0-147">147</a></span>
+<span class="normal"><a href="#__codelineno-0-148">148</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-147"><a id="__codelineno-0-147" name="__codelineno-0-147"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply the filter to event metadata.&quot;&quot;&quot;</span>
+</span><span id="__span-0-148"><a id="__codelineno-0-148" name="__codelineno-0-148"></a>    <span class="o">...</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

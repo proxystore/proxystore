@@ -2679,27 +2679,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../interface/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    interface
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../protocols/" class="md-nav__link">
         
   
@@ -2735,7 +2714,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_12_5" checked>
         
           
           
@@ -2751,14 +2730,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4_1_12_6" id="__nav_4_1_12_6_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_12_5" id="__nav_4_1_12_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_1_12_6">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_12_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_1_12_5">
             <span class="md-nav__icon md-icon"></span>
             shims
           </label>
@@ -2908,9 +2887,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send" class="md-nav__link">
+  <a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send_message" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_message
     </span>
   </a>
   
@@ -2930,6 +2909,15 @@
   
     <nav class="md-nav" aria-label=" ZeroMQSubscriber">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.shims.zmq.ZeroMQSubscriber.next_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_message
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#proxystore.stream.shims.zmq.ZeroMQSubscriber.close" class="md-nav__link">
@@ -3423,9 +3411,9 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send" class="md-nav__link">
+  <a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send_message" class="md-nav__link">
     <span class="md-ellipsis">
-      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;send_message
     </span>
   </a>
   
@@ -3445,6 +3433,15 @@
   
     <nav class="md-nav" aria-label=" ZeroMQSubscriber">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.stream.shims.zmq.ZeroMQSubscriber.next_message" class="md-nav__link">
+    <span class="md-ellipsis">
+      <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;next_message
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#proxystore.stream.shims.zmq.ZeroMQSubscriber.close" class="md-nav__link">
@@ -3611,12 +3608,12 @@ the subscriber, the subscriber will fail.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="proxystore.stream.shims.zmq.ZeroMQPublisher.send" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send</span>
+<h3 id="proxystore.stream.shims.zmq.ZeroMQPublisher.send_message" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">send_message</span>
 
 
-<a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send</span><span class="p">(</span><span class="n">topic</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<a href="#proxystore.stream.shims.zmq.ZeroMQPublisher.send_message" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">send_message</span><span class="p">(</span><span class="n">topic</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -3653,7 +3650,7 @@ the subscriber, the subscriber will fail.</p>
 <span class="normal"><a href="#__codelineno-0-44">44</a></span>
 <span class="normal"><a href="#__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#__codelineno-0-46">46</a></span>
-<span class="normal"><a href="#__codelineno-0-47">47</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-47">47</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40"></a><span class="k">def</span> <span class="nf">send_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Publish a message to the stream.</span>
 </span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42"></a>
 </span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43"></a><span class="sd">    Args:</span>
@@ -3758,6 +3755,36 @@ topics.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="proxystore.stream.shims.zmq.ZeroMQSubscriber.next_message" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">next_message</span>
+
+
+<a href="#proxystore.stream.shims.zmq.ZeroMQSubscriber.next_message" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">next_message</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get the next message.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/stream/shims/zmq.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-76">76</a></span>
+<span class="normal"><a href="#__codelineno-0-77">77</a></span>
+<span class="normal"><a href="#__codelineno-0-78">78</a></span>
+<span class="normal"><a href="#__codelineno-0-79">79</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a><span class="k">def</span> <span class="nf">next_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+</span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the next message.&quot;&quot;&quot;</span>
+</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="n">_</span><span class="p">,</span> <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_socket</span><span class="o">.</span><span class="n">recv_multipart</span><span class="p">()</span>
+</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="k">return</span> <span class="n">message</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="proxystore.stream.shims.zmq.ZeroMQSubscriber.close" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close</span>
 
@@ -3772,11 +3799,11 @@ topics.</p>
 
             <details class="quote">
               <summary>Source code in <code>proxystore/stream/shims/zmq.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-77">77</a></span>
-<span class="normal"><a href="#__codelineno-0-78">78</a></span>
-<span class="normal"><a href="#__codelineno-0-79">79</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-</span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
-</span><span id="__span-0-79"><a id="__codelineno-0-79" name="__codelineno-0-79"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-81">81</a></span>
+<span class="normal"><a href="#__codelineno-0-82">82</a></span>
+<span class="normal"><a href="#__codelineno-0-83">83</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close this subscriber.&quot;&quot;&quot;</span>
+</span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="o">.</span><span class="n">destroy</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
