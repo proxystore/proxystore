@@ -33,7 +33,7 @@ def publish(broker: str, delay: float) -> None:
     publisher = KafkaPublisher(producer)
 
     for message in MESSAGES:
-        publisher.send('default', message)
+        publisher.send_message('default', message)
         print(f'Sent: {message!r}')
         time.sleep(delay)
 

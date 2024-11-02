@@ -53,7 +53,7 @@ class QueuePublisher:
             if isinstance(q, multiprocessing.queues.Queue):
                 q.close()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -101,6 +101,10 @@ class QueueSubscriber:
         return self
 
     def __next__(self) -> bytes:
+        return self.next_message()
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         try:
             message = self._queue.get(block=self._block, timeout=self._timeout)
         except ValueError:

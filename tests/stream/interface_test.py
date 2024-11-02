@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import pathlib
-import queue
 import threading
 import uuid
 from typing import Any
@@ -15,26 +14,16 @@ from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store import Store
 from proxystore.store import store_registration
+from proxystore.stream import StreamConsumer
+from proxystore.stream import StreamProducer
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EventBatch
-from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.events import NewObjectKeyEvent
 from proxystore.stream.exceptions import TopicClosedError
-from proxystore.stream.interface import StreamConsumer
-from proxystore.stream.interface import StreamProducer
-from proxystore.stream.shims.queue import QueuePublisher
-from proxystore.stream.shims.queue import QueueSubscriber
-
-
-def create_pubsub_pair(
-    topic: str | None = None,
-) -> tuple[QueuePublisher, QueueSubscriber]:
-    topic = 'default' if topic is None else topic
-    queue_: queue.Queue[bytes] = queue.Queue()
-
-    publisher = QueuePublisher({topic: queue_})
-    subscriber = QueueSubscriber(queue_)
-
-    return publisher, subscriber
+from proxystore.stream.protocols import Publisher
+from proxystore.stream.protocols import Subscriber
+from testing.stream import create_event_pubsub_pair
+from testing.stream import create_message_pubsub_pair
 
 
 @pytest.fixture
@@ -47,14 +36,27 @@ def store(
 
 
 @pytest.mark.parametrize('batch_size', (1, 2, 3))
-def test_simple_stream(batch_size: int, store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('use_event_queue', (True, False))
+@pytest.mark.parametrize('use_store', (True, False))
+def test_stream_basics(
+    batch_size: int,
+    use_event_queue: bool,
+    use_store: bool,
+    store: Store[FileConnector],
+) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher: Publisher
+    subscriber: Subscriber
+
+    if use_event_queue:
+        publisher, subscriber = create_event_pubsub_pair(topic)
+    else:
+        publisher, subscriber = create_message_pubsub_pair(topic)
 
     producer = StreamProducer[uuid.UUID](
         publisher,
-        {topic: store},
         batch_size=batch_size,
+        stores={topic: store if use_store else None},
     )
     consumer = StreamConsumer[uuid.UUID](subscriber)
 
@@ -64,20 +66,17 @@ def test_simple_stream(batch_size: int, store: Store[FileConnector]) -> None:
         for obj in objects:
             producer.send('default', obj)
 
-        # Let the consumer handle closing the store
         producer.flush()
-        producer.close(stores=False)
 
     def consume() -> None:
         received = []
 
         for _, obj in zip(objects, consumer):
-            assert isinstance(obj, Proxy)
+            if use_store:
+                assert isinstance(obj, Proxy)
             received.append(obj)
 
         assert received == objects
-
-        consumer.close()
 
     pthread = threading.Thread(target=produce)
     cthread = threading.Thread(target=consume)
@@ -88,12 +87,15 @@ def test_simple_stream(batch_size: int, store: Store[FileConnector]) -> None:
     pthread.join(timeout=5)
     cthread.join(timeout=5)
 
+    producer.close(stores=True)
+    consumer.close(stores=True)
+
 
 def test_context_manager(store: Store[FileConnector]) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    with StreamProducer[str](publisher, {topic: store}) as producer:
+    with StreamProducer[str](publisher, stores={topic: store}) as producer:
         with StreamConsumer[str](subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
@@ -103,26 +105,36 @@ def test_close_without_closing_connectors(
     store: Store[FileConnector],
 ) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    producer = StreamProducer[str](publisher, {topic: store})
+    producer = StreamProducer[str](publisher, stores={topic: store})
     consumer = StreamConsumer[str](subscriber)
 
     producer.close(stores=False, publisher=False)
     consumer.close(stores=False, subscriber=False)
 
     # Reuse store, publisher, subscriber
-    with StreamProducer[str](publisher, {topic: store}) as producer:
+    with StreamProducer[str](publisher, stores={topic: store}) as producer:
         with StreamConsumer[str](subscriber) as consumer:
             producer.send('default', 'value')
             assert next(consumer) == 'value'
 
 
-def test_producer_close_topic(store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('use_event_queue', (True, False))
+def test_producer_close_topic(
+    use_event_queue: bool,
+    store: Store[FileConnector],
+) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher: Publisher
+    subscriber: Subscriber
 
-    with StreamProducer[str](publisher, {topic: store}) as producer:
+    if use_event_queue:
+        publisher, subscriber = create_event_pubsub_pair(topic)
+    else:
+        publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with StreamProducer[str](publisher, stores={topic: store}) as producer:
         with StreamConsumer[str](subscriber) as consumer:
             producer.close_topics(topic)
 
@@ -132,9 +144,9 @@ def test_producer_close_topic(store: Store[FileConnector]) -> None:
 
 def test_error_sending_to_closed_topic(store: Store[FileConnector]) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    with StreamProducer[str](publisher, {topic: store}) as producer:
+    with StreamProducer[str](publisher, stores={topic: store}) as producer:
         producer.close_topics(topic)
         with pytest.raises(TopicClosedError):
             producer.send(topic, 'value')
@@ -144,14 +156,14 @@ def test_error_sending_to_closed_topic(store: Store[FileConnector]) -> None:
 
 def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
     store = Store(
         'test-use-and-register-default-store',
         FileConnector(str(tmp_path)),
     )
 
-    producer = StreamProducer[str](publisher, {None: store})
+    producer = StreamProducer[str](publisher, default_store=store)
     consumer = StreamConsumer[str](subscriber)
 
     producer.send(topic, 'value')
@@ -167,24 +179,13 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     assert get_store(store.name) is None
 
 
-def test_missing_store_mapping_error(store: Store[FileConnector]) -> None:
-    topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
-
-    with StreamProducer[str](publisher, {'default': store}) as producer:
-        with pytest.raises(ValueError, match='other'):
-            producer.send('other', 'value')
-
-    subscriber.close()
-
-
 @pytest.mark.parametrize('toggle_side', (True, False))
 def test_filtering_stream(
     toggle_side: bool,
     store: Store[FileConnector],
 ) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
     def filter_(metadata: dict[str, Any] | None) -> bool:
         assert metadata is not None
@@ -192,7 +193,7 @@ def test_filtering_stream(
 
     producer = StreamProducer[int](
         publisher,
-        {topic: store},
+        stores={topic: store},
         filter_=filter_ if toggle_side else None,
     )
     consumer = StreamConsumer[int](
@@ -216,7 +217,7 @@ def test_filtering_stream(
         batch = bytes_to_event(event_bytes)
         assert isinstance(batch, EventBatch)
         (event,) = batch.events
-        assert isinstance(event, NewObjectEvent)
+        assert isinstance(event, NewObjectKeyEvent)
         assert not store.exists(event.get_key())
 
     producer.close()
@@ -226,13 +227,13 @@ def test_filtering_stream(
 @pytest.mark.parametrize('batch_size', (1, 2, 3))
 def test_aggregator(batch_size: int, store: Store[FileConnector]) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
     producer = StreamProducer[int](
         publisher,
-        {topic: store},
         aggregator=sum,
         batch_size=batch_size,
+        stores={topic: store},
     )
     consumer = StreamConsumer[int](subscriber)
 
@@ -249,11 +250,18 @@ def test_aggregator(batch_size: int, store: Store[FileConnector]) -> None:
     consumer.close()
 
 
-def test_iter_with_metadata(store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('use_store', (True, False))
+def test_iter_with_metadata(
+    use_store: bool,
+    store: Store[FileConnector],
+) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    producer = StreamProducer[int](publisher, {topic: store})
+    producer = StreamProducer[int](
+        publisher,
+        stores={topic: store if use_store else None},
+    )
     consumer = StreamConsumer[int](subscriber)
 
     count = 10
@@ -261,18 +269,25 @@ def test_iter_with_metadata(store: Store[FileConnector]) -> None:
         producer.send(topic, i, metadata={'value': i})
     producer.close_topics(topic)
 
-    for metadata, proxy in consumer.iter_with_metadata():
-        assert metadata['value'] == proxy
+    for metadata, proxy_or_item in consumer.iter_with_metadata():
+        assert metadata['value'] == proxy_or_item
 
     producer.close()
     consumer.close()
 
 
-def test_iter_objects_with_metadata(store: Store[FileConnector]) -> None:
+@pytest.mark.parametrize('use_store', (True, False))
+def test_iter_objects_with_metadata(
+    use_store: bool,
+    store: Store[FileConnector],
+) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    producer = StreamProducer[int](publisher, {topic: store})
+    producer = StreamProducer[int](
+        publisher,
+        stores={topic: store if use_store else None},
+    )
     consumer = StreamConsumer[int](subscriber)
 
     count = 10
@@ -293,9 +308,9 @@ def test_consumer_next_object_evicts(
     store: Store[FileConnector],
 ) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    producer = StreamProducer[str](publisher, {topic: store})
+    producer = StreamProducer[str](publisher, stores={topic: store})
     consumer = StreamConsumer[str](subscriber)
 
     producer.send(topic, 'value', evict=evict)
@@ -306,7 +321,7 @@ def test_consumer_next_object_evicts(
     batch = bytes_to_event(events[0])
     assert isinstance(batch, EventBatch)
     (event,) = batch.events
-    assert isinstance(event, NewObjectEvent)
+    assert isinstance(event, NewObjectKeyEvent)
     key = event.get_key()
 
     assert store.exists(key)
@@ -319,9 +334,9 @@ def test_consumer_next_object_evicts(
 
 def test_consumer_next_object_missing(store: Store[FileConnector]) -> None:
     topic = 'default'
-    publisher, subscriber = create_pubsub_pair(topic)
+    publisher, subscriber = create_message_pubsub_pair(topic)
 
-    producer = StreamProducer[str](publisher, {topic: store})
+    producer = StreamProducer[str](publisher, stores={topic: store})
     consumer = StreamConsumer[str](subscriber)
 
     producer.send(topic, 'value')
@@ -332,7 +347,7 @@ def test_consumer_next_object_missing(store: Store[FileConnector]) -> None:
     batch = bytes_to_event(events[0])
     assert isinstance(batch, EventBatch)
     (event,) = batch.events
-    assert isinstance(event, NewObjectEvent)
+    assert isinstance(event, NewObjectKeyEvent)
     key = event.get_key()
 
     store.evict(key)

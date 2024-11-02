@@ -1,22 +1,14 @@
-"""Event metadata type.
-
-Warning:
-    Event types are not considered as part of the public API and may change
-    at any time without warning. [`Events`][proxystore.stream.events.Event]
-    are created and consumed internally by the
-    [StreamProducer][proxystore.stream.interface.StreamProducer] and
-    [StreamConsumer][proxystore.stream.interface.StreamConsumer] and
-    never exposed to client code.
-"""
+"""Event types."""
 
 from __future__ import annotations
 
 import dataclasses
 import enum
-import json
 from typing import Any
 from typing import Union
 
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
 from proxystore.store.config import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
@@ -26,19 +18,20 @@ from proxystore.utils.imports import import_from_path
 class EndOfStreamEvent:
     """End of stream event."""
 
+    topic: str
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EndOfStreamEvent:
         """Create a new event instance from its dictionary representation."""
-        return cls()
+        return cls(**data)
 
 
 @dataclasses.dataclass
 class NewObjectEvent:
-    """New object in stream event metadata."""
+    """New object in stream event."""
 
-    key_type: str
-    raw_key: list[Any]
-    evict: bool
+    topic: str
+    obj: Any
     metadata: dict[str, Any]
 
     @classmethod
@@ -46,19 +39,41 @@ class NewObjectEvent:
         """Create a new event instance from its dictionary representation."""
         return NewObjectEvent(**data)
 
+
+@dataclasses.dataclass
+class NewObjectKeyEvent:
+    """New object key in stream event."""
+
+    topic: str
+    key_type: str
+    raw_key: list[Any]
+    evict: bool
+    metadata: dict[str, Any]
+    store_config: StoreConfig
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> NewObjectKeyEvent:
+        """Create a new event instance from its dictionary representation."""
+        return NewObjectKeyEvent(**data)
+
     @classmethod
     def from_key(
         cls,
         key: tuple[Any, ...],
+        *,
         evict: bool,
         metadata: dict[str, Any],
-    ) -> NewObjectEvent:
+        store_config: StoreConfig,
+        topic: str,
+    ) -> NewObjectKeyEvent:
         """Create a new event from a key and metadata."""
         return cls(
+            topic=topic,
             key_type=get_object_path(type(key)),
             raw_key=list(key),
             evict=evict,
             metadata=metadata,
+            store_config=store_config,
         )
 
     def get_key(self) -> Any:
@@ -67,33 +82,33 @@ class NewObjectEvent:
         return key_type(*self.raw_key)
 
 
-Event = Union[EndOfStreamEvent, NewObjectEvent]
+Event = Union[EndOfStreamEvent, NewObjectEvent, NewObjectKeyEvent]
 """Event union type."""
 
 
 @dataclasses.dataclass
 class EventBatch:
-    """Batch of stream events."""
+    """Batch of stream events.
 
-    events: list[Event]
+    Warning:
+        All events must be for the same topic.
+    """
+
     topic: str
-    store_config: StoreConfig
+    events: list[Event]
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EventBatch:
         """Create a new event instance from its dictionary representation."""
         events = [dict_to_event(d) for d in data['events']]
-        return cls(
-            events=events,  # type: ignore[arg-type]
-            topic=data['topic'],
-            store_config=StoreConfig(**data['store_config']),
-        )
+        return cls(events=events, topic=data['topic'])  # type: ignore[arg-type]
 
 
 class _EventMapping(enum.Enum):
     END_OF_STREAM = EndOfStreamEvent
     EVENT_BATCH = EventBatch
     NEW_OBJECT = NewObjectEvent
+    NEW_OBJECT_KEY = NewObjectKeyEvent
 
 
 def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
@@ -102,7 +117,6 @@ def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
         data = {
             'events': [event_to_dict(e) for e in event.events],
             'topic': event.topic,
-            'store_config': event.store_config.model_dump(),
         }
     else:
         data = dataclasses.asdict(event)
@@ -119,11 +133,9 @@ def dict_to_event(data: dict[str, Any]) -> Event | EventBatch:
 
 def event_to_bytes(event: Event | EventBatch) -> bytes:
     """Convert event to byte-string."""
-    data = event_to_dict(event)
-    return json.dumps(data).encode()
+    return serialize(event_to_dict(event))
 
 
 def bytes_to_event(s: bytes) -> Event | EventBatch:
     """Convert byte-string to event."""
-    data = json.loads(s.decode())
-    return dict_to_event(data)
+    return dict_to_event(deserialize(s))

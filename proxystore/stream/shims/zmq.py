@@ -37,7 +37,7 @@ class ZeroMQPublisher:
         """Close this publisher."""
         self._context.destroy()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -71,6 +71,10 @@ class ZeroMQSubscriber:
         return self
 
     def __next__(self) -> bytes:
+        return self.next_message()
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         _, message = self._socket.recv_multipart()
         return message
 

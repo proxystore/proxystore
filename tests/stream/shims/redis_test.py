@@ -34,7 +34,7 @@ def test_basic_publish_subscribe() -> None:
     messages = [f'message_{i}'.encode() for i in range(3)]
 
     for message in messages:
-        publisher.send('default', message)
+        publisher.send_message('default', message)
 
     publisher.close()
 
@@ -54,7 +54,7 @@ def test_basic_queue_publish_subscribe() -> None:
     messages = [f'message_{i}'.encode() for i in range(3)]
 
     for message in messages:
-        publisher.send('default', message)
+        publisher.send_message('default', message)
 
     publisher.close()
 

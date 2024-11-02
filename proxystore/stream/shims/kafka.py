@@ -31,7 +31,7 @@ class KafkaPublisher:
         """Close this publisher."""
         self.client.flush()
 
-    def send(self, topic: str, message: bytes) -> None:
+    def send_message(self, topic: str, message: bytes) -> None:
         """Publish a message to the stream.
 
         Args:
@@ -61,6 +61,10 @@ class KafkaSubscriber:
         return self
 
     def __next__(self) -> bytes:
+        return self.next_message()
+
+    def next_message(self) -> bytes:
+        """Get the next message."""
         message = self.client.poll()
         # Should not be None because we do not specify a poll in timeout.
         assert message is not None

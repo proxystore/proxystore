@@ -12,6 +12,7 @@ from proxystore.stream.events import Event
 from proxystore.stream.events import event_to_bytes
 from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectEvent
+from proxystore.stream.events import NewObjectKeyEvent
 
 
 class _TestKey(NamedTuple):
@@ -19,23 +20,28 @@ class _TestKey(NamedTuple):
     field2: int
 
 
+MOCK_CONFIG = StoreConfig(name='test', connector=ConnectorConfig(kind='test'))
+MOCK_END_OF_STREAM = EndOfStreamEvent('topic')
+MOCK_NEW_OBJECT = NewObjectEvent('topic', 123, {})
+MOCK_NEW_OBJECT_KEY = NewObjectKeyEvent.from_key(
+    _TestKey('a', 123),
+    evict=True,
+    metadata={},
+    store_config=MOCK_CONFIG,
+    topic='topic',
+)
+
+
 @pytest.mark.parametrize(
     'event',
     (
-        EndOfStreamEvent(),
+        MOCK_END_OF_STREAM,
+        MOCK_NEW_OBJECT,
+        MOCK_NEW_OBJECT_KEY,
         EventBatch(
-            [
-                NewObjectEvent.from_key(_TestKey('a', 123), True, {}),
-                NewObjectEvent.from_key(_TestKey('b', 234), True, {}),
-                EndOfStreamEvent(),
-            ],
-            topic='default',
-            store_config=StoreConfig(
-                name='test',
-                connector=ConnectorConfig(kind='test'),
-            ),
+            topic='topic',
+            events=[MOCK_NEW_OBJECT, MOCK_NEW_OBJECT_KEY, MOCK_END_OF_STREAM],
         ),
-        NewObjectEvent.from_key(_TestKey('a', 123), True, {}),
     ),
 )
 def test_encode_decode(event: Event) -> None:
@@ -44,9 +50,15 @@ def test_encode_decode(event: Event) -> None:
     assert event == new_event
 
 
-def test_new_object_to_from_key() -> None:
+def test_new_object_key() -> None:
     key = _TestKey('a', 123)
-    event = NewObjectEvent.from_key(key, True, {})
+    event = NewObjectKeyEvent.from_key(
+        key,
+        evict=True,
+        metadata={},
+        store_config=MOCK_CONFIG,
+        topic='topic',
+    )
     new_key = event.get_key()
     assert key == new_key
     assert type(key) is type(new_key)
