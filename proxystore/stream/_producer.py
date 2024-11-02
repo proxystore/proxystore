@@ -17,8 +17,8 @@ if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
 else:  # pragma: <3.11 cover
     from typing_extensions import Self
 
+from proxystore.store import Store
 from proxystore.store import unregister_store
-from proxystore.store.base import Store
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import Event
 from proxystore.stream.events import event_to_bytes
@@ -51,7 +51,22 @@ class _TopicBuffer(Generic[T]):
 
 
 class StreamProducer(Generic[T]):
-    """Proxy stream producer interface.
+    """Stream producer interface.
+
+    This interface enables streaming objects in a manner which decouples
+    bulk object transfer from event notifications. Topics can be associated
+    with a [`Store`][proxystore.store.Store] which will be used for bulk
+    object storage and communication. Event metadata, including the key to
+    the object in the store, is communicated through a message broker using
+    the [`Publisher`][proxystore.stream.protocols.Publisher] and
+    [`Subscriber`][proxystore.stream.protocols.Subscriber] interfaces.
+    The associated [`StreamConsumer`][proxystore.stream.StreamConsumer] can
+    be used to iterate on proxies of objects from the stream.
+
+    This interface can also be used without a
+    [`Store`][proxystore.store.Store] in which case the object is
+    included in the event metadata and communicated directly through the
+    message broker.
 
     Note:
         The [`StreamProducer`][proxystore.stream.StreamProducer] can
@@ -62,9 +77,6 @@ class StreamProducer(Generic[T]):
             for item in ...:
                 stream.send(item)
         ```
-
-    Warning:
-        The producer is not thread-safe.
 
     Tip:
         This class is generic, so it is recommended that the type of objects
@@ -78,12 +90,15 @@ class StreamProducer(Generic[T]):
         producer.send('default', [1, 2, 3])
         ```
 
+    Warning:
+        The producer is not thread-safe.
+
     Attributes:
         publisher: Publisher interface.
 
     Args:
-        publisher: Object which implements the
-            [`Publisher`][proxystore.stream.protocols.Publisher] protocol.
+        publisher: Object which implements one of the
+            [`Publisher`][proxystore.stream.protocols.Publisher] protocols.
             Used to publish event messages when new objects are added to
             the stream.
         aggregator: Optional aggregator which takes as input the batch of
@@ -94,7 +109,7 @@ class StreamProducer(Generic[T]):
             metadata dict from each object in the batch.
         batch_size: Batch size used for batching and aggregation.
         default_store: Specify the default
-            [`Store`][proxystore.store.base.Store] to be used with topics
+            [`Store`][proxystore.store.Store] to be used with topics
             not explicitly set in `stores`. If no default is provided, objects
             are included directly in the event.
         filter_: Optional filter to apply prior to sending objects to the
@@ -102,7 +117,7 @@ class StreamProducer(Generic[T]):
             metadata, the object will *not* be sent to the stream. The filter
             is applied before aggregation or batching.
         stores: Mapping from topic names to an optional
-            [`Store`][proxystore.store.base.Store] instance used to store
+            [`Store`][proxystore.store.Store] instance used to store
             and communicate serialized objects streamed to that topic.
             If the value associated with a topic is `None`, the object is
             included directly in the event.
@@ -167,12 +182,13 @@ class StreamProducer(Generic[T]):
         Warning:
             Objects buffered in an incomplete batch will be lost. Call
             [`flush()`][proxystore.stream.StreamProducer] to ensure
-            that all objects are sent before closing.
+            that all objects are sent before closing, or pass a list of
+            topics to flush and close.
 
         Warning:
             By default, this will close the
             [`Publisher`][proxystore.stream.protocols.Publisher] interface,
-            but will **not** close the [`Store`][proxystore.store.base.Store]
+            but will **not** close the [`Store`][proxystore.store.Store]
             interfaces.
 
         Args:
@@ -182,7 +198,7 @@ class StreamProducer(Generic[T]):
             publisher: Close the
                 [`Publisher`][proxystore.stream.protocols.Publisher] interface.
             stores: Close and [unregister][proxystore.store.unregister_store]
-                the [`Store`][proxystore.store.base.Store] instances.
+                the [`Store`][proxystore.store.Store] instances.
         """  # noqa: E501
         self.close_topics(*topics)
         if stores:
@@ -197,7 +213,7 @@ class StreamProducer(Generic[T]):
             self.publisher.close()
 
     def close_topics(self, *topics: str) -> None:
-        """Send publish an end of stream event to each topic.
+        """Send an end of stream event to each topic.
 
         A [`StreamConsumer`][proxystore.stream.StreamConsumer]
         will raise a [`StopIteration`][StopIteration] exception when an
@@ -228,7 +244,7 @@ class StreamProducer(Generic[T]):
         1. Pops the current batch of objects off the topic buffer.
         2. Applies the aggregator to the batch if one was provided.
         3. Puts the batch of objects in the
-           [`Store`][proxystore.store.base.Store].
+           [`Store`][proxystore.store.Store].
         4. Creates a new batch event using the keys returned by the store and
            additional metadata.
         5. Publishes the event to the stream via the
@@ -322,21 +338,23 @@ class StreamProducer(Generic[T]):
             topic: Stream topic to send the object to.
             obj: Object to send via the stream.
             evict: Evict the object from the
-                [`Store`][proxystore.store.base.Store] once the object is
+                [`Store`][proxystore.store.Store] once the object is
                 consumed by a
                 [`StreamConsumer`][proxystore.stream.StreamConsumer].
                 Set to `False` if a single object in the stream will be
                 consumed by multiple consumers. Note that when set to `False`,
-                data eviction must be handled manually.
+                data eviction must be handled manually. This parameter is
+                ignored if a [`Store`][proxystore.store.base.Store] is not
+                mapped to this topic.
             metadata: Dictionary containing metadata about the object. This
                 can be used by the producer or consumer to filter new
                 object events. The default value `None` is replaced with an
                 empty [`dict`][dict].
 
         Raises:
-            TopicClosedError: if the `topic` has already been closed via
+            TopicClosedError: If the `topic` has already been closed via
                 [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
-            ValueError: if a store associated with `topic` is not found
+            ValueError: If a store associated with `topic` is not found
                 in the mapping of topics to stores nor a default store is
                 provided.
         """

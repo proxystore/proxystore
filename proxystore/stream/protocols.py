@@ -1,17 +1,28 @@
-"""Protocols used by the streams.
+"""Stream interface protocols.
 
 ## Publisher/Subscriber
 
 The [`Publisher`][proxystore.stream.protocols.Publisher] and
 [`Subscriber`][proxystore.stream.protocols.Subscriber] are
 [`Protocols`][typing.Protocol] which define the publisher and subscriber
-interfaces to a pub/sub-like messaging system.
+interfaces to a pub/sub-like message broker system.
 
 In general, these protocols do not enforce any other implementation details
 besides the interface. For example, implementations could choose to support
 any producer-to-consumer configurations (e.g., 1:1, 1:N, N:N).
-A set of shims implementing these protocols for third-party message brokers
-are provided in [`proxystore.stream.shims`][proxystore.stream.shims].
+
+There are two variants of publisher/subscribers:
+
+* `Event`: The lower-level variant that are responsible for publishing and
+  retrieving [`EventBatch`][proxystore.stream.events.EventBatch] types.
+  These require more complexity to implement but can support finer
+  optimization.
+* `Message`: The higher-level variant that publishes pre-serialized messages
+  in the form of bytes-strings and receives messages on the subscriber side.
+  These are simple to implement.
+
+A set of shims to third-party message brokers are provided in
+[`proxystore.stream.shims`][proxystore.stream.shims].
 
 ## Plugins
 

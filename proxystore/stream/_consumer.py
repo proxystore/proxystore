@@ -18,8 +18,8 @@ else:  # pragma: <3.11 cover
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyOr
 from proxystore.store import get_or_create_store
+from proxystore.store import Store
 from proxystore.store import unregister_store
-from proxystore.store.base import Store
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import EventBatch
@@ -39,7 +39,7 @@ T = TypeVar('T')
 
 
 class StreamConsumer(Generic[T]):
-    """Proxy stream consumer interface.
+    """Stream consumer interface.
 
     This interface acts as an iterator that will yield items from the stream
     until the stream is closed.
@@ -60,7 +60,9 @@ class StreamConsumer(Generic[T]):
         ```python
         consumer = StreamConsumer[str](...)
         reveal_type(consumer.next())
-        # Proxy[str]
+        # ProxyOr[str]
+        reveal_type(consumer.next_object())
+        # str
         ```
         If the stream is heterogeneous or objects types are not known ahead
         of time, it may be appropriate to annotate the stream with
@@ -68,7 +70,7 @@ class StreamConsumer(Generic[T]):
         ```python
         consumer = StreamConsumer[Any](...)
         reveal_type(consumer.next())
-        # Proxy[Any]
+        # ProxyOr[Any]
         ```
 
     Warning:
@@ -82,15 +84,15 @@ class StreamConsumer(Generic[T]):
         is set correctly and the there is not code incidentally resolving
         proxies before you expect.
 
-    Note:
+    Warning:
         The consumer is not thread-safe.
 
     Attributes:
         subscriber: Subscriber interface.
 
     Args:
-        subscriber: Object which implements the
-            [`Subscriber`][proxystore.stream.protocols.Subscriber] protocol.
+        subscriber: Object which implements one of the
+            [`Subscriber`][proxystore.stream.protocols.Subscriber] protocols.
             Used to listen for new event messages indicating new objects
             in the stream.
         filter_: Optional filter to apply to event metadata received from the
@@ -124,7 +126,11 @@ class StreamConsumer(Generic[T]):
         self.close()
 
     def __iter__(self) -> Self:
-        """Return an iterator that will yield proxies of stream objects."""
+        """Return an iterator that will yield stream items.
+
+        The return type of items is based on that returned by
+        [`next()`][proxystore.stream.StreamConsumer.next].
+        """
         return self
 
     def __next__(self) -> ProxyOr[T]:
@@ -137,12 +143,12 @@ class StreamConsumer(Generic[T]):
         Warning:
             By default, this will close the
             [`Subscriber`][proxystore.stream.protocols.Subscriber] interface,
-            but will **not** close the [`Store`][proxystore.store.base.Store]
+            but will **not** close the [`Store`][proxystore.store.Store]
             interfaces.
 
         Args:
             stores: Close and [unregister][proxystore.store.unregister_store]
-                the [`Store`][proxystore.store.base.Store] instances
+                the [`Store`][proxystore.store.Store] instances
                 used to resolve objects consumed from the stream.
             subscriber: Close the
                 [`Subscriber`][proxystore.stream.protocols.Subscriber]
@@ -219,11 +225,12 @@ class StreamConsumer(Generic[T]):
     def iter_with_metadata(
         self,
     ) -> Generator[tuple[dict[str, Any], ProxyOr[T]], None, None]:
-        """Return an iterator that yields tuples of metadata and data.
+        """Create an iterator that yields tuples of metadata and items.
 
-        Note:
-            This is different from `iter(consumer)` which will yield
-            *only* proxies of objects in the stream.
+        The return type of items is based on that returned by
+        [`next()`][proxystore.stream.StreamConsumer.next].
+        This is different from `iter(consumer)` which will yield *only* items,
+        dropping the metadata.
         """
         while True:
             try:
@@ -232,12 +239,7 @@ class StreamConsumer(Generic[T]):
                 return
 
     def iter_objects(self) -> Generator[T, None, None]:
-        """Return an iterator that yields objects from the stream.
-
-        Note:
-            This is different from `iter(consumer)` which can yield
-            proxies of objects in the stream.
-        """
+        """Create an iterator that yields objects from the stream."""
         while True:
             try:
                 yield self.next_object()
@@ -247,12 +249,7 @@ class StreamConsumer(Generic[T]):
     def iter_objects_with_metadata(
         self,
     ) -> Generator[tuple[dict[str, Any], T], None, None]:
-        """Return an iterator that yields tuples of metadata and objects.
-
-        Note:
-            This is different from `iter(consumer)` which can yield
-            proxies of objects in the stream.
-        """
+        """Create an iterator that yields tuples of metadata and objects."""
         while True:
             try:
                 yield self.next_object_with_metadata()
@@ -260,20 +257,26 @@ class StreamConsumer(Generic[T]):
                 return
 
     def next(self) -> ProxyOr[T]:
-        """Return a proxy of the next object in the stream.
+        """Get the next item in the stream.
 
         Note:
             This method has the potential side effect of initializing and
-            globally registering a new [`Store`][proxystore.store.base.Store]
+            globally registering a new [`Store`][proxystore.store.Store]
             instance. This will happen at most once per topic because the
             producer can map topic names to
-            [`Store`][proxystore.store.base.Store] instances. This class will
-            keep track of the [`Store`][proxystore.store.base.Store] instances
+            [`Store`][proxystore.store.Store] instances. This class will
+            keep track of the [`Store`][proxystore.store.Store] instances
             used by the stream and will close and unregister them when this
             class is closed.
 
+        Returns:
+            [`Proxy[T]`][proxystore.proxy.Proxy] is returned if the topic \
+            was associated with a [`Store`][proxystore.store.Store] \
+            in the [`StreamProducer`][proxystore.stream.StreamProducer] \
+            otherwise `T` is returned.
+
         Raises:
-            StopIteration: when an end of stream event is received from a
+            StopIteration: When an end of stream event is received from a
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
         """
@@ -281,18 +284,18 @@ class StreamConsumer(Generic[T]):
         return proxy
 
     def next_with_metadata(self) -> tuple[dict[str, Any], ProxyOr[T]]:
-        """Return a tuple of metadata and proxy for the next object.
+        """Get the next item with metadata in the stream.
 
         Note:
-            This method has the same potential side effects as
-            [`next()`][proxystore.stream.StreamConsumer.next].
+            This method has the same potential side effects as and return type
+            as [`next()`][proxystore.stream.StreamConsumer.next].
 
         Returns:
             Dictionary of user-provided metadata associated with the object.
             Proxy of the next object in the stream.
 
         Raises:
-            StopIteration: when an end of stream event is received from a
+            StopIteration: When an end of stream event is received from a
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
         """
@@ -311,24 +314,24 @@ class StreamConsumer(Generic[T]):
             raise AssertionError('Unreachable.')
 
     def next_object(self) -> T:
-        """Return the next object in the stream.
+        """Get the next object in the stream.
 
         Note:
             This method has the same potential side effects as
             [`next()`][proxystore.stream.StreamConsumer.next].
 
         Raises:
-            StopIteration: when an end of stream event is received from a
+            StopIteration: When an end of stream event is received from a
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
-            ValueError: if the store does not return an object using the key
+            ValueError: If the store does not return an object using the key
                 included in the object's event metadata.
         """
         _, obj = self.next_object_with_metadata()
         return obj
 
     def next_object_with_metadata(self) -> tuple[dict[str, Any], T]:
-        """Return a tuple of metadata and the next object in the stream.
+        """Get the next object with metadata in the stream.
 
         Note:
             This method has the same potential side effects as
@@ -339,7 +342,7 @@ class StreamConsumer(Generic[T]):
             Next object in the stream.
 
         Raises:
-            StopIteration: when an end of stream event is received from a
+            StopIteration: When an end of stream event is received from a
                 producer. Note that this does not call
                 [`close()`][proxystore.stream.StreamConsumer.close].
         """

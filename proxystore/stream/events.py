@@ -1,13 +1,4 @@
-"""Event metadata type.
-
-Warning:
-    Event types are not considered as part of the public API and may change
-    at any time without warning. [`Events`][proxystore.stream.events.Event]
-    are created and consumed internally by the
-    [StreamProducer][proxystore.stream.StreamProducer] and
-    [StreamConsumer][proxystore.stream.StreamConsumer] and
-    never exposed to client code.
-"""
+"""Event types."""
 
 from __future__ import annotations
 
@@ -51,13 +42,7 @@ class NewObjectEvent:
 
 @dataclasses.dataclass
 class NewObjectKeyEvent:
-    """New object key in stream event.
-
-    Note:
-        The store configuration associated with the key is stored in the
-        [`EventBatch`][proxystore.stream.events.EventBatch] that will contain
-        this event.
-    """
+    """New object key in stream event."""
 
     topic: str
     key_type: str

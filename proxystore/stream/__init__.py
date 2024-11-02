@@ -1,4 +1,4 @@
-"""Proxy streaming interface.
+"""Streaming interface.
 
 Warning:
     The streaming interfaces are experimental and may change in future
