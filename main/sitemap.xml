@@ -137,6 +137,10 @@
          <lastmod>2024-11-14</lastmod>
     </url>
     <url>
+         <loc>https://docs.proxystore.dev/latest/api/globus/app/</loc>
+         <lastmod>2024-11-14</lastmod>
+    </url>
+    <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/cli/</loc>
          <lastmod>2024-11-14</lastmod>
     </url>
@@ -145,19 +149,7 @@
          <lastmod>2024-11-14</lastmod>
     </url>
     <url>
-         <loc>https://docs.proxystore.dev/latest/api/globus/manager/</loc>
-         <lastmod>2024-11-14</lastmod>
-    </url>
-    <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/scopes/</loc>
-         <lastmod>2024-11-14</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.proxystore.dev/latest/api/globus/storage/</loc>
-         <lastmod>2024-11-14</lastmod>
-    </url>
-    <url>
-         <loc>https://docs.proxystore.dev/latest/api/globus/transfer/</loc>
          <lastmod>2024-11-14</lastmod>
     </url>
     <url>

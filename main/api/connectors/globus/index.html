@@ -1886,6 +1886,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../globus/app/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    app
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../globus/cli/" class="md-nav__link">
         
   
@@ -1928,74 +1949,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../globus/manager/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    manager
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../globus/scopes/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
     scopes
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../globus/storage/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    storage
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../globus/transfer/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    transfer
   </span>
   
 
@@ -4590,8 +4548,8 @@ deleting the <code>local_path</code> of each endpoint.</p>
 </span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
 </span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">clear</span> <span class="o">=</span> <span class="n">clear</span>
 </span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a>
-</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_client</span> <span class="o">=</span> <span class="n">get_transfer_client_flow</span><span class="p">(</span>
-</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>        <span class="n">check_collections</span><span class="o">=</span><span class="p">[</span><span class="n">ep</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">],</span>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_transfer_client</span> <span class="o">=</span> <span class="n">get_transfer_client</span><span class="p">(</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a>        <span class="n">collections</span><span class="o">=</span><span class="p">[</span><span class="n">ep</span><span class="o">.</span><span class="n">uuid</span> <span class="k">for</span> <span class="n">ep</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoints</span><span class="p">],</span>
 </span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
                   </details>
