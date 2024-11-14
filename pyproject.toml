@@ -55,7 +55,7 @@ endpoints = [
     "python-daemon",
     "quart>=0.18.0",
     "requests>=2.27.1",
-    "websockets>=10.0",
+    "websockets>=10,<14",
 ]
 extensions = ["proxystore-ex"]
 kafka = ["confluent-kafka"]
