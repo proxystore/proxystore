@@ -30,7 +30,7 @@ repos:
       - id: mypy
         additional_dependencies:
           - click >= 8.1.0, != 8.1.4
-          - globus-sdk
+          - globus-sdk >= 3.46.0
           - parsl
           - pydantic
           - quart
@@ -38,4 +38,4 @@ repos:
           - types-redis
           - types-requests
           - uvicorn
-          - websockets
+          - websockets >= 10, < 14
