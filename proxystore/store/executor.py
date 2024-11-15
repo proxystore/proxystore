@@ -54,16 +54,16 @@ from __future__ import annotations
 
 import sys
 import warnings
+from collections.abc import Generator
+from collections.abc import Iterable
+from collections.abc import Iterator
+from collections.abc import Mapping
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
 from typing import Callable
 from typing import cast
-from typing import Generator
 from typing import Generic
-from typing import Iterable
-from typing import Iterator
-from typing import Mapping
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
@@ -440,16 +440,13 @@ class StoreExecutor(Executor):
         Args:
             wait: Wait on all pending futures to complete.
             cancel_futures: Cancel all pending futures that the executor
-                has not started running. Only used in Python 3.9 and later.
+                has not started running.
         """
         if isinstance(self.executor, Executor):
-            if sys.version_info >= (3, 9):  # pragma: >=3.9 cover
-                self.executor.shutdown(
-                    wait=wait,
-                    cancel_futures=cancel_futures,
-                )
-            else:  # pragma: <3.9 cover
-                self.executor.shutdown(wait=wait)
+            self.executor.shutdown(
+                wait=wait,
+                cancel_futures=cancel_futures,
+            )
         elif hasattr(self.executor, 'close'):
             # Handle Executor-like classes that don't quite follow the
             # Executor protocol, such as the Dask Distributed Client.
