@@ -4102,7 +4102,7 @@ the connector object.</p>
 
 
 <a href="#proxystore.connectors.file.FileConnector.get_batch" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_batch</span><span class="p">(</span><span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_batch</span><span class="p">(</span><span class="n">keys</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="collections.abc.Sequence" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4114,7 +4114,7 @@ the connector object.</p>
     <ul>
         <li class="doc-section-item field-body">
           <b><code>keys</code></b>
-              (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a>]</code>)
+              (<code><a class="autorefs autorefs-external" title="collections.abc.Sequence" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a>]</code>)
           –
           <div class="doc-md-description">
             <p>Sequence of keys associated with objects to retrieve.</p>
@@ -4325,7 +4325,7 @@ Ignored by this implementation.</p>
 
 
 <a href="#proxystore.connectors.file.FileConnector.put_batch" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">put_batch</span><span class="p">(</span><span class="n">objs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a></span><span class="p">]</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">put_batch</span><span class="p">(</span><span class="n">objs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="collections.abc.Sequence" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="proxystore.connectors.file.FileKey" href="#proxystore.connectors.file.FileKey">FileKey</a></span><span class="p">]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4337,7 +4337,7 @@ Ignored by this implementation.</p>
     <ul>
         <li class="doc-section-item field-body">
           <b><code>objs</code></b>
-              (<code><a class="autorefs autorefs-external" title="typing.Sequence" href="https://docs.python.org/3/library/typing.html#typing.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
+              (<code><a class="autorefs autorefs-external" title="collections.abc.Sequence" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Sequence">Sequence</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#bytes">bytes</a>]</code>)
           –
           <div class="doc-md-description">
             <p>Sequence of serialized objects to put in the store.</p>

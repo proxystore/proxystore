@@ -3984,9 +3984,9 @@ result proxies.</p>
 <a href="#proxystore.store.executor.StoreExecutor.map" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">map</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="nf">function</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Callable" href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.P">P</span></span><span class="p">,</span> <span class="n"><span title="proxystore.store.executor.R">R</span></span><span class="p">],</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.P.args">args</span></span><span class="p">],</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="n">iterables</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="collections.abc.Iterable" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.P.args">args</span></span><span class="p">],</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="typing.Iterator" href="https://docs.python.org/3/library/typing.html#typing.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.R">R</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.R">R</span></span><span class="p">]]</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="collections.abc.Iterator" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.R">R</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.executor.R">R</span></span><span class="p">]]</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4007,7 +4007,7 @@ passed iterables.</p>
         </li>
         <li class="doc-section-item field-body">
           <b><code>iterables</code></b>
-              (<code><a class="autorefs autorefs-external" title="typing.Iterable" href="https://docs.python.org/3/library/typing.html#typing.Iterable">Iterable</a>[<span title="proxystore.store.executor.P.args">args</span>]</code>, default:
+              (<code><a class="autorefs autorefs-external" title="collections.abc.Iterable" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<span title="proxystore.store.executor.P.args">args</span>]</code>, default:
                   <code>()</code>
 )
           –
@@ -4031,7 +4031,7 @@ passed iterables.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" title="typing.Iterator" href="https://docs.python.org/3/library/typing.html#typing.Iterator">Iterator</a>[<span title="proxystore.store.executor.R">R</span> | <a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.executor.R">R</span>]]</code>
+              <code><a class="autorefs autorefs-external" title="collections.abc.Iterator" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator">Iterator</a>[<span title="proxystore.store.executor.R">R</span> | <a class="autorefs autorefs-internal" title="proxystore.proxy.Proxy" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.executor.R">R</span>]]</code>
           –
           <div class="doc-md-description">
             <p>An iterator equivalent to: <code>map(func, *iterables)</code> but the calls             may be evaluated out-of-order.</p>
@@ -4193,7 +4193,7 @@ of Python's <a class="autorefs autorefs-external" href="https://docs.python.org/
           –
           <div class="doc-md-description">
             <p>Cancel all pending futures that the executor
-has not started running. Only used in Python 3.9 and later.</p>
+has not started running.</p>
           </div>
         </li>
     </ul>
@@ -4249,10 +4249,7 @@ has not started running. Only used in Python 3.9 and later.</p>
 <span class="normal"><a href="#__codelineno-0-461">461</a></span>
 <span class="normal"><a href="#__codelineno-0-462">462</a></span>
 <span class="normal"><a href="#__codelineno-0-463">463</a></span>
-<span class="normal"><a href="#__codelineno-0-464">464</a></span>
-<span class="normal"><a href="#__codelineno-0-465">465</a></span>
-<span class="normal"><a href="#__codelineno-0-466">466</a></span>
-<span class="normal"><a href="#__codelineno-0-467">467</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-464">464</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-415"><a id="__codelineno-0-415" name="__codelineno-0-415"></a><span class="k">def</span> <span class="nf">shutdown</span><span class="p">(</span>
 </span><span id="__span-0-416"><a id="__codelineno-0-416" name="__codelineno-0-416"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-417"><a id="__codelineno-0-417" name="__codelineno-0-417"></a>    <span class="n">wait</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a>    <span class="o">*</span><span class="p">,</span>
@@ -4280,31 +4277,28 @@ has not started running. Only used in Python 3.9 and later.</p>
 </span><span id="__span-0-440"><a id="__codelineno-0-440" name="__codelineno-0-440"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-441"><a id="__codelineno-0-441" name="__codelineno-0-441"></a><span class="sd">        wait: Wait on all pending futures to complete.</span>
 </span><span id="__span-0-442"><a id="__codelineno-0-442" name="__codelineno-0-442"></a><span class="sd">        cancel_futures: Cancel all pending futures that the executor</span>
-</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            has not started running. Only used in Python 3.9 and later.</span>
+</span><span id="__span-0-443"><a id="__codelineno-0-443" name="__codelineno-0-443"></a><span class="sd">            has not started running.</span>
 </span><span id="__span-0-444"><a id="__codelineno-0-444" name="__codelineno-0-444"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-445"><a id="__codelineno-0-445" name="__codelineno-0-445"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="n">Executor</span><span class="p">):</span>
-</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">):</span>  <span class="c1"># pragma: &gt;=3.9 cover</span>
-</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span>
-</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>                <span class="n">wait</span><span class="o">=</span><span class="n">wait</span><span class="p">,</span>
-</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>                <span class="n">cancel_futures</span><span class="o">=</span><span class="n">cancel_futures</span><span class="p">,</span>
-</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>            <span class="p">)</span>
-</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="k">else</span><span class="p">:</span>  <span class="c1"># pragma: &lt;3.9 cover</span>
-</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span><span class="n">wait</span><span class="o">=</span><span class="n">wait</span><span class="p">)</span>
-</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="s1">&#39;close&#39;</span><span class="p">):</span>
-</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>        <span class="c1"># Handle Executor-like classes that don&#39;t quite follow the</span>
-</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>        <span class="c1"># Executor protocol, such as the Dask Distributed Client.</span>
-</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>    <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
-</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>            <span class="sa">f</span><span class="s1">&#39;Cannot shutdown </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> because it &#39;</span>
-</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="sa">f</span><span class="s1">&#39;is not a subclass of </span><span class="si">{</span><span class="n">Executor</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> nor does it have &#39;</span>
-</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>            <span class="s1">&#39;a close() method.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>            <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
-</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="p">)</span>
-</span><span id="__span-0-465"><a id="__codelineno-0-465" name="__codelineno-0-465"></a>
-</span><span id="__span-0-466"><a id="__codelineno-0-466" name="__codelineno-0-466"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">close_store</span><span class="p">:</span>
-</span><span id="__span-0-467"><a id="__codelineno-0-467" name="__codelineno-0-467"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-0-446"><a id="__codelineno-0-446" name="__codelineno-0-446"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">shutdown</span><span class="p">(</span>
+</span><span id="__span-0-447"><a id="__codelineno-0-447" name="__codelineno-0-447"></a>            <span class="n">wait</span><span class="o">=</span><span class="n">wait</span><span class="p">,</span>
+</span><span id="__span-0-448"><a id="__codelineno-0-448" name="__codelineno-0-448"></a>            <span class="n">cancel_futures</span><span class="o">=</span><span class="n">cancel_futures</span><span class="p">,</span>
+</span><span id="__span-0-449"><a id="__codelineno-0-449" name="__codelineno-0-449"></a>        <span class="p">)</span>
+</span><span id="__span-0-450"><a id="__codelineno-0-450" name="__codelineno-0-450"></a>    <span class="k">elif</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">,</span> <span class="s1">&#39;close&#39;</span><span class="p">):</span>
+</span><span id="__span-0-451"><a id="__codelineno-0-451" name="__codelineno-0-451"></a>        <span class="c1"># Handle Executor-like classes that don&#39;t quite follow the</span>
+</span><span id="__span-0-452"><a id="__codelineno-0-452" name="__codelineno-0-452"></a>        <span class="c1"># Executor protocol, such as the Dask Distributed Client.</span>
+</span><span id="__span-0-453"><a id="__codelineno-0-453" name="__codelineno-0-453"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-0-454"><a id="__codelineno-0-454" name="__codelineno-0-454"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-455"><a id="__codelineno-0-455" name="__codelineno-0-455"></a>        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+</span><span id="__span-0-456"><a id="__codelineno-0-456" name="__codelineno-0-456"></a>            <span class="sa">f</span><span class="s1">&#39;Cannot shutdown </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">executor</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> because it &#39;</span>
+</span><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a>            <span class="sa">f</span><span class="s1">&#39;is not a subclass of </span><span class="si">{</span><span class="n">Executor</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1"> nor does it have &#39;</span>
+</span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a>            <span class="s1">&#39;a close() method.&#39;</span><span class="p">,</span>
+</span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>            <span class="n">category</span><span class="o">=</span><span class="ne">RuntimeWarning</span><span class="p">,</span>
+</span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a>            <span class="n">stacklevel</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+</span><span id="__span-0-461"><a id="__codelineno-0-461" name="__codelineno-0-461"></a>        <span class="p">)</span>
+</span><span id="__span-0-462"><a id="__codelineno-0-462" name="__codelineno-0-462"></a>
+</span><span id="__span-0-463"><a id="__codelineno-0-463" name="__codelineno-0-463"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">close_store</span><span class="p">:</span>
+</span><span id="__span-0-464"><a id="__codelineno-0-464" name="__codelineno-0-464"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

@@ -3487,7 +3487,7 @@
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">name</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">uuid</span><span class="p">:</span> <span class="n"><span title="proxystore.p2p.relay.manager.Client.uuid.UUID">UUID</span></span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">user</span><span class="p">:</span> <span class="n"><span title="proxystore.p2p.relay.manager.UserT">UserT</span></span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n"><span title="websockets.server.WebSocketServerProtocol">WebSocketServerProtocol</span></span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="websockets.asyncio.server.ServerConnection" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html#websockets.asyncio.server.ServerConnection">ServerConnection</a></span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">created</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="datetime.datetime" href="https://docs.python.org/3/library/datetime.html#datetime.datetime">datetime</a></span> <span class="o">=</span> <span class="n">_utc_current_time</span><span class="p">(),</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
 </span></code></pre></div>
@@ -3528,7 +3528,7 @@
         </li>
         <li class="doc-section-item field-body">
           <b><code><span title="proxystore.p2p.relay.manager.Client.websocket">websocket</span></code></b>
-              (<code><span title="websockets.server.WebSocketServerProtocol">WebSocketServerProtocol</span></code>)
+              (<code><a class="autorefs autorefs-external" title="websockets.asyncio.server.ServerConnection" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html#websockets.asyncio.server.ServerConnection">ServerConnection</a></code>)
           –
           <div class="doc-md-description">
             <p>WebSocket connection to the client.</p>
@@ -3600,7 +3600,7 @@
 <span class="normal"><a href="#__codelineno-0-78">78</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_clients_by_uuid</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">uuid</span><span class="o">.</span><span class="n">UUID</span><span class="p">,</span> <span class="n">Client</span><span class="p">[</span><span class="n">UserT</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 </span><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_clients_by_websocket</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span>
-</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="n">WebSocketServerProtocol</span><span class="p">,</span>
+</span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>        <span class="n">ServerConnection</span><span class="p">,</span>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>        <span class="n">Client</span><span class="p">[</span><span class="n">UserT</span><span class="p">],</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a>    <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 </span></code></pre></div></td></tr></table></div>
@@ -3713,7 +3713,7 @@
 
 <a href="#proxystore.p2p.relay.manager.ClientManager.get_client_by_websocket" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_client_by_websocket</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n"><span title="websockets.server.WebSocketServerProtocol">WebSocketServerProtocol</span></span><span class="p">,</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="websockets.asyncio.server.ServerConnection" href="https://websockets.readthedocs.io/en/stable/reference/asyncio/server.html#websockets.asyncio.server.ServerConnection">ServerConnection</a></span><span class="p">,</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="proxystore.p2p.relay.manager.Client" href="#proxystore.p2p.relay.manager.Client">Client</a></span><span class="p">[</span><span class="n"><span title="proxystore.p2p.relay.manager.UserT">UserT</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
 </span></code></pre></div>
 
@@ -3730,7 +3730,7 @@
 <span class="normal"><a href="#__codelineno-0-97">97</a></span>
 <span class="normal"><a href="#__codelineno-0-98">98</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a><span class="k">def</span> <span class="nf">get_client_by_websocket</span><span class="p">(</span>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>    <span class="bp">self</span><span class="p">,</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n">WebSocketServerProtocol</span><span class="p">,</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>    <span class="n">websocket</span><span class="p">:</span> <span class="n">ServerConnection</span><span class="p">,</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Client</span><span class="p">[</span><span class="n">UserT</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a client by the current websocket connection.&quot;&quot;&quot;</span>
 </span><span id="__span-0-98"><a id="__codelineno-0-98" name="__codelineno-0-98"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clients_by_websocket</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">websocket</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
