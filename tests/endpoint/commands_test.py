@@ -5,8 +5,8 @@ import os
 import pathlib
 import time
 import uuid
+from collections.abc import Generator
 from multiprocessing import Process
-from typing import Generator
 from unittest import mock
 
 import pytest
@@ -252,12 +252,15 @@ def test_remove_endpoint_running(
 ) -> None:
     os.makedirs(os.path.join(tmp_path, _NAME), exist_ok=True)
 
-    with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
-        return_value=str(tmp_path),
-    ), mock.patch(
-        'proxystore.endpoint.commands.get_status',
-        return_value=status,
+    with (
+        mock.patch(
+            'proxystore.endpoint.commands.home_dir',
+            return_value=str(tmp_path),
+        ),
+        mock.patch(
+            'proxystore.endpoint.commands.get_status',
+            return_value=status,
+        ),
     ):
         rv = remove_endpoint(_NAME)
     assert rv == 1
@@ -290,10 +293,13 @@ def test_start_endpoint_detached(tmp_path: pathlib.Path, caplog) -> None:
         relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
-    with mock.patch(
-        'proxystore.endpoint.commands.serve',
-        autospec=True,
-    ), mock.patch('daemon.DaemonContext', autospec=True):
+    with (
+        mock.patch(
+            'proxystore.endpoint.commands.serve',
+            autospec=True,
+        ),
+        mock.patch('daemon.DaemonContext', autospec=True),
+    ):
         rv = start_endpoint(_NAME, detach=True, proxystore_dir=str(tmp_path))
     assert rv == 0
 
@@ -303,12 +309,15 @@ def test_start_endpoint_detached(tmp_path: pathlib.Path, caplog) -> None:
 def test_start_endpoint_running(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.ERROR)
 
-    with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
-        return_value=str(tmp_path),
-    ), mock.patch(
-        'proxystore.endpoint.commands.get_status',
-        return_value=EndpointStatus.RUNNING,
+    with (
+        mock.patch(
+            'proxystore.endpoint.commands.home_dir',
+            return_value=str(tmp_path),
+        ),
+        mock.patch(
+            'proxystore.endpoint.commands.get_status',
+            return_value=EndpointStatus.RUNNING,
+        ),
     ):
         rv = start_endpoint(_NAME)
     assert rv == 1
@@ -410,9 +419,12 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     with open(pid_file, 'w') as f:
         f.write('1')
 
-    with mock.patch('psutil.pid_exists', return_value=False), mock.patch(
-        'proxystore.endpoint.commands.serve',
-        autospec=True,
+    with (
+        mock.patch('psutil.pid_exists', return_value=False),
+        mock.patch(
+            'proxystore.endpoint.commands.serve',
+            autospec=True,
+        ),
     ):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0

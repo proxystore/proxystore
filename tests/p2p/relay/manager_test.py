@@ -10,9 +10,9 @@ from proxystore.p2p.relay.manager import Client
 from proxystore.p2p.relay.manager import ClientManager
 
 
-def mock_websocket() -> websockets.server.WebSocketServerProtocol:
-    with mock.patch('websockets.server.WebSocketServerProtocol'):
-        return websockets.server.WebSocketServerProtocol()  # type: ignore[call-arg]
+def mock_websocket() -> websockets.asyncio.server.ServerConnection:
+    with mock.patch('websockets.asyncio.server.ServerConnection'):
+        return websockets.asyncio.server.ServerConnection()  # type: ignore[call-arg]
 
 
 def generate_client() -> Client[GlobusUser]:

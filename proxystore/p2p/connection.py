@@ -7,8 +7,8 @@ import logging
 import re
 import warnings
 from collections import defaultdict
+from collections.abc import Awaitable
 from typing import Any
-from typing import Awaitable
 from typing import Callable
 from uuid import UUID
 

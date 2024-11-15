@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import queue
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 from unittest import mock
 
 import pytest

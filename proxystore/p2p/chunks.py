@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import enum
 import math
+from collections.abc import Generator
 from struct import pack
 from struct import unpack_from
-from typing import Generator
 
 CHUNK_HEADER_LENGTH = 2 + (4 * 4)
 CHUNK_HEADER_FORMAT = '!HLLLL'

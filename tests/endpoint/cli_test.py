@@ -4,7 +4,7 @@ import logging
 import os
 import pathlib
 import uuid
-from typing import Generator
+from collections.abc import Generator
 from unittest import mock
 
 import click
@@ -22,12 +22,15 @@ from proxystore.p2p.nat import Result
 
 @pytest.fixture
 def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
-    with mock.patch(
-        'proxystore.utils.environment.home_dir',
-        return_value=str(tmp_path),
-    ), mock.patch(
-        'proxystore.endpoint.commands.home_dir',
-        return_value=str(tmp_path),
+    with (
+        mock.patch(
+            'proxystore.utils.environment.home_dir',
+            return_value=str(tmp_path),
+        ),
+        mock.patch(
+            'proxystore.endpoint.commands.home_dir',
+            return_value=str(tmp_path),
+        ),
     ):
         yield str(tmp_path)
 

@@ -3,11 +3,11 @@ from __future__ import annotations
 import asyncio
 import os
 import pathlib
+from collections.abc import Generator
 from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any
 from typing import Callable
-from typing import Generator
 
 import pytest
 

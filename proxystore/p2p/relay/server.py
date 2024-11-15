@@ -13,9 +13,8 @@ from typing import Generic
 from typing import TypeVar
 
 try:
-    import websockets.client
     import websockets.exceptions
-    from websockets.server import WebSocketServerProtocol
+    from websockets.asyncio.server import ServerConnection
 except ImportError as e:  # pragma: no cover
     import warnings
 
@@ -115,7 +114,7 @@ class RelayServer(Generic[UserT]):
 
     async def register(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         request: RelayRegistrationRequest,
     ) -> None:
         """Register client with relay server.
@@ -132,8 +131,10 @@ class RelayServer(Generic[UserT]):
                 registered by another user.
         """
         try:
+            # Available after opening handshake which is done at this point
+            assert websocket.request is not None
             auth_user = self.authenticator.authenticate_user(
-                websocket.request_headers,
+                websocket.request.headers,
             )
         except RelayServerError as e:
             logging.warning(
@@ -243,7 +244,7 @@ class RelayServer(Generic[UserT]):
 
     async def _process_message(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
         message: RelayMessage,
     ) -> None:
         # Dispatches the message to the correct method depending on the type
@@ -266,11 +267,7 @@ class RelayServer(Generic[UserT]):
         else:
             raise AssertionError('Unreachable.')
 
-    async def handler(  # noqa: C901
-        self,
-        websocket: WebSocketServerProtocol,
-        uri: str,
-    ) -> None:
+    async def handler(self, websocket: ServerConnection) -> None:  # noqa: C901
         """Websocket server message handler.
 
         The handler will close the connection for the following reasons.
@@ -282,7 +279,6 @@ class RelayServer(Generic[UserT]):
 
         Args:
             websocket: Websocket message was received on.
-            uri: URI message was sent to.
         """
         while True:
             try:

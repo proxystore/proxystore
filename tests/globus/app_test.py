@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import uuid
-from typing import Generator
+from collections.abc import Generator
 from unittest import mock
 
 import pytest

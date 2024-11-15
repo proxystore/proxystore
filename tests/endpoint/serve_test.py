@@ -6,7 +6,7 @@ import os
 import pathlib
 import time
 import uuid
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 from unittest import mock
 from unittest.mock import AsyncMock
 
@@ -255,13 +255,16 @@ async def test_unknown_endpoint_uuid(quart_app) -> None:
     client = quart_app.test_client()
     unknown_uuid = uuid.uuid4()
 
-    with mock.patch(
-        'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
-        return_value=True,
-    ), mock.patch(
-        'proxystore.endpoint.endpoint.Endpoint.peer_manager',
-        new_callable=mock.PropertyMock,
-    ) as mock_peer_manager_property:
+    with (
+        mock.patch(
+            'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
+            return_value=True,
+        ),
+        mock.patch(
+            'proxystore.endpoint.endpoint.Endpoint.peer_manager',
+            new_callable=mock.PropertyMock,
+        ) as mock_peer_manager_property,
+    ):
         mock_peer_manager = AsyncMock()
         mock_peer_manager.send = AsyncMock(side_effect=Exception())
         mock_peer_manager.close = AsyncMock()
@@ -399,17 +402,21 @@ def test_get_auth_headers_globus() -> None:
     mock_authorizer = mock.MagicMock()
     header = 'Bearer <TOKEN>'
 
-    with mock.patch(
-        'proxystore.endpoint.serve.get_globus_app',
-        return_value=globus_app,
-    ), mock.patch.object(
-        globus_app,
-        'get_authorizer',
-        return_value=mock_authorizer,
-    ), mock.patch.object(
-        mock_authorizer,
-        'get_authorization_header',
-        return_value=header,
+    with (
+        mock.patch(
+            'proxystore.endpoint.serve.get_globus_app',
+            return_value=globus_app,
+        ),
+        mock.patch.object(
+            globus_app,
+            'get_authorizer',
+            return_value=mock_authorizer,
+        ),
+        mock.patch.object(
+            mock_authorizer,
+            'get_authorization_header',
+            return_value=header,
+        ),
     ):
         assert _get_auth_headers('globus')['Authorization'] == header
 
@@ -417,14 +424,18 @@ def test_get_auth_headers_globus() -> None:
 def test_get_auth_headers_globus_missing() -> None:
     globus_app = get_testing_app()
 
-    with mock.patch(
-        'proxystore.endpoint.serve.get_globus_app',
-        return_value=globus_app,
-    ), mock.patch.object(
-        globus_app,
-        'get_authorizer',
-        side_effect=TokenValidationError(),
-    ), pytest.raises(
-        SystemExit,
+    with (
+        mock.patch(
+            'proxystore.endpoint.serve.get_globus_app',
+            return_value=globus_app,
+        ),
+        mock.patch.object(
+            globus_app,
+            'get_authorizer',
+            side_effect=TokenValidationError(),
+        ),
+        pytest.raises(
+            SystemExit,
+        ),
     ):
         assert _get_auth_headers('globus')

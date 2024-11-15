@@ -8,8 +8,8 @@ import logging
 import sys
 import time
 import uuid
+from collections.abc import Sequence
 from typing import Literal
-from typing import Sequence
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.p2p.manager import PeerManager

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pathlib
-from typing import List
+from typing import List  # noqa: UP035
 from typing import Optional
 
 from pydantic import BaseModel

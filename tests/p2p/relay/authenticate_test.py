@@ -69,13 +69,16 @@ def test_authenticate_user_with_token() -> None:
 
 def test_authenticate_user_with_token_expired_token() -> None:
     authenticator = GlobusAuthenticator(str(uuid.uuid4()), '')
-    with mock.patch.object(
-        authenticator.auth_client,
-        'oauth2_token_introspect',
-        return_value={'active': False},
-    ), pytest.raises(
-        ForbiddenError,
-        match='Token is expired or has been revoked.',
+    with (
+        mock.patch.object(
+            authenticator.auth_client,
+            'oauth2_token_introspect',
+            return_value={'active': False},
+        ),
+        pytest.raises(
+            ForbiddenError,
+            match='Token is expired or has been revoked.',
+        ),
     ):
         authenticator.authenticate_user({'Authorization': 'Bearer <TOKEN>'})
 
@@ -86,13 +89,16 @@ def test_authenticate_user_with_token_wrong_audience() -> None:
         '',
         audience='audience',
     )
-    with mock.patch.object(
-        authenticator.auth_client,
-        'oauth2_token_introspect',
-        return_value={'active': True},
-    ), pytest.raises(
-        ForbiddenError,
-        match='Token audience does not include "audience"',
+    with (
+        mock.patch.object(
+            authenticator.auth_client,
+            'oauth2_token_introspect',
+            return_value={'active': True},
+        ),
+        pytest.raises(
+            ForbiddenError,
+            match='Token audience does not include "audience"',
+        ),
     ):
         authenticator.authenticate_user({'Authorization': 'Bearer <TOKEN>'})
 

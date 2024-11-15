@@ -18,7 +18,7 @@ else:  # pragma: <3.11 cover
 try:
     import websockets
     import websockets.exceptions
-    from websockets.client import WebSocketClientProtocol
+    from websockets.asyncio.client import ClientConnection
 except ImportError as e:  # pragma: no cover
     import warnings
 
@@ -86,7 +86,7 @@ class RelayClient:
             Otherwise, reconnections will only be attempted when sending or
             receiving a message.
         ssl_context: Custom SSL context to pass to
-            [`websockets.connect()`][websockets.legacy.client.connect]. A TLS
+            [`websockets.connect()`][websockets.asyncio.client.connect]. A TLS
             context is created with
             [`ssl.create_default_context()`][ssl.create_default_context]
             when connecting to a `wss://` URI and `ssl_context` is not
@@ -144,7 +144,7 @@ class RelayClient:
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
-        self._websocket: WebSocketClientProtocol | None = None
+        self._websocket: ClientConnection | None = None
 
     async def __aenter__(self) -> Self:
         await self.connect()
@@ -158,7 +158,7 @@ class RelayClient:
     ) -> None:
         await self.close()
 
-    async def _register(self, timeout: float) -> WebSocketClientProtocol:
+    async def _register(self, timeout: float) -> ClientConnection:
         """Open a websocket connection and register with the relay server.
 
         Args:
@@ -176,11 +176,11 @@ class RelayClient:
                 was closed while registering.
             RelayRegistrationError: If the registration process failed.
         """
-        websocket = await websockets.client.connect(
+        websocket = await websockets.asyncio.client.connect(
             self._address,
             open_timeout=timeout,
             ssl=self._ssl_context,
-            extra_headers=self._extra_headers,
+            additional_headers=self._extra_headers,
         )
 
         registration_message = RelayRegistrationRequest(self.name, self.uuid)
@@ -228,7 +228,7 @@ class RelayClient:
         assert self._websocket is not None
         while True:
             await self._websocket.wait_closed()
-            assert self._websocket.closed
+            assert self._websocket.state is websockets.protocol.State.CLOSED
             await self.connect()
 
     @property
@@ -242,7 +242,7 @@ class RelayClient:
         return self._uuid
 
     @property
-    def websocket(self) -> WebSocketClientProtocol:
+    def websocket(self) -> ClientConnection:
         """Websocket connection to the relay server.
 
         Raises:
@@ -251,7 +251,10 @@ class RelayClient:
                 [`connect()`][proxystore.p2p.relay.client.RelayClient.connect]
                 needs to be called.
         """
-        if self._websocket is not None and self._websocket.open:
+        if (
+            self._websocket is not None
+            and self._websocket.state is websockets.protocol.State.OPEN
+        ):
             return self._websocket
         else:
             raise RelayNotConnectedError(
@@ -284,7 +287,10 @@ class RelayClient:
                 from and must be addressed by the user.
         """
         async with self._connect_lock:
-            if self._websocket is not None and self._websocket.open:
+            if (
+                self._websocket is not None
+                and self._websocket.state == websockets.protocol.State.OPEN
+            ):
                 return
 
             backoff_seconds = self._initial_backoff_seconds
@@ -315,7 +321,8 @@ class RelayClient:
 
                     if (
                         isinstance(e, websockets.exceptions.ConnectionClosed)
-                        and e.code in self._unrecoverable_status_codes
+                        and e.rcvd is not None
+                        and e.rcvd.code in self._unrecoverable_status_codes
                     ):
                         raise
 

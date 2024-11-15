@@ -23,9 +23,12 @@ def test_background_task_exits_on_error() -> None:
     async def run(task) -> None:
         await spawn_guarded_background_task(task)
 
-    with contextlib.redirect_stdout(
-        None,
-    ), contextlib.redirect_stderr(None):
+    with (
+        contextlib.redirect_stdout(
+            None,
+        ),
+        contextlib.redirect_stderr(None),
+    ):
         asyncio.run(run(okay_task))
         with pytest.raises(SafeTaskExitError):
             asyncio.run(run(safe_task))
@@ -42,9 +45,12 @@ def test_background_task_error_is_logged(caplog) -> None:
     async def run(task) -> None:
         await spawn_guarded_background_task(task)
 
-    with contextlib.redirect_stdout(
-        None,
-    ), contextlib.redirect_stderr(None):
+    with (
+        contextlib.redirect_stdout(
+            None,
+        ),
+        contextlib.redirect_stderr(None),
+    ):
         with pytest.raises(SystemExit):
             asyncio.run(run(bad_task))
 

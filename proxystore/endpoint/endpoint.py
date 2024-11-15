@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import enum
 import logging
+from collections.abc import Generator
 from types import TracebackType
 from typing import Any
-from typing import Generator
 from uuid import UUID
 from uuid import uuid4
 

@@ -4,12 +4,12 @@ import dataclasses
 import logging
 import sys
 from collections import defaultdict
+from collections.abc import Iterable
+from collections.abc import Mapping
 from types import TracebackType
 from typing import Any
 from typing import Callable
 from typing import Generic
-from typing import Iterable
-from typing import Mapping
 from typing import TypeVar
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import decimal
 import re
-from typing import Generator
+from collections.abc import Generator
 
 
 def chunk_bytes(

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import Any
 from typing import NamedTuple
 from typing import Protocol
 from typing import runtime_checkable
-from typing import Sequence
 from typing import TypeVar
 
 KeyT = TypeVar('KeyT', bound=NamedTuple)

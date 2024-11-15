@@ -83,7 +83,7 @@ async def test_recv_wrong_type(relay_server) -> None:
 async def test_connect_received_non_string(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
-            'websockets.WebSocketClientProtocol.recv',
+            'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=b''),
         ):
             with pytest.raises(AssertionError, match='non-string'):
@@ -94,7 +94,7 @@ async def test_connect_received_non_string(relay_server) -> None:
 async def test_connect_received_bad_message(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
-            'websockets.WebSocketClientProtocol.recv',
+            'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value='bad message'),
         ):
             with pytest.raises(
@@ -109,7 +109,7 @@ async def test_connect_failure(relay_server) -> None:
     message = RelayResponse(success=False, message='test error', error=True)
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
-            'websockets.WebSocketClientProtocol.recv',
+            'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=encode_relay_message(message)),
         ):
             with pytest.raises(RelayRegistrationError, match='test error'):
@@ -121,7 +121,7 @@ async def test_connect_unknown_response(relay_server) -> None:
     message = RelayRegistrationRequest('name', uuid.uuid4())
     async with RelayClient(relay_server.address) as client:
         with mock.patch(
-            'websockets.WebSocketClientProtocol.recv',
+            'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=encode_relay_message(message)),
         ):
             with pytest.raises(
@@ -167,11 +167,14 @@ async def test_relay_server_connect_fatal_error(relay_server) -> None:
         sent=None,
     )
     client = RelayClient(relay_server.address, reconnect_task=False)
-    with mock.patch.object(
-        client,
-        '_register',
-        AsyncMock(side_effect=error),
-    ), pytest.raises(type(error), match='ForbiddenError'):
+    with (
+        mock.patch.object(
+            client,
+            '_register',
+            AsyncMock(side_effect=error),
+        ),
+        pytest.raises(type(error), match='ForbiddenError'),
+    ):
         await client.connect(retry=True)
 
     await client.close()
@@ -225,10 +228,10 @@ async def test_relay_server_auto_reconnection(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
         old_websocket = client.websocket
         await old_websocket.close()
-        assert old_websocket.closed
+        assert old_websocket.state is websockets.protocol.State.CLOSED
         # Give opportunity to yield control to any clean up methods within
         # the websocket.
         for _ in range(10):
             await asyncio.sleep(0.001)
-        assert not client.websocket.closed
+        assert client.websocket.state is not websockets.protocol.State.CLOSED
         assert client.websocket != old_websocket

@@ -16,7 +16,7 @@ import shutil
 import signal
 import socket
 import uuid
-from typing import Generator
+from collections.abc import Generator
 
 import daemon.pidfile
 import psutil

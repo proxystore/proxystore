@@ -4,8 +4,8 @@ import math
 import pathlib
 import threading
 import uuid
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 
 import pytest
 

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import os
 import random
+from collections.abc import Generator
 from typing import Any
-from typing import Generator
 from unittest import mock
 
 import pytest
@@ -77,15 +77,19 @@ def globus_connector(
         ],
     )
 
-    with mock.patch(
-        'globus_sdk.DeleteData',
-        MockDeleteData,
-    ), mock.patch(
-        'globus_sdk.TransferData',
-        MockTransferData,
-    ), mock.patch(
-        'proxystore.connectors.globus.get_transfer_client',
-        MockTransferClient,
+    with (
+        mock.patch(
+            'globus_sdk.DeleteData',
+            MockDeleteData,
+        ),
+        mock.patch(
+            'globus_sdk.TransferData',
+            MockTransferData,
+        ),
+        mock.patch(
+            'proxystore.connectors.globus.get_transfer_client',
+            MockTransferClient,
+        ),
     ):
         with globus.GlobusConnector(endpoints=endpoints) as connector:
             yield connector

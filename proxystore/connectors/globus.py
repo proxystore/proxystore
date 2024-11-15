@@ -8,16 +8,16 @@ import os
 import re
 import sys
 import uuid
+from collections.abc import Collection
+from collections.abc import Generator
+from collections.abc import Iterator
+from collections.abc import Sequence
+from re import Pattern
 from types import TracebackType
 from typing import Any
 from typing import Callable
-from typing import Collection
-from typing import Generator
-from typing import Iterator
 from typing import Literal
 from typing import NamedTuple
-from typing import Pattern
-from typing import Sequence
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
