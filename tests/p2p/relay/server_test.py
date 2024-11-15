@@ -107,13 +107,16 @@ async def test_server_register_override_same_websocket(caplog) -> None:
 
     request = RelayRegistrationRequest(client.name, client.uuid)
 
-    with mock.patch.object(
-        server,
-        'unregister',
-    ) as mock_unregister, mock.patch.object(
-        server,
-        'send',
-    ) as mock_send:
+    with (
+        mock.patch.object(
+            server,
+            'unregister',
+        ) as mock_unregister,
+        mock.patch.object(
+            server,
+            'send',
+        ) as mock_send,
+    ):
         await server.register(client.websocket, request)
         mock_send.assert_awaited_once()
         mock_unregister.assert_not_awaited()
@@ -137,13 +140,16 @@ async def test_server_register_override_different_websocket(caplog) -> None:
     new_websocket = get_mock_websocket()
     request = RelayRegistrationRequest(client.name, client.uuid)
 
-    with mock.patch.object(
-        server,
-        'unregister',
-    ) as mock_unregister, mock.patch.object(
-        server,
-        'send',
-    ) as mock_send:
+    with (
+        mock.patch.object(
+            server,
+            'unregister',
+        ) as mock_unregister,
+        mock.patch.object(
+            server,
+            'send',
+        ) as mock_send,
+    ):
         await server.register(new_websocket, request)
         mock_send.assert_awaited_once()
         mock_unregister.assert_awaited_once()
@@ -167,13 +173,16 @@ async def test_server_register_with_different_users_uuid(caplog) -> None:
     new_request = RelayRegistrationRequest('name', client.uuid)
     new_user = object()
 
-    with mock.patch.object(
-        server.authenticator,
-        'authenticate_user',
-        return_value=new_user,
-    ), pytest.raises(
-        ForbiddenError,
-        match=f'The client UUID {new_request.uuid} is already registered',
+    with (
+        mock.patch.object(
+            server.authenticator,
+            'authenticate_user',
+            return_value=new_user,
+        ),
+        pytest.raises(
+            ForbiddenError,
+            match=f'The client UUID {new_request.uuid} is already registered',
+        ),
     ):
         await server.register(client.websocket, new_request)
 

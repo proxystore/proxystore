@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import queue
 import sys
-from typing import Mapping
+from collections.abc import Mapping
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

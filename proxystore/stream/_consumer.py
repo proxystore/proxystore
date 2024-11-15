@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 import sys
 import threading
+from collections.abc import Generator
 from types import TracebackType
 from typing import Any
 from typing import cast
-from typing import Generator
 from typing import Generic
 from typing import TypeVar
 

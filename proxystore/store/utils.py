@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
-from typing import Tuple
 from typing import TypeVar
 
 from proxystore.proxy import get_factory
@@ -11,10 +9,9 @@ from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import base
 from proxystore.store.exceptions import ProxyStoreFactoryError
+from proxystore.store.types import ConnectorKeyT
 
 T = TypeVar('T')
-ConnectorKeyT = Tuple[Any, ...]
-"""Connector key type alias."""
 
 
 def get_key(proxy: Proxy[T]) -> ConnectorKeyT:

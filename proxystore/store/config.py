@@ -5,7 +5,7 @@ from __future__ import annotations
 import pathlib
 import sys
 from typing import Any
-from typing import Dict
+from typing import Dict  # noqa: UP035
 from typing import Optional
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover

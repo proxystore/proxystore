@@ -4,9 +4,9 @@ import asyncio
 import contextlib
 import platform
 import sys
+from collections.abc import Generator
+from contextlib import AbstractContextManager
 from typing import Any
-from typing import ContextManager
-from typing import Generator
 from unittest import mock
 
 import pytest
@@ -53,7 +53,7 @@ def event_loop_policy(
 
     This enables us to toggle between uvloop and asyncio.
     """
-    context: ContextManager[Any]
+    context: AbstractContextManager[Any]
     # Note: both of these are excluded from coverage because only one will
     # execute depending on the value of --use-uvloop
     if use_uvloop:  # pragma: no cover

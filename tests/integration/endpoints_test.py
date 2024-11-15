@@ -5,10 +5,10 @@ import os
 import pathlib
 import tempfile
 import uuid
+from collections.abc import Generator
 from multiprocessing import Process
 from multiprocessing import Queue
 from typing import Any
-from typing import Generator
 from unittest import mock
 
 import pytest

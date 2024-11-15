@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import dataclasses
 import uuid
+from collections.abc import Mapping
 from typing import Any
-from typing import Mapping
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar

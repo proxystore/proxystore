@@ -6,7 +6,7 @@ import logging
 import pathlib
 import sys
 from typing import Any
-from typing import Dict
+from typing import Dict  # noqa: UP035
 from typing import Literal
 from typing import Optional
 from typing import Union

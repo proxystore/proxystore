@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import traceback
+from collections.abc import Coroutine
 from typing import Any
 from typing import Callable
-from typing import Coroutine
 
 logger = logging.getLogger(__name__)
 

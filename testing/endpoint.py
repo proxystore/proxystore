@@ -6,8 +6,8 @@ import contextlib
 import logging
 import time
 import uuid
+from collections.abc import Generator
 from multiprocessing import Process
-from typing import Generator
 
 import pytest
 import requests

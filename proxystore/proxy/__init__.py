@@ -42,6 +42,7 @@ from __future__ import annotations
 import operator
 import sys
 from collections.abc import Awaitable
+from collections.abc import Iterator
 from inspect import CO_ITERABLE_COROUTINE
 from types import CoroutineType
 from types import GeneratorType
@@ -49,7 +50,6 @@ from typing import Any
 from typing import Callable
 from typing import cast
 from typing import Generic
-from typing import Iterator
 from typing import Optional
 from typing import SupportsIndex
 from typing import TypeVar

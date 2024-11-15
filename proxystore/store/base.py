@@ -5,14 +5,13 @@ from __future__ import annotations
 import logging
 import sys
 import threading
+from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import cast
 from typing import Generic
-from typing import List
 from typing import Literal
 from typing import overload
-from typing import Sequence
 from typing import TypeVar
 from typing import Union
 
@@ -865,7 +864,7 @@ class Store(Generic[ConnectorT]):
             f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
             f'in {timer.elapsed_ms:.3f} ms',
         )
-        return cast(List[Union[Proxy[T], NonProxiableT]], proxies)
+        return cast(list[Union[Proxy[T], NonProxiableT]], proxies)
 
     def proxy_from_key(
         self,

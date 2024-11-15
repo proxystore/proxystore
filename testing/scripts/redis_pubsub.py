@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-from typing import Sequence
+from collections.abc import Sequence
 
 from proxystore.stream.shims.redis import RedisPublisher
 from proxystore.stream.shims.redis import RedisSubscriber

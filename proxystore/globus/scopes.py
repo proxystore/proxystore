@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable
+from collections.abc import Iterable
 
 from globus_sdk.scopes import AuthScopes
 from globus_sdk.scopes import GCSCollectionScopeBuilder

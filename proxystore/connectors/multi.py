@@ -6,13 +6,11 @@ import dataclasses
 import logging
 import re
 import sys
+from collections.abc import Iterable
+from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
-from typing import Dict
-from typing import Iterable
 from typing import NamedTuple
-from typing import Sequence
-from typing import Tuple
 from typing import TypedDict
 from typing import TypeVar
 
@@ -155,7 +153,7 @@ class _ConnectorPolicy(NamedTuple):
     policy: Policy
 
 
-ConnectorPolicyConfig = Tuple[str, Dict[str, Any], PolicyDict]
+ConnectorPolicyConfig = tuple[str, dict[str, Any], PolicyDict]
 """Type of the configuration for a connector and policy pair.
 
 Element zero is the fully qualified path of the connector type,

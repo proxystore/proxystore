@@ -5,9 +5,9 @@ from __future__ import annotations
 import contextlib
 import logging
 import threading
+from collections.abc import Generator
+from collections.abc import Sequence
 from typing import Any
-from typing import Generator
-from typing import Sequence
 from typing import TypeVar
 
 from proxystore.connectors.protocols import Connector

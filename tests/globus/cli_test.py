@@ -28,14 +28,17 @@ def test_cli_login_flow(mock_get_scopes, mock_get_user_app) -> None:
 
     runner = click.testing.CliRunner()
 
-    with mock.patch.object(
-        globus_app,
-        'login',
-        return_value=None,
-    ) as mock_run_login_flow, mock.patch.object(
-        globus_app._token_storage,
-        'get_token_data_by_resource_server',
-        return_value={},
+    with (
+        mock.patch.object(
+            globus_app,
+            'login',
+            return_value=None,
+        ) as mock_run_login_flow,
+        mock.patch.object(
+            globus_app._token_storage,
+            'get_token_data_by_resource_server',
+            return_value={},
+        ),
     ):
         result = runner.invoke(login)
 
@@ -52,15 +55,18 @@ def test_cli_already_logged_in(mock_get_user_app) -> None:
 
     runner = click.testing.CliRunner()
 
-    with mock.patch.object(
-        globus_app,
-        '_run_login_flow',
-        return_value=None,
-    ) as mock_run_login_flow, mock.patch.object(
-        globus_app,
-        'login_required',
-        return_value=False,
-    ) as mock_login_required:
+    with (
+        mock.patch.object(
+            globus_app,
+            '_run_login_flow',
+            return_value=None,
+        ) as mock_run_login_flow,
+        mock.patch.object(
+            globus_app,
+            'login_required',
+            return_value=False,
+        ) as mock_login_required,
+    ):
         result = runner.invoke(login)
 
     assert result.exit_code == 0

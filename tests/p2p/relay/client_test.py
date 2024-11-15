@@ -167,11 +167,14 @@ async def test_relay_server_connect_fatal_error(relay_server) -> None:
         sent=None,
     )
     client = RelayClient(relay_server.address, reconnect_task=False)
-    with mock.patch.object(
-        client,
-        '_register',
-        AsyncMock(side_effect=error),
-    ), pytest.raises(type(error), match='ForbiddenError'):
+    with (
+        mock.patch.object(
+            client,
+            '_register',
+            AsyncMock(side_effect=error),
+        ),
+        pytest.raises(type(error), match='ForbiddenError'),
+    ):
         await client.connect(retry=True)
 
     await client.close()

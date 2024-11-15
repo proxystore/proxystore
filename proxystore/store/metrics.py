@@ -10,23 +10,16 @@ from __future__ import annotations
 import copy
 import dataclasses
 import math
-import sys
 import time
 from collections import defaultdict
+from collections.abc import Sequence
 from typing import Any
-from typing import Sequence
-from typing import Tuple
 from typing import Union
 
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
-
 from proxystore.proxy import Proxy
+from proxystore.store.types import ConnectorKeyT
 from proxystore.store.utils import get_key
 
-ConnectorKeyT = Tuple[Any, ...]
 KeyT = Union[ConnectorKeyT, Sequence[ConnectorKeyT]]
 """Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""  # noqa: E501
 ProxyT = Union[Proxy[Any], Sequence[Proxy[Any]]]

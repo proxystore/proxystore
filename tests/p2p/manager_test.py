@@ -48,11 +48,14 @@ async def test_uuid_name_properties(relay_server) -> None:
 
 @pytest.mark.asyncio
 async def test_p2p_connection(relay_server) -> None:
-    async with PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager1, PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager2:
+    async with (
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager1,
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager2,
+    ):
         connection1 = await manager1.get_connection(manager2.uuid)
         assert connection1 == await manager1.get_connection(manager2.uuid)
         await connection1.ready()
@@ -79,11 +82,14 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
     # Record current tasks so we know which not to clean up
     task_names = {task.get_name() for task in asyncio.all_tasks()}
 
-    async with PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager1, PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager2:
+    async with (
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager1,
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager2,
+    ):
         # Mock manager 1 to receive error peer connection from relay server
         mock_recv = async_mock_once(
             manager1._relay_client.recv,
@@ -120,11 +126,14 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
 
 @pytest.mark.asyncio
 async def test_p2p_messaging(relay_server) -> None:
-    async with PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager1, PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager2:
+    async with (
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager1,
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager2,
+    ):
         await manager1.send(manager2.uuid, 'hello hello')
         source_uuid, message = await manager2.recv()
         assert source_uuid == manager1.uuid
@@ -218,11 +227,14 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
 
 @pytest.mark.asyncio
 async def test_close_connection(relay_server) -> None:
-    async with PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager1, PeerManager(
-        RelayClient(relay_server.address),
-    ) as manager2:
+    async with (
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager1,
+        PeerManager(
+            RelayClient(relay_server.address),
+        ) as manager2,
+    ):
         # Send message to make sure connection is open
         await manager1.send(manager2.uuid, 'hello hello')
         source_uuid, message = await manager2.recv()

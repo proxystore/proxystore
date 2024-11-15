@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Iterable
 from typing import Any
 from typing import Callable
-from typing import Iterable
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
