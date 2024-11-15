@@ -7,7 +7,7 @@ from typing import NamedTuple
 
 import pytest_asyncio
 import websockets
-from websockets.server import WebSocketServer
+from websockets.asyncio.server import Server
 
 from proxystore.p2p.relay.authenticate import NullAuthenticator
 from proxystore.p2p.relay.authenticate import NullUser
@@ -19,7 +19,7 @@ class RelayServerInfo(NamedTuple):
     """NamedTuple returned by relay_server fixture."""
 
     relay_server: RelayServer[NullUser]
-    websocket_server: WebSocketServer
+    websocket_server: Server
     host: str
     port: int
     address: str
@@ -41,7 +41,7 @@ async def relay_server() -> AsyncGenerator[RelayServerInfo, None]:
     address = f'ws://{host}:{port}'
 
     relay_server = RelayServer(NullAuthenticator())
-    async with websockets.server.serve(
+    async with websockets.asyncio.server.serve(
         relay_server.handler,
         host,
         port,

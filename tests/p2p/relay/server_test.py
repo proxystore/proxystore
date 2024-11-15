@@ -27,12 +27,11 @@ from testing.relay_server import RelayServerInfo
 _WAIT_FOR = 0.2
 
 
-def get_mock_websocket() -> websockets.server.WebSocketServerProtocol:
-    with mock.patch('websockets.server.WebSocketServerProtocol'):
-        module = websockets.server
-        websocket = module.WebSocketServerProtocol()  # type: ignore[call-arg]
+def get_mock_websocket() -> websockets.asyncio.server.ServerConnection:
+    with mock.patch('websockets.asyncio.server.ServerConnection'):
+        websocket = websockets.asyncio.server.ServerConnection()  # type: ignore[call-arg]
         headers = websockets.datastructures.Headers()
-        websocket.request_headers = headers
+        websocket.request = websockets.http11.Request('', headers)
         return websocket
 
 
@@ -306,7 +305,9 @@ async def test_handler_register_and_connect(
     client_sockets = []
 
     for client_uuid in client_uuids:
-        websocket = await websockets.client.connect(relay_server.address)
+        websocket = await websockets.asyncio.client.connect(
+            relay_server.address,
+        )
         request = RelayRegistrationRequest('name', client_uuid)
         await asyncio.wait_for(
             websocket.send(encode_relay_message(request)),
@@ -356,7 +357,7 @@ async def test_handler_register_and_connect(
 async def test_handler_bad_message_type_closes_socket(
     relay_server: RelayServerInfo,
 ) -> None:
-    websocket = await websockets.client.connect(relay_server.address)
+    websocket = await websockets.asyncio.client.connect(relay_server.address)
     await asyncio.wait_for(websocket.send(b'message'), _WAIT_FOR)
 
     await asyncio.wait_for(websocket.wait_closed(), _WAIT_FOR)
@@ -373,7 +374,7 @@ async def test_handler_unauthorized_error(
         'authenticate_user',
         side_effect=UnauthorizedError('Test unauthorized error.'),
     ):
-        async with websockets.client.connect(
+        async with websockets.asyncio.client.connect(
             relay_server.address,
         ) as websocket:
             request = RelayRegistrationRequest('name', uuid.uuid4())
@@ -398,7 +399,7 @@ async def test_handler_forbidden_error(
         'authenticate_user',
         side_effect=ForbiddenError('Test forbidden error.'),
     ):
-        async with websockets.client.connect(
+        async with websockets.asyncio.client.connect(
             relay_server.address,
         ) as websocket:
             request = RelayRegistrationRequest('name', uuid.uuid4())
@@ -424,7 +425,7 @@ async def test_handler_bad_request_error(
         'authenticate_user',
         side_effect=BadRequestError('Test bad request error.'),
     ):
-        async with websockets.client.connect(
+        async with websockets.asyncio.client.connect(
             relay_server.address,
         ) as websocket:
             request = RelayRegistrationRequest('name', uuid.uuid4())
@@ -454,7 +455,7 @@ async def test_handler_message_size_exceeded(
         '_max_message_bytes',
         max_size,
     ):
-        async with websockets.client.connect(
+        async with websockets.asyncio.client.connect(
             relay_server.address,
         ) as websocket:
             request = PeerConnectionRequest(
@@ -478,7 +479,7 @@ async def test_handler_message_size_exceeded(
 async def test_handler_forward_request_before_registration(
     relay_server: RelayServerInfo,
 ) -> None:
-    async with websockets.client.connect(
+    async with websockets.asyncio.client.connect(
         relay_server.address,
     ) as websocket:
         request = PeerConnectionRequest(

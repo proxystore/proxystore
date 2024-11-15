@@ -9,7 +9,7 @@ from typing import Generic
 from typing import TypeVar
 
 try:
-    from websockets.server import WebSocketServerProtocol
+    from websockets.asyncio.server import ServerConnection
 except ImportError as e:  # pragma: no cover
     import warnings
 
@@ -42,7 +42,7 @@ class Client(Generic[UserT]):
     name: str
     uuid: uuid.UUID
     user: UserT
-    websocket: WebSocketServerProtocol
+    websocket: ServerConnection
     created: datetime.datetime = dataclasses.field(
         default_factory=_utc_current_time,
     )
@@ -73,7 +73,7 @@ class ClientManager(Generic[UserT]):
     def __init__(self) -> None:
         self._clients_by_uuid: dict[uuid.UUID, Client[UserT]] = {}
         self._clients_by_websocket: dict[
-            WebSocketServerProtocol,
+            ServerConnection,
             Client[UserT],
         ] = {}
 
@@ -92,7 +92,7 @@ class ClientManager(Generic[UserT]):
 
     def get_client_by_websocket(
         self,
-        websocket: WebSocketServerProtocol,
+        websocket: ServerConnection,
     ) -> Client[UserT] | None:
         """Get a client by the current websocket connection."""
         return self._clients_by_websocket.get(websocket, None)

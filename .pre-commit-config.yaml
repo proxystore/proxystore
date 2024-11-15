@@ -29,13 +29,13 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies:
-          - click >= 8.1.0, != 8.1.4
-          - globus-sdk >= 3.46.0
+          - click>=8.1.0,!= 8.1.4
+          - globus-sdk>=3.46.0,<4
           - parsl
-          - pydantic
-          - quart
+          - pydantic>=2,<3
+          - quart>=0.18.0
           - types-psutil
           - types-redis
           - types-requests
           - uvicorn
-          - websockets >= 10, < 14
+          - websockets>=14

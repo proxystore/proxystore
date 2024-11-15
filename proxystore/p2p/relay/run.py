@@ -124,7 +124,7 @@ async def serve(config: RelayServingConfig) -> None:
     config_repr = pprint.pformat(config, indent=2)
     logger.info(f'Relay serving configuration:\n{config_repr}')
 
-    async with websockets.server.serve(
+    async with websockets.asyncio.server.serve(
         server.handler,
         config.host,
         config.port,
