@@ -58,6 +58,13 @@ $ curl http://127.0.0.1:8765/exists?key=abcdef
 {"exists": false}
 ```
 
+!!! warning
+
+    If the `curl` or `proxystore-endpoint test` commands return HTTP errors related to being unable to resolve the URL, check if you have an HTTP proxy enabled.
+    If your proxy is configured via the `HTTP_PROXY` environment variable, unset it when issuing the command.
+    Otherwise, it is possible your network administrator has enabled a proxy.
+    Certain configurations of HTTP proxies can prevent the client from connecting to the local endpoint.
+
 ## Test a Remote Endpoint
 
 Consider I have an endpoint running on system A with UUID
