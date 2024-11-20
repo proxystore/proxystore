@@ -3504,6 +3504,13 @@ the logs.
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>curl<span class="w"> </span>http://127.0.0.1:8765/exists?key<span class="o">=</span>abcdef
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="o">{</span><span class="s2">&quot;exists&quot;</span>:<span class="w"> </span>false<span class="o">}</span>
 </span></code></pre></div></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>If the <code>curl</code> or <code>proxystore-endpoint test</code> commands return HTTP errors related to being unable to resolve the URL, check if you have an HTTP proxy enabled.
+If your proxy is configured via the <code>HTTP_PROXY</code> environment variable, unset it when issuing the command.
+Otherwise, it is possible your network administrator has enabled a proxy.
+Certain configurations of HTTP proxies can prevent the client from connecting to the local endpoint.</p>
+</div>
 <h2 id="test-a-remote-endpoint">Test a Remote Endpoint<a class="headerlink" href="#test-a-remote-endpoint" title="Permanent link">&para;</a></h2>
 <p>Consider I have an endpoint running on system A with UUID
 <code>aaaa0259-5a8c-454b-b17d-61f010d874d4</code> and another on System B
