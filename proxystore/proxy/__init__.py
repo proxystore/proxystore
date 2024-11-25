@@ -231,10 +231,10 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     """
 
     __slots__ = (
-        '__proxy_target__',
-        '__proxy_factory__',
         '__proxy_default_class__',
         '__proxy_default_hash__',
+        '__proxy_factory__',
+        '__proxy_target__',
     )
 
     __proxy_target__: T
@@ -642,10 +642,12 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         obj_type = type(self.__proxy_wrapped__)
         if (
             obj_type is CoroutineType
-            or obj_type is GeneratorType
-            and bool(
-                self.__proxy_wrapped__.gi_code.co_flags  # type: ignore[attr-defined]
-                & CO_ITERABLE_COROUTINE,
+            or (
+                obj_type is GeneratorType
+                and bool(
+                    self.__proxy_wrapped__.gi_code.co_flags  # type: ignore[attr-defined]
+                    & CO_ITERABLE_COROUTINE,
+                )
             )
             or isinstance(self.__proxy_wrapped__, Awaitable)
         ):
