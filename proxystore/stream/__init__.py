@@ -22,4 +22,4 @@ warnings.warn(
     stacklevel=2,
 )
 
-__all__ = ['StreamProducer', 'StreamConsumer']
+__all__ = ['StreamConsumer', 'StreamProducer']

@@ -234,9 +234,9 @@ class OwnedProxy(BaseRefProxy[T]):
     """
 
     __slots__ = (
+        '__proxy_finalizer__',
         '__proxy_ref_count__',
         '__proxy_ref_mut_count__',
-        '__proxy_finalizer__',
     )
 
     __proxy_ref_count__: int

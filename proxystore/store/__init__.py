@@ -22,8 +22,8 @@ from proxystore.store.types import ConnectorT
 
 __all__ = [
     'Store',
-    'StoreFactory',
     'StoreConfig',
+    'StoreFactory',
     'get_store',
     'register_store',
     'store_registration',
