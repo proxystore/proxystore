@@ -106,7 +106,8 @@ skip = """
 __pycache__,
 build,
 dist,
-.*egg-info
+.*egg-info,
+docs/publications/index.md,
 """
 
 [tool.coverage.run]
