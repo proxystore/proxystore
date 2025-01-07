@@ -3529,7 +3529,7 @@ typically be raised from a cloudpickle error.</p>
 <span class="normal"><a href="#__codelineno-0-253">253</a></span>
 <span class="normal"><a href="#__codelineno-0-254">254</a></span>
 <span class="normal"><a href="#__codelineno-0-255">255</a></span>
-<span class="normal"><a href="#__codelineno-0-256">256</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="k">def</span> <span class="nf">serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-256">256</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-208"><a id="__codelineno-0-208" name="__codelineno-0-208"></a><span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 </span><span id="__span-0-209"><a id="__codelineno-0-209" name="__codelineno-0-209"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize object.</span>
 </span><span id="__span-0-210"><a id="__codelineno-0-210" name="__codelineno-0-210"></a>
 </span><span id="__span-0-211"><a id="__codelineno-0-211" name="__codelineno-0-211"></a><span class="sd">    Objects are serialized with different mechanisms depending on their type.</span>
@@ -3577,7 +3577,7 @@ typically be raised from a cloudpickle error.</p>
 </span><span id="__span-0-253"><a id="__codelineno-0-253" name="__codelineno-0-253"></a>    <span class="k">assert</span> <span class="n">last_exception</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="__span-0-254"><a id="__codelineno-0-254" name="__codelineno-0-254"></a>    <span class="k">raise</span> <span class="n">SerializationError</span><span class="p">(</span>
 </span><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a>        <span class="sa">f</span><span class="s1">&#39;Object of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s1"> is not supported.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="p">)</span> <span class="kn">from</span> <span class="nn">last_exception</span>
+</span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a>    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">last_exception</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -3707,7 +3707,7 @@ when deserializing the object.</p>
 <span class="normal"><a href="#__codelineno-0-299">299</a></span>
 <span class="normal"><a href="#__codelineno-0-300">300</a></span>
 <span class="normal"><a href="#__codelineno-0-301">301</a></span>
-<span class="normal"><a href="#__codelineno-0-302">302</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="k">def</span> <span class="nf">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-302">302</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-259"><a id="__codelineno-0-259" name="__codelineno-0-259"></a><span class="k">def</span><span class="w"> </span><span class="nf">deserialize</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 </span><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Deserialize object.</span>
 </span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a>
 </span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a><span class="sd">    Warning:</span>
@@ -3750,7 +3750,7 @@ when deserializing the object.</p>
 </span><span id="__span-0-299"><a id="__codelineno-0-299" name="__codelineno-0-299"></a>            <span class="k">raise</span> <span class="n">SerializationError</span><span class="p">(</span>
 </span><span id="__span-0-300"><a id="__codelineno-0-300" name="__codelineno-0-300"></a>                <span class="s1">&#39;Failed to deserialize object using the &#39;</span>
 </span><span id="__span-0-301"><a id="__codelineno-0-301" name="__codelineno-0-301"></a>                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">serializer</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s1"> serializer.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a>            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-302"><a id="__codelineno-0-302" name="__codelineno-0-302"></a>            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

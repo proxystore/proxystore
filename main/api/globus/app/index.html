@@ -3521,7 +3521,7 @@ partitioning token data.</p>
 <span class="normal"><a href="#__codelineno-0-65">65</a></span>
 <span class="normal"><a href="#__codelineno-0-66">66</a></span>
 <span class="normal"><a href="#__codelineno-0-67">67</a></span>
-<span class="normal"><a href="#__codelineno-0-68">68</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span> <span class="nf">get_token_storage</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-68">68</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_token_storage</span><span class="p">(</span>
 </span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48"></a>    <span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="n">namespace</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;DEFAULT&#39;</span><span class="p">,</span>
@@ -3623,7 +3623,7 @@ the secret to <code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code>.</p>
 <span class="normal"><a href="#__codelineno-0-94">94</a></span>
 <span class="normal"><a href="#__codelineno-0-95">95</a></span>
 <span class="normal"><a href="#__codelineno-0-96">96</a></span>
-<span class="normal"><a href="#__codelineno-0-97">97</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span> <span class="nf">get_client_credentials_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-97">97</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_client_credentials_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Read the Globus Client ID and secret from the environment.</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a><span class="sd">    The Client ID should be set to `PROXYSTORE_GLOBUS_CLIENT_ID` and</span>
@@ -3647,7 +3647,7 @@ the secret to <code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code>.</p>
 </span><span id="__span-0-92"><a id="__codelineno-0-92" name="__codelineno-0-92"></a>            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">PROXYSTORE_GLOBUS_CLIENT_SECRET_ENV_NAME</span><span class="si">}</span><span class="s1"> must be set to &#39;</span>
 </span><span id="__span-0-93"><a id="__codelineno-0-93" name="__codelineno-0-93"></a>            <span class="s1">&#39;use a client identity. Either set both environment variables &#39;</span>
 </span><span id="__span-0-94"><a id="__codelineno-0-94" name="__codelineno-0-94"></a>            <span class="s1">&#39;or unset both to use the normal login flow.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-95"><a id="__codelineno-0-95" name="__codelineno-0-95"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span><span id="__span-0-96"><a id="__codelineno-0-96" name="__codelineno-0-96"></a>
 </span><span id="__span-0-97"><a id="__codelineno-0-97" name="__codelineno-0-97"></a>    <span class="k">return</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span>
 </span></code></pre></div></td></tr></table></div>
@@ -3704,7 +3704,7 @@ returns a <a class="autorefs autorefs-external" href="https://globus-sdk-python.
 <span class="normal"><a href="#__codelineno-0-111">111</a></span>
 <span class="normal"><a href="#__codelineno-0-112">112</a></span>
 <span class="normal"><a href="#__codelineno-0-113">113</a></span>
-<span class="normal"><a href="#__codelineno-0-114">114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="k">def</span> <span class="nf">get_globus_app</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GlobusApp</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-114">114</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-100"><a id="__codelineno-0-100" name="__codelineno-0-100"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_globus_app</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GlobusApp</span><span class="p">:</span>
 </span><span id="__span-0-101"><a id="__codelineno-0-101" name="__codelineno-0-101"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a Globus App based on the environment.</span>
 </span><span id="__span-0-102"><a id="__codelineno-0-102" name="__codelineno-0-102"></a>
 </span><span id="__span-0-103"><a id="__codelineno-0-103" name="__codelineno-0-103"></a><span class="sd">    If a client ID and secret are set in the environment, returns a</span>
@@ -3814,7 +3814,7 @@ the environment using
 <span class="normal"><a href="#__codelineno-0-143">143</a></span>
 <span class="normal"><a href="#__codelineno-0-144">144</a></span>
 <span class="normal"><a href="#__codelineno-0-145">145</a></span>
-<span class="normal"><a href="#__codelineno-0-146">146</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="k">def</span> <span class="nf">get_client_app</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-146">146</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-117"><a id="__codelineno-0-117" name="__codelineno-0-117"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_client_app</span><span class="p">(</span>
 </span><span id="__span-0-118"><a id="__codelineno-0-118" name="__codelineno-0-118"></a>    <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-119"><a id="__codelineno-0-119" name="__codelineno-0-119"></a>    <span class="n">client_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-120"><a id="__codelineno-0-120" name="__codelineno-0-120"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClientApp</span><span class="p">:</span>
@@ -3900,7 +3900,7 @@ automatically perform an interactive flow with the user as needed.</p>
 <span class="normal"><a href="#__codelineno-0-165">165</a></span>
 <span class="normal"><a href="#__codelineno-0-166">166</a></span>
 <span class="normal"><a href="#__codelineno-0-167">167</a></span>
-<span class="normal"><a href="#__codelineno-0-168">168</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="k">def</span> <span class="nf">get_user_app</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">UserApp</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-168">168</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-149"><a id="__codelineno-0-149" name="__codelineno-0-149"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_user_app</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">UserApp</span><span class="p">:</span>
 </span><span id="__span-0-150"><a id="__codelineno-0-150" name="__codelineno-0-150"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a User Globus App.</span>
 </span><span id="__span-0-151"><a id="__codelineno-0-151" name="__codelineno-0-151"></a>
 </span><span id="__span-0-152"><a id="__codelineno-0-152" name="__codelineno-0-152"></a><span class="sd">    The [`UserApp`][globus_sdk.UserApp] will</span>
@@ -3972,7 +3972,7 @@ automatically perform an interactive flow with the user as needed.</p>
 <span class="normal"><a href="#__codelineno-0-183">183</a></span>
 <span class="normal"><a href="#__codelineno-0-184">184</a></span>
 <span class="normal"><a href="#__codelineno-0-185">185</a></span>
-<span class="normal"><a href="#__codelineno-0-186">186</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span> <span class="nf">is_client_login</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-186">186</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_client_login</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if Globus client identity environment variables are set.</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a><span class="sd">    Based on the Globus Compute SDK&#39;s</span>

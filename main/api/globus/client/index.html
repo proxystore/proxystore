@@ -3504,7 +3504,7 @@ one or both of <code>PROXYSTORE_GLOBUS_CLIENT_ID</code> and
 <span class="normal"><a href="#__codelineno-0-47">47</a></span>
 <span class="normal"><a href="#__codelineno-0-48">48</a></span>
 <span class="normal"><a href="#__codelineno-0-49">49</a></span>
-<span class="normal"><a href="#__codelineno-0-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="k">def</span> <span class="nf">get_confidential_app_auth_client</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-50">50</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_confidential_app_auth_client</span><span class="p">(</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17"></a>    <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18"></a>    <span class="n">client_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">ConfidentialAppAuthClient</span><span class="p">:</span>
@@ -3626,7 +3626,7 @@ one or both of <code>PROXYSTORE_GLOBUS_CLIENT_ID</code> and
 <span class="normal"><a href="#__codelineno-0-69">69</a></span>
 <span class="normal"><a href="#__codelineno-0-70">70</a></span>
 <span class="normal"><a href="#__codelineno-0-71">71</a></span>
-<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="k">def</span> <span class="nf">get_native_app_auth_client</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-72">72</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_native_app_auth_client</span><span class="p">(</span>
 </span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a>    <span class="n">client_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">PROXYSTORE_GLOBUS_CLIENT_ID</span><span class="p">,</span>
 </span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>    <span class="n">app_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">NativeAppAuthClient</span><span class="p">:</span>
@@ -3738,7 +3738,7 @@ the transfer client. If <code>None</code>, a default
 <span class="normal"><a href="#__codelineno-0-96">96</a></span>
 <span class="normal"><a href="#__codelineno-0-97">97</a></span>
 <span class="normal"><a href="#__codelineno-0-98">98</a></span>
-<span class="normal"><a href="#__codelineno-0-99">99</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span> <span class="nf">get_transfer_client</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-99">99</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-75"><a id="__codelineno-0-75" name="__codelineno-0-75"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_transfer_client</span><span class="p">(</span>
 </span><span id="__span-0-76"><a id="__codelineno-0-76" name="__codelineno-0-76"></a>    <span class="n">globus_app</span><span class="p">:</span> <span class="n">GlobusApp</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-77"><a id="__codelineno-0-77" name="__codelineno-0-77"></a>    <span class="n">collections</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
 </span><span id="__span-0-78"><a id="__codelineno-0-78" name="__codelineno-0-78"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">globus_sdk</span><span class="o">.</span><span class="n">TransferClient</span><span class="p">:</span>

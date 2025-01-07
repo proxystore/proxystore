@@ -3765,9 +3765,9 @@ object being cached in the resulting <a class="autorefs autorefs-internal" href=
 <span class="normal"><a href="#__codelineno-0-14">14</a></span>
 <span class="normal"><a href="#__codelineno-0-15">15</a></span>
 <span class="normal"><a href="#__codelineno-0-16">16</a></span>
-<span class="normal"><a href="#__codelineno-0-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">import</span> <span class="nn">pickle</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.local</span> <span class="kn">import</span> <span class="n">LocalConnector</span>
+<span class="normal"><a href="#__codelineno-0-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.local</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalConnector</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="s1">&#39;example&#39;</span><span class="p">,</span> <span class="n">LocalConnector</span><span class="p">(),</span> <span class="n">register</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
@@ -3959,7 +3959,7 @@ exists.</p>
 <span class="normal"><a href="#__codelineno-0-182">182</a></span>
 <span class="normal"><a href="#__codelineno-0-183">183</a></span>
 <span class="normal"><a href="#__codelineno-0-184">184</a></span>
-<span class="normal"><a href="#__codelineno-0-185">185</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-185">185</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-143"><a id="__codelineno-0-143" name="__codelineno-0-143"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-144"><a id="__codelineno-0-144" name="__codelineno-0-144"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-145"><a id="__codelineno-0-145" name="__codelineno-0-145"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="__span-0-146"><a id="__codelineno-0-146" name="__codelineno-0-146"></a>    <span class="n">connector</span><span class="p">:</span> <span class="n">ConnectorT</span><span class="p">,</span>
@@ -4182,7 +4182,7 @@ proxies have been resolved.</p>
 <span class="normal"><a href="#__codelineno-0-260">260</a></span>
 <span class="normal"><a href="#__codelineno-0-261">261</a></span>
 <span class="normal"><a href="#__codelineno-0-262">262</a></span>
-<span class="normal"><a href="#__codelineno-0-263">263</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-263">263</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the connector associated with the store.</span>
 </span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>
 </span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    This will (1) close the connector and (2) unregister the store if</span>
@@ -4271,7 +4271,7 @@ proxies have been resolved.</p>
 <span class="normal"><a href="#__codelineno-0-287">287</a></span>
 <span class="normal"><a href="#__codelineno-0-288">288</a></span>
 <span class="normal"><a href="#__codelineno-0-289">289</a></span>
-<span class="normal"><a href="#__codelineno-0-290">290</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoreConfig</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-290">290</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StoreConfig</span><span class="p">:</span>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the store configuration.</span>
 </span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    Example:</span>
@@ -4370,7 +4370,7 @@ proxies have been resolved.</p>
 <span class="normal"><a href="#__codelineno-0-310">310</a></span>
 <span class="normal"><a href="#__codelineno-0-311">311</a></span>
 <span class="normal"><a href="#__codelineno-0-312">312</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-292"><a id="__codelineno-0-292" name="__codelineno-0-292"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">StoreConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Store</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+</span><span id="__span-0-293"><a id="__codelineno-0-293" name="__codelineno-0-293"></a><span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">StoreConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Store</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 </span><span id="__span-0-294"><a id="__codelineno-0-294" name="__codelineno-0-294"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new store instance from a configuration.</span>
 </span><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a>
 </span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="sd">    Args:</span>
@@ -4423,16 +4423,16 @@ proxies have been resolved.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.file</span> <span class="kn">import</span> <span class="n">FileConnector</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store.future</span> <span class="kn">import</span> <span class="n">Future</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span> <span class="nf">remote_foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">remote_foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="c1"># Computation that generates a result value needed by</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="c1"># the remote_bar function.</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span> <span class="nf">remote_bar</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">remote_bar</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="c1"># Function uses data, which is a proxy, as normal, blocking</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="c1"># until the remote_foo function has called set_result.</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="o">...</span>
@@ -4688,7 +4688,7 @@ the timeout is reached an error is raised.</p>
 <span class="normal"><a href="#__codelineno-0-425">425</a></span>
 <span class="normal"><a href="#__codelineno-0-426">426</a></span>
 <span class="normal"><a href="#__codelineno-0-427">427</a></span>
-<span class="normal"><a href="#__codelineno-0-428">428</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="k">def</span> <span class="nf">future</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-428">428</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a><span class="k">def</span><span class="w"> </span><span class="nf">future</span><span class="p">(</span>
 </span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a>    <span class="n">evict</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -4864,7 +4864,7 @@ the timeout is reached an error is raised.</p>
 <span class="normal"><a href="#__codelineno-0-452">452</a></span>
 <span class="normal"><a href="#__codelineno-0-453">453</a></span>
 <span class="normal"><a href="#__codelineno-0-454">454</a></span>
-<span class="normal"><a href="#__codelineno-0-455">455</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="k">def</span> <span class="nf">evict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-455">455</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-430"><a id="__codelineno-0-430" name="__codelineno-0-430"></a><span class="k">def</span><span class="w"> </span><span class="nf">evict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-431"><a id="__codelineno-0-431" name="__codelineno-0-431"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Evict the object associated with the key.</span>
 </span><span id="__span-0-432"><a id="__codelineno-0-432" name="__codelineno-0-432"></a>
 </span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a><span class="sd">    Args:</span>
@@ -4967,7 +4967,7 @@ the timeout is reached an error is raised.</p>
 <span class="normal"><a href="#__codelineno-0-483">483</a></span>
 <span class="normal"><a href="#__codelineno-0-484">484</a></span>
 <span class="normal"><a href="#__codelineno-0-485">485</a></span>
-<span class="normal"><a href="#__codelineno-0-486">486</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-486">486</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-457"><a id="__codelineno-0-457" name="__codelineno-0-457"></a><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-0-458"><a id="__codelineno-0-458" name="__codelineno-0-458"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object associated with the key exists.</span>
 </span><span id="__span-0-459"><a id="__codelineno-0-459" name="__codelineno-0-459"></a>
 </span><span id="__span-0-460"><a id="__codelineno-0-460" name="__codelineno-0-460"></a><span class="sd">    Args:</span>
@@ -5170,7 +5170,7 @@ the object associated with the key.</p>
 <span class="normal"><a href="#__codelineno-0-570">570</a></span>
 <span class="normal"><a href="#__codelineno-0-571">571</a></span>
 <span class="normal"><a href="#__codelineno-0-572">572</a></span>
-<span class="normal"><a href="#__codelineno-0-573">573</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-573">573</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-488"><a id="__codelineno-0-488" name="__codelineno-0-488"></a><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
 </span><span id="__span-0-489"><a id="__codelineno-0-489" name="__codelineno-0-489"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-490"><a id="__codelineno-0-490" name="__codelineno-0-490"></a>    <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">,</span>
 </span><span id="__span-0-491"><a id="__codelineno-0-491" name="__codelineno-0-491"></a>    <span class="o">*</span><span class="p">,</span>
@@ -5231,7 +5231,7 @@ the object associated with the key.</p>
 </span><span id="__span-0-546"><a id="__codelineno-0-546" name="__codelineno-0-546"></a>                    <span class="k">raise</span> <span class="n">SerializationError</span><span class="p">(</span>
 </span><span id="__span-0-547"><a id="__codelineno-0-547" name="__codelineno-0-547"></a>                        <span class="s1">&#39;Failed to deserialize object &#39;</span>
 </span><span id="__span-0-548"><a id="__codelineno-0-548" name="__codelineno-0-548"></a>                        <span class="sa">f</span><span class="s1">&#39;(deserializer=</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s1">, key=</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">).&#39;</span><span class="p">,</span>
-</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-549"><a id="__codelineno-0-549" name="__codelineno-0-549"></a>                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span><span id="__span-0-550"><a id="__codelineno-0-550" name="__codelineno-0-550"></a>
 </span><span id="__span-0-551"><a id="__codelineno-0-551" name="__codelineno-0-551"></a>            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metrics</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-552"><a id="__codelineno-0-552" name="__codelineno-0-552"></a>                <span class="n">dtime</span> <span class="o">=</span> <span class="n">deserializer_timer</span><span class="o">.</span><span class="n">elapsed_ms</span>
@@ -5314,7 +5314,7 @@ the object associated with the key.</p>
 <span class="normal"><a href="#__codelineno-0-582">582</a></span>
 <span class="normal"><a href="#__codelineno-0-583">583</a></span>
 <span class="normal"><a href="#__codelineno-0-584">584</a></span>
-<span class="normal"><a href="#__codelineno-0-585">585</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="k">def</span> <span class="nf">is_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-585">585</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-575"><a id="__codelineno-0-575" name="__codelineno-0-575"></a><span class="k">def</span><span class="w"> </span><span class="nf">is_cached</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-0-576"><a id="__codelineno-0-576" name="__codelineno-0-576"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object associated with the key is cached locally.</span>
 </span><span id="__span-0-577"><a id="__codelineno-0-577" name="__codelineno-0-577"></a>
 </span><span id="__span-0-578"><a id="__codelineno-0-578" name="__codelineno-0-578"></a><span class="sd">    Args:</span>
@@ -5591,7 +5591,7 @@ because these parameters are mutually exclusive.</p>
 <span class="normal"><a href="#__codelineno-0-712">712</a></span>
 <span class="normal"><a href="#__codelineno-0-713">713</a></span>
 <span class="normal"><a href="#__codelineno-0-714">714</a></span>
-<span class="normal"><a href="#__codelineno-0-715">715</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-615"><a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="k">def</span> <span class="nf">proxy</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-715">715</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-615"><a id="__codelineno-0-615" name="__codelineno-0-615"></a><span class="k">def</span><span class="w"> </span><span class="nf">proxy</span><span class="p">(</span>
 </span><span id="__span-0-616"><a id="__codelineno-0-616" name="__codelineno-0-616"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-617"><a id="__codelineno-0-617" name="__codelineno-0-617"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n">T</span> <span class="o">|</span> <span class="n">NonProxiableT</span><span class="p">,</span>
 </span><span id="__span-0-618"><a id="__codelineno-0-618" name="__codelineno-0-618"></a>    <span class="o">*</span><span class="p">,</span>
@@ -5974,7 +5974,7 @@ because these parameters are mutually exclusive.</p>
 <span class="normal"><a href="#__codelineno-0-864">864</a></span>
 <span class="normal"><a href="#__codelineno-0-865">865</a></span>
 <span class="normal"><a href="#__codelineno-0-866">866</a></span>
-<span class="normal"><a href="#__codelineno-0-867">867</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-748"><a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="k">def</span> <span class="nf">proxy_batch</span><span class="p">(</span>  <span class="c1"># type: ignore[misc]</span>
+<span class="normal"><a href="#__codelineno-0-867">867</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-748"><a id="__codelineno-0-748" name="__codelineno-0-748"></a><span class="k">def</span><span class="w"> </span><span class="nf">proxy_batch</span><span class="p">(</span>  <span class="c1"># type: ignore[misc]</span>
 </span><span id="__span-0-749"><a id="__codelineno-0-749" name="__codelineno-0-749"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-750"><a id="__codelineno-0-750" name="__codelineno-0-750"></a>    <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">T</span> <span class="o">|</span> <span class="n">NonProxiableT</span><span class="p">],</span>
 </span><span id="__span-0-751"><a id="__codelineno-0-751" name="__codelineno-0-751"></a>    <span class="o">*</span><span class="p">,</span>
@@ -6241,7 +6241,7 @@ because these parameters are mutually exclusive.</p>
 <span class="normal"><a href="#__codelineno-0-912">912</a></span>
 <span class="normal"><a href="#__codelineno-0-913">913</a></span>
 <span class="normal"><a href="#__codelineno-0-914">914</a></span>
-<span class="normal"><a href="#__codelineno-0-915">915</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-869"><a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="k">def</span> <span class="nf">proxy_from_key</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-915">915</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-869"><a id="__codelineno-0-869" name="__codelineno-0-869"></a><span class="k">def</span><span class="w"> </span><span class="nf">proxy_from_key</span><span class="p">(</span>
 </span><span id="__span-0-870"><a id="__codelineno-0-870" name="__codelineno-0-870"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-871"><a id="__codelineno-0-871" name="__codelineno-0-871"></a>    <span class="n">key</span><span class="p">:</span> <span class="n">ConnectorKeyT</span><span class="p">,</span>
 </span><span id="__span-0-872"><a id="__codelineno-0-872" name="__codelineno-0-872"></a>    <span class="o">*</span><span class="p">,</span>
@@ -6514,7 +6514,7 @@ because these parameters are mutually exclusive.</p>
 <span class="normal"><a href="#__codelineno-0-1005">1005</a></span>
 <span class="normal"><a href="#__codelineno-0-1006">1006</a></span>
 <span class="normal"><a href="#__codelineno-0-1007">1007</a></span>
-<span class="normal"><a href="#__codelineno-0-1008">1008</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-945"><a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="k">def</span> <span class="nf">locked_proxy</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1008">1008</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-945"><a id="__codelineno-0-945" name="__codelineno-0-945"></a><span class="k">def</span><span class="w"> </span><span class="nf">locked_proxy</span><span class="p">(</span>
 </span><span id="__span-0-946"><a id="__codelineno-0-946" name="__codelineno-0-946"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-947"><a id="__codelineno-0-947" name="__codelineno-0-947"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n">T</span> <span class="o">|</span> <span class="n">NonProxiableT</span><span class="p">,</span>
 </span><span id="__span-0-948"><a id="__codelineno-0-948" name="__codelineno-0-948"></a>    <span class="o">*</span><span class="p">,</span>
@@ -6772,7 +6772,7 @@ behavior can be overridden by setting
 <span class="normal"><a href="#__codelineno-0-1092">1092</a></span>
 <span class="normal"><a href="#__codelineno-0-1093">1093</a></span>
 <span class="normal"><a href="#__codelineno-0-1094">1094</a></span>
-<span class="normal"><a href="#__codelineno-0-1095">1095</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1034"><a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="k">def</span> <span class="nf">owned_proxy</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1095">1095</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1034"><a id="__codelineno-0-1034" name="__codelineno-0-1034"></a><span class="k">def</span><span class="w"> </span><span class="nf">owned_proxy</span><span class="p">(</span>
 </span><span id="__span-0-1035"><a id="__codelineno-0-1035" name="__codelineno-0-1035"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-1036"><a id="__codelineno-0-1036" name="__codelineno-0-1036"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n">T</span> <span class="o">|</span> <span class="n">NonProxiableT</span><span class="p">,</span>
 </span><span id="__span-0-1037"><a id="__codelineno-0-1037" name="__codelineno-0-1037"></a>    <span class="o">*</span><span class="p">,</span>
@@ -6989,7 +6989,7 @@ with the key will be evicted when the lifetime ends.</p>
 <span class="normal"><a href="#__codelineno-0-1150">1150</a></span>
 <span class="normal"><a href="#__codelineno-0-1151">1151</a></span>
 <span class="normal"><a href="#__codelineno-0-1152">1152</a></span>
-<span class="normal"><a href="#__codelineno-0-1153">1153</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1097"><a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="k">def</span> <span class="nf">put</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1153">1153</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1097"><a id="__codelineno-0-1097" name="__codelineno-0-1097"></a><span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span>
 </span><span id="__span-0-1098"><a id="__codelineno-0-1098" name="__codelineno-0-1098"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-1099"><a id="__codelineno-0-1099" name="__codelineno-0-1099"></a>    <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 </span><span id="__span-0-1100"><a id="__codelineno-0-1100" name="__codelineno-0-1100"></a>    <span class="o">*</span><span class="p">,</span>
@@ -7211,7 +7211,7 @@ with each key will be evicted when the lifetime ends.</p>
 <span class="normal"><a href="#__codelineno-0-1218">1218</a></span>
 <span class="normal"><a href="#__codelineno-0-1219">1219</a></span>
 <span class="normal"><a href="#__codelineno-0-1220">1220</a></span>
-<span class="normal"><a href="#__codelineno-0-1221">1221</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1155"><a id="__codelineno-0-1155" name="__codelineno-0-1155"></a><span class="k">def</span> <span class="nf">put_batch</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-1221">1221</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1155"><a id="__codelineno-0-1155" name="__codelineno-0-1155"></a><span class="k">def</span><span class="w"> </span><span class="nf">put_batch</span><span class="p">(</span>
 </span><span id="__span-0-1156"><a id="__codelineno-0-1156" name="__codelineno-0-1156"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-1157"><a id="__codelineno-0-1157" name="__codelineno-0-1157"></a>    <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
 </span><span id="__span-0-1158"><a id="__codelineno-0-1158" name="__codelineno-0-1158"></a>    <span class="o">*</span><span class="p">,</span>
@@ -7238,7 +7238,7 @@ with each key will be evicted when the lifetime ends.</p>
 </span><span id="__span-0-1179"><a id="__codelineno-0-1179" name="__codelineno-0-1179"></a><span class="sd">    &quot;&quot;&quot;</span>
 </span><span id="__span-0-1180"><a id="__codelineno-0-1180" name="__codelineno-0-1180"></a>    <span class="n">timer</span> <span class="o">=</span> <span class="n">Timer</span><span class="p">()</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
 </span><span id="__span-0-1181"><a id="__codelineno-0-1181" name="__codelineno-0-1181"></a>
-</span><span id="__span-0-1182"><a id="__codelineno-0-1182" name="__codelineno-0-1182"></a>    <span class="k">def</span> <span class="nf">_serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+</span><span id="__span-0-1182"><a id="__codelineno-0-1182" name="__codelineno-0-1182"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_serialize</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 </span><span id="__span-0-1183"><a id="__codelineno-0-1183" name="__codelineno-0-1183"></a>        <span class="k">if</span> <span class="n">serializer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-1184"><a id="__codelineno-0-1184" name="__codelineno-0-1184"></a>            <span class="n">obj</span> <span class="o">=</span> <span class="n">serializer</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
 </span><span id="__span-0-1185"><a id="__codelineno-0-1185" name="__codelineno-0-1185"></a>        <span class="k">else</span><span class="p">:</span>

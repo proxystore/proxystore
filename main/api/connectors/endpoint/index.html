@@ -3821,7 +3821,7 @@ provided.</p>
 <span class="normal"><a href="#__codelineno-0-134">134</a></span>
 <span class="normal"><a href="#__codelineno-0-135">135</a></span>
 <span class="normal"><a href="#__codelineno-0-136">136</a></span>
-<span class="normal"><a href="#__codelineno-0-137">137</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-137">137</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-71"><a id="__codelineno-0-71" name="__codelineno-0-71"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-72"><a id="__codelineno-0-72" name="__codelineno-0-72"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-73"><a id="__codelineno-0-73" name="__codelineno-0-73"></a>    <span class="n">endpoints</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="n">UUID</span><span class="p">],</span>
 </span><span id="__span-0-74"><a id="__codelineno-0-74" name="__codelineno-0-74"></a>    <span class="n">proxystore_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3922,7 +3922,7 @@ provided.</p>
               <summary>Source code in <code>proxystore/connectors/endpoint.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-156">156</a></span>
 <span class="normal"><a href="#__codelineno-0-157">157</a></span>
-<span class="normal"><a href="#__codelineno-0-158">158</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-158">158</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-156"><a id="__codelineno-0-156" name="__codelineno-0-156"></a><span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-157"><a id="__codelineno-0-157" name="__codelineno-0-157"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the connector and clean up.&quot;&quot;&quot;</span>
 </span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </span></code></pre></div></td></tr></table></div>
@@ -3959,7 +3959,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-166">166</a></span>
 <span class="normal"><a href="#__codelineno-0-167">167</a></span>
 <span class="normal"><a href="#__codelineno-0-168">168</a></span>
-<span class="normal"><a href="#__codelineno-0-169">169</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-169">169</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 </span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the connector configuration.</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a><span class="sd">    The configuration contains all the information needed to reconstruct</span>
@@ -4017,7 +4017,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-176">176</a></span>
 <span class="normal"><a href="#__codelineno-0-177">177</a></span>
 <span class="normal"><a href="#__codelineno-0-178">178</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="nd">@classmethod</span>
-</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="k">def</span> <span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EndpointConnector</span><span class="p">:</span>
+</span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a><span class="k">def</span><span class="w"> </span><span class="nf">from_config</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">EndpointConnector</span><span class="p">:</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new connector instance from a configuration.</span>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>
 </span><span id="__span-0-175"><a id="__codelineno-0-175" name="__codelineno-0-175"></a><span class="sd">    Args:</span>
@@ -4077,7 +4077,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-194">194</a></span>
 <span class="normal"><a href="#__codelineno-0-195">195</a></span>
 <span class="normal"><a href="#__codelineno-0-196">196</a></span>
-<span class="normal"><a href="#__codelineno-0-197">197</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="k">def</span> <span class="nf">evict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-197">197</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-180"><a id="__codelineno-0-180" name="__codelineno-0-180"></a><span class="k">def</span><span class="w"> </span><span class="nf">evict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-181"><a id="__codelineno-0-181" name="__codelineno-0-181"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Evict the object associated with the key.</span>
 </span><span id="__span-0-182"><a id="__codelineno-0-182" name="__codelineno-0-182"></a>
 </span><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="sd">    Args:</span>
@@ -4094,7 +4094,7 @@ the connector object.</p>
 </span><span id="__span-0-194"><a id="__codelineno-0-194" name="__codelineno-0-194"></a>        <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="__span-0-195"><a id="__codelineno-0-195" name="__codelineno-0-195"></a>        <span class="k">raise</span> <span class="n">EndpointConnectorError</span><span class="p">(</span>
 </span><span id="__span-0-196"><a id="__codelineno-0-196" name="__codelineno-0-196"></a>            <span class="sa">f</span><span class="s1">&#39;Evict failed with error code </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a>        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-197"><a id="__codelineno-0-197" name="__codelineno-0-197"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4163,7 +4163,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-216">216</a></span>
 <span class="normal"><a href="#__codelineno-0-217">217</a></span>
 <span class="normal"><a href="#__codelineno-0-218">218</a></span>
-<span class="normal"><a href="#__codelineno-0-219">219</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-219">219</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-199"><a id="__codelineno-0-199" name="__codelineno-0-199"></a><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 </span><span id="__span-0-200"><a id="__codelineno-0-200" name="__codelineno-0-200"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if an object associated with the key exists.</span>
 </span><span id="__span-0-201"><a id="__codelineno-0-201" name="__codelineno-0-201"></a>
 </span><span id="__span-0-202"><a id="__codelineno-0-202" name="__codelineno-0-202"></a><span class="sd">    Args:</span>
@@ -4183,7 +4183,7 @@ the connector object.</p>
 </span><span id="__span-0-216"><a id="__codelineno-0-216" name="__codelineno-0-216"></a>        <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="__span-0-217"><a id="__codelineno-0-217" name="__codelineno-0-217"></a>        <span class="k">raise</span> <span class="n">EndpointConnectorError</span><span class="p">(</span>
 </span><span id="__span-0-218"><a id="__codelineno-0-218" name="__codelineno-0-218"></a>            <span class="sa">f</span><span class="s1">&#39;Exists failed with error code </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a>        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-219"><a id="__codelineno-0-219" name="__codelineno-0-219"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4252,7 +4252,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-238">238</a></span>
 <span class="normal"><a href="#__codelineno-0-239">239</a></span>
 <span class="normal"><a href="#__codelineno-0-240">240</a></span>
-<span class="normal"><a href="#__codelineno-0-241">241</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-241">241</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-221"><a id="__codelineno-0-221" name="__codelineno-0-221"></a><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-222"><a id="__codelineno-0-222" name="__codelineno-0-222"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the serialized object associated with the key.</span>
 </span><span id="__span-0-223"><a id="__codelineno-0-223" name="__codelineno-0-223"></a>
 </span><span id="__span-0-224"><a id="__codelineno-0-224" name="__codelineno-0-224"></a><span class="sd">    Args:</span>
@@ -4272,7 +4272,7 @@ the connector object.</p>
 </span><span id="__span-0-238"><a id="__codelineno-0-238" name="__codelineno-0-238"></a>        <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="__span-0-239"><a id="__codelineno-0-239" name="__codelineno-0-239"></a>        <span class="k">raise</span> <span class="n">EndpointConnectorError</span><span class="p">(</span>
 </span><span id="__span-0-240"><a id="__codelineno-0-240" name="__codelineno-0-240"></a>            <span class="sa">f</span><span class="s1">&#39;Get failed with error code </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-241"><a id="__codelineno-0-241" name="__codelineno-0-241"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -4333,7 +4333,7 @@ the connector object.</p>
 <span class="normal"><a href="#__codelineno-0-250">250</a></span>
 <span class="normal"><a href="#__codelineno-0-251">251</a></span>
 <span class="normal"><a href="#__codelineno-0-252">252</a></span>
-<span class="normal"><a href="#__codelineno-0-253">253</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span> <span class="nf">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">EndpointKey</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-253">253</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-243"><a id="__codelineno-0-243" name="__codelineno-0-243"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">EndpointKey</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 </span><span id="__span-0-244"><a id="__codelineno-0-244" name="__codelineno-0-244"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a batch of serialized objects associated with the keys.</span>
 </span><span id="__span-0-245"><a id="__codelineno-0-245" name="__codelineno-0-245"></a>
 </span><span id="__span-0-246"><a id="__codelineno-0-246" name="__codelineno-0-246"></a><span class="sd">    Args:</span>
@@ -4426,7 +4426,7 @@ Ignored in this implementation.</p>
 <span class="normal"><a href="#__codelineno-0-274">274</a></span>
 <span class="normal"><a href="#__codelineno-0-275">275</a></span>
 <span class="normal"><a href="#__codelineno-0-276">276</a></span>
-<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="k">def</span> <span class="nf">new_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EndpointKey</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-255"><a id="__codelineno-0-255" name="__codelineno-0-255"></a><span class="k">def</span><span class="w"> </span><span class="nf">new_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EndpointKey</span><span class="p">:</span>
 </span><span id="__span-0-256"><a id="__codelineno-0-256" name="__codelineno-0-256"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a new key.</span>
 </span><span id="__span-0-257"><a id="__codelineno-0-257" name="__codelineno-0-257"></a>
 </span><span id="__span-0-258"><a id="__codelineno-0-258" name="__codelineno-0-258"></a><span class="sd">    Warning:</span>
@@ -4511,7 +4511,7 @@ Ignored in this implementation.</p>
 <span class="normal"><a href="#__codelineno-0-290">290</a></span>
 <span class="normal"><a href="#__codelineno-0-291">291</a></span>
 <span class="normal"><a href="#__codelineno-0-292">292</a></span>
-<span class="normal"><a href="#__codelineno-0-293">293</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EndpointKey</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-293">293</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-279"><a id="__codelineno-0-279" name="__codelineno-0-279"></a><span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EndpointKey</span><span class="p">:</span>
 </span><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Put a serialized object in the store.</span>
 </span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="sd">    Args:</span>
@@ -4584,7 +4584,7 @@ Ignored in this implementation.</p>
 <span class="normal"><a href="#__codelineno-0-302">302</a></span>
 <span class="normal"><a href="#__codelineno-0-303">303</a></span>
 <span class="normal"><a href="#__codelineno-0-304">304</a></span>
-<span class="normal"><a href="#__codelineno-0-305">305</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="k">def</span> <span class="nf">put_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EndpointKey</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-305">305</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-295"><a id="__codelineno-0-295" name="__codelineno-0-295"></a><span class="k">def</span><span class="w"> </span><span class="nf">put_batch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">objs</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">bytes</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">EndpointKey</span><span class="p">]:</span>
 </span><span id="__span-0-296"><a id="__codelineno-0-296" name="__codelineno-0-296"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Put a batch of serialized objects in the store.</span>
 </span><span id="__span-0-297"><a id="__codelineno-0-297" name="__codelineno-0-297"></a>
 </span><span id="__span-0-298"><a id="__codelineno-0-298" name="__codelineno-0-298"></a><span class="sd">    Args:</span>
@@ -4674,7 +4674,7 @@ can occur.</p>
 <span class="normal"><a href="#__codelineno-0-330">330</a></span>
 <span class="normal"><a href="#__codelineno-0-331">331</a></span>
 <span class="normal"><a href="#__codelineno-0-332">332</a></span>
-<span class="normal"><a href="#__codelineno-0-333">333</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-307"><a id="__codelineno-0-307" name="__codelineno-0-307"></a><span class="k">def</span><span class="w"> </span><span class="nf">set</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">EndpointKey</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the object associated with a key.</span>
 </span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a>
 </span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a><span class="sd">    Note:</span>
@@ -4700,7 +4700,7 @@ can occur.</p>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>        <span class="k">assert</span> <span class="n">e</span><span class="o">.</span><span class="n">response</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 </span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>        <span class="k">raise</span> <span class="n">EndpointConnectorError</span><span class="p">(</span>
 </span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>            <span class="sa">f</span><span class="s1">&#39;Put failed with error code </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">,</span>
-</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a>        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

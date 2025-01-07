@@ -3521,7 +3521,7 @@ relay server to provide automatic reconnection.</p>
 <details class="tip" open>
   <summary>Tip</summary>
   <p>This class can be used as an async context manager!
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.relay.client</span> <span class="kn">import</span> <span class="n">RelayClient</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.relay.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">RelayClient</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">async</span> <span class="k">with</span> <span class="n">RelayClient</span><span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -3704,7 +3704,7 @@ timeout, or replies with an error.</p>
 <span class="normal"><a href="#__codelineno-0-144">144</a></span>
 <span class="normal"><a href="#__codelineno-0-145">145</a></span>
 <span class="normal"><a href="#__codelineno-0-146">146</a></span>
-<span class="normal"><a href="#__codelineno-0-147">147</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-147">147</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-105"><a id="__codelineno-0-105" name="__codelineno-0-105"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-106"><a id="__codelineno-0-106" name="__codelineno-0-106"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-107"><a id="__codelineno-0-107" name="__codelineno-0-107"></a>    <span class="n">address</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 </span><span id="__span-0-108"><a id="__codelineno-0-108" name="__codelineno-0-108"></a>    <span class="o">*</span><span class="p">,</span>
@@ -3978,7 +3978,7 @@ from and must be addressed by the user.</p>
 <span class="normal"><a href="#__codelineno-0-336">336</a></span>
 <span class="normal"><a href="#__codelineno-0-337">337</a></span>
 <span class="normal"><a href="#__codelineno-0-338">338</a></span>
-<span class="normal"><a href="#__codelineno-0-339">339</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">retry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">retry</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Connect to the relay server.</span>
 </span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a>
 </span><span id="__span-0-268"><a id="__codelineno-0-268" name="__codelineno-0-268"></a><span class="sd">    Note:</span>
@@ -4090,7 +4090,7 @@ from and must be addressed by the user.</p>
 <span class="normal"><a href="#__codelineno-0-348">348</a></span>
 <span class="normal"><a href="#__codelineno-0-349">349</a></span>
 <span class="normal"><a href="#__codelineno-0-350">350</a></span>
-<span class="normal"><a href="#__codelineno-0-351">351</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the connection to the relay server.&quot;&quot;&quot;</span>
 </span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_task</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_reconnect_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
@@ -4172,7 +4172,7 @@ be decoded into the appropriate message type.</p>
 <span class="normal"><a href="#__codelineno-0-369">369</a></span>
 <span class="normal"><a href="#__codelineno-0-370">370</a></span>
 <span class="normal"><a href="#__codelineno-0-371">371</a></span>
-<span class="normal"><a href="#__codelineno-0-372">372</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RelayMessage</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-372">372</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RelayMessage</span><span class="p">:</span>
 </span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Receive the next message.</span>
 </span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a>
 </span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">    Returns:</span>
@@ -4246,7 +4246,7 @@ be decoded into the appropriate message type.</p>
 <span class="normal"><a href="#__codelineno-0-385">385</a></span>
 <span class="normal"><a href="#__codelineno-0-386">386</a></span>
 <span class="normal"><a href="#__codelineno-0-387">387</a></span>
-<span class="normal"><a href="#__codelineno-0-388">388</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">RelayMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-388">388</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-374"><a id="__codelineno-0-374" name="__codelineno-0-374"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">RelayMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-375"><a id="__codelineno-0-375" name="__codelineno-0-375"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Send a message.</span>
 </span><span id="__span-0-376"><a id="__codelineno-0-376" name="__codelineno-0-376"></a>
 </span><span id="__span-0-377"><a id="__codelineno-0-377" name="__codelineno-0-377"></a><span class="sd">    Args:</span>

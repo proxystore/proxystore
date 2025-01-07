@@ -3551,8 +3551,8 @@ and receiving data to/from existing peer connections.</p>
 
 <details class="example" open>
   <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.manager</span> <span class="kn">import</span> <span class="n">PeerManager</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.p2p.relay</span> <span class="kn">import</span> <span class="n">BasicRelayClient</span>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeerManager</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.relay</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasicRelayClient</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">relay_client</span> <span class="o">=</span> <span class="n">BasicRelayClient</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
@@ -3644,7 +3644,7 @@ or "wss://".</p>
 <span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
 <span class="normal"><a href="#__codelineno-0-103">103</a></span>
-<span class="normal"><a href="#__codelineno-0-104">104</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-104">104</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-88"><a id="__codelineno-0-88" name="__codelineno-0-88"></a>    <span class="n">relay_client</span><span class="p">:</span> <span class="n">RelayClient</span><span class="p">,</span>
 </span><span id="__span-0-89"><a id="__codelineno-0-89" name="__codelineno-0-89"></a>    <span class="o">*</span><span class="p">,</span>
@@ -3789,7 +3789,7 @@ has not been called.</p>
 <span class="normal"><a href="#__codelineno-0-141">141</a></span>
 <span class="normal"><a href="#__codelineno-0-142">142</a></span>
 <span class="normal"><a href="#__codelineno-0-143">143</a></span>
-<span class="normal"><a href="#__codelineno-0-144">144</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">async_init</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-144">144</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-137"><a id="__codelineno-0-137" name="__codelineno-0-137"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">async_init</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-138"><a id="__codelineno-0-138" name="__codelineno-0-138"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Connect to relay server and being listening to incoming messages.&quot;&quot;&quot;</span>
 </span><span id="__span-0-139"><a id="__codelineno-0-139" name="__codelineno-0-139"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_relay_client</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
 </span><span id="__span-0-140"><a id="__codelineno-0-140" name="__codelineno-0-140"></a>    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_server_task</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -3856,7 +3856,7 @@ connection to the relay server.</p>
 <span class="normal"><a href="#__codelineno-0-283">283</a></span>
 <span class="normal"><a href="#__codelineno-0-284">284</a></span>
 <span class="normal"><a href="#__codelineno-0-285">285</a></span>
-<span class="normal"><a href="#__codelineno-0-286">286</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-286">286</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-260"><a id="__codelineno-0-260" name="__codelineno-0-260"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-261"><a id="__codelineno-0-261" name="__codelineno-0-261"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the connection manager.</span>
 </span><span id="__span-0-262"><a id="__codelineno-0-262" name="__codelineno-0-262"></a>
 </span><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="sd">    Warning:</span>
@@ -3959,7 +3959,7 @@ connection that should be closed.</p>
 <span class="normal"><a href="#__codelineno-0-314">314</a></span>
 <span class="normal"><a href="#__codelineno-0-315">315</a></span>
 <span class="normal"><a href="#__codelineno-0-316">316</a></span>
-<span class="normal"><a href="#__codelineno-0-317">317</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">close_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peers</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-288"><a id="__codelineno-0-288" name="__codelineno-0-288"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peers</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">UUID</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-289"><a id="__codelineno-0-289" name="__codelineno-0-289"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Close a peer connection if it exists.</span>
 </span><span id="__span-0-290"><a id="__codelineno-0-290" name="__codelineno-0-290"></a>
 </span><span id="__span-0-291"><a id="__codelineno-0-291" name="__codelineno-0-291"></a><span class="sd">    This will close the associated</span>
@@ -4035,7 +4035,7 @@ connection that should be closed.</p>
 <span class="normal"><a href="#__codelineno-0-323">323</a></span>
 <span class="normal"><a href="#__codelineno-0-324">324</a></span>
 <span class="normal"><a href="#__codelineno-0-325">325</a></span>
-<span class="normal"><a href="#__codelineno-0-326">326</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">recv</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">]:</span>
 </span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Receive next message from a peer.</span>
 </span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>
 </span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a><span class="sd">    Returns:</span>
@@ -4136,7 +4136,7 @@ established within the timeout.</p>
 <span class="normal"><a href="#__codelineno-0-343">343</a></span>
 <span class="normal"><a href="#__codelineno-0-344">344</a></span>
 <span class="normal"><a href="#__codelineno-0-345">345</a></span>
-<span class="normal"><a href="#__codelineno-0-346">346</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">send</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-346">346</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
 </span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="bp">self</span><span class="p">,</span>
 </span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a>    <span class="n">peer_uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
 </span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a>    <span class="n">message</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span>
@@ -4244,7 +4244,7 @@ established within the timeout.</p>
 <span class="normal"><a href="#__codelineno-0-382">382</a></span>
 <span class="normal"><a href="#__codelineno-0-383">383</a></span>
 <span class="normal"><a href="#__codelineno-0-384">384</a></span>
-<span class="normal"><a href="#__codelineno-0-385">385</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">get_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peer_uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PeerConnection</span><span class="p">:</span>
+<span class="normal"><a href="#__codelineno-0-385">385</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_connection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peer_uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PeerConnection</span><span class="p">:</span>
 </span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Get connection to the peer.</span>
 </span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a>
 </span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    Args:</span>

@@ -3379,11 +3379,11 @@ is generated, and then a new proxy, internalized with the factory, is returned.<
 <span class="normal"><a href="#__codelineno-0-16">16</a></span>
 <span class="normal"><a href="#__codelineno-0-17">17</a></span>
 <span class="normal"><a href="#__codelineno-0-18">18</a></span>
-<span class="normal"><a href="#__codelineno-0-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span> <span class="nn">proxystore.connectors.redis</span> <span class="kn">import</span> <span class="n">RedisConnector</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span> <span class="nn">proxystore.proxy</span> <span class="kn">import</span> <span class="n">Proxy</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+<span class="normal"><a href="#__codelineno-0-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisConnector</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="k">def</span> <span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">MyDataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="o">...</span><span class="p">:</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_function</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">MyDataType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="o">...</span><span class="p">:</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">MyDataType</span><span class="p">)</span>  <span class="c1"># (1)!</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="c1"># More computation...</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>
@@ -3421,9 +3421,9 @@ asynchronous resolution to overlap communication and computation.</p>
 <span class="normal"><a href="#__codelineno-1-7"> 7</a></span>
 <span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-1-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span> <span class="nn">proxystore.store.utils</span> <span class="kn">import</span> <span class="n">resolve_async</span>
+<span class="normal"><a href="#__codelineno-1-10">10</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_async</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="k">def</span> <span class="nf">complex_function</span><span class="p">(</span><span class="n">large_proxied_input</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">complex_function</span><span class="p">(</span><span class="n">large_proxied_input</span><span class="p">):</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a>   <span class="n">resolve_async</span><span class="p">(</span><span class="n">large_proxied_input</span><span class="p">)</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a>   <span class="c1"># More computation...</span>
@@ -3439,7 +3439,7 @@ multiple proxies refer to the same object.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
 <span class="normal"><a href="#__codelineno-2-2">2</a></span>
 <span class="normal"><a href="#__codelineno-2-3">3</a></span>
-<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="c1"># Cache size of 16 is the default</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">Store</span><span class="p">(</span><span class="s1">&#39;example&#39;</span><span class="p">,</span> <span class="n">connector</span><span class="o">=...</span><span class="p">,</span> <span class="n">cache_size</span><span class="o">=</span><span class="mi">16</span><span class="p">)</span>
@@ -3479,13 +3479,13 @@ innefficient. E.g.,</p>
 <span class="normal"><a href="#__codelineno-4-16">16</a></span>
 <span class="normal"><a href="#__codelineno-4-17">17</a></span>
 <span class="normal"><a href="#__codelineno-4-18">18</a></span>
-<span class="normal"><a href="#__codelineno-4-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">import</span> <span class="nn">torch</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">import</span> <span class="nn">io</span>
+<span class="normal"><a href="#__codelineno-4-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span> <span class="nn">proxystore.serialize</span> <span class="kn">import</span> <span class="n">serialize</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="kn">from</span> <span class="nn">proxystore.store</span> <span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.serialize</span><span class="w"> </span><span class="kn">import</span> <span class="n">serialize</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="k">def</span> <span class="nf">serialize_torch_model</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">serialize_torch_model</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
 </span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a>   <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 </span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>       <span class="n">buffer</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">()</span>
 </span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a>       <span class="n">torch</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">buffer</span><span class="p">)</span>

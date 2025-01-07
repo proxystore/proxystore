@@ -3549,7 +3549,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-71">71</a></span>
 <span class="normal"><a href="#__codelineno-0-72">72</a></span>
 <span class="normal"><a href="#__codelineno-0-73">73</a></span>
-<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="k">def</span> <span class="nf">create_app</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-74">74</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49"></a><span class="k">def</span><span class="w"> </span><span class="nf">create_app</span><span class="p">(</span>
 </span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50"></a>    <span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">,</span>
 </span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51"></a>    <span class="n">max_content_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52"></a>    <span class="n">body_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
@@ -3721,7 +3721,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-237">237</a></span>
 <span class="normal"><a href="#__codelineno-0-238">238</a></span>
 <span class="normal"><a href="#__codelineno-0-239">239</a></span>
-<span class="normal"><a href="#__codelineno-0-240">240</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span> <span class="nf">serve</span><span class="p">(</span>
+<span class="normal"><a href="#__codelineno-0-240">240</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-171"><a id="__codelineno-0-171" name="__codelineno-0-171"></a><span class="k">def</span><span class="w"> </span><span class="nf">serve</span><span class="p">(</span>
 </span><span id="__span-0-172"><a id="__codelineno-0-172" name="__codelineno-0-172"></a>    <span class="n">config</span><span class="p">:</span> <span class="n">EndpointConfig</span><span class="p">,</span>
 </span><span id="__span-0-173"><a id="__codelineno-0-173" name="__codelineno-0-173"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-174"><a id="__codelineno-0-174" name="__codelineno-0-174"></a>    <span class="n">log_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span>
@@ -3838,7 +3838,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-275">275</a></span>
 <span class="normal"><a href="#__codelineno-0-276">276</a></span>
 <span class="normal"><a href="#__codelineno-0-277">277</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-263"><a id="__codelineno-0-263" name="__codelineno-0-263"></a><span class="nd">@routes_blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/endpoint&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
-</span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">endpoint_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-0-264"><a id="__codelineno-0-264" name="__codelineno-0-264"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">endpoint_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 </span><span id="__span-0-265"><a id="__codelineno-0-265" name="__codelineno-0-265"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route handler for `GET /endpoint`.</span>
 </span><span id="__span-0-266"><a id="__codelineno-0-266" name="__codelineno-0-266"></a>
 </span><span id="__span-0-267"><a id="__codelineno-0-267" name="__codelineno-0-267"></a><span class="sd">    Responses:</span>
@@ -3921,7 +3921,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-310">310</a></span>
 <span class="normal"><a href="#__codelineno-0-311">311</a></span>
 <span class="normal"><a href="#__codelineno-0-312">312</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-280"><a id="__codelineno-0-280" name="__codelineno-0-280"></a><span class="nd">@routes_blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/evict&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
-</span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">evict_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-0-281"><a id="__codelineno-0-281" name="__codelineno-0-281"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">evict_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 </span><span id="__span-0-282"><a id="__codelineno-0-282" name="__codelineno-0-282"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route handler for `POST /evict`.</span>
 </span><span id="__span-0-283"><a id="__codelineno-0-283" name="__codelineno-0-283"></a>
 </span><span id="__span-0-284"><a id="__codelineno-0-284" name="__codelineno-0-284"></a><span class="sd">    Responses:</span>
@@ -4026,7 +4026,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-349">349</a></span>
 <span class="normal"><a href="#__codelineno-0-350">350</a></span>
 <span class="normal"><a href="#__codelineno-0-351">351</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="nd">@routes_blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/exists&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
-</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">exists_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">exists_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 </span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route handler for `GET /exists`.</span>
 </span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>
 </span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a><span class="sd">    Responses:</span>
@@ -4140,7 +4140,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-392">392</a></span>
 <span class="normal"><a href="#__codelineno-0-393">393</a></span>
 <span class="normal"><a href="#__codelineno-0-394">394</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="nd">@routes_blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/get&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GET&#39;</span><span class="p">])</span>
-</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">get_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 </span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route handler for `GET /get`.</span>
 </span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a>
 </span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a><span class="sd">    Responses:</span>
@@ -4262,7 +4262,7 @@ completely received.</p>
 <span class="normal"><a href="#__codelineno-0-439">439</a></span>
 <span class="normal"><a href="#__codelineno-0-440">440</a></span>
 <span class="normal"><a href="#__codelineno-0-441">441</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-397"><a id="__codelineno-0-397" name="__codelineno-0-397"></a><span class="nd">@routes_blueprint</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s1">&#39;/set&#39;</span><span class="p">,</span> <span class="n">methods</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;POST&#39;</span><span class="p">])</span>
-</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="k">async</span> <span class="k">def</span> <span class="nf">set_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+</span><span id="__span-0-398"><a id="__codelineno-0-398" name="__codelineno-0-398"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">set_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
 </span><span id="__span-0-399"><a id="__codelineno-0-399" name="__codelineno-0-399"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Route handler for `POST /set`.</span>
 </span><span id="__span-0-400"><a id="__codelineno-0-400" name="__codelineno-0-400"></a>
 </span><span id="__span-0-401"><a id="__codelineno-0-401" name="__codelineno-0-401"></a><span class="sd">    Responses:</span>
