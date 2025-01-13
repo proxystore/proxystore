@@ -407,4 +407,4 @@ class PeerConnection:
 def log_name(uuid: UUID, name: str) -> str:
     """Return string formatted as `#!python 'name(uuid-prefix)'`."""
     uuid_ = str(uuid)
-    return f'{name}({uuid_[:min(8,len(uuid_))]})'
+    return f'{name}({uuid_[: min(8, len(uuid_))]})'

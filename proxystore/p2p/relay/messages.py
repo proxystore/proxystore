@@ -175,8 +175,7 @@ def decode_relay_message(message: str) -> RelayMessage:
         )
     except (AttributeError, KeyError) as e:
         raise RelayMessageDecodeError(
-            'The message is of an unknown message type: '
-            f'{message_type_name}.',
+            f'The message is of an unknown message type: {message_type_name}.',
         ) from e
 
     data = str_to_uuid(data)
