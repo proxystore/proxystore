@@ -367,8 +367,7 @@ class PeerManager:
             self._peers[peers] = connection
 
         logger.info(
-            f'{self._log_prefix}: opening peer connection with '
-            f'{peer_uuid}',
+            f'{self._log_prefix}: opening peer connection with {peer_uuid}',
         )
         await connection.send_offer(peer_uuid)
 

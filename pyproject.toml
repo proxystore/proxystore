@@ -217,8 +217,8 @@ extend-ignore = [
     "D105",
     # Do not require docstrings for __init__ methods
     "D107",
-    # Allow builtin attribute shadowing
-    "A003",
+    # Allow builtin attribute and module shadowing
+    "A003", "A005",
     # Ruff will change all([generator]) to all(generator) because the all/any
     # generator expressions directly and the list comprehension is not needed.
     # However, coverage marks unfinished generators as not covered and
