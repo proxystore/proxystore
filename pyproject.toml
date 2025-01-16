@@ -109,6 +109,8 @@ dist,
 .*egg-info,
 docs/publications/index.md,
 """
+# These words get caught because they are written as {O}bject in bibtex citations.
+ignore-words-list = "pplications,bject"
 
 [tool.coverage.run]
 plugins = ["covdefaults"]
