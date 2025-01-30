@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import multiprocessing
 import os
 import pathlib
 from collections.abc import Generator
@@ -171,7 +172,8 @@ def test_submit_does_not_resolve(store: Store[FileConnector]) -> None:
 def test_submit_with_multiprocessing(store: Store[FileConnector]) -> None:
     proxy = store.owned_proxy('value')
 
-    with ProcessPoolExecutor(max_workers=1) as pool:
+    context = multiprocessing.get_context('spawn')
+    with ProcessPoolExecutor(max_workers=1, mp_context=context) as pool:
         borrowed = borrow(proxy)
         fut: Future[bool] = submit(
             pool.submit,

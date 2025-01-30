@@ -166,7 +166,8 @@ async def test_serve_in_subprocess(
     prefix = 'wss://' if use_ssl else 'ws://'
     address = f'{prefix}{config.host}:{config.port}'
 
-    process = multiprocessing.Process(target=_serve, args=(config,))
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(target=_serve, args=(config,))
     process.start()
 
     while True:

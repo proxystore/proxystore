@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import logging
+import multiprocessing
 import os
 import pathlib
 import time
 import uuid
 from collections.abc import Generator
-from multiprocessing import Process
 from unittest import mock
 
 import pytest
@@ -449,7 +449,8 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
     )
 
     # Create a fake process to kill
-    p = Process(target=time.sleep, args=(1000,))
+    context = multiprocessing.get_context('spawn')
+    p = context.Process(target=time.sleep, args=(1000,))
     p.start()
 
     pid_file = get_pid_filepath(endpoint_dir)

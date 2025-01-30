@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import multiprocessing
 import time
 import uuid
 from collections.abc import Generator
-from multiprocessing import Process
 
 import pytest
 import requests
@@ -62,7 +62,8 @@ def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
         host='localhost',
         port=open_port(),
     )
-    server_handle = Process(
+    context = multiprocessing.get_context('spawn')
+    server_handle = context.Process(
         target=serve_endpoint_silent,
         args=[config],
         kwargs={'use_uvloop': use_uvloop},

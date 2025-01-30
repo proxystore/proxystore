@@ -31,21 +31,24 @@ def test_unknown_topic() -> None:
 
 
 def test_multiprocessing_implements_protocol() -> None:
-    publisher, subscriber = create_pubsub_pair(multiprocessing.Queue())
+    context = multiprocessing.get_context('spawn')
+    publisher, subscriber = create_pubsub_pair(context.Queue())
 
     assert isinstance(publisher, MessagePublisher)
     assert isinstance(subscriber, MessageSubscriber)
 
 
 def test_threading_implements_protocol() -> None:
-    publisher, subscriber = create_pubsub_pair(queue.Queue())
+    context = multiprocessing.get_context('spawn')
+    publisher, subscriber = create_pubsub_pair(context.Queue())
 
     assert isinstance(publisher, MessagePublisher)
     assert isinstance(subscriber, MessageSubscriber)
 
 
 def test_multiprocessing_open_close() -> None:
-    publisher, subscriber = create_pubsub_pair(multiprocessing.Queue())
+    context = multiprocessing.get_context('spawn')
+    publisher, subscriber = create_pubsub_pair(context.Queue())
 
     publisher.close()
 
@@ -71,15 +74,14 @@ def subscribe(subscriber: QueueSubscriber, messages: list[bytes]) -> None:
 
 
 def test_multiprocessing_send_messages() -> None:
-    publisher, subscriber = create_pubsub_pair(multiprocessing.Queue())
+    context = multiprocessing.get_context('spawn')
+    publisher, subscriber = create_pubsub_pair(context.Queue())
 
     messages = [b'message-{i}' for i in range(10)]
 
-    pproc = multiprocessing.Process(target=publish, args=[publisher, messages])
-    sproc = multiprocessing.Process(
-        target=subscribe,
-        args=[subscriber, messages],
-    )
+    context = multiprocessing.get_context('spawn')
+    pproc = context.Process(target=publish, args=[publisher, messages])
+    sproc = context.Process(target=subscribe, args=[subscriber, messages])
 
     sproc.start()
     pproc.start()
