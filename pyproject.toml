@@ -149,11 +149,9 @@ module = "tests.*"
 allow_incomplete_defs = true
 allow_untyped_defs = true
 
-[tool.pytest]
-asyncio_mode = "auto"
-timeout = 30
-
 [tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"
+asyncio_mode = "auto"
 filterwarnings = [
     "ignore::proxystore.warnings.ExperimentalWarning",
     "ignore::DeprecationWarning:proxystore.*",
@@ -163,6 +161,7 @@ filterwarnings = [
 markers = [
     "integration: mark a test as an integration test.",
 ]
+timeout = 60
 
 [tool.ruff]
 line-length = 79

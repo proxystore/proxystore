@@ -330,7 +330,8 @@ def test_serve(use_uvloop: bool) -> None:
         storage=EndpointStorageConfig(database_path=':memory:'),
     )
 
-    process = multiprocessing.Process(
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(
         target=serve,
         args=(config,),
         kwargs={'use_uvloop': use_uvloop},

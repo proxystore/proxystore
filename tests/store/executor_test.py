@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import gc
+import multiprocessing
 import os
 import pathlib
 import sys
@@ -48,7 +49,11 @@ def test_default_behavior(
     base_executor_type: type[Executor],
     tmp_path: pathlib.Path,
 ) -> None:
-    base_executor = base_executor_type()
+    if base_executor_type is ProcessPoolExecutor:
+        context = multiprocessing.get_context('spawn')
+        base_executor = base_executor_type(mp_context=context)  # type: ignore[call-arg]
+    else:
+        base_executor = base_executor_type()
     store = Store(
         'test-default-behavior',
         FileConnector(str(tmp_path)),
@@ -84,7 +89,11 @@ def test_proxy_behavior(
     ownership: bool,
     tmp_path: pathlib.Path,
 ) -> None:
-    base_executor = base_executor_type()
+    if base_executor_type is ProcessPoolExecutor:
+        context = multiprocessing.get_context('spawn')
+        base_executor = base_executor_type(mp_context=context)  # type: ignore[call-arg]
+    else:
+        base_executor = base_executor_type()
     store = Store(
         'test-proxy-behavior',
         FileConnector(str(tmp_path)),

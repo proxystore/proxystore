@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import multiprocessing
 import os
 import pathlib
 import tempfile
 import uuid
 from collections.abc import Generator
-from multiprocessing import Process
-from multiprocessing import Queue
 from typing import Any
 from unittest import mock
 
@@ -55,7 +54,8 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     ss_host = 'localhost'
     ss_port = open_port()
 
-    ss = Process(
+    context = multiprocessing.get_context('spawn')
+    ss = context.Process(
         target=serve_relay_server,
         kwargs={'host': ss_host, 'port': ss_port},
     )
@@ -84,7 +84,7 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
         uuids.append(uuid.UUID(cfg.uuid))
         dirs.append(proxystore_dir)
 
-        handle = Process(target=serve_endpoint_silent, args=[cfg])
+        handle = context.Process(target=serve_endpoint_silent, args=[cfg])
         handle.start()
         handles.append(handle)
 
@@ -132,7 +132,7 @@ def test_endpoint_transfer(endpoints) -> None:
 
 
 def _produce_local(
-    queue: Queue[Any],
+    queue: multiprocessing.Queue[Any],
     endpoints: list[uuid.UUID],
     home_dir: str,
 ) -> None:
@@ -148,7 +148,7 @@ def _produce_local(
     queue.put(proxy)
 
 
-def _consume_local(queue: Queue[Any]) -> None:
+def _consume_local(queue: multiprocessing.Queue[Any]) -> None:
     # access proxy to force resolve which will reconstruct store
     obj = queue.get()
     assert obj == [1, 2, 3]
@@ -158,13 +158,14 @@ def _consume_local(queue: Queue[Any]) -> None:
 def test_endpoint_proxy_transfer(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 
-    queue: Queue[Any] = Queue()
+    context = multiprocessing.get_context('spawn')
+    queue: multiprocessing.Queue[Any] = context.Queue()
 
-    producer = Process(
+    producer = context.Process(
         target=_produce_local,
         args=(queue, endpoints, proxystore_dirs[0]),
     )
-    consumer = Process(target=_consume_local, args=(queue,))
+    consumer = context.Process(target=_consume_local, args=(queue,))
 
     producer.start()
     consumer.start()
@@ -180,7 +181,7 @@ def test_endpoint_proxy_transfer(endpoints) -> None:
 
 
 def _produce_remote(
-    queue: Queue[Any],
+    queue: multiprocessing.Queue[Any],
     endpoints: list[uuid.UUID],
     home_dir: str,
 ) -> None:
@@ -198,7 +199,7 @@ def _produce_remote(
         queue.put(proxy)
 
 
-def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
+def _consume_remote(queue: multiprocessing.Queue[Any], home_dir: str) -> None:
     # Mock home_dir to simulate different systems
     with mock.patch(
         'proxystore.connectors.endpoint.home_dir',
@@ -218,13 +219,14 @@ def _consume_remote(queue: Queue[Any], home_dir: str) -> None:
 def test_proxy_detects_endpoint(endpoints) -> None:
     endpoints, proxystore_dirs = endpoints
 
-    queue: Queue[Any] = Queue()
+    context = multiprocessing.get_context('spawn')
+    queue: multiprocessing.Queue[Any] = context.Queue()
 
-    producer = Process(
+    producer = context.Process(
         target=_produce_remote,
         args=(queue, endpoints, proxystore_dirs[0]),
     )
-    consumer = Process(
+    consumer = context.Process(
         target=_consume_remote,
         args=(queue, proxystore_dirs[1]),
     )
