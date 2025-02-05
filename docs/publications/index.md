@@ -46,6 +46,7 @@ If you use ProxyStore or any of this code in your work, please cite the followin
 
 *If you use ProxyStore in your work and would like to be featured on this page, open an [issue](https://github.com/proxystore/proxystore/issues){target=_blank} or propose a [pull request](https://github.com/proxystore/proxystore/pulls){target=_blank} on GitHub.*
 
+* Xiaoli Yan, Nathaniel Hudson, Hyun Park, Daniel Grzenda, J Gregory Pauloski, Marcus Schwarting, Haochen Pan, Hassan Harb, Samuel Foreman, Chris Knight, Tom Gibbs, Kyle Chard, Santanu Chaudhuri, Emad Tajkhorshid, Ian Foster, Mohamad Moosavi, Logan Ward, EA Huerta. ["MOFA: Discovering Materials for Carbon Capture with a GenAI-and Simulation-Based Workflow"](https://arxiv.org/abs/2501.10651){target=_blank} *ArXiv Preprint*. 2025.
 * J. Gregory Pauloski, Klaudiusz Rydzy, Valerie Hayot-Sasson, Ian Foster, and Kyle Chard. ["Accelerating Python Applications with Dask and ProxyStore."](https://arxiv.org/abs/2410.12092){target=_blank} *ArXiv Preprint*. Presented as a demo at the SC24 Workshop on High Performance Python for Science at Scale (HPPSS). 2024.
 * Logan Ward, J. Gregory Pauloski, Valerie Hayot-Sasson, Yadu Babuji, Alexander Brace, Ryan Chard, Kyle Chard, Rajeev Thakur, and Ian Foster. ["Employing Artificial Intelligence to Steer Exascale Workflows with Colmena."](https://doi.org/10.1177/10943420241288242){target=_blank} *The International Journal of High Performance Computing Applications*. Sage, 2024.
 * Nathaniel Hudson, Valerie Hayot-Sasson, Yadu Babuji, Matt Baughman, J. Gregory Pauloski, Ryan Chard, Ian Foster, and Kyle Chard. ["Flight: A FaaS-Based Framework for Complex and Hierarchical Federated Learning."](https://arxiv.org/abs/2409.16495){target=_blank} *ArXiv Preprint*. 2024.
@@ -62,5 +63,6 @@ If you use ProxyStore or any of this code in your work, please cite the followin
 
 ## Presentations
 
+* [[Slides](https://gregpauloski.com/slides/pauloski-hppss24-proxystore.pdf){target=_blank}] "Accelerating Python Applications with Dask and ProxyStore" presented at [SC24 Workshop on High Performance Python for Science at Scale](https://hppss.github.io/SC24/){target=_blank}. 2024.
 * [[Slides](https://gregpauloski.com/slides/pauloski-sc23-proxystore.pdf){target=_blank}] "Accelerating Communications in Federated Applications with Transparent Object Proxies" presented at [SC23](https://sc23.conference-program.com/presentation/?id=pap224&sess=sess181){target=_blank}. 2023.
 * [[Poster](https://gregpauloski.com/posters/gcasr2023-proxystore.pdf){target=_blank}] "Accelerating Communications in Federated Applications with Transparent Object Proxies" presented at the [Greater Chicago Area Systems Research Workshop (GCASR)](https://gcasr.org/posters){target=_blank}. 2023.
