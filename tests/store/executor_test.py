@@ -196,8 +196,8 @@ class DaskLikeClient:
 
     def map(
         self,
-        function: Callable[P, R],
-        *iterables: Iterable[P.args],
+        function: Callable[..., R],
+        *iterables: Iterable[Any],
         timeout: float | None = None,
         chunksize: int = 1,
     ) -> Iterator[Future[R]]:
@@ -243,8 +243,8 @@ class BadExecutor:
 
     def map(
         self,
-        function: Callable[P, R],
-        *iterables: Iterable[P.args],
+        function: Callable[..., R],
+        *iterables: Iterable[Any],
         timeout: float | None = None,
         chunksize: int = 1,
     ) -> Iterator[Future[R]]:

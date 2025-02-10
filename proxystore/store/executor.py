@@ -352,14 +352,8 @@ class StoreExecutor(Executor):
             [`Future`][concurrent.futures.Future] representing \
             the result of the execution of the callable.
         """
-        # We cast the transformed args and kwargs back to P.args and P.kwargs,
-        # but note that those types aren't exactly correct. Some items
-        # may be Proxy[T] rather than T, but this is not practicle to type.
         pargs, keys1 = _proxy_iterable(args, self.store, self.should_proxy)
-        pargs = cast(P.args, pargs)
-
         pkwargs, keys2 = _proxy_mapping(kwargs, self.store, self.should_proxy)
-        pkwargs = cast(P.kwargs, pkwargs)
 
         wrapped = self._wrapped(function)
         future = self.executor.submit(wrapped, *pargs, **pkwargs)
@@ -369,8 +363,8 @@ class StoreExecutor(Executor):
 
     def map(  # type: ignore[override]
         self,
-        function: Callable[P, R],
-        *iterables: Iterable[P.args],
+        function: Callable[..., R],
+        *iterables: Iterable[Any],
         **kwargs: Any,
     ) -> Iterator[R | Proxy[R]]:
         """Map a function onto iterables of arguments.
