@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import sys
 from collections.abc import Iterable
+from collections.abc import Mapping
+from collections.abc import Sequence
 from typing import Any
 from typing import Callable
 from typing import Protocol
@@ -92,8 +94,8 @@ def _make_out_of_scope_callback(
 def submit(
     submit_func: Callable[P, FutureT],
     *,
-    args: P.args = (),
-    kwargs: P.kwargs | None = None,
+    args: Sequence[Any] = (),
+    kwargs: Mapping[str, Any] | None = None,
     register_custom_refs: Iterable[Any] = (),
 ) -> FutureT:
     """Shim around function executor for managing reference proxy scopes.
