@@ -112,6 +112,7 @@ class EndpointConfig(BaseModel):
         name: Endpoint name.
         uuid: Endpoint UUID.
         host: Host endpoint is running on.
+        host_type: Type of host address to use (FQDN or IP).
         port: Port endpoint is running on.
         peering: Peering configuration.
         storage: Storage configuration.
@@ -126,6 +127,7 @@ class EndpointConfig(BaseModel):
     uuid: str
     port: int
     host: Optional[str] = None  # noqa: UP007
+    host_type: Literal['fqdn', 'ip'] = 'fqdn'
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,
     )

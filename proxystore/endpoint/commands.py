@@ -111,6 +111,7 @@ def configure_endpoint(
     proxystore_dir: str | None = None,
     peer_channels: int = 1,
     persist_data: bool = False,
+    use_fqdn: bool = True,
 ) -> int:
     """Configure a new endpoint.
 
@@ -126,6 +127,8 @@ def configure_endpoint(
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
         persist_data: Persist data stored in the endpoint.
+        use_fqdn: Use the FQDN, rather than IP address, for client connections
+            to the endpoint.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -149,6 +152,7 @@ def configure_endpoint(
             uuid=str(uuid.uuid4()),
             host=None,
             port=port,
+            host_type='fqdn' if use_fqdn else 'ip',
             relay=EndpointRelayConfig(
                 address=relay_server,
                 auth=EndpointRelayAuthConfig(
@@ -300,8 +304,13 @@ def start_endpoint(
 
     endpoint_dir = os.path.join(proxystore_dir, name)
     cfg = read_config(endpoint_dir)
-    # Use IP address here which is generally more reliable
-    hostname = socket.gethostbyname(utils.hostname())
+
+    if cfg.host_type == 'fqdn':
+        hostname = socket.getfqdn()
+    elif cfg.host_type == 'ip':
+        hostname = socket.gethostbyname(utils.hostname())
+    else:
+        raise AssertionError('Unreachable.')
 
     pid_file = get_pid_filepath(endpoint_dir)
 
