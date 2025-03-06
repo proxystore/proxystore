@@ -271,12 +271,14 @@ def test_remove_endpoint_running(
 
 
 @pytest.mark.usefixtures('_patch_hostname')
-def test_start_endpoint(tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize('use_fqdn', (True, False))
+def test_start_endpoint(use_fqdn: bool, tmp_path: pathlib.Path) -> None:
     configure_endpoint(
         name=_NAME,
         port=_PORT,
         relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
+        use_fqdn=use_fqdn,
     )
     with mock.patch('proxystore.endpoint.commands.serve', autospec=True):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))

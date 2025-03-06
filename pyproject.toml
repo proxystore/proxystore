@@ -150,7 +150,6 @@ allow_incomplete_defs = true
 allow_untyped_defs = true
 
 [tool.pytest.ini_options]
-asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 filterwarnings = [
     "ignore::proxystore.warnings.ExperimentalWarning",

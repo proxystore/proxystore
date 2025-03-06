@@ -235,3 +235,31 @@ async def test_relay_server_auto_reconnection(relay_server) -> None:
             await asyncio.sleep(0.001)
         assert client.websocket.state is not websockets.protocol.State.CLOSED
         assert client.websocket != old_websocket
+
+
+@pytest.mark.asyncio
+async def test_relay_server_duplicate_registration(relay_server) -> None:
+    uid = uuid.uuid4()
+    client1 = RelayClient(
+        relay_server.address,
+        client_uuid=uid,
+        reconnect_task=False,
+    )
+    client2 = RelayClient(
+        relay_server.address,
+        client_uuid=uid,
+        reconnect_task=False,
+    )
+
+    await client1.connect()
+    # This will cause the relay to close the websocket to client1.
+    await client2.connect()
+
+    with pytest.raises(
+        RelayRegistrationError,
+        match='Relay received a registration with the same ID.',
+    ):
+        await client1.connect()
+
+    await client1.close()
+    await client2.close()

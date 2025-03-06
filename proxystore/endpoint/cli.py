@@ -117,7 +117,7 @@ def check_nat_command(host: str, port: int) -> None:
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
     '--port',
-    default=8765,
+    default=None,
     type=int,
     metavar='PORT',
     help='Port to listen on.',
@@ -153,14 +153,20 @@ def check_nat_command(host: str, port: int) -> None:
     metavar='BOOL',
     help='Optionally persist data to a database.',
 )
+@click.option(
+    '--use-fqdn/--use-ip',
+    default=True,
+    help='Use the FQDN or IP address of the endpoint for client connections.',
+)
 def configure(
     name: str,
-    port: int,
+    port: int | None,
     relay_address: str,
     relay_auth: bool,
     relay_server: bool,
     peer_channels: int,
     persist: bool,
+    use_fqdn: bool,
 ) -> None:
     """Configure a new endpoint."""
     raise SystemExit(
@@ -171,6 +177,7 @@ def configure(
             relay_auth=relay_auth,
             peer_channels=peer_channels,
             persist_data=persist,
+            use_fqdn=use_fqdn,
         ),
     )
 
