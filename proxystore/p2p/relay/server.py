@@ -154,7 +154,15 @@ class RelayServer(Generic[UserT]):
                     'to reregister on new socket so old socket associated '
                     'with existing registration will be closed',
                 )
-                await self.unregister(existing_client, False)
+                await self.unregister(
+                    existing_client,
+                    code=4004,
+                    reason=(
+                        'Relay received a registration with the same ID. '
+                        'This might mean that the endpoint is running '
+                        'in multiple locations.'
+                    ),
+                )
             elif existing_client.user != auth_user:
                 logger.warning(
                     f'User {auth_user} is attempting to register with a UUID'
@@ -176,21 +184,25 @@ class RelayServer(Generic[UserT]):
 
         await self.send(client, RelayResponse(success=True))
 
-    async def unregister(self, client: Client[UserT], expected: bool) -> None:
+    async def unregister(
+        self,
+        client: Client[UserT],
+        code: int = 1000,
+        reason: str = '',
+    ) -> None:
         """Unregister the endpoint.
 
         Args:
             client: Client to unregister.
-            expected: If the connection was closed intentionally or due to an
-                error.
+            code: Close code.
+            reason: Close reason.
         """
-        reason = 'ok' if expected else 'unexpected'
         logger.info(
             f'Unregistering client {client.uuid} ({client.name}) '
-            f'for {reason} reason',
+            f'with code {code}',
         )
         self.client_manager.remove_client(client)
-        await client.websocket.close(code=1000 if expected else 1001)
+        await client.websocket.close(code=code, reason=reason)
 
     async def forward(
         self,
@@ -276,6 +288,7 @@ class RelayServer(Generic[UserT]):
         - The client can not be authenticated (code 4001).
         - The client attempts to access forbidden resources (code 4002).
         - The client sends a message larger than the allowed size (code 4003).
+        - A different client registers with the same ID (code 4004).
 
         Args:
             websocket: Websocket message was received on.
@@ -286,12 +299,12 @@ class RelayServer(Generic[UserT]):
             except websockets.exceptions.ConnectionClosedOK:
                 client = self.client_manager.get_client_by_websocket(websocket)
                 if client is not None:
-                    await self.unregister(client, expected=True)
+                    await self.unregister(client)
                 break
             except websockets.exceptions.ConnectionClosedError:
                 client = self.client_manager.get_client_by_websocket(websocket)
                 if client is not None:
-                    await self.unregister(client, expected=False)
+                    await self.unregister(client)
                 break
 
             if (

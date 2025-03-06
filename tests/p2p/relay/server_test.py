@@ -198,7 +198,7 @@ async def test_server_unregister(caplog) -> None:
         'close',
         mock.AsyncMock(),
     ) as mock_close:
-        await server.unregister(client, expected=True)
+        await server.unregister(client)
         mock_close.assert_awaited_once()
 
     assert server.client_manager.get_client_by_uuid(client.uuid) is None

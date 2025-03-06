@@ -140,7 +140,8 @@ class RelayClient:
         # from when connecting.
         #   - 4001: UnauthorizedError
         #   - 4002: ForbiddenError
-        self._unrecoverable_status_codes = (4001, 4002)
+        #   - 4004: Duplicated registration
+        self._unrecoverable_status_codes = (4001, 4002, 4004)
 
         self._connect_lock = asyncio.Lock()
         self._reconnect_task: asyncio.Task[None] | None = None
@@ -287,11 +288,15 @@ class RelayClient:
                 from and must be addressed by the user.
         """
         async with self._connect_lock:
-            if (
-                self._websocket is not None
-                and self._websocket.state == websockets.protocol.State.OPEN
-            ):
-                return
+            if self._websocket is not None:
+                if self._websocket.state == websockets.protocol.State.OPEN:
+                    return
+                if (
+                    self._websocket.state == websockets.protocol.State.CLOSED
+                    and self._websocket.close_code
+                    in self._unrecoverable_status_codes
+                ):
+                    raise RelayRegistrationError(self._websocket.close_reason)
 
             backoff_seconds = self._initial_backoff_seconds
             while True:
