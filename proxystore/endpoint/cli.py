@@ -117,7 +117,7 @@ def check_nat_command(host: str, port: int) -> None:
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
     '--port',
-    default=8765,
+    default=None,
     type=int,
     metavar='PORT',
     help='Port to listen on.',
@@ -155,7 +155,7 @@ def check_nat_command(host: str, port: int) -> None:
 )
 def configure(
     name: str,
-    port: int,
+    port: int | None,
     relay_address: str,
     relay_auth: bool,
     relay_server: bool,

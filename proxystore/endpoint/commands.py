@@ -12,6 +12,7 @@ import contextlib
 import enum
 import logging
 import os
+import random
 import shutil
 import signal
 import socket
@@ -104,7 +105,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
 def configure_endpoint(
     name: str,
     *,
-    port: int,
+    port: int | None,
     relay_server: str | None,
     relay_auth: bool = True,
     proxystore_dir: str | None = None,
@@ -115,7 +116,8 @@ def configure_endpoint(
 
     Args:
         name: Name of endpoint.
-        port: Port for endpoint to listen on.
+        port: Port for endpoint to listen on. If `None`, a random port is
+            selected.
         relay_server: Optional relay server address for P2P endpoint
             connections.
         relay_auth: Relay server used Globus Auth.
@@ -138,6 +140,8 @@ def configure_endpoint(
         if persist_data
         else None
     )
+
+    port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
     try:
         cfg = EndpointConfig(
