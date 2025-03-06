@@ -424,5 +424,7 @@ def _attached_pid_manager(pid_file: str) -> Generator[None, None, None]:
     """Context manager that writes and cleans up a PID file."""
     with open(pid_file, 'w') as f:
         f.write(str(os.getpid()))
-    yield
-    os.remove(pid_file)
+    try:
+        yield
+    finally:
+        os.remove(pid_file)
