@@ -3506,10 +3506,9 @@ the logs.
 </span></code></pre></div></p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
-<p>If the <code>curl</code> or <code>proxystore-endpoint test</code> commands return HTTP errors related to being unable to resolve the URL, check if you have an HTTP proxy enabled.
-If your proxy is configured via the <code>HTTP_PROXY</code> environment variable, unset it when issuing the command.
-Otherwise, it is possible your network administrator has enabled a proxy.
-Certain configurations of HTTP proxies can prevent the client from connecting to the local endpoint.</p>
+<p>If the <code>curl</code> command hangs or returns an HTTP error related to being unable to resolve the URL, check if you have an HTTP proxy set.
+The <code>proxystore-endpoint test</code> command ignores all HTTP proxies and should work in the case where <code>curl</code> does not.
+Alternatively, try to unset the <code>http_proxy</code> and <code>HTTP_PROXY</code> environment variables when issuing the command.</p>
 </div>
 <h2 id="test-a-remote-endpoint">Test a Remote Endpoint<a class="headerlink" href="#test-a-remote-endpoint" title="Permanent link">&para;</a></h2>
 <p>Consider I have an endpoint running on system A with UUID
