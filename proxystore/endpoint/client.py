@@ -1,4 +1,14 @@
-"""Utilities for client interactions with endpoints."""
+"""Utilities for client interactions with endpoints.
+
+Note:
+    Endpoints serve an HTTP REST API for clients on the local network.
+    It is not intended that clients from outside the local network interact
+    with an endpoint this way. (Rather, they should connect to their own
+    local endpoint, which peers with remote endpoints.)
+
+Note:
+    These client functions ignore all HTTP proxies.
+"""
 
 from __future__ import annotations
 
@@ -38,6 +48,7 @@ def evict(
     response = post(
         f'{address}/evict',
         params={'key': key, 'endpoint': endpoint_str},
+        proxies={'http': ''},
     )
     if not response.ok:
         raise requests.exceptions.RequestException(
@@ -77,6 +88,7 @@ def exists(
     response = get_(
         f'{address}/exists',
         params={'key': key, 'endpoint': endpoint_str},
+        proxies={'http': ''},
     )
     if not response.ok:
         raise requests.exceptions.RequestException(
@@ -117,6 +129,7 @@ def get(
     response = get_(
         f'{address}/get',
         params={'key': key, 'endpoint': endpoint_str},
+        proxies={'http': ''},
         stream=True,
     )
 
@@ -168,6 +181,7 @@ def put(
         f'{address}/set',
         headers={'Content-Type': 'application/octet-stream'},
         params={'key': key, 'endpoint': endpoint_str},
+        proxies={'http': ''},
         data=chunk_bytes(data, MAX_CHUNK_LENGTH),
         stream=True,
     )
