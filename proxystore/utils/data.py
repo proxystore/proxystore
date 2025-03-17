@@ -100,10 +100,10 @@ def readable_to_bytes(size: str) -> int:
         'mb': int(1e6),
         'gb': int(1e9),
         'tb': int(1e12),
-        'kib': (2**10),
-        'mib': (2**20),
-        'gib': (2**30),
-        'tib': (2**40),
+        'kib': 2**10,
+        'mib': 2**20,
+        'gib': 2**30,
+        'tib': 2**40,
     }
 
     # Try casting size to value (will only work if no units)
