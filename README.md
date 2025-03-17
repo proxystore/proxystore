@@ -104,7 +104,7 @@ guide to learn more!
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
-If you use ProxyStore or any of this code in your work, please cite our ProxyStore ([SC '23](https://dl.acm.org/doi/10.1145/3581784.3607047)) and Proxy Patterns ([arXiv preprint](https://arxiv.org/abs/2407.01764)) papers.
+If you use ProxyStore or any of this code in your work, please cite our ProxyStore ([SC '23](https://dl.acm.org/doi/10.1145/3581784.3607047)) and Proxy Patterns ([TPDS](https://ieeexplore.ieee.org/document/10776778)) papers.
 ```bib
 @inproceedings{pauloski2023proxystore,
     title = {Accelerating {C}ommunications in {F}ederated {A}pplications with {T}ransparent {O}bject {P}roxies},
