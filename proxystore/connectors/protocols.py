@@ -23,6 +23,12 @@ class Connector(Protocol[KeyT]):
     def close(self) -> None:
         """Close the connector and clean up.
 
+        Warning:
+            The semantics of `close` may differ by implementation. Some may
+            delete objects stored in the connector while others may just close
+            connection objects. Please refer to the implementation-specific
+            docstrings for details.
+
         Note:
             Implementations should make this idempotent.
         """

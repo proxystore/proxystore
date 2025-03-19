@@ -36,18 +36,44 @@ SerializerT = Callable[[Any], bytes]
 
 
 class GlobusEndpoint:
-    """Globus endpoint representation.
+    """Globus Collection endpoint configuration.
+
+    Defines the directory within the Globus Collection to be used
+    for storage and transfer of files.
+
+    Tip:
+        A Globus Collection may have a different mount point than what you
+        would use when logged in to a system. The `endpoint_path` and
+        `local_path` parameters are used as the mapping between the two.
+        For example, if I created a directory `bar/` within the `foo` project
+        allocation on ALCF's Grand filesystem, the `endpoint_path` would be
+        `/foo/bar` but the `local_path` would be `/projects/foo/bar`. Be sure
+        to check that the two paths point to the same physical directory
+        when instantiating this type.
+
+    Warning:
+        The path should refer to a unique directory that ProxyStore can
+        exclusively use. For example, do not use your `$HOME` directory and
+        instead prefer a directory suitable for bulk data storage, such as
+        a subdirectory of a project allocation
+        (e.g., `/projects/FOO/proxystore-globus-cache`).
 
     Args:
-        uuid: UUID of Globus endpoint.
-        endpoint_path: Path within endpoint to directory to use
-            for storing objects.
-        local_path: Local path (as seen by the host filesystem) that
-            corresponds to the directory specified by `endpoint_path`.
-        host_regex: String that matches the host where
-            the Globus endpoint exists or regex pattern than can be used
-            to match the host. The host pattern is needed so that proxies
-            can figure out what the local endpoint is when they are resolved.
+        uuid: UUID of the Globus Collection. This can be found by searching
+            for the collection on [app.globus.org](https://app.globus.org).
+        endpoint_path: Directory path within the Globus Collection to use
+            for storing objects and transferring files. This path can be
+            found via the File Manager on
+            [app.globus.org](https://app.globus.org).
+        local_path: The local path equivalent of `endpoint_path`. This may
+            or may not be equal to `endpoint_path`, depending on the
+            configuration of the Globus Collection. This is equivalent to the
+            path that you would `ls` when logged on to the system.
+        host_regex: String or regular expression that matches the hostname
+            where the Globus Collection exists. The host pattern is used by the
+            [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
+            to determine what the "local" endpoint is when reading, writing,
+            and transferring files.
     """
 
     def __init__(
@@ -95,7 +121,7 @@ class GlobusEndpoints:
 
     Args:
         endpoints: Iterable of
-            [`GlobusEndpoints`][proxystore.connectors.globus.GlobusEndpoints]
+            [`GlobusEndpoint`][proxystore.connectors.globus.GlobusEndpoint]
             instances.
 
     Raises:
@@ -265,13 +291,13 @@ class GlobusConnector:
     The [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector] is
     similar to a [`FileConnector`][proxystore.connectors.file.FileConnector]
     in that objects are saved to disk but allows for the transfer of objects
-    between two remote file systems. The two directories on the separate file
-    systems are kept in sync via Globus transfers. The
+    between remote file systems. Directories on separate file systems are kept
+    in sync via Globus transfers. The
     [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
-    is useful when moving data between hosts that have a Globus endpoint but
-    may have restrictions that prevent the use of other store backends
+    is useful when moving data between hosts that have a Globus Transfer
+    endpoint but may have restrictions that prevent the use of other connectors
     (e.g., ports cannot be opened for using a
-    [`RedisConnector`][proxystore.connectors.redis.RedisConnector].
+    [`RedisConnector`][proxystore.connectors.redis.RedisConnector]).
 
     Note:
         To use Globus for data transfer, Globus authentication needs to be
@@ -283,20 +309,29 @@ class GlobusConnector:
         user to authenticate. Authentication only needs to be performed once
         per system
 
+    Warning:
+        The [`close()`][proxystore.connectors.globus.GlobusConnector.close]
+        method will, by default, **delete all** of the provided directories
+        to keep in sync. Ensure that the provided directories are unique
+        and only used by ProxyStore.
+
     Args:
-        endpoints: Globus endpoints to keep in sync. If passed as a `dict`,
-            the dictionary must match the format expected by
+        endpoints: Collection of directories across Globus Collection endpoints
+            to keep in sync. If passed as a `dict`, the dictionary must match
+            the format expected by
             [`GlobusEndpoints.from_dict()`][proxystore.connectors.globus.GlobusEndpoints.from_dict].
             Note that given `n` endpoints there will be `n-1` Globus transfers
             per operation, so we suggest not using too many endpoints at the
-            same time.
-        polling_interval: Interval in seconds to check if Globus
+            same time. I.e., stored objects are transferred to all
+            endpoints. If this behavior is not desired, use multiple
+            connector instances, each with a different set of endpoints.
+        polling_interval: Interval in seconds to check if Globus Transfer
             tasks have finished.
-        sync_level: Globus transfer sync level.
-        timeout: Timeout in seconds for waiting on Globus tasks.
-        clear: Clear all objects on
-            [`close()`][proxystore.connectors.globus.GlobusConnector.close] by
-            deleting the `local_path` of each endpoint.
+        sync_level: Globus Transfer sync level.
+        timeout: Timeout in seconds for waiting on Globus Transfer tasks.
+        clear: Delete all directories specified in `endpoints` when
+            [`close()`][proxystore.connectors.globus.GlobusConnector.close] is
+            called to cleanup files.
 
     Raises:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
@@ -360,7 +395,7 @@ class GlobusConnector:
 
         Args:
             filename: Name of file in Globus.
-            endpoint: Optionally specify a GlobusEndpoint
+            endpoint: Optionally specify a Globus Endpoint
                 to get the filepath relative to. If not specified, the endpoint
                 associated with the local host will be used.
 
@@ -476,11 +511,12 @@ class GlobusConnector:
         Warning:
             This method should only be called at the end of the program when
             the store will no longer be used, for example once all proxies
-            have been resolved.
+            have been resolved. Calling `close()` multiple times
+            can raise file not found errors.
 
         Args:
-            clear: Remove the store directory. Overrides the default
-                value of `clear` provided when the
+            clear: Delete the user-provided directories on each endpoint.
+                Overrides the default value of `clear` provided when the
                 [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
                 was instantiated.
         """
@@ -542,7 +578,7 @@ class GlobusConnector:
         """Check if an object associated with the key exists.
 
         Note:
-            If the corresponding Globus transfer is still in progress, this
+            If the corresponding Globus Transfer is still in progress, this
             method will wait to make sure the transfers is successful.
 
         Args:
