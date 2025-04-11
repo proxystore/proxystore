@@ -29,7 +29,7 @@ def cli() -> None:  # pragma: no cover
     '-c',
     metavar='UUID',
     multiple=True,
-    help='Globus Collection UUID to request transfer scopes for.',
+    help='Globus Collection UUID to request data_access scopes for.',
 )
 def login(collection: list[str]) -> None:
     """Authenticate with Globus Auth.
@@ -39,6 +39,10 @@ def login(collection: list[str]) -> None:
     scopes for multiple collections with:
 
     $ proxystore-globus-auth -c UUID -c UUID -c UUID
+
+    Providing UUIDs for High-Assurance GCS Mapped Collections will result
+    in "Unknown Scope" errors during the login flow because those Collections
+    do not use data_access. Do not provide those Collection UUIDs to the CLI.
     """
     app = get_user_app()
     scopes = get_all_scopes_by_resource_server(collection)
