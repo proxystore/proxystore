@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from globus_sdk import TransferClient
 from globus_sdk.scopes import AuthScopes
 from globus_sdk.scopes import GCSCollectionScopeBuilder
 from globus_sdk.scopes import ScopeBuilder
@@ -45,7 +46,13 @@ def get_all_scopes_by_resource_server(
 
 def get_auth_scopes_by_resource_server() -> dict[str, list[str]]:
     """Get basic scopes for the auth API resource server."""
-    return {AuthScopes.resource_server: [AuthScopes.openid, AuthScopes.email]}
+    return {
+        AuthScopes.resource_server: [
+            AuthScopes.openid,
+            AuthScopes.email,
+            AuthScopes.view_identity_set,
+        ],
+    }
 
 
 def get_relay_scopes_by_resource_server() -> dict[str, list[str]]:
@@ -74,3 +81,20 @@ def get_transfer_scopes_by_resource_server(
         transfer_scope.add_dependency(data_access_scope)
 
     return {TransferScopes.resource_server: [str(transfer_scope)]}
+
+
+def uses_data_access(client: TransferClient, collection: str) -> bool:
+    """Check if a collection uses data access scopes.
+
+    Args:
+        client: Transfer client to use for lookup.
+        collection: Collection ID to query.
+
+    Returns:
+        `True` if the collection uses a `data_access` scope and `False` \
+        otherwise.
+    """
+    ep = client.get_endpoint(collection)
+    if ep['entity_type'] != 'GCSv5_mapped_collection':
+        return False
+    return not ep['high_assurance']

@@ -702,7 +702,6 @@ def _submit_transfer_action(
         else:
             raise AssertionError('Unreachable.')
     except globus_sdk.TransferAPIError as e:  # pragma: no cover
-        # https://github.com/globus/globus-sdk-python/blob/054a29167c86f66b77bb99beca45ce317b02a5a7/src/globus_sdk/exc/err_info.py#L93  # noqa: E501
         raise Exception(
             f'Failure initiating Globus Transfer. Error info: {e.info}',
         ) from e

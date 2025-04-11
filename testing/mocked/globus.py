@@ -52,6 +52,9 @@ class MockTransferClient:
     def __init__(self, *args, **kwargs):
         pass
 
+    def get_endpoint(self, *args, **kwargs) -> Any:  # pragma: no cover
+        pass
+
     def get_task(self, task_id: str) -> Any:
         """Get task."""
         assert isinstance(task_id, str)
