@@ -51,7 +51,7 @@ def test_get_native_app_auth_client() -> None:
 
 def test_get_transfer_client_default() -> None:
     with mock.patch(
-        'proxystore.globus.client.get_user_app',
+        'proxystore.globus.client.get_globus_app',
         return_value=get_testing_app(),
     ):
         client = get_transfer_client()
@@ -60,5 +60,21 @@ def test_get_transfer_client_default() -> None:
 
 def test_get_transfer_client_custom() -> None:
     globus_app = get_testing_app()
-    client = get_transfer_client(globus_app, collections=[str(uuid.uuid4())])
+    # App.add_scope_requirements() is called by
+    # TransferClient.add_app_data_access_scope() which calls
+    # TransferClient.add_app_scope().
+    with mock.patch.object(
+        globus_app,
+        'add_scope_requirements',
+    ) as mock_add_scope:
+        with mock.patch(
+            'proxystore.globus.client.uses_data_access',
+            side_effect=(True, False),
+        ) as mock_data_access:
+            client = get_transfer_client(
+                globus_app,
+                collections=[str(uuid.uuid4()), str(uuid.uuid4())],
+            )
+    assert mock_add_scope.call_count == 2
+    assert mock_data_access.call_count == 2
     assert isinstance(client, globus_sdk.TransferClient)

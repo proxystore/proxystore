@@ -9,8 +9,9 @@ from globus_sdk.globus_app import GlobusApp
 
 from proxystore.globus.app import _APP_NAME
 from proxystore.globus.app import get_client_credentials_from_env
-from proxystore.globus.app import get_user_app
+from proxystore.globus.app import get_globus_app
 from proxystore.globus.app import PROXYSTORE_GLOBUS_CLIENT_ID
+from proxystore.globus.scopes import uses_data_access
 
 
 def get_confidential_app_auth_client(
@@ -91,9 +92,14 @@ def get_transfer_client(
         Transfer client.
     """
     if globus_app is None:
-        globus_app = get_user_app()
+        globus_app = get_globus_app()
 
     client = globus_sdk.TransferClient(app=globus_app)
-    client.add_app_data_access_scope(collections)
+    data_access_collections = [
+        collection
+        for collection in collections
+        if uses_data_access(client, collection)
+    ]
+    client.add_app_data_access_scope(data_access_collections)
 
     return client

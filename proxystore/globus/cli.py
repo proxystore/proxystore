@@ -12,6 +12,7 @@ proxystore-globus-auth login --collection COLLECTION_UUID --collection COLLECTIO
 from __future__ import annotations
 
 import click
+from globus_sdk.gare import GlobusAuthorizationParameters
 
 from proxystore.globus.app import get_user_app
 from proxystore.globus.scopes import get_all_scopes_by_resource_server
@@ -29,9 +30,25 @@ def cli() -> None:  # pragma: no cover
     '-c',
     metavar='UUID',
     multiple=True,
-    help='Globus Collection UUID to request transfer scopes for.',
+    help='Globus Collection UUID to request data_access scopes for.',
 )
-def login(collection: list[str]) -> None:
+@click.option(
+    '--domain',
+    '-d',
+    metavar='DOMAIN',
+    multiple=True,
+    help='Require identities from the domain.',
+)
+@click.option(
+    '--force',
+    is_flag=True,
+    help='Force a login flow.',
+)
+def login(
+    collection: tuple[str],
+    domain: tuple[str],
+    force: bool,
+) -> None:
     """Authenticate with Globus Auth.
 
     This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
@@ -39,17 +56,37 @@ def login(collection: list[str]) -> None:
     scopes for multiple collections with:
 
     $ proxystore-globus-auth -c UUID -c UUID -c UUID
+
+    Providing UUIDs for High-Assurance GCS Mapped Collections will result
+    in "Unknown Scope" errors during the login flow because those Collections
+    do not use data_access. Do not provide those Collection UUIDs to the CLI.
+    In this case, you may need to provide a domain for the collection:
+
+    $ proxystore-globus-auth -d <domain>
     """
     app = get_user_app()
     scopes = get_all_scopes_by_resource_server(collection)
     app.add_scope_requirements(scopes)
 
-    if app.login_required():
-        app.login()
+    auth_params = (
+        GlobusAuthorizationParameters(
+            session_message=(
+                'Your request requires an identity from specified domains.'
+            ),
+            session_required_single_domain=list(domain),
+            # https://docs.globus.org/api/auth/reference/#authorization_code_grant_preferred
+            prompt='login',
+        )
+        if len(domain) > 0
+        else None
+    )
+
+    if force or app.login_required():
+        app.login(auth_params=auth_params)
     else:
         click.echo(
             'Globus authentication tokens already exist. '
-            'To recreate, logout and login again.',
+            'To recreate, logout and login again or rerun with --force.',
         )
 
 
