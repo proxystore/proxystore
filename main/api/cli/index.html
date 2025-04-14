@@ -3693,6 +3693,11 @@
 relay server. Collections can be strung together. E.g., request transfer
 scopes for multiple collections with:</p>
 <p>$ proxystore-globus-auth -c UUID -c UUID -c UUID</p>
+<p>Providing UUIDs for High-Assurance GCS Mapped Collections will result
+in "Unknown Scope" errors during the login flow because those Collections
+do not use data_access. Do not provide those Collection UUIDs to the CLI.
+In this case, you may need to provide a domain for the collection:</p>
+<p>$ proxystore-globus-auth -d <domain></p>
 <p><strong>Usage:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>proxystore-globus-auth login [OPTIONS]
 </span></code></pre></div>
@@ -3710,8 +3715,20 @@ scopes for multiple collections with:</p>
 <tr>
 <td><code>--collection</code>, <code>-c</code></td>
 <td>text</td>
-<td>Globus Collection UUID to request transfer scopes for.</td>
+<td>Globus Collection UUID to request data_access scopes for.</td>
 <td>None</td>
+</tr>
+<tr>
+<td><code>--domain</code>, <code>-d</code></td>
+<td>text</td>
+<td>Require identities from the domain.</td>
+<td>None</td>
+</tr>
+<tr>
+<td><code>--force</code></td>
+<td>boolean</td>
+<td>Force a login flow.</td>
+<td><code>False</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
