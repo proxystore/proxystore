@@ -50,7 +50,7 @@ class MyFactory():
    def __init__(self, obj):
        self.obj = obj
 
-   def __class__(self):
+   def __call__(self):
        return self.obj
 
 p = Proxy(MyFactory(x))
