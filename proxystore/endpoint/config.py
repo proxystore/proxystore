@@ -127,7 +127,7 @@ class EndpointConfig(BaseModel):
     uuid: str
     port: int
     host: Optional[str] = None  # noqa: UP007
-    host_type: Literal['fqdn', 'ip'] = 'fqdn'
+    host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,
     )

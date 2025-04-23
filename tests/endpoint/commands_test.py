@@ -271,15 +271,27 @@ def test_remove_endpoint_running(
 
 
 @pytest.mark.usefixtures('_patch_hostname')
-@pytest.mark.parametrize('use_fqdn', (True, False))
-def test_start_endpoint(use_fqdn: bool, tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize('host', ('fqdn', 'ip', 'localhost'))
+def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
     configure_endpoint(
         name=_NAME,
         port=_PORT,
+        host=host,
         relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
-        use_fqdn=use_fqdn,
     )
+
+    cfg = read_config(os.path.join(tmp_path, _NAME))
+    if host == 'fqdn':
+        assert cfg.host is None
+        assert cfg.host_type == 'fqdn'
+    elif host == 'ip':
+        assert cfg.host is None
+        assert cfg.host_type == 'ip'
+    else:
+        assert cfg.host == host
+        assert cfg.host_type == 'static'
+
     with mock.patch('proxystore.endpoint.commands.serve', autospec=True):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0
@@ -436,6 +448,35 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
             'Removing invalid PID file' in record.message
             for record in caplog.records
             if record.levelno == logging.DEBUG
+        ],
+    )
+
+
+def test_start_endpoint_missing_static_host(
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    caplog.set_level(logging.DEBUG)
+
+    endpoint_dir = os.path.join(tmp_path, _NAME)
+
+    config = EndpointConfig(
+        name=_NAME,
+        uuid=str(_UUID),
+        host=None,
+        host_type='static',
+        port=1234,
+    )
+    write_config(config, endpoint_dir)
+
+    rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
+    assert rv == 1
+
+    assert any(
+        [
+            'Missing static host address in config.' in record.message
+            for record in caplog.records
+            if record.levelno == logging.ERROR
         ],
     )
 
