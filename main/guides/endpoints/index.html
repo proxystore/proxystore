@@ -3472,29 +3472,35 @@ name, UUID, host address, port, relay server address, and more.</p>
 <span class="normal"><a href="#__codelineno-2-14">14</a></span>
 <span class="normal"><a href="#__codelineno-2-15">15</a></span>
 <span class="normal"><a href="#__codelineno-2-16">16</a></span>
-<span class="normal"><a href="#__codelineno-2-17">17</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-endpoint&quot;</span><span class="w">  </span><span class="c1"># (1)!</span>
+<span class="normal"><a href="#__codelineno-2-17">17</a></span>
+<span class="normal"><a href="#__codelineno-2-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;my-endpoint&quot;</span><span class="w">  </span><span class="c1"># (1)!</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;d27cf8cb-45fa-46b0-b907-27c830da62e3&quot;</span><span class="w">  </span><span class="c1"># (2)!</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (3)!</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="k">[relay]</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;wss://relay.proxystore.dev&quot;</span><span class="w">  </span><span class="c1"># (4)!</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (5)!</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (6)!</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="k">[relay.auth]</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;globus&quot;</span><span class="w">  </span><span class="c1"># (7)!</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="k">[relay.auth.kwargs]</span><span class="w">  </span><span class="c1"># (8)!</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[storage]</span>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/.local/share/proxystore/my-endpoint/blobs.db&quot;</span><span class="w">  </span><span class="c1"># (9)!</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (10)!</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">host_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;ip&quot;</span><span class="w">  </span><span class="c1"># (4)!</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="k">[relay]</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;wss://relay.proxystore.dev&quot;</span><span class="w">  </span><span class="c1"># (5)!</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (6)!</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (7)!</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="k">[relay.auth]</span>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;globus&quot;</span><span class="w">  </span><span class="c1"># (8)!</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="k">[relay.auth.kwargs]</span><span class="w">  </span><span class="c1"># (9)!</span>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="k">[storage]</span>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/.local/share/proxystore/my-endpoint/blobs.db&quot;</span><span class="w">  </span><span class="c1"># (10)!</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (11)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>Human-readable name of this endpoint. Only used for logging and CLI
    operations.</li>
 <li>Unique identifier of this endpoint.</li>
 <li>Change the default port if running multiple endpoints on the same system.</li>
+<li>When the <code>host_type</code> is "ip" or "fqdn", the host of the endpoint will be
+   determined at runtime and set as the IP address or fully-qualified domain
+   name, respectively. If <code>host_type</code> is "static", a static address can
+   be specified in a <code>host</code> field (e.g., <code>host = "localhost"</code>).</li>
 <li>Comment out the relay address if you want to start the endpoint in SOLO
    mode. Peering will not be available, but all other functionality will
    remain.</li>
@@ -3507,7 +3513,7 @@ name, UUID, host address, port, relay server address, and more.</p>
 <li>Optional keyword arguments to use when creating the authorization headers.
    Typically only used for testing and development purposes.</li>
 <li>Optional path to a SQLite database for persisting endpoint objects. See
-   the tip below for more details.</li>
+    the tip below for more details.</li>
 <li>Maximum object size. Comment out to disable object size limits.</li>
 </ol>
 <div class="admonition tip">
@@ -3525,6 +3531,20 @@ directory, initialize the endpoint, and start a Quart app using the host and
 port.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>By default, the <code>host</code> address that an endpoint is served on is set to
+the IP address of the node where the endpoint is started (so that an
+endpoint can be configured and started on different nodes).
+IP addresses can be incompatible with certain HTTP proxies, causing
+clients to be unable to connect to their local endpoint (such as at ALCF).
+Changing the <code>host_type</code> in the configuration from "ip" to "fqdn" will
+use the fully-qualified domain name instead. Alternatively,
+<code>host_type = "static"</code> will use a static host address specified in the
+<code>host</code> field (i.e. <code>host = "12.34.56.78"</code>). The <code>--host</code> flag can also
+be used during configuration to specify "ip" (default), "fqdn", or a
+static host.</p>
+</div>
 <h2 id="endpointconnector">EndpointConnector<a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h2>
 <p>The primary interface to endpoints is the
 <a class="autorefs autorefs-internal" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</p>
