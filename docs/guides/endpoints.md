@@ -110,40 +110,45 @@ A typical configuration looks like the following.
 name = "my-endpoint"  # (1)!
 uuid = "d27cf8cb-45fa-46b0-b907-27c830da62e3"  # (2)!
 port = 8765  # (3)!
+host_type = "ip"  # (4)!
 
 [relay]
-address = "wss://relay.proxystore.dev"  # (4)!
-peer_channels = 1  # (5)!
-verify_certificate = true  # (6)!
+address = "wss://relay.proxystore.dev"  # (5)!
+peer_channels = 1  # (6)!
+verify_certificate = true  # (7)!
 
 [relay.auth]
-method = "globus"  # (7)!
+method = "globus"  # (8)!
 
-[relay.auth.kwargs]  # (8)!
+[relay.auth.kwargs]  # (9)!
 
 [storage]
-database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (9)!
-max_object_size = 10000000  # (10)!
+database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (10)!
+max_object_size = 10000000  # (11)!
 ```
 
 1. Human-readable name of this endpoint. Only used for logging and CLI
    operations.
 2. Unique identifier of this endpoint.
 3. Change the default port if running multiple endpoints on the same system.
-4. Comment out the relay address if you want to start the endpoint in SOLO
+4. When the `host_type` is "ip" or "fqdn", the host of the endpoint will be
+   determined at runtime and set as the IP address or fully-qualified domain
+   name, respectively. If `host_type` is "static", a static address can
+   be specified in a `host` field (e.g., `host = "localhost"`).
+5. Comment out the relay address if you want to start the endpoint in SOLO
    mode. Peering will not be available, but all other functionality will
    remain.
-5. Number of channels to multiplex peer communications over. Increasing this
+6. Number of channels to multiplex peer communications over. Increasing this
    to two or four may improve performance on certain networks.
-6. Only disable this when connecting to a local relay server using self-signed
+7. Only disable this when connecting to a local relay server using self-signed
    certificates for testing and development purposes.
-7. Authentication method to use with the relay server. Comment this out when
+8. Authentication method to use with the relay server. Comment this out when
    using a local relay server without authentication.
-8. Optional keyword arguments to use when creating the authorization headers.
+9. Optional keyword arguments to use when creating the authorization headers.
    Typically only used for testing and development purposes.
-9. Optional path to a SQLite database for persisting endpoint objects. See
-   the tip below for more details.
-10. Maximum object size. Comment out to disable object size limits.
+10. Optional path to a SQLite database for persisting endpoint objects. See
+    the tip below for more details.
+11. Maximum object size. Comment out to disable object size limits.
 
 !!! tip
 
@@ -163,6 +168,20 @@ port.
 ```bash
 $ proxystore-endpoint start my-endpoint
 ```
+
+!!! note
+
+    By default, the `host` address that an endpoint is served on is set to
+    the IP address of the node where the endpoint is started (so that an
+    endpoint can be configured and started on different nodes).
+    IP addresses can be incompatible with certain HTTP proxies, causing
+    clients to be unable to connect to their local endpoint (such as at ALCF).
+    Changing the `host_type` in the configuration from "ip" to "fqdn" will
+    use the fully-qualified domain name instead. Alternatively,
+    `host_type = "static"` will use a static host address specified in the
+    `host` field (i.e. `host = "12.34.56.78"`). The `--host` flag can also
+    be used during configuration to specify "ip" (default), "fqdn", or a
+    static host.
 
 ## EndpointConnector
 

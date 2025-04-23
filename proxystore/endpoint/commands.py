@@ -18,11 +18,13 @@ import signal
 import socket
 import uuid
 from collections.abc import Generator
+from typing import Literal
 
 import daemon.pidfile
 import psutil
 
 from proxystore import utils
+from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
 from proxystore.endpoint.config import ENDPOINT_DATABASE_FILE
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointRelayAuthConfig
@@ -105,30 +107,30 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
 def configure_endpoint(
     name: str,
     *,
-    port: int | None,
-    relay_server: str | None,
-    relay_auth: bool = True,
-    proxystore_dir: str | None = None,
+    host: str = 'ip',
     peer_channels: int = 1,
     persist_data: bool = False,
-    use_fqdn: bool = True,
+    port: int | None,
+    proxystore_dir: str | None = None,
+    relay_auth: bool = True,
+    relay_server: str | None,
 ) -> int:
     """Configure a new endpoint.
 
     Args:
         name: Name of endpoint.
-        port: Port for endpoint to listen on. If `None`, a random port is
-            selected.
-        relay_server: Optional relay server address for P2P endpoint
-            connections.
-        relay_auth: Relay server used Globus Auth.
-        proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+        host: Method to resolve the hostname of the endpoint ("ip" or "fqdn")
+            or a static address to use.
         peer_channels: Number of datachannels per peer connection
             to another endpoint to communicate over.
         persist_data: Persist data stored in the endpoint.
-        use_fqdn: Use the FQDN, rather than IP address, for client connections
-            to the endpoint.
+        port: Port for endpoint to listen on. If `None`, a random port is
+            selected.
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+        relay_server: Optional relay server address for P2P endpoint
+            connections.
+        relay_auth: Relay server used Globus Auth.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -144,15 +146,25 @@ def configure_endpoint(
         else None
     )
 
+    host_addr: str | None = None
+    host_type: Literal['fqdn', 'ip', 'static']
+    if host.lower().strip() == 'fqdn':
+        host_type = 'fqdn'
+    elif host.lower().strip() == 'ip':
+        host_type = 'ip'
+    else:
+        host_addr = host
+        host_type = 'static'
+
     port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
     try:
         cfg = EndpointConfig(
             name=name,
             uuid=str(uuid.uuid4()),
-            host=None,
+            host=host_addr,
             port=port,
-            host_type='fqdn' if use_fqdn else 'ip',
+            host_type=host_type,
             relay=EndpointRelayConfig(
                 address=relay_server,
                 auth=EndpointRelayAuthConfig(
@@ -270,7 +282,7 @@ def remove_endpoint(
     return 0
 
 
-def start_endpoint(
+def start_endpoint(  # noqa: C901
     name: str,
     *,
     detach: bool = False,
@@ -309,6 +321,17 @@ def start_endpoint(
         hostname = socket.getfqdn()
     elif cfg.host_type == 'ip':
         hostname = socket.gethostbyname(utils.hostname())
+    elif cfg.host_type == 'static' and cfg.host is None:
+        path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
+        logger.error('Missing static host address in config.')
+        logger.error(
+            'Set the `host` field or change the `host_type` to '
+            '"ip" or "fqdn" in the config.',
+        )
+        logger.error(f'  Config: {path}')
+        return 1
+    elif cfg.host_type == 'static' and cfg.host is not None:
+        hostname = cfg.host
     else:
         raise AssertionError('Unreachable.')
 
