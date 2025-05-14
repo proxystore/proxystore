@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import logging
 import os
 import pathlib
@@ -18,6 +19,10 @@ from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.p2p.nat import NatType
 from proxystore.p2p.nat import Result
+
+CLICK_VERSION = tuple(
+    int(x) for x in importlib.metadata.version('click').split('.')
+)
 
 
 @pytest.fixture
@@ -38,7 +43,9 @@ def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
 def test_no_command() -> None:
     runner = click.testing.CliRunner()
     result = runner.invoke(cli)
-    assert result.exit_code == 0
+    # https://github.com/pallets/click/pull/1489
+    expected = 2 if CLICK_VERSION >= (8, 2, 0) else 0
+    assert result.exit_code == expected
     assert result.output.startswith('Usage:')
 
 

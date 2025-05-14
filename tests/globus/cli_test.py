@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import uuid
 from unittest import mock
 
@@ -13,11 +14,17 @@ from proxystore.globus.cli import login
 from proxystore.globus.cli import logout
 from testing.mocked.globus import get_testing_app
 
+CLICK_VERSION = tuple(
+    int(x) for x in importlib.metadata.version('click').split('.')
+)
+
 
 def test_cli() -> None:
     runner = click.testing.CliRunner()
     result = runner.invoke(cli)
-    assert result.exit_code == 0
+    # https://github.com/pallets/click/pull/1489
+    expected = 2 if CLICK_VERSION >= (8, 2, 0) else 0
+    assert result.exit_code == expected
 
 
 @mock.patch('proxystore.globus.cli.get_user_app')
