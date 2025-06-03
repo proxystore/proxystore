@@ -165,13 +165,13 @@ class BaseRefProxy(Proxy[T]):
             )
         return super().__proxy_wrapped__
 
-    @__proxy_wrapped__.deleter
-    def __proxy_wrapped__(self) -> None:
-        object.__delattr__(self, '__proxy_target__')
-
     @__proxy_wrapped__.setter
     def __proxy_wrapped__(self, target: T) -> None:
         object.__setattr__(self, '__proxy_target__', target)
+
+    @__proxy_wrapped__.deleter
+    def __proxy_wrapped__(self) -> None:
+        object.__delattr__(self, '__proxy_target__')
 
     def __copy__(self) -> NoReturn:
         raise NotImplementedError(

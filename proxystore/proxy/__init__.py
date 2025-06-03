@@ -292,13 +292,13 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
             object.__setattr__(self, '__proxy_target__', target)
             return target
 
-    @__proxy_wrapped__.deleter
-    def __proxy_wrapped__(self) -> None:
-        object.__delattr__(self, '__proxy_target__')
-
     @__proxy_wrapped__.setter
     def __proxy_wrapped__(self, target: T) -> None:
         object.__setattr__(self, '__proxy_target__', target)
+
+    @__proxy_wrapped__.deleter
+    def __proxy_wrapped__(self) -> None:
+        object.__delattr__(self, '__proxy_target__')
 
     @property
     def __name__(self) -> str:
