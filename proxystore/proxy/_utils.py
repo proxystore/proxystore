@@ -32,7 +32,7 @@ class _ProxyMethods:
     # and this module is hidden from the docs so we set the Proxy class's
     # module to proxystore.proxy.
     @proxy_property(default='proxystore.proxy')
-    def __module__(self) -> str:  # type: ignore[override]
+    def __module__(self) -> str:
         return self.__proxy_wrapped__.__module__
 
     @__module__.setter
@@ -40,7 +40,7 @@ class _ProxyMethods:
         self.__proxy_wrapped__.__module__ = value
 
     @proxy_property(default='<Proxy Placeholder Docstring>')
-    def __doc__(self) -> str:  # type: ignore[override]
+    def __doc__(self) -> str:
         return self.__proxy_wrapped__.__doc__
 
     @__doc__.setter
