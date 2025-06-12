@@ -52,6 +52,7 @@ import pytest
 
 from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
+from proxystore.proxy import ProxyResolveError
 from testing.compat import randbytes
 
 OBJECTS_CODE = """
@@ -632,8 +633,13 @@ def test_raise_attribute_error() -> None:
         raise AttributeError('boom!')
 
     proxy = Proxy(foo)
-    pytest.raises(AttributeError, str, proxy)
-    pytest.raises(AttributeError, lambda: proxy.__proxy_wrapped__)
+    with pytest.raises(ProxyResolveError) as exc_info:
+        str(proxy)
+    assert isinstance(exc_info.value.cause, AttributeError)
+
+    with pytest.raises(ProxyResolveError) as exc_info:
+        _ = proxy.__proxy_wrapped__
+    assert isinstance(exc_info.value.cause, AttributeError)
     assert proxy.__proxy_factory__ is foo
 
 
@@ -642,10 +648,15 @@ def test_patching_the_factory() -> None:
         raise AttributeError('boom!')
 
     proxy = Proxy(foo)
-    pytest.raises(AttributeError, lambda: proxy.__proxy_wrapped__)
+    with pytest.raises(ProxyResolveError) as exc_info:
+        _ = proxy.__proxy_wrapped__
+    assert isinstance(exc_info.value.cause, AttributeError)
     assert proxy.__proxy_factory__ is foo
 
+    # Set the factory to return the original factory. I.e., the target
+    # object is now the foo function.
     proxy.__proxy_factory__ = lambda: foo
+    # Calling the proxy should call foo and raise the error.
     pytest.raises(AttributeError, proxy)
     assert proxy.__proxy_wrapped__ is foo
 
@@ -656,14 +667,31 @@ def test_deleting_the_factory() -> None:
     proxy.__proxy_factory__ = None  # type: ignore[assignment]
     assert proxy.__proxy_factory__ is None
     del proxy.__proxy_factory__
-    pytest.raises(ValueError, str, proxy)
+    with pytest.raises(
+        ProxyResolveError,
+        match='Proxy is not initialized: __proxy_factory__ is missing.',
+    ) as exc_info:
+        str(proxy)
+    assert isinstance(exc_info.value.cause, AttributeError)
 
 
 def test_new() -> None:
     a = Proxy.__new__(Proxy)
     b = Proxy.__new__(Proxy)
-    pytest.raises(ValueError, lambda: a + b)
-    pytest.raises(ValueError, lambda: a.__proxy_wrapped__)
+
+    with pytest.raises(
+        ProxyResolveError,
+        match='Proxy is not initialized: __proxy_factory__ is missing.',
+    ) as exc_info:
+        _ = a + b
+    assert isinstance(exc_info.value.cause, AttributeError)
+
+    with pytest.raises(
+        ProxyResolveError,
+        match='Proxy is not initialized: __proxy_factory__ is missing.',
+    ) as exc_info:
+        _ = a.__proxy_wrapped__
+    assert isinstance(exc_info.value.cause, AttributeError)
 
 
 def test_set_wrapped_via_new() -> None:

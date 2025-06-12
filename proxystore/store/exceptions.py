@@ -46,9 +46,11 @@ class ProxyResolveMissingKeyError(Exception):
         self.store_type = store_type
         self.store_name = store_name
         super().__init__(
-            f"Proxy cannot resolve target object with key='{self.key}' "
-            f"from {self.store_type.__name__}(name='{self.store_name}'): "
-            'store returned NoneType with key.',
+            f"Cannot resolve target object with key='{self.key}' "
+            f"from {self.store_type.__name__}(name='{self.store_name}') "
+            'because there is no object associated with the key. This can '
+            'often occur when the target object is evicted from the store '
+            'while proxies of the target still exist.',
         )
 
 

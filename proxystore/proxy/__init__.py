@@ -92,6 +92,18 @@ def _proxy_trampoline(
     return proxy
 
 
+class ProxyResolveError(Exception):
+    """Error raised when resolving a proxy fails.
+
+    Attributes:
+        cause: The captured base exception that prevented resolving the proxy.
+    """
+
+    def __init__(self, message: str, cause: Exception) -> None:
+        self.cause = cause
+        super().__init__(message)
+
+
 class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     """Lazy object proxy.
 
@@ -227,6 +239,8 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         target: Optionally preset the target object.
 
     Raises:
+        ProxyResolveError: If the `factory` raises an error when the proxy
+            is resolved.
         TypeError: If `factory` is not callable.
     """
 
@@ -282,15 +296,28 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         try:
             return cast(T, object.__getattribute__(self, '__proxy_target__'))
         except AttributeError:
-            try:
-                factory = object.__getattribute__(self, '__proxy_factory__')
-            except AttributeError as exc:
-                raise ValueError(
-                    'Proxy is not initialized: __proxy_factory__ is missing.',
-                ) from exc
+            pass
+
+        try:
+            factory = object.__getattribute__(self, '__proxy_factory__')
+        except AttributeError as e:
+            raise ProxyResolveError(
+                'Proxy is not initialized: __proxy_factory__ is missing.',
+                cause=e,
+            ) from e
+
+        try:
             target = factory()
-            object.__setattr__(self, '__proxy_target__', target)
-            return target
+        except Exception as e:
+            raise ProxyResolveError(
+                'The factory of this proxy raised an error while resolving '
+                'the target object. See the full stack trace for the '
+                'direct cause of this exception.',
+                cause=e,
+            ) from e
+
+        object.__setattr__(self, '__proxy_target__', target)
+        return target
 
     @__proxy_wrapped__.setter
     def __proxy_wrapped__(self, target: T) -> None:
@@ -400,7 +427,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
 
     def __getattr__(self, name: str) -> Any:
         if name in ('__proxy_wrapped__', '__proxy_factory__'):
-            raise AttributeError(name)
+            raise AttributeError(name)  # pragma: no cover
         else:
             return getattr(self.__proxy_wrapped__, name)
 
