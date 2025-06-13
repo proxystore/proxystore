@@ -351,9 +351,8 @@ class LeaseLifetime(ContextLifetime):
             close_stores: Close any [`Store`][proxystore.store.base.Store]
                 store instances associated with the lifetime.
         """
-        if self._timer is not None:
+        if self._timer is not None:  # pragma: no cover
             self._timer.cancel()
-            self._timer = None
 
         super().close(close_stores=close_stores)
 

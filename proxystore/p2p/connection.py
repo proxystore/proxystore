@@ -153,9 +153,8 @@ class PeerConnection:
         # Flush send buffers before close
         # https://github.com/aiortc/aiortc/issues/547
         for channel in self._channels.values():
-            transport = channel._RTCDataChannel__transport
-            await transport._data_channel_flush()
-            await transport._transmit()
+            await channel.transport._data_channel_flush()
+            await channel.transport._transmit()
             channel.close()
         await self._pc.close()
 
