@@ -157,7 +157,7 @@ plugins:
             - https://websockets.readthedocs.io/en/stable/objects.inv
             - https://requests.readthedocs.io/en/latest/objects.inv
             - https://extensions.proxystore.dev/main/objects.inv
-            - https://redis-py.readthedocs.io/en/stable/objects.inv
+            - https://redis.readthedocs.io/en/stable/objects.inv
             - https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/objects.inv
             - https://distributed.dask.org/en/latest/objects.inv
           options:
