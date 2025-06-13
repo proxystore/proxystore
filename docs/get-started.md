@@ -56,21 +56,16 @@ third-party code can provide custom implementations provided they meet the
 specification.
 
 The following example uses the
-[`RedisConnector`][proxystore.connectors.redis.RedisConnector] to interface
-with an already running Redis server using proxies.
+[`LocalConnector`][proxystore.connectors.local.LocalConnector] which stores data locally in the process.
+Other [connector types][proxystore.connectors] can be used to store and transfer objects remotely.
 
 ```python title="Basic ProxyStore Usage" linenums="1"
-from proxystore.connectors.redis import RedisConnector
+from proxystore.connectors.local import LocalConnector
 from proxystore.store import get_store
 from proxystore.store import Store
 
-store = Store(
-    'my-store',
-    RedisConnector(hostname='localhost', port=1234),
-    register=True,
-)
-
-store = get_store('my-store')  # (1)!
+store = Store('example', connector=LocalConnector(), register=True)
+store = get_store('example')  # (1)!
 
 key = store.put(my_object)  # (2)!
 assert my_object == store.get(key)
@@ -86,9 +81,12 @@ assert isinstance(p, type(my_object))  # (4)!
 4. The proxy, when used, will behave as the target.
 
 This proxy, `p`, can be cheaply serialized and communicated to any
-arbitrary Python process as if it were the target object itself. Once the
-proxy is used on the remote process, the underlying factory function will
-be executed to retrieve the target object from the Redis server.
+arbitrary Python process as if it were the target object itself, provided
+the underlying storage connector is accessible by all processes. (Here,
+the [`LocalConnector`][proxystore.connectors.local.LocalConnector] is only
+accessible within the local process and is used for illustrative purposes.)
+Once the proxy is used on the remote process, the underlying factory function
+will be executed to retrieve the target object from the Redis server.
 
 Using the [`Store`][proxystore.store.base.Store] interface allows
 developers to write code without needing to worry about how data communication

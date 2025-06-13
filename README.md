@@ -68,33 +68,29 @@ to get started for local development.
 
 ## Example
 
-Using ProxyStore to store and transfer objects only requires a few lines of code.
+Creating proxies of objects only requires a few lines of code.
 
 ```python
-from proxystore.connectors.redis import RedisConnector
+from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 
-data = MyDataType(...)
+def process(x: dict[str, str]) -> None:
+    # x is transparently resolved from the store when first
+    # used by the function. After which the proxy behaves as
+    # target object (the dict) for the rest of its existence.
+    assert isinstance(x, dict)
+    assert x['hello'] == 'world'
 
-def my_function(x: MyDataType) -> ...:
-    # x is transparently resolved when first used by the function.
-    # Then the proxy, x, behaves as an instance of MyDataType
-    # for the rest of its existence.
-    assert isinstance(x, MyDataType)
-
-with Store(
-    'example',
-    connector=RedisConnector('localhost', 6379),
-    register=True,
-) as store:
-    # Store the object in Redis (or any other connector).
-    # The returned Proxy acts like a reference to the object.
-    proxy = store.proxy(data)
+with Store('example', connector=LocalConnector(), register=True) as store:
+    # Store the object via a connector interface (here, a thread local
+    # store). The returned proxy acts like a reference to the object.
+    x = {'hello': 'world'}
+    proxy = store.proxy(x)
     assert isinstance(proxy, Proxy)
 
     # Invoking a function with proxy works without function changes.
-    my_function(proxy)
+    process(proxy)
 ```
 
 Check out the [Get Started](https://docs.proxystore.dev/latest/get-started)

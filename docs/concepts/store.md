@@ -22,33 +22,32 @@ other information necessary to retrieve the object from the mediated channel
 is generated, and then a new proxy, internalized with the factory, is returned.
 
 ```python title="Base Store Usage" linenums="1"
-from proxystore.connectors.redis import RedisConnector
+from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 
-def my_function(x: MyDataType) -> ...:
-    assert isinstance(x, MyDataType)  # (1)!
-    # More computation...
-
-my_object = MyDataType(...)
+def process(x: dict[str, str]) -> None:
+    assert isinstance(x, dict)  # (1)!
+    assert x['hello'] == 'world'
+    # More computation using x...
 
 with Store(
     'example',
-    connector=RedisConnector('localhost',  6379)  # (2)!
+    connector=LocalConnector(),  # (2)!
     register=True,  # (3)!
 ) as store:
-    p = store.proxy(my_object)  # (4)!
-    isinstance(p, Proxy)
-
-    my_function(p) # (5)!
+    x = {'hello': 'world'}
+    proxy = store.proxy(x)  # (4)!
+    assert isinstance(proxy, Proxy)
+    process(proxy)  # (5)!
 ```
 
-1. `x` is resolved from "my-store" on the first use of `x`.
-2. The `Connector` defines the low-level communication method used by the `Store`.
+1. `x` is resolved from the store named "example" on the first use of `x` and `x` then acts as a transparent reference to the target object (the dictionary).
+2. The `Connector` defines the low-level communication method used by the `Store`. Here, the [`LocalConnector`][proxystore.connectors.local.LocalConnector] stores data in the processes memory, but other connectors are provided to remote storage and transfer services.
 3. Passing the `register=True` will call [`register_store()`][proxystore.store.register_store] automatically to register the instance globally by name.
    This enables proxies to reuse the same store instance to improve performance.
 4. Store the object and get a proxy.
-5. Always succeeds regardless of if `p` is the true object or a proxy.
+5. Always succeeds regardless of if `proxy` is the true object or a proxy.
 
 ## Asynchronous Resolving
 
