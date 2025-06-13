@@ -149,7 +149,7 @@ plugins:
           setup_commands:
             - import pytkdocs_tweaks
             - pytkdocs_tweaks.main()
-          import:
+          inventories:
             - https://docs.python.org/3/objects.inv
             - https://quart.palletsprojects.com/en/latest/objects.inv
             - https://aiortc.readthedocs.io/en/latest/objects.inv
