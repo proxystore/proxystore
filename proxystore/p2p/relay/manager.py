@@ -53,6 +53,8 @@ class Client(Generic[UserT]):
         else:
             return False
 
+    __hash__ = object.__hash__
+
     def __repr__(self) -> str:
         created = self.created.strftime('%Y-%m-%d %H:%M:%S %Z')
         address = str(self.websocket.remote_address)

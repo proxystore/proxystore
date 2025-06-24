@@ -107,6 +107,8 @@ class GlobusEndpoint:
             and self.host_regex == endpoint.host_regex
         )
 
+    __hash__ = object.__hash__
+
     def __repr__(self) -> str:
         return (
             f"{self.__class__.__name__}(uuid='{self.uuid}', "
@@ -279,6 +281,9 @@ class GlobusKey(NamedTuple):
         if isinstance(other, tuple):
             return self[0] == other[0]
         return False
+
+    def __hash__(self) -> int:
+        return hash(self.filename) + hash(self.task_id)
 
     def __ne__(self, other: Any) -> bool:
         # Match keys by filename only.

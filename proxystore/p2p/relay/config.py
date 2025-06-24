@@ -35,7 +35,7 @@ class RelayAuthConfig(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    method: Optional[Literal['globus']] = None  # noqa: UP007
+    method: Optional[Literal['globus']] = None  # noqa: UP045
     kwargs: Dict[str, Any] = Field(  # noqa: UP006
         default_factory=dict,
         repr=False,
@@ -58,11 +58,11 @@ class RelayLoggingConfig(BaseModel):
             list will be logged.
     """
 
-    log_dir: Optional[str] = None  # noqa: UP007
+    log_dir: Optional[str] = None  # noqa: UP045
     default_level: Union[int, str] = logging.INFO  # noqa: UP007
     websockets_level: Union[int, str] = logging.WARNING  # noqa: UP007
-    current_client_interval: Optional[int] = 60  # noqa: UP007
-    current_client_limit: Optional[int] = 32  # noqa: UP007
+    current_client_interval: Optional[int] = 60  # noqa: UP045
+    current_client_limit: Optional[int] = 32  # noqa: UP045
 
 
 class RelayServingConfig(BaseModel):
@@ -80,13 +80,13 @@ class RelayServingConfig(BaseModel):
             the relay server.
     """
 
-    host: Optional[str] = None  # noqa: UP007
+    host: Optional[str] = None  # noqa: UP045
     port: int = 8700
-    certfile: Optional[str] = None  # noqa: UP007
-    keyfile: Optional[str] = None  # noqa: UP007
+    certfile: Optional[str] = None  # noqa: UP045
+    keyfile: Optional[str] = None  # noqa: UP045
     auth: RelayAuthConfig = Field(default_factory=RelayAuthConfig)
     logging: RelayLoggingConfig = Field(default_factory=RelayLoggingConfig)
-    max_message_bytes: Optional[int] = None  # noqa: UP007
+    max_message_bytes: Optional[int] = None  # noqa: UP045
 
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:

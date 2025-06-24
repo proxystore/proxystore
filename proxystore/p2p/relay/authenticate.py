@@ -49,6 +49,8 @@ class NullUser:
     def __eq__(self, other: object) -> bool:
         return isinstance(other, type(self))
 
+    __hash__ = object.__hash__
+
     def __repr__(self) -> str:
         return 'NullUser()'
 
@@ -98,6 +100,8 @@ class GlobusUser:
             return self.client_id == other.client_id
         else:
             return False
+
+    __hash__ = object.__hash__
 
 
 class GlobusAuthenticator:

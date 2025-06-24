@@ -40,7 +40,7 @@ class EndpointRelayAuthConfig(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    method: Optional[Literal['globus']] = None  # noqa: UP007
+    method: Optional[Literal['globus']] = None  # noqa: UP045
     kwargs: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
 
 
@@ -56,7 +56,7 @@ class EndpointRelayConfig(BaseModel):
             servers using self-signed certificates.
     """
 
-    address: Optional[str] = None  # noqa: UP007
+    address: Optional[str] = None  # noqa: UP045
     auth: EndpointRelayAuthConfig = Field(
         default_factory=EndpointRelayAuthConfig,
     )
@@ -92,8 +92,8 @@ class EndpointStorageConfig(BaseModel):
         max_object_size: Optional maximum object size.
     """
 
-    database_path: Optional[str] = None  # noqa: UP007
-    max_object_size: Optional[int] = MAX_OBJECT_SIZE_DEFAULT  # noqa: UP007
+    database_path: Optional[str] = None  # noqa: UP045
+    max_object_size: Optional[int] = MAX_OBJECT_SIZE_DEFAULT  # noqa: UP045
 
     @field_validator('max_object_size')
     @classmethod
@@ -126,7 +126,7 @@ class EndpointConfig(BaseModel):
     name: str
     uuid: str
     port: int
-    host: Optional[str] = None  # noqa: UP007
+    host: Optional[str] = None  # noqa: UP045
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,
