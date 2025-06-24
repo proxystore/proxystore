@@ -140,8 +140,8 @@ class StoreConfig(BaseModel):
 
     name: str
     connector: ConnectorConfig
-    serializer: Optional[SerializerT] = Field(None)  # noqa: UP007
-    deserializer: Optional[DeserializerT] = Field(None)  # noqa: UP007
+    serializer: Optional[SerializerT] = Field(None)  # noqa: UP045
+    deserializer: Optional[DeserializerT] = Field(None)  # noqa: UP045
     cache_size: int = Field(16)
     metrics: bool = Field(False)
     populate_target: bool = Field(True)

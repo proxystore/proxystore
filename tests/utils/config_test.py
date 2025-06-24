@@ -67,7 +67,7 @@ def test_dump_drops_none_values(tmp_path: pathlib.Path) -> None:
     filepath = tmp_path / 'test.toml'
 
     class _Config(BaseModel):
-        field1: Optional[str] = None  # noqa: UP007
+        field1: Optional[str] = None  # noqa: UP045
         field2: str = 'abc'
 
     with open(filepath, 'wb') as fw:

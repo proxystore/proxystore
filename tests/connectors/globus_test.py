@@ -272,6 +272,7 @@ def test_globus_connector_key_equality() -> None:
     assert key != ('b', 'b')
     assert key == ('a', 'c')
     assert key != 'a'
+    assert hash(key) == hash(GlobusKey('a', 'b'))
 
 
 @pytest.mark.parametrize(
