@@ -91,7 +91,10 @@ def globus_connector(
             MockTransferClient,
         ),
     ):
-        with globus.GlobusConnector(endpoints=endpoints) as connector:
+        with globus.GlobusConnector(
+            endpoints=endpoints,
+            buffering=0,
+        ) as connector:
             yield connector
 
 
@@ -101,7 +104,7 @@ def file_connector(
 ) -> Generator[Connector[Any], None, None]:
     """FileConnector fixture."""
     tmp_path = tmp_path_factory.mktemp('file-connector-fixture')
-    with file.FileConnector(str(tmp_path)) as connector:
+    with file.FileConnector(str(tmp_path), buffering=0) as connector:
         yield connector
 
 

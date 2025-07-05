@@ -330,13 +330,14 @@ class GlobusConnector:
             same time. I.e., stored objects are transferred to all
             endpoints. If this behavior is not desired, use multiple
             connector instances, each with a different set of endpoints.
+        buffering: Buffering policy used with [`open()`][open].
+        clear: Delete all directories specified in `endpoints` when
+            [`close()`][proxystore.connectors.globus.GlobusConnector.close] is
+            called to cleanup files.
         polling_interval: Interval in seconds to check if Globus Transfer
             tasks have finished.
         sync_level: Globus Transfer sync level.
         timeout: Timeout in seconds for waiting on Globus Transfer tasks.
-        clear: Delete all directories specified in `endpoints` when
-            [`close()`][proxystore.connectors.globus.GlobusConnector.close] is
-            called to cleanup files.
 
     Raises:
         GlobusAuthFileError: If the Globus authentication file cannot be found.
@@ -349,11 +350,13 @@ class GlobusConnector:
         endpoints: GlobusEndpoints
         | list[GlobusEndpoint]
         | dict[str, dict[str, str]],
+        *,
+        clear: bool = True,
+        buffering: int = -1,
         polling_interval: int = 1,
         sync_level: int
         | Literal['exists', 'size', 'mtime', 'checksum'] = 'mtime',
         timeout: int = 60,
-        clear: bool = True,
     ) -> None:
         if isinstance(endpoints, GlobusEndpoints):
             self.endpoints = endpoints
@@ -368,10 +371,11 @@ class GlobusConnector:
             )
         if len(endpoints) < 2:
             raise ValueError('At least two Globus endpoints are required.')
+        self.buffering = buffering
+        self.clear = clear
         self.polling_interval = polling_interval
         self.sync_level = sync_level
         self.timeout = timeout
-        self.clear = clear
 
         self._transfer_client = get_transfer_client(
             collections=[ep.uuid for ep in self.endpoints],
@@ -551,10 +555,11 @@ class GlobusConnector:
         """
         return {
             'endpoints': self.endpoints.dict(),
+            'clear': self.clear,
+            'buffering': self.buffering,
             'polling_interval': self.polling_interval,
             'sync_level': self.sync_level,
             'timeout': self.timeout,
-            'clear': self.clear,
         }
 
     @classmethod
@@ -610,7 +615,7 @@ class GlobusConnector:
             return None
 
         path = self._get_filepath(key.filename)
-        with open(path, 'rb') as f:
+        with open(path, 'rb', buffering=self.buffering) as f:
             return f.read()
 
     def get_batch(self, keys: Sequence[GlobusKey]) -> list[bytes | None]:
@@ -639,7 +644,7 @@ class GlobusConnector:
         path = self._get_filepath(filename)
         os.makedirs(os.path.dirname(path), exist_ok=True)
 
-        with open(path, 'wb', buffering=0) as f:
+        with open(path, 'wb', buffering=self.buffering) as f:
             f.write(obj)
 
         tids = self._transfer_files(filename)
@@ -662,7 +667,7 @@ class GlobusConnector:
             path = self._get_filepath(filename)
             os.makedirs(os.path.dirname(path), exist_ok=True)
 
-            with open(path, 'wb', buffering=0) as f:
+            with open(path, 'wb', buffering=self.buffering) as f:
                 f.write(obj)
 
         tids = self._transfer_files(filenames)

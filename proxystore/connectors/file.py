@@ -43,11 +43,19 @@ class FileConnector:
         clear: Clear all objects on
             [`close()`][proxystore.connectors.file.FileConnector] by removing
             `store_dir`.
+        buffering: Buffering policy used with [`open()`][open].
     """
 
-    def __init__(self, store_dir: str, clear: bool = True) -> None:
+    def __init__(
+        self,
+        store_dir: str,
+        *,
+        clear: bool = True,
+        buffering: int = -1,
+    ) -> None:
         self.store_dir = os.path.abspath(store_dir)
         self.clear = clear
+        self.buffering = buffering
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
@@ -93,7 +101,11 @@ class FileConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'store_dir': self.store_dir, 'clear': self.clear}
+        return {
+            'store_dir': self.store_dir,
+            'clear': self.clear,
+            'buffering': self.buffering,
+        }
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> FileConnector:
@@ -141,9 +153,8 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename)
         marker = path + '.ready'
         if os.path.exists(marker):
-            with open(path, 'rb') as f:
-                data = f.read()
-                return data
+            with open(path, 'rb', buffering=self.buffering) as f:
+                return f.read()
         return None
 
     def get_batch(self, keys: Sequence[FileKey]) -> list[bytes | None]:
@@ -212,7 +223,7 @@ class FileConnector:
             obj: Object to associate with the key.
         """
         path = os.path.join(self.store_dir, key.filename)
-        with open(path, 'wb', buffering=0) as f:
+        with open(path, 'wb', buffering=self.buffering) as f:
             f.write(obj)
         marker = path + '.ready'
         open(marker, 'wb').close()
