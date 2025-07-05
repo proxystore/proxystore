@@ -96,10 +96,9 @@ However, the [`Store`][proxystore.store.base.Store] can be initialized with
 custom default serializers or deserializers of the form:
 
 ```python linenums="1"
-serializer = Callable[[Any], bytes]
-deserializer = Callable[[bytes], Any]
+serializer = Callable[[Any], BytesLike]
+deserializer = Callable[[BytesLike], Any]
 ```
-Most methods also support specifying an alternative serializer or deserializer to the default.
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
 innefficient. E.g.,
@@ -108,22 +107,36 @@ innefficient. E.g.,
 import torch
 import io
 
-from proxystore.serialize import serialize
+from proxystore.serialize import serialize, deserialize, SerializationError
 from proxystore.store import Store
 
 def serialize_torch_model(obj: Any) -> bytes:
-   if isinstance(obj, torch.nn.Module):
-       buffer = io.BytesIO()
-       torch.save(model, buffer)
-       return buffer.read()
-   else:
-       # Fallback for unsupported types
-       return serialize(obj)
+    if isinstance(obj, torch.nn.Module):
+        buffer = io.BytesIO()
+        buffer.write(b'PT\n')
+        torch.save(obj, buffer)
+        return buffer.getvalue()
+    else:
+        # Fallback for unsupported types
+        return serialize(obj)
 
-mymodel = torch.nn.Module()
+def deserialize_torch_model(raw: BytesLike) -> Any:
+    try:
+        return deserialize(raw)
+    except SerializationError:
+        buffer = io.BytesIO(raw)
+        assert buffer.readline() == b'PT\n'
+        return torch.load(buffer, weights_only=False)
 
-store = Store(...)
-key = store.put(mymodel, serializer=serialize_torch_model)
+model = torch.nn.Module()
+
+with Store(
+    ...,
+    serializer=serialize_torch_model,
+    deserializer=deserialize_torch_model,
+) as store:
+    key = store.put(model)
+    model = store.get(key)
 ```
 
 !!! tip
@@ -132,8 +145,6 @@ key = store.put(mymodel, serializer=serialize_torch_model)
     However, `populate_target=False` should also be set in this case to avoid prepopulating the proxy with the serialized target object.
     See the [`Store`][proxystore.store.base.Store] docstring for more information.
 
-Rather than providing a custom serializer or deserializer to each method
-invocation, a default serializer and deserializer can be provided when
-initializing a new [`Store`][proxystore.store.base.Store].
+Alternative, custom serializers and deserializers can be passed to [`Store`][proxystore.store.base.Store], overriding the class defaults.
 See Issue [#146](https://github.com/proxystore/proxystore/issues/146){target=_blank}
 for further discussion on where custom serializers can be helpful.
