@@ -4,15 +4,42 @@ from __future__ import annotations
 
 import io
 import pickle
+import sys
 from collections import OrderedDict
+from collections.abc import Sized
 from typing import Any
 from typing import Protocol
+from typing import runtime_checkable
+from typing import Union
+
+if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
+    from typing import TypeAlias
+else:  # pragma: <3.11 cover
+    from typing_extensions import TypeAlias
+
+if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
+    from typing import TypeGuard
+else:  # pragma: <3.12 cover
+    from typing_extensions import TypeGuard
 
 import cloudpickle
 
 # Pickle protocol 5 is available in Python 3.8 version so that is ProxyStore's
 # minimum version. If higher version come out in the future, prefer those.
 _PICKLE_PROTOCOL = max(pickle.HIGHEST_PROTOCOL, 5)
+
+
+if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
+    from collections.abc import Buffer
+
+    @runtime_checkable
+    class BytesLike(Buffer, Sized, Protocol):
+        """Protocol for bytes-like objects."""
+
+        pass
+else:  # pragma: <3.12 cover
+    BytesLike: TypeAlias = Union[bytes, bytearray, memoryview]
+    """Protocol for bytes-like objects."""
 
 
 class SerializationError(Exception):
@@ -205,6 +232,14 @@ _register_serializer(_PickleSerializer)
 _register_serializer(_CloudPickleSerializer)
 
 
+def is_bytes_like(obj: Any) -> TypeGuard[BytesLike]:
+    """Check if the object is bytes-like."""
+    if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
+        return isinstance(obj, BytesLike)
+    else:  # pragma: <3.12 cover
+        return isinstance(obj, (bytes, bytearray, memoryview))
+
+
 def serialize(obj: Any) -> bytes:
     """Serialize object.
 
@@ -231,7 +266,7 @@ def serialize(obj: Any) -> bytes:
         obj: Object to serialize.
 
     Returns:
-        Bytes that can be passed to \
+        Bytes-like object that can be passed to \
         [`deserialize()`][proxystore.serialize.deserialize].
 
     Raises:
@@ -243,10 +278,10 @@ def serialize(obj: Any) -> bytes:
     for identifier, serializer in _SERIALIZERS.items():
         if serializer.supported(obj):
             try:
-                with io.BytesIO() as buffer:
-                    buffer.write(identifier + b'\n')
-                    serializer.serialize(obj, buffer)
-                    return buffer.getvalue()
+                buffer = io.BytesIO()
+                buffer.write(identifier + b'\n')
+                serializer.serialize(obj, buffer)
+                return buffer.getvalue()
             except Exception as e:
                 last_exception = e
 
@@ -256,7 +291,7 @@ def serialize(obj: Any) -> bytes:
     ) from last_exception
 
 
-def deserialize(data: bytes) -> Any:
+def deserialize(buffer: BytesLike) -> Any:
     """Deserialize object.
 
     Warning:
@@ -264,14 +299,14 @@ def deserialize(data: bytes) -> Any:
         arbitrary code when upickled. Only unpickle data you trust.
 
     Args:
-        data: Bytes produced by
+        buffer: Bytes-like object produced by
             [`serialize()`][proxystore.serialize.serialize].
 
     Returns:
         The deserialized object.
 
     Raises:
-        ValueError: If `data` is not of type `bytes`.
+        ValueError: If `buffer` is not bytes-like.
         SerializationError: If the identifier of `data` is missing or
             invalid. The identifier is prepended to the string in
             [`serialize()`][proxystore.serialize.serialize] to indicate which
@@ -280,13 +315,13 @@ def deserialize(data: bytes) -> Any:
         SerializationError: If pickle or cloudpickle raise an exception
             when deserializing the object.
     """
-    if not isinstance(data, bytes):
+    if not is_bytes_like(buffer):
         raise ValueError(
-            f'Expected data to be of type bytes, not {type(data)}.',
+            f'Expected data to be a bytes-like type, not {type(buffer)}.',
         )
 
-    with io.BytesIO(data) as buffer:
-        identifier = buffer.readline().strip()
+    with io.BytesIO(buffer) as buffer_io:
+        identifier = buffer_io.readline().strip()
         if identifier not in _SERIALIZERS:
             raise SerializationError(
                 f'Unknown identifier {identifier!r} for deserialization.',
@@ -294,7 +329,7 @@ def deserialize(data: bytes) -> Any:
 
         serializer = _SERIALIZERS[identifier]
         try:
-            return serializer.deserialize(buffer)
+            return serializer.deserialize(buffer_io)
         except Exception as e:
             raise SerializationError(
                 'Failed to deserialize object using the '

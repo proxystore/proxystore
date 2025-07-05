@@ -15,9 +15,10 @@ from collections.abc import Sequence
 from re import Pattern
 from types import TracebackType
 from typing import Any
-from typing import Callable
 from typing import Literal
 from typing import NamedTuple
+
+from proxystore.serialize import BytesLike
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -31,8 +32,6 @@ from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
 GLOBUS_MKDIR_EXISTS_ERROR_CODE = 'ExternalError.MkdirFailed.Exists'
-
-SerializerT = Callable[[Any], bytes]
 
 
 class GlobusEndpoint:
@@ -602,7 +601,7 @@ class GlobusConnector:
         self._wait_on_tasks(key.task_id)
         return os.path.exists(self._get_filepath(key.filename))
 
-    def get(self, key: GlobusKey) -> bytes | None:
+    def get(self, key: GlobusKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -618,7 +617,7 @@ class GlobusConnector:
         with open(path, 'rb', buffering=self.buffering) as f:
             return f.read()
 
-    def get_batch(self, keys: Sequence[GlobusKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[GlobusKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -630,7 +629,7 @@ class GlobusConnector:
         """
         return [self.get(key) for key in keys]
 
-    def put(self, obj: bytes) -> GlobusKey:
+    def put(self, obj: BytesLike) -> GlobusKey:
         """Put a serialized object in the store.
 
         Args:
@@ -651,7 +650,7 @@ class GlobusConnector:
 
         return GlobusKey(filename=filename, task_id=tids)
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[GlobusKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[GlobusKey]:
         """Put a batch of serialized objects in the store.
 
         Args:

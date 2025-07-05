@@ -12,6 +12,8 @@ from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -141,7 +143,7 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename + '.ready')
         return os.path.exists(path)
 
-    def get(self, key: FileKey) -> bytes | None:
+    def get(self, key: FileKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -157,7 +159,7 @@ class FileConnector:
                 return f.read()
         return None
 
-    def get_batch(self, keys: Sequence[FileKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[FileKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -169,7 +171,7 @@ class FileConnector:
         """
         return [self.get(key) for key in keys]
 
-    def new_key(self, obj: bytes | None = None) -> FileKey:
+    def new_key(self, obj: BytesLike | None = None) -> FileKey:
         """Create a new key.
 
         Args:
@@ -183,7 +185,7 @@ class FileConnector:
         """
         return FileKey(filename=str(uuid.uuid4()))
 
-    def put(self, obj: bytes) -> FileKey:
+    def put(self, obj: BytesLike) -> FileKey:
         """Put a serialized object in the store.
 
         Args:
@@ -196,7 +198,7 @@ class FileConnector:
         self.set(key, obj)
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[FileKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[FileKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -208,7 +210,7 @@ class FileConnector:
         """
         return [self.put(obj) for obj in objs]
 
-    def set(self, key: FileKey, obj: bytes) -> None:
+    def set(self, key: FileKey, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Note:

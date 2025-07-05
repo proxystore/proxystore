@@ -9,6 +9,8 @@ from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -120,7 +122,7 @@ class RedisConnector:
         """
         return bool(self._redis_client.exists(key.redis_key))
 
-    def get(self, key: RedisKey) -> bytes | None:
+    def get(self, key: RedisKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -131,7 +133,7 @@ class RedisConnector:
         """
         return self._redis_client.get(key.redis_key)
 
-    def get_batch(self, keys: Sequence[RedisKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[RedisKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -141,9 +143,9 @@ class RedisConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
-        return self._redis_client.mget([key.redis_key for key in keys])
+        return self._redis_client.mget([key.redis_key for key in keys])  # type: ignore[return-value]
 
-    def new_key(self, obj: bytes | None = None) -> RedisKey:
+    def new_key(self, obj: BytesLike | None = None) -> RedisKey:
         """Create a new key.
 
         Args:
@@ -157,7 +159,7 @@ class RedisConnector:
         """
         return RedisKey(redis_key=str(uuid.uuid4()))
 
-    def put(self, obj: bytes) -> RedisKey:
+    def put(self, obj: BytesLike) -> RedisKey:
         """Put a serialized object in the store.
 
         Args:
@@ -167,10 +169,10 @@ class RedisConnector:
             Key which can be used to retrieve the object.
         """
         key = RedisKey(redis_key=str(uuid.uuid4()))
-        self._redis_client.set(key.redis_key, obj)
+        self._redis_client.set(key.redis_key, bytes(obj))
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[RedisKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[RedisKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -182,11 +184,11 @@ class RedisConnector:
         """
         keys = [RedisKey(redis_key=str(uuid.uuid4())) for _ in objs]
         self._redis_client.mset(
-            {key.redis_key: obj for key, obj in zip(keys, objs)},
+            {key.redis_key: bytes(obj) for key, obj in zip(keys, objs)},
         )
         return keys
 
-    def set(self, key: RedisKey, obj: bytes) -> None:
+    def set(self, key: RedisKey, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Note:
@@ -200,4 +202,4 @@ class RedisConnector:
             key: Key that the object will be associated with.
             obj: Object to associate with the key.
         """
-        self._redis_client.set(key.redis_key, obj)
+        self._redis_client.set(key.redis_key, bytes(obj))

@@ -9,6 +9,8 @@ from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
 
+from proxystore.serialize import BytesLike
+
 KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
@@ -76,7 +78,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def get(self, key: KeyT) -> bytes | None:
+    def get(self, key: KeyT) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -87,7 +89,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def get_batch(self, keys: Sequence[KeyT]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[KeyT]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -99,7 +101,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def put(self, obj: bytes) -> KeyT:
+    def put(self, obj: BytesLike) -> KeyT:
         """Put a serialized object in the store.
 
         Args:
@@ -110,7 +112,7 @@ class Connector(Protocol[KeyT]):
         """
         ...
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[KeyT]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[KeyT]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -149,7 +151,7 @@ class DeferrableConnector(Protocol[KeyT]):
         """  # noqa: E501
         ...
 
-    def set(self, key: KeyT, obj: bytes) -> None:
+    def set(self, key: KeyT, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Note:
