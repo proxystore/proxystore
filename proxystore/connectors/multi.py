@@ -14,6 +14,8 @@ from typing import NamedTuple
 from typing import TypedDict
 from typing import TypeVar
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -350,7 +352,7 @@ class MultiConnector:
         connector = self._connector_from_key(key)
         return connector.exists(key.connector_key)
 
-    def get(self, key: MultiKey) -> bytes | None:
+    def get(self, key: MultiKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -362,7 +364,7 @@ class MultiConnector:
         connector = self._connector_from_key(key)
         return connector.get(key.connector_key)
 
-    def get_batch(self, keys: Sequence[MultiKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[MultiKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -376,7 +378,7 @@ class MultiConnector:
 
     def put(
         self,
-        obj: bytes,
+        obj: BytesLike,
         subset_tags: Iterable[str] = (),
         superset_tags: Iterable[str] = (),
     ) -> MultiKey:
@@ -414,7 +416,7 @@ class MultiConnector:
 
     def put_batch(
         self,
-        objs: Sequence[bytes],
+        objs: Sequence[BytesLike],
         subset_tags: Iterable[str] = (),
         superset_tags: Iterable[str] = (),
     ) -> list[MultiKey]:

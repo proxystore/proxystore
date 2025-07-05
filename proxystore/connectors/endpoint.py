@@ -11,6 +11,8 @@ from typing import Any
 from typing import NamedTuple
 from uuid import UUID
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -218,7 +220,7 @@ class EndpointConnector:
                 f'Exists failed with error code {e.response.status_code}.',
             ) from e
 
-    def get(self, key: EndpointKey) -> bytes | None:
+    def get(self, key: EndpointKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -240,7 +242,7 @@ class EndpointConnector:
                 f'Get failed with error code {e.response.status_code}.',
             ) from e
 
-    def get_batch(self, keys: Sequence[EndpointKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[EndpointKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -252,7 +254,7 @@ class EndpointConnector:
         """
         return [self.get(key) for key in keys]
 
-    def new_key(self, obj: bytes | None = None) -> EndpointKey:
+    def new_key(self, obj: BytesLike | None = None) -> EndpointKey:
         """Create a new key.
 
         Warning:
@@ -276,7 +278,7 @@ class EndpointConnector:
             endpoint_id=str(self.endpoint_uuid),
         )
 
-    def put(self, obj: bytes) -> EndpointKey:
+    def put(self, obj: BytesLike) -> EndpointKey:
         """Put a serialized object in the store.
 
         Args:
@@ -292,7 +294,7 @@ class EndpointConnector:
         self.set(key, obj)
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[EndpointKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[EndpointKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -304,7 +306,7 @@ class EndpointConnector:
         """
         return [self.put(obj) for obj in objs]
 
-    def set(self, key: EndpointKey, obj: bytes) -> None:
+    def set(self, key: EndpointKey, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Note:
@@ -322,7 +324,7 @@ class EndpointConnector:
             client.put(
                 self.address,
                 key.object_id,
-                obj,
+                bytes(obj),
                 key.endpoint_id,
                 session=self._session,
             )

@@ -12,6 +12,8 @@ from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -43,11 +45,19 @@ class FileConnector:
         clear: Clear all objects on
             [`close()`][proxystore.connectors.file.FileConnector] by removing
             `store_dir`.
+        buffering: Buffering policy used with [`open()`][open].
     """
 
-    def __init__(self, store_dir: str, clear: bool = True) -> None:
+    def __init__(
+        self,
+        store_dir: str,
+        *,
+        clear: bool = True,
+        buffering: int = -1,
+    ) -> None:
         self.store_dir = os.path.abspath(store_dir)
         self.clear = clear
+        self.buffering = buffering
 
         if not os.path.exists(self.store_dir):
             os.makedirs(self.store_dir, exist_ok=True)
@@ -93,7 +103,11 @@ class FileConnector:
         The configuration contains all the information needed to reconstruct
         the connector object.
         """
-        return {'store_dir': self.store_dir, 'clear': self.clear}
+        return {
+            'store_dir': self.store_dir,
+            'clear': self.clear,
+            'buffering': self.buffering,
+        }
 
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> FileConnector:
@@ -129,7 +143,7 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename + '.ready')
         return os.path.exists(path)
 
-    def get(self, key: FileKey) -> bytes | None:
+    def get(self, key: FileKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -141,12 +155,11 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename)
         marker = path + '.ready'
         if os.path.exists(marker):
-            with open(path, 'rb') as f:
-                data = f.read()
-                return data
+            with open(path, 'rb', buffering=self.buffering) as f:
+                return f.read()
         return None
 
-    def get_batch(self, keys: Sequence[FileKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[FileKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -158,7 +171,7 @@ class FileConnector:
         """
         return [self.get(key) for key in keys]
 
-    def new_key(self, obj: bytes | None = None) -> FileKey:
+    def new_key(self, obj: BytesLike | None = None) -> FileKey:
         """Create a new key.
 
         Args:
@@ -172,7 +185,7 @@ class FileConnector:
         """
         return FileKey(filename=str(uuid.uuid4()))
 
-    def put(self, obj: bytes) -> FileKey:
+    def put(self, obj: BytesLike) -> FileKey:
         """Put a serialized object in the store.
 
         Args:
@@ -185,7 +198,7 @@ class FileConnector:
         self.set(key, obj)
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[FileKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[FileKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -197,7 +210,7 @@ class FileConnector:
         """
         return [self.put(obj) for obj in objs]
 
-    def set(self, key: FileKey, obj: bytes) -> None:
+    def set(self, key: FileKey, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Note:
@@ -212,7 +225,7 @@ class FileConnector:
             obj: Object to associate with the key.
         """
         path = os.path.join(self.store_dir, key.filename)
-        with open(path, 'wb', buffering=0) as f:
+        with open(path, 'wb', buffering=self.buffering) as f:
             f.write(obj)
         marker = path + '.ready'
         open(marker, 'wb').close()

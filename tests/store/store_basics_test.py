@@ -8,6 +8,7 @@ import pytest
 
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
+from proxystore.serialize import BytesLike
 from proxystore.serialize import SerializationError
 from proxystore.store import get_store
 from proxystore.store import Store
@@ -120,7 +121,7 @@ def test_custom_serializer(store: Store[LocalConnector]) -> None:
 def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
     key = store.put('value')
 
-    def _deserialize(x: bytes) -> Any:
+    def _deserialize(x: BytesLike) -> Any:
         raise Exception()
 
     with pytest.raises(

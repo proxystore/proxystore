@@ -25,6 +25,8 @@ import proxystore.serialize
 from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyLocker
+from proxystore.serialize import BytesLike
+from proxystore.serialize import is_bytes_like
 from proxystore.serialize import SerializationError
 from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
@@ -1127,8 +1129,8 @@ class Store(Generic[ConnectorT]):
             else:
                 obj = self.serializer(obj)
 
-        if not isinstance(obj, bytes):
-            raise TypeError('Serializer must produce bytes.')
+        if not is_bytes_like(obj):
+            raise TypeError('Serializer must return a bytes-like object.')
 
         with self._lock:
             with Timer() as connector_timer:
@@ -1179,14 +1181,14 @@ class Store(Generic[ConnectorT]):
         """
         timer = Timer().start()
 
-        def _serialize(obj: Any) -> bytes:
+        def _serialize(obj: Any) -> BytesLike:
             if serializer is not None:
                 obj = serializer(obj)
             else:
                 obj = self.serializer(obj)
 
-            if not isinstance(obj, bytes):
-                raise TypeError('Serializer must produce bytes.')
+            if not is_bytes_like(obj):
+                raise TypeError('Serializer must return a bytes-like object.')
 
             return obj
 
@@ -1272,8 +1274,8 @@ class Store(Generic[ConnectorT]):
             else:
                 obj = self.serializer(obj)
 
-        if not isinstance(obj, bytes):
-            raise TypeError('Serializer must produce bytes.')
+        if not is_bytes_like(obj):
+            raise TypeError('Serializer must return a bytes-like object.')
 
         with self._lock:
             with Timer() as connector_timer:

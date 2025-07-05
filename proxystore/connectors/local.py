@@ -10,6 +10,8 @@ from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 
+from proxystore.serialize import BytesLike
+
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
 else:  # pragma: <3.11 cover
@@ -44,11 +46,11 @@ class LocalConnector:
 
     def __init__(
         self,
-        store_dict: dict[LocalKey, bytes] | None = None,
+        store_dict: dict[LocalKey, BytesLike] | None = None,
         *,
         include_data_in_config: bool = False,
     ) -> None:
-        self._store: dict[LocalKey, bytes] = (
+        self._store: dict[LocalKey, BytesLike] = (
             {} if store_dict is None else store_dict
         )
         self._include_data_in_config = include_data_in_config
@@ -113,7 +115,7 @@ class LocalConnector:
         """
         return key in self._store
 
-    def get(self, key: LocalKey) -> bytes | None:
+    def get(self, key: LocalKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
 
         Args:
@@ -124,7 +126,7 @@ class LocalConnector:
         """
         return self._store.get(key, None)
 
-    def get_batch(self, keys: Sequence[LocalKey]) -> list[bytes | None]:
+    def get_batch(self, keys: Sequence[LocalKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
 
         Args:
@@ -136,7 +138,7 @@ class LocalConnector:
         """
         return [self.get(key) for key in keys]
 
-    def new_key(self, obj: bytes | None = None) -> LocalKey:
+    def new_key(self, obj: BytesLike | None = None) -> LocalKey:
         """Create a new key.
 
         Args:
@@ -150,7 +152,7 @@ class LocalConnector:
         """
         return LocalKey(str(uuid.uuid4()))
 
-    def put(self, obj: bytes) -> LocalKey:
+    def put(self, obj: BytesLike) -> LocalKey:
         """Put a serialized object in the store.
 
         Args:
@@ -163,7 +165,7 @@ class LocalConnector:
         self._store[key] = obj
         return key
 
-    def put_batch(self, objs: Sequence[bytes]) -> list[LocalKey]:
+    def put_batch(self, objs: Sequence[BytesLike]) -> list[LocalKey]:
         """Put a batch of serialized objects in the store.
 
         Args:
@@ -175,7 +177,7 @@ class LocalConnector:
         """
         return [self.put(obj) for obj in objs]
 
-    def set(self, key: LocalKey, obj: bytes) -> None:
+    def set(self, key: LocalKey, obj: BytesLike) -> None:
         """Set the object associated with a key.
 
         Args:
