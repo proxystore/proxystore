@@ -133,10 +133,19 @@ def _proxy_attribute_access(
     if not isinstance(instance, Instance):
         return ctx.default_attr_type
 
+    is_proxy_subclass = False
+    if isinstance(ctx.type, Instance):
+        is_proxy_subclass = any(
+            base.fullname in PROXY_TYPES for base in ctx.type.type.mro
+        )
+
     # Instance is not a Proxy type so handle it normally. This case happens
     # when checking the T branch of a type annotated as Proxy[T] | T.
     fullname = instance.type.fullname
-    if not any(fullname.startswith(name) for name in PROXY_TYPES):
+    if not (
+        any(fullname.startswith(name) for name in PROXY_TYPES)
+        or is_proxy_subclass
+    ):
         member = find_member(attr, instance, instance)
         if member is None:
             return ctx.default_attr_type
