@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import proxystore as ps
 from proxystore.factory import LambdaFactory
 from proxystore.factory import SimpleFactory
+from proxystore.serialize import deserialize
+from proxystore.serialize import serialize
 
 
 def test_simple_factory() -> None:
@@ -12,8 +13,8 @@ def test_simple_factory() -> None:
     assert f() == [1, 2, 3]
 
     # Test pickleable
-    f_pkl = ps.serialize.serialize(f)
-    f = ps.serialize.deserialize(f_pkl)
+    f_pkl = serialize(f)
+    f = deserialize(f_pkl)
     assert f() == [1, 2, 3]
 
 
@@ -24,8 +25,8 @@ def test_lambda_factory() -> None:
     assert f1() == [1, 2, 3]
 
     # Test pickleable
-    f1_pkl = ps.serialize.serialize(f1)
-    f1 = ps.serialize.deserialize(f1_pkl)
+    f1_pkl = serialize(f1)
+    f1 = deserialize(f1_pkl)
     assert f1() == [1, 2, 3]
 
     # Test with function
@@ -33,8 +34,8 @@ def test_lambda_factory() -> None:
         return 'abc'
 
     f2 = LambdaFactory(myfunc)
-    f2_pkl = ps.serialize.serialize(f2)
-    f2 = ps.serialize.deserialize(f2_pkl)
+    f2_pkl = serialize(f2)
+    f2 = deserialize(f2_pkl)
     assert f2() == 'abc'
 
     # Test args/kwargs
