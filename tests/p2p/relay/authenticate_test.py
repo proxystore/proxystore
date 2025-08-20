@@ -27,11 +27,11 @@ def test_null_authenticator() -> None:
 
 
 def test_globus_user_equality() -> None:
-    user1 = GlobusUser('username', uuid.uuid4())
-    user2 = GlobusUser('username', uuid.uuid4())
+    user1 = GlobusUser('user1', uuid.uuid4())
+    user2 = GlobusUser('user2', uuid.uuid4())
     assert user1 != user2
 
-    user2 = GlobusUser('different-username', user1.client_id)
+    user2 = GlobusUser('user1', uuid.uuid4())
     assert user1 == user2
 
     assert user1 != object()

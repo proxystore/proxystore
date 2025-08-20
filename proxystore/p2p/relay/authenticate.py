@@ -95,9 +95,9 @@ class GlobusUser:
     display_name: str | None = None
 
     def __eq__(self, other: object) -> bool:
-        """Check equality using only Globus Auth client ID."""
+        """Check equality using only Globus Auth username."""
         if isinstance(other, GlobusUser):
-            return self.client_id == other.client_id
+            return self.username == other.username
         else:
             return False
 
