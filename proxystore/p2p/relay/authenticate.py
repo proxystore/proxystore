@@ -79,7 +79,7 @@ class GlobusUser:
 
     Attributes:
         username: Identity username.
-        client_id: The Globus Auth issues client id of the client to which
+        sub: The Globus Auth issued identity ID of the client to which
             the introspected token was issued.
         email: Email address associated with the effective identity of the
             introspected token. May be `None` if the user restricts their
@@ -90,14 +90,14 @@ class GlobusUser:
     """
 
     username: str
-    client_id: uuid.UUID
+    sub: uuid.UUID
     email: str | None = None
     display_name: str | None = None
 
     def __eq__(self, other: object) -> bool:
-        """Check equality using only Globus Auth client ID."""
+        """Check equality using only Globus Auth issued identity ID."""
         if isinstance(other, GlobusUser):
-            return self.client_id == other.client_id
+            return self.sub == other.sub
         else:
             return False
 
@@ -175,7 +175,7 @@ class GlobusAuthenticator:
 
         return GlobusUser(
             username=token_meta.get('username'),
-            client_id=uuid.UUID(token_meta.get('client_id')),
+            sub=uuid.UUID(token_meta.get('sub')),
             email=token_meta.get('email', None),
             display_name=token_meta.get('name', None),
         )
