@@ -27,11 +27,11 @@ def test_null_authenticator() -> None:
 
 
 def test_globus_user_equality() -> None:
-    user1 = GlobusUser('username', uuid.uuid4())
-    user2 = GlobusUser('username', uuid.uuid4())
+    user1 = GlobusUser('user1', uuid.uuid4())
+    user2 = GlobusUser('user2', uuid.uuid4())
     assert user1 != user2
 
-    user2 = GlobusUser('different-username', user1.client_id)
+    user2 = GlobusUser('user1', user1.sub)
     assert user1 == user2
 
     assert user1 != object()
@@ -43,7 +43,7 @@ def test_authenticate_user_with_token() -> None:
     token_meta: dict[str, Any] = {
         'active': True,
         'aud': [authenticator.audience],
-        'sub': authenticator.auth_client.client_id,
+        'sub': str(uuid.uuid4()),
         'username': 'username',
         'client_id': str(uuid.uuid4()),
         'email': 'username@example.com',
@@ -61,7 +61,7 @@ def test_authenticate_user_with_token() -> None:
 
     assert user == GlobusUser(
         username=token_meta['username'],
-        client_id=uuid.UUID(token_meta['client_id']),
+        sub=uuid.UUID(token_meta['sub']),
         email=token_meta['email'],
         display_name=token_meta['name'],
     )
