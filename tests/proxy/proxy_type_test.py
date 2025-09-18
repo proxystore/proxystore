@@ -669,7 +669,7 @@ def test_deleting_the_factory() -> None:
     del proxy.__proxy_factory__
     with pytest.raises(
         ProxyResolveError,
-        match='Proxy is not initialized: __proxy_factory__ is missing.',
+        match=r'Proxy is not initialized: __proxy_factory__ is missing',
     ) as exc_info:
         str(proxy)
     assert isinstance(exc_info.value.cause, AttributeError)
@@ -681,14 +681,14 @@ def test_new() -> None:
 
     with pytest.raises(
         ProxyResolveError,
-        match='Proxy is not initialized: __proxy_factory__ is missing.',
+        match=r'Proxy is not initialized: __proxy_factory__ is missing',
     ) as exc_info:
         _ = a + b
     assert isinstance(exc_info.value.cause, AttributeError)
 
     with pytest.raises(
         ProxyResolveError,
-        match='Proxy is not initialized: __proxy_factory__ is missing.',
+        match=r'Proxy is not initialized: __proxy_factory__ is missing',
     ) as exc_info:
         _ = a.__proxy_wrapped__
     assert isinstance(exc_info.value.cause, AttributeError)

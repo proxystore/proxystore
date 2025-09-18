@@ -257,7 +257,7 @@ async def test_relay_server_duplicate_registration(relay_server) -> None:
 
     with pytest.raises(
         RelayRegistrationError,
-        match='Relay received a registration with the same ID.',
+        match=r'Relay received a registration with the same ID',
     ):
         await client1.connect()
 

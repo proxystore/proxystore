@@ -51,6 +51,6 @@ def test_async_resolve_factory_error() -> None:
 
     with pytest.raises(
         ProxyStoreFactoryError,
-        match='The proxy must contain a factory with type StoreFactory.',
+        match=r'The proxy must contain a factory with type StoreFactory',
     ):
         resolve_async(p)

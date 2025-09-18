@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import re
 from typing import Any
 from unittest import mock
 
@@ -85,7 +86,9 @@ def test_propagate_cloudpickle_dumps_error() -> None:
     with mock.patch('cloudpickle.dump', side_effect=Exception()):
         with pytest.raises(
             SerializationError,
-            match="Object of type <class 'function'> is not supported.",
+            match=re.escape(
+                "Object of type <class 'function'> is not supported.",
+            ),
         ):
             serialize(lambda x: x + x)  # pragma: no cover
 
