@@ -440,7 +440,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     for p in processes:
         p.send_signal(signal.SIGTERM)
 
-    terminated, alive = psutil.wait_procs(processes, timeout=1)
+    _, alive = psutil.wait_procs(processes, timeout=1)
     for p in alive:  # pragma: no cover
         try:
             p.send_signal(signal.SIGKILL)

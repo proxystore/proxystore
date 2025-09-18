@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import multiprocessing
 import queue
+import re
 import threading
 
 import pytest
@@ -26,7 +27,7 @@ def create_pubsub_pair(
 def test_unknown_topic() -> None:
     publisher = QueuePublisher({'default': queue.Queue()})
 
-    with pytest.raises(ValueError, match='Unknown topic "other".'):
+    with pytest.raises(ValueError, match=re.escape('Unknown topic "other".')):
         publisher.send_message('other', b'message')
 
 

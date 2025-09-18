@@ -177,7 +177,7 @@ def test_globus_connector_init(globus_connector) -> None:
 
     with pytest.raises(
         ValueError,
-        match='At least two Globus endpoints are required.',
+        match=r'At least two Globus endpoints are required',
     ):
         GlobusConnector(endpoints=[EP1])
 

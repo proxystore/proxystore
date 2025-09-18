@@ -169,7 +169,7 @@ def test_multi_connector_from_config() -> None:
     with multi_connector_from_policies(
         Policy(priority=1, subset_tags=['a', 'b']),
         Policy(priority=2, superset_tags=['x', 'y']),
-    ) as (multi_connector, connector1, connector2):
+    ) as (multi_connector, _, _):
         config = multi_connector.config()
         MultiConnector.from_config(config)
 
@@ -179,7 +179,7 @@ def test_dormant_connectors() -> None:
         with multi_connector_from_policies(
             Policy(host_pattern='testhost', subset_tags=['a']),
             Policy(host_pattern='otherhost', subset_tags=['b']),
-        ) as (multi_connector, connector1, connector2):
+        ) as (multi_connector, _, _):
             mock_hostname.return_value = 'otherhost'
             key2 = multi_connector.put(b'data', subset_tags=['b'])
             mock_hostname.return_value = 'testhost'

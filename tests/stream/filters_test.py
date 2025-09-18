@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from unittest import mock
 
 import pytest
@@ -27,8 +28,8 @@ def test_sampling_filter():
 
 
 def test_sampling_filter_value_error():
-    with pytest.raises(ValueError, match='[0, 1]'):
+    with pytest.raises(ValueError, match=re.escape('[0, 1]')):
         SamplingFilter(-1)
 
-    with pytest.raises(ValueError, match='[0, 1]'):
+    with pytest.raises(ValueError, match=re.escape('[0, 1]')):
         SamplingFilter(1.1)

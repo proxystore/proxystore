@@ -16,12 +16,12 @@ from testing.utils import open_port
 def test_nat_type() -> None:
     assert NatType._from_str(stun.FullCone) == NatType.FullCone
 
-    with pytest.raises(RuntimeError, match='No response from a STUN server.'):
+    with pytest.raises(RuntimeError, match=r'No response from a STUN server'):
         NatType._from_str(stun.Blocked)
 
     with pytest.raises(
         RuntimeError,
-        match='Address changed during NAT type check.',
+        match=r'Address changed during NAT type check',
     ):
         NatType._from_str(stun.ChangedAddressError)
 

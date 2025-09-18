@@ -151,7 +151,10 @@ def test_borrow_delete_owned_proxy_error(store: Store[FileConnector]) -> None:
     # keeping the count at 1. In general, this is good and should prevent
     # this runtime error from happening, but we want to raise a helpful
     # message in the event we get into this position.
-    with pytest.raises(RuntimeError, match='^Cannot safely delete OwnedProxy'):
+    with pytest.raises(
+        RuntimeError,
+        match=r'^Cannot safely delete OwnedProxy',
+    ):
         proxy.__del__()
 
 
@@ -371,7 +374,7 @@ def test_into_owned_factory_error(store: Store[FileConnector]) -> None:
     proxy = Proxy(factory)
     with pytest.raises(
         ProxyStoreFactoryError,
-        match='The proxy must contain a factory with type StoreFactory.',
+        match='The proxy must contain a factory with type StoreFactory',
     ):
         into_owned(proxy)
 
