@@ -42,7 +42,13 @@ def _patch_hostname() -> Generator[None, None, None]:
     # Related:
     #   - https://apple.stackexchange.com/a/253834
     #   - https://stackoverflow.com/a/43549848
-    with mock.patch('socket.gethostbyname', return_value='localhost'):
+    # socket.getfqdn() is similarly mocked because it performs a reverse
+    # DNS lookup (gethostbyaddr) that can hang on MacOS runners with a
+    # .local hostname. See: https://github.com/actions/setup-python/issues/1223
+    with (
+        mock.patch('socket.gethostbyname', return_value='localhost'),
+        mock.patch('socket.getfqdn', return_value='localhost'),
+    ):
         yield
 
 
