@@ -6,10 +6,7 @@ import logging
 import pathlib
 import sys
 from typing import Any
-from typing import Dict  # noqa: UP035
 from typing import Literal
-from typing import Optional
-from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -35,11 +32,8 @@ class RelayAuthConfig(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    method: Optional[Literal['globus']] = None  # noqa: UP045
-    kwargs: Dict[str, Any] = Field(  # noqa: UP006
-        default_factory=dict,
-        repr=False,
-    )
+    method: Literal['globus'] | None = None
+    kwargs: dict[str, Any] = Field(default_factory=dict, repr=False)
 
 
 class RelayLoggingConfig(BaseModel):
@@ -58,11 +52,11 @@ class RelayLoggingConfig(BaseModel):
             list will be logged.
     """
 
-    log_dir: Optional[str] = None  # noqa: UP045
-    default_level: Union[int, str] = logging.INFO  # noqa: UP007
-    websockets_level: Union[int, str] = logging.WARNING  # noqa: UP007
-    current_client_interval: Optional[int] = 60  # noqa: UP045
-    current_client_limit: Optional[int] = 32  # noqa: UP045
+    log_dir: str | None = None
+    default_level: int | str = logging.INFO
+    websockets_level: int | str = logging.WARNING
+    current_client_interval: int | None = 60
+    current_client_limit: int | None = 32
 
 
 class RelayServingConfig(BaseModel):
@@ -80,13 +74,13 @@ class RelayServingConfig(BaseModel):
             the relay server.
     """
 
-    host: Optional[str] = None  # noqa: UP045
+    host: str | None = None
     port: int = 8700
-    certfile: Optional[str] = None  # noqa: UP045
-    keyfile: Optional[str] = None  # noqa: UP045
+    certfile: str | None = None
+    keyfile: str | None = None
     auth: RelayAuthConfig = Field(default_factory=RelayAuthConfig)
     logging: RelayLoggingConfig = Field(default_factory=RelayLoggingConfig)
-    max_message_bytes: Optional[int] = None  # noqa: UP045
+    max_message_bytes: int | None = None
 
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:

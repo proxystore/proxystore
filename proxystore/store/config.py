@@ -5,8 +5,6 @@ from __future__ import annotations
 import pathlib
 import sys
 from typing import Any
-from typing import Dict  # noqa: UP035
-from typing import Optional
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -66,7 +64,7 @@ class ConnectorConfig(BaseModel):
     model_config = ConfigDict(extra='forbid')
 
     kind: str
-    options: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
+    options: dict[str, Any] = Field(default_factory=dict)
 
     def get_connector_type(self) -> type[Connector[Any]]:
         """Resolve the class type for the specified connector.
@@ -140,8 +138,8 @@ class StoreConfig(BaseModel):
 
     name: str
     connector: ConnectorConfig
-    serializer: Optional[SerializerT] = Field(None)  # noqa: UP045
-    deserializer: Optional[DeserializerT] = Field(None)  # noqa: UP045
+    serializer: SerializerT | None = Field(None)
+    deserializer: DeserializerT | None = Field(None)
     cache_size: int = Field(16)
     metrics: bool = Field(False)
     populate_target: bool = Field(True)

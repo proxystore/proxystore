@@ -203,12 +203,8 @@ def test_special_writeable_attributes(kind: str) -> None:
     assert wrapper.__doc__ == target.__doc__ == new_doc
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason='Requires Python 3.10 or later',
-)
 @pytest.mark.parametrize('kind', ('class', 'function'))
-def test_annotations(kind: str) -> None:  # pragma: >=3.10 cover
+def test_annotations(kind: str) -> None:
     class TestClass:
         """Test class."""
 

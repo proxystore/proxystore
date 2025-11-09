@@ -4,11 +4,11 @@ import dataclasses
 import logging
 import sys
 from collections import defaultdict
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
 from types import TracebackType
 from typing import Any
-from typing import Callable
 from typing import Generic
 from typing import TypeVar
 
@@ -278,7 +278,7 @@ class StreamProducer(Generic[T]):
             keys = store.put_batch([item.obj for item in objects])
             config = store.config()
 
-            for key, item in zip(keys, objects):
+            for key, item in zip(keys, objects, strict=True):
                 events.append(
                     NewObjectKeyEvent.from_key(
                         key,

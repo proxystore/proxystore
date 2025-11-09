@@ -15,7 +15,7 @@ maintainers = [
 ]
 description = "Advanced data flow management for distributed Python applications"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 classifiers = [
     "License :: OSI Approved :: MIT License",
@@ -165,7 +165,7 @@ timeout = 60
 
 [tool.ruff]
 line-length = 79
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.format]
 indent-style = "space"

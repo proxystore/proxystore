@@ -54,14 +54,9 @@ in your
 from __future__ import annotations
 
 import functools
-import sys
-from typing import Callable
+from collections.abc import Callable
+from typing import ParamSpec
 from typing import TypeVar
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import ParamSpec
-else:  # pragma: <3.10 cover
-    from typing_extensions import ParamSpec
 
 from mypy.errorcodes import ATTR_DEFINED
 from mypy.errorcodes import UNION_ATTR

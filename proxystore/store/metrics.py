@@ -14,15 +14,14 @@ import time
 from collections import defaultdict
 from collections.abc import Sequence
 from typing import Any
-from typing import Union
 
 from proxystore.proxy import Proxy
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.utils import get_key
 
-KeyT = Union[ConnectorKeyT, Sequence[ConnectorKeyT]]
+KeyT = ConnectorKeyT | Sequence[ConnectorKeyT]
 """Key types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics]."""  # noqa: E501
-ProxyT = Union[Proxy[Any], Sequence[Proxy[Any]]]
+ProxyT = Proxy[Any] | Sequence[Proxy[Any]]
 """Proxy types supported by [`StoreMetrics`][proxystore.store.metrics.StoreMetrics].
 
 When a `ProxyT` is passed, the keys are extracted from the proxies.

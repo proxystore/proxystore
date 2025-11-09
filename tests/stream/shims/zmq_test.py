@@ -28,7 +28,7 @@ def test_basic_publish_subscribe() -> None:
         'recv_multipart',
         side_effect=[(b'default', message) for message in messages],
     ):
-        for _, message in zip(messages, subscriber):
+        for _, message in zip(messages, subscriber, strict=False):
             received.append(message)
 
     subscriber.close()

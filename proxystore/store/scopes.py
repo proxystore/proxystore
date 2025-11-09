@@ -2,23 +2,18 @@
 
 from __future__ import annotations
 
-import sys
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Mapping
 from collections.abc import Sequence
 from typing import Any
-from typing import Callable
+from typing import ParamSpec
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
 
 from proxystore.store.ref import RefMutProxy
 from proxystore.store.ref import RefProxy
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import ParamSpec
-else:  # pragma: <3.10 cover
-    from typing_extensions import ParamSpec
 
 
 @runtime_checkable
