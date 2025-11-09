@@ -45,19 +45,14 @@ from __future__ import annotations
 
 import atexit
 import copy
-import sys
 import weakref
+from collections.abc import Callable
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import NoReturn
 from typing import SupportsIndex
+from typing import TypeAlias
 from typing import TypeVar
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import TypeAlias
-else:  # pragma: <3.10 cover
-    from typing_extensions import TypeAlias
 
 from proxystore.proxy import DefaultClassType
 from proxystore.proxy import DefaultHashType

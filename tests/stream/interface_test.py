@@ -71,7 +71,7 @@ def test_stream_basics(
     def consume() -> None:
         received = []
 
-        for _, obj in zip(objects, consumer):
+        for _, obj in zip(objects, consumer, strict=False):
             if use_store:
                 assert isinstance(obj, Proxy)
             received.append(obj)

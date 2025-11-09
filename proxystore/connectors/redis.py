@@ -184,7 +184,10 @@ class RedisConnector:
         """
         keys = [RedisKey(redis_key=str(uuid.uuid4())) for _ in objs]
         self._redis_client.mset(
-            {key.redis_key: bytes(obj) for key, obj in zip(keys, objs)},
+            {
+                key.redis_key: bytes(obj)
+                for key, obj in zip(keys, objs, strict=True)
+            },
         )
         return keys
 

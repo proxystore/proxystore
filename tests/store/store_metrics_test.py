@@ -103,7 +103,7 @@ def test_store_multi_key_operations(store: Store[FileConnector]) -> None:
     assert key_metrics.times['store.put_batch'].count == 1
 
     proxies = store.proxy_batch(values)
-    for proxy, value in zip(proxies, values):
+    for proxy, value in zip(proxies, values, strict=True):
         assert proxy == value
 
     proxy_metrics = store.metrics.get_metrics(proxies)

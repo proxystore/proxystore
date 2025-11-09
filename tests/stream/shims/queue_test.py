@@ -68,7 +68,7 @@ def publish(publisher: QueuePublisher, messages: list[bytes]) -> None:
 def subscribe(subscriber: QueueSubscriber, messages: list[bytes]) -> None:
     received = []
 
-    for _, message in zip(messages, subscriber):
+    for _, message in zip(messages, subscriber, strict=False):
         received.append(message)
 
     assert received == messages

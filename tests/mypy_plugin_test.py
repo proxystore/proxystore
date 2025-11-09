@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import sys
+from collections.abc import Callable
 from types import MappingProxyType
 from typing import Any
-from typing import Callable
 from typing import Generic
 from typing import TYPE_CHECKING
 from typing import TypeVar
@@ -40,14 +40,9 @@ def test_proxy_slots_types() -> None:
 
 
 def test_proxy_class_attribute_types() -> None:
-    # Note that it doesn't actually matter if these branches run because
-    # assert_type is a no-op at runtime. We just need mypy to be able
-    # to statically parse it.
-    if sys.version_info >= (3, 10):  # pragma: no cover
-        assert_type(Proxy.__annotations__, dict[str, Any])
-        assert_type(Proxy.__dict__, MappingProxyType[str, Any])
-        assert_type(Proxy.__doc__, str | None)
-
+    assert_type(Proxy.__annotations__, dict[str, Any])
+    assert_type(Proxy.__dict__, MappingProxyType[str, Any])
+    assert_type(Proxy.__doc__, str | None)
     assert_type(Proxy.__module__, str)
 
 

@@ -4,7 +4,7 @@ import gc
 import multiprocessing
 import os
 import pathlib
-import sys
+from collections.abc import Callable
 from collections.abc import Iterable
 from collections.abc import Iterator
 from concurrent.futures import Executor
@@ -12,13 +12,8 @@ from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
-from typing import Callable
+from typing import ParamSpec
 from typing import TypeVar
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import ParamSpec
-else:  # pragma: <3.10 cover
-    from typing_extensions import ParamSpec
 
 import pytest
 

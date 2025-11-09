@@ -5,7 +5,6 @@ from __future__ import annotations
 import dataclasses
 import enum
 from typing import Any
-from typing import Union
 
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
@@ -82,7 +81,7 @@ class NewObjectKeyEvent:
         return key_type(*self.raw_key)
 
 
-Event = Union[EndOfStreamEvent, NewObjectEvent, NewObjectKeyEvent]
+Event = EndOfStreamEvent | NewObjectEvent | NewObjectKeyEvent
 """Event union type."""
 
 

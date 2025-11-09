@@ -4,11 +4,11 @@ import asyncio
 import multiprocessing
 import os
 import pathlib
+from collections.abc import Callable
 from collections.abc import Generator
 from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from typing import Any
-from typing import Callable
 
 import pytest
 

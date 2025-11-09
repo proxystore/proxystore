@@ -42,23 +42,19 @@ from __future__ import annotations
 import operator
 import sys
 from collections.abc import Awaitable
+from collections.abc import Callable
 from collections.abc import Iterator
 from inspect import CO_ITERABLE_COROUTINE
 from types import CoroutineType
 from types import GeneratorType
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import Generic
 from typing import Optional
 from typing import SupportsIndex
+from typing import TypeAlias
 from typing import TypeVar
 from typing import Union
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import TypeAlias
-else:  # pragma: <3.10 cover
-    from typing_extensions import TypeAlias
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -77,8 +73,8 @@ from proxystore.proxy._utils import ProxyMetaType
 
 T = TypeVar('T')
 FactoryType: TypeAlias = Callable[[], T]
-DefaultClassType: TypeAlias = Optional[type]
-DefaultHashType: TypeAlias = Optional[Union[Exception, int]]
+DefaultClassType: TypeAlias = type | None
+DefaultHashType: TypeAlias = Exception | int | None
 
 
 def _proxy_trampoline(
@@ -689,8 +685,8 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         return self.__proxy_wrapped__.__aexit__(*args, **kwargs)  # type: ignore[attr-defined]
 
 
-_ProxyOr: TypeAlias = Union[Proxy[T], T]
-ProxyOr = TypeAliasType('ProxyOr', Union[Proxy[T], T], type_params=(T,))
+_ProxyOr: TypeAlias = Proxy[T] | T
+ProxyOr = TypeAliasType('ProxyOr', Proxy[T] | T, type_params=(T,))
 """Type alias for a union of a type `T` or a `Proxy[T]`.
 
 This type alias is useful for typing functions that operate on or
