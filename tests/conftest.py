@@ -48,7 +48,7 @@ def use_uvloop(request) -> bool:
 @pytest.fixture(scope='session')
 def event_loop_policy(
     use_uvloop: bool,
-) -> Generator[asyncio.AbstractEventLoopPolicy, None, None]:
+) -> Generator[asyncio.AbstractEventLoopPolicy, None, None]:  # type: ignore[name-defined]
     """Get the session-wide event loop policy.
 
     This enables us to toggle between uvloop and asyncio.
