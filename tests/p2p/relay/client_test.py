@@ -75,7 +75,10 @@ async def test_recv_wrong_type(relay_server) -> None:
             'recv',
             AsyncMock(return_value=b''),
         ):
-            with pytest.raises(AssertionError, match='non-string'):
+            with pytest.raises(  # pragma: <3.14 cover
+                AssertionError,
+                match='non-string',
+            ):
                 await client.recv()
 
 
@@ -86,7 +89,10 @@ async def test_connect_received_non_string(relay_server) -> None:
             'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=b''),
         ):
-            with pytest.raises(AssertionError, match='non-string'):
+            with pytest.raises(
+                AssertionError,
+                match='non-string',
+            ):  # pragma: <3.14 cover
                 await client._register(_WAIT_FOR)
 
 
@@ -97,7 +103,7 @@ async def test_connect_received_bad_message(relay_server) -> None:
             'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value='bad message'),
         ):
-            with pytest.raises(
+            with pytest.raises(  # pragma: <3.14 cover
                 RelayRegistrationError,
                 match='Unable to decode response message',
             ):
@@ -112,7 +118,10 @@ async def test_connect_failure(relay_server) -> None:
             'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=encode_relay_message(message)),
         ):
-            with pytest.raises(RelayRegistrationError, match='test error'):
+            with pytest.raises(
+                RelayRegistrationError,
+                match='test error',
+            ):  # pragma: <3.14 cover
                 await client._register(_WAIT_FOR)
 
 
@@ -124,7 +133,7 @@ async def test_connect_unknown_response(relay_server) -> None:
             'websockets.asyncio.client.ClientConnection.recv',
             AsyncMock(return_value=encode_relay_message(message)),
         ):
-            with pytest.raises(
+            with pytest.raises(  # pragma: <3.14 cover
                 RelayRegistrationError,
                 match='unknown message type',
             ):

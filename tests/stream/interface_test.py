@@ -138,7 +138,7 @@ def test_producer_close_topic(
         with StreamConsumer[str](subscriber) as consumer:
             producer.close_topics(topic)
 
-            with pytest.raises(StopIteration):
+            with pytest.raises(StopIteration):  # pragma: <3.14 cover
                 consumer.next()
 
 

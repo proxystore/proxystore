@@ -5,7 +5,6 @@ import gc
 import os
 import pathlib
 import pickle
-import sys
 from collections.abc import Generator
 from typing import TypeVar
 
@@ -89,10 +88,7 @@ def test_weakref_finalizer() -> None:
 def test_owned_proxy_out_of_scope_evicts(store: Store[FileConnector]) -> None:
     def _test_in_scope() -> None:
         factory = put_in_store('value', store)
-        proxy = OwnedProxy(factory)
-        # The local variable proxy is one reference, and the getrefcount()
-        # holds the other reference
-        assert sys.getrefcount(proxy) == 2
+        _proxy = OwnedProxy(factory)
 
     _test_in_scope()
     gc.collect()

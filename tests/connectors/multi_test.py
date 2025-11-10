@@ -197,5 +197,8 @@ def test_dormant_connectors() -> None:
 
             with pytest.raises(MultiConnectorError, match='constraints'):
                 remote_connector.put(b'data', subset_tags=['b'])
-            with pytest.raises(MultiConnectorError, match='dormant'):
+            with pytest.raises(  # pragma: <3.14 cover
+                MultiConnectorError,
+                match='dormant',
+            ):
                 remote_connector.get(key2)
