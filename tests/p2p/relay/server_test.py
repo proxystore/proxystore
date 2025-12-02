@@ -7,7 +7,7 @@ from unittest import mock
 from unittest.mock import AsyncMock
 
 import pytest
-import websockets
+import websockets.asyncio
 
 from proxystore.p2p.relay.authenticate import NullAuthenticator
 from proxystore.p2p.relay.authenticate import NullUser

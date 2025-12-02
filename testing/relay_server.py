@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from typing import NamedTuple
 
 import pytest_asyncio
-import websockets
+import websockets.asyncio
 from websockets.asyncio.server import Server
 
 from proxystore.p2p.relay.authenticate import NullAuthenticator
