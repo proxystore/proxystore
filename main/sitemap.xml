@@ -2,422 +2,422 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.proxystore.dev/latest/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/examples/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/faq/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/get-started/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/installation/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/SUMMARY/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/cli/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/ex/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/factory/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/mypy_plugin/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/serialize/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/warnings/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/dim/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/endpoint/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/file/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/globus/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/local/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/multi/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/protocols/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/redis/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/cli/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/client/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/commands/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/config/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/constants/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/endpoint/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/exceptions/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/messages/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/serve/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/storage/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/app/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/cli/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/client/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/globus/scopes/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/chunks/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/connection/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/exceptions/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/manager/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/nat/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/authenticate/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/client/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/config/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/exceptions/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/manager/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/messages/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/run/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/p2p/relay/server/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/proxy/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/base/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/cache/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/config/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/exceptions/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/executor/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/factory/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/future/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/lifetimes/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/metrics/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/ref/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/scopes/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/types/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/store/utils/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/events/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/exceptions/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/filters/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/protocols/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/shims/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/shims/kafka/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/shims/queue/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/shims/redis/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/stream/shims/zmq/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/config/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/counter/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/data/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/environment/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/imports/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/tasks/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/utils/timer/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/concepts/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/concepts/connector/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/concepts/proxy/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/concepts/store/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/contributing/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/contributing/issues-pull-requests/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/contributing/releases/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/contributing/style-guide/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/dask-distributed/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/endpoints-debugging/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/endpoints/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/globus-compute/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/object-lifetimes/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/performance/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/proxy-futures/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/relay-serving/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/streaming/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/publications/</loc>
-         <lastmod>2025-12-23</lastmod>
+         <lastmod>2026-01-13</lastmod>
     </url>
 </urlset>
