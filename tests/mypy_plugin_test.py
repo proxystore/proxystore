@@ -159,7 +159,7 @@ def test_union_type_partial_attr() -> None:
     class Bar:
         y = ''
 
-    union: Proxy[Foo] | Bar = Proxy(lambda: Foo())
+    union: Proxy[Foo] | Bar = Proxy(Foo)
 
     try:
         # Item "Proxy[Foo]" of "Proxy[Foo] | Bar" has no attribute "y"
@@ -186,7 +186,7 @@ def test_proxy_or_type() -> None:
         return x.value
 
     class_instance = TestClass()
-    proxy_instance = Proxy(lambda: TestClass())
+    proxy_instance = Proxy(TestClass)
 
     assert get_value(class_instance) == 42
     assert get_value(proxy_instance) == 42
