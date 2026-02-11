@@ -76,7 +76,7 @@ def test_index() -> None:
         def __index__(self):
             return 1
 
-    value1 = Proxy(lambda: TestClass1())
+    value1 = Proxy(TestClass1)
     items1 = [0, 1, 2]
 
     assert items1[value1] == items1[1]
@@ -85,7 +85,7 @@ def test_index() -> None:
         def __int__(self):
             return 1
 
-    value2 = Proxy(lambda: TestClass2())
+    value2 = Proxy(TestClass2)
     items2 = [0, 1, 2]
 
     assert items2[value2] == items2[1]
