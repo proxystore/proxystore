@@ -17,6 +17,7 @@ else:  # pragma: <3.11 cover
 
 try:
     import websockets
+    import websockets.asyncio
     import websockets.exceptions
     from websockets.asyncio.client import ClientConnection
 except ImportError as e:  # pragma: no cover

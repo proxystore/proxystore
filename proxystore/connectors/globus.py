@@ -662,7 +662,7 @@ class GlobusConnector:
         """
         filenames = [str(uuid.uuid4()) for _ in objs]
 
-        for filename, obj in zip(filenames, objs):
+        for filename, obj in zip(filenames, objs, strict=True):
             path = self._get_filepath(filename)
             os.makedirs(os.path.dirname(path), exist_ok=True)
 

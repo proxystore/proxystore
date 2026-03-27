@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import pathlib
-from typing import List  # noqa: UP035
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -19,7 +17,7 @@ class _Subsection(BaseModel):
 
 class _Section(BaseModel):
     subsection: _Subsection
-    values: List[int]  # noqa: UP006
+    values: list[int]
 
 
 class _Config(BaseModel):
@@ -67,7 +65,7 @@ def test_dump_drops_none_values(tmp_path: pathlib.Path) -> None:
     filepath = tmp_path / 'test.toml'
 
     class _Config(BaseModel):
-        field1: Optional[str] = None  # noqa: UP045
+        field1: str | None = None
         field2: str = 'abc'
 
     with open(filepath, 'wb') as fw:

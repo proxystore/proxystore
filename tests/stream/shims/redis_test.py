@@ -39,7 +39,7 @@ def test_basic_publish_subscribe() -> None:
     publisher.close()
 
     received = []
-    for _, message in zip(messages, subscriber):
+    for _, message in zip(messages, subscriber, strict=False):
         received.append(message)
 
     subscriber.close()
@@ -59,7 +59,7 @@ def test_basic_queue_publish_subscribe() -> None:
     publisher.close()
 
     received = []
-    for _, message in zip(messages, subscriber):
+    for _, message in zip(messages, subscriber, strict=False):
         received.append(message)
 
     subscriber.close()

@@ -15,9 +15,6 @@ jobs:
       matrix:
         include:
         - os: ubuntu-latest
-          python: '3.9'
-          toxenv: py39
-        - os: ubuntu-latest
           python: '3.10'
           toxenv: py310
         - os: ubuntu-latest
@@ -29,9 +26,9 @@ jobs:
         - os: ubuntu-latest
           python: '3.13'
           toxenv: py313
-        - os: macos-latest
-          python: '3.9'
-          toxenv: py39
+        - os: ubuntu-latest
+          python: '3.14'
+          toxenv: py314
         - os: macos-latest
           python: '3.10'
           toxenv: py310
@@ -44,11 +41,14 @@ jobs:
         - os: macos-latest
           python: '3.13'
           toxenv: py313
+        - os: macos-latest
+          python: '3.14'
+          toxenv: py314
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Set up Python ${{ matrix.python }}
         uses: actions/setup-python@v6
@@ -61,7 +61,7 @@ jobs:
 
       - name: Use pip cache
         id: pip-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.PIP_CACHE_DIR }}
           key: ${{ matrix.os }}-pip-${{ matrix.python }}-${{ hashFiles('pyproject.toml') }}

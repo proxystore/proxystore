@@ -17,7 +17,7 @@ def test_basic_publish_subscribe() -> None:
 
     publisher.close()
 
-    for expected, received in zip(messages, subscriber):
+    for expected, received in zip(messages, subscriber, strict=False):
         assert received == expected
 
     subscriber.close()

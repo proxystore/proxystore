@@ -248,7 +248,7 @@ def test_proxy_batch(store: Store[LocalConnector]) -> None:
         values,
         populate_target=False,
     )
-    for p, v in zip(proxies, values):
+    for p, v in zip(proxies, values, strict=True):
         assert not is_resolved(p)
         assert p == v
         assert is_resolved(p)
@@ -264,7 +264,7 @@ def test_proxy_batch_populate_target(store: Store[LocalConnector]) -> None:
     assert is_resolved(proxies[0])
     assert not isinstance(proxies[1], Proxy)
     assert is_resolved(proxies[2])
-    for p, v in zip(proxies, values):
+    for p, v in zip(proxies, values, strict=True):
         assert p == v
 
     # populate_target should also set cache_defaults on the proxy
@@ -282,7 +282,7 @@ def test_proxy_batch_custom_serializer(store: Store[LocalConnector]) -> None:
         serializer=lambda s: s,
         deserializer=lambda s: s,
     )
-    for p, v in zip(proxies, values):
+    for p, v in zip(proxies, values, strict=True):
         assert p == v
 
 
@@ -294,7 +294,10 @@ def test_proxy_batch_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     inputs = [None, 'string', False, True, [1, 2, 3], 'string']
     should_proxy = [False, True, False, False, True, True]
     v2 = store.proxy_batch(inputs, skip_nonproxiable=True)
-    assert all(isinstance(v, Proxy) == e for v, e in zip(v2, should_proxy))
+    assert all(
+        isinstance(v, Proxy) == e
+        for v, e in zip(v2, should_proxy, strict=True)
+    )
 
 
 def test_proxy_batch_nonproxiable_error(store: Store[LocalConnector]) -> None:

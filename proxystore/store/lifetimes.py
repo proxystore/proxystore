@@ -14,22 +14,17 @@ import threading
 import time
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from datetime import datetime
 from datetime import timedelta
 from types import TracebackType
 from typing import Any
-from typing import Callable
+from typing import Concatenate
+from typing import ParamSpec
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TYPE_CHECKING
 from typing import TypeVar
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import Concatenate
-    from typing import ParamSpec
-else:  # pragma: <3.10 cover
-    from typing_extensions import Concatenate
-    from typing_extensions import ParamSpec
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self

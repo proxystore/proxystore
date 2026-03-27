@@ -71,7 +71,7 @@ def test_stream_basics(
     def consume() -> None:
         received = []
 
-        for _, obj in zip(objects, consumer):
+        for _, obj in zip(objects, consumer, strict=False):
             if use_store:
                 assert isinstance(obj, Proxy)
             received.append(obj)
@@ -138,7 +138,7 @@ def test_producer_close_topic(
         with StreamConsumer[str](subscriber) as consumer:
             producer.close_topics(topic)
 
-            with pytest.raises(StopIteration):
+            with pytest.raises(StopIteration):  # pragma: <3.14 cover
                 consumer.next()
 
 

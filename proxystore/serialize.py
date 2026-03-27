@@ -10,17 +10,16 @@ from collections.abc import Sized
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
-from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import TypeAlias
 else:  # pragma: <3.11 cover
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
     from typing import TypeGuard
 else:  # pragma: <3.12 cover
-    from typing_extensions import TypeGuard
+    from typing import TypeGuard
 
 import cloudpickle
 
@@ -38,7 +37,7 @@ if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
 
         pass
 else:  # pragma: <3.12 cover
-    BytesLike: TypeAlias = Union[bytes, bytearray, memoryview]
+    BytesLike: TypeAlias = bytes | bytearray | memoryview
     """Protocol for bytes-like objects."""
 
 

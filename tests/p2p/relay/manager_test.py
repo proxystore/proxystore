@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from unittest import mock
 
-import websockets
+import websockets.asyncio
 
 from proxystore.p2p.relay.authenticate import GlobusUser
 from proxystore.p2p.relay.manager import Client

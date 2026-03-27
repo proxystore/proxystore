@@ -143,7 +143,7 @@ def test_put_batch(store: Store[LocalConnector]) -> None:
 def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 
-    new_keys = store.put_batch(values, serializer=lambda s: str.encode(s))
+    new_keys = store.put_batch(values, serializer=str.encode)
     for key in new_keys:
         assert store.exists(key)
 
@@ -168,7 +168,7 @@ def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
 
 def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
     key = store.connector.new_key()
-    store._set(key, 'test_value', serializer=lambda s: str.encode(s))
+    store._set(key, 'test_value', serializer=str.encode)
     assert store.get(key, deserializer=lambda s: s) == b'test_value'
 
     with pytest.raises(TypeError, match='bytes'):

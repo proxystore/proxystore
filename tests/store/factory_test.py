@@ -74,7 +74,9 @@ def test_polling_store_factory_timeout() -> None:
                 polling_interval=0.001,
                 polling_timeout=0.002,
             )
-            with pytest.raises(ProxyResolveMissingKeyError):
+            with pytest.raises(
+                ProxyResolveMissingKeyError,
+            ):  # pragma: <3.14 cover
                 factory.resolve()
 
 

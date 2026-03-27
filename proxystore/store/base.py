@@ -13,7 +13,6 @@ from typing import Generic
 from typing import Literal
 from typing import overload
 from typing import TypeVar
-from typing import Union
 
 if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
     from typing import Self
@@ -844,7 +843,7 @@ class Store(Generic[ConnectorT]):
             )
 
             proxies: list[Proxy[T]] = []
-            for factory, obj in zip(factories, proxiable_objs):
+            for factory, obj in zip(factories, proxiable_objs, strict=True):
                 if populate_target:
                     proxy = Proxy(factory, cache_defaults=True, target=obj)
                 else:
@@ -866,7 +865,7 @@ class Store(Generic[ConnectorT]):
             f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
             f'in {timer.elapsed_ms:.3f} ms',
         )
-        return cast(list[Union[Proxy[T], NonProxiableT]], proxies)
+        return cast(list[Proxy[T] | NonProxiableT], proxies)
 
     def proxy_from_key(
         self,

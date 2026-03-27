@@ -14,7 +14,7 @@ import sys
 from typing import TypeVar
 
 import click
-import websockets
+import websockets.asyncio
 
 from proxystore.p2p.relay.authenticate import get_authenticator
 from proxystore.p2p.relay.config import RelayServingConfig

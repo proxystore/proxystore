@@ -52,8 +52,8 @@ an array is larger than some threshold.
 
 from __future__ import annotations
 
-import sys
 import warnings
+from collections.abc import Callable
 from collections.abc import Generator
 from collections.abc import Iterable
 from collections.abc import Iterator
@@ -61,17 +61,12 @@ from collections.abc import Mapping
 from concurrent.futures import Executor
 from concurrent.futures import Future
 from typing import Any
-from typing import Callable
 from typing import cast
 from typing import Generic
+from typing import ParamSpec
 from typing import Protocol
 from typing import runtime_checkable
 from typing import TypeVar
-
-if sys.version_info >= (3, 10):  # pragma: >=3.10 cover
-    from typing import ParamSpec
-else:  # pragma: <3.10 cover
-    from typing_extensions import ParamSpec
 
 from proxystore.proxy import Proxy
 from proxystore.store import get_store

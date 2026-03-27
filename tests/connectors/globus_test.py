@@ -100,7 +100,7 @@ def test_globus_endpoint_objects() -> None:
     with pytest.raises(KeyError):
         assert eps['-1']
 
-    for x, y in zip([EP1, EP2], eps):
+    for x, y in zip([EP1, EP2], eps, strict=False):
         assert x == y
 
     assert eps.get_by_host('localhost') == EP1

@@ -6,9 +6,7 @@ import os
 import re
 import uuid
 from typing import Any
-from typing import Dict  # noqa: UP035
 from typing import Literal
-from typing import Optional
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -40,8 +38,8 @@ class EndpointRelayAuthConfig(BaseModel):
 
     model_config = ConfigDict(extra='forbid')
 
-    method: Optional[Literal['globus']] = None  # noqa: UP045
-    kwargs: Dict[str, Any] = Field(default_factory=dict)  # noqa: UP006
+    method: Literal['globus'] | None = None
+    kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
 class EndpointRelayConfig(BaseModel):
@@ -56,7 +54,7 @@ class EndpointRelayConfig(BaseModel):
             servers using self-signed certificates.
     """
 
-    address: Optional[str] = None  # noqa: UP045
+    address: str | None = None
     auth: EndpointRelayAuthConfig = Field(
         default_factory=EndpointRelayAuthConfig,
     )
@@ -92,8 +90,8 @@ class EndpointStorageConfig(BaseModel):
         max_object_size: Optional maximum object size.
     """
 
-    database_path: Optional[str] = None  # noqa: UP045
-    max_object_size: Optional[int] = MAX_OBJECT_SIZE_DEFAULT  # noqa: UP045
+    database_path: str | None = None
+    max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
 
     @field_validator('max_object_size')
     @classmethod
@@ -126,7 +124,7 @@ class EndpointConfig(BaseModel):
     name: str
     uuid: str
     port: int
-    host: Optional[str] = None  # noqa: UP045
+    host: str | None = None
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,

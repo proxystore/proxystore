@@ -206,21 +206,16 @@ class StreamConsumer(Generic[T]):
             # if the event was an end of stream event.
             event = self._next_event()
 
-            if self._filter(event.metadata):
-                # Coverage in Python 3.8/3.9 does not mark the "else"
-                # as covered but if you put else: assert False the some
-                # tests fail there so it does get run
-                if (  # pragma: no branch
-                    isinstance(event, NewObjectKeyEvent) and event.evict
-                ):
-                    # If an object gets filtered out by the consumer client,
-                    # we still want to respect the evict flag to.
-                    store = self._get_store(event)
-                    store.evict(event.get_key())
+            if not self._filter(event.metadata):
+                return event
 
-                continue
-
-            return event
+            if (
+                isinstance(event, NewObjectKeyEvent) and event.evict
+            ):  # pragma: no branch
+                # If an object gets filtered out by the consumer client,
+                # we still want to respect the evict flag to.
+                store = self._get_store(event)
+                store.evict(event.get_key())
 
     def iter_with_metadata(
         self,

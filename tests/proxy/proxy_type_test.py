@@ -203,12 +203,8 @@ def test_special_writeable_attributes(kind: str) -> None:
     assert wrapper.__doc__ == target.__doc__ == new_doc
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 10),
-    reason='Requires Python 3.10 or later',
-)
 @pytest.mark.parametrize('kind', ('class', 'function'))
-def test_annotations(kind: str) -> None:  # pragma: >=3.10 cover
+def test_annotations(kind: str) -> None:
     class TestClass:
         """Test class."""
 
@@ -442,7 +438,7 @@ def test_iteration() -> None:
             return self.value
 
     # Manual iteration with next
-    wrapper_next = Proxy(lambda: TestClass())
+    wrapper_next = Proxy(TestClass)
     assert next(wrapper_next) == 1
 
     # Construct iterator directly
@@ -461,7 +457,7 @@ def test_context_manager() -> None:
         def __exit__(*args, **kwargs):
             return
 
-    with Proxy(lambda: TestClass()):
+    with Proxy(TestClass):
         pass
 
 
@@ -489,11 +485,10 @@ def test_repr() -> None:
     class TestClass:
         pass
 
-    value1 = Proxy(lambda: TestClass())
+    value1 = Proxy(TestClass)
     str(value1)
     representation = repr(value1)
     assert 'Proxy at' in representation
-    assert 'lambda' in representation
     assert 'TestClass' in representation
 
     # Validate calling repr does not invoke the factory
@@ -657,7 +652,8 @@ def test_patching_the_factory() -> None:
     # object is now the foo function.
     proxy.__proxy_factory__ = lambda: foo
     # Calling the proxy should call foo and raise the error.
-    pytest.raises(AttributeError, proxy)
+    with pytest.raises(AttributeError) as exc_info:
+        proxy()
     assert proxy.__proxy_wrapped__ is foo
 
 
