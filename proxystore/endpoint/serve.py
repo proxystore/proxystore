@@ -25,7 +25,7 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     ) from e
 
-from globus_sdk.tokenstorage import TokenValidationError
+from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.constants import MAX_CHUNK_LENGTH

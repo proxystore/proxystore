@@ -11,7 +11,7 @@ from globus_sdk.globus_app import GlobusApp
 from globus_sdk.globus_app import GlobusAppConfig
 from globus_sdk.globus_app import UserApp
 from globus_sdk.login_flows import CommandLineLoginFlowManager
-from globus_sdk.tokenstorage import SQLiteTokenStorage
+from globus_sdk.token_storage import SQLiteTokenStorage
 
 from proxystore.utils.environment import home_dir
 

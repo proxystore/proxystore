@@ -28,7 +28,7 @@ dependencies = [
     "click!=8.1.4",
     "cloudpickle>=3",
     "cryptography>=39.0.1",
-    "globus-sdk>=3.46.0,<4",
+    "globus-sdk>=4",
     "pydantic>=2,<3",
     "tomli ; python_version<'3.11'",
     "tomli-w",

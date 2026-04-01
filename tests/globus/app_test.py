@@ -9,7 +9,7 @@ from unittest import mock
 import pytest
 from globus_sdk.globus_app import ClientApp
 from globus_sdk.globus_app import UserApp
-from globus_sdk.tokenstorage import MemoryTokenStorage
+from globus_sdk.token_storage import MemoryTokenStorage
 
 from proxystore.globus.app import get_client_app
 from proxystore.globus.app import get_client_credentials_from_env

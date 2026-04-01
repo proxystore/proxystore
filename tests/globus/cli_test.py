@@ -7,7 +7,7 @@ from unittest import mock
 import click
 import click.testing
 import pytest
-from globus_sdk.tokenstorage import TokenStorageData
+from globus_sdk.token_storage import TokenStorageData
 
 from proxystore.globus.cli import cli
 from proxystore.globus.cli import login
