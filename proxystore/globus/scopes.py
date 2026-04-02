@@ -14,11 +14,12 @@ from globus_sdk.scopes import TransferScopes
 
 class _ProxyStoreRelayScopes(StaticScopeCollection):
     resource_server = 'ebd5bbed-95e2-47cf-9c80-39e2064274bd'
-    relay_all = Scope('relay_all')
+    relay_all = Scope(
+        f'https://auth.globus.org/scopes/{resource_server}/relay_all',
+    )
 
 
 ProxyStoreRelayScopes = _ProxyStoreRelayScopes()
-
 """ProxyStore Relay Server scopes.
 
 Supported Scopes:
