@@ -60,12 +60,11 @@ def test_get_transfer_scopes_by_resource_server_with_collections() -> None:
     ]
 
     scopes = get_transfer_scopes_by_resource_server(collections)
-    expected = {
-        TransferScopes.resource_server: [
-            f'{TransferScopes.all}[{" ".join(urls)}]',
-        ],
-    }
-    assert scopes == expected
+    assert TransferScopes.resource_server in scopes
+    assert len(scopes[TransferScopes.resource_server]) == 1
+    transfer_scope = scopes[TransferScopes.resource_server][0]
+    expected = f'{TransferScopes.all}[{" ".join(urls)}]'
+    assert str(transfer_scope) == expected
 
 
 @pytest.mark.parametrize(

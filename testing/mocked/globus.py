@@ -9,7 +9,7 @@ from unittest import mock
 import globus_sdk
 from globus_sdk.globus_app import GlobusAppConfig
 from globus_sdk.globus_app import UserApp
-from globus_sdk.tokenstorage import MemoryTokenStorage
+from globus_sdk.token_storage import MemoryTokenStorage
 
 
 class MockTransferData(globus_sdk.TransferData):

@@ -6,16 +6,20 @@ from collections.abc import Iterable
 
 from globus_sdk import TransferClient
 from globus_sdk.scopes import AuthScopes
-from globus_sdk.scopes import GCSCollectionScopeBuilder
-from globus_sdk.scopes import ScopeBuilder
+from globus_sdk.scopes import GCSCollectionScopes
+from globus_sdk.scopes import Scope
+from globus_sdk.scopes import StaticScopeCollection
 from globus_sdk.scopes import TransferScopes
 
-ProxyStoreRelayScopes = ScopeBuilder(
-    # "ProxyStore Relay Server" application client ID
-    'ebd5bbed-95e2-47cf-9c80-39e2064274bd',
-    # The relay_all scope has scope ID 27b969ab-d8a4-4e31-b53d-bd899b1d8394
-    known_url_scopes=['relay_all'],
-)
+
+class _ProxyStoreRelayScopes(StaticScopeCollection):
+    resource_server = 'ebd5bbed-95e2-47cf-9c80-39e2064274bd'
+    relay_all = Scope(
+        f'https://auth.globus.org/scopes/{resource_server}/relay_all',
+    )
+
+
+ProxyStoreRelayScopes = _ProxyStoreRelayScopes()
 """ProxyStore Relay Server scopes.
 
 Supported Scopes:
@@ -26,7 +30,7 @@ Supported Scopes:
 
 def get_all_scopes_by_resource_server(
     collections: Iterable[str] = (),
-) -> dict[str, list[str]]:
+) -> dict[str, list[Scope]]:
     """Get all scopes needed by the ProxyStore library by resource server.
 
     This returns scopes for three resource servers: Globus Auth, Globus
@@ -44,7 +48,7 @@ def get_all_scopes_by_resource_server(
     }
 
 
-def get_auth_scopes_by_resource_server() -> dict[str, list[str]]:
+def get_auth_scopes_by_resource_server() -> dict[str, list[Scope]]:
     """Get basic scopes for the auth API resource server."""
     return {
         AuthScopes.resource_server: [
@@ -55,7 +59,7 @@ def get_auth_scopes_by_resource_server() -> dict[str, list[str]]:
     }
 
 
-def get_relay_scopes_by_resource_server() -> dict[str, list[str]]:
+def get_relay_scopes_by_resource_server() -> dict[str, list[Scope]]:
     """Get all scopes for the relay server by resource server."""
     return {
         ProxyStoreRelayScopes.resource_server: [
@@ -66,21 +70,19 @@ def get_relay_scopes_by_resource_server() -> dict[str, list[str]]:
 
 def get_transfer_scopes_by_resource_server(
     collections: Iterable[str] = (),
-) -> dict[str, list[str]]:
+) -> dict[str, list[Scope]]:
     """Get scopes for the transfer API resource server.
 
     Args:
         collections: Iterable of collection UUIDs to request consent for.
     """
-    transfer_scope = TransferScopes.make_mutable('all')
+    transfer_scope = TransferScopes.all
 
     for collection in collections:
-        data_access_scope = GCSCollectionScopeBuilder(collection).make_mutable(
-            'data_access',
-        )
-        transfer_scope.add_dependency(data_access_scope)
+        data_access_scope = GCSCollectionScopes(collection).data_access
+        transfer_scope = transfer_scope.with_dependency(data_access_scope)
 
-    return {TransferScopes.resource_server: [str(transfer_scope)]}
+    return {TransferScopes.resource_server: [transfer_scope]}
 
 
 def uses_data_access(client: TransferClient, collection: str) -> bool:

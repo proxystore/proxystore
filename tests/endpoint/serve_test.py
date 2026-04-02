@@ -14,7 +14,7 @@ import pytest
 import pytest_asyncio
 import quart
 import requests
-from globus_sdk.tokenstorage import TokenValidationError
+from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig

@@ -469,12 +469,10 @@ class GlobusConnector:
             transfer_task: globus_sdk.DeleteData | globus_sdk.TransferData
             if delete:
                 transfer_task = globus_sdk.DeleteData(
-                    self._transfer_client,
                     endpoint=dst_endpoint.uuid,
                 )
             else:
                 transfer_task = globus_sdk.TransferData(
-                    self._transfer_client,
                     source_endpoint=src_endpoint.uuid,
                     destination_endpoint=dst_endpoint.uuid,
                     sync_level=self.sync_level,
@@ -532,7 +530,6 @@ class GlobusConnector:
         if clear:
             for endpoint in self.endpoints:
                 delete_task = globus_sdk.DeleteData(
-                    self._transfer_client,
                     endpoint=endpoint.uuid,
                     recursive=True,
                 )
