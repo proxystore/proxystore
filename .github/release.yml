@@ -4,6 +4,7 @@ changelog:
       - ignore-for-release
     authors:
       - pre-commit-ci
+      - pre-commit-ci[bot]
   categories:
     - title: Breaking Changes
       labels:
