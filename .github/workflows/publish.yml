@@ -18,31 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Extract package version from pyproject.toml
+      - name: Extract version from tag
         run: |
-          echo "PACKAGE_VERSION=$(grep -Po '^version\s*=\s*\"\K.*?(?=\")' pyproject.toml)" >> $GITHUB_ENV
-          echo "Found version in pyproject.toml: ${{ env.PACKAGE_VERSION }}"
-
-      - name: Check package version is PEP440 compliant
-        # This is only a partial PEP440 match, it just checks the major, minor
-        # patch, but not any optional suffixes.
-        run: echo "${{ env.PACKAGE_VERSION }}" | grep -P "^\d+\.\d+\.\d+.*$"
-
-      - name: Check version matches release tag
-        run: |
-          if [ "${{ format('v{0}', env.PACKAGE_VERSION) }}" != "${{ github.event.release.tag_name }}" ]
-          then
-            echo "v\$\{PACKAGE_VERSION\} = v${{ env.PACKAGE_VERSION }} does not match tag name: ${{ github.event.release.tag_name }}"
-            exit 1
-          fi
-
-      - name: Check version matches release title
-        run: |
-          if [ "${{ format('ProxyStore v{0}', env.PACKAGE_VERSION) }}" != "${{ github.event.release.name }}" ]
-          then
-            echo "ProxyStore v\$\{PACKAGE_VERSION\} = ProxyStore v${{ env.PACKAGE_VERSION }} does not match release title: ${{ github.event.release.name }}"
-            exit 1
-          fi
+          # Removes 'v' prefix from tag (e.g., v1.0.0 -> 1.0.0)
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Extracted version from tag: $VERSION"
 
       - name: Setup Python 3.12
         uses: actions/setup-python@v6
