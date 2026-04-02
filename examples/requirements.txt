@@ -1,5 +1,5 @@
-globus-compute-sdk==2.18.1
-globus-compute-endpoint==2.18.1
-numpy==1.26.4
-parsl==2024.3.18
-proxystore[all]==0.6.5
+globus-compute-sdk==4.9.0
+globus-compute-endpoint==4.9.0
+numpy==2.4.4
+parsl==2026.03.30
+proxystore[all]==1.0.0
