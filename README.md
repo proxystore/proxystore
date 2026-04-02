@@ -1,13 +1,13 @@
 # ProxyStore
 
-![PyPI - Version](https://img.shields.io/pypi/v/proxystore)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore)
-![GitHub License](https://img.shields.io/github/license/proxystore/proxystore)
+![PyPI - Version](https://img.shields.io/pypi/v/proxystore?cache-control=no-cache)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore?cache-control=no-cache)
+![GitHub License](https://img.shields.io/github/license/proxystore/proxystore?cache-control=no-cache)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
-[![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml)
-[![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions)
-[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main)
+[![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml?cache-control=no-cache)
+[![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions?cache-control=no-cache)
+[![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main?cache-control=no-cache)
 
 ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.
 
