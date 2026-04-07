@@ -44,9 +44,10 @@ def test_default_behavior(
     base_executor_type: type[Executor],
     tmp_path: pathlib.Path,
 ) -> None:
+    base_executor: Executor
     if base_executor_type is ProcessPoolExecutor:
         context = multiprocessing.get_context('spawn')
-        base_executor = base_executor_type(mp_context=context)  # type: ignore[call-arg]
+        base_executor = base_executor_type(mp_context=context)
     else:
         base_executor = base_executor_type()
     store = Store(
@@ -84,9 +85,10 @@ def test_proxy_behavior(
     ownership: bool,
     tmp_path: pathlib.Path,
 ) -> None:
+    base_executor: Executor
     if base_executor_type is ProcessPoolExecutor:
         context = multiprocessing.get_context('spawn')
-        base_executor = base_executor_type(mp_context=context)  # type: ignore[call-arg]
+        base_executor = base_executor_type(mp_context=context)
     else:
         base_executor = base_executor_type()
     store = Store(
