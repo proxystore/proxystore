@@ -103,13 +103,13 @@ def version() -> None:
 )
 @click.option(
     '--port',
-    default=54320,
+    default=0,
     type=int,
     metavar='PORT',
-    help='Port to listen on.',
+    help='Port to listen on. Defaults to an ephemeral port.',
 )
 def check_nat_command(host: str, port: int) -> None:
-    """Check the type of NAT you are behind."""
+    """Check the NAT mapping behavior of your network."""
     check_nat_and_log(host, port)
 
 

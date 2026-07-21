@@ -17,7 +17,7 @@ from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
-from proxystore.p2p.nat import NatType
+from proxystore.p2p.nat import NatMapping
 from proxystore.p2p.nat import Result
 
 CLICK_VERSION = tuple(
@@ -67,12 +67,22 @@ def test_check_nat_normal(caplog) -> None:
     caplog.set_level(logging.INFO)
     runner = click.testing.CliRunner()
 
-    r = Result(NatType.RestrictedCone, '192.168.1.1', 1234)
-    with mock.patch('proxystore.p2p.nat.check_nat', return_value=r):
+    r = Result(
+        NatMapping.EndpointIndependent,
+        '192.168.1.1',
+        1234,
+        True,
+    )
+    with mock.patch(
+        'proxystore.p2p.nat.check_nat_async',
+        mock.AsyncMock(return_value=r),
+    ):
         result = runner.invoke(cli, ['check-nat'])
 
     assert result.exit_code == 0
-    assert caplog.records[1].message == 'NAT Type:       Restricted-cone NAT'
+    assert caplog.records[1].message == (
+        'NAT Behavior:   Endpoint-independent mapping'
+    )
     assert caplog.records[2].message == 'External IP:    192.168.1.1'
     assert caplog.records[3].message == 'External Port:  1234'
     assert caplog.records[4].message.startswith(

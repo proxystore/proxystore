@@ -117,18 +117,21 @@ Peer requests typically fail for two reasons:
 After ensuring both endpoints are running and connected to the relay server,
 you can check the NAT compatibility in two ways.
 
-1. Endpoints will attempt to discover and log the NAT type on startup, so check
-   the logs to see if this could be the reason.
+1. Endpoints will attempt to discover and log the NAT behavior on startup, so
+   check the logs to see if this could be the reason.
    ```
-   INFO  (proxystore.p2p.nat) :: Checking NAT type. This may take a moment...
-   INFO  (proxystore.p2p.nat) :: NAT Type:       Full-cone NAT
+   INFO  (proxystore.p2p.nat) :: Checking NAT behavior. This may take a moment...
+   INFO  (proxystore.p2p.nat) :: NAT Behavior:   Endpoint-independent mapping
    INFO  (proxystore.p2p.nat) :: External IP:    <IP ADDRESS>
    INFO  (proxystore.p2p.nat) :: External Port:  <PORT>
-   INFO  (proxystore.p2p.nat) :: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
+   INFO  (proxystore.p2p.nat) :: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work.
    ```
+   A NAT with *address-dependent* mapping assigns a different external address
+   to each peer, so the address one peer learns is not the address it must
+   send to and hole-punching will not work reliably.
 2. Use the
    [`proxystore-endpoint check-nat`](../api/cli.md#proxystore-endpoint-check-nat)
-   command to discover your NAT type.
+   command to discover your NAT behavior.
    ```
    $ proxystore-endpoint check-nat
    INFO: Checking NAT type. This may take a moment...
