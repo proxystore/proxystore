@@ -74,7 +74,7 @@ def test_check_nat_normal(caplog) -> None:
         True,
     )
     with mock.patch(
-        'proxystore.p2p.nat.check_nat_async',
+        'proxystore.p2p.nat.check_nat',
         mock.AsyncMock(return_value=r),
     ):
         result = runner.invoke(cli, ['check-nat'])

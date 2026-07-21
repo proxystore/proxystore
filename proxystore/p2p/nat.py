@@ -228,7 +228,7 @@ def _local_address(server: Address) -> str:
         return s.getsockname()[0]
 
 
-async def check_nat_async(
+async def check_nat(
     source_ip: str = '0.0.0.0',
     source_port: int = 0,
     timeout: float = 2.0,
@@ -317,37 +317,6 @@ async def check_nat_async(
     )
 
 
-def check_nat(
-    source_ip: str = '0.0.0.0',
-    source_port: int = 0,
-    timeout: float = 2.0,
-) -> Result:
-    """Check the NAT mapping behavior of this host.
-
-    Synchronous wrapper around
-    [`check_nat_async()`][proxystore.p2p.nat.check_nat_async].
-
-    Args:
-        source_ip: Address to bind to.
-        source_port: Port to bind to. The default binds an ephemeral port.
-        timeout: Maximum number of seconds to wait for responses.
-
-    Returns:
-        Result describing the mapping behavior and external address.
-
-    Raises:
-        RuntimeError: if fewer than two STUN servers respond, in which case
-            the mapping behavior cannot be determined.
-    """
-    return asyncio.run(
-        check_nat_async(
-            source_ip=source_ip,
-            source_port=source_port,
-            timeout=timeout,
-        ),
-    )
-
-
 def _log_result(result: Result) -> None:
     logger.info(f'NAT Behavior:   {result.mapping.value}')
     logger.info(f'External IP:    {result.external_ip}')
@@ -366,14 +335,14 @@ def _log_result(result: Result) -> None:
         )
 
 
-async def check_nat_and_log_async(
+async def check_nat_and_log(
     source_ip: str = '0.0.0.0',
     source_port: int = 0,
     timeout: float = 2.0,
 ) -> None:
     """Check the NAT mapping behavior of this host and log the results.
 
-    Wrapper around [`check_nat_async()`][proxystore.p2p.nat.check_nat_async]
+    Wrapper around [`check_nat()`][proxystore.p2p.nat.check_nat]
     that logs the results rather than return them.
 
     Args:
@@ -383,7 +352,7 @@ async def check_nat_and_log_async(
     """
     logger.info('Checking NAT behavior. This may take a moment...')
     try:
-        result = await check_nat_async(
+        result = await check_nat(
             source_ip=source_ip,
             source_port=source_port,
             timeout=timeout,
@@ -392,27 +361,3 @@ async def check_nat_and_log_async(
         logger.error(f'Failed to determine NAT behavior: {e}')
     else:
         _log_result(result)
-
-
-def check_nat_and_log(
-    source_ip: str = '0.0.0.0',
-    source_port: int = 0,
-    timeout: float = 2.0,
-) -> None:
-    """Check the NAT mapping behavior of this host and log the results.
-
-    Synchronous wrapper around
-    [`check_nat_and_log_async()`][proxystore.p2p.nat.check_nat_and_log_async].
-
-    Args:
-        source_ip: Address to bind to.
-        source_port: Port to bind to. The default binds an ephemeral port.
-        timeout: Maximum number of seconds to wait for responses.
-    """
-    asyncio.run(
-        check_nat_and_log_async(
-            source_ip=source_ip,
-            source_port=source_port,
-            timeout=timeout,
-        ),
-    )

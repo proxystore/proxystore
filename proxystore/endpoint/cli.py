@@ -6,6 +6,7 @@ See the CLI Reference for the
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sys
@@ -110,7 +111,7 @@ def version() -> None:
 )
 def check_nat_command(host: str, port: int) -> None:
     """Check the NAT mapping behavior of your network."""
-    check_nat_and_log(host, port)
+    asyncio.run(check_nat_and_log(host, port))
 
 
 @cli.command()

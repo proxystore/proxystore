@@ -17,8 +17,6 @@ from proxystore.p2p.nat import _resolve_servers
 from proxystore.p2p.nat import _STUN_SERVERS
 from proxystore.p2p.nat import check_nat
 from proxystore.p2p.nat import check_nat_and_log
-from proxystore.p2p.nat import check_nat_and_log_async
-from proxystore.p2p.nat import check_nat_async
 from proxystore.p2p.nat import NatMapping
 from proxystore.p2p.nat import Result
 
@@ -230,7 +228,7 @@ async def test_check_nat_endpoint_independent() -> None:
         },
     )
     with patches[0], patches[1]:
-        result = await check_nat_async()
+        result = await check_nat()
 
     assert result.mapping == NatMapping.EndpointIndependent
     assert result.external_ip == '93.184.216.34'
@@ -249,7 +247,7 @@ async def test_check_nat_address_dependent() -> None:
         },
     )
     with patches[0], patches[1]:
-        result = await check_nat_async()
+        result = await check_nat()
 
     assert result.mapping == NatMapping.AddressDependent
     assert not result.hole_punching_likely
@@ -265,7 +263,7 @@ async def test_check_nat_no_nat() -> None:
         local_ip='93.184.216.34',
     )
     with patches[0], patches[1]:
-        result = await check_nat_async()
+        result = await check_nat()
 
     assert result.mapping == NatMapping.NoNat
     assert result.hole_punching_likely
@@ -287,7 +285,7 @@ async def test_check_nat_requires_two_responses() -> None:
         ),
     ):
         with pytest.raises(RuntimeError, match='Only 1 of 2 STUN servers'):
-            await check_nat_async()
+            await check_nat()
 
 
 async def test_check_nat_stops_at_timeout() -> None:
@@ -296,7 +294,7 @@ async def test_check_nat_stops_at_timeout() -> None:
     patches = patch_stun({'1.1.1.1': None, '2.2.2.2': None})
     with patches[0], patches[1]:
         with pytest.raises(RuntimeError, match='Only 0 of 2 STUN servers'):
-            await check_nat_async(timeout=0)
+            await check_nat(timeout=0)
 
 
 def test_local_address() -> None:
@@ -310,16 +308,7 @@ async def test_check_nat_requires_two_servers() -> None:
         mock.AsyncMock(return_value=[('1.1.1.1', 3478)]),
     ):
         with pytest.raises(RuntimeError, match='Only 1 STUN servers'):
-            await check_nat_async()
-
-
-def test_check_nat_sync_wrapper() -> None:
-    result = Result(NatMapping.EndpointIndependent, '93.184.216.34', 1, True)
-    with mock.patch(
-        'proxystore.p2p.nat.check_nat_async',
-        mock.AsyncMock(return_value=result),
-    ):
-        assert check_nat() == result
+            await check_nat()
 
 
 def test_stun_servers_are_distinct_hosts() -> None:
@@ -339,10 +328,10 @@ async def test_check_nat_and_log_hole_punching_likely(caplog) -> None:
         True,
     )
     with mock.patch(
-        'proxystore.p2p.nat.check_nat_async',
+        'proxystore.p2p.nat.check_nat',
         mock.AsyncMock(return_value=result),
     ):
-        await check_nat_and_log_async()
+        await check_nat_and_log()
 
     messages = [r.message for r in caplog.records]
     assert any('Endpoint-independent mapping' in m for m in messages)
@@ -356,10 +345,10 @@ async def test_check_nat_and_log_address_dependent(caplog) -> None:
 
     result = Result(NatMapping.AddressDependent, '93.184.216.34', 1234, False)
     with mock.patch(
-        'proxystore.p2p.nat.check_nat_async',
+        'proxystore.p2p.nat.check_nat',
         mock.AsyncMock(return_value=result),
     ):
-        await check_nat_and_log_async()
+        await check_nat_and_log()
 
     messages = [r.message for r in caplog.records]
     assert any('Address-dependent mapping' in m for m in messages)
@@ -370,22 +359,12 @@ async def test_check_nat_and_log_failure(caplog) -> None:
     caplog.set_level(logging.INFO)
 
     with mock.patch(
-        'proxystore.p2p.nat.check_nat_async',
+        'proxystore.p2p.nat.check_nat',
         mock.AsyncMock(side_effect=RuntimeError('test error')),
     ):
-        await check_nat_and_log_async()
+        await check_nat_and_log()
 
     assert any(
         r.message.startswith('Failed to determine NAT behavior: test error')
         for r in caplog.records
     )
-
-
-def test_check_nat_and_log_sync_wrapper() -> None:
-    with mock.patch(
-        'proxystore.p2p.nat.check_nat_and_log_async',
-        mock.AsyncMock(),
-    ) as mock_check:
-        check_nat_and_log()
-
-    assert mock_check.call_count == 1
