@@ -73,6 +73,26 @@ def event_loop_policy(
         yield policy
 
 
+@pytest.fixture(scope='session', autouse=True)
+def _disable_ice_servers() -> Generator[None, None, None]:
+    """Disable STUN servers when gathering ICE candidates.
+
+    Peers created in the test suite are always on the same host so host
+    candidates are sufficient to establish a connection and server-reflexive
+    candidates are never used. Gathering them is not merely wasted work: a
+    local address which cannot route to the STUN server stalls candidate
+    gathering for five seconds because aioice does not support trickle ICE
+    and waits for every STUN request to time out. WSL, for example, assigns
+    a non-routable address to the loopback interface, causing every peer
+    connection to take an additional five seconds to open (#599).
+    """
+    with mock.patch(
+        'aiortc.rtcicetransport.RTCIceGatherer.getDefaultIceServers',
+        return_value=[],
+    ):
+        yield
+
+
 @pytest.fixture(autouse=True)
 def _verify_no_registered_stores() -> Generator[None, None, None]:
     yield
