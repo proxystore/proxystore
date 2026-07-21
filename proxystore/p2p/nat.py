@@ -317,24 +317,6 @@ async def check_nat(
     )
 
 
-def _log_result(result: Result) -> None:
-    logger.info(f'NAT Behavior:   {result.mapping.value}')
-    logger.info(f'External IP:    {result.external_ip}')
-    logger.info(f'External Port:  {result.external_port}')
-
-    if result.hole_punching_likely:
-        logger.info(
-            'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
-            'is likely to work.',
-        )
-    else:
-        logger.warning(
-            'This NAT assigns a different external address to each peer so '
-            'NAT traversal (e.g., hole-punching) will not work reliably. '
-            'Peer-to-peer methods may require a relay.',
-        )
-
-
 async def check_nat_and_log(
     source_ip: str = '0.0.0.0',
     source_port: int = 0,
@@ -359,5 +341,20 @@ async def check_nat_and_log(
         )
     except Exception as e:
         logger.error(f'Failed to determine NAT behavior: {e}')
+        return
+
+    logger.info(f'NAT Behavior:   {result.mapping.value}')
+    logger.info(f'External IP:    {result.external_ip}')
+    logger.info(f'External Port:  {result.external_port}')
+
+    if result.hole_punching_likely:
+        logger.info(
+            'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
+            'is likely to work.',
+        )
     else:
-        _log_result(result)
+        logger.warning(
+            'This NAT assigns a different external address to each peer so '
+            'NAT traversal (e.g., hole-punching) will not work reliably. '
+            'Peer-to-peer methods may require a relay.',
+        )
