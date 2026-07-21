@@ -20,6 +20,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.serve import _get_auth_headers
+from proxystore.endpoint.serve import _serve_async
 from proxystore.endpoint.serve import create_app
 from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
 from proxystore.endpoint.serve import serve
@@ -440,3 +441,38 @@ def test_get_auth_headers_globus_missing() -> None:
         ),
     ):
         assert _get_auth_headers('globus')
+
+
+async def test_serve_cancels_nat_check(relay_server) -> None:
+    # The NAT check runs concurrently with serving so that a slow or blocked
+    # network cannot delay the endpoint from accepting requests. Shutting the
+    # endpoint down must therefore cancel a check which has not finished
+    # rather than wait for it.
+    cancelled = asyncio.Event()
+
+    async def never_finishes() -> None:
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    config = EndpointConfig(
+        name='my-endpoint',
+        uuid=str(uuid.uuid4()),
+        host='localhost',
+        port=open_port(),
+        storage=EndpointStorageConfig(database_path=':memory:'),
+    )
+    config.relay.address = relay_server.address
+
+    with (
+        mock.patch('uvicorn.Server.serve', AsyncMock()),
+        mock.patch(
+            'proxystore.endpoint.serve.check_nat_and_log',
+            side_effect=never_finishes,
+        ),
+    ):
+        await _serve_async(config)
+
+    assert cancelled.is_set()
