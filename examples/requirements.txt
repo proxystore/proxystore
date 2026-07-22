@@ -2,4 +2,4 @@ globus-compute-sdk==4.9.0
 globus-compute-endpoint==4.9.0
 numpy==2.4.4
 parsl==2026.03.30
-proxystore[all]==1.0.0
+proxystore[all]==1.1.0
