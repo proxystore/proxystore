@@ -22,6 +22,7 @@ from proxystore.proxy import Proxy
 from proxystore.store import get_store
 from proxystore.store.base import Store
 from testing.endpoint import serve_endpoint_silent
+from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
 from testing.utils import open_port
 
@@ -55,52 +56,63 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
     ss_port = open_port()
 
     context = multiprocessing.get_context('spawn')
+    handles = []
+    uuids = []
+    dirs = []
     ss = context.Process(
         target=serve_relay_server,
         kwargs={'host': ss_host, 'port': ss_port},
     )
-    ss.start()
 
-    asyncio.run(wait_for_server(ss_host, ss_port))
+    try:
+        ss.start()
 
-    handles = []
-    uuids = []
-    dirs = []
-    for port in (open_port(), open_port()):
-        cfg = EndpointConfig(
-            name=f'test-endpoint-{port}',
-            uuid=str(uuid.uuid4()),
-            host='localhost',
-            port=port,
-        )
-        cfg.relay.address = f'ws://{ss_host}:{ss_port}'
-        assert cfg.host is not None
+        asyncio.run(wait_for_server(ss_host, ss_port))
 
-        # We want a unique proxystore_dir for each endpoint to simulate
-        # different systems
-        proxystore_dir = os.path.join(tmp_path, str(port))
-        endpoint_dir = os.path.join(proxystore_dir, cfg.name)
-        write_config(cfg, endpoint_dir)
-        uuids.append(uuid.UUID(cfg.uuid))
-        dirs.append(proxystore_dir)
+        for port in (open_port(), open_port()):
+            cfg = EndpointConfig(
+                name=f'test-endpoint-{port}',
+                uuid=str(uuid.uuid4()),
+                host='localhost',
+                port=port,
+            )
+            cfg.relay.address = f'ws://{ss_host}:{ss_port}'
+            assert cfg.host is not None
 
-        handle = context.Process(target=serve_endpoint_silent, args=[cfg])
-        handle.start()
-        handles.append(handle)
+            # We want a unique proxystore_dir for each endpoint to simulate
+            # different systems
+            proxystore_dir = os.path.join(tmp_path, str(port))
+            endpoint_dir = os.path.join(proxystore_dir, cfg.name)
+            write_config(cfg, endpoint_dir)
+            uuids.append(uuid.UUID(cfg.uuid))
+            dirs.append(proxystore_dir)
 
-        wait_for_endpoint(cfg.host, cfg.port)
+            handle = context.Process(
+                target=serve_endpoint_silent,
+                args=[cfg],
+            )
+            handle.start()
+            handles.append(handle)
 
-    if not ss.is_alive():  # pragma: no cover
-        raise RuntimeError('Relay server died.')
+            wait_for_endpoint(cfg.host, cfg.port)
+
+        if not ss.is_alive():  # pragma: no cover
+            raise RuntimeError('Relay server died.')
+    except BaseException:  # pragma: no cover
+        # Setup failed partway through so tear down anything already
+        # started before re-raising, otherwise the orphaned non-daemon
+        # spawn children block interpreter exit and hang the job.
+        for handle in handles:
+            terminate_process(handle)
+        terminate_process(ss)
+        tmp_dir.cleanup()
+        raise
 
     yield uuids, dirs
 
     for handle in handles:
-        handle.terminate()
-        handle.join()
-
-    ss.terminate()
-    ss.join()
+        terminate_process(handle)
+    terminate_process(ss)
 
     tmp_dir.cleanup()
 

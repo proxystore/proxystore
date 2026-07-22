@@ -32,6 +32,17 @@ def serve_endpoint_silent(
         serve(config, use_uvloop=use_uvloop)
 
 
+def terminate_process(
+    process: multiprocessing.process.BaseProcess,
+) -> None:
+    """Terminate a process, killing it if it does not exit promptly."""
+    process.terminate()
+    process.join(timeout=5)
+    if process.exitcode is None:  # pragma: no cover
+        process.kill()
+        process.join()
+
+
 def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
     """Wait for the endpoint at host:port to be available."""
     waited_s = 0.0
@@ -68,12 +79,18 @@ def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
         args=[config],
         kwargs={'use_uvloop': use_uvloop},
     )
-    server_handle.start()
 
-    assert config.host is not None
-    wait_for_endpoint(config.host, config.port)
+    try:
+        server_handle.start()
+
+        assert config.host is not None
+        wait_for_endpoint(config.host, config.port)
+    except BaseException:  # pragma: no cover
+        # Setup failed so terminate the child before re-raising, otherwise
+        # the orphaned non-daemon spawn process blocks interpreter exit.
+        terminate_process(server_handle)
+        raise
 
     yield config
 
-    server_handle.terminate()
-    server_handle.join()
+    terminate_process(server_handle)
