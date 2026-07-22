@@ -3,7 +3,6 @@
 ![PyPI - Version](https://img.shields.io/pypi/v/proxystore?cache-control=no-cache)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/proxystore?cache-control=no-cache)
 ![GitHub License](https://img.shields.io/github/license/proxystore/proxystore?cache-control=no-cache)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.8077899.svg)](https://doi.org/10.5281/zenodo.8077899)
 
 [![docs](https://github.com/proxystore/proxystore/actions/workflows/docs.yml/badge.svg)](https://github.com/proxystore/proxystore/actions/workflows/docs.yml?cache-control=no-cache)
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions?cache-control=no-cache)
