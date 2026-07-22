@@ -73,6 +73,9 @@ def endpoint(use_uvloop: bool) -> Generator[EndpointConfig, None, None]:
         host='localhost',
         port=open_port(),
     )
+    # Disable ICE server candidate gathering in the spawned child where the
+    # _disable_ice_servers conftest fixture does not apply (see #599).
+    config.relay.ice_servers = []
     context = multiprocessing.get_context('spawn')
     server_handle = context.Process(
         target=serve_endpoint_silent,

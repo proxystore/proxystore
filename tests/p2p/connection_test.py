@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from unittest import mock
 from uuid import uuid4
 
 import aiortc
@@ -57,6 +58,46 @@ async def test_p2p_connection(relay_server) -> None:
     await client2.close()
     await connection1.close()
     await connection2.close()
+
+
+@pytest.mark.asyncio
+async def test_p2p_connection_default_ice_servers(relay_server) -> None:
+    client = RelayClient(relay_server.address)
+    await client.connect()
+
+    with mock.patch(
+        'proxystore.p2p.connection.RTCPeerConnection',
+    ) as mock_pc:
+        PeerConnection(client)
+        # No configuration is passed so aiortc uses its default STUN servers.
+        mock_pc.assert_called_once_with()
+
+    await client.close()
+
+
+@pytest.mark.asyncio
+async def test_p2p_connection_custom_ice_servers(relay_server) -> None:
+    client = RelayClient(relay_server.address)
+    await client.connect()
+
+    ice_servers = [aiortc.RTCIceServer(urls='stun:stun.example.com:3478')]
+    with mock.patch(
+        'proxystore.p2p.connection.RTCPeerConnection',
+    ) as mock_pc:
+        PeerConnection(client, ice_servers=ice_servers)
+        mock_pc.assert_called_once()
+        (configuration,) = mock_pc.call_args.args
+        assert configuration.iceServers == ice_servers
+
+    # An empty list disables server-reflexive candidate gathering.
+    with mock.patch(
+        'proxystore.p2p.connection.RTCPeerConnection',
+    ) as mock_pc:
+        PeerConnection(client, ice_servers=[])
+        (configuration,) = mock_pc.call_args.args
+        assert configuration.iceServers == []
+
+    await client.close()
 
 
 @pytest.mark.asyncio

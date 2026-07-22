@@ -3,7 +3,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from unittest import mock
 
+import aiortc
 import pytest
 
 from proxystore.p2p.exceptions import PeerConnectionError
@@ -20,6 +22,29 @@ async def test_awaitable(relay_server) -> None:
     manager = await PeerManager(RelayClient(relay_server.address))
     # Calling async_init again should do nothing
     await manager.async_init()
+    await manager.close()
+
+
+@pytest.mark.asyncio
+async def test_ice_servers_forwarded_to_connection(relay_server) -> None:
+    ice_servers = [aiortc.RTCIceServer(urls='stun:stun.example.com:3478')]
+    manager = await PeerManager(
+        RelayClient(relay_server.address),
+        ice_servers=ice_servers,
+    )
+
+    async def _block() -> None:
+        await asyncio.Event().wait()
+
+    with mock.patch('proxystore.p2p.manager.PeerConnection') as mock_conn:
+        mock_conn.return_value.send_offer = mock.AsyncMock()
+        mock_conn.return_value.ready = mock.AsyncMock()
+        mock_conn.return_value.close = mock.AsyncMock()
+        # Block the peer message handler task so it does not busy loop.
+        mock_conn.return_value.recv = mock.AsyncMock(side_effect=_block)
+        await manager.get_connection(uuid.uuid4())
+        assert mock_conn.call_args.kwargs['ice_servers'] is ice_servers
+
     await manager.close()
 
 

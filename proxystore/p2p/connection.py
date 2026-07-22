@@ -13,8 +13,10 @@ from typing import Any
 from uuid import UUID
 
 try:
+    from aiortc import RTCConfiguration
     from aiortc import RTCDataChannel
     from aiortc import RTCIceCandidate
+    from aiortc import RTCIceServer
     from aiortc import RTCPeerConnection
     from aiortc import RTCSessionDescription
     from aiortc.contrib.signaling import BYE
@@ -94,6 +96,9 @@ class PeerConnection:
     Args:
         relay_client: Client connection to the relay server.
         channels: Number of datachannels to open with peer.
+        ice_servers: STUN/TURN servers to use when gathering ICE candidates.
+            If `None`, aiortc's default set of public STUN servers is used.
+            An empty list disables server-reflexive candidate gathering.
     """
 
     def __init__(
@@ -101,6 +106,7 @@ class PeerConnection:
         relay_client: RelayClient,
         *,
         channels: int = 1,
+        ice_servers: list[RTCIceServer] | None = None,
     ) -> None:
         self._relay_client = relay_client
         self._max_channels = channels
@@ -108,7 +114,12 @@ class PeerConnection:
         self._handshake_success: asyncio.Future[bool] = (
             asyncio.get_running_loop().create_future()
         )
-        self._pc = RTCPeerConnection()
+        if ice_servers is None:
+            self._pc = RTCPeerConnection()
+        else:
+            self._pc = RTCPeerConnection(
+                RTCConfiguration(iceServers=list(ice_servers)),
+            )
 
         self._incoming_queue: asyncio.Queue[bytes | str] = asyncio.Queue()
         self._incoming_chunks: dict[int, list[Chunk]] = defaultdict(list)

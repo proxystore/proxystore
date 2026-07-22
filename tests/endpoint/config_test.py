@@ -10,6 +10,7 @@ import pytest
 from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointRelayConfig
+from proxystore.endpoint.config import EndpointRelayICEServerConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_log_filepath
@@ -33,6 +34,29 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
     assert os.path.exists(tmp_dir)
 
     # Overwriting is okay
+    write_config(cfg, tmp_dir)
+
+    new_cfg = read_config(tmp_dir)
+    assert cfg == new_cfg
+
+
+def test_write_read_config_with_ice_servers(tmp_path: pathlib.Path) -> None:
+    tmp_dir = os.path.join(tmp_path, 'config-dir')
+
+    cfg = EndpointConfig(
+        name='name',
+        uuid=str(uuid.uuid4()),
+        host='host',
+        port=1234,
+    )
+    cfg.relay.ice_servers = [
+        EndpointRelayICEServerConfig(urls='stun:stun.example.com:3478'),
+        EndpointRelayICEServerConfig(
+            urls=['turn:turn.example.com:3478'],
+            username='user',
+            credential='secret',
+        ),
+    ]
     write_config(cfg, tmp_dir)
 
     new_cfg = read_config(tmp_dir)
