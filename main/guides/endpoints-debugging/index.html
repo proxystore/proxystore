@@ -3793,17 +3793,20 @@ Peer requests typically fail for two reasons:</p>
 <p>After ensuring both endpoints are running and connected to the relay server,
 you can check the NAT compatibility in two ways.</p>
 <ol>
-<li>Endpoints will attempt to discover and log the NAT type on startup, so check
-   the logs to see if this could be the reason.
-   <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>INFO  (proxystore.p2p.nat) :: Checking NAT type. This may take a moment...
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>INFO  (proxystore.p2p.nat) :: NAT Type:       Full-cone NAT
+<li>Endpoints will attempt to discover and log the NAT behavior on startup, so
+   check the logs to see if this could be the reason.
+   <div class="language-text highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>INFO  (proxystore.p2p.nat) :: Checking NAT behavior. This may take a moment...
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>INFO  (proxystore.p2p.nat) :: NAT Behavior:   Endpoint-independent mapping
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>INFO  (proxystore.p2p.nat) :: External IP:    &lt;IP ADDRESS&gt;
 </span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>INFO  (proxystore.p2p.nat) :: External Port:  &lt;PORT&gt;
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>INFO  (proxystore.p2p.nat) :: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
-</span></code></pre></div></li>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>INFO  (proxystore.p2p.nat) :: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work.
+</span></code></pre></div>
+   A NAT with <em>address-dependent</em> mapping assigns a different external address
+   to each peer, so the address one peer learns is not the address it must
+   send to and hole-punching will not work reliably.</li>
 <li>Use the
    <a href="../../api/cli/#proxystore-endpoint-check-nat"><code>proxystore-endpoint check-nat</code></a>
-   command to discover your NAT type.
+   command to discover your NAT behavior.
    <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$ proxystore-endpoint check-nat
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>INFO: Checking NAT type. This may take a moment...
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>INFO: NAT Type:       Full-cone NAT

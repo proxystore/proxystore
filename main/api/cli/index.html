@@ -4034,7 +4034,7 @@ In this case, you may need to provide a domain for the collection:</p>
 </table>
 <p><strong>Subcommands</strong></p>
 <ul>
-<li><em><a href="#proxystore-endpoint-check-nat">check-nat</a></em>: Check the type of NAT you are behind.</li>
+<li><em><a href="#proxystore-endpoint-check-nat">check-nat</a></em>: Check the NAT mapping behavior of your network.</li>
 <li><em><a href="#proxystore-endpoint-configure">configure</a></em>: Configure a new endpoint.</li>
 <li><em><a href="#proxystore-endpoint-help">help</a></em>: Show available commands and options.</li>
 <li><em><a href="#proxystore-endpoint-list">list</a></em>: List all user endpoints.</li>
@@ -4045,7 +4045,7 @@ In this case, you may need to provide a domain for the collection:</p>
 <li><em><a href="#proxystore-endpoint-version">version</a></em>: Show the ProxyStore version.</li>
 </ul>
 <h3 id="proxystore-endpoint-check-nat">proxystore-endpoint check-nat<a class="headerlink" href="#proxystore-endpoint-check-nat" title="Permanent link">&para;</a></h3>
-<p>Check the type of NAT you are behind.</p>
+<p>Check the NAT mapping behavior of your network.</p>
 <p><strong>Usage:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>proxystore-endpoint check-nat [OPTIONS]
 </span></code></pre></div>
@@ -4069,8 +4069,8 @@ In this case, you may need to provide a domain for the collection:</p>
 <tr>
 <td><code>--port</code></td>
 <td>integer</td>
-<td>Port to listen on.</td>
-<td><code>54320</code></td>
+<td>Port to listen on. Defaults to an ephemeral port.</td>
+<td><code>0</code></td>
 </tr>
 <tr>
 <td><code>--help</code></td>
