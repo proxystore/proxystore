@@ -92,13 +92,27 @@ def test_invoke_and_override_defaults(tmp_path: pathlib.Path) -> None:
     options += ['--log-level', 'WARNING']
 
     runner = click.testing.CliRunner()
-    with mock.patch(
-        'proxystore.p2p.relay.run.serve',
-        AsyncMock(side_effect=_mock_serve),
-    ):
-        runner.invoke(cli, options)
+    # cli() configures the root logger with a file handler for server.log via
+    # logging.basicConfig(), which is a no-op when the root logger already has
+    # handlers. Clear them first so the file handler is actually attached, then
+    # close and restore afterwards to avoid leaking the open file
+    # (ResourceWarning).
+    root_logger = logging.getLogger()
+    original_handlers = root_logger.handlers[:]
+    root_logger.handlers.clear()
+    try:
+        with mock.patch(
+            'proxystore.p2p.relay.run.serve',
+            AsyncMock(side_effect=_mock_serve),
+        ):
+            runner.invoke(cli, options)
 
-    assert os.path.isdir(tmp_dir)
+        assert os.path.isdir(tmp_dir)
+    finally:
+        for handler in root_logger.handlers[:]:
+            handler.close()
+            root_logger.removeHandler(handler)
+        root_logger.handlers = original_handlers
 
 
 def test_logging_config(tmp_path: pathlib.Path) -> None:

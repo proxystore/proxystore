@@ -106,7 +106,14 @@ def test_lease_lifetime_extend(
     store: Store[LocalConnector],
     expiry: Any,
 ) -> None:
-    lifetime = LeaseLifetime(store, expiry=0.001)
+    # Use an initial expiry far enough in the future that the background
+    # timer cannot fire and close the lifetime before extend() is called
+    # below. A very short initial expiry (e.g. 0.001) races with the main
+    # thread reaching extend() on slow/loaded runners, causing extend() to
+    # hit the "lifetime has ended" guard (flaky on macOS). The relative
+    # extend values still expire quickly after this base.
+    initial_expiry = 0.1
+    lifetime = LeaseLifetime(store, expiry=initial_expiry)
 
     assert lifetime._timer is not None
     first_timer = lifetime._timer
