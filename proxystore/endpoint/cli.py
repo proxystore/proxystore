@@ -6,6 +6,7 @@ See the CLI Reference for the
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import sys
@@ -103,14 +104,14 @@ def version() -> None:
 )
 @click.option(
     '--port',
-    default=54320,
+    default=0,
     type=int,
     metavar='PORT',
-    help='Port to listen on.',
+    help='Port to listen on. Defaults to an ephemeral port.',
 )
 def check_nat_command(host: str, port: int) -> None:
-    """Check the type of NAT you are behind."""
-    check_nat_and_log(host, port)
+    """Check the NAT mapping behavior of your network."""
+    asyncio.run(check_nat_and_log(host, port))
 
 
 @cli.command()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -123,6 +124,7 @@ async def _serve_async(config: EndpointConfig) -> None:
         storage = DictStorage(max_object_size=config.storage.max_object_size)
 
     peer_manager: PeerManager | None = None
+    nat_check: asyncio.Task[None] | None = None
     if config.relay.address is not None:
         headers = _get_auth_headers(
             method=config.relay.auth.method,
@@ -139,7 +141,10 @@ async def _serve_async(config: EndpointConfig) -> None:
             relay_client,
             peer_channels=config.relay.peer_channels,
         )
-        check_nat_and_log()
+        # The NAT check only produces diagnostic logs so it is run
+        # concurrently rather than delaying the endpoint from serving
+        # requests on networks where STUN is slow or blocked.
+        nat_check = asyncio.create_task(check_nat_and_log())
 
     endpoint = await Endpoint(
         name=config.name,
@@ -165,7 +170,20 @@ async def _serve_async(config: EndpointConfig) -> None:
     )
     logger.info(f'Config: {config}')
 
-    await server.serve()
+    try:
+        await server.serve()
+    finally:
+        if nat_check is not None and not nat_check.done():
+            nat_check.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await nat_check
+        # Normally the endpoint is closed by the "after_app_serving" shutdown
+        # callback, but that callback only runs if the server's lifespan
+        # completes. Closing here as well ensures the endpoint's background
+        # tasks (e.g., the relay client's reconnect task) are always torn down
+        # so they cannot raise after serving has stopped. close() is
+        # idempotent so the redundant call in the normal path is a no-op.
+        await endpoint.close()
 
 
 def serve(
