@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import socket
 import ssl
 import sys
 import uuid
@@ -314,12 +313,19 @@ class RelayClient:
                         )
                         self._reconnect_task.set_name('relay-client-reconnect')
                 except (
-                    # May occur if relay is unavailable
-                    ConnectionRefusedError,
-                    # May occur if relay is too slow to respond
+                    # OSError covers a range of connection failures, all
+                    # subclasses of OSError:
+                    #   - ConnectionRefusedError if the relay is unavailable,
+                    #   - socket.gaierror on temporary DNS failures, and
+                    #   - a bare OSError ("Multiple exceptions: ...") raised by
+                    #     asyncio when every address a hostname resolves to
+                    #     (e.g. both ::1 and 127.0.0.1 for localhost) fails to
+                    #     connect.
+                    OSError,
+                    # asyncio.TimeoutError may occur if the relay is too slow
+                    # to respond. It is only an OSError subclass on Python
+                    # >=3.11 so it is listed explicitly.
                     asyncio.TimeoutError,
-                    # May occur if client experiences temporary DNS failure
-                    socket.gaierror,
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
                     if not retry:

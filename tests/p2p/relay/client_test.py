@@ -168,6 +168,36 @@ async def test_relay_server_retry_backoff(relay_server, caplog) -> None:
 
 
 @pytest.mark.asyncio
+async def test_relay_server_retry_bare_oserror(relay_server, caplog) -> None:
+    # asyncio raises a bare OSError ("Multiple exceptions: ...") rather than
+    # a ConnectionRefusedError when every address a hostname resolves to fails
+    # to connect (e.g. both ::1 and 127.0.0.1 for localhost on macOS). This
+    # must be treated as a retryable connection failure.
+    caplog.set_level(logging.WARNING)
+    client = RelayClient(relay_server.address, reconnect_task=False)
+    client._initial_backoff_seconds = 0.01
+    error = OSError(
+        "Multiple exceptions: [Errno 61] Connect call failed ('::1', 1), "
+        "[Errno 61] Connect call failed ('127.0.0.1', 1)",
+    )
+    with mock.patch.object(
+        client,
+        '_register',
+        AsyncMock(side_effect=[error, None]),
+    ):
+        await client.connect(retry=True)
+
+    records = [
+        record.message
+        for record in caplog.records
+        if 'Retrying connection in' in record.message
+    ]
+    assert len(records) == 1
+
+    await client.close()
+
+
+@pytest.mark.asyncio
 async def test_relay_server_connect_fatal_error(relay_server) -> None:
     error = websockets.exceptions.ConnectionClosedError(
         # Mimic a ForbiddenError from the relay server that caused
