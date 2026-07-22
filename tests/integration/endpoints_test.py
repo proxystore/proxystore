@@ -77,6 +77,10 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
                 port=port,
             )
             cfg.relay.address = f'ws://{ss_host}:{ss_port}'
+            # Disable ICE server candidate gathering in the spawned child
+            # where the _disable_ice_servers conftest fixture does not
+            # apply (see #599).
+            cfg.relay.ice_servers = []
             assert cfg.host is not None
 
             # We want a unique proxystore_dir for each endpoint to simulate

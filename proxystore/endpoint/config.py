@@ -42,12 +42,34 @@ class EndpointRelayAuthConfig(BaseModel):
     kwargs: dict[str, Any] = Field(default_factory=dict)
 
 
+class EndpointRelayICEServerConfig(BaseModel):
+    """STUN/TURN server used when gathering ICE candidates.
+
+    Attributes:
+        urls: One or more URLs of the STUN or TURN server (e.g.,
+            `stun:stun.l.google.com:19302`).
+        username: Optional username for authenticating with a TURN server.
+        credential: Optional credential for authenticating with a TURN server.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    urls: str | list[str]
+    username: str | None = None
+    credential: str | None = None
+
+
 class EndpointRelayConfig(BaseModel):
     """Endpoint relay server configuration.
 
     Attributes:
         address: Address of the relay server to register with.
         auth: Relay server authentication configuration.
+        ice_servers: STUN/TURN servers to use when gathering ICE candidates
+            for peer connections. If `None`, a default set of public STUN
+            servers is used. An empty list disables server-reflexive candidate
+            gathering entirely, which is useful when all peers are on the same
+            host or when STUN servers are unreachable.
         peer_channels: Number of peer channels to multiplex communication over.
         verify_certificates: Validate the relay server's SSL certificate. This
             should only be disabled when testing endpoint with local relay
@@ -58,6 +80,7 @@ class EndpointRelayConfig(BaseModel):
     auth: EndpointRelayAuthConfig = Field(
         default_factory=EndpointRelayAuthConfig,
     )
+    ice_servers: list[EndpointRelayICEServerConfig] | None = None
     peer_channels: int = 1
     verify_certificate: bool = True
 

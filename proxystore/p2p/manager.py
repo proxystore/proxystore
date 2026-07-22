@@ -21,6 +21,12 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
+try:
+    from aiortc import RTCIceServer
+except ImportError:  # pragma: no cover
+    # Handled by the aiortc import warning in proxystore.p2p.connection.
+    pass
+
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
 from proxystore.p2p.exceptions import PeerConnectionError
@@ -77,6 +83,11 @@ class PeerManager:
             established.
         peer_channels: number of datachannels to split message sending over
             between each peer.
+        ice_servers: STUN/TURN servers passed to each
+            [`PeerConnection`][proxystore.p2p.connection.PeerConnection] when
+            gathering ICE candidates. If `None`, aiortc's default set of
+            public STUN servers is used. An empty list disables
+            server-reflexive candidate gathering.
 
     Raises:
         ValueError: If the relay server address does not start with "ws://"
@@ -89,10 +100,12 @@ class PeerManager:
         *,
         timeout: int = 30,
         peer_channels: int = 1,
+        ice_servers: list[RTCIceServer] | None = None,
     ) -> None:
         self._relay_client = relay_client
         self._timeout = timeout
         self._peer_channels = peer_channels
+        self._ice_servers = ice_servers
 
         self._peers_lock = asyncio.Lock()
         self._peers: dict[frozenset[UUID], PeerConnection] = {}
@@ -230,6 +243,7 @@ class PeerManager:
                     connection = PeerConnection(
                         relay_client=self.relay_client,
                         channels=self._peer_channels,
+                        ice_servers=self._ice_servers,
                     )
                     async with self._peers_lock:
                         self._peers[peers] = connection
@@ -363,6 +377,7 @@ class PeerManager:
             connection = PeerConnection(
                 self.relay_client,
                 channels=self._peer_channels,
+                ice_servers=self._ice_servers,
             )
             self._peers[peers] = connection
 

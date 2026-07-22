@@ -26,6 +26,7 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     ) from e
 
+from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.config import EndpointConfig
@@ -137,9 +138,22 @@ async def _serve_async(config: EndpointConfig) -> None:
             extra_headers=headers,
             verify_certificate=config.relay.verify_certificate,
         )
+        ice_servers = (
+            None
+            if config.relay.ice_servers is None
+            else [
+                RTCIceServer(
+                    urls=server.urls,
+                    username=server.username,
+                    credential=server.credential,
+                )
+                for server in config.relay.ice_servers
+            ]
+        )
         peer_manager = PeerManager(
             relay_client,
             peer_channels=config.relay.peer_channels,
+            ice_servers=ice_servers,
         )
         # The NAT check only produces diagnostic logs so it is run
         # concurrently rather than delaying the endpoint from serving
