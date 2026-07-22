@@ -158,6 +158,7 @@ class Endpoint:
             asyncio.Future[EndpointRequest],
         ] = {}
         self._peer_handler_task: asyncio.Task[None] | None = None
+        self._closed = False
 
         if self._mode is EndpointMode.SOLO:
             # Initialization is not complete for endpoints in peering mode
@@ -490,7 +491,15 @@ class Endpoint:
             await self._storage.set(key, data)
 
     async def close(self) -> None:
-        """Close the endpoint and any open connections safely."""
+        """Close the endpoint and any open connections safely.
+
+        This is idempotent so that it is safe to call from both the Quart
+        `after_serving` shutdown hook and the
+        [`serve()`][proxystore.endpoint.serve.serve] cleanup path.
+        """
+        if self._closed:
+            return
+        self._closed = True
         if self._peer_handler_task is not None:
             self._peer_handler_task.cancel()
             try:

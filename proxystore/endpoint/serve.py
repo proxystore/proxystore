@@ -177,6 +177,13 @@ async def _serve_async(config: EndpointConfig) -> None:
             nat_check.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await nat_check
+        # Normally the endpoint is closed by the "after_app_serving" shutdown
+        # callback, but that callback only runs if the server's lifespan
+        # completes. Closing here as well ensures the endpoint's background
+        # tasks (e.g., the relay client's reconnect task) are always torn down
+        # so they cannot raise after serving has stopped. close() is
+        # idempotent so the redundant call in the normal path is a no-op.
+        await endpoint.close()
 
 
 def serve(
