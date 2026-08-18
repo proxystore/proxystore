@@ -3584,10 +3584,10 @@ via the <a class="autorefs autorefs-internal" title="            Proxy" href="..
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>    <span class="k">return</span> <span class="n">Foo</span><span class="p">()</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;Proxy[Foo]&quot;</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Revealed type is "Proxy[Foo]"</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12"></a>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13"></a><span class="n">bar</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">bar</span><span class="p">()</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;Any&quot;</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>  <span class="c1"># Revealed type is "Any"</span>
 </span></code></pre></div></td></tr></table></div>
 <p>ProxyStore (v0.6.5 and later) comes with an optional mypy plugin which can fix
 these type resolution limitations. With the mypy plugin enabled, we get the
@@ -3597,10 +3597,10 @@ correct type.</p>
 <span class="normal"><a href="#__codelineno-1-3">3</a></span>
 <span class="normal"><a href="#__codelineno-1-4">4</a></span>
 <span class="normal"><a href="#__codelineno-1-5">5</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="n">proxy</span> <span class="o">=</span> <span class="n">Proxy</span><span class="p">(</span><span class="n">factory</span><span class="p">)</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;Proxy[Foo]&quot;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>  <span class="c1"># Revealed type is "Proxy[Foo]"</span>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="n">bar</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">bar</span><span class="p">()</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>  <span class="c1"># Revealed type is &quot;int&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">reveal_type</span><span class="p">(</span><span class="n">bar</span><span class="p">)</span>  <span class="c1"># Revealed type is "int"</span>
 </span></code></pre></div></td></tr></table></div>
 <p>Enable the plugin by adding <code>proxystore.mypy_plugin</code> to the list of plugins
 in your
@@ -3608,7 +3608,7 @@ in your
 <ul>
 <li><code>pyproject.toml</code>
   <div class="language-toml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[tools.mypy]</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;proxystore.mypy_plugin&quot;</span><span class="p">]</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">plugins</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"proxystore.mypy_plugin"</span><span class="p">]</span>
 </span></code></pre></div></li>
 <li><code>mypy.ini</code> and <code>setup.cfg</code>
   <div class="language-ini highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">[mypy]</span>
