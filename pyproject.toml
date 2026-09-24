@@ -46,6 +46,7 @@ endpoints = [
     "aiortc>=1.3.2",
     "aiosqlite",
     "uvicorn[standard]",
+    "uvloop>=0.18.0",
     "psutil",
     "python-daemon",
     "quart>=0.18.0",

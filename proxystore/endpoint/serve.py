@@ -216,7 +216,7 @@ def serve(
         config: Configuration object.
         log_level: Logging level of endpoint.
         log_file: Optional file path to append log to.
-        use_uvloop: Install uvloop as the default event loop implementation.
+        use_uvloop: Use uvloop as the event loop implementation.
     """
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
@@ -234,14 +234,6 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    if use_uvloop:  # pragma: no cover
-        logger.info('Installing uvloop as default event loop')
-        uvloop.install()
-    else:
-        logger.warning(
-            'Not installing uvloop. Uvicorn may override and install anyways',
-        )
-
     # Convert SIGTERM to SIGINT which will be handled by Uvicorn first,
     # then passed on by this function.
     signal.signal(
@@ -252,7 +244,11 @@ def serve(
     # The remaining set up and serving code is deferred to within the
     # _serve_async helper function which will be executed within an event loop.
     try:
-        asyncio.run(_serve_async(config))
+        if use_uvloop:  # pragma: no cover
+            logger.info('Using uvloop as the event loop')
+            uvloop.run(_serve_async(config))
+        else:
+            asyncio.run(_serve_async(config))
     except Exception as e:
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see
@@ -437,6 +433,8 @@ async def set_handler() -> Response:
     * `Status Code 400`: If the key argument is missing, the endpoint UUID
       argument is present but not a valid UUID, or the request is missing
       the data payload.
+    * `Status Code 413`: If the data payload exceeds the maximum content
+      length configured for the app.
     * `Status Code 500`: If there was a peer request error. The response
       will contain the string representation of the internal error.
     """
@@ -455,12 +453,18 @@ async def set_handler() -> Response:
         except ValueError:
             return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
 
+    max_length = quart.current_app.config['MAX_CONTENT_LENGTH']
     data = bytearray()
     # Note: tests/endpoint/serve_test.py::test_empty_chunked_data handles
     # the branching case for where the code in the for loop is not executed
     # but coverage is not detecting that hence the pragma here
     async for chunk in request.body:  # pragma: no branch
         data += chunk
+        # Quart>=0.23 no longer enforces MAX_CONTENT_LENGTH when iterating
+        # over the request body so we must check the length ourselves.
+        # Quart>=0.23 requires Python>=3.13 so this is only reachable there.
+        if max_length is not None and len(data) > max_length:
+            return Response('payload too large', 413)  # pragma: >=3.13 cover
 
     if len(data) == 0:
         return Response('received empty payload', 400)
