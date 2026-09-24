@@ -216,7 +216,7 @@ def serve(
         config: Configuration object.
         log_level: Logging level of endpoint.
         log_file: Optional file path to append log to.
-        use_uvloop: Install uvloop as the default event loop implementation.
+        use_uvloop: Use uvloop as the event loop implementation.
     """
     if log_file is not None:
         parent_dir = os.path.dirname(log_file)
@@ -234,14 +234,6 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    if use_uvloop:  # pragma: no cover
-        logger.info('Installing uvloop as default event loop')
-        uvloop.install()
-    else:
-        logger.warning(
-            'Not installing uvloop. Uvicorn may override and install anyways',
-        )
-
     # Convert SIGTERM to SIGINT which will be handled by Uvicorn first,
     # then passed on by this function.
     signal.signal(
@@ -252,7 +244,11 @@ def serve(
     # The remaining set up and serving code is deferred to within the
     # _serve_async helper function which will be executed within an event loop.
     try:
-        asyncio.run(_serve_async(config))
+        if use_uvloop:  # pragma: no cover
+            logger.info('Using uvloop as the event loop')
+            uvloop.run(_serve_async(config))
+        else:
+            asyncio.run(_serve_async(config))
     except Exception as e:
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see

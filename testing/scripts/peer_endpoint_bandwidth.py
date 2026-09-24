@@ -114,18 +114,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         logging.getLogger('aiortc.rtcsctptransport').setLevel(logging.INFO)
         logging.getLogger('proxystore.p2p.connection').setLevel(logging.INFO)
 
+    run = asyncio.run
     if not args.no_uvloop:
         try:
             import uvloop
 
-            uvloop.install()
+            run = uvloop.run
             print('using uvloop')
         except ImportError:
             print('uvloop unavailable... using default asyncio event loop')
 
     logging.basicConfig()
 
-    asyncio.run(amain(args.actor, args.size, args.relay), debug=args.debug)
+    run(amain(args.actor, args.size, args.relay), debug=args.debug)
 
     return 0
 

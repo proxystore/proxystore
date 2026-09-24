@@ -64,10 +64,10 @@ def pytest_asyncio_loop_factories(
 
 
 @pytest.fixture(autouse=True)
-def _guard_uvloop_install(
+def _guard_uvloop_run(
     use_uvloop: bool,
 ) -> Generator[None, None, None]:
-    """Fail if ``uvloop.install()`` is called when uvloop is not requested.
+    """Fail if ``uvloop.run()`` is called when uvloop is not requested.
 
     uvloop should only be used when ``--use-uvloop`` is passed to pytest.
     """
@@ -76,9 +76,9 @@ def _guard_uvloop_install(
         return
 
     with mock.patch(
-        'uvloop.install',
+        'uvloop.run',
         side_effect=RuntimeError(
-            'uvloop.install() was called when --use-uvloop=False. uvloop '
+            'uvloop.run() was called when --use-uvloop=False. uvloop '
             'should only be used when --use-uvloop is passed to pytest.',
         ),
     ):

@@ -117,18 +117,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    run = asyncio.run
     if not args.no_uvloop:
         try:
             import uvloop
 
-            uvloop.install()
+            run = uvloop.run
             print('using uvloop')
         except ImportError:
             print('uvloop unavailable... using default asyncio event loop')
 
     logging.basicConfig()
 
-    asyncio.run(
+    run(
         amain(args.actor, args.size, args.relay, args.channels),
         debug=args.debug,
     )
