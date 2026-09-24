@@ -35,8 +35,10 @@ There are a few mechanisms for determining when a proxy is getting resolved whil
   ```python linenums="1"
   from proxystore.proxy import Proxy
 
+
   def alert_factory() -> None:
       raise RuntimeError('Proxy was resolved!')
+
 
   proxy = Proxy(alert_factory)
   ```
@@ -51,13 +53,16 @@ A [`Proxy`][proxystore.proxy.Proxy] can be serialized using most common serializ
 ```python linenums="1"
 from proxystore.proxy import Proxy
 
+
 def factory() -> int:
     return 42
+
 
 proxy = Proxy(factory)
 
 # Cloudpickle
 import cloudpickle
+
 dump = cloudpickle.dumps(proxy)
 new_proxy = cloudpickle.loads(dump)
 assert isinstance(new_proxy, Proxy)
@@ -65,6 +70,7 @@ assert new_proxy == 42
 
 # Dill
 import dill
+
 dump = dill.dumps(proxy)
 new_proxy = dill.loads(dump)
 assert isinstance(new_proxy, Proxy)
@@ -72,6 +78,7 @@ assert new_proxy == 42
 
 # Pickle
 import pickle
+
 dump = pickle.dumps(proxy)
 new_proxy = pickle.loads(dump)
 assert isinstance(new_proxy, Proxy)
@@ -91,8 +98,10 @@ from proxystore.proxy import Proxy
 target = 'x' * 10000
 assert sys.getsizeof(target) >= 10000
 
+
 def factory() -> str:
     return target
+
 
 proxy = Proxy(factory)
 
@@ -204,8 +213,9 @@ from proxystore.proxy import Proxy
 
 T = TypeVar('T')
 
-def extract(proxy: Proxy[T]) -> T:
-    ...
+
+def extract(proxy: Proxy[T]) -> T: ...
+
 
 proxy = Proxy(lambda: 42)
 reveal_type(proxy)  # Revealed type is Proxy[int]

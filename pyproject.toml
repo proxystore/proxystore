@@ -210,6 +210,8 @@ select = [
     "RUF",
 ]
 extend-ignore = [
+    # Conflicts with the formatter
+    "COM812",
     # Do not require docstrings for magic methods
     "D105",
     # Do not require docstrings for __init__ methods

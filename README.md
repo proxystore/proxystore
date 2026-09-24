@@ -74,12 +74,14 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 
+
 def process(x: dict[str, str]) -> None:
     # x is transparently resolved from the store when first
     # used by the function. After which the proxy behaves as
     # target object (the dict) for the rest of its existence.
     assert isinstance(x, dict)
     assert x['hello'] == 'world'
+
 
 with Store('example', connector=LocalConnector(), register=True) as store:
     # Store the object via a connector interface (here, a thread local

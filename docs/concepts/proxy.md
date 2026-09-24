@@ -46,19 +46,21 @@ from proxystore.proxy import Proxy
 
 x = np.array([1, 2, 3])
 
-class MyFactory():
-   def __init__(self, obj):
-       self.obj = obj
 
-   def __call__(self):
-       return self.obj
+class MyFactory:
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __call__(self):
+        return self.obj
+
 
 p = Proxy(MyFactory(x))
 
-assert isinstance(p, Proxy) # (1)!
+assert isinstance(p, Proxy)  # (1)!
 assert isinstance(p, np.ndarray)
 
-assert np.array_equal(p, [1, 2, 3]) # (2)!
+assert np.array_equal(p, [1, 2, 3])  # (2)!
 assert np.sum(p) == 6
 y = x + p
 assert np.array_equal(y, [2, 4, 6])

@@ -103,7 +103,6 @@ Each [`LeaseLifetime`][proxystore.store.lifetimes.LeaseLifetime] has an associat
 The lease can be extended as needed with [`extend()`][proxystore.store.lifetimes.LeaseLifetime.extend] or ended early [`close()`][proxystore.store.lifetimes.LeaseLifetime.close].
 
 ```python linenums="1" title="Leased Lifetime"
-
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import LeaseLifetime
 
@@ -115,9 +114,9 @@ with Store(...) as store:
 
     lifetime.extend(5)  # (2)!
 
-    time.sleep(20)  #(3)!
+    time.sleep(20)  # (3)!
 
-    assert lifetime.done()  #(4)!
+    assert lifetime.done()  # (4)!
     assert not store.exists(key)
 ```
 
