@@ -437,6 +437,8 @@ async def set_handler() -> Response:
     * `Status Code 400`: If the key argument is missing, the endpoint UUID
       argument is present but not a valid UUID, or the request is missing
       the data payload.
+    * `Status Code 413`: If the data payload exceeds the maximum content
+      length configured for the app.
     * `Status Code 500`: If there was a peer request error. The response
       will contain the string representation of the internal error.
     """
@@ -455,12 +457,18 @@ async def set_handler() -> Response:
         except ValueError:
             return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
 
+    max_length = quart.current_app.config['MAX_CONTENT_LENGTH']
     data = bytearray()
     # Note: tests/endpoint/serve_test.py::test_empty_chunked_data handles
     # the branching case for where the code in the for loop is not executed
     # but coverage is not detecting that hence the pragma here
     async for chunk in request.body:  # pragma: no branch
         data += chunk
+        # Quart>=0.23 no longer enforces MAX_CONTENT_LENGTH when iterating
+        # over the request body so we must check the length ourselves.
+        # Quart>=0.23 requires Python>=3.13 so this is only reachable there.
+        if max_length is not None and len(data) > max_length:
+            return Response('payload too large', 413)  # pragma: >=3.13 cover
 
     if len(data) == 0:
         return Response('received empty payload', 400)
