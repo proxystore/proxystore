@@ -3797,12 +3797,12 @@ return mixed types involving proxies.</p>
 
 
 <a href="#proxystore.proxy.ProxyResolveError" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ProxyResolveError</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">cause</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ProxyResolveError</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span> <span class="n">cause</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#Exception">Exception</a></span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#Exception">Exception</a></code></p>
 
 
         <p>Error raised when resolving a proxy fails.</p>
@@ -3867,7 +3867,7 @@ return mixed types involving proxies.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">Proxy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.proxy.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.proxy.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
@@ -3921,8 +3921,8 @@ will be called again to resolve the object.</p>
 
 <details class="tip" open>
   <summary>Tip</summary>
-  <p>Common data structures (e.g., <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict"><code>dict</code></a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#set"><code>set</code></a>) and
-operations (e.g., <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance</code></a>) will resolve an
+  <p>Common data structures (e.g., <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict"><code>dict</code></a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#set"><code>set</code></a>) and
+operations (e.g., <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#isinstance"><code>isinstance</code></a>) will resolve an
 unresolved proxy. This can result in unintentional performance
 degradation for expensive factories, such as those that require
 significant I/O or produce target objects that require a lot of memory.
@@ -3961,14 +3961,14 @@ target object in the proxy.</p>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15"></a><span class="k">assert</span> <span class="ow">not</span> <span class="n">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
-<li>Using <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance</code></a> calls <code>__class__</code> on the target
+<li>Using <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#isinstance"><code>isinstance</code></a> calls <code>__class__</code> on the target
    object which requires the proxy to be resolved. In many cases,
    it may be desirable to check the type of a proxy's target object
    without incurring the cost of resolving the target.</li>
 <li>If the target is available when constructing the proxy, the
    proxy can precompute and cache the <code>__class__</code> and <code>__hash__</code> values
    of the target.</li>
-<li>Using <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance</code></a> no longer requires the proxy
+<li>Using <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#isinstance"><code>isinstance</code></a> no longer requires the proxy
    to be resolved, instead using the precomputed value.</li>
 </ol>
 </details>
@@ -4025,7 +4025,7 @@ object.</p>
         </li>
         <li class="doc-section-item field-body">
           <b><code><span title="proxystore.proxy.Proxy.__proxy_resolved__">__proxy_resolved__</span></code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>)
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>)
           –
           <div class="doc-md-description">
             <p><code>True</code> if <code>__proxy_target__</code> is set.</p>
@@ -4048,7 +4048,7 @@ if it exists else calls <code>__proxy_factory__</code>, saving the result to
           <div class="doc-md-description">
             <p>Optional default class type value to use when
 a proxy is in the unresolved state. This avoids needing to resolve
-the proxy to perform <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#isinstance"><code>isinstance</code></a> checks. This value
+the proxy to perform <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#isinstance"><code>isinstance</code></a> checks. This value
 is always ignored while the proxy is resolved because <code>__class__</code>
 is a writable property of the cached target and could be altered.</p>
           </div>
@@ -4059,7 +4059,7 @@ is a writable property of the cached target and could be altered.</p>
           –
           <div class="doc-md-description">
             <p>Optional default hash value to use when a proxy
-is in the unresolved state and <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#hash"><code>hash()</code></a> is called. This
+is in the unresolved state and <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#hash"><code>hash()</code></a> is called. This
 avoids needing to resolve the proxy for simple operations like
 dictionary updates. This value is always ignored while the proxy
 is resolved because the cached target may be modified which
@@ -4083,7 +4083,7 @@ of the factory returns the same object.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>cache_defaults</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>False</code>
 )
           –
@@ -4117,7 +4117,7 @@ is resolved.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#TypeError">TypeError</a></code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#TypeError">TypeError</a></code>
             –
           <div class="doc-md-description">
             <p>If <code>factory</code> is not callable.</p>
@@ -4485,7 +4485,7 @@ the proxy to be resolved prior.</p>
 
 
 <a href="#proxystore.proxy.is_resolved" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">is_resolved</span><span class="p">(</span><span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -4509,7 +4509,7 @@ the proxy to be resolved prior.</p>
 <p><span class="doc-section-title">Returns:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>
           –
           <div class="doc-md-description">
             <p><code>True</code> if <code>proxy</code> is resolved (i.e., the <code>factory</code> has been called)         and <code>False</code> otherwise.</p>

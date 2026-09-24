@@ -3866,7 +3866,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
+              Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#Exception">Exception</a></code></p>
 
 
         <p>Base exception type for proxy references.</p>
@@ -3981,7 +3981,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">BaseRefProxy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
@@ -4064,7 +4064,7 @@ that are shared by all the reference types:</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">OwnedProxy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
@@ -4094,7 +4094,7 @@ to resolve the target object from the store.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>cache_defaults</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>False</code>
 )
           –
@@ -4188,7 +4188,7 @@ to resolve the target object from the store.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RefProxy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">owner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
@@ -4215,7 +4215,7 @@ to resolve the target object from the store.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>cache_defaults</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>False</code>
 )
           –
@@ -4323,7 +4323,7 @@ be <code>None</code>.</p>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">RefMutProxy</span><span class="p">(</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">owner</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.store.ref.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
@@ -4350,7 +4350,7 @@ to resolve the target object from the store.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>cache_defaults</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>False</code>
 )
           –
@@ -4456,7 +4456,7 @@ be <code>None</code>.</p>
 
 <a href="#proxystore.store.ref.borrow" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">borrow</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RefProxy (proxystore.store.ref.RefProxy)" href="#proxystore.store.ref.RefProxy">RefProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">]</span>
 </span></code></pre></div>
 
@@ -4482,7 +4482,7 @@ be <code>None</code>.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>populate_target</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>True</code>
 )
           –
@@ -4599,7 +4599,7 @@ the returned proxy is already resolved.</p>
 
 <a href="#proxystore.store.ref.mut_borrow" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">mut_borrow</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            RefMutProxy (proxystore.store.ref.RefMutProxy)" href="#proxystore.store.ref.RefMutProxy">RefMutProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">]</span>
 </span></code></pre></div>
 
@@ -4625,7 +4625,7 @@ the returned proxy is already resolved.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>populate_target</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>True</code>
 )
           –
@@ -4840,7 +4840,7 @@ be deepcopied into the cloned proxy.</p>
 
 <a href="#proxystore.store.ref.into_owned" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">into_owned</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">proxy</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">populate_target</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            OwnedProxy (proxystore.store.ref.OwnedProxy)" href="#proxystore.store.ref.OwnedProxy">OwnedProxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.store.ref.T">T</span></span><span class="p">]</span>
 </span></code></pre></div>
 
@@ -4872,7 +4872,7 @@ copied already.</p>
         </li>
         <li class="doc-section-item field-body">
             <b><code>populate_target</code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>, default:
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>, default:
                   <code>True</code>
 )
           –
@@ -4888,7 +4888,7 @@ the returned proxy is already resolved.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#ValueError">ValueError</a></code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
             –
           <div class="doc-md-description">
             <p>if <code>proxy</code> is already a
@@ -5075,7 +5075,7 @@ as the new global value.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError">NotImplementedError</a></code>
+              <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#NotImplementedError">NotImplementedError</a></code>
             –
           <div class="doc-md-description">
             <p>if the <code>connector</code> of the <code>store</code> used to create
