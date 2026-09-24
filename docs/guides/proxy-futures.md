@@ -83,12 +83,14 @@ from proxystore.connectors.redis import RedisConnector
 from proxystore.store import Store
 from proxystore.store.future import Future
 
-class MyData:
-    ...
+
+class MyData: ...
+
 
 def foo(future: Future[MyData]) -> None:
     data: MyData = compute(...)
     future.set_result(data)
+
 
 def bar(data: MyData) -> None:
     # Computation not involving data can execute freely.

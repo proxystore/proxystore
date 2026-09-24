@@ -50,10 +50,12 @@ guide.
 ```python linenums="1" title="example.py"
 from globus_compute_sdk import Executor
 
-ENDPOINT_UUID = '5b994a7d-8d7c-48d1-baa1-0fda09ea1687' # (1)!
+ENDPOINT_UUID = '5b994a7d-8d7c-48d1-baa1-0fda09ea1687'  # (1)!
+
 
 def average(x: list[float]) -> float:  # (2)!
     return sum(x) / len(x)
+
 
 with Executor(endpoint_id=ENDPOINT_UUID) as gce:  # (3)!
     x = list(range(1, 100000))
@@ -95,19 +97,23 @@ from proxystore.store import Store
 
 ENDPOINT_UUID = '5b994a7d-8d7c-48d1-baa1-0fda09ea1687'
 
+
 def average(x: list[float]) -> float:
     return sum(x) / len(x)
 
-store = Store('my-store', FileConnector('./proxystore-cache'), register=True)  # (1)!
+
+store = Store(
+    'my-store', FileConnector('./proxystore-cache'), register=True
+)  # (1)!
 
 with Executor(endpoint_id=ENDPOINT_UUID) as gce:
     x = list(range(1, 100000))
-    p = store.proxy(x) # (2)!
+    p = store.proxy(x)  # (2)!
     future = gce.submit(average, p)
 
     print(future.result())
 
-store.close() # (3)!
+store.close()  # (3)!
 ```
 
 1. Create a new store using the file system for mediated communication.
@@ -133,12 +139,12 @@ We can also use ProxyStore to return data via the same communication method.
 
 ```python linenums="1" title="example.py" hl_lines="2 3 7 8 9"
 def average(x: list[float]) -> float:
-    from proxystore.proxy import Proxy # (1)!
+    from proxystore.proxy import Proxy  # (1)!
     from proxystore.store import get_store
 
     avg = sum(x) / len(x)
 
-    if isinstance(x, Proxy): # (2)!
+    if isinstance(x, Proxy):  # (2)!
         store = get_store(x)
         avg = store.proxy(avg)
 

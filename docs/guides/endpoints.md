@@ -198,11 +198,11 @@ from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.store import Store
 
 connector = EndpointConnector(
-   endpoints=[
-       '5349ffce-edeb-4a8b-94a6-ab16ade1c1a1',
-       'd62910f6-0d29-452e-80b7-e0cd601949db',
-       ...
-   ],
+    endpoints=[
+        '5349ffce-edeb-4a8b-94a6-ab16ade1c1a1',
+        'd62910f6-0d29-452e-80b7-e0cd601949db',
+        ...,
+    ],
 )
 store = Store(name='default', connector=connector)
 

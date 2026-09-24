@@ -35,6 +35,7 @@ Consider this trivial example where we submit [`sum()`][sum]{target=_blank} on a
 ```python linenums="1" title="example.py"
 from dask.distributed import Client
 
+
 def main() -> None:
     client = Client(processes=True)
 
@@ -43,6 +44,7 @@ def main() -> None:
     print(f'Result: {y.result()}')
 
     client.close()
+
 
 if __name__ == '__main__':
     main()
@@ -67,6 +69,7 @@ from dask.distributed import Client
 from proxystore.connectors.file import FileConnector
 from proxystore.store import Store
 
+
 def main() -> None:
     client = Client(processes=True)
 
@@ -83,6 +86,7 @@ def main() -> None:
         print(f'Result: {y.result()}')
 
     client.close()
+
 
 if __name__ == '__main__':
     main()
@@ -115,6 +119,7 @@ This allows Dask to call [`hash()`][hash]{target=_blank} and [`isinstance()`][is
 If `#!python populate_target=False` and we run the example with `DEBUG` level logging enabled, we will see that the target object of the proxy is retrieved three times.
 ```python
 import logging
+
 logging.basicConfig(level=logging.DEBUG)
 ```
 

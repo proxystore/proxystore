@@ -225,6 +225,7 @@ from proxystore.p2p.relay.client import RelayClient
 RELAY_APP_UUID = '...'
 RELAY_APP_SCOPE = 'relay_all'
 
+
 async def main() -> None:
     manager = NativeAppAuthManager(
         resource_server_scopes={RELAY_APP_UUID: [RELAY_APP_SCOPE]},

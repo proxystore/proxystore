@@ -99,18 +99,18 @@ serialized object on disk, you will need boilerplate code that looks like:
 
 ```python linenums="1"
 def my_function(input: MyDataType | str | ...) -> None:
-   if is_filepath(input_data):
-       data = read_and_deserialize(input)
-   elif is_redis_key(input_data):
-       data = redis_client.get(input)
-   elif is_other_communication_method(input_data):
-       ...
-   elif isinstance(input, MyDataType):
-       data = input
-   else:
+    if is_filepath(input_data):
+        data = read_and_deserialize(input)
+    elif is_redis_key(input_data):
+        data = redis_client.get(input)
+    elif is_other_communication_method(input_data):
+        ...
+    elif isinstance(input, MyDataType):
+        data = input
+    else:
         raise ValueError(...)
 
-   # Compute using the data
+    # Compute using the data
 ```
 
 This function is hard to type and must be extended every time a new
@@ -120,9 +120,9 @@ necessary code to resolve the object.
 
 ```python linenums="1"
 def my_function(input: MyDataType) -> None:
-   assert isinstance(input, MyDataType)  # (1)!
+    assert isinstance(input, MyDataType)  # (1)!
 
-   # Compute using the data
+    # Compute using the data
 ```
 
 1. Always true even if input is a proxy.

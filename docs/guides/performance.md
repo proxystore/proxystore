@@ -13,10 +13,10 @@ from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
 
 store = Store(
-   name='example-store',
-   connector=FileConnector('/tmp/proxystore-dump'),
-   metrics=True,  # (1)!
-   register=True,
+    name='example-store',
+    connector=FileConnector('/tmp/proxystore-dump'),
+    metrics=True,  # (1)!
+    register=True,
 )
 assert store.metrics is not None
 ```

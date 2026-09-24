@@ -78,14 +78,14 @@ from proxystore.store import Store
 from proxystore.stream import StreamProducer
 from proxystore.stream.shims.redis import RedisPublisher
 
-store = Store('example', FileConnector(...)) # (1)!
-publisher = RedisPublisher(...) # (2)!
-producer = StreamProducer(publisher, stores={'my-topic': store}) # (3)!
+store = Store('example', FileConnector(...))  # (1)!
+publisher = RedisPublisher(...)  # (2)!
+producer = StreamProducer(publisher, stores={'my-topic': store})  # (3)!
 
 for item in ...:
-    producer.send('my-topic', item, evict=True) # (4)!
+    producer.send('my-topic', item, evict=True)  # (4)!
 
-producer.close(topics=['my-topic']) # (5)!
+producer.close(topics=['my-topic'])  # (5)!
 ```
 
 1. The [`Store`][proxystore.store.Store] configuration is determined by
@@ -123,10 +123,10 @@ from proxystore.stream.shims.redis import RedisSubscriber
 subscriber = RedisSubscriber(...)  # (1)!
 consumer = StreamConsumer(subscriber)  # (2)!
 
-for item in consumer: # (3)!
+for item in consumer:  # (3)!
     assert isinstance(item, Proxy)  # (4)!
 
-consumer.close() # (5)!
+consumer.close()  # (5)!
 ```
 
 1. The [`Subscriber`][proxystore.stream.protocols.Subscriber] is the interface

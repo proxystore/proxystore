@@ -26,10 +26,12 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 
+
 def process(x: dict[str, str]) -> None:
     assert isinstance(x, dict)  # (1)!
     assert x['hello'] == 'world'
     # More computation using x...
+
 
 with Store(
     'example',
@@ -59,14 +61,15 @@ asynchronous resolution to overlap communication and computation.
 ```python linenums="1"
 from proxystore.store.utils import resolve_async
 
+
 def complex_function(large_proxied_input):
-   resolve_async(large_proxied_input)
+    resolve_async(large_proxied_input)
 
-   # More computation...
+    # More computation...
 
-   # First access to the proxy will not be as expensive because
-   # of the asynchronous resolution
-   compute_input(large_proxied_input)
+    # First access to the proxy will not be as expensive because
+    # of the asynchronous resolution
+    compute_input(large_proxied_input)
 ```
 
 ## Caching
@@ -110,6 +113,7 @@ import io
 from proxystore.serialize import serialize, deserialize, SerializationError
 from proxystore.store import Store
 
+
 def serialize_torch_model(obj: Any) -> bytes:
     if isinstance(obj, torch.nn.Module):
         buffer = io.BytesIO()
@@ -120,6 +124,7 @@ def serialize_torch_model(obj: Any) -> bytes:
         # Fallback for unsupported types
         return serialize(obj)
 
+
 def deserialize_torch_model(raw: BytesLike) -> Any:
     try:
         return deserialize(raw)
@@ -127,6 +132,7 @@ def deserialize_torch_model(raw: BytesLike) -> Any:
         buffer = io.BytesIO(raw)
         assert buffer.readline() == b'PT\n'
         return torch.load(buffer, weights_only=False)
+
 
 model = torch.nn.Module()
 
