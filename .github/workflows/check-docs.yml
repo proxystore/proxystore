@@ -39,7 +39,7 @@ jobs:
             docs-ubuntu-latest-pip-3.12-
 
       - name: Install Packages
-        run: pip install --upgrade setuptools pip tox virtualenv
+        run: pip install --upgrade setuptools pip tox
 
       - name: Run Tox to build docs
         run: tox -e docs

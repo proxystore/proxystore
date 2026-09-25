@@ -66,13 +66,11 @@ dev = [
     "pre-commit",
     "pytest",
     "pytest-asyncio>=0.23.2",
-    "pytest-cov",
     "pytest-timeout",
     "ruff>=0.2.0",
     "tox",
     "types-redis",
     "types-requests",
-    "virtualenv",
 ]
 docs = [
     "black==26.5.1",
