@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 import threading
 from collections.abc import Sequence
 from types import TracebackType
@@ -12,12 +11,8 @@ from typing import cast
 from typing import Generic
 from typing import Literal
 from typing import overload
+from typing import Self
 from typing import TypeVar
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 import proxystore
 import proxystore.serialize
@@ -172,13 +167,10 @@ class Store(Generic[ConnectorT]):
             try:
                 proxystore.store.register_store(self)
             except StoreExistsError as e:
-                if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-                    e.add_note(
-                        'Consider using get_store(name) rather than '
-                        'initializing a new instance with register=True.',
-                    )
-                else:  # pragma: <3.11 cover
-                    pass
+                e.add_note(
+                    'Consider using get_store(name) rather than '
+                    'initializing a new instance with register=True.',
+                )
                 raise
 
         self._lock = threading.RLock()

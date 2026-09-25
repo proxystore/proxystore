@@ -35,17 +35,12 @@ their behavior.
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
+from typing import Self
 from typing import TypeVar
 from typing import Union
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 from proxystore.stream.events import EventBatch
 

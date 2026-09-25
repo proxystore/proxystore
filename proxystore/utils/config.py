@@ -2,18 +2,12 @@
 
 from __future__ import annotations
 
-import sys
+import tomllib
 from typing import BinaryIO
 from typing import TypeVar
 
 import tomli_w
 from pydantic import BaseModel
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    import tomllib
-else:  # pragma: <3.11 cover
-    import tomli as tomllib  # type: ignore[import-not-found,unused-ignore]
-
 
 BaseModelT = TypeVar('BaseModelT', bound=BaseModel)
 

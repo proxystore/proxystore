@@ -10,11 +10,7 @@ from collections.abc import Sized
 from typing import Any
 from typing import Protocol
 from typing import runtime_checkable
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import TypeAlias
-else:  # pragma: <3.11 cover
-    from typing import TypeAlias
+from typing import TypeAlias
 
 if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
     from typing import TypeGuard

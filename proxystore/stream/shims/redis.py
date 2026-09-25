@@ -7,14 +7,9 @@ Shims to the
 
 from __future__ import annotations
 
-import sys
 from collections.abc import Sequence
 from typing import Any
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 import redis
 

@@ -1,13 +1,8 @@
 from __future__ import annotations
 
 import queue
-import sys
 from collections.abc import Mapping
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 from proxystore.stream.events import EventBatch
 from proxystore.stream.protocols import EventPublisher

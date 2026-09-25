@@ -2,14 +2,9 @@
 
 from __future__ import annotations
 
-import sys
 import time
 from types import TracebackType
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 
 class Timer:

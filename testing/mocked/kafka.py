@@ -1,13 +1,7 @@
 from __future__ import annotations
 
 import queue
-import sys
 from typing import NamedTuple
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    pass
-else:  # pragma: <3.11 cover
-    pass
 
 import confluent_kafka
 

@@ -2,21 +2,16 @@
 
 from __future__ import annotations
 
-import sys
 import uuid
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
-
-from proxystore.serialize import BytesLike
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 import redis
+
+from proxystore.serialize import BytesLike
 
 
 class RedisKey(NamedTuple):

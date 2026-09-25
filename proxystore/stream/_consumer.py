@@ -1,19 +1,14 @@
 from __future__ import annotations
 
 import logging
-import sys
 import threading
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any
 from typing import cast
 from typing import Generic
+from typing import Self
 from typing import TypeVar
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyOr

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import dataclasses
 import logging
-import sys
 from collections import defaultdict
 from collections.abc import Callable
 from collections.abc import Iterable
@@ -10,12 +9,8 @@ from collections.abc import Mapping
 from types import TracebackType
 from typing import Any
 from typing import Generic
+from typing import Self
 from typing import TypeVar
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 from proxystore.store import Store
 from proxystore.store import unregister_store

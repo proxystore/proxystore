@@ -3,26 +3,20 @@
 from __future__ import annotations
 
 import logging
-import sys
 import uuid
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
+from typing import Self
 from uuid import UUID
-
-from proxystore.serialize import BytesLike
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 import requests
 
 from proxystore.endpoint import client
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
+from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
