@@ -93,7 +93,7 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
 
             handle = context.Process(
                 target=serve_endpoint_silent,
-                args=[cfg],
+                args=[cfg, endpoint_dir],
             )
             handle.start()
             handles.append(handle)

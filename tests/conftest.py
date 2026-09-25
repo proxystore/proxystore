@@ -21,6 +21,7 @@ from testing.connectors import local_connector
 from testing.connectors import multi_connector
 from testing.connectors import redis_connector
 from testing.endpoint import endpoint
+from testing.endpoint import endpoint_dir
 from testing.relay_server import relay_server
 from testing.ssl import ssl_context
 from testing.stores import store

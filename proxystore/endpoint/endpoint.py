@@ -493,9 +493,7 @@ class Endpoint:
     async def close(self) -> None:
         """Close the endpoint and any open connections safely.
 
-        This is idempotent so that it is safe to call from both the Quart
-        `after_serving` shutdown hook and the
-        [`serve()`][proxystore.endpoint.serve.serve] cleanup path.
+        This is idempotent so it is safe to call multiple times.
         """
         if self._closed:
             return

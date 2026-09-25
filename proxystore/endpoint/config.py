@@ -26,6 +26,7 @@ ENDPOINT_CONFIG_FILE = 'config.toml'
 ENDPOINT_DATABASE_FILE = 'blobs.db'
 ENDPOINT_LOG_FILE = 'log.txt'
 ENDPOINT_PID_FILE = 'daemon.pid'
+ENDPOINT_TOKEN_FILE = 'client.token'
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -237,6 +238,18 @@ def get_pid_filepath(endpoint_dir: str) -> str:
         Path to PID file.
     """
     return os.path.join(endpoint_dir, ENDPOINT_PID_FILE)
+
+
+def get_token_filepath(endpoint_dir: str) -> str:
+    """Return path to the client token file for endpoint.
+
+    Args:
+        endpoint_dir: Directory for the endpoint.
+
+    Returns:
+        Path to the token file.
+    """
+    return os.path.join(endpoint_dir, ENDPOINT_TOKEN_FILE)
 
 
 def read_config(endpoint_dir: str) -> EndpointConfig:

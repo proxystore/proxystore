@@ -7,23 +7,27 @@ See the CLI Reference for the
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import os
 import sys
 import uuid
+from collections.abc import Generator
 from typing import ClassVar
 
 import click
-import requests
 
 import proxystore
-from proxystore.endpoint import client
+from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
+from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
+from proxystore.endpoint.exceptions import EndpointClientError
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
@@ -239,8 +243,39 @@ def test(
         logger.error(f'An endpoint named {name} does not exist.')
         raise SystemExit(1)
 
-    ctx.obj['ENDPOINT_ADDRESS'] = f'http://{cfg.host}:{cfg.port}'
+    ctx.obj['ENDPOINT_CONFIG'] = cfg
+    ctx.obj['ENDPOINT_DIR'] = endpoint_dir
     ctx.obj['REMOTE_ENDPOINT_UUID'] = remote
+
+
+@contextlib.contextmanager
+def _endpoint_client(
+    ctx: click.Context,
+) -> Generator[EndpointClient, None, None]:
+    """Connect to the endpoint of a test command and handle errors."""
+    cfg = ctx.obj['ENDPOINT_CONFIG']
+    if cfg.host is None:
+        logger.error(f'Endpoint {cfg.name} has not been started.')
+        sys.exit(1)
+
+    address = f'{cfg.host}:{cfg.port}'
+    try:
+        token = read_token_file(get_token_filepath(ctx.obj['ENDPOINT_DIR']))
+        with EndpointClient.connect(cfg.host, cfg.port, token) as client:
+            yield client
+    except FileNotFoundError:
+        logger.error(
+            f'Unable to find the token file of endpoint {cfg.name}. Is the '
+            'endpoint running?',
+        )
+        sys.exit(1)
+    except OSError as e:
+        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.debug(e)
+        sys.exit(1)
+    except (EndpointClientError, ValueError) as e:
+        logger.error(e)
+        sys.exit(1)
 
 
 @test.command()
@@ -248,19 +283,9 @@ def test(
 @click.pass_context
 def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
-    address = ctx.obj['ENDPOINT_ADDRESS']
-    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
-    try:
-        client.evict(address, key, remote)
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f'Unable to connect to endpoint at {address}.')
-        logger.debug(e)
-        sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        logger.error(e)
-        sys.exit(1)
-    else:
-        logger.info('Evicted object from endpoint.')
+    with _endpoint_client(ctx) as client:
+        client.evict(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
+    logger.info('Evicted object from endpoint.')
 
 
 @test.command()
@@ -268,19 +293,9 @@ def evict(ctx: click.Context, key: str) -> None:
 @click.pass_context
 def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
-    address = ctx.obj['ENDPOINT_ADDRESS']
-    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
-    try:
-        res = client.exists(address, key, remote)
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f'Unable to connect to endpoint at {address}.')
-        logger.debug(e)
-        sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        logger.error(e)
-        sys.exit(1)
-    else:
-        logger.info(f'Object exists: {res}')
+    with _endpoint_client(ctx) as client:
+        res = client.exists(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
+    logger.info(f'Object exists: {res}')
 
 
 @test.command()
@@ -288,17 +303,8 @@ def exists(ctx: click.Context, key: str) -> None:
 @click.pass_context
 def get(ctx: click.Context, key: str) -> None:
     """Get an object from an endpoint."""
-    address = ctx.obj['ENDPOINT_ADDRESS']
-    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
-    try:
-        res = client.get(address, key, remote)
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f'Unable to connect to endpoint at {address}.')
-        logger.debug(e)
-        sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        logger.error(e)
-        sys.exit(1)
+    with _endpoint_client(ctx) as client:
+        res = client.get(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
 
     if res is None:
         logger.info('Object does not exist.')
@@ -312,18 +318,7 @@ def get(ctx: click.Context, key: str) -> None:
 @click.pass_context
 def put(ctx: click.Context, data: str) -> None:
     """Put an object in an endpoint."""
-    address = ctx.obj['ENDPOINT_ADDRESS']
-    remote = ctx.obj['REMOTE_ENDPOINT_UUID']
     key = str(uuid.uuid4())
-    data_ = serialize(data)
-    try:
-        client.put(address, key, data_, remote)
-    except requests.exceptions.ConnectionError as e:
-        logger.error(f'Unable to connect to endpoint at {address}.')
-        logger.debug(e)
-        sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        logger.error(e)
-        sys.exit(1)
-    else:
-        logger.info(f'Put object in endpoint with key {key}')
+    with _endpoint_client(ctx) as client:
+        client.set(key, serialize(data), ctx.obj['REMOTE_ENDPOINT_UUID'])
+    logger.info(f'Put object in endpoint with key {key}')

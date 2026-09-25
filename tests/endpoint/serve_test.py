@@ -4,363 +4,455 @@ import asyncio
 import multiprocessing
 import os
 import pathlib
-import time
+import socket
+import stat
 import uuid
 from collections.abc import AsyncGenerator
+from typing import Any
+from typing import NamedTuple
 from unittest import mock
 from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
-import quart
-import requests
 from globus_sdk.token_storage import TokenValidationError
 
+from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.client import _recv_exactly
+from proxystore.endpoint.client import _recv_message
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.protocol import HEADER
+from proxystore.endpoint.protocol import local_versions
+from proxystore.endpoint.protocol import MAX_META_SIZE
+from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import pack_preamble
+from proxystore.endpoint.protocol import PREAMBLE
+from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import unpack_preamble
 from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import _serve_async
-from proxystore.endpoint.serve import create_app
-from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
+from proxystore.endpoint.serve import EndpointServer
 from proxystore.endpoint.serve import serve
-from proxystore.utils.data import chunk_bytes
+from proxystore.endpoint.storage import DictStorage
 from testing.compat import randbytes
+from testing.endpoint import terminate_process
+from testing.endpoint import wait_for_endpoint
 from testing.mocked.globus import get_testing_app
 from testing.utils import open_port
 
+MAX_OBJECT_SIZE = 10_000_000
+
+
+class _Server(NamedTuple):
+    handler: EndpointServer
+    endpoint: Endpoint
+    token: bytes
+    host: str
+    port: int
+
 
 @pytest_asyncio.fixture()
-async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
-    async with Endpoint(
-        name='my-endpoint',
-        uuid=uuid.uuid4(),
-    ) as endpoint:
-        app = create_app(endpoint)
-        async with app.test_app() as test_app:
-            test_app.endpoint = endpoint  # type: ignore
-            yield test_app
+async def server() -> AsyncGenerator[_Server, None]:
+    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
+        token = os.urandom(TOKEN_SIZE)
+        handler = EndpointServer(
+            endpoint,
+            token,
+            max_object_size=MAX_OBJECT_SIZE,
+            handshake_timeout=1,
+        )
+        tcp_server = await asyncio.start_server(
+            handler.handle_connection,
+            host='127.0.0.1',
+            port=0,
+        )
+        port = tcp_server.sockets[0].getsockname()[1]
+        yield _Server(handler, endpoint, token, '127.0.0.1', port)
+        tcp_server.close()
+        handler.close_connections()
+        await tcp_server.wait_closed()
 
 
-@pytest.mark.asyncio
-async def test_running(quart_app) -> None:
-    client = quart_app.test_client()
-    response = await client.get('/')
-    assert response.status_code == 200
-
-    response = await client.get('/endpoint')
-    assert len((await response.get_json())['uuid']) > 0
-
-
-@pytest.mark.asyncio
-async def test_set_request(quart_app) -> None:
-    client = quart_app.test_client()
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
+async def _connect(server: _Server, token: bytes | None = None) -> Any:
+    token = server.token if token is None else token
+    return await asyncio.to_thread(
+        EndpointClient.connect,
+        server.host,
+        server.port,
+        token,
     )
-    assert set_response.status_code == 200
-
-    # overwrite key should be okay
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
 
 
-@pytest.mark.asyncio
-async def test_get_request(quart_app) -> None:
-    client = quart_app.test_client()
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    get_response = await client.get('/get', query_string={'key': 'my-key'})
-    assert get_response.status_code == 200
-    assert (await get_response.get_data()) == data
-
-    get_response = await client.get(
-        '/get',
-        query_string={'key': 'missing-key'},
-    )
-    assert get_response.status_code == 404
+def _raw_socket(server: _Server) -> socket.socket:
+    sock = socket.create_connection((server.host, server.port), timeout=5)
+    return sock
 
 
-@pytest.mark.asyncio
-async def test_chunked_data(quart_app) -> None:
-    client = quart_app.test_client()
-    # Data needs to be larger than MAX_CHUNK_LENGTH
-    data = randbytes((2 * MAX_CHUNK_LENGTH) + 1)
-
-    async with client.request(
-        '/set',
-        method='POST',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-    ) as connection:
-        for chunk in chunk_bytes(data, MAX_CHUNK_LENGTH):
-            await connection.send(chunk)
-            # Small sleep to simulate transfer time of chunks
-            await asyncio.sleep(0.01)
-        await connection.send_complete()
-    set_response = await connection.as_response()
-    assert set_response.status_code == 200
-
-    get_response = await client.get('/get', query_string={'key': 'my-key'})
-    assert get_response.status_code == 200
-    assert (await get_response.get_data()) == data
+def _is_closed(sock: socket.socket) -> bool:
+    try:
+        return sock.recv(1) == b''
+    except ConnectionResetError:  # pragma: no cover
+        return True
 
 
-@pytest.mark.asyncio
-async def test_empty_chunked_data(quart_app) -> None:
-    client = quart_app.test_client()
+async def test_operations(server: _Server) -> None:
+    client = await _connect(server)
+    assert client.info.uuid == server.endpoint.uuid
+    assert client.info.name == server.endpoint.name
+    assert client.info.proxystore_version == local_versions()['proxystore']
+    assert client.info.python_version == local_versions()['python']
 
-    async with client.request(
-        '/set',
-        method='POST',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-    ) as connection:
-        await connection.send_complete()
-    set_response = await connection.as_response()
-    assert set_response.status_code == 400
+    small, large = b'value', randbytes(5_000_000)
+    await asyncio.to_thread(client.set, 'small', small)
+    await asyncio.to_thread(client.set, 'large', large)
+    assert await asyncio.to_thread(client.get, 'small') == small
+    assert await asyncio.to_thread(client.get, 'large') == large
+    assert await asyncio.to_thread(client.exists, 'small')
 
+    await asyncio.to_thread(client.evict, 'small')
+    assert not await asyncio.to_thread(client.exists, 'small')
+    assert await asyncio.to_thread(client.get, 'small') is None
 
-@pytest.mark.asyncio
-async def test_exists_request(quart_app) -> None:
-    client = quart_app.test_client()
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert not (await exists_response.get_json())['exists']
-
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert (await exists_response.get_json())['exists']
+    await asyncio.to_thread(client.close)
 
 
-@pytest.mark.asyncio
-async def test_evict_request(quart_app) -> None:
-    client = quart_app.test_client()
-    evict_response = await client.post('evict', query_string={'key': 'my-key'})
-    # No error if key does not exist
-    assert evict_response.status_code == 200
-
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert (await exists_response.get_json())['exists']
-
-    evict_response = await client.post('evict', query_string={'key': 'my-key'})
-    assert evict_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert not (await exists_response.get_json())['exists']
+async def test_client_closes_between_requests(server: _Server) -> None:
+    client = await _connect(server)
+    await asyncio.to_thread(client.exists, 'key')
+    await asyncio.to_thread(client.close)
+    # Wait for the server to notice the closed connection
+    for _ in range(100):  # pragma: no branch
+        if len(server.handler._connections) == 0:
+            break
+        await asyncio.sleep(0.01)
+    assert len(server.handler._connections) == 0
 
 
-@pytest.mark.asyncio
-async def test_payload_too_big() -> None:
-    async with Endpoint(
-        name='my-endpoint',
-        uuid=uuid.uuid4(),
-    ) as endpoint:
-        app = create_app(endpoint, max_content_length=10)
-        async with app.test_app() as quart_app:
-            client = quart_app.test_client()
-            data = randbytes(100)
-            set_response = await client.post(
-                '/set',
-                headers={'Content-Type': 'application/octet-stream'},
-                query_string={'key': 'my-key'},
-                data=data,
+async def test_client_wrong_token(server: _Server) -> None:
+    # The client detects the server does not know the client's token first
+    # (i.e., an impostor endpoint) before sending its own proof.
+    with pytest.raises(EndpointAuthError, match='failed to prove'):
+        await _connect(server, token=os.urandom(TOKEN_SIZE))
+
+
+def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
+    client_nonce = os.urandom(32)
+    hello = {'nonce': client_nonce.hex(), **local_versions()}
+    sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
+    assert unpack_preamble(bytes(_recv_exactly(sock, PREAMBLE.size))) == 1
+    header, meta = _recv_message(sock)
+    assert header.code == Status.OK
+    return client_nonce, meta
+
+
+async def test_server_rejects_bad_proof(server: _Server) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            client_nonce, meta = _raw_hello(sock)
+            proof = compute_proof(
+                os.urandom(TOKEN_SIZE),
+                'client',
+                client_nonce,
+                bytes.fromhex(meta['nonce']),
             )
-            assert set_response.status_code == 413
+            sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
+            header, meta = _recv_message(sock)
+            assert header.code == Status.UNAUTHORIZED
+            assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
 
 
-@pytest.mark.asyncio
-async def test_bad_endpoint_uuid(quart_app) -> None:
-    client = quart_app.test_client()
-    bad_uuid = 'not a uuid'
+async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
+    # The server's own proof cannot be sent back as the client's proof.
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            _, meta = _raw_hello(sock)
+            sock.sendall(pack_message(Op.AUTH, {'proof': meta['proof']}))
+            header, _ = _recv_message(sock)
+            assert header.code == Status.UNAUTHORIZED
 
-    evict_response = await client.post(
-        'evict',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+    await asyncio.to_thread(_run)
+
+
+async def test_protocol_version_mismatch(server: _Server) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            sock.sendall(pack_preamble(PROTOCOL_VERSION + 1))
+            preamble = _recv_exactly(sock, PREAMBLE.size)
+            assert unpack_preamble(bytes(preamble)) == PROTOCOL_VERSION
+            header, meta = _recv_message(sock)
+            assert header.code == Status.PROTOCOL_MISMATCH
+            assert 'protocol version' in meta['error']
+            assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+
+
+@pytest.mark.parametrize(
+    'message',
+    (
+        # Bad magic
+        b'XXXX\x00\x01',
+        # First message is not HELLO
+        pack_preamble() + pack_message(Op.AUTH, {'proof': '00'}),
+        # HELLO is missing the nonce
+        pack_preamble() + pack_message(Op.HELLO, {}),
+        # HELLO has malformed metadata
+        pack_preamble() + HEADER.pack(Op.HELLO, 0, 2, 0) + b'[]',
+    ),
+)
+async def test_bad_handshake_closes_connection(
+    message: bytes,
+    server: _Server,
+) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            sock.sendall(message)
+            assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+
+
+async def test_bad_auth_message_closes_connection(server: _Server) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            _raw_hello(sock)
+            sock.sendall(pack_message(Op.GET, {'key': 'key'}))
+            assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+
+
+async def test_handshake_timeout(server: _Server, caplog) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            # Server should close the connection after the handshake timeout
+            assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+    assert any(
+        'did not complete the handshake' in r.message for r in caplog.records
     )
-    assert evict_response.status_code == 400
 
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
+
+async def _raw_request(
+    client: EndpointClient,
+    message: bytes,
+) -> tuple[int, dict[str, Any]]:
+    def _run() -> tuple[int, dict[str, Any]]:
+        client._socket.sendall(message)
+        header, meta = _recv_message(client._socket)
+        return header.code, meta
+
+    return await asyncio.to_thread(_run)
+
+
+async def test_bad_requests(server: _Server) -> None:
+    client = await _connect(server)
+
+    code, meta = await _raw_request(client, pack_message(Op.GET, {}))
+    assert code == Status.BAD_REQUEST
+    assert 'missing key' in meta['error']
+
+    code, meta = await _raw_request(client, pack_message(99, {'key': 'key'}))
+    assert code == Status.BAD_REQUEST
+    assert 'unknown op' in meta['error']
+
+    code, meta = await _raw_request(
+        client,
+        pack_message(Op.GET, {'key': 'key', 'endpoint': 42}),
     )
-    assert exists_response.status_code == 400
+    assert code == Status.BAD_REQUEST
+    assert 'not a valid UUID4' in meta['error']
 
-    get_response = await client.get(
+    with pytest.raises(EndpointRequestError, match='not a valid UUID4'):
+        await asyncio.to_thread(client.get, 'key', 'not-a-uuid')
+
+    with pytest.raises(EndpointRequestError, match='empty payload'):
+        await asyncio.to_thread(client.set, 'key', b'')
+
+    # The connection is still usable after these errors
+    assert not await asyncio.to_thread(client.exists, 'key')
+    await asyncio.to_thread(client.close)
+
+
+async def test_request_meta_too_large(server: _Server) -> None:
+    client = await _connect(server)
+
+    def _run() -> None:
+        header = HEADER.pack(Op.GET, 0, MAX_META_SIZE + 1, 0)
+        client._socket.sendall(header)
+        assert _is_closed(client._socket)
+
+    await asyncio.to_thread(_run)
+    await asyncio.to_thread(client.close)
+
+
+async def test_data_too_large(server: _Server) -> None:
+    client = await _connect(server)
+    assert client.info.max_object_size == MAX_OBJECT_SIZE
+
+    # The client checks the size before sending the data
+    data = randbytes(MAX_OBJECT_SIZE + 1)
+    with pytest.raises(EndpointRequestError, match='exceeds the maximum'):
+        await asyncio.to_thread(client.set, 'key', data)
+    assert not client.closed
+
+    # The server also checks the size before reading the data, then closes
+    # the connection because it did not read the data
+    code, meta = await _raw_request(
+        client,
+        pack_message(Op.SET, {'key': 'key'}, data_len=MAX_OBJECT_SIZE + 1),
+    )
+    assert code == Status.TOO_LARGE
+    assert 'exceeds the maximum' in meta['error']
+    await asyncio.to_thread(lambda: _is_closed(client._socket))
+    await asyncio.to_thread(client.close)
+
+
+async def test_storage_object_size_exceeded(server: _Server) -> None:
+    server.endpoint._storage = DictStorage(max_object_size=10)
+    client = await _connect(server)
+    with pytest.raises(EndpointRequestError, match='TOO_LARGE'):
+        await asyncio.to_thread(client.set, 'key', randbytes(100))
+    await asyncio.to_thread(client.close)
+
+
+async def test_peer_request_error(server: _Server) -> None:
+    client = await _connect(server)
+    with mock.patch.object(
+        server.endpoint,
         'get',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-    )
-    assert get_response.status_code == 400
-
-    data = randbytes(100)
-    set_response = await client.post(
-        'set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-        data=data,
-    )
-    assert set_response.status_code == 400
-
-
-@pytest.mark.asyncio
-async def test_unknown_endpoint_uuid(quart_app) -> None:
-    client = quart_app.test_client()
-    unknown_uuid = uuid.uuid4()
-
-    with (
-        mock.patch(
-            'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
-            return_value=True,
-        ),
-        mock.patch(
-            'proxystore.endpoint.endpoint.Endpoint.peer_manager',
-            new_callable=mock.PropertyMock,
-        ) as mock_peer_manager_property,
+        AsyncMock(side_effect=PeerRequestError('peer failed')),
     ):
-        mock_peer_manager = AsyncMock()
-        mock_peer_manager.send = AsyncMock(side_effect=Exception())
-        mock_peer_manager.close = AsyncMock()
-        mock_peer_manager_property.return_value = mock_peer_manager
-
-        evict_response = await client.post(
-            'evict',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert evict_response.status_code == 500
-
-        exists_response = await client.get(
-            'exists',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert exists_response.status_code == 500
-
-        get_response = await client.get(
-            'get',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert get_response.status_code == 500
-
-        data = randbytes(100)
-        set_response = await client.post(
-            'set',
-            headers={'Content-Type': 'application/octet-stream'},
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-            data=data,
-        )
-        assert set_response.status_code == 500
+        with pytest.raises(EndpointRequestError, match='peer failed'):
+            await asyncio.to_thread(client.get, 'key', str(uuid.uuid4()))
+    await asyncio.to_thread(client.close)
 
 
-@pytest.mark.asyncio
-async def test_missing_key(quart_app) -> None:
-    client = quart_app.test_client()
+async def test_unexpected_error(server: _Server) -> None:
+    client = await _connect(server)
+    with mock.patch.object(
+        server.endpoint,
+        'exists',
+        AsyncMock(side_effect=RuntimeError('oops')),
+    ):
+        with pytest.raises(EndpointRequestError, match='unexpected error'):
+            await asyncio.to_thread(client.exists, 'key')
+    await asyncio.to_thread(client.close)
 
-    evict_response = await client.post('evict')
-    assert evict_response.status_code == 400
 
-    exists_response = await client.get('exists')
-    assert exists_response.status_code == 400
+async def test_close_connections(server: _Server) -> None:
+    client = await _connect(server)
+    server.handler.close_connections()
+    with pytest.raises(EndpointClientError):
+        await asyncio.to_thread(client.exists, 'key')
+    assert client.closed
 
-    get_response = await client.get('get')
-    assert get_response.status_code == 400
 
-    data = randbytes(100)
-    set_response = await client.post(
-        'set',
-        headers={'Content-Type': 'application/octet-stream'},
-        data=data,
+def _endpoint_config(**kwargs: Any) -> EndpointConfig:
+    options: dict[str, Any] = {
+        'name': 'my-endpoint',
+        'uuid': str(uuid.uuid4()),
+        'host': '127.0.0.1',
+        'port': open_port(),
+        'storage': EndpointStorageConfig(database_path=':memory:'),
+    }
+    options.update(kwargs)
+    return EndpointConfig(**options)
+
+
+async def test_serve_async_token_file(tmp_path: pathlib.Path) -> None:
+    config = _endpoint_config()
+    token_file = get_token_filepath(str(tmp_path))
+    stop = asyncio.Event()
+    task = asyncio.create_task(_serve_async(config, str(tmp_path), stop))
+
+    for _ in range(500):  # pragma: no branch
+        if os.path.exists(token_file):
+            break
+        await asyncio.sleep(0.01)
+    assert stat.S_IMODE(os.stat(token_file).st_mode) == 0o600
+
+    assert config.host is not None
+    await asyncio.to_thread(wait_for_endpoint, config.host, config.port)
+    token = read_token_file(token_file)
+    client = await asyncio.to_thread(
+        EndpointClient.connect,
+        config.host,
+        config.port,
+        token,
     )
-    assert set_response.status_code == 400
+    assert client.info.uuid == uuid.UUID(config.uuid)
+
+    stop.set()
+    await task
+    # Open connections are closed and the token is removed on shutdown
+    with pytest.raises(EndpointClientError):
+        await asyncio.to_thread(client.exists, 'key')
+    assert not os.path.exists(token_file)
 
 
-@pytest.mark.timeout(5)
-def test_serve(use_uvloop: bool) -> None:
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='localhost',
-        port=open_port(),
-        storage=EndpointStorageConfig(database_path=':memory:'),
-    )
+async def test_serve_async_port_in_use(tmp_path: pathlib.Path) -> None:
+    with socket.socket() as sock:
+        sock.bind(('127.0.0.1', 0))
+        sock.listen()
+        config = _endpoint_config(port=sock.getsockname()[1])
+        with pytest.raises(OSError):
+            await _serve_async(config, str(tmp_path))
+    assert not os.path.exists(get_token_filepath(str(tmp_path)))
+
+
+@pytest.mark.timeout(10)
+def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
+    config = _endpoint_config()
+    endpoint_dir = str(tmp_path)
 
     context = multiprocessing.get_context('spawn')
     process = context.Process(
         target=serve,
         args=(config,),
-        kwargs={'use_uvloop': use_uvloop},
+        kwargs={'endpoint_dir': endpoint_dir, 'use_uvloop': use_uvloop},
     )
     process.start()
 
     try:
-        while True:
-            try:
-                r = requests.get(f'http://{config.host}:{config.port}/')
-            except requests.exceptions.ConnectionError:
-                time.sleep(0.01)
-                continue
-            if r.status_code == 200:  # pragma: no branch
-                break
-    finally:
+        assert config.host is not None
+        wait_for_endpoint(config.host, config.port)
+        token = read_token_file(get_token_filepath(endpoint_dir))
+        with EndpointClient.connect(config.host, config.port, token) as client:
+            client.set('key', b'value')
+            assert client.get('key') == b'value'
+
+        # SIGTERM should cleanly shutdown the endpoint
         process.terminate()
+        process.join(timeout=5)
+        assert process.exitcode == 0
+        assert not os.path.exists(get_token_filepath(endpoint_dir))
+    finally:
+        terminate_process(process)
 
 
-def test_serve_config_validation(use_uvloop: bool) -> None:
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host=None,
-        port=open_port(),
-    )
+def test_serve_config_validation(
+    use_uvloop: bool,
+    tmp_path: pathlib.Path,
+) -> None:
+    config = _endpoint_config(host=None)
     with pytest.raises(ValueError, match='host'):
-        serve(config, use_uvloop=use_uvloop)
+        serve(config, endpoint_dir=str(tmp_path), use_uvloop=use_uvloop)
 
 
 def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
@@ -368,15 +460,13 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
 
     def _serve(log_file: str) -> None:
-        config = EndpointConfig(
-            name='name',
-            uuid=str(uuid.uuid4()),
-            host='0.0.0.0',
-            port=open_port(),
-        )
-        with mock.patch('uvicorn.Server.serve', AsyncMock()):
+        with mock.patch(
+            'proxystore.endpoint.serve._serve_async',
+            AsyncMock(),
+        ):
             serve(
-                config,
+                _endpoint_config(),
+                endpoint_dir=str(tmp_path),
                 log_level='INFO',
                 log_file=log_file,
                 use_uvloop=use_uvloop,
@@ -443,7 +533,10 @@ def test_get_auth_headers_globus_missing() -> None:
         assert _get_auth_headers('globus')
 
 
-async def test_serve_cancels_nat_check(relay_server) -> None:
+async def test_serve_cancels_nat_check(
+    relay_server,
+    tmp_path: pathlib.Path,
+) -> None:
     # The NAT check runs concurrently with serving so that a slow or blocked
     # network cannot delay the endpoint from accepting requests. Shutting the
     # endpoint down must therefore cancel a check which has not finished
@@ -457,22 +550,15 @@ async def test_serve_cancels_nat_check(relay_server) -> None:
             cancelled.set()
             raise
 
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='localhost',
-        port=open_port(),
-        storage=EndpointStorageConfig(database_path=':memory:'),
-    )
+    config = _endpoint_config()
     config.relay.address = relay_server.address
 
-    with (
-        mock.patch('uvicorn.Server.serve', AsyncMock()),
-        mock.patch(
-            'proxystore.endpoint.serve.check_nat_and_log',
-            side_effect=never_finishes,
-        ),
+    stop = asyncio.Event()
+    stop.set()
+    with mock.patch(
+        'proxystore.endpoint.serve.check_nat_and_log',
+        side_effect=never_finishes,
     ):
-        await _serve_async(config)
+        await _serve_async(config, str(tmp_path), stop)
 
     assert cancelled.is_set()

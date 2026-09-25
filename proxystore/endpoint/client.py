@@ -1,193 +1,383 @@
-"""Utilities for client interactions with endpoints.
+"""Client for communicating with a local endpoint.
 
 Note:
-    Endpoints serve an HTTP REST API for clients on the local network.
+    Clients communicate with endpoints on the local network over TCP using
+    the protocol defined in
+    [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol].
     It is not intended that clients from outside the local network interact
     with an endpoint this way. (Rather, they should connect to their own
     local endpoint, which peers with remote endpoints.)
 
-Note:
-    These client functions ignore all HTTP proxies.
+This module only depends on the standard library so clients do not need
+to install the `endpoints` extra dependencies.
 """
 
 from __future__ import annotations
 
+import os
+import socket
 import uuid
+from types import TracebackType
+from typing import Any
+from typing import NamedTuple
+from typing import Self
 
-import requests
-from requests.exceptions import RequestException  # noqa: F401
+from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.protocol import decode_meta
+from proxystore.endpoint.protocol import HEADER
+from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import local_versions
+from proxystore.endpoint.protocol import NONCE_SIZE
+from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import pack_preamble
+from proxystore.endpoint.protocol import PREAMBLE
+from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import unpack_header
+from proxystore.endpoint.protocol import unpack_preamble
+from proxystore.serialize import BytesLike
 
-from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
-from proxystore.utils.data import chunk_bytes
+# Payloads smaller than this are copied into the same buffer as the header
+# so the request is sent with a single system call.
+_COALESCE_THRESHOLD = 64 * 1024
 
 
-def evict(
-    address: str,
-    key: str,
-    endpoint: uuid.UUID | str | None = None,
-    session: requests.Session | None = None,
-) -> None:
-    """Evict the object associated with the key.
+class EndpointInfo(NamedTuple):
+    """Information about an endpoint received during the handshake.
+
+    Attributes:
+        uuid: UUID of the endpoint.
+        name: Name of the endpoint.
+        proxystore_version: ProxyStore version of the endpoint.
+        python_version: Python version of the endpoint.
+        max_object_size: Maximum size in bytes of objects that can be set
+            on the endpoint or `None` if there is no limit.
+    """
+
+    uuid: uuid.UUID
+    name: str
+    proxystore_version: str
+    python_version: str
+    max_object_size: int | None
+
+
+class EndpointClient:
+    """Connection to a local endpoint.
+
+    Use [`connect()`][proxystore.endpoint.client.EndpointClient.connect]
+    to create a client.
+
+    Warning:
+        A client is not thread-safe because a connection can only process one
+        request at a time. Use a separate client per thread.
+
+    Example:
+        ```python
+        from proxystore.endpoint.auth import read_token_file
+
+        token = read_token_file('/path/to/endpoint/client.token')
+        with EndpointClient.connect('localhost', 8765, token) as client:
+            client.set('key', b'value')
+            assert client.get('key') == b'value'
+        ```
 
     Args:
-        address: Address of endpoint.
-        key: Key associated with object to evict.
-        endpoint: Optional UUID of remote endpoint to forward operation to.
-        session: Session instance to use for making the request. Reusing the
-            same session across multiple requests to the same host can improve
-            performance.
-
-    Raises:
-        RequestException: If the endpoint request results in an unexpected
-            error code.
+        sock: Connected socket that has completed the handshake.
+        info: Information about the endpoint.
     """
-    endpoint_str = (
-        str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
-    )
-    post = requests.post if session is None else session.post
-    response = post(
-        f'{address}/evict',
-        params={'key': key, 'endpoint': endpoint_str},
-        proxies={'http': ''},
-    )
-    if not response.ok:
-        raise requests.exceptions.RequestException(
-            f'Endpoint returned HTTP error code {response.status_code}. '
-            f'{response.text}',
-            response=response,
+
+    def __init__(self, sock: socket.socket, info: EndpointInfo) -> None:
+        self._socket = sock
+        self.info = info
+        self.closed = False
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+    def __repr__(self) -> str:
+        return (
+            f'{type(self).__name__}(uuid={self.info.uuid}, '
+            f'name={self.info.name!r})'
+        )
+
+    @classmethod
+    def connect(
+        cls,
+        host: str,
+        port: int,
+        token: bytes,
+        *,
+        timeout: float | None = 10,
+    ) -> Self:
+        """Connect to an endpoint and complete the handshake.
+
+        Args:
+            host: Host address of the endpoint.
+            port: Port of the endpoint.
+            token: Token of the endpoint (see
+                [`read_token_file()`][proxystore.endpoint.auth.read_token_file]).
+            timeout: Timeout in seconds for connecting and completing the
+                handshake. Requests after the handshake have no timeout
+                because large transfers can take arbitrarily long.
+
+        Raises:
+            OSError: If the connection cannot be established.
+            EndpointAuthError: If the client or endpoint fails
+                authentication.
+            EndpointProtocolError: If the endpoint uses an incompatible
+                protocol.
+        """
+        sock = socket.create_connection((host, port), timeout=timeout)
+        try:
+            sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            info = _handshake(sock, token)
+            sock.settimeout(None)
+        except BaseException:
+            sock.close()
+            raise
+        return cls(sock, info)
+
+    def close(self) -> None:
+        """Close the connection."""
+        if not self.closed:
+            self.closed = True
+            self._socket.close()
+
+    def evict(self, key: str, endpoint: uuid.UUID | str | None = None) -> None:
+        """Evict the object associated with the key.
+
+        Args:
+            key: Key associated with object to evict.
+            endpoint: Optional UUID of remote endpoint to forward operation to.
+
+        Raises:
+            EndpointClientError: If the request fails.
+        """
+        self._request(Op.EVICT, key, endpoint)
+
+    def exists(
+        self, key: str, endpoint: uuid.UUID | str | None = None
+    ) -> bool:
+        """Check if an object associated with the key exists.
+
+        Args:
+            key: Key potentially associated with stored object.
+            endpoint: Optional UUID of remote endpoint to forward operation to.
+
+        Returns:
+            If an object associated with the key exists.
+
+        Raises:
+            EndpointClientError: If the request fails.
+        """
+        _, meta, _ = self._request(Op.EXISTS, key, endpoint)
+        return bool(meta.get('exists'))
+
+    def get(
+        self,
+        key: str,
+        endpoint: uuid.UUID | str | None = None,
+    ) -> bytearray | None:
+        """Get the serialized object associated with the key.
+
+        Args:
+            key: Key associated with object to retrieve.
+            endpoint: Optional UUID of remote endpoint to forward operation to.
+
+        Returns:
+            Serialized object or `None` if the object does not exist.
+
+        Raises:
+            EndpointClientError: If the request fails.
+        """
+        status, _, data = self._request(Op.GET, key, endpoint)
+        return None if status == Status.NOT_FOUND else data
+
+    def set(
+        self,
+        key: str,
+        data: BytesLike,
+        endpoint: uuid.UUID | str | None = None,
+    ) -> None:
+        """Set the serialized object associated with the key.
+
+        Args:
+            key: Key to associate with the object.
+            data: Serialized object.
+            endpoint: Optional UUID of remote endpoint to forward operation to.
+
+        Raises:
+            EndpointRequestError: If the size of `data` exceeds the maximum
+                object size of the endpoint.
+            EndpointClientError: If the request fails.
+        """
+        size = memoryview(data).nbytes
+        max_size = self.info.max_object_size
+        if max_size is not None and size > max_size:
+            raise EndpointRequestError(
+                f'Data size ({size} bytes) exceeds the maximum object size '
+                f'of the endpoint ({max_size} bytes).',
+            )
+        self._request(Op.SET, key, endpoint, data)
+
+    def _request(
+        self,
+        op: Op,
+        key: str,
+        endpoint: uuid.UUID | str | None,
+        data: BytesLike | None = None,
+    ) -> tuple[Status, dict[str, Any], bytearray]:
+        if self.closed:
+            raise EndpointClientError('Connection to the endpoint is closed.')
+
+        meta = {
+            'key': key,
+            'endpoint': None if endpoint is None else str(endpoint),
+        }
+        payload = memoryview(data).cast('B') if data is not None else None
+        data_len = 0 if payload is None else len(payload)
+        message = pack_message(op, meta, data_len)
+
+        try:
+            if payload is None:
+                self._socket.sendall(message)
+            elif data_len < _COALESCE_THRESHOLD:
+                self._socket.sendall(message + payload)
+            else:
+                self._socket.sendall(message)
+                self._socket.sendall(payload)
+
+            header, response_meta = _recv_message(self._socket)
+            response_data = _recv_exactly(self._socket, header.data_len)
+        except (OSError, EndpointClientError) as e:
+            self.close()
+            if isinstance(e, EndpointClientError):
+                raise
+            raise EndpointClientError(
+                f'Lost connection to the endpoint: {e}',
+            ) from e
+
+        try:
+            status = Status(header.code)
+        except ValueError:
+            self.close()
+            raise EndpointProtocolError(
+                f'Endpoint returned unknown status code {header.code}.',
+            ) from None
+        if status in (Status.OK, Status.NOT_FOUND):
+            return status, response_meta, response_data
+
+        error = response_meta.get('error', 'no error message provided')
+        if status == Status.TOO_LARGE:
+            # The endpoint closes the connection because it did not read
+            # the data of the request.
+            self.close()
+        raise EndpointRequestError(
+            f'Endpoint returned {status.name} for {op.name} request: {error}',
         )
 
 
-def exists(
-    address: str,
-    key: str,
-    endpoint: uuid.UUID | str | None = None,
-    session: requests.Session | None = None,
-) -> bool:
-    """Check if an object associated with the key exists.
+def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
+    client_nonce = os.urandom(NONCE_SIZE)
+    hello = {'nonce': client_nonce.hex(), **local_versions()}
+    sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
 
-    Args:
-        address: Address of endpoint.
-        key: Key potentially associated with stored object.
-        endpoint: Optional UUID of remote endpoint to forward operation to.
-        session: Session instance to use for making the request. Reusing the
-            same session across multiple requests to the same host can improve
-            performance.
-
-    Returns:
-        If an object associated with the key exists.
-
-    Raises:
-        RequestException: If the endpoint request results in an unexpected
-            error code.
-    """
-    endpoint_str = (
-        str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
-    )
-    get_ = requests.get if session is None else session.get
-    response = get_(
-        f'{address}/exists',
-        params={'key': key, 'endpoint': endpoint_str},
-        proxies={'http': ''},
-    )
-    if not response.ok:
-        raise requests.exceptions.RequestException(
-            f'Endpoint returned HTTP error code {response.status_code}. '
-            f'{response.text}',
-            response=response,
+    preamble = _recv_exactly(sock, PREAMBLE.size)
+    version = unpack_preamble(bytes(preamble))
+    header, meta = _recv_message(sock)
+    if version != PROTOCOL_VERSION or header.code == Status.PROTOCOL_MISMATCH:
+        raise EndpointProtocolError(
+            meta.get(
+                'error',
+                f'Endpoint uses protocol version {version} but the client '
+                f'uses protocol version {PROTOCOL_VERSION}.',
+            ),
         )
-    return response.json()['exists']
+    _check_status(header, meta, 'handshake')
 
-
-def get(
-    address: str,
-    key: str,
-    endpoint: uuid.UUID | str | None = None,
-    session: requests.Session | None = None,
-) -> bytes | None:
-    """Get the serialized object associated with the key.
-
-    Args:
-        address: Address of endpoint.
-        key: Key associated with object to retrieve.
-        endpoint: Optional UUID of remote endpoint to forward operation to.
-        session: Session instance to use for making the request. Reusing the
-            same session across multiple requests to the same host can improve
-            performance.
-
-    Returns:
-        Serialized object or `None` if the object does not exist.
-
-    Raises:
-        RequestException: If the endpoint request results in an unexpected
-            error code.
-    """
-    endpoint_str = (
-        str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
-    )
-    get_ = requests.get if session is None else session.get
-    response = get_(
-        f'{address}/get',
-        params={'key': key, 'endpoint': endpoint_str},
-        proxies={'http': ''},
-        stream=True,
-    )
-
-    # Status code 404 is only returned if there's no data associated with the
-    # provided key.
-    if response.status_code == 404:
-        return None
-
-    if not response.ok:
-        raise requests.exceptions.RequestException(
-            f'Endpoint returned HTTP error code {response.status_code}. '
-            f'{response.text}',
-            response=response,
+    try:
+        server_nonce = bytes.fromhex(meta['nonce'])
+        server_proof = bytes.fromhex(meta['proof'])
+    except (KeyError, TypeError, ValueError) as e:
+        raise EndpointProtocolError(
+            f'Malformed handshake response from endpoint: {e!r}',
+        ) from e
+    if not verify_proof(
+        token,
+        'server',
+        server_nonce,
+        client_nonce,
+        server_proof,
+    ):
+        raise EndpointAuthError(
+            'The endpoint failed to prove that it knows the endpoint token. '
+            'Another process may be listening on the address of the '
+            'endpoint, or the endpoint was restarted since the token was '
+            'read.',
         )
 
-    data = bytearray()
-    for chunk in response.iter_content(chunk_size=None):
-        data += chunk
-    return bytes(data)
+    client_proof = compute_proof(token, 'client', client_nonce, server_nonce)
+    sock.sendall(pack_message(Op.AUTH, {'proof': client_proof.hex()}))
 
-
-def put(
-    address: str,
-    key: str,
-    data: bytes,
-    endpoint: uuid.UUID | str | None = None,
-    session: requests.Session | None = None,
-) -> None:
-    """Put a serialized object in the store.
-
-    Args:
-        address: Address of endpoint.
-        key: Key associated with object to retrieve.
-        data: Serialized data to put in the store.
-        endpoint: Optional UUID of remote endpoint to forward operation to.
-        session: Session instance to use for making the request. Reusing the
-            same session across multiple requests to the same host can improve
-            performance.
-
-    Raises:
-        RequestException: If the endpoint request results in an unexpected
-            error code.
-    """
-    endpoint_str = (
-        str(endpoint) if isinstance(endpoint, uuid.UUID) else endpoint
-    )
-    post = requests.post if session is None else session.post
-    response = post(
-        f'{address}/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        params={'key': key, 'endpoint': endpoint_str},
-        proxies={'http': ''},
-        data=chunk_bytes(data, MAX_CHUNK_LENGTH),
-        stream=True,
-    )
-    if not response.ok:
-        raise requests.exceptions.RequestException(
-            f'Endpoint returned HTTP error code {response.status_code}. '
-            f'{response.text}',
-            response=response,
+    header, meta = _recv_message(sock)
+    if header.code == Status.UNAUTHORIZED:
+        raise EndpointAuthError(
+            'The endpoint rejected the token of the client. The endpoint may '
+            'have been restarted since the token was read.',
         )
+    _check_status(header, meta, 'handshake')
+
+    try:
+        return EndpointInfo(
+            uuid=uuid.UUID(meta['uuid']),
+            name=meta['name'],
+            proxystore_version=meta['proxystore'],
+            python_version=meta['python'],
+            max_object_size=meta['max_object_size'],
+        )
+    except (KeyError, TypeError, ValueError) as e:
+        raise EndpointProtocolError(
+            f'Malformed handshake response from endpoint: {e!r}',
+        ) from e
+
+
+def _check_status(header: Header, meta: dict[str, Any], stage: str) -> None:
+    if header.code != Status.OK:
+        error = meta.get('error', 'no error message provided')
+        raise EndpointProtocolError(
+            f'Endpoint returned status {header.code} during {stage}: {error}',
+        )
+
+
+def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
+    header = unpack_header(bytes(_recv_exactly(sock, HEADER.size)))
+    meta = decode_meta(bytes(_recv_exactly(sock, header.meta_len)))
+    return header, meta
+
+
+def _recv_exactly(sock: socket.socket, size: int) -> bytearray:
+    buffer = bytearray(size)
+    view = memoryview(buffer)
+    received = 0
+    while received < size:
+        n = sock.recv_into(view[received:])
+        if n == 0:
+            raise EndpointClientError(
+                'The endpoint closed the connection unexpectedly.',
+            )
+        received += n
+    return buffer
