@@ -10,14 +10,20 @@ each prove they know the token by computing an HMAC over random nonces
 chosen by both sides. This authenticates the client to the endpoint and the
 endpoint to the client (i.e., a different server listening on the endpoint's
 address cannot impersonate the endpoint).
+
+Optionally, connections can be encrypted with TLS. The endpoint generates a
+new self-signed certificate each time it starts, and clients only trust the
+certificate in the endpoint's directory (i.e., certificate pinning).
 """
 
 from __future__ import annotations
 
+import datetime
 import hashlib
 import hmac
 import os
 import secrets
+import ssl
 from typing import Literal
 
 TOKEN_SIZE = 32
@@ -102,3 +108,68 @@ def verify_proof(
     """Verify a proof computed by the other side of the handshake."""
     expected = compute_proof(token, role, first_nonce, second_nonce)
     return hmac.compare_digest(expected, proof)
+
+
+def generate_tls_certificate(
+    cert_path: str,
+    key_path: str,
+    common_name: str,
+) -> None:
+    """Generate a self-signed TLS certificate and private key.
+
+    Note:
+        This requires the `cryptography` package which is included in the
+        `endpoints` extra.
+
+    Args:
+        cert_path: Path to write the PEM-encoded certificate to.
+        key_path: Path to write the PEM-encoded private key to. The file
+            is only readable by the owner.
+        common_name: Common name of the certificate subject.
+    """
+    from cryptography import x509
+    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.x509.oid import NameOID
+
+    key = ec.generate_private_key(ec.SECP256R1())
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, common_name)])
+    now = datetime.datetime.now(datetime.UTC)
+    cert = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - datetime.timedelta(minutes=5))
+        .not_valid_after(now + datetime.timedelta(days=3650))
+        .sign(key, hashes.SHA256())
+    )
+
+    write_private_file(
+        key_path,
+        key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        ),
+    )
+    with open(cert_path, 'wb') as f:
+        f.write(cert.public_bytes(serialization.Encoding.PEM))
+
+
+def certificate_fingerprint(der: bytes) -> str:
+    """Compute the SHA-256 fingerprint of a DER-encoded certificate."""
+    return hashlib.sha256(der).hexdigest()
+
+
+def read_certificate_fingerprint(cert_path: str) -> str:
+    """Read a PEM-encoded certificate and compute its fingerprint.
+
+    Raises:
+        FileNotFoundError: If the certificate file does not exist.
+    """
+    with open(cert_path) as f:
+        der = ssl.PEM_cert_to_DER_cert(f.read())
+    return certificate_fingerprint(der)

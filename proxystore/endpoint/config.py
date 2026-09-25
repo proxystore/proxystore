@@ -27,6 +27,8 @@ ENDPOINT_DATABASE_FILE = 'blobs.db'
 ENDPOINT_LOG_FILE = 'log.txt'
 ENDPOINT_PID_FILE = 'daemon.pid'
 ENDPOINT_TOKEN_FILE = 'client.token'
+ENDPOINT_TLS_CERT_FILE = 'tls.crt'
+ENDPOINT_TLS_KEY_FILE = 'tls.key'
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -136,6 +138,9 @@ class EndpointConfig(BaseModel):
         host: Host endpoint is running on.
         host_type: Type of host address to use (FQDN or IP).
         port: Port endpoint is running on.
+        tls: Encrypt connections between clients and the endpoint with TLS.
+            The endpoint generates a self-signed certificate each time it
+            starts, and clients only trust that certificate.
         peering: Peering configuration.
         storage: Storage configuration.
 
@@ -150,6 +155,7 @@ class EndpointConfig(BaseModel):
     port: int
     host: str | None = None
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
+    tls: bool = False
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,
     )
@@ -250,6 +256,30 @@ def get_token_filepath(endpoint_dir: str) -> str:
         Path to the token file.
     """
     return os.path.join(endpoint_dir, ENDPOINT_TOKEN_FILE)
+
+
+def get_tls_cert_filepath(endpoint_dir: str) -> str:
+    """Return path to the TLS certificate file for endpoint.
+
+    Args:
+        endpoint_dir: Directory for the endpoint.
+
+    Returns:
+        Path to the TLS certificate file.
+    """
+    return os.path.join(endpoint_dir, ENDPOINT_TLS_CERT_FILE)
+
+
+def get_tls_key_filepath(endpoint_dir: str) -> str:
+    """Return path to the TLS private key file for endpoint.
+
+    Args:
+        endpoint_dir: Directory for the endpoint.
+
+    Returns:
+        Path to the TLS private key file.
+    """
+    return os.path.join(endpoint_dir, ENDPOINT_TLS_KEY_FILE)
 
 
 def read_config(endpoint_dir: str) -> EndpointConfig:

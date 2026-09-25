@@ -5,6 +5,7 @@ import multiprocessing
 import os
 import pathlib
 import socket
+import ssl
 import stat
 import uuid
 from collections.abc import AsyncGenerator
@@ -18,6 +19,8 @@ import pytest_asyncio
 from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import generate_tls_certificate
+from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.client import _recv_exactly
@@ -25,10 +28,13 @@ from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.config import get_tls_cert_filepath
+from proxystore.endpoint.config import get_tls_key_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import HEADER
@@ -736,3 +742,100 @@ async def test_client_version_mismatch_logged_once(
     assert len(_warnings()) == 1
     assert 'ProxyStore 0.0.1 (client)' in _warnings()[0]
     assert 'Python 2.7.18 (client)' in _warnings()[0]
+
+
+class _TLSServer(NamedTuple):
+    server: _Server
+    fingerprint: str
+
+
+@pytest_asyncio.fixture()
+async def tls_server(
+    tmp_path: pathlib.Path,
+) -> AsyncGenerator[_TLSServer, None]:
+    cert, key = str(tmp_path / 'tls.crt'), str(tmp_path / 'tls.key')
+    generate_tls_certificate(cert, key, 'test')
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(cert, key)
+
+    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
+        token = os.urandom(TOKEN_SIZE)
+        handler = EndpointServer(endpoint, token, handshake_timeout=1)
+        tcp_server = await handler.start_server(
+            '127.0.0.1',
+            0,
+            ssl_context=context,
+        )
+        port = tcp_server.sockets[0].getsockname()[1]
+        server = _Server(handler, endpoint, token, '127.0.0.1', port)
+        yield _TLSServer(server, read_certificate_fingerprint(cert))
+        tcp_server.close()
+        handler.close_connections()
+        await tcp_server.wait_closed()
+
+
+def _connect_tls(server: _Server, fingerprint: str) -> EndpointClient:
+    return EndpointClient.connect(
+        server.host,
+        server.port,
+        server.token,
+        tls_fingerprint=fingerprint,
+    )
+
+
+async def test_tls_operations(tls_server: _TLSServer) -> None:
+    client = await asyncio.to_thread(
+        _connect_tls,
+        tls_server.server,
+        tls_server.fingerprint,
+    )
+    assert isinstance(client._socket, ssl.SSLSocket)
+
+    data = randbytes(5_000_000)
+    await asyncio.to_thread(client.set, 'key', data)
+    assert await asyncio.to_thread(client.get, 'key') == data
+    assert await asyncio.to_thread(client.exists, 'key')
+    await asyncio.to_thread(client.close)
+
+
+async def test_tls_wrong_fingerprint(tls_server: _TLSServer) -> None:
+    with pytest.raises(EndpointAuthError, match='TLS certificate'):
+        await asyncio.to_thread(_connect_tls, tls_server.server, '0' * 64)
+
+
+async def test_tls_client_without_tls(tls_server: _TLSServer) -> None:
+    with pytest.raises(EndpointClientError):
+        await _connect(tls_server.server)
+
+
+async def test_tls_client_with_plain_server(server: _Server) -> None:
+    with pytest.raises(EndpointProtocolError, match='TLS handshake'):
+        await asyncio.to_thread(_connect_tls, server, '0' * 64)
+
+
+async def test_serve_async_tls(tmp_path: pathlib.Path) -> None:
+    config = _endpoint_config(tls=True)
+    endpoint_dir = str(tmp_path)
+    cert_file = get_tls_cert_filepath(endpoint_dir)
+    key_file = get_tls_key_filepath(endpoint_dir)
+    stop = asyncio.Event()
+    task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
+
+    assert config.host is not None
+    await asyncio.to_thread(wait_for_endpoint, config.host, config.port)
+    assert stat.S_IMODE(os.stat(key_file).st_mode) == 0o600
+
+    client = await asyncio.to_thread(
+        EndpointClient.connect,
+        config.host,
+        config.port,
+        read_token_file(get_token_filepath(endpoint_dir)),
+        tls_fingerprint=read_certificate_fingerprint(cert_file),
+    )
+    assert client.info.uuid == uuid.UUID(config.uuid)
+    await asyncio.to_thread(client.close)
+
+    stop.set()
+    await task
+    assert not os.path.exists(cert_file)
+    assert not os.path.exists(key_file)

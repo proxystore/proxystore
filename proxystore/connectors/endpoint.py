@@ -17,10 +17,12 @@ from typing import NamedTuple
 from typing import Self
 from uuid import UUID
 
+from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
+from proxystore.endpoint.config import get_tls_cert_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointClientError
@@ -315,10 +317,20 @@ class EndpointConnector:
 
 def _connect(config: EndpointConfig, endpoint_dir: str) -> EndpointClient:
     assert config.host is not None
-    # The token is read on every connection because it changes each time
-    # the endpoint is restarted.
+    # The token and certificate are read on every connection because they
+    # change each time the endpoint is restarted.
     token = read_token_file(get_token_filepath(endpoint_dir))
-    return EndpointClient.connect(config.host, config.port, token)
+    fingerprint = (
+        read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
+        if config.tls
+        else None
+    )
+    return EndpointClient.connect(
+        config.host,
+        config.port,
+        token,
+        tls_fingerprint=fingerprint,
+    )
 
 
 class _ConnectionPool:

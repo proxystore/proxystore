@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import os
 import pathlib
+import ssl
 import stat
 
 import pytest
 
+from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
+from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import verify_proof
@@ -89,3 +93,21 @@ def test_proof_verification() -> None:
     assert not verify_proof(token, 'client', server_nonce, client_nonce, proof)
     # Nonces are not interchangeable
     assert not verify_proof(token, 'server', client_nonce, server_nonce, proof)
+
+
+def test_generate_tls_certificate(tmp_path: pathlib.Path) -> None:
+    cert_path, key_path = tmp_path / 'tls.crt', tmp_path / 'tls.key'
+    generate_tls_certificate(str(cert_path), str(key_path), 'test')
+    assert _mode(key_path) == 0o600
+
+    # Certificate and key are a valid pair
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(str(cert_path), str(key_path))
+
+    der = ssl.PEM_cert_to_DER_cert(cert_path.read_text())
+    fingerprint = read_certificate_fingerprint(str(cert_path))
+    assert fingerprint == certificate_fingerprint(der)
+
+    # A new certificate is generated each time
+    generate_tls_certificate(str(cert_path), str(key_path), 'test')
+    assert read_certificate_fingerprint(str(cert_path)) != fingerprint

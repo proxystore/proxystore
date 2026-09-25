@@ -14,8 +14,10 @@ to install the `endpoints` extra dependencies.
 
 from __future__ import annotations
 
+import hmac
 import os
 import socket
+import ssl
 import uuid
 import warnings
 from types import TracebackType
@@ -23,6 +25,7 @@ from typing import Any
 from typing import NamedTuple
 from typing import Self
 
+from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.exceptions import EndpointAuthError
@@ -125,6 +128,7 @@ class EndpointClient:
         port: int,
         token: bytes,
         *,
+        tls_fingerprint: str | None = None,
         timeout: float | None = 10,
     ) -> Self:
         """Connect to an endpoint and complete the handshake.
@@ -134,6 +138,11 @@ class EndpointClient:
             port: Port of the endpoint.
             token: Token of the endpoint (see
                 [`read_token_file()`][proxystore.endpoint.auth.read_token_file]).
+            tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
+                certificate (see
+                [`read_certificate_fingerprint()`][proxystore.endpoint.auth.read_certificate_fingerprint]).
+                If provided, the connection is encrypted with TLS and the
+                endpoint's certificate must match the fingerprint.
             timeout: Timeout in seconds for connecting and completing the
                 handshake. Requests after the handshake have no timeout
                 because large transfers can take arbitrarily long.
@@ -152,6 +161,8 @@ class EndpointClient:
         sock = socket.create_connection((host, port), timeout=timeout)
         try:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            if tls_fingerprint is not None:
+                sock = _wrap_tls(sock, tls_fingerprint)
             info = _handshake(sock, token)
             sock.settimeout(None)
         except BaseException:
@@ -312,6 +323,34 @@ class EndpointClient:
         raise EndpointRequestError(
             f'Endpoint returned {status.name} for {op.name} request: {error}',
         )
+
+
+def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
+    # The endpoint's certificate is self-signed so it cannot be verified
+    # against a certificate authority. Instead, the certificate is pinned:
+    # it must match the certificate in the endpoint's directory.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_NONE
+    try:
+        tls_sock = context.wrap_socket(sock)
+    except (ssl.SSLError, ConnectionError) as e:
+        raise EndpointProtocolError(
+            f'TLS handshake with the endpoint failed: {e}. Check that TLS is '
+            'enabled on the endpoint.',
+        ) from e
+
+    der = tls_sock.getpeercert(binary_form=True)
+    actual = certificate_fingerprint(der) if der is not None else ''
+    if not hmac.compare_digest(actual, fingerprint):
+        tls_sock.close()
+        raise EndpointAuthError(
+            'The TLS certificate of the endpoint does not match the '
+            'certificate in the endpoint directory. Another process may be '
+            'listening on the address of the endpoint, or the endpoint was '
+            'restarted since the certificate was read.',
+        )
+    return tls_sock
 
 
 def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:

@@ -18,6 +18,7 @@ from typing import ClassVar
 import click
 
 import proxystore
+from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.commands import configure_endpoint
@@ -25,6 +26,7 @@ from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
+from proxystore.endpoint.config import get_tls_cert_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.exceptions import EndpointClientError
@@ -164,6 +166,12 @@ def check_nat_command(host: str, port: int) -> None:
     metavar='BOOL',
     help='Optionally persist data to a database.',
 )
+@click.option(
+    '--tls/--no-tls',
+    default=False,
+    metavar='BOOL',
+    help='Encrypt connections from clients with TLS.',
+)
 def configure(
     name: str,
     host: str,
@@ -173,6 +181,7 @@ def configure(
     relay_server: bool,
     peer_channels: int,
     persist: bool,
+    tls: bool,
 ) -> None:
     """Configure a new endpoint."""
     raise SystemExit(
@@ -183,6 +192,7 @@ def configure(
             persist_data=persist,
             port=port,
             relay_auth=relay_auth,
+            tls=tls,
             relay_server=relay_address if relay_server else None,
         ),
     )
@@ -260,13 +270,24 @@ def _endpoint_client(
 
     address = f'{cfg.host}:{cfg.port}'
     try:
-        token = read_token_file(get_token_filepath(ctx.obj['ENDPOINT_DIR']))
-        with EndpointClient.connect(cfg.host, cfg.port, token) as client:
+        endpoint_dir = ctx.obj['ENDPOINT_DIR']
+        token = read_token_file(get_token_filepath(endpoint_dir))
+        fingerprint = (
+            read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
+            if cfg.tls
+            else None
+        )
+        with EndpointClient.connect(
+            cfg.host,
+            cfg.port,
+            token,
+            tls_fingerprint=fingerprint,
+        ) as client:
             yield client
     except FileNotFoundError:
         logger.error(
-            f'Unable to find the token file of endpoint {cfg.name}. Is the '
-            'endpoint running?',
+            f'Unable to find the token or certificate file of endpoint '
+            f'{cfg.name}. Is the endpoint running?',
         )
         sys.exit(1)
     except OSError as e:

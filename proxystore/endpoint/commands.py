@@ -114,6 +114,7 @@ def configure_endpoint(
     proxystore_dir: str | None = None,
     relay_auth: bool = True,
     relay_server: str | None,
+    tls: bool = False,
 ) -> int:
     """Configure a new endpoint.
 
@@ -131,6 +132,7 @@ def configure_endpoint(
         relay_server: Optional relay server address for P2P endpoint
             connections.
         relay_auth: Relay server used Globus Auth.
+        tls: Encrypt connections between clients and the endpoint with TLS.
 
     Returns:
         Exit code where 0 is success and 1 is failure. Failure messages \
@@ -165,6 +167,7 @@ def configure_endpoint(
             host=host_addr,
             port=port,
             host_type=host_type,
+            tls=tls,
             relay=EndpointRelayConfig(
                 address=relay_server,
                 auth=EndpointRelayAuthConfig(

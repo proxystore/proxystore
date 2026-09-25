@@ -12,6 +12,7 @@ import logging
 import os
 import signal
 import socket
+import ssl
 import uuid
 from collections.abc import Callable
 from collections.abc import Coroutine
@@ -31,9 +32,12 @@ from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import get_tls_cert_filepath
+from proxystore.endpoint.config import get_tls_key_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -293,13 +297,26 @@ class EndpointServer:
         self._connections: set[ClientConnection] = set()
         self._warned_versions: set[tuple[str, str]] = set()
 
-    async def start_server(self, host: str, port: int) -> asyncio.Server:
-        """Start a server that handles connections on the host and port."""
+    async def start_server(
+        self,
+        host: str,
+        port: int,
+        *,
+        ssl_context: ssl.SSLContext | None = None,
+    ) -> asyncio.Server:
+        """Start a server that handles connections on the host and port.
+
+        Args:
+            host: Address to listen on.
+            port: Port to listen on.
+            ssl_context: Optional SSL context to encrypt connections with TLS.
+        """
         loop = asyncio.get_running_loop()
         return await loop.create_server(
             lambda: ClientConnection(self.handle_connection),
             host=host,
             port=port,
+            ssl=ssl_context,
         )
 
     def close_connections(self) -> None:
@@ -700,6 +717,8 @@ async def _serve_async(
         loop.add_signal_handler(sig, stop.set)
 
     token_file = get_token_filepath(endpoint_dir)
+    cert_file = get_tls_cert_filepath(endpoint_dir)
+    key_file = get_tls_key_filepath(endpoint_dir)
     handler = EndpointServer(
         endpoint,
         generate_token_file(token_file),
@@ -708,7 +727,22 @@ async def _serve_async(
     server: asyncio.Server | None = None
 
     try:
-        server = await handler.start_server(config.host, config.port)
+        ssl_context: ssl.SSLContext | None = None
+        if config.tls:
+            generate_tls_certificate(
+                cert_file,
+                key_file,
+                common_name=f'proxystore-endpoint-{config.uuid}',
+            )
+            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_context.load_cert_chain(cert_file, key_file)
+            logger.info('Encrypting client connections with TLS')
+
+        server = await handler.start_server(
+            config.host,
+            config.port,
+            ssl_context=ssl_context,
+        )
         logger.info(
             f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
             f'{config.host}:{config.port}',
@@ -728,8 +762,9 @@ async def _serve_async(
             with contextlib.suppress(asyncio.CancelledError):
                 await nat_check
         await endpoint.close()
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(token_file)
+        for path in (token_file, cert_file, key_file):
+            with contextlib.suppress(FileNotFoundError):
+                os.remove(path)
 
 
 def serve(

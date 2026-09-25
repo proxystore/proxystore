@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import importlib.metadata
 import logging
 import os
@@ -19,9 +20,12 @@ from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.serve import _serve_async
 from proxystore.p2p.nat import NatMapping
 from proxystore.p2p.nat import Result
 from testing.endpoint import copy_endpoint_dir
+from testing.endpoint import wait_for_endpoint
+from testing.utils import open_port
 
 CLICK_VERSION = tuple(
     int(x) for x in importlib.metadata.version('click').split('.')
@@ -110,6 +114,11 @@ def test_configure_command(home_dir) -> None:
     assert cfg.name == name
     assert cfg.port == port
     assert cfg.relay.address == relay_server
+    assert not cfg.tls
+
+    result = runner.invoke(cli, ['configure', 'tls-endpoint', '--tls'])
+    assert result.exit_code == 0
+    assert read_config(os.path.join(home_dir, 'tls-endpoint')).tls
 
 
 def test_list_command(home_dir, caplog) -> None:
@@ -276,3 +285,37 @@ def test_test_command_errors(
         result = runner.invoke(cli, args)
         assert result.exit_code == 1
         assert 'has not been started' in caplog.records[0].message
+
+
+async def test_test_command_tls(home_dir, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    config = EndpointConfig(
+        name='tls-endpoint',
+        uuid=str(uuid.uuid4()),
+        host='127.0.0.1',
+        port=open_port(),
+        tls=True,
+    )
+    endpoint_dir = os.path.join(home_dir, config.name)
+    write_config(config, endpoint_dir)
+
+    stop = asyncio.Event()
+    task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
+    await asyncio.to_thread(wait_for_endpoint, '127.0.0.1', config.port)
+
+    runner = click.testing.CliRunner()
+    try:
+        with mock.patch(
+            'proxystore.endpoint.cli.home_dir',
+            return_value=home_dir,
+        ):
+            result = await asyncio.to_thread(
+                runner.invoke,
+                cli,
+                ['test', config.name, 'exists', 'key'],
+            )
+        assert result.exit_code == 0
+        assert any('Object exists: False' in r.message for r in caplog.records)
+    finally:
+        stop.set()
+        await task

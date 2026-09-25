@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import pathlib
@@ -17,8 +18,11 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
+from proxystore.endpoint.serve import _serve_async
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
+from testing.endpoint import wait_for_endpoint
+from testing.utils import open_port
 
 
 def test_no_endpoints_provided() -> None:
@@ -205,3 +209,33 @@ def test_closed_connections_not_returned_to_pool(endpoint_connector) -> None:
     assert not connector.exists(connector.new_key())
     assert len(connector._pool._idle) == 1
     connector.close()
+
+
+async def test_connector_tls(tmp_path: pathlib.Path) -> None:
+    config = EndpointConfig(
+        name='tls-endpoint',
+        uuid=str(uuid.uuid4()),
+        host='127.0.0.1',
+        port=open_port(),
+        tls=True,
+    )
+    endpoint_dir = str(tmp_path / config.name)
+    write_config(config, endpoint_dir)
+
+    stop = asyncio.Event()
+    task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
+    await asyncio.to_thread(wait_for_endpoint, '127.0.0.1', config.port)
+
+    def _run() -> None:
+        with EndpointConnector(
+            [config.uuid],
+            proxystore_dir=str(tmp_path),
+        ) as connector:
+            key = connector.put(b'value')
+            assert connector.get(key) == b'value'
+
+    try:
+        await asyncio.to_thread(_run)
+    finally:
+        stop.set()
+        await task
