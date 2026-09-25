@@ -48,6 +48,8 @@ MAX_META_SIZE = 64 * 1024
 """Maximum size in bytes of the metadata in a message."""
 HTTP_METHODS = (b'GET ', b'POST', b'HEAD', b'PUT ')
 """Leading bytes of HTTP requests sent by clients using the old HTTP API."""
+VERSION_DOCS_URL = 'https://docs.proxystore.dev/latest/guides/endpoints/#version-compatibility'
+"""Documentation on version compatibility between clients and endpoints."""
 
 PREAMBLE = struct.Struct('!4sH')
 """Preamble format: magic and protocol version."""
@@ -114,6 +116,45 @@ def local_versions() -> dict[str, str]:
         'proxystore': proxystore.__version__,
         'python': platform.python_version(),
     }
+
+
+def version_mismatches(
+    client: dict[str, str],
+    endpoint: dict[str, str],
+) -> list[str]:
+    """Find version differences between a client and endpoint.
+
+    The ProxyStore versions must match exactly. The Python versions must
+    have the same major and minor version because objects pickled by one
+    Python version may not unpickle with another, but patch releases are
+    compatible.
+
+    Args:
+        client: Versions of the client (see
+            [`local_versions()`][proxystore.endpoint.protocol.local_versions]).
+        endpoint: Versions of the endpoint.
+
+    Returns:
+        Human-readable descriptions of each mismatch. Empty if the versions \
+        are compatible.
+    """
+    mismatches = []
+
+    client_ps = client.get('proxystore', 'unknown')
+    endpoint_ps = endpoint.get('proxystore', 'unknown')
+    if client_ps != endpoint_ps:
+        mismatches.append(
+            f'ProxyStore {client_ps} (client) vs. {endpoint_ps} (endpoint)',
+        )
+
+    client_py = client.get('python', 'unknown')
+    endpoint_py = endpoint.get('python', 'unknown')
+    if client_py.split('.')[:2] != endpoint_py.split('.')[:2]:
+        mismatches.append(
+            f'Python {client_py} (client) vs. {endpoint_py} (endpoint)',
+        )
+
+    return mismatches
 
 
 def pack_preamble(version: int = PROTOCOL_VERSION) -> bytes:

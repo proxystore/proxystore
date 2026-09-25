@@ -18,6 +18,7 @@ from proxystore.endpoint.protocol import pack_preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import unpack_header
 from proxystore.endpoint.protocol import unpack_preamble
+from proxystore.endpoint.protocol import version_mismatches
 
 
 def test_local_versions() -> None:
@@ -63,3 +64,46 @@ def test_header_meta_too_large() -> None:
 def test_decode_meta_invalid(buffer: bytes) -> None:
     with pytest.raises(EndpointProtocolError):
         decode_meta(buffer)
+
+
+@pytest.mark.parametrize(
+    ('client', 'endpoint', 'expected'),
+    (
+        # Same versions
+        (
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            [],
+        ),
+        # Python patch versions are compatible
+        (
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            {'proxystore': '1.0.0', 'python': '3.12.9'},
+            [],
+        ),
+        (
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            {'proxystore': '1.0.1', 'python': '3.12.4'},
+            ['ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)'],
+        ),
+        (
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            {'proxystore': '1.0.0', 'python': '3.13.0'},
+            ['Python 3.12.4 (client) vs. 3.13.0 (endpoint)'],
+        ),
+        (
+            {'proxystore': '1.0.0', 'python': '3.12.4'},
+            {},
+            [
+                'ProxyStore 1.0.0 (client) vs. unknown (endpoint)',
+                'Python 3.12.4 (client) vs. unknown (endpoint)',
+            ],
+        ),
+    ),
+)
+def test_version_mismatches(
+    client: dict[str, str],
+    endpoint: dict[str, str],
+    expected: list[str],
+) -> None:
+    assert version_mismatches(client, endpoint) == expected

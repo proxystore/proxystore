@@ -42,6 +42,7 @@ from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import HTTP_METHODS
 from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
@@ -52,6 +53,8 @@ from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import unpack_header
 from proxystore.endpoint.protocol import unpack_preamble
+from proxystore.endpoint.protocol import VERSION_DOCS_URL
+from proxystore.endpoint.protocol import version_mismatches
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
@@ -235,6 +238,16 @@ class ClientConnection(asyncio.BufferedProtocol):
             finally:
                 self._drain_waiter = None
 
+    def can_write_eof(self) -> bool:
+        """Check if the transport supports closing only the write side."""
+        assert self._transport is not None
+        return self._transport.can_write_eof()
+
+    def write_eof(self) -> None:
+        """Close the write side of the connection."""
+        assert self._transport is not None
+        self._transport.write_eof()
+
     def close(self) -> None:
         """Close the connection."""
         assert self._transport is not None
@@ -278,6 +291,7 @@ class EndpointServer:
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
         self._connections: set[ClientConnection] = set()
+        self._warned_versions: set[tuple[str, str]] = set()
 
     async def start_server(self, host: str, port: int) -> asyncio.Server:
         """Start a server that handles connections on the host and port."""
@@ -329,7 +343,26 @@ class EndpointServer:
             await conn.wait_closed()
 
     async def _handshake(self, conn: ClientConnection, peer: Any) -> bool:
-        version = unpack_preamble(await conn.readexactly(PREAMBLE.size))
+        preamble = await conn.readexactly(PREAMBLE.size)
+        if bytes(preamble[:4]) in HTTP_METHODS:
+            logger.warning(
+                f'Rejecting HTTP request from {peer}. The client is likely '
+                'using an older version of ProxyStore that uses the HTTP API.',
+            )
+            conn.write(_http_upgrade_response())
+            await conn.drain()
+            # Closing the connection while the unread request is still in
+            # the receive buffer causes the OS to reset the connection so
+            # the client may never read the response. Instead, only close
+            # our side and give the client time to read the response and
+            # close the connection.
+            if conn.can_write_eof():  # pragma: no branch
+                conn.write_eof()
+                with contextlib.suppress(TimeoutError):
+                    await asyncio.wait_for(conn.wait_closed(), timeout=1)
+            return False
+
+        version = unpack_preamble(preamble)
         if version != PROTOCOL_VERSION:
             logger.warning(
                 f'Rejecting connection from {peer} with protocol version '
@@ -350,6 +383,10 @@ class EndpointServer:
                 f'Expected HELLO message but got op {header.code}.',
             )
         client_nonce = _decode_hex(meta, 'nonce')
+        client_versions = {
+            'proxystore': str(meta.get('proxystore', 'unknown')),
+            'python': str(meta.get('python', 'unknown')),
+        }
 
         server_nonce = os.urandom(NONCE_SIZE)
         proof = compute_proof(self.token, 'server', server_nonce, client_nonce)
@@ -380,6 +417,7 @@ class EndpointServer:
             await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
             return False
 
+        self._check_client_versions(peer, client_versions)
         info = {
             'uuid': str(self.endpoint.uuid),
             'name': self.endpoint.name,
@@ -388,6 +426,23 @@ class EndpointServer:
         }
         await _send(conn, Status.OK, info)
         return True
+
+    def _check_client_versions(
+        self,
+        peer: Any,
+        client_versions: dict[str, str],
+    ) -> None:
+        mismatches = version_mismatches(client_versions, local_versions())
+        key = (client_versions['proxystore'], client_versions['python'])
+        if len(mismatches) > 0 and key not in self._warned_versions:
+            # Only warn once for each combination of client versions.
+            self._warned_versions.add(key)
+            logger.warning(
+                f'Client {peer} uses different versions than this endpoint: '
+                f'{"; ".join(mismatches)}. Objects serialized in one '
+                'environment may fail to deserialize in another. See '
+                f'{VERSION_DOCS_URL} for details.',
+            )
 
     async def _serve_requests(self, conn: ClientConnection) -> None:
         while True:
@@ -514,6 +569,24 @@ async def _send(
     if data is not None:
         conn.write(data)
     await conn.drain()
+
+
+def _http_upgrade_response() -> bytes:
+    version = local_versions()['proxystore']
+    body = (
+        f'This endpoint uses ProxyStore {version} which no longer supports '
+        'the HTTP API used by older versions of ProxyStore. Upgrade '
+        'ProxyStore on the client to the same version as the endpoint. See '
+        f'{VERSION_DOCS_URL} for details.\n'
+    ).encode()
+    headers = (
+        'HTTP/1.1 426 Upgrade Required\r\n'
+        'Content-Type: text/plain; charset=utf-8\r\n'
+        f'Content-Length: {len(body)}\r\n'
+        'Connection: close\r\n'
+        '\r\n'
+    ).encode()
+    return headers + body
 
 
 def _decode_hex(meta: dict[str, Any], field: str) -> bytes:

@@ -681,3 +681,58 @@ async def test_connection_drain() -> None:
     # Drain fails if the connection is already closing
     with pytest.raises(ConnectionResetError):
         await conn.drain()
+
+
+async def test_http_request_rejected(server: _Server, caplog) -> None:
+    def _run() -> bytes:
+        with _raw_socket(server) as sock:
+            sock.sendall(b'GET /get?key=abc HTTP/1.1\r\nHost: x\r\n\r\n')
+            response = bytearray()
+            while chunk := sock.recv(65536):
+                response += chunk
+            return bytes(response)
+
+    response = await asyncio.to_thread(_run)
+    assert response.startswith(b'HTTP/1.1 426 Upgrade Required\r\n')
+    assert b'Upgrade ProxyStore on the client' in response
+    assert any('Rejecting HTTP request' in r.message for r in caplog.records)
+
+
+def _raw_handshake(server: _Server, versions: dict[str, str]) -> None:
+    with _raw_socket(server) as sock:
+        client_nonce = os.urandom(32)
+        hello = {'nonce': client_nonce.hex(), **versions}
+        sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
+        _recv_exactly(sock, PREAMBLE.size)
+        _, meta = _recv_message(sock)
+        proof = compute_proof(
+            server.token,
+            'client',
+            client_nonce,
+            bytes.fromhex(meta['nonce']),
+        )
+        sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
+        header, _ = _recv_message(sock)
+        assert header.code == Status.OK
+
+
+async def test_client_version_mismatch_logged_once(
+    server: _Server,
+    caplog,
+) -> None:
+    def _warnings() -> list[str]:
+        return [
+            r.message
+            for r in caplog.records
+            if 'uses different versions' in r.message
+        ]
+
+    await asyncio.to_thread(_raw_handshake, server, local_versions())
+    assert len(_warnings()) == 0
+
+    versions = {'proxystore': '0.0.1', 'python': '2.7.18'}
+    await asyncio.to_thread(_raw_handshake, server, versions)
+    await asyncio.to_thread(_raw_handshake, server, versions)
+    assert len(_warnings()) == 1
+    assert 'ProxyStore 0.0.1 (client)' in _warnings()[0]
+    assert 'Python 2.7.18 (client)' in _warnings()[0]

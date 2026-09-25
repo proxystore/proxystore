@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 import socket
 import uuid
+import warnings
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
@@ -41,7 +42,10 @@ from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import unpack_header
 from proxystore.endpoint.protocol import unpack_preamble
+from proxystore.endpoint.protocol import VERSION_DOCS_URL
+from proxystore.endpoint.protocol import version_mismatches
 from proxystore.serialize import BytesLike
+from proxystore.warnings import EndpointVersionWarning
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
@@ -134,6 +138,10 @@ class EndpointClient:
                 handshake. Requests after the handshake have no timeout
                 because large transfers can take arbitrarily long.
 
+        Warns:
+            EndpointVersionWarning: If the endpoint uses a different
+                ProxyStore version or Python minor version than this client.
+
         Raises:
             OSError: If the connection cannot be established.
             EndpointAuthError: If the client or endpoint fails
@@ -149,6 +157,21 @@ class EndpointClient:
         except BaseException:
             sock.close()
             raise
+
+        endpoint_versions = {
+            'proxystore': info.proxystore_version,
+            'python': info.python_version,
+        }
+        mismatches = version_mismatches(local_versions(), endpoint_versions)
+        if len(mismatches) > 0:
+            warnings.warn(
+                f'Endpoint {info.name} ({info.uuid}) uses different versions '
+                f'than this client: {"; ".join(mismatches)}. Objects '
+                'serialized in one environment may fail to deserialize in '
+                f'another. See {VERSION_DOCS_URL} for details.',
+                EndpointVersionWarning,
+                stacklevel=2,
+            )
         return cls(sock, info)
 
     def close(self) -> None:
@@ -297,6 +320,13 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
     sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
 
     preamble = _recv_exactly(sock, PREAMBLE.size)
+    if preamble.startswith(b'HTTP/'):
+        raise EndpointProtocolError(
+            'The endpoint responded with HTTP, so it is likely running a '
+            'version of ProxyStore older than the client that uses the HTTP '
+            'API. Restart the endpoint with the same version of ProxyStore as '
+            f'the client. See {VERSION_DOCS_URL} for details.',
+        )
     version = unpack_preamble(preamble)
     header, meta = _recv_message(sock)
     if version != PROTOCOL_VERSION or header.code == Status.PROTOCOL_MISMATCH:

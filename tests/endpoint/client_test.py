@@ -5,6 +5,7 @@ import socket
 import threading
 import time
 import uuid
+import warnings
 from collections.abc import Callable
 from collections.abc import Generator
 from typing import Any
@@ -26,6 +27,7 @@ from proxystore.endpoint.protocol import pack_preamble
 from proxystore.endpoint.protocol import PREAMBLE
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
+from proxystore.warnings import EndpointVersionWarning
 
 TOKEN = os.urandom(TOKEN_SIZE)
 ENDPOINT_UUID = uuid.uuid4()
@@ -243,3 +245,38 @@ def test_request_connection_reset(fake_server) -> None:
             # Large enough that the send cannot complete before the reset
             client.set('key', b'x' * 10_000_000)
         assert client.closed
+
+
+def test_old_http_endpoint(fake_server) -> None:
+    def _script(conn: socket.socket) -> None:
+        conn.recv(65536)
+        conn.sendall(b'HTTP/1.1 400 Bad Request\r\nContent-Length: 0\r\n\r\n')
+
+    port = fake_server(_script)
+    with pytest.raises(EndpointProtocolError, match='responded with HTTP'):
+        EndpointClient.connect('127.0.0.1', port, TOKEN)
+
+
+def _handshake_with_info(**info: Any) -> Script:
+    def _script(conn: socket.socket) -> None:
+        _server_hello(conn)
+        _recv_message(conn)
+        conn.sendall(pack_message(Status.OK, _info(**info)))
+
+    return _script
+
+
+def test_version_mismatch_warning(fake_server) -> None:
+    port = fake_server(_handshake_with_info(proxystore='0.0.1'))
+    with pytest.warns(EndpointVersionWarning, match='ProxyStore'):
+        client = EndpointClient.connect('127.0.0.1', port, TOKEN)
+    client.close()
+
+
+def test_python_patch_version_no_warning(fake_server) -> None:
+    major, minor, _ = local_versions()['python'].split('.', 2)
+    port = fake_server(_handshake_with_info(python=f'{major}.{minor}.999'))
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', EndpointVersionWarning)
+        client = EndpointClient.connect('127.0.0.1', port, TOKEN)
+    client.close()
