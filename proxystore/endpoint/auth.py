@@ -36,10 +36,16 @@ def write_private_file(path: str, data: bytes) -> None:
     The file is created with mode `0600`. If the file already exists, it is
     truncated and its mode is reset to `0600`.
     """
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    _write_file(path, data, 0o600)
+
+
+def _write_file(path: str, data: bytes, mode: int) -> None:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
     try:
-        # The mode passed to open() only applies when the file is created.
-        os.fchmod(fd, 0o600)
+        # The mode passed to open() only applies when the file is created
+        # and is masked by the umask (e.g., the endpoint daemon's umask
+        # makes new files group-writable), so always set the mode.
+        os.fchmod(fd, mode)
         os.write(fd, data)
     finally:
         os.close(fd)
@@ -155,8 +161,11 @@ def generate_tls_certificate(
             encryption_algorithm=serialization.NoEncryption(),
         ),
     )
-    with open(cert_path, 'wb') as f:
-        f.write(cert.public_bytes(serialization.Encoding.PEM))
+    # Clients trust whatever certificate is in this file, so only the owner
+    # can modify it.
+    _write_file(
+        cert_path, cert.public_bytes(serialization.Encoding.PEM), 0o644
+    )
 
 
 def certificate_fingerprint(der: bytes) -> str:

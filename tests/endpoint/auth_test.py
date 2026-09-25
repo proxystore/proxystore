@@ -97,8 +97,14 @@ def test_proof_verification() -> None:
 
 def test_generate_tls_certificate(tmp_path: pathlib.Path) -> None:
     cert_path, key_path = tmp_path / 'tls.crt', tmp_path / 'tls.key'
-    generate_tls_certificate(str(cert_path), str(key_path), 'test')
+    # Permissive umask like the endpoint daemon uses
+    old_umask = os.umask(0o002)
+    try:
+        generate_tls_certificate(str(cert_path), str(key_path), 'test')
+    finally:
+        os.umask(old_umask)
     assert _mode(key_path) == 0o600
+    assert _mode(cert_path) == 0o644
 
     # Certificate and key are a valid pair
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
