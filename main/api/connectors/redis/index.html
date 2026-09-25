@@ -5073,7 +5073,7 @@ the connector object.</p>
 </span><span id="__span-0-131"><a id="__codelineno-0-131" name="__codelineno-0-131"></a><span class="sd">    Returns:</span>
 </span><span id="__span-0-132"><a id="__codelineno-0-132" name="__codelineno-0-132"></a><span class="sd">        Serialized object or `None` if the object does not exist.</span>
 </span><span id="__span-0-133"><a id="__codelineno-0-133" name="__codelineno-0-133"></a><span class="sd">    """</span>
-</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">redis_key</span><span class="p">)</span>
+</span><span id="__span-0-134"><a id="__codelineno-0-134" name="__codelineno-0-134"></a>    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_redis_client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">redis_key</span><span class="p">)</span>  <span class="c1"># type: ignore[return-value]</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>
