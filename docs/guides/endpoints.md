@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 26 September 2023*
+*Last updated 25 September 2026*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -11,11 +11,18 @@ between multiple sites using NAT traversal.
     implementations may change. Refer to the API docs for the most
     up-to-date information.
 
+!!! warning "Use the same ProxyStore and Python versions everywhere"
+    Clients and endpoints should use the same versions of ProxyStore and
+    Python. Mismatched versions can cause errors when objects are serialized
+    in one environment and deserialized in another. See
+    [Version Compatibility](#version-compatibility) for details.
+
 ## Overview
 
 At its core, the [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] is
-an in-memory data store built on asyncio. Endpoints provide a REST API, served
-using [Quart](https://pgjones.gitlab.io/quart/), and ProxyStore provides the
+an in-memory data store built on asyncio. Endpoints serve clients on the local
+network over an authenticated TCP protocol (see [Security](#security)), and
+ProxyStore provides the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as
 the primary interface for clients to interact with endpoints.
 
@@ -47,8 +54,7 @@ https://webrtc.org/getting-started/peer-connections.) The peers will then
 keep a data channel open between themselves for the remainder of their
 lifetime.
 
-Clients interacting with an endpoint via the REST API and typical object store
-operations (*get*, *set*, etc.) specify a *key* and an *endpoint UUID*.
+Clients interacting with an endpoint via typical object store operations (*get*, *set*, etc.) specify a *key* and an *endpoint UUID*.
 Endpoints that receive a request with a different endpoint UUID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.
@@ -111,20 +117,21 @@ name = "my-endpoint"  # (1)!
 uuid = "d27cf8cb-45fa-46b0-b907-27c830da62e3"  # (2)!
 port = 8765  # (3)!
 host_type = "ip"  # (4)!
+tls = false  # (5)!
 
 [relay]
-address = "wss://relay.proxystore.dev"  # (5)!
-peer_channels = 1  # (6)!
-verify_certificate = true  # (7)!
+address = "wss://relay.proxystore.dev"  # (6)!
+peer_channels = 1  # (7)!
+verify_certificate = true  # (8)!
 
 [relay.auth]
-method = "globus"  # (8)!
+method = "globus"  # (9)!
 
-[relay.auth.kwargs]  # (9)!
+[relay.auth.kwargs]  # (10)!
 
 [storage]
-database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (10)!
-max_object_size = 10000000  # (11)!
+database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (11)!
+max_object_size = 10000000  # (12)!
 ```
 
 1. Human-readable name of this endpoint. Only used for logging and CLI
@@ -135,20 +142,22 @@ max_object_size = 10000000  # (11)!
    determined at runtime and set as the IP address or fully-qualified domain
    name, respectively. If `host_type` is "static", a static address can
    be specified in a `host` field (e.g., `host = "localhost"`).
-5. Comment out the relay address if you want to start the endpoint in SOLO
+5. Encrypt connections between clients and the endpoint with TLS. See
+   [Security](#security) for details.
+6. Comment out the relay address if you want to start the endpoint in SOLO
    mode. Peering will not be available, but all other functionality will
    remain.
-6. Number of channels to multiplex peer communications over. Increasing this
+7. Number of channels to multiplex peer communications over. Increasing this
    to two or four may improve performance on certain networks.
-7. Only disable this when connecting to a local relay server using self-signed
+8. Only disable this when connecting to a local relay server using self-signed
    certificates for testing and development purposes.
-8. Authentication method to use with the relay server. Comment this out when
+9. Authentication method to use with the relay server. Comment this out when
    using a local relay server without authentication.
-9. Optional keyword arguments to use when creating the authorization headers.
-   Typically only used for testing and development purposes.
-10. Optional path to a SQLite database for persisting endpoint objects. See
+10. Optional keyword arguments to use when creating the authorization headers.
+    Typically only used for testing and development purposes.
+11. Optional path to a SQLite database for persisting endpoint objects. See
     the tip below for more details.
-11. Maximum object size. Comment out to disable object size limits.
+12. Maximum object size. Comment out to disable object size limits.
 
 !!! tip
 
@@ -162,7 +171,7 @@ An up-to-date configuration description can found in the
 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.
 
 Starting the endpoint will load the configuration from the ProxyStore home
-directory, initialize the endpoint, and start a Quart app using the host and
+directory, initialize the endpoint, and start serving clients on the host and
 port.
 
 ```bash
@@ -174,14 +183,55 @@ $ proxystore-endpoint start my-endpoint
     By default, the `host` address that an endpoint is served on is set to
     the IP address of the node where the endpoint is started (so that an
     endpoint can be configured and started on different nodes).
-    IP addresses can be incompatible with certain HTTP proxies, causing
-    clients to be unable to connect to their local endpoint (such as at ALCF).
-    Changing the `host_type` in the configuration from "ip" to "fqdn" will
+    If clients cannot reach the endpoint at that IP address,
+    changing the `host_type` in the configuration from "ip" to "fqdn" will
     use the fully-qualified domain name instead. Alternatively,
     `host_type = "static"` will use a static host address specified in the
     `host` field (i.e. `host = "12.34.56.78"`). The `--host` flag can also
     be used during configuration to specify "ip" (default), "fqdn", or a
     static host.
+
+## Security
+
+Clients connect to their local endpoint over TCP. Each time an endpoint
+starts, it writes a random token to the `client.token` file in the endpoint
+directory, and only the owner can read that file. When a client connects,
+the client and endpoint each prove that they know the token without sending
+it over the network. This means:
+
+* Only processes that can read your endpoint directory can use your
+  endpoint. Other users on a shared system cannot read, write, or evict
+  your objects.
+* A different server listening on the endpoint's address cannot impersonate
+  your endpoint, so clients never send objects to it.
+
+Clients on other nodes find the endpoint's address and token in the
+ProxyStore home directory, so the home directory must be on a shared file
+system that is private to your user.
+
+!!! tip
+
+    If all clients run on the same node as the endpoint, set
+    `host_type = "static"` and `host = "127.0.0.1"` in the endpoint
+    configuration so the endpoint is not reachable from other nodes.
+
+By default, objects are sent between clients and the endpoint unencrypted.
+This is usually acceptable within a cluster because reading network traffic
+typically requires root access. To encrypt connections, configure the
+endpoint with TLS.
+
+```bash
+$ proxystore-endpoint configure my-endpoint --tls
+```
+
+Or, set `tls = true` in the endpoint's `config.toml` and restart the endpoint.
+The endpoint generates a new self-signed certificate (`tls.crt` and
+`tls.key` in the endpoint directory) each time it starts, and clients only
+trust the certificate in the endpoint directory. TLS reduces the throughput of
+large transfers by about half.
+
+Connections between peer endpoints are separate. They are encrypted by WebRTC
+and established through the relay server.
 
 ## EndpointConnector
 
@@ -222,6 +272,51 @@ to connect to the endpoint using the host and port in the configuration. This
 process is repeated until a reachable endpoint is found. While the user could
 specify the home endpoint directly, the home endpoint may change when a proxy
 travels to a different machine.
+
+## Version Compatibility
+
+Objects are serialized by one client and deserialized by another, possibly
+on a different system after being transferred between peer endpoints.
+Pickle and cloudpickle do not guarantee that data pickled by one Python
+version can be unpickled by another (in particular, functions and classes
+pickled by value with cloudpickle), and ProxyStore's internal formats can
+change between versions.
+
+!!! warning
+
+    Use the same ProxyStore version and the same Python major and minor
+    version (e.g., 3.12) for all clients and endpoints. After upgrading
+    ProxyStore, restart your endpoints.
+    ```bash
+    $ proxystore-endpoint stop my-endpoint
+    $ proxystore-endpoint start my-endpoint
+    ```
+
+Clients and endpoints exchange their versions each time a client connects.
+
+| Mismatch | Result |
+| --- | --- |
+| Client and endpoint protocol versions | Error. The connection is refused. |
+| Client uses the older HTTP API | The client receives HTTP error 426 explaining that the client should be upgraded. |
+| Endpoint uses the older HTTP API | Error explaining that the endpoint should be restarted with the client's version. |
+| ProxyStore versions | The client warns with an [`EndpointVersionWarning`][proxystore.warnings.EndpointVersionWarning], and the endpoint logs a warning. |
+| Python major or minor versions | Same as above. |
+| Python patch versions (e.g., 3.12.1 vs. 3.12.4) | None. Patch releases are compatible. |
+
+Versions are only checked between a client and its local endpoint. Versions
+are **not** checked between peer endpoints or between the client that
+created an object and the client that resolves it on another system, so keep
+the environments on all systems consistent (e.g., with a lock file).
+
+To turn the warning into an error, use a
+[warnings filter](https://docs.python.org/3/library/warnings.html#the-warnings-filter).
+
+```python
+import warnings
+from proxystore.warnings import EndpointVersionWarning
+
+warnings.simplefilter('error', EndpointVersionWarning)
+```
 
 ## Proxy Lifecycle
 

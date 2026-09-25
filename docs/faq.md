@@ -249,3 +249,6 @@ Check out the [mypy plugin][proxystore.mypy_plugin] to learn more.
 ### Why are my endpoints not working?
 
 Check out the [Endpoints Debugging Guide](guides/endpoints-debugging.md).
+Also check that your clients and endpoints use the same ProxyStore and Python
+versions (see
+[Version Compatibility](guides/endpoints.md#version-compatibility)).
