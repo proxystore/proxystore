@@ -51,15 +51,11 @@ from typing import Any
 from typing import cast
 from typing import Generic
 from typing import Optional
+from typing import Self
 from typing import SupportsIndex
 from typing import TypeAlias
 from typing import TypeVar
 from typing import Union
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
     from typing import TypeAliasType

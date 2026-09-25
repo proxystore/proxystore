@@ -9,7 +9,6 @@ from __future__ import annotations
 import atexit
 import functools
 import logging
-import sys
 import threading
 import time
 import uuid
@@ -23,13 +22,9 @@ from typing import Concatenate
 from typing import ParamSpec
 from typing import Protocol
 from typing import runtime_checkable
+from typing import Self
 from typing import TYPE_CHECKING
 from typing import TypeVar
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy

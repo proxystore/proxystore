@@ -15,7 +15,7 @@ maintainers = [
 ]
 description = "Advanced data flow management for distributed Python applications"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = "MIT"
 license-files = ["LICENSE"]
 classifiers = [
@@ -30,9 +30,8 @@ dependencies = [
     "cryptography>=39.0.1",
     "globus-sdk>=4,<5",
     "pydantic>=2,<3",
-    "tomli ; python_version<'3.11'",
     "tomli-w",
-    "typing-extensions>=4.3.0 ; python_version<'3.11'",
+    "typing-extensions>=4.6.0 ; python_version<'3.12'",
 ]
 
 [project.urls]
@@ -156,7 +155,7 @@ timeout = 60
 
 [tool.ruff]
 line-length = 79
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.format]
 indent-style = "space"

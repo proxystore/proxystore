@@ -1,17 +1,12 @@
 from __future__ import annotations
 
-import sys
 from collections.abc import Callable
 from typing import Any
 from typing import Generic
 from typing import overload
 from typing import ParamSpec
+from typing import Self
 from typing import TypeVar
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 T = TypeVar('T')
 P = ParamSpec('P')

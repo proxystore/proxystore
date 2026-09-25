@@ -407,7 +407,7 @@ class PeerConnection:
         """
         try:
             await asyncio.wait_for(self._handshake_success, timeout)
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise PeerConnectionTimeoutError(
                 'Timeout waiting for peer to peer connection to establish '
                 f'in {self._log_prefix}.',

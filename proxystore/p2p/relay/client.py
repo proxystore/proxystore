@@ -5,14 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 import ssl
-import sys
 import uuid
 from types import TracebackType
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 try:
     import websockets
@@ -316,16 +311,13 @@ class RelayClient:
                     # OSError covers a range of connection failures, all
                     # subclasses of OSError:
                     #   - ConnectionRefusedError if the relay is unavailable,
-                    #   - socket.gaierror on temporary DNS failures, and
+                    #   - socket.gaierror on temporary DNS failures,
+                    #   - TimeoutError if the relay is too slow to respond, and
                     #   - a bare OSError ("Multiple exceptions: ...") raised by
                     #     asyncio when every address a hostname resolves to
                     #     (e.g. both ::1 and 127.0.0.1 for localhost) fails to
                     #     connect.
                     OSError,
-                    # asyncio.TimeoutError may occur if the relay is too slow
-                    # to respond. It is only an OSError subclass on Python
-                    # >=3.11 so it is listed explicitly.
-                    asyncio.TimeoutError,
                     websockets.exceptions.ConnectionClosed,
                 ) as e:
                     if not retry:

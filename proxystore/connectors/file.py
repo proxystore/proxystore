@@ -5,19 +5,14 @@ from __future__ import annotations
 import logging
 import os
 import shutil
-import sys
 import uuid
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
+from typing import Self
 
 from proxystore.serialize import BytesLike
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 

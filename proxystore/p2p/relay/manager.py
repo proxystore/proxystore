@@ -24,7 +24,7 @@ UserT = TypeVar('UserT')
 
 def _utc_current_time() -> datetime.datetime:
     # dataclasses.field's default_factory requires a zero argument callable
-    return datetime.datetime.now(tz=datetime.timezone.utc)
+    return datetime.datetime.now(tz=datetime.UTC)
 
 
 @dataclasses.dataclass(frozen=True, eq=False)

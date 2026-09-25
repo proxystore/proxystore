@@ -45,7 +45,7 @@ body:
     id: python-version
     attributes:
       label: Python Version
-      placeholder: "3.10"
+      placeholder: "3.11"
     validations:
       required: true
 

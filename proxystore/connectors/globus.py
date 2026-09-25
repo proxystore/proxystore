@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import re
-import sys
 import uuid
 from collections.abc import Collection
 from collections.abc import Generator
@@ -17,17 +16,12 @@ from types import TracebackType
 from typing import Any
 from typing import Literal
 from typing import NamedTuple
-
-from proxystore.serialize import BytesLike
-
-if sys.version_info >= (3, 11):  # pragma: >=3.11 cover
-    from typing import Self
-else:  # pragma: <3.11 cover
-    from typing_extensions import Self
+from typing import Self
 
 import globus_sdk
 
 from proxystore.globus.client import get_transfer_client
+from proxystore.serialize import BytesLike
 from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
