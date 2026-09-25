@@ -69,7 +69,7 @@ jobs:
             ${{ matrix.os }}-pip-${{ matrix.python }}-
 
       - name: Install Packages
-        run: pip install --upgrade setuptools pip tox virtualenv
+        run: pip install --upgrade setuptools pip tox
 
       - name: Run Tox
         run: tox -e ${{ matrix.toxenv }}

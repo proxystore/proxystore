@@ -11,6 +11,8 @@ from unittest import mock
 
 import pytest
 
+from proxystore.endpoint.commands import _is_own_process
+from proxystore.endpoint.commands import _wait_for_exit
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import EndpointStatus
 from proxystore.endpoint.commands import get_status
@@ -79,7 +81,9 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
         with open(get_pid_filepath(endpoint_dir), 'w') as f:
             f.write('0')
 
-        with mock.patch('psutil.pid_exists') as mock_exists:
+        with mock.patch(
+            'proxystore.endpoint.commands._is_own_process'
+        ) as mock_exists:
             # Return RUNNING if PID exists
             mock_exists.return_value = True
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.RUNNING
@@ -87,6 +91,46 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
             # Return HANGING if PID does not exists
             mock_exists.return_value = False
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
+
+        # Return HANGING if PID was reused by another user's process
+        with open(get_pid_filepath(endpoint_dir), 'w') as f:
+            f.write('1234')
+        with mock.patch('os.kill', side_effect=PermissionError):
+            assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
+
+
+def test_is_own_process() -> None:
+    assert _is_own_process(os.getpid())
+    assert not _is_own_process(0)
+    assert not _is_own_process(-1)
+
+    context = multiprocessing.get_context('spawn')
+    p = context.Process(target=time.sleep, args=(0,))
+    p.start()
+    p.join()
+    assert p.pid is not None
+    assert not _is_own_process(p.pid)
+
+    with mock.patch('os.kill', side_effect=PermissionError):
+        assert not _is_own_process(os.getpid())
+
+
+def test_wait_for_exit() -> None:
+    with (
+        mock.patch(
+            'proxystore.endpoint.commands._is_own_process',
+            side_effect=[True, False],
+        ),
+        mock.patch('time.sleep') as mock_sleep,
+    ):
+        assert _wait_for_exit(os.getpid(), timeout=1)
+    mock_sleep.assert_called_once()
+
+    with mock.patch(
+        'proxystore.endpoint.commands._is_own_process',
+        return_value=True,
+    ):
+        assert not _wait_for_exit(os.getpid(), timeout=0)
 
 
 def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
@@ -414,7 +458,9 @@ def test_start_endpoint_hanging_different_host(
     with open(pid_file, 'w') as f:
         f.write('1')
 
-    with mock.patch('psutil.pid_exists', return_value=False):
+    with mock.patch(
+        'proxystore.endpoint.commands._is_own_process', return_value=False
+    ):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
@@ -440,7 +486,9 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
         f.write('1')
 
     with (
-        mock.patch('psutil.pid_exists', return_value=False),
+        mock.patch(
+            'proxystore.endpoint.commands._is_own_process', return_value=False
+        ),
         mock.patch(
             'proxystore.endpoint.commands.serve',
             autospec=True,
@@ -563,7 +611,9 @@ def test_stop_endpoint_hanging_different_host(
     with open(pid_file, 'w') as f:
         f.write('1')
 
-    with mock.patch('psutil.pid_exists', return_value=False):
+    with mock.patch(
+        'proxystore.endpoint.commands._is_own_process', return_value=False
+    ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
@@ -589,7 +639,9 @@ def test_stop_endpoint_dangling_pid_file(
     with open(pid_file, 'w') as f:
         f.write('1')
 
-    with mock.patch('psutil.pid_exists', return_value=False):
+    with mock.patch(
+        'proxystore.endpoint.commands._is_own_process', return_value=False
+    ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0
 
