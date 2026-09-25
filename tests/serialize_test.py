@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import io
 import re
+import subprocess
+import sys
 from typing import Any
 from unittest import mock
 
@@ -155,3 +157,42 @@ def test_polars_serializer() -> None:
         buffer.seek(0)
         deserialized = serializer.deserialize(buffer)
         assert xpl.equals(deserialized)
+
+
+@pytest.mark.parametrize(
+    ('serializer', 'module', 'obj'),
+    (
+        (_NumpySerializer(), 'numpy', numpy.array([1, 2, 3])),
+        (_PandasSerializer(), 'pandas', pandas.DataFrame({'a': [1, 2, 3]})),
+        (_PolarsSerializer(), 'polars', polars.DataFrame({'a': [1, 2, 3]})),
+    ),
+)
+def test_supported_module_not_imported(
+    serializer: Any,
+    module: str,
+    obj: Any,
+) -> None:
+    with mock.patch.dict(sys.modules, {module: None}):
+        assert not serializer.supported(obj)
+
+
+def test_deserialize_module_not_installed() -> None:
+    data = serialize(numpy.array([1, 2, 3]))
+    with mock.patch.dict(sys.modules, {'numpy': None}):
+        with pytest.raises(
+            SerializationError,
+            match='using the numpy serializer',
+        ):
+            deserialize(data)
+
+
+def test_import_does_not_import_optional_modules() -> None:
+    # Run in a subprocess because this test process has already imported
+    # the modules.
+    code = (
+        'import sys\n'
+        'import proxystore.serialize\n'
+        "imported = {'numpy', 'pandas', 'polars'} & set(sys.modules)\n"
+        'assert not imported, imported\n'
+    )
+    subprocess.run([sys.executable, '-c', code], check=True)

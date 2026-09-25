@@ -106,19 +106,32 @@ class _StrSerializer:
         return buffer.read().decode()
 
 
+# The numpy, pandas, and polars serializers import their library lazily.
+# Importing these libraries is slow, and polars starts a thread pool on
+# import which deadlocks processes that fork afterwards (e.g., the endpoint
+# daemon). An object can only be an instance of a type from one of these
+# libraries if the library has already been imported, so checking
+# sys.modules in supported() never misses a compatible object.
+
+
 class _NumpySerializer:
     identifier = b'NP'
     name = 'numpy'
 
     def supported(self, obj: Any) -> bool:
-        return isinstance(obj, numpy.ndarray)
+        numpy = sys.modules.get('numpy')
+        return numpy is not None and isinstance(obj, numpy.ndarray)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
+        import numpy
+
         # Must allow_pickle=True for the case where the numpy array contains
         # non-numeric data.
         numpy.save(buffer, obj, allow_pickle=True)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
+        import numpy
+
         return numpy.load(buffer, allow_pickle=True)
 
 
@@ -127,7 +140,8 @@ class _PandasSerializer:
     name = 'pandas'
 
     def supported(self, obj: Any) -> bool:
-        return isinstance(obj, pandas.DataFrame)
+        pandas = sys.modules.get('pandas')
+        return pandas is not None and isinstance(obj, pandas.DataFrame)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         # Pandas with pickle protocol 5 is the suggested serialization
@@ -137,6 +151,8 @@ class _PandasSerializer:
         obj.to_pickle(buffer, protocol=_PICKLE_PROTOCOL)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
+        import pandas
+
         return pandas.read_pickle(buffer)
 
 
@@ -145,12 +161,15 @@ class _PolarsSerializer:
     name = 'polars'
 
     def supported(self, obj: Any) -> bool:
-        return isinstance(obj, polars.DataFrame)
+        polars = sys.modules.get('polars')
+        return polars is not None and isinstance(obj, polars.DataFrame)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         obj.write_ipc(buffer)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
+        import polars
+
         return polars.read_ipc(buffer.read())
 
 
@@ -205,28 +224,9 @@ def _register_serializer(serializer: type[_Serializer]) -> None:
 # we want serialization to be tried.
 _register_serializer(_BytesSerializer)
 _register_serializer(_StrSerializer)
-
-try:
-    import numpy
-
-    _register_serializer(_NumpySerializer)
-except ImportError:  # pragma: no cover
-    pass
-
-try:
-    import pandas
-
-    _register_serializer(_PandasSerializer)
-except ImportError:  # pragma: no cover
-    pass
-
-try:
-    import polars
-
-    _register_serializer(_PolarsSerializer)
-except ImportError:  # pragma: no cover
-    pass
-
+_register_serializer(_NumpySerializer)
+_register_serializer(_PandasSerializer)
+_register_serializer(_PolarsSerializer)
 _register_serializer(_PickleSerializer)
 _register_serializer(_CloudPickleSerializer)
 
