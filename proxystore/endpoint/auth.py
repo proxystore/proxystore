@@ -1,0 +1,104 @@
+"""Authentication between clients and their local endpoint.
+
+Each time an endpoint starts, it generates a random token and writes it to
+a file in the endpoint's directory that only the owner can read. Clients
+read the token from the same directory, so any process that can read the
+user's ProxyStore home directory is trusted.
+
+The token is never sent over the network. Instead, the client and endpoint
+each prove they know the token by computing an HMAC over random nonces
+chosen by both sides. This authenticates the client to the endpoint and the
+endpoint to the client (i.e., a different server listening on the endpoint's
+address cannot impersonate the endpoint).
+"""
+
+from __future__ import annotations
+
+import hashlib
+import hmac
+import os
+import secrets
+from typing import Literal
+
+TOKEN_SIZE = 32
+"""Size in bytes of an endpoint token."""
+
+
+def write_private_file(path: str, data: bytes) -> None:
+    """Write data to a file that only the owner can read and write.
+
+    The file is created with mode `0600`. If the file already exists, it is
+    truncated and its mode is reset to `0600`.
+    """
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        # The mode passed to open() only applies when the file is created.
+        os.fchmod(fd, 0o600)
+        os.write(fd, data)
+    finally:
+        os.close(fd)
+
+
+def generate_token_file(path: str) -> bytes:
+    """Generate a new random token and write it to a file.
+
+    Args:
+        path: Path of the token file.
+
+    Returns:
+        The token.
+    """
+    token = secrets.token_bytes(TOKEN_SIZE)
+    write_private_file(path, token.hex().encode())
+    return token
+
+
+def read_token_file(path: str) -> bytes:
+    """Read a token from a file.
+
+    Raises:
+        FileNotFoundError: If the token file does not exist.
+        ValueError: If the file does not contain a valid token.
+    """
+    with open(path) as f:
+        contents = f.read().strip()
+    try:
+        token = bytes.fromhex(contents)
+    except ValueError:
+        raise ValueError(f'Token file at {path} is malformed.') from None
+    if len(token) != TOKEN_SIZE:
+        raise ValueError(f'Token file at {path} is malformed.')
+    return token
+
+
+def compute_proof(
+    token: bytes,
+    role: Literal['client', 'server'],
+    first_nonce: bytes,
+    second_nonce: bytes,
+) -> bytes:
+    """Compute a proof that the sender knows the token.
+
+    The role is included so a proof sent by one side can never be replayed
+    as the proof of the other side.
+
+    Args:
+        token: Endpoint token.
+        role: Role of the side computing the proof.
+        first_nonce: Nonce of the side computing the proof.
+        second_nonce: Nonce of the other side.
+    """
+    message = role.encode() + first_nonce + second_nonce
+    return hmac.new(token, message, hashlib.sha256).digest()
+
+
+def verify_proof(
+    token: bytes,
+    role: Literal['client', 'server'],
+    first_nonce: bytes,
+    second_nonce: bytes,
+    proof: bytes,
+) -> bool:
+    """Verify a proof computed by the other side of the handshake."""
+    expected = compute_proof(token, role, first_nonce, second_nonce)
+    return hmac.compare_digest(expected, proof)

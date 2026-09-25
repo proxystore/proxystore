@@ -1,0 +1,91 @@
+from __future__ import annotations
+
+import os
+import pathlib
+import stat
+
+import pytest
+
+from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import generate_token_file
+from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.auth import write_private_file
+
+
+def _mode(path: pathlib.Path) -> int:
+    return stat.S_IMODE(os.stat(path).st_mode)
+
+
+def test_write_private_file_mode(tmp_path: pathlib.Path) -> None:
+    path = tmp_path / 'file'
+    old_umask = os.umask(0)
+    try:
+        write_private_file(str(path), b'secret')
+    finally:
+        os.umask(old_umask)
+    assert _mode(path) == 0o600
+    assert path.read_bytes() == b'secret'
+
+
+def test_write_private_file_resets_existing_mode(
+    tmp_path: pathlib.Path,
+) -> None:
+    path = tmp_path / 'file'
+    path.write_bytes(b'old contents that are longer')
+    os.chmod(path, 0o644)
+
+    write_private_file(str(path), b'new')
+
+    assert _mode(path) == 0o600
+    assert path.read_bytes() == b'new'
+
+
+def test_token_file_round_trip(tmp_path: pathlib.Path) -> None:
+    path = str(tmp_path / 'token')
+    token = generate_token_file(path)
+    assert len(token) == TOKEN_SIZE
+    assert read_token_file(path) == token
+    assert _mode(tmp_path / 'token') == 0o600
+
+    # A new token is generated each time
+    assert generate_token_file(path) != token
+
+
+@pytest.mark.parametrize('contents', ('not hex', 'abcd'))
+def test_read_token_file_malformed(
+    contents: str,
+    tmp_path: pathlib.Path,
+) -> None:
+    path = tmp_path / 'token'
+    path.write_text(contents)
+    with pytest.raises(ValueError, match='malformed'):
+        read_token_file(str(path))
+
+
+def test_read_token_file_missing(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        read_token_file(str(tmp_path / 'token'))
+
+
+def test_proof_verification() -> None:
+    token = os.urandom(TOKEN_SIZE)
+    client_nonce, server_nonce = os.urandom(32), os.urandom(32)
+
+    proof = compute_proof(token, 'server', server_nonce, client_nonce)
+    assert verify_proof(token, 'server', server_nonce, client_nonce, proof)
+
+    # Wrong token
+    other_token = os.urandom(TOKEN_SIZE)
+    assert not verify_proof(
+        other_token,
+        'server',
+        server_nonce,
+        client_nonce,
+        proof,
+    )
+    # A server proof cannot be used as a client proof
+    assert not verify_proof(token, 'client', server_nonce, client_nonce, proof)
+    # Nonces are not interchangeable
+    assert not verify_proof(token, 'server', client_nonce, server_nonce, proof)
