@@ -43,6 +43,7 @@ from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import unpack_preamble
 from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import _serve_async
+from proxystore.endpoint.serve import ClientConnection
 from proxystore.endpoint.serve import EndpointServer
 from proxystore.endpoint.serve import serve
 from proxystore.endpoint.storage import DictStorage
@@ -73,11 +74,7 @@ async def server() -> AsyncGenerator[_Server, None]:
             max_object_size=MAX_OBJECT_SIZE,
             handshake_timeout=1,
         )
-        tcp_server = await asyncio.start_server(
-            handler.handle_connection,
-            host='127.0.0.1',
-            port=0,
-        )
+        tcp_server = await handler.start_server('127.0.0.1', 0)
         port = tcp_server.sockets[0].getsockname()[1]
         yield _Server(handler, endpoint, token, '127.0.0.1', port)
         tcp_server.close()
@@ -562,3 +559,125 @@ async def test_serve_cancels_nat_check(
         await _serve_async(config, str(tmp_path), stop)
 
     assert cancelled.is_set()
+
+
+class _FakeTransport:
+    def __init__(self) -> None:
+        self.protocol: ClientConnection | None = None
+        self.written = bytearray()
+        self.reading_paused = False
+        self.closing = False
+
+    def write(self, data: bytes) -> None:
+        self.written += data
+
+    def pause_reading(self) -> None:
+        self.reading_paused = True
+
+    def resume_reading(self) -> None:
+        self.reading_paused = False
+
+    def is_closing(self) -> bool:
+        return self.closing
+
+    def close(self) -> None:
+        self.closing = True
+        assert self.protocol is not None
+        self.protocol.connection_lost(None)
+
+    def get_extra_info(self, name: str) -> Any:
+        return f'extra-{name}'
+
+
+async def _fake_connection() -> tuple[ClientConnection, _FakeTransport]:
+    conn = ClientConnection(AsyncMock())
+    transport = _FakeTransport()
+    transport.protocol = conn
+    conn.connection_made(transport)  # type: ignore[arg-type]
+    await asyncio.sleep(0)
+    return conn, transport
+
+
+def _feed(conn: ClientConnection, data: bytes) -> None:
+    view = memoryview(data)
+    while len(view) > 0:
+        buffer = conn.get_buffer(-1)
+        n = min(len(buffer), len(view))
+        buffer[:n] = view[:n]
+        conn.buffer_updated(n)
+        view = view[n:]
+
+
+async def test_connection_pending_data_flow_control() -> None:
+    conn, transport = await _fake_connection()
+    assert conn.get_extra_info('peername') == 'extra-peername'
+
+    # Data received while no read is waiting is buffered until too much
+    # is buffered, then reading is paused.
+    data = randbytes(ClientConnection._MAX_PENDING_SIZE + 1)
+    _feed(conn, data)
+    assert transport.reading_paused
+
+    assert await conn.readexactly(len(data)) == data
+    assert not transport.reading_paused
+
+
+async def test_connection_read_split_across_buffers() -> None:
+    conn, _ = await _fake_connection()
+    _feed(conn, b'abc')
+    task = asyncio.create_task(conn.readexactly(6))
+    await asyncio.sleep(0)
+    _feed(conn, b'defgh')
+    assert await task == b'abcdef'
+    assert await conn.readexactly(2) == b'gh'
+
+
+async def test_connection_eof_before_read() -> None:
+    conn, _ = await _fake_connection()
+    _feed(conn, b'abc')
+    conn.eof_received()
+    with pytest.raises(asyncio.IncompleteReadError) as exc_info:
+        await conn.readexactly(5)
+    assert exc_info.value.partial == b'abc'
+
+
+async def test_connection_eof_during_read() -> None:
+    conn, _ = await _fake_connection()
+    task = asyncio.create_task(conn.readexactly(10))
+    await asyncio.sleep(0)
+    _feed(conn, b'abcd')
+    conn.eof_received()
+    with pytest.raises(asyncio.IncompleteReadError) as exc_info:
+        await task
+    assert exc_info.value.partial == b'abcd'
+
+
+async def test_connection_drain() -> None:
+    conn, transport = await _fake_connection()
+    conn.write(b'data')
+    assert transport.written == b'data'
+    await conn.drain()
+
+    # Drain waits until writing is resumed
+    conn.pause_writing()
+    task = asyncio.create_task(conn.drain())
+    await asyncio.sleep(0)
+    assert not task.done()
+    conn.resume_writing()
+    await task
+
+    # Resuming without a drain waiting is a no-op
+    conn.resume_writing()
+
+    # Drain fails if the connection is lost while waiting
+    conn.pause_writing()
+    task = asyncio.create_task(conn.drain())
+    await asyncio.sleep(0)
+    conn.close()
+    with pytest.raises(ConnectionResetError):
+        await task
+    await conn.wait_closed()
+
+    # Drain fails if the connection is already closing
+    with pytest.raises(ConnectionResetError):
+        await conn.drain()

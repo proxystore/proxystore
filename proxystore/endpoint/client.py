@@ -297,7 +297,7 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
     sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
 
     preamble = _recv_exactly(sock, PREAMBLE.size)
-    version = unpack_preamble(bytes(preamble))
+    version = unpack_preamble(preamble)
     header, meta = _recv_message(sock)
     if version != PROTOCOL_VERSION or header.code == Status.PROTOCOL_MISMATCH:
         raise EndpointProtocolError(
@@ -364,8 +364,8 @@ def _check_status(header: Header, meta: dict[str, Any], stage: str) -> None:
 
 
 def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
-    header = unpack_header(bytes(_recv_exactly(sock, HEADER.size)))
-    meta = decode_meta(bytes(_recv_exactly(sock, header.meta_len)))
+    header = unpack_header(_recv_exactly(sock, HEADER.size))
+    meta = decode_meta(_recv_exactly(sock, header.meta_len))
     return header, meta
 
 

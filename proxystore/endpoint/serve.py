@@ -13,7 +13,10 @@ import os
 import signal
 import socket
 import uuid
+from collections.abc import Callable
+from collections.abc import Coroutine
 from typing import Any
+from typing import cast
 from typing import Literal
 
 try:
@@ -63,7 +66,187 @@ logger = logging.getLogger(__name__)
 HANDSHAKE_TIMEOUT = 10
 """Seconds a client has to complete the handshake after connecting."""
 
-_Response = tuple[Status, dict[str, Any] | None, bytes | None]
+_Response = tuple[Status, dict[str, Any] | None, bytes | bytearray | None]
+
+
+class ClientConnection(asyncio.BufferedProtocol):
+    """Client connection that receives data directly into buffers.
+
+    This provides the subset of the
+    [`StreamReader`][asyncio.StreamReader] and
+    [`StreamWriter`][asyncio.StreamWriter] interfaces used by the
+    [`EndpointServer`][proxystore.endpoint.serve.EndpointServer].
+    Unlike [`StreamReader.readexactly()`][asyncio.StreamReader.readexactly],
+    which copies received data through an internal buffer,
+    [`readexactly()`][proxystore.endpoint.serve.ClientConnection.readexactly]
+    has the transport write directly into the returned buffer. This roughly
+    triples the throughput of receiving large objects.
+
+    Args:
+        callback: Coroutine function called with this connection once the
+            connection is made.
+    """
+
+    _SPARE_SIZE = 64 * 1024
+    _MAX_PENDING_SIZE = 1024 * 1024
+
+    def __init__(
+        self,
+        callback: Callable[[ClientConnection], Coroutine[Any, Any, None]],
+    ) -> None:
+        self._callback = callback
+        self._transport: asyncio.Transport | None = None
+        self._task: asyncio.Task[None] | None = None
+        loop = asyncio.get_running_loop()
+        self._closed: asyncio.Future[None] = loop.create_future()
+
+        # Data received while no read is waiting.
+        self._spare = bytearray(self._SPARE_SIZE)
+        self._pending = bytearray()
+        # Buffer of the read currently waiting for data.
+        self._target: memoryview | None = None
+        self._target_pos = 0
+        self._read_waiter: asyncio.Future[None] | None = None
+        self._reading_paused = False
+        self._eof = False
+
+        self._writing_paused = False
+        self._drain_waiter: asyncio.Future[None] | None = None
+
+    def connection_made(self, transport: asyncio.BaseTransport) -> None:
+        """Start the callback task for the new connection."""
+        # uvloop transports do not subclass asyncio.Transport but implement
+        # the same interface.
+        self._transport = cast(asyncio.Transport, transport)
+        self._task = asyncio.get_running_loop().create_task(
+            self._callback(self),
+        )
+
+    def get_buffer(self, sizehint: int) -> memoryview:
+        """Get the buffer that the transport should write data into."""
+        if self._target is not None:
+            return self._target[self._target_pos :]
+        return memoryview(self._spare)
+
+    def buffer_updated(self, nbytes: int) -> None:
+        """Process data written into the buffer from `get_buffer()`."""
+        if self._target is not None:
+            self._target_pos += nbytes
+            if self._target_pos == len(self._target):
+                # Stop receiving into the target immediately because the
+                # transport may request another buffer before the reader
+                # wakes up, and the buffer must not be empty.
+                self._target = None
+                self._wake_reader()
+            return
+
+        self._pending += self._spare[:nbytes]
+        if (
+            len(self._pending) > self._MAX_PENDING_SIZE
+            and not self._reading_paused
+        ):
+            assert self._transport is not None
+            self._transport.pause_reading()
+            self._reading_paused = True
+
+    def eof_received(self) -> bool:
+        """Handle the client closing its side of the connection."""
+        self._eof = True
+        self._wake_reader()
+        return False
+
+    def connection_lost(self, exc: Exception | None) -> None:
+        """Handle the connection being closed."""
+        self._eof = True
+        self._wake_reader()
+        if self._drain_waiter is not None and not self._drain_waiter.done():
+            self._drain_waiter.set_exception(
+                ConnectionResetError('Connection lost'),
+            )
+        if not self._closed.done():  # pragma: no branch
+            self._closed.set_result(None)
+
+    def pause_writing(self) -> None:
+        """Pause writing when the transport's write buffer is full."""
+        self._writing_paused = True
+
+    def resume_writing(self) -> None:
+        """Resume writing when the transport's write buffer drains."""
+        self._writing_paused = False
+        if self._drain_waiter is not None and not self._drain_waiter.done():
+            self._drain_waiter.set_result(None)
+
+    def get_extra_info(self, name: str) -> Any:
+        """Get information about the transport."""
+        assert self._transport is not None
+        return self._transport.get_extra_info(name)
+
+    async def readexactly(self, n: int) -> bytearray:
+        """Read exactly `n` bytes.
+
+        Raises:
+            IncompleteReadError: If the connection is closed before `n`
+                bytes are read.
+        """
+        buffer = bytearray(n)
+        view = memoryview(buffer)
+        received = min(n, len(self._pending))
+        view[:received] = self._pending[:received]
+        del self._pending[:received]
+        if self._reading_paused and len(self._pending) == 0:
+            assert self._transport is not None
+            self._transport.resume_reading()
+            self._reading_paused = False
+
+        if received < n:
+            if self._eof:
+                raise asyncio.IncompleteReadError(bytes(view[:received]), n)
+            self._target = view
+            self._target_pos = received
+            self._read_waiter = asyncio.get_running_loop().create_future()
+            try:
+                await self._read_waiter
+            finally:
+                received = self._target_pos
+                self._target = None
+                self._read_waiter = None
+            if received < n:
+                raise asyncio.IncompleteReadError(bytes(view[:received]), n)
+        return buffer
+
+    def write(self, data: bytes | bytearray | memoryview) -> None:
+        """Write data to the connection."""
+        assert self._transport is not None
+        self._transport.write(data)
+
+    async def drain(self) -> None:
+        """Wait until it is appropriate to write more data.
+
+        Raises:
+            ConnectionResetError: If the connection is closed.
+        """
+        assert self._transport is not None
+        if self._transport.is_closing():
+            raise ConnectionResetError('Connection lost')
+        if self._writing_paused:
+            self._drain_waiter = asyncio.get_running_loop().create_future()
+            try:
+                await self._drain_waiter
+            finally:
+                self._drain_waiter = None
+
+    def close(self) -> None:
+        """Close the connection."""
+        assert self._transport is not None
+        self._transport.close()
+
+    async def wait_closed(self) -> None:
+        """Wait until the connection is closed."""
+        await asyncio.shield(self._closed)
+
+    def _wake_reader(self) -> None:
+        if self._read_waiter is not None and not self._read_waiter.done():
+            self._read_waiter.set_result(None)
 
 
 class EndpointServer:
@@ -94,22 +277,27 @@ class EndpointServer:
         self.token = token
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
-        self._connections: set[asyncio.StreamWriter] = set()
+        self._connections: set[ClientConnection] = set()
+
+    async def start_server(self, host: str, port: int) -> asyncio.Server:
+        """Start a server that handles connections on the host and port."""
+        loop = asyncio.get_running_loop()
+        return await loop.create_server(
+            lambda: ClientConnection(self.handle_connection),
+            host=host,
+            port=port,
+        )
 
     def close_connections(self) -> None:
         """Close all open client connections."""
-        for writer in list(self._connections):
-            writer.close()
+        for conn in list(self._connections):
+            conn.close()
 
-    async def handle_connection(
-        self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter,
-    ) -> None:
+    async def handle_connection(self, conn: ClientConnection) -> None:
         """Handle a client connection until it is closed."""
-        self._connections.add(writer)
-        peer = writer.get_extra_info('peername')
-        sock = writer.get_extra_info('socket')
+        self._connections.add(conn)
+        peer = conn.get_extra_info('peername')
+        sock = conn.get_extra_info('socket')
         if sock is not None:  # pragma: no branch
             with contextlib.suppress(OSError):
                 sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
@@ -117,7 +305,7 @@ class EndpointServer:
         try:
             try:
                 authenticated = await asyncio.wait_for(
-                    self._handshake(reader, writer, peer),
+                    self._handshake(conn, peer),
                     timeout=self.handshake_timeout,
                 )
             except TimeoutError:
@@ -128,7 +316,7 @@ class EndpointServer:
                 )
                 return
             if authenticated:
-                await self._serve_requests(reader, writer)
+                await self._serve_requests(conn)
         except (
             ConnectionError,
             asyncio.IncompleteReadError,
@@ -136,18 +324,12 @@ class EndpointServer:
         ) as e:
             logger.debug(f'Closing connection from {peer}: {e!r}')
         finally:
-            self._connections.discard(writer)
-            writer.close()
-            with contextlib.suppress(Exception):
-                await writer.wait_closed()
+            self._connections.discard(conn)
+            conn.close()
+            await conn.wait_closed()
 
-    async def _handshake(
-        self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter,
-        peer: Any,
-    ) -> bool:
-        version = unpack_preamble(await reader.readexactly(PREAMBLE.size))
+    async def _handshake(self, conn: ClientConnection, peer: Any) -> bool:
+        version = unpack_preamble(await conn.readexactly(PREAMBLE.size))
         if version != PROTOCOL_VERSION:
             logger.warning(
                 f'Rejecting connection from {peer} with protocol version '
@@ -158,11 +340,11 @@ class EndpointServer:
                 f'client uses protocol version {version}. Use the same '
                 'ProxyStore version for the client and endpoint.'
             )
-            writer.write(pack_preamble())
-            await _send(writer, Status.PROTOCOL_MISMATCH, {'error': error})
+            conn.write(pack_preamble())
+            await _send(conn, Status.PROTOCOL_MISMATCH, {'error': error})
             return False
 
-        header, meta = await _read_message(reader)
+        header, meta = await _read_message(conn)
         if header.code != Op.HELLO:
             raise EndpointProtocolError(
                 f'Expected HELLO message but got op {header.code}.',
@@ -171,14 +353,14 @@ class EndpointServer:
 
         server_nonce = os.urandom(NONCE_SIZE)
         proof = compute_proof(self.token, 'server', server_nonce, client_nonce)
-        writer.write(pack_preamble())
+        conn.write(pack_preamble())
         await _send(
-            writer,
+            conn,
             Status.OK,
             {'nonce': server_nonce.hex(), 'proof': proof.hex()},
         )
 
-        header, meta = await _read_message(reader)
+        header, meta = await _read_message(conn)
         if header.code != Op.AUTH:
             raise EndpointProtocolError(
                 f'Expected AUTH message but got op {header.code}.',
@@ -195,9 +377,7 @@ class EndpointServer:
                 f'Rejecting connection from {peer} because the client '
                 'failed authentication',
             )
-            await _send(
-                writer, Status.UNAUTHORIZED, {'error': 'invalid token'}
-            )
+            await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
             return False
 
         info = {
@@ -206,22 +386,18 @@ class EndpointServer:
             'max_object_size': self.max_object_size,
             **local_versions(),
         }
-        await _send(writer, Status.OK, info)
+        await _send(conn, Status.OK, info)
         return True
 
-    async def _serve_requests(
-        self,
-        reader: asyncio.StreamReader,
-        writer: asyncio.StreamWriter,
-    ) -> None:
+    async def _serve_requests(self, conn: ClientConnection) -> None:
         while True:
             try:
-                header_bytes = await reader.readexactly(HEADER.size)
+                header_bytes = await conn.readexactly(HEADER.size)
             except asyncio.IncompleteReadError:
                 # Client closed the connection between requests.
                 return
             header = unpack_header(header_bytes)
-            meta = decode_meta(await reader.readexactly(header.meta_len))
+            meta = decode_meta(await conn.readexactly(header.meta_len))
 
             if (
                 self.max_object_size is not None
@@ -234,11 +410,11 @@ class EndpointServer:
                     f'object size of the endpoint ({self.max_object_size} '
                     'bytes).'
                 )
-                await _send(writer, Status.TOO_LARGE, {'error': error})
+                await _send(conn, Status.TOO_LARGE, {'error': error})
                 return
 
             data = (
-                await reader.readexactly(header.data_len)
+                await conn.readexactly(header.data_len)
                 if header.data_len > 0
                 else b''
             )
@@ -247,13 +423,13 @@ class EndpointServer:
                 meta,
                 data,
             )
-            await _send(writer, status, response_meta, response_data)
+            await _send(conn, status, response_meta, response_data)
 
     async def _handle_request(
         self,
         header: Header,
         meta: dict[str, Any],
-        data: bytes,
+        data: bytes | bytearray,
     ) -> _Response:
         try:
             key, endpoint_uuid = _parse_request(meta)
@@ -277,7 +453,7 @@ class EndpointServer:
         op: int,
         key: str,
         endpoint_uuid: uuid.UUID | None,
-        data: bytes,
+        data: bytes | bytearray,
     ) -> _Response:
         if op == Op.GET:
             result = await self.endpoint.get(key, endpoint=endpoint_uuid)
@@ -320,24 +496,24 @@ def _parse_request(meta: dict[str, Any]) -> tuple[str, uuid.UUID | None]:
 
 
 async def _read_message(
-    reader: asyncio.StreamReader,
+    conn: ClientConnection,
 ) -> tuple[Header, dict[str, Any]]:
-    header = unpack_header(await reader.readexactly(HEADER.size))
-    meta = decode_meta(await reader.readexactly(header.meta_len))
+    header = unpack_header(await conn.readexactly(HEADER.size))
+    meta = decode_meta(await conn.readexactly(header.meta_len))
     return header, meta
 
 
 async def _send(
-    writer: asyncio.StreamWriter,
+    conn: ClientConnection,
     status: Status,
     meta: dict[str, Any] | None = None,
-    data: bytes | None = None,
+    data: bytes | bytearray | None = None,
 ) -> None:
     data_len = 0 if data is None else len(data)
-    writer.write(pack_message(status, meta, data_len))
+    conn.write(pack_message(status, meta, data_len))
     if data is not None:
-        writer.write(data)
-    await writer.drain()
+        conn.write(data)
+    await conn.drain()
 
 
 def _decode_hex(meta: dict[str, Any], field: str) -> bytes:
@@ -459,11 +635,7 @@ async def _serve_async(
     server: asyncio.Server | None = None
 
     try:
-        server = await asyncio.start_server(
-            handler.handle_connection,
-            host=config.host,
-            port=config.port,
-        )
+        server = await handler.start_server(config.host, config.port)
         logger.info(
             f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
             f'{config.host}:{config.port}',

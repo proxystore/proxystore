@@ -121,7 +121,7 @@ def pack_preamble(version: int = PROTOCOL_VERSION) -> bytes:
     return PREAMBLE.pack(MAGIC, version)
 
 
-def unpack_preamble(buffer: bytes) -> int:
+def unpack_preamble(buffer: bytes | bytearray) -> int:
     """Unpack the connection preamble.
 
     Returns:
@@ -158,7 +158,7 @@ def pack_message(
     return HEADER.pack(code, 0, len(meta_bytes), data_len) + meta_bytes
 
 
-def unpack_header(buffer: bytes) -> Header:
+def unpack_header(buffer: bytes | bytearray) -> Header:
     """Unpack a message header.
 
     Raises:
@@ -179,7 +179,7 @@ def encode_meta(meta: dict[str, Any]) -> bytes:
     return json.dumps(meta, separators=(',', ':')).encode()
 
 
-def decode_meta(buffer: bytes) -> dict[str, Any]:
+def decode_meta(buffer: bytes | bytearray) -> dict[str, Any]:
     """Decode message metadata.
 
     Raises:

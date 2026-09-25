@@ -40,7 +40,7 @@ class Storage(Protocol):
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -52,7 +52,7 @@ class Storage(Protocol):
         """
         ...
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -83,7 +83,7 @@ class DictStorage:
         *,
         max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
     ) -> None:
-        self._data: dict[str, bytes] = {}
+        self._data: dict[str, bytes | bytearray] = {}
         self._max_object_size = max_object_size
 
     async def evict(self, key: str) -> None:
@@ -109,7 +109,7 @@ class DictStorage:
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -121,7 +121,7 @@ class DictStorage:
         """
         return self._data.get(key, default)
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -216,7 +216,7 @@ class SQLiteStorage:
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -237,7 +237,7 @@ class SQLiteStorage:
             else:
                 return result[0]
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:

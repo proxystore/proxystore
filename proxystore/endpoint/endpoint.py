@@ -420,7 +420,7 @@ class Endpoint:
         self,
         key: str,
         endpoint: UUID | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get value associated with key on endpoint.
 
         Args:
@@ -455,7 +455,7 @@ class Endpoint:
     async def set(
         self,
         key: str,
-        data: bytes,
+        data: bytes | bytearray,
         endpoint: UUID | None = None,
     ) -> None:
         """Set key with data on endpoint.
