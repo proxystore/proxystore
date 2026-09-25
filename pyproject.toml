@@ -69,7 +69,6 @@ dev = [
     "pytest-timeout",
     "ruff>=0.2.0",
     "tox",
-    "types-redis",
     "types-requests",
 ]
 docs = [

@@ -103,10 +103,7 @@ class RedisSubscriber:
         while True:
             message = self._pubsub_client.get_message(
                 ignore_subscribe_messages=True,
-                # The type hint from redis is "timeout: float" but the
-                # docstring and code also support None type.
-                # https://github.com/redis/redis-py/blob/0a824962e9c0f8ec1b6b9b0fc823db8ec296e580/redis/client.py#L1046
-                timeout=None,  # type: ignore[arg-type]
+                timeout=None,
             )
             if message is None:
                 # None is returned in a few cases, such as the message
@@ -231,7 +228,7 @@ class RedisQueueSubscriber:
                 # because we just end up in a while True loop.
                 continue
             else:
-                return output[1]
+                return output[1]  # type: ignore[return-value]
 
     def close(self) -> None:
         """Close this subscriber."""

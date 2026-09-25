@@ -34,7 +34,7 @@ repos:
           - parsl
           - pydantic>=2,<3
           - quart>=0.18.0
-          - types-redis
+          - redis
           - types-requests
           - uvicorn
           - websockets>=14

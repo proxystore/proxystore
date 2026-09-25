@@ -131,7 +131,7 @@ class RedisConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        return self._redis_client.get(key.redis_key)
+        return self._redis_client.get(key.redis_key)  # type: ignore[return-value]
 
     def get_batch(self, keys: Sequence[RedisKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
