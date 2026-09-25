@@ -16,12 +16,12 @@ import random
 import shutil
 import signal
 import socket
+import time
 import uuid
 from collections.abc import Generator
 from typing import Literal
 
 import daemon.pidfile
-import psutil
 
 from proxystore import utils
 from proxystore.endpoint.config import ENDPOINT_CONFIG_FILE
@@ -98,7 +98,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     with open(pid_file) as f:
         pid = int(f.read().strip())
 
-    if psutil.pid_exists(pid):
+    if _is_own_process(pid):
         return EndpointStatus.RUNNING
     else:
         return EndpointStatus.HANGING
@@ -433,19 +433,12 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         pid = int(f.read().strip())
 
     logger.debug(f'Terminating endpoint process (PID: {pid}).')
-    # Source: https://github.com/funcx-faas/funcX/blob/facf37348f9a9eb4e1a0572793d7b6819be5754d/funcx_endpoint/funcx_endpoint/endpoint/endpoint.py#L360  # noqa: E501
-    parent = psutil.Process(pid)
-    processes = parent.children(recursive=True)
-    processes.append(parent)
-    for p in processes:
-        p.send_signal(signal.SIGTERM)
+    with contextlib.suppress(ProcessLookupError):
+        os.kill(pid, signal.SIGTERM)
 
-    _, alive = psutil.wait_procs(processes, timeout=1)
-    for p in alive:  # pragma: no cover
-        try:
-            p.send_signal(signal.SIGKILL)
-        except psutil.NoSuchProcess:
-            pass
+    if not _wait_for_exit(pid, timeout=1):  # pragma: no cover
+        with contextlib.suppress(ProcessLookupError):
+            os.kill(pid, signal.SIGKILL)
 
     if os.path.isfile(pid_file):  # pragma: no branch
         logger.debug(f'Cleaning up PID file ({pid_file}).')
@@ -464,3 +457,36 @@ def _attached_pid_manager(pid_file: str) -> Generator[None, None, None]:
         yield
     finally:
         os.remove(pid_file)
+
+
+def _is_own_process(pid: int) -> bool:
+    """Check if a process with the PID exists and is owned by this user."""
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except (ProcessLookupError, PermissionError):
+        # PermissionError means the PID belongs to another user. The endpoint
+        # always runs as the current user, so the endpoint exited and its PID
+        # was reused by the OS.
+        return False
+    return True
+
+
+def _wait_for_exit(pid: int, timeout: float) -> bool:
+    """Wait for a process to exit.
+
+    Returns:
+        `True` if the process exited before the timeout.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        # Reap the process if it is a child of this process. This only
+        # happens in tests; otherwise the zombie would appear alive.
+        with contextlib.suppress(ChildProcessError):
+            os.waitpid(pid, os.WNOHANG)
+        if not _is_own_process(pid):
+            return True
+        if time.monotonic() >= deadline:
+            return False
+        time.sleep(0.01)
