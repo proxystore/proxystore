@@ -14,59 +14,55 @@ from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import encode_meta
 from proxystore.endpoint.protocol import EndpointInfo
-from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
-from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import pack_preamble
+from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
-from proxystore.endpoint.protocol import unpack_header
-from proxystore.endpoint.protocol import unpack_preamble
-from proxystore.endpoint.protocol import version_mismatches
+from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Versions
 
 
-def test_local_versions() -> None:
-    versions = local_versions()
+def test_versions_current() -> None:
+    versions = Versions.current()
     assert versions.proxystore == proxystore.__version__
     assert versions.python == platform.python_version()
 
 
 def test_preamble_round_trip() -> None:
-    assert unpack_preamble(pack_preamble()) == PROTOCOL_VERSION
-    assert unpack_preamble(pack_preamble(42)) == 42
+    assert Preamble.unpack(Preamble().pack()).version == PROTOCOL_VERSION
+    assert Preamble.unpack(Preamble(42).pack()).version == 42
 
 
 def test_preamble_bad_magic() -> None:
     with pytest.raises(EndpointProtocolError, match='Expected connection'):
-        unpack_preamble(b'GET /x')
+        Preamble.unpack(b'GET /x')
 
 
 def test_message_round_trip() -> None:
     meta = {'key': 'abc', 'endpoint': None}
     message = pack_message(Op.SET, meta, data_len=100)
 
-    header = unpack_header(message[: HEADER.size])
+    header = Header.unpack(message[: Header.SIZE])
     assert header == Header(Op.SET, 0, len(encode_meta(meta)), 100)
-    assert decode_meta(message[HEADER.size :]) == meta
+    assert decode_meta(message[Header.SIZE :]) == meta
 
 
 def test_message_no_meta() -> None:
     message = pack_message(Op.GET)
-    header = unpack_header(message)
+    header = Header.unpack(message)
     assert header.meta_len == 0
     assert header.data_len == 0
     assert decode_meta(b'') == {}
 
 
 def test_header_meta_too_large() -> None:
-    header = HEADER.pack(Op.GET, 0, MAX_META_SIZE + 1, 0)
+    header = Header(Op.GET, 0, MAX_META_SIZE + 1, 0).pack()
     with pytest.raises(EndpointProtocolError, match='exceeds the maximum'):
-        unpack_header(header)
+        Header.unpack(header)
 
 
 @pytest.mark.parametrize('buffer', (b'{', b'\xff\xfe', b'[1, 2]'))
@@ -102,12 +98,12 @@ def test_decode_meta_invalid(buffer: bytes) -> None:
         ),
     ),
 )
-def test_version_mismatches(
+def test_versions_mismatches(
     client: Versions,
     endpoint: Versions,
     expected: list[str],
 ) -> None:
-    assert version_mismatches(client, endpoint) == expected
+    assert client.mismatches(endpoint) == expected
 
 
 _NONCE = os.urandom(NONCE_SIZE)
@@ -123,10 +119,12 @@ _VERSIONS = Versions('1.0.0', '3.12.4')
         Auth(_PROOF),
         EndpointInfo(uuid.uuid4(), 'name', _VERSIONS, 100),
         EndpointInfo(uuid.uuid4(), 'name', _VERSIONS, None),
+        Request('key'),
+        Request('key', uuid.uuid4()),
     ),
 )
-def test_handshake_message_round_trip(
-    message: Hello | Challenge | Auth | EndpointInfo,
+def test_message_meta_round_trip(
+    message: Hello | Challenge | Auth | EndpointInfo | Request,
 ) -> None:
     meta = decode_meta(encode_meta(message.to_meta()))
     assert type(message).from_meta(meta) == message
@@ -160,10 +158,15 @@ def test_handshake_message_round_trip(
             },
             'max_object_size',
         ),
+        (Request, {'endpoint': None}, 'key'),
+        (Request, {'key': '', 'endpoint': None}, 'key'),
+        (Request, {'key': 'key'}, 'endpoint'),
+        (Request, {'key': 'key', 'endpoint': 42}, 'endpoint'),
+        (Request, {'key': 'key', 'endpoint': 'not-a-uuid'}, 'endpoint'),
     ),
 )
-def test_handshake_message_malformed(
-    message: type[Hello | Challenge | Auth | EndpointInfo],
+def test_message_meta_malformed(
+    message: type[Hello | Challenge | Auth | EndpointInfo | Request],
     meta: dict[str, Any],
     field: str,
 ) -> None:

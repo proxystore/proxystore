@@ -270,7 +270,7 @@ def test_test_command_errors(
             ['test', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
         )
         assert result.exit_code == 1
-        assert 'not a valid UUID4' in caplog.records[0].message
+        assert 'not a valid endpoint UUID' in caplog.records[0].message
         caplog.clear()
 
         os.remove(EndpointFiles(copied_dir).token)

@@ -36,11 +36,13 @@ import platform
 import struct
 import uuid
 from typing import Any
+from typing import ClassVar
 from typing import NamedTuple
 from typing import Self
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.serialize import BytesLike
 
 MAGIC = b'PSEP'
 """Bytes that start every connection."""
@@ -53,15 +55,8 @@ NONCE_SIZE = 32
 """Size in bytes of the random nonces exchanged in the handshake."""
 MAX_META_SIZE = 64 * 1024
 """Maximum size in bytes of the metadata in a message."""
-HTTP_METHODS = (b'GET ', b'POST', b'HEAD', b'PUT ')
-"""Leading bytes of HTTP requests sent by clients using the old HTTP API."""
 VERSION_DOCS_URL = 'https://docs.proxystore.dev/latest/guides/endpoints/#version-compatibility'
 """Documentation on version compatibility between clients and endpoints."""
-
-PREAMBLE = struct.Struct('!4sH')
-"""Preamble format: magic and protocol version."""
-HEADER = struct.Struct('!BBIQ')
-"""Message header format: op/status, flags, metadata length, data length."""
 
 
 class Op(enum.IntEnum):
@@ -98,7 +93,47 @@ class Status(enum.IntEnum):
     """Request data exceeds the maximum object size of the endpoint."""
 
 
-class Header(NamedTuple):
+@dataclasses.dataclass(frozen=True, slots=True)
+class Preamble:
+    """Preamble that starts every connection.
+
+    The format of the preamble must never change so that clients and
+    endpoints using different protocol versions can detect the mismatch.
+
+    Attributes:
+        version: Protocol version of the sender.
+    """
+
+    FORMAT: ClassVar[struct.Struct] = struct.Struct('!4sH')
+    """Format of the magic bytes and protocol version."""
+    SIZE: ClassVar[int] = FORMAT.size
+    """Size in bytes of the preamble."""
+
+    version: int = PROTOCOL_VERSION
+
+    def pack(self) -> bytes:
+        """Pack the preamble."""
+        return self.FORMAT.pack(MAGIC, self.version)
+
+    @classmethod
+    def unpack(cls, buffer: BytesLike) -> Self:
+        """Unpack a preamble.
+
+        Raises:
+            EndpointProtocolError: If the preamble does not start with
+                [`MAGIC`][proxystore.endpoint.protocol.MAGIC].
+        """
+        magic, version = cls.FORMAT.unpack(buffer)
+        if magic != MAGIC:
+            raise EndpointProtocolError(
+                f'Expected connection to start with {MAGIC!r} but got '
+                f'{magic!r}.',
+            )
+        return cls(version)
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class Header:
     """Message header.
 
     Attributes:
@@ -109,10 +144,40 @@ class Header(NamedTuple):
         data_len: Length in bytes of the data.
     """
 
+    FORMAT: ClassVar[struct.Struct] = struct.Struct('!BBIQ')
+    """Format of the code, flags, metadata length, and data length."""
+    SIZE: ClassVar[int] = FORMAT.size
+    """Size in bytes of the header."""
+
     code: int
     flags: int
     meta_len: int
     data_len: int
+
+    def pack(self) -> bytes:
+        """Pack the header."""
+        return self.FORMAT.pack(
+            self.code,
+            self.flags,
+            self.meta_len,
+            self.data_len,
+        )
+
+    @classmethod
+    def unpack(cls, buffer: BytesLike) -> Self:
+        """Unpack a header.
+
+        Raises:
+            EndpointProtocolError: If the metadata length exceeds
+                [`MAX_META_SIZE`][proxystore.endpoint.protocol.MAX_META_SIZE].
+        """
+        header = cls(*cls.FORMAT.unpack(buffer))
+        if header.meta_len > MAX_META_SIZE:
+            raise EndpointProtocolError(
+                f'Message metadata length ({header.meta_len} bytes) exceeds '
+                f'the maximum of {MAX_META_SIZE} bytes.',
+            )
+        return header
 
 
 class Versions(NamedTuple):
@@ -126,40 +191,38 @@ class Versions(NamedTuple):
     proxystore: str
     python: str
 
+    @classmethod
+    def current(cls) -> Self:
+        """Get the ProxyStore and Python versions of this process."""
+        return cls(proxystore.__version__, platform.python_version())
 
-def local_versions() -> Versions:
-    """Get the ProxyStore and Python versions of this process."""
-    return Versions(proxystore.__version__, platform.python_version())
+    def mismatches(self, endpoint: Versions) -> list[str]:
+        """Find differences between these client and the endpoint versions.
 
+        The ProxyStore versions must match exactly. The Python versions must
+        have the same major and minor version because objects pickled by one
+        Python version may not unpickle with another, but patch releases are
+        compatible.
 
-def version_mismatches(client: Versions, endpoint: Versions) -> list[str]:
-    """Find version differences between a client and endpoint.
+        Args:
+            endpoint: Versions of the endpoint.
 
-    The ProxyStore versions must match exactly. The Python versions must
-    have the same major and minor version because objects pickled by one
-    Python version may not unpickle with another, but patch releases are
-    compatible.
-
-    Args:
-        client: Versions of the client.
-        endpoint: Versions of the endpoint.
-
-    Returns:
-        Human-readable descriptions of each mismatch. Empty if the versions \
-        are compatible.
-    """
-    mismatches = []
-    if client.proxystore != endpoint.proxystore:
-        mismatches.append(
-            f'ProxyStore {client.proxystore} (client) vs. '
-            f'{endpoint.proxystore} (endpoint)',
-        )
-    if client.python.split('.')[:2] != endpoint.python.split('.')[:2]:
-        mismatches.append(
-            f'Python {client.python} (client) vs. {endpoint.python} '
-            '(endpoint)',
-        )
-    return mismatches
+        Returns:
+            Human-readable descriptions of each mismatch. Empty if the \
+            versions are compatible.
+        """
+        mismatches = []
+        if self.proxystore != endpoint.proxystore:
+            mismatches.append(
+                f'ProxyStore {self.proxystore} (client) vs. '
+                f'{endpoint.proxystore} (endpoint)',
+            )
+        if self.python.split('.')[:2] != endpoint.python.split('.')[:2]:
+            mismatches.append(
+                f'Python {self.python} (client) vs. {endpoint.python} '
+                '(endpoint)',
+            )
+        return mismatches
 
 
 @dataclasses.dataclass(frozen=True)
@@ -277,13 +340,8 @@ class EndpointInfo:
         Raises:
             EndpointProtocolError: If the metadata is malformed.
         """
-        uuid_str = _get(meta, 'uuid', str, cls)
-        try:
-            endpoint_uuid = uuid.UUID(uuid_str)
-        except ValueError:
-            raise _malformed(cls, 'uuid') from None
         return cls(
-            uuid=endpoint_uuid,
+            uuid=_parse_uuid(_get(meta, 'uuid', str, cls), 'uuid', cls),
             name=_get(meta, 'name', str, cls),
             versions=_get_versions(meta, cls),
             max_object_size=_get(
@@ -293,6 +351,50 @@ class EndpointInfo:
                 cls,
             ),
         )
+
+
+@dataclasses.dataclass(frozen=True)
+class Request:
+    """Metadata of a request sent by a client after the handshake.
+
+    Attributes:
+        key: Key of the object.
+        endpoint: UUID of the endpoint to forward the request to or `None`
+            for the local endpoint.
+    """
+
+    key: str
+    endpoint: uuid.UUID | None = None
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        endpoint = None if self.endpoint is None else str(self.endpoint)
+        return {'key': self.key, 'endpoint': endpoint}
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        key = _get(meta, 'key', str, cls)
+        if len(key) == 0:
+            raise _malformed(cls, 'key')
+        endpoint = _get(meta, 'endpoint', (str, type(None)), cls)
+        return cls(
+            key=key,
+            endpoint=None
+            if endpoint is None
+            else _parse_uuid(endpoint, 'endpoint', cls),
+        )
+
+
+def _parse_uuid(value: str, field: str, message: type) -> uuid.UUID:
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        raise _malformed(message, field) from None
 
 
 def _malformed(message: type, field: str) -> EndpointProtocolError:
@@ -336,29 +438,6 @@ def _get_versions(meta: dict[str, Any], message: type) -> Versions:
     )
 
 
-def pack_preamble(version: int = PROTOCOL_VERSION) -> bytes:
-    """Pack the connection preamble."""
-    return PREAMBLE.pack(MAGIC, version)
-
-
-def unpack_preamble(buffer: bytes | bytearray) -> int:
-    """Unpack the connection preamble.
-
-    Returns:
-        Protocol version of the peer.
-
-    Raises:
-        EndpointProtocolError: If the preamble does not start with
-            [`MAGIC`][proxystore.endpoint.protocol.MAGIC].
-    """
-    magic, version = PREAMBLE.unpack(buffer)
-    if magic != MAGIC:
-        raise EndpointProtocolError(
-            f'Expected connection to start with {MAGIC!r} but got {magic!r}.',
-        )
-    return version
-
-
 def pack_message(
     code: int,
     meta: dict[str, Any] | None = None,
@@ -375,23 +454,7 @@ def pack_message(
         data_len: Length in bytes of the data that will follow.
     """
     meta_bytes = b'' if meta is None else encode_meta(meta)
-    return HEADER.pack(code, 0, len(meta_bytes), data_len) + meta_bytes
-
-
-def unpack_header(buffer: bytes | bytearray) -> Header:
-    """Unpack a message header.
-
-    Raises:
-        EndpointProtocolError: If the metadata length exceeds
-            [`MAX_META_SIZE`][proxystore.endpoint.protocol.MAX_META_SIZE].
-    """
-    header = Header(*HEADER.unpack(buffer))
-    if header.meta_len > MAX_META_SIZE:
-        raise EndpointProtocolError(
-            f'Message metadata length ({header.meta_len} bytes) exceeds the '
-            f'maximum of {MAX_META_SIZE} bytes.',
-        )
-    return header
+    return Header(code, 0, len(meta_bytes), data_len).pack() + meta_bytes
 
 
 def encode_meta(meta: dict[str, Any]) -> bytes:

@@ -39,21 +39,17 @@ from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
-from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
-from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import pack_preamble
-from proxystore.endpoint.protocol import PREAMBLE
+from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
-from proxystore.endpoint.protocol import unpack_header
-from proxystore.endpoint.protocol import unpack_preamble
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
-from proxystore.endpoint.protocol import version_mismatches
+from proxystore.endpoint.protocol import Versions
 from proxystore.serialize import BytesLike
 from proxystore.warnings import EndpointVersionWarning
 
@@ -167,7 +163,7 @@ class EndpointClient:
             sock.close()
             raise
 
-        mismatches = version_mismatches(local_versions(), info.versions)
+        mismatches = Versions.current().mismatches(info.versions)
         if len(mismatches) > 0:
             warnings.warn(
                 f'Endpoint {info.name} ({info.uuid}) uses different versions '
@@ -193,6 +189,7 @@ class EndpointClient:
             endpoint: Optional UUID of remote endpoint to forward operation to.
 
         Raises:
+            ValueError: If `endpoint` is not a valid UUID.
             EndpointError: If the request fails.
         """
         self._request(Op.EVICT, key, endpoint)
@@ -210,6 +207,7 @@ class EndpointClient:
             If an object associated with the key exists.
 
         Raises:
+            ValueError: If `endpoint` is not a valid UUID.
             EndpointError: If the request fails.
         """
         _, meta, _ = self._request(Op.EXISTS, key, endpoint)
@@ -230,6 +228,7 @@ class EndpointClient:
             Serialized object or `None` if the object does not exist.
 
         Raises:
+            ValueError: If `endpoint` is not a valid UUID.
             EndpointError: If the request fails.
         """
         status, _, data = self._request(Op.GET, key, endpoint)
@@ -251,6 +250,7 @@ class EndpointClient:
         Raises:
             ObjectSizeExceededError: If the size of `data` exceeds the
                 maximum object size of the endpoint.
+            ValueError: If `endpoint` is not a valid UUID.
             EndpointError: If the request fails.
         """
         size = memoryview(data).nbytes
@@ -274,13 +274,10 @@ class EndpointClient:
                 'Connection to the endpoint is closed.',
             )
 
-        meta = {
-            'key': key,
-            'endpoint': None if endpoint is None else str(endpoint),
-        }
+        request = Request(key, _parse_endpoint(endpoint))
         payload = _as_bytes_view(data) if data is not None else None
         data_len = 0 if payload is None else len(payload)
-        message = pack_message(op, meta, data_len)
+        message = pack_message(op, request.to_meta(), data_len)
 
         try:
             if payload is None:
@@ -362,6 +359,15 @@ def connect_to_endpoint(
     )
 
 
+def _parse_endpoint(endpoint: uuid.UUID | str | None) -> uuid.UUID | None:
+    if endpoint is None or isinstance(endpoint, uuid.UUID):
+        return endpoint
+    try:
+        return uuid.UUID(endpoint)
+    except ValueError:
+        raise ValueError(f'{endpoint} is not a valid endpoint UUID.') from None
+
+
 def _as_bytes_view(data: BytesLike) -> memoryview:
     view = memoryview(data)
     if not view.c_contiguous:
@@ -399,10 +405,10 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
 
 
 def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
-    hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=local_versions())
-    sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello.to_meta()))
+    hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
+    sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello.to_meta()))
 
-    preamble = _recv_exactly(sock, PREAMBLE.size)
+    preamble = _recv_exactly(sock, Preamble.SIZE)
     if preamble.startswith(b'HTTP/'):
         raise EndpointProtocolError(
             'The endpoint responded with HTTP, so it is likely running a '
@@ -410,7 +416,7 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             'API. Restart the endpoint with the same version of ProxyStore as '
             f'the client. See {VERSION_DOCS_URL} for details.',
         )
-    version = unpack_preamble(preamble)
+    version = Preamble.unpack(preamble).version
     if version != PROTOCOL_VERSION:
         # Only the preamble format is the same across protocol versions so
         # nothing after it can be parsed.
@@ -463,7 +469,7 @@ def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
 
 
 def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
-    header = unpack_header(_recv_exactly(sock, HEADER.size))
+    header = Header.unpack(_recv_exactly(sock, Header.SIZE))
     meta = decode_meta(_recv_exactly(sock, header.meta_len))
     return header, meta
 

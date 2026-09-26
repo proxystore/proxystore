@@ -31,24 +31,22 @@ from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
-from proxystore.endpoint.protocol import HEADER
+from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
-from proxystore.endpoint.protocol import HTTP_METHODS
-from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import pack_preamble
-from proxystore.endpoint.protocol import PREAMBLE
+from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
-from proxystore.endpoint.protocol import unpack_header
-from proxystore.endpoint.protocol import unpack_preamble
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
-from proxystore.endpoint.protocol import version_mismatches
 from proxystore.endpoint.protocol import Versions
 
 logger = logging.getLogger(__name__)
+
+_HTTP_METHODS = (b'GET ', b'POST', b'HEAD', b'PUT ')
+"""Leading bytes of HTTP requests sent by clients using the old HTTP API."""
 
 HANDSHAKE_TIMEOUT = 10
 """Seconds a client has to complete the handshake after connecting."""
@@ -397,8 +395,8 @@ class ClientHandler:
             await conn.wait_closed()
 
     async def _handshake(self, conn: _ClientConnection, peer: Any) -> bool:
-        preamble = await conn.readexactly(PREAMBLE.size)
-        if bytes(preamble[:4]) in HTTP_METHODS:
+        preamble = await conn.readexactly(Preamble.SIZE)
+        if bytes(preamble[:4]) in _HTTP_METHODS:
             logger.warning(
                 f'Rejecting HTTP request from {peer}. The client is likely '
                 'using an older version of ProxyStore that uses the HTTP API.',
@@ -406,7 +404,7 @@ class ClientHandler:
             await _reply_and_close(conn, _http_upgrade_response())
             return False
 
-        version = unpack_preamble(preamble)
+        version = Preamble.unpack(preamble).version
         if version != PROTOCOL_VERSION:
             logger.warning(
                 f'Rejecting connection from {peer} with protocol version '
@@ -414,7 +412,7 @@ class ClientHandler:
             )
             # Only the preamble format is the same across protocol versions
             # so the client detects the mismatch from our preamble.
-            await _reply_and_close(conn, pack_preamble())
+            await _reply_and_close(conn, Preamble().pack())
             return False
 
         hello = Hello.from_meta(await _read_handshake_message(conn, Op.HELLO))
@@ -423,7 +421,7 @@ class ClientHandler:
             nonce=nonce,
             proof=compute_proof(self.token, 'server', nonce, hello.nonce),
         )
-        conn.write(pack_preamble())
+        conn.write(Preamble().pack())
         await _send(conn, Status.OK, challenge.to_meta())
 
         auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
@@ -445,14 +443,14 @@ class ClientHandler:
         info = EndpointInfo(
             uuid=self.endpoint.uuid,
             name=self.endpoint.name,
-            versions=local_versions(),
+            versions=Versions.current(),
             max_object_size=self.max_object_size,
         )
         await _send(conn, Status.OK, info.to_meta())
         return True
 
     def _check_client_versions(self, peer: Any, versions: Versions) -> None:
-        mismatches = version_mismatches(versions, local_versions())
+        mismatches = versions.mismatches(Versions.current())
         if len(mismatches) > 0 and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.
             self._warned_versions.add(versions)
@@ -466,11 +464,11 @@ class ClientHandler:
     async def _serve_requests(self, conn: _ClientConnection) -> None:
         while True:
             try:
-                header_bytes = await conn.readexactly(HEADER.size)
+                header_bytes = await conn.readexactly(Header.SIZE)
             except asyncio.IncompleteReadError:
                 # Client closed the connection between requests.
                 return
-            header = unpack_header(header_bytes)
+            header = Header.unpack(header_bytes)
             meta = decode_meta(await conn.readexactly(header.meta_len))
 
             if (
@@ -506,12 +504,12 @@ class ClientHandler:
         data: bytes | bytearray,
     ) -> _Response:
         try:
-            key, endpoint_uuid = _parse_request(meta)
-        except ValueError as e:
+            request = Request.from_meta(meta)
+        except EndpointProtocolError as e:
             return Status.BAD_REQUEST, {'error': str(e)}, None
 
         try:
-            return await self._dispatch(op, key, endpoint_uuid, data)
+            return await self._dispatch(op, request, data)
         except PeerRequestError as e:
             return Status.ERROR, {'error': str(e)}, None
         except ObjectSizeExceededError as e:
@@ -523,10 +521,10 @@ class ClientHandler:
     async def _dispatch(
         self,
         op: int,
-        key: str,
-        endpoint_uuid: UUID | None,
+        request: Request,
         data: bytes | bytearray,
     ) -> _Response:
+        key, endpoint_uuid = request.key, request.endpoint
         if op == Op.GET:
             result = await self.endpoint.get(key, endpoint=endpoint_uuid)
             if result is None:
@@ -548,30 +546,11 @@ class ClientHandler:
             return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
 
 
-def _parse_request(meta: dict[str, Any]) -> tuple[str, UUID | None]:
-    """Parse the key and optional target endpoint UUID of a request.
-
-    Raises:
-        ValueError: If the key is missing or the endpoint UUID is invalid.
-    """
-    key = meta.get('key')
-    if not isinstance(key, str) or len(key) == 0:
-        raise ValueError('request missing key')
-
-    endpoint_str = meta.get('endpoint')
-    if endpoint_str is None:
-        return key, None
-    try:
-        return key, UUID(endpoint_str, version=4)
-    except (AttributeError, TypeError, ValueError):
-        raise ValueError(f'{endpoint_str} is not a valid UUID4') from None
-
-
 async def _read_handshake_message(
     conn: _ClientConnection,
     expected: Op,
 ) -> dict[str, Any]:
-    header = unpack_header(await conn.readexactly(HEADER.size))
+    header = Header.unpack(await conn.readexactly(Header.SIZE))
     if header.code != expected:
         raise EndpointProtocolError(
             f'Expected {expected.name} message but got op {header.code}.',
@@ -610,7 +589,7 @@ async def _reply_and_close(conn: _ClientConnection, data: bytes) -> None:
 
 
 def _http_upgrade_response() -> bytes:
-    version = local_versions().proxystore
+    version = Versions.current().proxystore
     body = (
         f'This endpoint uses ProxyStore {version} which no longer supports '
         'the HTTP API used by older versions of ProxyStore. Upgrade '

@@ -23,12 +23,11 @@ from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
-from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import pack_preamble
-from proxystore.endpoint.protocol import PREAMBLE
+from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import Versions
 from proxystore.warnings import EndpointVersionWarning
 
 TOKEN = os.urandom(TOKEN_SIZE)
@@ -42,7 +41,7 @@ def _info(**overrides: Any) -> dict[str, Any]:
         'uuid': str(ENDPOINT_UUID),
         'name': 'fake',
         'max_object_size': None,
-        **local_versions()._asdict(),
+        **Versions.current()._asdict(),
     }
     info.update(overrides)
     return info
@@ -56,14 +55,14 @@ def _server_hello(
     meta: dict[str, Any] | None = None,
 ) -> bytes:
     """Read the client's HELLO and reply. Returns the client nonce."""
-    _recv_exactly(conn, PREAMBLE.size)
+    _recv_exactly(conn, Preamble.SIZE)
     _, hello = _recv_message(conn)
     client_nonce = bytes.fromhex(hello['nonce'])
     if meta is None:
         server_nonce = os.urandom(32)
         proof = compute_proof(TOKEN, 'server', server_nonce, client_nonce)
         meta = {'nonce': server_nonce.hex(), 'proof': proof.hex()}
-    conn.sendall(pack_preamble(version) + pack_message(status, meta))
+    conn.sendall(Preamble(version).pack() + pack_message(status, meta))
     return client_nonce
 
 
@@ -125,10 +124,10 @@ def test_connect_and_close(fake_server) -> None:
 
 def test_handshake_protocol_mismatch(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
-        _recv_exactly(conn, PREAMBLE.size)
+        _recv_exactly(conn, Preamble.SIZE)
         # Nothing after the preamble of a different protocol version is
         # parsed, so it may be in any format.
-        conn.sendall(pack_preamble(PROTOCOL_VERSION + 1) + b'\xff' * 64)
+        conn.sendall(Preamble(PROTOCOL_VERSION + 1).pack() + b'\xff' * 64)
 
     port = fake_server(_script)
     with pytest.raises(EndpointProtocolError, match='protocol version'):
@@ -163,10 +162,10 @@ def test_handshake_short_nonce(fake_server) -> None:
 
 def test_handshake_message_with_data(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
-        _recv_exactly(conn, PREAMBLE.size)
+        _recv_exactly(conn, Preamble.SIZE)
         _recv_message(conn)
         conn.sendall(
-            pack_preamble() + pack_message(Status.OK, {}, data_len=1) + b'x',
+            Preamble().pack() + pack_message(Status.OK, {}, data_len=1) + b'x',
         )
 
     port = fake_server(_script)
@@ -294,7 +293,7 @@ def test_version_mismatch_warning(fake_server) -> None:
 
 
 def test_python_patch_version_no_warning(fake_server) -> None:
-    major, minor, _ = local_versions().python.split('.', 2)
+    major, minor, _ = Versions.current().python.split('.', 2)
     port = fake_server(_handshake_with_info(python=f'{major}.{minor}.999'))
     with warnings.catch_warnings():
         warnings.simplefilter('error', EndpointVersionWarning)
