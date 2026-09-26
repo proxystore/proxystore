@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import stat
 import uuid
 from typing import Any
 
@@ -32,6 +33,7 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
     )
     write_config(cfg, tmp_dir)
     assert os.path.exists(tmp_dir)
+    assert stat.S_IMODE(os.stat(tmp_dir).st_mode) == 0o700
 
     # Overwriting is okay
     write_config(cfg, tmp_dir)

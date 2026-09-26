@@ -24,6 +24,7 @@ import hmac
 import os
 import secrets
 import ssl
+import stat
 from typing import Literal
 
 TOKEN_SIZE = 32
@@ -39,12 +40,28 @@ def write_private_file(path: str, data: bytes) -> None:
     _write_file(path, data, 0o600)
 
 
+def restrict_directory(path: str) -> bool:
+    """Remove group and other write permissions from a directory.
+
+    Clients trust the token and TLS certificate in the endpoint directory,
+    so no one other than the owner may be able to create, replace, or
+    rename files in it.
+
+    Returns:
+        `True` if the permissions of the directory were changed.
+    """
+    mode = stat.S_IMODE(os.stat(path).st_mode)
+    if mode & 0o022 == 0:
+        return False
+    os.chmod(path, mode & ~0o022)
+    return True
+
+
 def _write_file(path: str, data: bytes, mode: int) -> None:
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
     try:
         # The mode passed to open() only applies when the file is created
-        # and is masked by the umask (e.g., the endpoint daemon's umask
-        # makes new files group-writable), so always set the mode.
+        # and is masked by the umask, so always set the mode.
         os.fchmod(fd, mode)
         os.write(fd, data)
     finally:

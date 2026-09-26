@@ -368,7 +368,7 @@ def start_endpoint(  # noqa: C901
 
         context = daemon.DaemonContext(
             working_directory=endpoint_dir,
-            umask=0o002,
+            umask=0o022,
             pidfile=daemon.pidfile.PIDLockFile(pid_file),
             detach_process=True,
             # Note: stdin, stdout, stderr left as None which binds to /dev/null

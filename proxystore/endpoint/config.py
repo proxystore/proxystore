@@ -324,7 +324,9 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
         cfg: Configuration to write.
         endpoint_dir: Directory to write config to.
     """
-    os.makedirs(endpoint_dir, exist_ok=True)
+    # Clients trust the files in the endpoint directory (e.g., the token and
+    # TLS certificate), so only the owner can create or replace files in it.
+    os.makedirs(endpoint_dir, mode=0o700, exist_ok=True)
     path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
     with open(path, 'wb') as f:
         dump(cfg, f)

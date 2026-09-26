@@ -409,6 +409,18 @@ async def test_serve_async_token_file(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(token_file)
 
 
+async def test_serve_async_restricts_endpoint_dir(
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    os.chmod(tmp_path, 0o777)
+    stop = asyncio.Event()
+    stop.set()
+    await _serve_async(_endpoint_config(), str(tmp_path), stop)
+    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o755
+    assert any('write permissions' in r.message for r in caplog.records)
+
+
 async def test_serve_async_port_in_use(tmp_path: pathlib.Path) -> None:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))

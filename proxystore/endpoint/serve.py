@@ -34,6 +34,7 @@ from globus_sdk.token_storage import TokenValidationError
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
+from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_tls_cert_filepath
@@ -747,6 +748,12 @@ async def _serve_async(
             loop.add_signal_handler(sig, stop.set)
             stack.callback(loop.remove_signal_handler, sig)
 
+        if restrict_directory(endpoint_dir):
+            logger.warning(
+                'Removed group and other write permissions from '
+                f'{endpoint_dir} because clients trust the files in the '
+                'endpoint directory',
+            )
         token_file = get_token_filepath(endpoint_dir)
         cert_file = get_tls_cert_filepath(endpoint_dir)
         key_file = get_tls_key_filepath(endpoint_dir)
