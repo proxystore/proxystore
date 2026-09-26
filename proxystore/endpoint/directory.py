@@ -103,7 +103,8 @@ class EndpointDir:
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
             ) from None
-        except Exception as e:
+        except ValueError as e:
+            # Includes TOML decoding and pydantic validation errors.
             raise ValueError(
                 f'Unable to parse ({self.config_path}): {e!s}.',
             ) from None
