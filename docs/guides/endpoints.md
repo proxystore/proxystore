@@ -157,7 +157,7 @@ max_object_size = 10000000  # (12)!
     Typically only used for testing and development purposes.
 11. Optional path to a SQLite database for persisting endpoint objects. See
     the tip below for more details.
-12. Maximum object size. Comment out to disable object size limits.
+12. Maximum object size in bytes. Defaults to 100 MB if omitted.
 
 !!! tip
 
@@ -274,9 +274,10 @@ created by this store may interact with to resolve themselves. The
 list to find its *home* endpoint, the endpoint that will be used to issue
 operations to. To find the *home* endpoint, the ProxyStore home directory
 will be scanned for any endpoint configurations matching
-the one of the UUIDs. If a match is found, the
+one of the UUIDs. If a match is found, the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will attempt
-to connect to the endpoint using the host and port in the configuration. This
+to connect to the endpoint using the `connection.json` file that the running
+endpoint writes to its directory (see [Security](#security)). This
 process is repeated until a reachable endpoint is found. While the user could
 specify the home endpoint directly, the home endpoint may change when a proxy
 travels to a different machine.

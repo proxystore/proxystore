@@ -109,6 +109,7 @@ def submit(
         from concurrent.futures import ProcessPoolExecutor
         from proxystore.store.base import Store
         from proxystore.store.ref import borrow
+        from proxystore.store.scopes import submit
 
         store = Store('example', ...)
         proxy = store.owned_proxy([1, 2, 3])

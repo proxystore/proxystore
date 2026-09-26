@@ -20,7 +20,7 @@ an endpoint can be configure with this URI and will connect this instance
 when started.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --relay-server ws://localhost:8700
+$ proxystore-endpoint configure my-endpoint --relay-address ws://localhost:8700
 $ proxystore-endpoint start my-endpoint --no-detach
 ```
 
@@ -219,19 +219,22 @@ the relay that is being served with Globus Auth.
 ```python
 import asyncio
 
-from proxystore.globus.manager import NativeAppAuthManager
+from globus_sdk.scopes import Scope
+
+from proxystore.globus.app import get_user_app
 from proxystore.p2p.relay.client import RelayClient
 
 RELAY_APP_UUID = '...'
-RELAY_APP_SCOPE = 'relay_all'
+RELAY_APP_SCOPE = Scope(
+    f'https://auth.globus.org/scopes/{RELAY_APP_UUID}/relay_all',
+)
 
 
 async def main() -> None:
-    manager = NativeAppAuthManager(
-        resource_server_scopes={RELAY_APP_UUID: [RELAY_APP_SCOPE]},
-    )
-    manager.login()
-    authorizer = manager.get_authorizer(RELAY_APP_UUID)
+    app = get_user_app()
+    app.add_scope_requirements({RELAY_APP_UUID: [RELAY_APP_SCOPE]})
+    # Starts a login flow if valid tokens for the scope are not found
+    authorizer = app.get_authorizer(RELAY_APP_UUID)
 
     async with RelayClient(
         'wss://localhost:8700',

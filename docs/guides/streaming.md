@@ -73,7 +73,7 @@ applications or deployments but using a different
 event notifications via a message broker.
 
 ```python title="producer.py" linenums="1"
-from proxystore.connector.file import FileConnector
+from proxystore.connectors.file import FileConnector
 from proxystore.store import Store
 from proxystore.stream import StreamProducer
 from proxystore.stream.shims.redis import RedisPublisher
@@ -105,9 +105,10 @@ producer.close(topics=['my-topic'])  # (5)!
 4. The state of the `evict` flag will alter if proxies yielded by a
    consumer are one-time use or not.
 5. Closing the [`StreamProducer`][proxystore.stream.StreamProducer]
-   will close the [`Publisher`][proxystore.stream.protocols.Publisher],
-   all [`Store`][proxystore.store.Store] instances, and
-   [`Connector`][proxystore.connectors.protocols.Connector] by default.
+   will close the [`Publisher`][proxystore.stream.protocols.Publisher] by
+   default. Pass `stores=True` to also close the
+   [`Store`][proxystore.store.Store] instances (and their
+   [`Connector`][proxystore.connectors.protocols.Connector] instances).
    Topics are not closed by default and must be explicitly closed using the
    `topics` parameter or
    [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
@@ -115,7 +116,6 @@ producer.close(topics=['my-topic'])  # (5)!
    any consumers waiting on the stream to stop.
 
 ```python title="consumer.py" linenums="1"
-from proxystore.connector.file import FileConnector
 from proxystore.proxy import Proxy
 from proxystore.stream import StreamConsumer
 from proxystore.stream.shims.redis import RedisSubscriber
@@ -148,10 +148,12 @@ consumer.close()  # (5)!
    [`Store`][proxystore.store.Store], and the state of the `evict` flag
    inside the proxy's factory is determined in
    [`StreamProducer.send()`][proxystore.stream.StreamProducer.send].
-4. Closing the [`StreamConsumer`][proxystore.stream.StreamConsumer] will close
-   the [`Subscriber`][proxystore.stream.protocols.Subscriber],
-   all [`Store`][proxystore.store.Store] instances, and
-   [`Connector`][proxystore.connectors.protocols.Connector] by default.
+5. Closing the [`StreamConsumer`][proxystore.stream.StreamConsumer] will close
+   the [`Subscriber`][proxystore.stream.protocols.Subscriber] by default.
+   Pass `stores=True` to also close the [`Store`][proxystore.store.Store]
+   instances (and their
+   [`Connector`][proxystore.connectors.protocols.Connector] instances)
+   used to resolve objects from the stream.
 
 !!! tip
 

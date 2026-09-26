@@ -103,6 +103,8 @@ Each [`LeaseLifetime`][proxystore.store.lifetimes.LeaseLifetime] has an associat
 The lease can be extended as needed with [`extend()`][proxystore.store.lifetimes.LeaseLifetime.extend] or ended early [`close()`][proxystore.store.lifetimes.LeaseLifetime.close].
 
 ```python linenums="1" title="Leased Lifetime"
+import time
+
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import LeaseLifetime
 
@@ -187,9 +189,10 @@ from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from proxystore.store.base import Store
 from proxystore.store.ref import borrow
+from proxystore.store.scopes import submit
 
 store = Store(...)
-proxy = store.owned_proxy('value')
+proxy = store.owned_proxy([1, 2, 3])
 borrowed = borrow(proxy)  # (1)!
 
 with ProcessPoolExecutor() as pool:

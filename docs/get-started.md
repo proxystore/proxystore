@@ -86,7 +86,7 @@ the underlying storage connector is accessible by all processes. (Here,
 the [`LocalConnector`][proxystore.connectors.local.LocalConnector] is only
 accessible within the local process and is used for illustrative purposes.)
 Once the proxy is used on the remote process, the underlying factory function
-will be executed to retrieve the target object from the Redis server.
+will be executed to retrieve the target object from the store.
 
 Using the [`Store`][proxystore.store.base.Store] interface allows
 developers to write code without needing to worry about how data communication

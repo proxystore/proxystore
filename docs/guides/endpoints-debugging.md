@@ -10,7 +10,9 @@ are encountering issues using ProxyStore Endpoints.
 Consider you configured and started an endpoint as follows:
 ```bash
 $ proxystore-endpoint configure myendpoint
-INFO: Configured endpoint myendpoint <f4dc841d-377e-4785-8d66-8eade34f63cd>. Start with:
+INFO: Configured endpoint: myendpoint <f4dc841d-377e-4785-8d66-8eade34f63cd>
+INFO: Config and log file directory: ~/.local/share/proxystore/myendpoint
+INFO: Start the endpoint with:
 INFO:   $ proxystore-endpoint start myendpoint
 $ proxystore-endpoint start myendpoint
 INFO: Starting endpoint process as daemon.
@@ -111,7 +113,7 @@ Restart your endpoints if you had to change the configuration.
 Second, confirm the endpoint connects to the relay server when started by
 checking the endpoint logs for a line like this.
 ```bash
-INFO  (proxystore.p2p.relay_client) :: Established client connection to relay server at ws://localhost:8765 with client uuid=aaaa0259-5a8c-454b-b17d-61f010d874d4 and name=myendpoint
+INFO  (proxystore.p2p.relay.client) :: Established client connection to relay server at ws://localhost:8765 with client uuid=aaaa0259-5a8c-454b-b17d-61f010d874d4 and name=myendpoint
 ```
 
 ### Use the Test CLI
@@ -158,9 +160,9 @@ you can check the NAT compatibility in two ways.
    command to discover your NAT behavior.
    ```
    $ proxystore-endpoint check-nat
-   INFO: Checking NAT type. This may take a moment...
-   INFO: NAT Type:       Full-cone NAT
+   INFO: Checking NAT behavior. This may take a moment...
+   INFO: NAT Behavior:   Endpoint-independent mapping
    INFO: External IP:    <IP ADDRESS>
    INFO: External Port:  <PORT>
-   INFO: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
+   INFO: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work.
    ```
