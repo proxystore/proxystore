@@ -52,6 +52,12 @@ class DAOSConnector:
         PyDAOS is not available on PyPI and must be installed alongside
         DAOS. See the [DAOS guide](../../guides/daos.md) for more details.
 
+    Warning:
+        This connector is only tested against a mocked version of PyDAOS
+        based on the DAOS v2.4 reference implementation. It is not tested
+        against real DAOS deployments, and changes to the PyDAOS interface
+        in other DAOS versions may break this connector.
+
     Example:
         Assume we have a DAOS pool named "mypool." First, we create a new
         container in that pool named "kvstore" with type `PYTHON`.

@@ -11,6 +11,17 @@ ProxyStore provides support for DAOS via the
 [PyDAOS](https://www.intel.com/content/www/us/en/developer/articles/case-study/unlock-the-power-of-daos-in-python-with-pydaos.html){target=_blank}
 internally to connect to a DAOS pool.
 
+!!! warning
+
+    PyDAOS is not available on PyPI, so the
+    [`DAOSConnector`][proxystore.connectors.daos.DAOSConnector] is only
+    tested against a mocked version of PyDAOS based on the DAOS v2.4
+    reference implementation. It is not tested against real DAOS
+    deployments, and changes to the PyDAOS interface in other DAOS versions
+    may break the connector. Please
+    [open an issue](https://github.com/proxystore/proxystore/issues){target=_blank}
+    if you encounter problems.
+
 References:
 
 * [DAOS Documentation](https://docs.daos.io/){target=_blank}
