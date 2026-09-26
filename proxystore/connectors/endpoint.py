@@ -17,7 +17,6 @@ from typing import Self
 from typing import TypeVar
 from uuid import UUID
 
-from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
@@ -108,7 +107,7 @@ class EndpointConnector:
             endpoint_dir = os.path.join(home, endpoint.name)
             logger.debug(f'Attempting connection to {endpoint_uuid}')
             try:
-                client = connect_to_endpoint(endpoint, endpoint_dir)
+                client = EndpointClient.from_config(endpoint, endpoint_dir)
             except (EndpointAuthError, EndpointProtocolError) as e:
                 logger.warning(
                     f'Connection to {endpoint_uuid} failed: {e}',
@@ -149,7 +148,7 @@ class EndpointConnector:
         self.address = f'{self.endpoint_host}:{self.endpoint_port}'
 
         self._pool = _ConnectionPool(
-            lambda: connect_to_endpoint(found_config, found_dir),
+            lambda: EndpointClient.from_config(found_config, found_dir),
         )
         self._pool.add(client)
 

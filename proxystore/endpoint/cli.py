@@ -18,7 +18,6 @@ from typing import ClassVar
 import click
 
 import proxystore
-from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
@@ -262,7 +261,9 @@ def _endpoint_client(
     """Connect to the endpoint of a test command and handle errors."""
     cfg = ctx.obj['ENDPOINT_CONFIG']
     try:
-        with connect_to_endpoint(cfg, ctx.obj['ENDPOINT_DIR']) as client:
+        with EndpointClient.from_config(
+            cfg, ctx.obj['ENDPOINT_DIR']
+        ) as client:
             yield client
     except FileNotFoundError:
         logger.error(

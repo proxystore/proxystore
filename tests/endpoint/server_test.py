@@ -16,8 +16,8 @@ import pytest
 import pytest_asyncio
 
 from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import create_credentials
 from proxystore.endpoint.auth import create_server_ssl_context
+from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
@@ -557,7 +557,7 @@ class _TLSServer(NamedTuple):
 async def tls_server(
     tmp_path: pathlib.Path,
 ) -> AsyncGenerator[_TLSServer, None]:
-    credentials = create_credentials(
+    credentials = Credentials.create(
         str(tmp_path),
         tls=True,
         common_name='test',

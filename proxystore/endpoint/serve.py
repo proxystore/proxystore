@@ -27,9 +27,8 @@ except ImportError as e:  # pragma: no cover
 from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
-from proxystore.endpoint.auth import create_credentials
 from proxystore.endpoint.auth import create_server_ssl_context
-from proxystore.endpoint.auth import remove_credentials
+from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.endpoint import Endpoint
@@ -178,8 +177,8 @@ async def _serve_async(
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )
-        stack.callback(remove_credentials, endpoint_dir)
-        credentials = create_credentials(
+        stack.callback(Credentials.remove, endpoint_dir)
+        credentials = Credentials.create(
             endpoint_dir,
             tls=config.tls,
             common_name=f'proxystore-endpoint-{config.uuid}',

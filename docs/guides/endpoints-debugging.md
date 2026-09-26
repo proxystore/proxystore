@@ -59,17 +59,17 @@ The [`EndpointClient`][proxystore.endpoint.client.EndpointClient] can be used
 to connect to an endpoint directly. Clients authenticate with the token (and
 TLS certificate, if enabled) that the endpoint writes to its directory when it
 starts, and
-[`connect_to_endpoint()`][proxystore.endpoint.client.connect_to_endpoint]
+[`EndpointClient.from_config()`][proxystore.endpoint.client.EndpointClient.from_config]
 reads these files for you.
 ```python
 import os
 
-from proxystore.endpoint.client import connect_to_endpoint
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import read_config
 
 endpoint_dir = os.path.expanduser('~/.local/share/proxystore/myendpoint')
 config = read_config(endpoint_dir)
-with connect_to_endpoint(config, endpoint_dir) as client:
+with EndpointClient.from_config(config, endpoint_dir) as client:
     print(client.info)
     print(client.exists('abcdef'))
 ```

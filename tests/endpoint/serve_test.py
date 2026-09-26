@@ -16,7 +16,6 @@ import pytest
 from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.auth import read_token_file
-from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointFiles
@@ -124,7 +123,7 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     try:
         assert config.host is not None
         wait_for_endpoint(config.host, config.port)
-        with connect_to_endpoint(config, endpoint_dir) as client:
+        with EndpointClient.from_config(config, endpoint_dir) as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'
 
@@ -268,7 +267,7 @@ async def test_serve_async_tls(tmp_path: pathlib.Path) -> None:
     assert stat.S_IMODE(os.stat(key_file).st_mode) == 0o600
 
     client = await asyncio.to_thread(
-        connect_to_endpoint,
+        EndpointClient.from_config,
         config,
         endpoint_dir,
     )
