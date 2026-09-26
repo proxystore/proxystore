@@ -21,6 +21,7 @@ from testing.connectors import globus_connector
 from testing.connectors import local_connector
 from testing.connectors import multi_connector
 from testing.connectors import redis_connector
+from testing.connectors import zmq_connector
 from testing.endpoint import endpoint
 from testing.endpoint import endpoint_dir
 from testing.mocked import pydaos as mocked_pydaos

@@ -15,6 +15,7 @@ from proxystore.connectors import globus
 from proxystore.connectors import local
 from proxystore.connectors import multi
 from proxystore.connectors import redis
+from proxystore.connectors import zmq
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.protocols import Connector
 from proxystore.endpoint.config import EndpointConfig
@@ -24,6 +25,7 @@ from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
 from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
+from testing.utils import open_port
 
 FIXTURE_LIST = [
     'daos_connector',
@@ -33,6 +35,7 @@ FIXTURE_LIST = [
     'local_connector',
     'multi_connector',
     'redis_connector',
+    'zmq_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
 
@@ -152,6 +155,14 @@ def redis_connector() -> Generator[Connector[Any], None, None]:
         redis.RedisConnector(redis_host, redis_port) as connector,
     ):
         yield connector
+
+
+@pytest.fixture(scope='session')
+def zmq_connector() -> Generator[Connector[Any], None, None]:
+    """ZeroMQConnector fixture."""
+    connector = zmq.ZeroMQConnector(open_port(), address='127.0.0.1')
+    yield connector
+    connector.close(kill_server=True)
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)
