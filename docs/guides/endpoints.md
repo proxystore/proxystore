@@ -209,9 +209,10 @@ Clients on other nodes find the endpoint's address and token in the
 ProxyStore home directory, so the home directory must be on a shared file
 system that is private to your user.
 
-Clients also trust every file in the endpoint directory, so new endpoint
-directories are only accessible by the owner, and the endpoint removes group
-and other write permissions from its directory when it starts.
+Clients also trust every file in the endpoint directory, and the directory
+contains the endpoint's database and log, so new endpoint directories are only
+accessible by the owner, and the endpoint removes all group and other
+permissions from its directory when it starts.
 
 !!! tip
 

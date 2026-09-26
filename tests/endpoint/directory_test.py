@@ -28,7 +28,7 @@ def test_endpoint_dir_paths() -> None:
 
 @pytest.mark.parametrize(
     ('mode', 'expected'),
-    ((0o700, 0o700), (0o755, 0o755), (0o775, 0o755), (0o777, 0o755)),
+    ((0o700, 0o700), (0o755, 0o700), (0o775, 0o700), (0o777, 0o700)),
 )
 def test_restrict_permissions(
     mode: int,

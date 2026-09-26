@@ -196,7 +196,7 @@ async def running_endpoint(
 
         if endpoint_dir.restrict_permissions():
             logger.warning(
-                'Removed group and other write permissions from '
+                'Removed group and other permissions from '
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )

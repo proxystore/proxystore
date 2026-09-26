@@ -72,8 +72,8 @@ async def test_running_endpoint_restricts_endpoint_dir(
     os.chmod(tmp_path, 0o777)
     async with running_endpoint(endpoint_dir):
         pass
-    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o755
-    assert any('write permissions' in r.message for r in caplog.records)
+    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o700
+    assert any('other permissions' in r.message for r in caplog.records)
 
 
 async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
