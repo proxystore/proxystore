@@ -13,12 +13,12 @@ import pytest
 from proxystore.connectors.endpoint import _ConnectionPool
 from proxystore.connectors.endpoint import _reset_pools_after_fork
 from proxystore.connectors.endpoint import EndpointConnector
-from proxystore.connectors.endpoint import EndpointConnectorError
 from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.serve import running_endpoint
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir

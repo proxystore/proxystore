@@ -43,6 +43,17 @@ class EndpointConnectionError(EndpointError):
     pass
 
 
+class EndpointConnectorError(EndpointError):
+    """Exception raised when a request by an endpoint connector fails.
+
+    Raised by the
+    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
+    with the error that caused the request to fail as the cause.
+    """
+
+    pass
+
+
 class EndpointNotRunningError(EndpointError):
     """Exception raised when connecting to an endpoint that is not running.
 
