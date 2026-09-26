@@ -53,6 +53,10 @@
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
+         <loc>https://docs.proxystore.dev/latest/api/connectors/daos/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
          <loc>https://docs.proxystore.dev/latest/api/connectors/endpoint/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
@@ -386,6 +390,10 @@
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/guides/</loc>
+         <lastmod>2026-09-26</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/guides/daos/</loc>
          <lastmod>2026-09-26</lastmod>
     </url>
     <url>
