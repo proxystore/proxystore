@@ -6,12 +6,11 @@ build-backend = "setuptools.build_meta"
 name = "proxystore"
 dynamic = ["version"]
 authors = [
-    {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
+    {name = "Greg Pauloski"},
     {name = "Globus Labs"},
 ]
 maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
-    {name = "Valerie Hayot-Sasson", email = "vhayot@uchicago.edu"},
 ]
 description = "Advanced data flow management for distributed Python applications"
 readme = "README.md"
