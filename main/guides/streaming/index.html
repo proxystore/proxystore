@@ -4332,7 +4332,7 @@ to stream objects using a file system and Redis server.
 This configuration is optimized for storage of large objects using the
 file system while maintaining low latency event notifications via Redis
 pub/sub. However, the configuration can easily be optimized for different
-applications or deployments but using a different
+applications or deployments by using a different
 <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> with the
 <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> for data storage and/or a different
 <a class="autorefs autorefs-internal" title="            Publisher
@@ -4360,7 +4360,7 @@ event notifications via a message broker.</p>
 <span class="normal"><a href="#__codelineno-0-10">10</a></span>
 <span class="normal"><a href="#__codelineno-0-11">11</a></span>
 <span class="normal"><a href="#__codelineno-0-12">12</a></span>
-<span class="normal"><a href="#__codelineno-0-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connector.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
+<span class="normal"><a href="#__codelineno-0-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamProducer</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream.shims.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisPublisher</span>
@@ -4402,9 +4402,10 @@ event notifications via a message broker.</p>
 
   
       module-attribute
-  " href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a>,
-   all <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> instances, and
-   <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.
+  " href="../../api/stream/protocols/#proxystore.stream.protocols.Publisher"><code>Publisher</code></a> by
+   default. Pass <code>stores=True</code> to also close the
+   <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> instances (and their
+   <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instances).
    Topics are not closed by default and must be explicitly closed using the
    <code>topics</code> parameter or
    <a class="autorefs autorefs-internal" title="            close_topics" href="../../api/stream/#proxystore.stream.StreamProducer.close_topics"><code>close_topics()</code></a>.
@@ -4421,19 +4422,17 @@ event notifications via a message broker.</p>
 <span class="normal"><a href="#__codelineno-1-8"> 8</a></span>
 <span class="normal"><a href="#__codelineno-1-9"> 9</a></span>
 <span class="normal"><a href="#__codelineno-1-10">10</a></span>
-<span class="normal"><a href="#__codelineno-1-11">11</a></span>
-<span class="normal"><a href="#__codelineno-1-12">12</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connector.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Proxy</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamConsumer</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream.shims.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSubscriber</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="n">subscriber</span> <span class="o">=</span> <span class="n">RedisSubscriber</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># (1)!</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a><span class="n">consumer</span> <span class="o">=</span> <span class="n">StreamConsumer</span><span class="p">(</span><span class="n">subscriber</span><span class="p">)</span>  <span class="c1"># (2)!</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">consumer</span><span class="p">:</span>  <span class="c1"># (3)!</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>  <span class="c1"># (4)!</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a>
-</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a><span class="n">consumer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (5)!</span>
+<span class="normal"><a href="#__codelineno-1-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.proxy</span><span class="w"> </span><span class="kn">import</span> <span class="n">Proxy</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamConsumer</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.stream.shims.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisSubscriber</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a><span class="n">subscriber</span> <span class="o">=</span> <span class="n">RedisSubscriber</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="n">consumer</span> <span class="o">=</span> <span class="n">StreamConsumer</span><span class="p">(</span><span class="n">subscriber</span><span class="p">)</span>  <span class="c1"># (2)!</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a><span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">consumer</span><span class="p">:</span>  <span class="c1"># (3)!</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>  <span class="c1"># (4)!</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a><span class="n">consumer</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>  <span class="c1"># (5)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>The <a class="autorefs autorefs-internal" title="            Subscriber
@@ -4466,9 +4465,11 @@ event notifications via a message broker.</p>
 
   
       module-attribute
-  " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a>,
-   all <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/#proxystore.store.Store"><code>Store</code></a> instances, and
-   <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> by default.</li>
+  " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> by default.
+   Pass <code>stores=True</code> to also close the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/#proxystore.store.Store"><code>Store</code></a>
+   instances (and their
+   <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instances)
+   used to resolve objects from the stream.</li>
 </ol>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
@@ -4514,8 +4515,8 @@ However, it is <em>not</em> a requirement that the
 
   
       module-attribute
-  " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> protocols to
-implements multi-producer or multi-consumer support.
+  " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> protocols
+implement multi-producer or multi-consumer support.
 In other words, it is up to each
 <a class="autorefs autorefs-internal" title="            Publisher
 
@@ -4530,7 +4531,7 @@ In other words, it is up to each
       module-attribute
   " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a> implementation
 to decide on and document their support for these features, and users
-should confirm that the specific implementations or configurations parameters
+should confirm that the specific implementations or configuration parameters
 produce the behavior they want.</p>
 <p><strong>Multi-producer.</strong> If a <a class="autorefs autorefs-internal" title="            Publisher
 
@@ -4556,9 +4557,9 @@ sending objects to the stream.</p>
   
       module-attribute
   " href="../../api/stream/protocols/#proxystore.stream.protocols.Subscriber"><code>Subscriber</code></a>
-support multiple consumers, attention should be given to the manner in which
+supports multiple consumers, attention should be given to the manner in which
 the consumers behave. If all consumers receive the full stream (i.e., each
-consumer receives each object in the stream), then the the <code>evict</code> flag of
+consumer receives each object in the stream), then the <code>evict</code> flag of
 <a class="autorefs autorefs-internal" title="            send" href="../../api/stream/#proxystore.stream.StreamProducer.send"><code>StreamProducer.send()</code></a>
 should be set to <code>False</code>. This ensures that the first consumer to resolve a
 proxy from the stream does not delete the object data for the other consumers,

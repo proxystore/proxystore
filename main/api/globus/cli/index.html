@@ -4447,12 +4447,12 @@
 <p>This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
 relay server. Collections can be strung together. E.g., request transfer
 scopes for multiple collections with:</p>
-<p>$ proxystore-globus-auth -c UUID -c UUID -c UUID</p>
+<p>$ proxystore-globus-auth login -c UUID -c UUID -c UUID</p>
 <p>Providing UUIDs for High-Assurance GCS Mapped Collections will result
 in "Unknown Scope" errors during the login flow because those Collections
 do not use data_access. Do not provide those Collection UUIDs to the CLI.
 In this case, you may need to provide a domain for the collection:</p>
-<p>$ proxystore-globus-auth -d <domain></p>
+<p>$ proxystore-globus-auth login -d <domain></p>
 
 
             <details class="mkdocstrings-source">
@@ -4551,14 +4551,14 @@ In this case, you may need to provide a domain for the collection:</p>
 </span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54"></a><span class="sd">    relay server. Collections can be strung together. E.g., request transfer</span>
 </span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a><span class="sd">    scopes for multiple collections with:</span>
 </span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a>
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    $ proxystore-globus-auth -c UUID -c UUID -c UUID</span>
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">    $ proxystore-globus-auth login -c UUID -c UUID -c UUID</span>
 </span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a>
 </span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">    Providing UUIDs for High-Assurance GCS Mapped Collections will result</span>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a><span class="sd">    in "Unknown Scope" errors during the login flow because those Collections</span>
 </span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    do not use data_access. Do not provide those Collection UUIDs to the CLI.</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">    In this case, you may need to provide a domain for the collection:</span>
 </span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>
-</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    $ proxystore-globus-auth -d &lt;domain&gt;</span>
+</span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    $ proxystore-globus-auth login -d &lt;domain&gt;</span>
 </span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">    """</span>
 </span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a>    <span class="n">app</span> <span class="o">=</span> <span class="n">get_user_app</span><span class="p">()</span>
 </span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a>    <span class="n">scopes</span> <span class="o">=</span> <span class="n">get_all_scopes_by_resource_server</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>

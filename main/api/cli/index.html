@@ -4679,12 +4679,12 @@
 <p>This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
 relay server. Collections can be strung together. E.g., request transfer
 scopes for multiple collections with:</p>
-<p>$ proxystore-globus-auth -c UUID -c UUID -c UUID</p>
+<p>$ proxystore-globus-auth login -c UUID -c UUID -c UUID</p>
 <p>Providing UUIDs for High-Assurance GCS Mapped Collections will result
 in "Unknown Scope" errors during the login flow because those Collections
 do not use data_access. Do not provide those Collection UUIDs to the CLI.
 In this case, you may need to provide a domain for the collection:</p>
-<p>$ proxystore-globus-auth -d <domain></p>
+<p>$ proxystore-globus-auth login -d <domain></p>
 <p><strong>Usage:</strong></p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>proxystore-globus-auth login [OPTIONS]
 </span></code></pre></div>
@@ -5225,7 +5225,7 @@ configuration object.</p>
 <tr>
 <td><code>--log-dir</code></td>
 <td>text</td>
-<td>Logging directoryy.</td>
+<td>Logging directory.</td>
 <td><code>Sentinel.UNSET</code></td>
 </tr>
 <tr>

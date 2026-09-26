@@ -4611,7 +4611,7 @@ the secret to <code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code>.</p>
               <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#ValueError">ValueError</a></code>
             –
           <div class="doc-md-description">
-            <p>if one of the environment variables is set.</p>
+            <p>if one or both of the environment variables are not set.</p>
           </div>
         </li>
     </ul>
@@ -4658,7 +4658,7 @@ the secret to <code>PROXYSTORE_GLOBUS_CLIENT_SECRET</code>.</p>
 </span><span id="__span-0-81"><a id="__codelineno-0-81" name="__codelineno-0-81"></a><span class="sd">        Tuple containing the client ID and secret.</span>
 </span><span id="__span-0-82"><a id="__codelineno-0-82" name="__codelineno-0-82"></a>
 </span><span id="__span-0-83"><a id="__codelineno-0-83" name="__codelineno-0-83"></a><span class="sd">    Raises:</span>
-</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        ValueError: if one of the environment variables is set.</span>
+</span><span id="__span-0-84"><a id="__codelineno-0-84" name="__codelineno-0-84"></a><span class="sd">        ValueError: if one or both of the environment variables are not set.</span>
 </span><span id="__span-0-85"><a id="__codelineno-0-85" name="__codelineno-0-85"></a><span class="sd">    """</span>
 </span><span id="__span-0-86"><a id="__codelineno-0-86" name="__codelineno-0-86"></a>    <span class="k">try</span><span class="p">:</span>
 </span><span id="__span-0-87"><a id="__codelineno-0-87" name="__codelineno-0-87"></a>        <span class="n">client_id</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="n">PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME</span><span class="p">]</span>

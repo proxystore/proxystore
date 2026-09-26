@@ -4478,10 +4478,10 @@
 
 
 <h1 id="frequently-asked-questions">Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
-<p><em><a href="https://github.com/proxystore/proxystore/issues" target="_bank">Open a new issue</a> if you have a question not answered in the FAQ, Guides, or API docs.</em></p>
+<p><em><a href="https://github.com/proxystore/proxystore/issues" target="_blank">Open a new issue</a> if you have a question not answered in the FAQ, Guides, or API docs.</em></p>
 <h2 id="working-with-proxies">Working with Proxies<a class="headerlink" href="#working-with-proxies" title="Permanent link">&para;</a></h2>
 <h3 id="what-is-resolving-my-proxy">What is resolving my proxy?<a class="headerlink" href="#what-is-resolving-my-proxy" title="Permanent link">&para;</a></h3>
-<p>Certain data structures can unintenionally resolve a proxy.
+<p>Certain data structures can unintentionally resolve a proxy.
 This is because the <a class="autorefs autorefs-internal" title="            Proxy" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> type forwards <em>all</em> special methods to the target object.
 For example, data structures which use the hash of an object, such as <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#set"><code>set()</code></a> or <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#dict"><code>dict()</code></a>, will cause a proxy to resolve because <code>proxy.__hash__()</code> is forwarded to the target object's <code>__hash__()</code>.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1">1</a></span>
@@ -4506,7 +4506,7 @@ For example, data structures which use the hash of an object, such as <a class="
 <p class="admonition-title">Tip</p>
 <p>The <code class="language-python highlight"><span class="n">cache_defaults</span><span class="o">=</span><span class="kc">True</span></code> and <code>target</code> flags can be used inside the <a class="autorefs autorefs-internal" title="            Proxy" href="../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> constructor to cache the <code>__hash__</code> value of the target which will make the proxy hashable without needing to be resolved first.
 This only applies to hashable target objects.
-Similarly, passing <code class="language-python highlight"><span class="n">populate_target</span><span class="o">=</span><span class="kc">True</span></code> to <a class="autorefs autorefs-internal" title="            proxy" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> will automatically set these flags on the returned proxy.</p>
+Similarly, <a class="autorefs autorefs-internal" title="            proxy" href="../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> sets these flags on the returned proxy by default (<code class="language-python highlight"><span class="n">populate_target</span><span class="o">=</span><span class="kc">True</span></code>).</p>
 </div>
 <p>There are a few mechanisms for determining when a proxy is getting resolved while debugging.</p>
 <ul>
@@ -4639,7 +4639,7 @@ For example, here the target object is a large 10,000 character string but the s
 <p>To check if an object is a proxy, use <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span></code>.
 This will not resolve the proxy.</p>
 <p>Checking the type of a proxy's target object requires more care because <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">MyType</span><span class="p">)</span></code> will resolve the proxy.
-This can be avoided by doing a direct type comparisons (e.g., <code class="language-python highlight"><span class="nb">type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span> <span class="o">==</span> <span class="n">MyType</span><span class="p">)</span></code>) but this will mean that type comparisons with subclasses will not work.</p>
+This can be avoided by doing a direct type comparison (e.g., <code class="language-python highlight"><span class="nb">type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span> <span class="o">==</span> <span class="n">MyType</span></code>) but this will mean that type comparisons with subclasses will not work.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-4-3"> 3</a></span>

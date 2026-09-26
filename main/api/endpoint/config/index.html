@@ -1850,6 +1850,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" EndpointStorageConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.config.EndpointStorageConfig.object_size_limit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;object_size_limit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4322,6 +4339,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label=" EndpointStorageConfig">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.config.EndpointStorageConfig.object_size_limit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;object_size_limit
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4710,12 +4744,12 @@ host or when STUN servers are unreachable.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><span title="proxystore.endpoint.config.EndpointRelayConfig.verify_certificates">verify_certificates</span></code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
+          <b><code><span title="proxystore.endpoint.config.EndpointRelayConfig.verify_certificate">verify_certificate</span></code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>)
           –
           <div class="doc-md-description">
             <p>Validate the relay server's SSL certificate. This
-should only be disabled when testing endpoint with local relay
+should only be disabled when testing endpoints with local relay
 servers using self-signed certificates.</p>
           </div>
         </li>
@@ -4787,7 +4821,8 @@ in-memory.</p>
               (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
           –
           <div class="doc-md-description">
-            <p>Optional maximum object size.</p>
+            <p>Maximum object size in bytes. If <code>0</code>, there is no
+limit on object sizes.</p>
           </div>
         </li>
     </ul>
@@ -4809,6 +4844,30 @@ in-memory.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="proxystore.endpoint.config.EndpointStorageConfig.object_size_limit" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">object_size_limit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#proxystore.endpoint.config.EndpointStorageConfig.object_size_limit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">object_size_limit</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Maximum object size in bytes or <code>None</code> if there is no limit.</p>
+
+    </div>
+
+</div>
 
 
 
@@ -4872,7 +4931,9 @@ in-memory.</p>
               (<code><a class="autorefs autorefs-external" title="typing.Literal" href="https://docs.python.org/3/library/typing.html#typing.Literal">Literal</a>[&#39;fqdn&#39;, &#39;ip&#39;, &#39;static&#39;]</code>)
           –
           <div class="doc-md-description">
-            <p>Type of host address to use (FQDN or IP).</p>
+            <p>Type of host address to use. If <code>"ip"</code> or <code>"fqdn"</code>, the
+host is determined when the endpoint starts. If <code>"static"</code>, the
+<code>host</code> field is used.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -4894,11 +4955,11 @@ starts, and clients only trust that certificate.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><span title="proxystore.endpoint.config.EndpointConfig.peering">peering</span></code></b>
-              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></code>)
+          <b><code><span title="proxystore.endpoint.config.EndpointConfig.relay">relay</span></code></b>
+              (<code><a class="autorefs autorefs-internal" title="            EndpointRelayConfig (proxystore.endpoint.config.EndpointRelayConfig)" href="#proxystore.endpoint.config.EndpointRelayConfig">EndpointRelayConfig</a></code>)
           –
           <div class="doc-md-description">
-            <p>Peering configuration.</p>
+            <p>Relay server configuration used for peering.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -4973,11 +5034,11 @@ port is not in the range [1, 65535].</p>
 
             <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/config.py</code></summary>
-              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-183">183</a></span>
-<span class="normal"><a href="#__codelineno-0-184">184</a></span>
-<span class="normal"><a href="#__codelineno-0-185">185</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-183"><a id="__codelineno-0-183" name="__codelineno-0-183"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-</span><span id="__span-0-184"><a id="__codelineno-0-184" name="__codelineno-0-184"></a><span class="w">    </span><span class="sd">"""Validate name only contains alphanumeric or dash/underscore chars."""</span>
-</span><span id="__span-0-185"><a id="__codelineno-0-185" name="__codelineno-0-185"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">'[^A-Za-z0-9_\-]'</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-191">191</a></span>
+<span class="normal"><a href="#__codelineno-0-192">192</a></span>
+<span class="normal"><a href="#__codelineno-0-193">193</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-191"><a id="__codelineno-0-191" name="__codelineno-0-191"></a><span class="k">def</span><span class="w"> </span><span class="nf">validate_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+</span><span id="__span-0-192"><a id="__codelineno-0-192" name="__codelineno-0-192"></a><span class="w">    </span><span class="sd">"""Validate name only contains alphanumeric or dash/underscore chars."""</span>
+</span><span id="__span-0-193"><a id="__codelineno-0-193" name="__codelineno-0-193"></a>    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s1">'[^A-Za-z0-9_\-]'</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 </span></code></pre></div></td></tr></table></div>
             </details>
     </div>

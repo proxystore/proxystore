@@ -4480,7 +4480,7 @@ Here, we create a <a class="autorefs autorefs-internal" title="            Store
 <a class="autorefs autorefs-internal" title="            StoreExecutor" href="#proxystore.store.executor.StoreExecutor"><code>StoreExecutor</code></a> takes a
 <code>should_proxy</code> argument which is a callable used to determine which inputs
 and output values should be proxied. In this example, we use
-<a class="autorefs autorefs-internal" title="            ProxyType" href="#proxystore.store.executor.ProxyType"><code>ProxyType(str)</code></a> which cause only
+<a class="autorefs autorefs-internal" title="            ProxyType" href="#proxystore.store.executor.ProxyType"><code>ProxyType(str)</code></a> which causes only
 instances of <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str"><code>str</code></a> to be proxied. All other input or output types
 will be ignored.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
@@ -4507,7 +4507,7 @@ will be ignored.</p>
 </span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">assert</span> <span class="n">result</span> <span class="o">==</span> <span class="s1">'foobar-42'</span>
 </span></code></pre></div>
-<p>The execution of <code>concat</code>, above, uses a <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str"><code>str</code></a> and <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int"><code>int</code></a> inputs
+<p>The execution of <code>concat</code>, above, uses <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str"><code>str</code></a> and <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int"><code>int</code></a> inputs
 and produces a <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str"><code>str</code></a> output. Because we configured the
 <a class="autorefs autorefs-internal" title="            StoreExecutor" href="#proxystore.store.executor.StoreExecutor"><code>StoreExecutor</code></a> to proxy only
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str"><code>str</code></a> instances, only the <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a> input and output were proxied.
@@ -4758,7 +4758,7 @@ if the specific client does not inherit from
 compatible with every executor type. If you encounter errors such as
 <a class="autorefs autorefs-internal" title="            ReferenceInvalidError" href="../ref/#proxystore.store.ref.ReferenceInvalidError"><code>ReferenceInvalidError</code></a>,
 set <code>ownership=False</code> and consider using alternate mechanisms for
-evicted data associated with proxies.</p>
+evicting data associated with proxies.</p>
 <p>For example, <code>ownership=True</code> is not currently compatible with the
 Dask Distributed <code>Client</code> because Dask will maintain multiple
 references to the resulting

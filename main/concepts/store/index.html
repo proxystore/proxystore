@@ -4275,7 +4275,7 @@
 <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> instance and provides
 extra functionality. Similar to the
 <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>, the
-<a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> exposes <code>evict</code>, <code>exist</code>, <code>get</code>, and <code>put</code>
+<a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> exposes <code>evict</code>, <code>exists</code>, <code>get</code>, and <code>put</code>
 operations; however, these operations act on Python objects rather than
 <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes"><code>bytes</code></a>. The <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will (de)serialize
 objects accordingly before invoking the corresponding operation on the
@@ -4291,7 +4291,7 @@ mediated channel and returns a proxy (see example below). The object is
 serialized before being put in the mediated channel, a factory with the key
 returned by the <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> and
 other information necessary to retrieve the object from the mediated channel
-is generated, and then a new proxy, internalized with the factory, is returned.</p>
+is generated, and then a new proxy, initialized with the factory, is returned.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Base Store Usage</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-0-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-0-3"> 3</a></span>
@@ -4394,7 +4394,7 @@ custom default serializers or deserializers of the form:</p>
 </span></code></pre></div></td></tr></table></div>
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
-innefficient. E.g.,</p>
+inefficient. E.g.,</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
 <span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
 <span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
@@ -4473,7 +4473,7 @@ innefficient. E.g.,</p>
 However, <code>populate_target=False</code> should also be set in this case to avoid prepopulating the proxy with the serialized target object.
 See the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> docstring for more information.</p>
 </div>
-<p>Alternative, custom serializers and deserializers can be passed to <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, overriding the class defaults.
+<p>Custom serializers and deserializers can also be passed to individual operations, such as <a class="autorefs autorefs-internal" title="            put" href="../../api/store/base/#proxystore.store.base.Store.put"><code>Store.put()</code></a>, <a class="autorefs autorefs-internal" title="            get" href="../../api/store/base/#proxystore.store.base.Store.get"><code>Store.get()</code></a>, or <a class="autorefs autorefs-internal" title="            proxy" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a>, to override the defaults of the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instance.
 See Issue <a href="https://github.com/proxystore/proxystore/issues/146" target="_blank">#146</a>
 for further discussion on where custom serializers can be helpful.</p>
 

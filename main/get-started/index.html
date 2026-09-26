@@ -4262,7 +4262,7 @@ Communication via proxies gives applications the illusion that objects are
 moving through a specified path (e.g., through a network socket, cloud
 server, workflow engine, etc.) while the true path the data takes is
 different. Transporting the lightweight proxies through the application or
-systems can be more efficient---reduce overheads in the system.</p>
+systems can be more efficient and reduce overheads in the system.</p>
 </blockquote>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>ProxyStore provides a unique interface to object stores, the transparent
@@ -4343,7 +4343,7 @@ the underlying storage connector is accessible by all processes. (Here,
 the <a class="autorefs autorefs-internal" title="            LocalConnector" href="../api/connectors/local/#proxystore.connectors.local.LocalConnector"><code>LocalConnector</code></a> is only
 accessible within the local process and is used for illustrative purposes.)
 Once the proxy is used on the remote process, the underlying factory function
-will be executed to retrieve the target object from the Redis server.</p>
+will be executed to retrieve the target object from the store.</p>
 <p>Using the <a class="autorefs autorefs-internal" title="            Store" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface allows
 developers to write code without needing to worry about how data communication
 is handled and reduces the number of lines of code that need to be changed
@@ -4393,7 +4393,7 @@ necessary code to resolve the object.</p>
 <li>Always true even if input is a proxy.</li>
 </ol>
 <p>In this model, only the producer of the data needs to be aware of which
-communication and storage system is being used, and no modification to the consumer code are required.</p>
+communication and storage system is being used, and no modifications to the consumer code are required.</p>
 <p><strong>How is this more efficient?</strong></p>
 <p>The ProxyStore model can improve application performance in many ways:</p>
 <ol>

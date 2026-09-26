@@ -4470,7 +4470,7 @@
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26"></a>
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27"></a><span class="sd">    Raises:</span>
 </span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28"></a><span class="sd">        ProxyStoreFactoryError: If the proxy's factory is not an instance of</span>
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">            [`StoreFactory`][proxystore.store.base.StoreFactory].</span>
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29"></a><span class="sd">            [`StoreFactory`][proxystore.store.factory.StoreFactory].</span>
 </span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30"></a><span class="sd">    """</span>
 </span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31"></a>    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_factory</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
 </span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">StoreFactory</span><span class="p">):</span>
@@ -4514,8 +4514,8 @@ resolve the proxy concurrently with other computation.</p>
 <details class="note" open>
   <summary>Note</summary>
   <p>The asynchronous resolving functionality is implemented
-by <a class="autorefs autorefs-internal" title="            StoreFactory" href="../factory/#proxystore.store.factory.StoreFactory"><code>StoreFactory</code></a>. Factories that
-are not of this type will error when used with this function.</p>
+by <a class="autorefs autorefs-internal" title="            StoreFactory" href="../factory/#proxystore.store.factory.StoreFactory"><code>StoreFactory</code></a>. Factories
+that are not of this type will error when used with this function.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4599,15 +4599,15 @@ are not of this type will error when used with this function.</p>
 </span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55"></a>
 </span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56"></a><span class="sd">    Note:</span>
 </span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57"></a><span class="sd">        The asynchronous resolving functionality is implemented</span>
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        by [`StoreFactory`][proxystore.store.base.StoreFactory]. Factories that</span>
-</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        are not of this type will error when used with this function.</span>
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58"></a><span class="sd">        by [`StoreFactory`][proxystore.store.factory.StoreFactory]. Factories</span>
+</span><span id="__span-0-59"><a id="__codelineno-0-59" name="__codelineno-0-59"></a><span class="sd">        that are not of this type will error when used with this function.</span>
 </span><span id="__span-0-60"><a id="__codelineno-0-60" name="__codelineno-0-60"></a>
 </span><span id="__span-0-61"><a id="__codelineno-0-61" name="__codelineno-0-61"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-62"><a id="__codelineno-0-62" name="__codelineno-0-62"></a><span class="sd">        proxy: Proxy instance to begin asynchronously resolving.</span>
 </span><span id="__span-0-63"><a id="__codelineno-0-63" name="__codelineno-0-63"></a>
 </span><span id="__span-0-64"><a id="__codelineno-0-64" name="__codelineno-0-64"></a><span class="sd">    Raises:</span>
 </span><span id="__span-0-65"><a id="__codelineno-0-65" name="__codelineno-0-65"></a><span class="sd">        ProxyStoreFactoryError: If the proxy's factory is not an instance of</span>
-</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            [`StoreFactory`][proxystore.store.base.StoreFactory].</span>
+</span><span id="__span-0-66"><a id="__codelineno-0-66" name="__codelineno-0-66"></a><span class="sd">            [`StoreFactory`][proxystore.store.factory.StoreFactory].</span>
 </span><span id="__span-0-67"><a id="__codelineno-0-67" name="__codelineno-0-67"></a><span class="sd">    """</span>
 </span><span id="__span-0-68"><a id="__codelineno-0-68" name="__codelineno-0-68"></a>    <span class="n">factory</span> <span class="o">=</span> <span class="n">get_factory</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
 </span><span id="__span-0-69"><a id="__codelineno-0-69" name="__codelineno-0-69"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">factory</span><span class="p">,</span> <span class="n">base</span><span class="o">.</span><span class="n">StoreFactory</span><span class="p">):</span>

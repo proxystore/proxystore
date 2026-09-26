@@ -4438,11 +4438,13 @@ are encountering issues using ProxyStore Endpoints.</p>
 <h2 id="test-a-local-endpoint">Test a Local Endpoint<a class="headerlink" href="#test-a-local-endpoint" title="Permanent link">&para;</a></h2>
 <p>Consider you configured and started an endpoint as follows:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>myendpoint
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint<span class="w"> </span>myendpoint<span class="w"> </span>&lt;f4dc841d-377e-4785-8d66-8eade34f63cd&gt;.<span class="w"> </span>Start<span class="w"> </span>with:
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w"> </span>Starting<span class="w"> </span>endpoint<span class="w"> </span>process<span class="w"> </span>as<span class="w"> </span>daemon.
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>INFO:<span class="w"> </span>Logs<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>written<span class="w"> </span>to<span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>INFO:<span class="w"> </span>Configured<span class="w"> </span>endpoint:<span class="w"> </span>myendpoint<span class="w"> </span>&lt;f4dc841d-377e-4785-8d66-8eade34f63cd&gt;
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>INFO:<span class="w"> </span>Config<span class="w"> </span>and<span class="w"> </span>log<span class="w"> </span>file<span class="w"> </span>directory:<span class="w"> </span>~/.local/share/proxystore/myendpoint
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>INFO:<span class="w"> </span>Start<span class="w"> </span>the<span class="w"> </span>endpoint<span class="w"> </span>with:
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>INFO:<span class="w">   </span>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>myendpoint
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>INFO:<span class="w"> </span>Starting<span class="w"> </span>endpoint<span class="w"> </span>process<span class="w"> </span>as<span class="w"> </span>daemon.
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>INFO:<span class="w"> </span>Logs<span class="w"> </span>will<span class="w"> </span>be<span class="w"> </span>written<span class="w"> </span>to<span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
 </span></code></pre></div></p>
 <h3 id="check-endpoint-logs">Check Endpoint Logs<a class="headerlink" href="#check-endpoint-logs" title="Permanent link">&para;</a></h3>
 <p>Endpoint logs are written to a directory in <code>$XDG_DATA_HOME/proxystore</code> which
@@ -4529,7 +4531,7 @@ directory (e.g., <code>~/.local/share/proxystore/myendpoint/config.toml</code>).
 Restart your endpoints if you had to change the configuration.</p>
 <p>Second, confirm the endpoint connects to the relay server when started by
 checking the endpoint logs for a line like this.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>INFO<span class="w">  </span><span class="o">(</span>proxystore.p2p.relay_client<span class="o">)</span><span class="w"> </span>::<span class="w"> </span>Established<span class="w"> </span>client<span class="w"> </span>connection<span class="w"> </span>to<span class="w"> </span>relay<span class="w"> </span>server<span class="w"> </span>at<span class="w"> </span>ws://localhost:8765<span class="w"> </span>with<span class="w"> </span>client<span class="w"> </span><span class="nv">uuid</span><span class="o">=</span>aaaa0259-5a8c-454b-b17d-61f010d874d4<span class="w"> </span>and<span class="w"> </span><span class="nv">name</span><span class="o">=</span>myendpoint
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>INFO<span class="w">  </span><span class="o">(</span>proxystore.p2p.relay.client<span class="o">)</span><span class="w"> </span>::<span class="w"> </span>Established<span class="w"> </span>client<span class="w"> </span>connection<span class="w"> </span>to<span class="w"> </span>relay<span class="w"> </span>server<span class="w"> </span>at<span class="w"> </span>ws://localhost:8765<span class="w"> </span>with<span class="w"> </span>client<span class="w"> </span><span class="nv">uuid</span><span class="o">=</span>aaaa0259-5a8c-454b-b17d-61f010d874d4<span class="w"> </span>and<span class="w"> </span><span class="nv">name</span><span class="o">=</span>myendpoint
 </span></code></pre></div></p>
 <h3 id="use-the-test-cli_1">Use the Test CLI<a class="headerlink" href="#use-the-test-cli_1" title="Permanent link">&para;</a></h3>
 <p>The <code>proxystore-endpoint test</code> CLI can be used to establish a peer connection
@@ -4570,11 +4572,11 @@ you can check the NAT compatibility in two ways.</p>
    <a href="../../api/cli/#proxystore-endpoint-check-nat"><code>proxystore-endpoint check-nat</code></a>
    command to discover your NAT behavior.
    <div class="language-text highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$ proxystore-endpoint check-nat
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>INFO: Checking NAT type. This may take a moment...
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>INFO: NAT Type:       Full-cone NAT
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>INFO: Checking NAT behavior. This may take a moment...
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>INFO: NAT Behavior:   Endpoint-independent mapping
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>INFO: External IP:    &lt;IP ADDRESS&gt;
 </span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>INFO: External Port:  &lt;PORT&gt;
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>INFO: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work. (NAT traversal does not work reliably across symmetric NATs or poorly behaved legacy NATs.)
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>INFO: NAT traversal for peer-to-peer methods (e.g., hole-punching) is likely to work.
 </span></code></pre></div></li>
 </ol>
 

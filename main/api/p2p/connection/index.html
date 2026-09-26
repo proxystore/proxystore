@@ -4619,13 +4619,13 @@ the <a class="autorefs autorefs-internal" title="            PeerConnection" hre
 <details class="example" open>
   <summary>Example</summary>
   <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.connection</span><span class="w"> </span><span class="kn">import</span> <span class="n">PeerConnection</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.relay</span><span class="w"> </span><span class="kn">import</span> <span class="n">BasicRelayClient</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.p2p.relay.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">RelayClient</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">client1</span> <span class="o">=</span> <span class="n">BasicRelayClient</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">client1</span> <span class="o">=</span> <span class="n">RelayClient</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">await</span> <span class="n">client1</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">connection1</span> <span class="o">=</span> <span class="n">PeerConnection</span><span class="p">(</span><span class="n">client1</span><span class="p">)</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">client2</span> <span class="o">=</span> <span class="n">BasicRelayClient</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">client2</span> <span class="o">=</span> <span class="n">RelayClient</span><span class="p">(</span><span class="n">relay_server_address</span><span class="p">)</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="k">await</span> <span class="n">client2</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">connection2</span> <span class="o">=</span> <span class="n">PeerConnection</span><span class="p">(</span><span class="n">client2</span><span class="p">)</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
@@ -4831,7 +4831,12 @@ An empty list disables server-reflexive candidate gathering.</p>
 <details class="note" open>
   <summary>Note</summary>
   <p>This will not call
-<a class="autorefs autorefs-internal" title="            RelayClient" href="../relay/client/#proxystore.p2p.relay.client.RelayClient"><code>RelayClient.close()</code></a>.</p>
+<a class="autorefs autorefs-internal" title="            close
+
+
+  
+      async
+  " href="../relay/client/#proxystore.p2p.relay.client.RelayClient.close"><code>RelayClient.close()</code></a>.</p>
 </details>
 
             <details class="mkdocstrings-source">
@@ -4855,7 +4860,7 @@ An empty list disables server-reflexive candidate gathering.</p>
 </span><span id="__span-0-158"><a id="__codelineno-0-158" name="__codelineno-0-158"></a>
 </span><span id="__span-0-159"><a id="__codelineno-0-159" name="__codelineno-0-159"></a><span class="sd">    Note:</span>
 </span><span id="__span-0-160"><a id="__codelineno-0-160" name="__codelineno-0-160"></a><span class="sd">        This will not call</span>
-</span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">        [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient].</span>
+</span><span id="__span-0-161"><a id="__codelineno-0-161" name="__codelineno-0-161"></a><span class="sd">        [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient.close].</span>
 </span><span id="__span-0-162"><a id="__codelineno-0-162" name="__codelineno-0-162"></a><span class="sd">    """</span>
 </span><span id="__span-0-163"><a id="__codelineno-0-163" name="__codelineno-0-163"></a>    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">'</span><span class="si">%s</span><span class="s1">: closing connection'</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log_prefix</span><span class="p">)</span>
 </span><span id="__span-0-164"><a id="__codelineno-0-164" name="__codelineno-0-164"></a>    <span class="c1"># Flush send buffers before close</span>

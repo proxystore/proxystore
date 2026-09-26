@@ -5427,7 +5427,7 @@ the returned proxy is already resolved.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Mutably borrow <code>T</code> by creating an mutable reference of <code>T</code>.</p>
+        <p>Mutably borrow <code>T</code> by creating a mutable reference of <code>T</code>.</p>
 
 
 <details class="note" open>
@@ -5524,7 +5524,7 @@ the returned proxy is already resolved.</p>
 </span><span id="__span-0-433"><a id="__codelineno-0-433" name="__codelineno-0-433"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-434"><a id="__codelineno-0-434" name="__codelineno-0-434"></a>    <span class="n">populate_target</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-435"><a id="__codelineno-0-435" name="__codelineno-0-435"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RefMutProxy</span><span class="p">[</span><span class="n">T</span><span class="p">]:</span>
-</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="w">    </span><span class="sd">"""Mutably borrow `T` by creating an mutable reference of `T`.</span>
+</span><span id="__span-0-436"><a id="__codelineno-0-436" name="__codelineno-0-436"></a><span class="w">    </span><span class="sd">"""Mutably borrow `T` by creating a mutable reference of `T`.</span>
 </span><span id="__span-0-437"><a id="__codelineno-0-437" name="__codelineno-0-437"></a>
 </span><span id="__span-0-438"><a id="__codelineno-0-438" name="__codelineno-0-438"></a><span class="sd">    Note:</span>
 </span><span id="__span-0-439"><a id="__codelineno-0-439" name="__codelineno-0-439"></a><span class="sd">        This mutates `proxy`.</span>
@@ -5689,7 +5689,7 @@ copied already.</p>
               (<code><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.ref.T">T</span>]</code>)
           –
           <div class="doc-md-description">
-            <p>Proxy reference to borrow.</p>
+            <p>Proxy to convert.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -5787,7 +5787,7 @@ the returned proxy is already resolved.</p>
 </span><span id="__span-0-510"><a id="__codelineno-0-510" name="__codelineno-0-510"></a><span class="sd">        This will unset the `evict` flag on the proxy.</span>
 </span><span id="__span-0-511"><a id="__codelineno-0-511" name="__codelineno-0-511"></a>
 </span><span id="__span-0-512"><a id="__codelineno-0-512" name="__codelineno-0-512"></a><span class="sd">    Args:</span>
-</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">        proxy: Proxy reference to borrow.</span>
+</span><span id="__span-0-513"><a id="__codelineno-0-513" name="__codelineno-0-513"></a><span class="sd">        proxy: Proxy to convert.</span>
 </span><span id="__span-0-514"><a id="__codelineno-0-514" name="__codelineno-0-514"></a><span class="sd">        populate_target: If the target of `proxy` has already been resolved,</span>
 </span><span id="__span-0-515"><a id="__codelineno-0-515" name="__codelineno-0-515"></a><span class="sd">            copy the reference to the target into the returned proxy such that</span>
 </span><span id="__span-0-516"><a id="__codelineno-0-516" name="__codelineno-0-516"></a><span class="sd">            the returned proxy is already resolved.</span>
@@ -5796,7 +5796,7 @@ the returned proxy is already resolved.</p>
 </span><span id="__span-0-519"><a id="__codelineno-0-519" name="__codelineno-0-519"></a><span class="sd">        ValueError: if `proxy` is already a</span>
 </span><span id="__span-0-520"><a id="__codelineno-0-520" name="__codelineno-0-520"></a><span class="sd">            [`BaseRefProxy`][proxystore.store.ref.BaseRefProxy] instance.</span>
 </span><span id="__span-0-521"><a id="__codelineno-0-521" name="__codelineno-0-521"></a><span class="sd">        ProxyStoreFactoryError: If the proxy's factory is not an instance of</span>
-</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="sd">            [`StoreFactory`][proxystore.store.base.StoreFactory].</span>
+</span><span id="__span-0-522"><a id="__codelineno-0-522" name="__codelineno-0-522"></a><span class="sd">            [`StoreFactory`][proxystore.store.factory.StoreFactory].</span>
 </span><span id="__span-0-523"><a id="__codelineno-0-523" name="__codelineno-0-523"></a><span class="sd">    """</span>
 </span><span id="__span-0-524"><a id="__codelineno-0-524" name="__codelineno-0-524"></a>    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span> <span class="ow">in</span> <span class="p">(</span><span class="n">OwnedProxy</span><span class="p">,</span> <span class="n">RefProxy</span><span class="p">,</span> <span class="n">RefMutProxy</span><span class="p">):</span>
 </span><span id="__span-0-525"><a id="__codelineno-0-525" name="__codelineno-0-525"></a>        <span class="c1"># We don't use isinstance to prevent resolving the proxy.</span>

@@ -5387,7 +5387,7 @@ stored in.</p>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="s1">'small'</span><span class="p">:</span> <span class="p">(</span><span class="n">file_connector</span><span class="p">,</span> <span class="n">Policy</span><span class="p">(</span><span class="n">max_size_bytes</span><span class="o">=</span><span class="mi">1000000</span><span class="p">)),</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="s1">'large'</span><span class="p">:</span> <span class="p">(</span><span class="n">redis_connector</span><span class="p">,</span> <span class="n">Policy</span><span class="p">(</span><span class="n">min_size_bytes</span><span class="o">=</span><span class="mi">1000000</span><span class="p">)),</span>
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">}</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">MultiConnector</span><span class="p">(</span><span class="n">connector</span><span class="p">)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">MultiConnector</span><span class="p">(</span><span class="n">connectors</span><span class="p">)</span>
 </span></code></pre></div>
 </details>
 
@@ -6170,9 +6170,9 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
 <details class="warning" open>
   <summary>Warning</summary>
   <p>This method calls
-<a class="autorefs autorefs-internal" title="            MultiConnector" href="#proxystore.connectors.multi.MultiConnector"><code>put()</code></a> individually
-for each item in the batch so items in the batch can potentially
-be placed in different connectors.</p>
+<a class="autorefs autorefs-internal" title="            put" href="#proxystore.connectors.multi.MultiConnector.put"><code>put()</code></a>
+individually for each item in the batch so items in the batch
+can potentially be placed in different connectors.</p>
 </details>
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6277,9 +6277,9 @@ of a connectors's policy <code>superset_tags</code> to match.</p>
 </span><span id="__span-0-418"><a id="__codelineno-0-418" name="__codelineno-0-418"></a>
 </span><span id="__span-0-419"><a id="__codelineno-0-419" name="__codelineno-0-419"></a><span class="sd">    Warning:</span>
 </span><span id="__span-0-420"><a id="__codelineno-0-420" name="__codelineno-0-420"></a><span class="sd">        This method calls</span>
-</span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        [`put()`][proxystore.connectors.multi.MultiConnector] individually</span>
-</span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        for each item in the batch so items in the batch can potentially</span>
-</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        be placed in different connectors.</span>
+</span><span id="__span-0-421"><a id="__codelineno-0-421" name="__codelineno-0-421"></a><span class="sd">        [`put()`][proxystore.connectors.multi.MultiConnector.put]</span>
+</span><span id="__span-0-422"><a id="__codelineno-0-422" name="__codelineno-0-422"></a><span class="sd">        individually for each item in the batch so items in the batch</span>
+</span><span id="__span-0-423"><a id="__codelineno-0-423" name="__codelineno-0-423"></a><span class="sd">        can potentially be placed in different connectors.</span>
 </span><span id="__span-0-424"><a id="__codelineno-0-424" name="__codelineno-0-424"></a>
 </span><span id="__span-0-425"><a id="__codelineno-0-425" name="__codelineno-0-425"></a><span class="sd">    Args:</span>
 </span><span id="__span-0-426"><a id="__codelineno-0-426" name="__codelineno-0-426"></a><span class="sd">        objs: Sequence of serialized objects to put in the store.</span>
