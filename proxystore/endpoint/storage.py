@@ -9,7 +9,7 @@ from typing import runtime_checkable
 
 import aiosqlite
 
-from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+from proxystore.endpoint.config import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.utils.data import bytes_to_readable
 

@@ -17,7 +17,8 @@ except ImportError:  # pragma: no cover
     # Pydantic v1 compatibility
     from pydantic import validator as field_validator  # type: ignore[no-redef]
 
-from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+MAX_OBJECT_SIZE_DEFAULT = 100_000_000
+"""Default maximum endpoint object size in bytes."""
 
 
 class EndpointRelayAuthConfig(BaseModel):
