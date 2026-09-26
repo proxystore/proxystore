@@ -6,10 +6,11 @@ import contextlib
 import logging
 import multiprocessing
 import os
+import secrets
 import shutil
 import time
-import uuid
 from collections.abc import Generator
+from typing import Any
 
 import pytest
 
@@ -17,8 +18,43 @@ from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.identity import endpoint_id_from_secret_key
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
+
+
+def random_endpoint_id() -> EndpointId:
+    """Generate a random endpoint ID without a secret key."""
+    return EndpointId(secrets.token_hex(32))
+
+
+def write_endpoint(
+    endpoint_dir: EndpointDir,
+    **kwargs: Any,
+) -> EndpointConfig:
+    """Write an endpoint configuration and a new secret key.
+
+    Args:
+        endpoint_dir: Directory to write the endpoint to.
+        kwargs: Fields of the configuration. The `name` defaults to the
+            base name of the directory and the `port` to an open port.
+
+    Returns:
+        The configuration.
+    """
+    secret_key = generate_secret_key()
+    options: dict[str, Any] = {
+        'name': os.path.basename(endpoint_dir.path),
+        'port': open_port(),
+        **kwargs,
+        'id': endpoint_id_from_secret_key(secret_key),
+    }
+    config = EndpointConfig(**options)
+    endpoint_dir.write_config(config)
+    endpoint_dir.write_secret_key(secret_key)
+    return config
 
 
 def serve_endpoint_silent(
@@ -108,13 +144,7 @@ def endpoint(
     use_uvloop: bool,
 ) -> Generator[EndpointConfig, None, None]:
     """Launch endpoint in subprocess."""
-    config = EndpointConfig(
-        name=os.path.basename(endpoint_dir.path),
-        uuid=str(uuid.uuid4()),
-        host='localhost',
-        port=open_port(),
-    )
-    endpoint_dir.write_config(config)
+    config = write_endpoint(endpoint_dir, host='localhost')
     context = multiprocessing.get_context('spawn')
     server_handle = context.Process(
         target=serve_endpoint_silent,

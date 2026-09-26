@@ -12,7 +12,6 @@ import logging
 import os
 import signal
 import ssl
-import uuid
 from collections.abc import AsyncIterator
 
 try:
@@ -31,12 +30,33 @@ from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.identity import endpoint_id_from_secret_key
+from proxystore.endpoint.identity import short_id
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 
 logger = logging.getLogger(__name__)
+
+
+def _check_secret_key(
+    endpoint_dir: EndpointDir, config: EndpointConfig
+) -> None:
+    try:
+        secret_key = endpoint_dir.read_secret_key()
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f'Endpoint directory {endpoint_dir} does not contain a secret '
+            'key. Remove the endpoint and configure it again with '
+            '"proxystore-endpoint configure".',
+        ) from None
+    endpoint_id = endpoint_id_from_secret_key(secret_key)
+    if endpoint_id != config.id:
+        raise ValueError(
+            f'The endpoint ID in the configuration ({config.id}) does not '
+            f'match the secret key ({endpoint_id}) in {endpoint_dir}.',
+        )
 
 
 def _create_storage(config: EndpointConfig) -> Storage:
@@ -88,14 +108,16 @@ async def running_endpoint(
         The running endpoint.
 
     Raises:
-        FileNotFoundError: If the configuration does not exist.
-        ValueError: If the configuration is invalid or the host is not set
-            in the configuration.
+        FileNotFoundError: If the configuration or secret key does not exist.
+        ValueError: If the configuration is invalid, the host is not set
+            in the configuration, or the ID in the configuration does not
+            match the secret key.
         OSError: If the endpoint cannot listen on its host and port.
     """
     config = endpoint_dir.read_config()
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
+    _check_secret_key(endpoint_dir, config)
 
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.
@@ -103,7 +125,7 @@ async def running_endpoint(
         endpoint = await stack.enter_async_context(
             Endpoint(
                 name=config.name,
-                uuid=uuid.UUID(config.uuid),
+                endpoint_id=config.id,
                 storage=_create_storage(config),
             ),
         )
@@ -112,7 +134,7 @@ async def running_endpoint(
             logger.warning(
                 'Removed group and other permissions from '
                 '%s because clients trust the files in the '
-                'endpoint directory',
+                'endpoint directory and it contains the secret key',
                 endpoint_dir,
             )
 
@@ -121,7 +143,7 @@ async def running_endpoint(
         tls_fingerprint: str | None = None
         if config.tls:
             cert_pem, key_pem = generate_tls_certificate(
-                f'proxystore-endpoint-{config.uuid}',
+                f'proxystore-endpoint-{short_id(config.id)}',
             )
             ssl_context = server_ssl_context(cert_pem, key_pem)
             tls_fingerprint = pem_certificate_fingerprint(cert_pem)
@@ -153,7 +175,7 @@ async def running_endpoint(
         stack.callback(endpoint_dir.remove_connection, connection)
         logger.info(
             'Serving endpoint %s (%s) on %s:%s',
-            endpoint.uuid,
+            endpoint.id,
             endpoint.name,
             config.host,
             config.port,

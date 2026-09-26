@@ -16,7 +16,7 @@ A connection starts with a handshake:
 3. The client verifies the endpoint's proof then sends an
    [`AUTH`][proxystore.endpoint.protocol.Op.AUTH] message with its own proof.
 4. The endpoint verifies the client's proof and replies with its
-   information (UUID, name, and versions).
+   information (ID, name, and versions).
 
 The preamble format must never change so that clients and endpoints using
 different protocol versions can detect the mismatch. If the protocol versions
@@ -34,7 +34,6 @@ import enum
 import json
 import platform
 import struct
-import uuid
 from typing import Any
 from typing import ClassVar
 from typing import NamedTuple
@@ -42,6 +41,8 @@ from typing import Self
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.serialize import BytesLike
 
 MAGIC = b'PSEP'
@@ -312,14 +313,14 @@ class EndpointInfo:
     """Information about an endpoint sent at the end of the handshake.
 
     Attributes:
-        uuid: UUID of the endpoint.
+        id: ID of the endpoint.
         name: Name of the endpoint.
         versions: Versions of the endpoint.
         max_object_size: Maximum size in bytes of objects that can be set
             on the endpoint or `None` if there is no limit.
     """
 
-    uuid: uuid.UUID
+    id: EndpointId
     name: str
     versions: Versions
     max_object_size: int | None
@@ -327,7 +328,7 @@ class EndpointInfo:
     def to_meta(self) -> dict[str, Any]:
         """Encode as message metadata."""
         return {
-            'uuid': str(self.uuid),
+            'id': self.id,
             'name': self.name,
             'max_object_size': self.max_object_size,
             **self.versions._asdict(),
@@ -341,7 +342,7 @@ class EndpointInfo:
             EndpointProtocolError: If the metadata is malformed.
         """
         return cls(
-            uuid=_parse_uuid(_get(meta, 'uuid', str, cls), 'uuid', cls),
+            id=_parse_id(_get(meta, 'id', str, cls), 'id', cls),
             name=_get(meta, 'name', str, cls),
             versions=_get_versions(meta, cls),
             max_object_size=_get(
@@ -359,17 +360,16 @@ class Request:
 
     Attributes:
         key: Key of the object.
-        endpoint: UUID of the endpoint to forward the request to or `None`
+        endpoint: ID of the endpoint to forward the request to or `None`
             for the local endpoint.
     """
 
     key: str
-    endpoint: uuid.UUID | None = None
+    endpoint: EndpointId | None = None
 
     def to_meta(self) -> dict[str, Any]:
         """Encode as message metadata."""
-        endpoint = None if self.endpoint is None else str(self.endpoint)
-        return {'key': self.key, 'endpoint': endpoint}
+        return {'key': self.key, 'endpoint': self.endpoint}
 
     @classmethod
     def from_meta(cls, meta: dict[str, Any]) -> Self:
@@ -386,13 +386,13 @@ class Request:
             key=key,
             endpoint=None
             if endpoint is None
-            else _parse_uuid(endpoint, 'endpoint', cls),
+            else _parse_id(endpoint, 'endpoint', cls),
         )
 
 
-def _parse_uuid(value: str, field: str, message: type) -> uuid.UUID:
+def _parse_id(value: str, field: str, message: type) -> EndpointId:
     try:
-        return uuid.UUID(value)
+        return parse_endpoint_id(value)
     except ValueError:
         raise _malformed(message, field) from None
 

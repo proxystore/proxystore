@@ -12,6 +12,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
+from testing.endpoint import random_endpoint_id
 
 
 def test_write_read_config(tmp_path: pathlib.Path) -> None:
@@ -20,7 +21,7 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
 
     cfg = EndpointConfig(
         name='name',
-        uuid=str(uuid.uuid4()),
+        id=random_endpoint_id(),
         host='host',
         port=1234,
     )
@@ -57,7 +58,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
         endpoint_dir.write_config(
             EndpointConfig(
                 name=name,
-                uuid=str(uuid.uuid4()),
+                id=random_endpoint_id(),
                 host='host',
                 port=1234,
             )
@@ -67,7 +68,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
     os.makedirs(os.path.join(tmp_dir, 'ep4'))
     # Nested directories and files are not endpoints
     EndpointDir(os.path.join(tmp_dir, 'ep1', 'nested')).write_config(
-        EndpointConfig(name='nested', uuid=str(uuid.uuid4()), port=1234),
+        EndpointConfig(name='nested', id=random_endpoint_id(), port=1234),
     )
     with open(os.path.join(tmp_dir, 'file'), 'w') as f:
         f.write('not an endpoint')
@@ -112,7 +113,8 @@ def test_validate_name(name: str, valid: bool) -> None:
     (
         ({}, None),
         ({'name': 'bad name'}, 'alphanumeric characters'),
-        ({'uuid': 'abc-abc-abc'}, 'not a valid UUID4 string'),
+        ({'id': 'abc-abc-abc'}, 'not a valid endpoint ID'),
+        ({'id': 42}, 'not a valid endpoint ID'),
         ({'port': 0}, 'Port must be in range'),
         ({'port': 1000000}, 'Port must be in range'),
     ),
@@ -120,7 +122,7 @@ def test_validate_name(name: str, valid: bool) -> None:
 def test_validate_config(bad_cfg: Any, error: str | None) -> None:
     options = {
         'name': 'name',
-        'uuid': str(uuid.uuid4()),
+        'id': random_endpoint_id(),
         'host': 'host',
         'port': 1234,
     }
@@ -155,3 +157,16 @@ def test_storage_config_object_size_limit() -> None:
     )
     assert EndpointStorageConfig(max_object_size=10).object_size_limit == 10
     assert EndpointStorageConfig(max_object_size=0).object_size_limit is None
+
+
+def test_legacy_uuid_config(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ValueError, match='older version of ProxyStore'):
+        EndpointConfig.model_validate(
+            {'name': 'name', 'uuid': str(uuid.uuid4()), 'port': 1234},
+        )
+
+    endpoint_dir = EndpointDir(str(tmp_path))
+    with open(endpoint_dir.config_path, 'w') as f:
+        f.write(f'name = "name"\nuuid = "{uuid.uuid4()}"\nport = 1234\n')
+    with pytest.raises(ValueError, match='configure it again'):
+        endpoint_dir.read_config()

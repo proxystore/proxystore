@@ -98,9 +98,9 @@ with EndpointClient.from_name('myendpoint') as client:
 
 ## Test a Remote Endpoint
 
-Consider I have an endpoint running on system A with UUID
-`aaaa0259-5a8c-454b-b17d-61f010d874d4` and another on System B
-with UUID `bbbbab4d-c73a-44ee-a316-58ec8857e83a`.
+Consider I have an endpoint running on system A with ID
+`aaaa7ce803e5348b74920943c61322d9b38fcddf2decd628c9abc3c224610929` and another on System B
+with ID `bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e`.
 
 ### Use the Test CLI
 The `proxystore-endpoint test` CLI can be used to establish a peer connection
@@ -108,13 +108,13 @@ between two endpoints and invoke remote operations.
 Here, we will request the endpoint on system A (named "myendpoint") to invoke
 an `exists` operation on the endpoint on system B.
 ```bash
-$ proxystore-endpoint test --remote bbbbab4d-c73a-44ee-a316-58ec8857e83a myendpoint exists abcdef
+$ proxystore-endpoint test --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
 INFO: Object exists: False
 ```
 
 You will get an error if the peer connection fails. For example:
 ```bash
-ERROR: Endpoint returned ERROR for EXISTS request: Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
+ERROR: Endpoint returned ERROR for EXISTS request: Request to peer bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e failed: ...
 ```
 If this happens, check the logs for both endpoints for further error messages.
 Peer requests typically fail because one of the endpoints is not running

@@ -6,7 +6,6 @@ import pathlib
 import socket
 import struct
 import threading
-import uuid
 import warnings
 from collections.abc import Callable
 from collections.abc import Generator
@@ -35,16 +34,17 @@ from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
+from testing.endpoint import random_endpoint_id
 
 TOKEN = os.urandom(TOKEN_SIZE)
-ENDPOINT_UUID = uuid.uuid4()
+ENDPOINT_ID = random_endpoint_id()
 
 Script = Callable[[socket.socket], None]
 
 
 def _info(**overrides: Any) -> dict[str, Any]:
     info = {
-        'uuid': str(ENDPOINT_UUID),
+        'id': ENDPOINT_ID,
         'name': 'fake',
         'max_object_size': None,
         **Versions.current()._asdict(),
@@ -131,7 +131,7 @@ def test_connect_handshake_timeout(fake_server) -> None:
 def test_connect_and_close(fake_server) -> None:
     port = fake_server(_complete_handshake)
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        assert client.info.uuid == ENDPOINT_UUID
+        assert client.info.id == ENDPOINT_ID
         assert client.info.name == 'fake'
         assert client.info.max_object_size is None
         assert 'fake' in repr(client)
@@ -209,7 +209,7 @@ def test_handshake_rejected(fake_server) -> None:
     ('status', 'meta', 'match'),
     (
         (Status.ERROR, {'error': 'bad'}, 'bad'),
-        (Status.OK, _info(uuid='not-a-uuid'), 'Malformed'),
+        (Status.OK, _info(id='not-an-id'), 'Malformed'),
         (Status.OK, {}, 'Malformed'),
     ),
 )
@@ -340,7 +340,7 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     endpoint_dir = EndpointDir(str(tmp_path))
     config = EndpointConfig(
         name='test',
-        uuid=str(uuid.uuid4()),
+        id=random_endpoint_id(),
         port=1,
         **kwargs,
     )
@@ -398,7 +398,7 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
         ),
     )
     with EndpointClient.from_name('test', proxystore_dir=str(tmp_path)) as c:
-        assert c.info.uuid == ENDPOINT_UUID
+        assert c.info.id == ENDPOINT_ID
 
 
 def test_from_name_default_home(tmp_path: pathlib.Path) -> None:

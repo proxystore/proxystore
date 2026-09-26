@@ -17,7 +17,6 @@ import shutil
 import signal
 import socket
 import time
-import uuid
 from collections.abc import Generator
 from typing import Literal
 
@@ -28,6 +27,8 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
+from proxystore.endpoint.identity import endpoint_id_from_secret_key
+from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -140,10 +141,11 @@ def configure_endpoint(
 
     port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
+    secret_key = generate_secret_key()
     try:
         cfg = EndpointConfig(
             name=name,
-            uuid=str(uuid.uuid4()),
+            id=endpoint_id_from_secret_key(secret_key),
             host=host_addr,
             port=port,
             host_type=host_type,
@@ -160,8 +162,9 @@ def configure_endpoint(
         return 1
 
     endpoint_dir.write_config(cfg)
+    endpoint_dir.write_secret_key(secret_key)
 
-    logger.info('Configured endpoint: %s <%s>', cfg.name, cfg.uuid)
+    logger.info('Configured endpoint: %s <%s>', cfg.name, cfg.id)
     logger.info('Config and log file directory: %s', endpoint_dir)
     logger.info('Start the endpoint with:')
     logger.info('  $ proxystore-endpoint start %s', cfg.name)
@@ -200,10 +203,10 @@ def list_endpoints(
         logger.info('No valid endpoint configurations in %s.', proxystore_dir)
         return 0
 
-    eps = [(e.name, str(e.uuid)) for e in endpoints]
+    eps = [(e.name, e.id) for e in endpoints]
     eps = sorted(eps, key=lambda x: x[0])
     logger.info(
-        '%-*s %-*s UUID',
+        '%-*s %-*s ID',
         max_endpoint_chars,
         'NAME',
         max_status_chars,
@@ -214,7 +217,7 @@ def list_endpoints(
     toprule_len = 2 + max_endpoint_chars + max_status_chars + len(eps[0][1])
     logger.info('=' * toprule_len, extra={'simple': True})
 
-    for name, uuid_ in eps:
+    for name, endpoint_id in eps:
         status = get_status(name, proxystore_dir)
         logger.info(
             '%-*.*s %-*.*s %s',
@@ -224,7 +227,7 @@ def list_endpoints(
             max_status_chars,
             max_status_chars,
             status.name,
-            uuid_,
+            endpoint_id,
             extra={'simple': True},
         )
 

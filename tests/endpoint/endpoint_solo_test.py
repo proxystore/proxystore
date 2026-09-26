@@ -1,25 +1,24 @@
 from __future__ import annotations
 
-import uuid
-
 import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from testing.compat import randbytes
+from testing.endpoint import random_endpoint_id
 
 _NAME = 'test-endpoint'
-_UUID = uuid.uuid4()
+_ID = random_endpoint_id()
 
 
 @pytest.mark.asyncio
 async def test_init() -> None:
-    endpoint = Endpoint(name=_NAME, uuid=_UUID)
+    endpoint = Endpoint(name=_NAME, endpoint_id=_ID)
     # Should not do anything
     await endpoint.close()
 
     # Try again with awaitable initialization
-    endpoint = await Endpoint(name=_NAME, uuid=_UUID)
+    endpoint = await Endpoint(name=_NAME, endpoint_id=_ID)
     await endpoint.close()
     # Closing again is a no-op
     await endpoint.close()
@@ -27,7 +26,7 @@ async def test_init() -> None:
 
 @pytest.mark.asyncio
 async def test_set() -> None:
-    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
@@ -40,25 +39,25 @@ async def test_set() -> None:
 
 @pytest.mark.asyncio
 async def test_get() -> None:
-    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
-        assert (await endpoint.get('key', endpoint=_UUID)) == data
+        assert (await endpoint.get('key', endpoint=_ID)) == data
 
 
 @pytest.mark.parametrize('op', ('evict', 'exists', 'get', 'set'))
 @pytest.mark.asyncio
 async def test_remote_endpoint_not_available(op: str) -> None:
-    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         args = ('key', b'data') if op == 'set' else ('key',)
         with pytest.raises(PeeringNotAvailableError):
-            await getattr(endpoint, op)(*args, endpoint=uuid.uuid4())
+            await getattr(endpoint, op)(*args, endpoint=random_endpoint_id())
 
 
 @pytest.mark.asyncio
 async def test_evict() -> None:
-    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
@@ -70,7 +69,7 @@ async def test_evict() -> None:
 
 @pytest.mark.asyncio
 async def test_exists() -> None:
-    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         data = randbytes(100)
         assert not (await endpoint.exists('key'))
         await endpoint.set('key', data)

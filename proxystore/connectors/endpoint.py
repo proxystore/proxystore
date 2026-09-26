@@ -16,7 +16,6 @@ from typing import Any
 from typing import NamedTuple
 from typing import Self
 from typing import TypeVar
-from uuid import UUID
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import EndpointDir
@@ -26,6 +25,8 @@ from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
 
@@ -39,7 +40,7 @@ class EndpointKey(NamedTuple):
 
     Attributes:
         object_id: Unique object ID.
-        endpoint_id: Endpoint UUID where object is stored.
+        endpoint_id: ID of the endpoint where object is stored.
     """
 
     object_id: str
@@ -58,7 +59,7 @@ class EndpointConnector:
 
     Args:
         endpoints: Sequence of valid and running endpoint
-            UUIDs to use. At least one of these endpoints must be
+            IDs to use. At least one of these endpoints must be
             accessible by this process.
         proxystore_dir: Optionally specify the proxystore home
             directory. Defaults to
@@ -68,21 +69,22 @@ class EndpointConnector:
             before a request fails.
 
     Raises:
-        ValueError: If endpoints is an empty list.
+        ValueError: If endpoints is an empty list or contains an invalid
+            endpoint ID.
         EndpointConnectorError: If unable to connect to any of the endpoints
             provided.
     """
 
     def __init__(
         self,
-        endpoints: Sequence[str | UUID],
+        endpoints: Sequence[str],
         proxystore_dir: str | None = None,
         reconnect_timeout: float = 5,
     ) -> None:
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
-        self.endpoints: list[UUID] = [
-            e if isinstance(e, UUID) else UUID(e, version=4) for e in endpoints
+        self.endpoints: list[EndpointId] = [
+            parse_endpoint_id(e) for e in endpoints
         ]
         self.proxystore_dir = proxystore_dir
         self.reconnect_timeout = reconnect_timeout
@@ -93,44 +95,44 @@ class EndpointConnector:
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
         failures: list[str] = []
-        found: tuple[UUID, EndpointDir, EndpointClient] | None = None
+        found: tuple[EndpointId, EndpointDir, EndpointClient] | None = None
         for endpoint_dir, endpoint in EndpointDir.find_all(home):
-            endpoint_uuid = UUID(endpoint.uuid)
-            if endpoint_uuid not in self.endpoints:
+            endpoint_id = endpoint.id
+            if endpoint_id not in self.endpoints:
                 continue
 
-            logger.debug('Attempting connection to %s', endpoint_uuid)
+            logger.debug('Attempting connection to %s', endpoint_id)
             try:
-                client = _connect(endpoint_dir, endpoint_uuid)
+                client = _connect(endpoint_dir, endpoint_id)
             except EndpointError as e:
-                logger.debug('Connection to %s failed: %r', endpoint_uuid, e)
-                failures.append(f'{endpoint.name} ({endpoint_uuid}): {e}')
+                logger.debug('Connection to %s failed: %r', endpoint_id, e)
+                failures.append(f'{endpoint.name} ({endpoint_id}): {e}')
                 continue
 
             logger.debug(
                 'Connection to %s successful, using as local endpoint',
-                endpoint_uuid,
+                endpoint_id,
             )
-            found = (endpoint_uuid, endpoint_dir, client)
+            found = (endpoint_id, endpoint_dir, client)
             break
 
         if found is None:
             if len(failures) == 0:
                 raise EndpointConnectorError(
                     'Failed to find an endpoint configuration in '
-                    f'{home} matching one of the provided endpoint UUIDs.',
+                    f'{home} matching one of the provided endpoint IDs.',
                 )
             reasons = '\n'.join(f'  - {failure}' for failure in failures)
             raise EndpointConnectorError(
                 'Failed to connect to any of the endpoints matching the '
-                f'provided endpoint UUIDs:\n{reasons}',
+                f'provided endpoint IDs:\n{reasons}',
             )
-        endpoint_uuid, endpoint_dir, client = found
-        self.endpoint_uuid: uuid.UUID = endpoint_uuid
+        endpoint_id, endpoint_dir, client = found
+        self.endpoint_id: EndpointId = endpoint_id
         self.endpoint_dir = endpoint_dir
 
         self._pool = _ConnectionPool(
-            lambda: _connect(endpoint_dir, endpoint_uuid),
+            lambda: _connect(endpoint_dir, endpoint_id),
             reconnect_timeout=reconnect_timeout,
         )
         self._pool.add(client)
@@ -148,7 +150,7 @@ class EndpointConnector:
 
     def __repr__(self) -> str:
         return (
-            f'{self.__class__.__name__}(connected to {self.endpoint_uuid} '
+            f'{self.__class__.__name__}(connected to {self.endpoint_id} '
             f'in {self.endpoint_dir})'
         )
 
@@ -163,7 +165,7 @@ class EndpointConnector:
         the connector object.
         """
         return {
-            'endpoints': [str(ep) for ep in self.endpoints],
+            'endpoints': list(self.endpoints),
             'proxystore_dir': self.proxystore_dir,
             'reconnect_timeout': self.reconnect_timeout,
         }
@@ -259,7 +261,7 @@ class EndpointConnector:
         """
         return EndpointKey(
             object_id=str(uuid.uuid4()),
-            endpoint_id=str(self.endpoint_uuid),
+            endpoint_id=self.endpoint_id,
         )
 
     def put(self, obj: BytesLike) -> EndpointKey:
@@ -273,7 +275,7 @@ class EndpointConnector:
         """
         key = EndpointKey(
             object_id=str(uuid.uuid4()),
-            endpoint_id=str(self.endpoint_uuid),
+            endpoint_id=self.endpoint_id,
         )
         self.set(key, obj)
         return key
@@ -310,13 +312,16 @@ class EndpointConnector:
         )
 
 
-def _connect(endpoint_dir: EndpointDir, endpoint_uuid: UUID) -> EndpointClient:
+def _connect(
+    endpoint_dir: EndpointDir,
+    endpoint_id: EndpointId,
+) -> EndpointClient:
     client = EndpointClient.from_dir(endpoint_dir)
-    if client.info.uuid != endpoint_uuid:
+    if client.info.id != endpoint_id:
         client.close()
         raise EndpointProtocolError(
-            f'Expected endpoint {endpoint_uuid} but the endpoint running in '
-            f'{endpoint_dir} is {client.info.uuid}.',
+            f'Expected endpoint {endpoint_id} but the endpoint running in '
+            f'{endpoint_dir} is {client.info.id}.',
         )
     return client
 

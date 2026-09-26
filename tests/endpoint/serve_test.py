@@ -6,7 +6,6 @@ import os
 import pathlib
 import ssl
 import stat
-import uuid
 from typing import Any
 from unittest import mock
 from unittest.mock import AsyncMock
@@ -19,11 +18,12 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
-from testing.utils import open_port
+from testing.endpoint import write_endpoint
 
 
 def _endpoint_dir(
@@ -32,15 +32,12 @@ def _endpoint_dir(
 ) -> tuple[EndpointDir, EndpointConfig]:
     options: dict[str, Any] = {
         'name': 'my-endpoint',
-        'uuid': str(uuid.uuid4()),
         'host': '127.0.0.1',
-        'port': open_port(),
         'storage': EndpointStorageConfig(database_path=':memory:'),
     }
     options.update(kwargs)
-    config = EndpointConfig(**options)
     endpoint_dir = EndpointDir(str(path))
-    endpoint_dir.write_config(config)
+    config = write_endpoint(endpoint_dir, **options)
     return endpoint_dir, config
 
 
@@ -49,10 +46,10 @@ async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     connection_file = endpoint_dir.connection_path
 
     async with running_endpoint(endpoint_dir) as endpoint:
-        assert endpoint.uuid == uuid.UUID(config.uuid)
+        assert endpoint.id == config.id
         assert stat.S_IMODE(os.stat(connection_file).st_mode) == 0o600
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
-        assert client.info.uuid == endpoint.uuid
+        assert client.info.id == endpoint.id
 
     # Open connections are closed and the connection file is removed on
     # shutdown
@@ -98,6 +95,27 @@ async def test_running_endpoint_restricts_endpoint_dir(
         pass
     assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o700
     assert any('other permissions' in r.message for r in caplog.records)
+
+
+async def test_running_endpoint_missing_secret_key(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    os.remove(endpoint_dir.secret_key_path)
+    with pytest.raises(FileNotFoundError, match='does not contain a secret'):
+        async with running_endpoint(endpoint_dir):
+            pass  # pragma: no cover
+
+
+async def test_running_endpoint_secret_key_mismatch(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    endpoint_dir.write_secret_key(generate_secret_key())
+    with pytest.raises(ValueError, match='does not match the secret key'):
+        async with running_endpoint(endpoint_dir):
+            pass  # pragma: no cover
+    assert not os.path.exists(endpoint_dir.connection_path)
 
 
 async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
@@ -209,5 +227,5 @@ async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
         assert not any('tls' in f for f in os.listdir(endpoint_dir.path))
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert isinstance(client._socket, ssl.SSLSocket)
-        assert client.info.uuid == uuid.UUID(config.uuid)
+        assert client.info.id == config.id
         await asyncio.to_thread(client.close)

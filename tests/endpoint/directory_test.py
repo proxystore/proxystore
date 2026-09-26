@@ -13,6 +13,7 @@ from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
+from proxystore.endpoint.identity import SECRET_KEY_SIZE
 
 
 def test_endpoint_dir_paths() -> None:
@@ -25,6 +26,7 @@ def test_endpoint_dir_paths() -> None:
         endpoint_dir.log_path,
         endpoint_dir.pid_path,
         endpoint_dir.connection_path,
+        endpoint_dir.secret_key_path,
     ]
     assert all(os.path.dirname(p) == '/path/to/endpoint' for p in paths)
     assert len(set(paths)) == len(paths)
@@ -43,6 +45,35 @@ def test_restrict_permissions(
     changed = EndpointDir(str(tmp_path)).restrict_permissions()
     assert changed == (mode != expected)
     assert stat.S_IMODE(os.stat(tmp_path).st_mode) == expected
+
+
+def test_restrict_permissions_secret_key(tmp_path: pathlib.Path) -> None:
+    os.chmod(tmp_path, 0o700)
+    endpoint_dir = EndpointDir(str(tmp_path))
+    endpoint_dir.write_secret_key(b'x' * SECRET_KEY_SIZE)
+    assert not endpoint_dir.restrict_permissions()
+
+    os.chmod(endpoint_dir.secret_key_path, 0o644)
+    assert endpoint_dir.restrict_permissions()
+    mode = stat.S_IMODE(os.stat(endpoint_dir.secret_key_path).st_mode)
+    assert mode == 0o600
+
+
+def test_secret_key_read_write(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    with pytest.raises(FileNotFoundError):
+        endpoint_dir.read_secret_key()
+
+    secret_key = os.urandom(SECRET_KEY_SIZE)
+    endpoint_dir.write_secret_key(secret_key)
+    assert endpoint_dir.read_secret_key() == secret_key
+    mode = stat.S_IMODE(os.stat(endpoint_dir.secret_key_path).st_mode)
+    assert mode == 0o600
+
+    with open(endpoint_dir.secret_key_path, 'wb') as f:
+        f.write(b'abc')
+    with pytest.raises(ValueError, match='malformed'):
+        endpoint_dir.read_secret_key()
 
 
 @pytest.mark.parametrize('fingerprint', ('abcd', None))

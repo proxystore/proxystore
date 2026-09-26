@@ -5,7 +5,6 @@ import os
 import pathlib
 import socket
 import ssl
-import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 from typing import NamedTuple
@@ -45,6 +44,7 @@ from proxystore.endpoint.server import _ClientConnection
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from testing.compat import randbytes
+from testing.endpoint import random_endpoint_id
 
 MAX_OBJECT_SIZE = 10_000_000
 
@@ -59,7 +59,9 @@ class _Server(NamedTuple):
 
 @pytest_asyncio.fixture()
 async def server() -> AsyncGenerator[_Server, None]:
-    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
+    async with Endpoint(
+        name='my-endpoint', endpoint_id=random_endpoint_id()
+    ) as endpoint:
         token = os.urandom(TOKEN_SIZE)
         handler = ClientHandler(
             endpoint,
@@ -98,7 +100,7 @@ def _is_closed(sock: socket.socket) -> bool:
 
 async def test_operations(server: _Server) -> None:
     client = await _connect(server)
-    assert client.info.uuid == server.endpoint.uuid
+    assert client.info.id == server.endpoint.id
     assert client.info.name == server.endpoint.name
     assert client.info.versions == Versions.current()
 
@@ -285,14 +287,14 @@ async def test_bad_requests(server: _Server) -> None:
 
     code, meta = await _raw_request(
         client,
-        pack_message(Op.GET, {'key': 'key', 'endpoint': 'not-a-uuid'}),
+        pack_message(Op.GET, {'key': 'key', 'endpoint': 'not-an-id'}),
     )
     assert code == Status.BAD_REQUEST
     assert "invalid 'endpoint'" in meta['error']
 
-    # The client validates the endpoint UUID before sending the request
-    with pytest.raises(ValueError, match='not a valid endpoint UUID'):
-        await asyncio.to_thread(client.get, 'key', 'not-a-uuid')
+    # The client validates the endpoint ID before sending the request
+    with pytest.raises(ValueError, match='not a valid endpoint ID'):
+        await asyncio.to_thread(client.get, 'key', 'not-an-id')
 
     # The connection is still usable after these errors
     assert not await asyncio.to_thread(client.exists, 'key')
@@ -375,7 +377,7 @@ async def test_peer_request_error(server: _Server) -> None:
         ),
         pytest.raises(EndpointRequestError, match='peer failed'),
     ):
-        await asyncio.to_thread(client.get, 'key', str(uuid.uuid4()))
+        await asyncio.to_thread(client.get, 'key', random_endpoint_id())
     await asyncio.to_thread(client.close)
 
 
@@ -653,7 +655,9 @@ async def tls_server(
     cert_pem, key_pem = generate_tls_certificate('test')
     context = server_ssl_context(cert_pem, key_pem)
 
-    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
+    async with Endpoint(
+        name='my-endpoint', endpoint_id=random_endpoint_id()
+    ) as endpoint:
         token = generate_token()
         handler = ClientHandler(endpoint, token, handshake_timeout=1)
         tcp_server = await handler.start_server(

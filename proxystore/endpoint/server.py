@@ -455,7 +455,7 @@ class ClientHandler:
 
         self._check_client_versions(peer, hello.versions)
         info = EndpointInfo(
-            uuid=self.endpoint.uuid,
+            id=self.endpoint.id,
             name=self.endpoint.name,
             versions=Versions.current(),
             max_object_size=self.max_object_size,
@@ -544,20 +544,20 @@ class ClientHandler:
         request: Request,
         data: bytes | bytearray,
     ) -> _Response:
-        key, endpoint_uuid = request.key, request.endpoint
+        key, endpoint_id = request.key, request.endpoint
         if op == Op.GET:
-            result = await self.endpoint.get(key, endpoint=endpoint_uuid)
+            result = await self.endpoint.get(key, endpoint=endpoint_id)
             if result is None:
                 return Status.NOT_FOUND, None, None
             return Status.OK, None, result
         if op == Op.SET:
-            await self.endpoint.set(key, data, endpoint=endpoint_uuid)
+            await self.endpoint.set(key, data, endpoint=endpoint_id)
             return Status.OK, None, None
         if op == Op.EXISTS:
-            exists = await self.endpoint.exists(key, endpoint=endpoint_uuid)
+            exists = await self.endpoint.exists(key, endpoint=endpoint_id)
             return Status.OK, {'exists': exists}, None
         if op == Op.EVICT:
-            await self.endpoint.evict(key, endpoint=endpoint_uuid)
+            await self.endpoint.evict(key, endpoint=endpoint_id)
             return Status.OK, None, None
         return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
 

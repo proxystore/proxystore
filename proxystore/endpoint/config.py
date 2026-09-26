@@ -3,17 +3,16 @@
 from __future__ import annotations
 
 import re
-import uuid
+from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel
 from pydantic import Field
+from pydantic import field_validator
+from pydantic import model_validator
 
-try:
-    from pydantic import field_validator
-except ImportError:  # pragma: no cover
-    # Pydantic v1 compatibility
-    from pydantic import validator as field_validator  # type: ignore[no-redef]
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import parse_endpoint_id
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
@@ -53,7 +52,8 @@ class EndpointConfig(BaseModel):
 
     Attributes:
         name: Endpoint name.
-        uuid: Endpoint UUID.
+        id: Endpoint ID. This is the public key of the endpoint's secret key
+            which is stored separately in the endpoint directory.
         host: Host endpoint is running on.
         host_type: Type of host address to use. If `"ip"` or `"fqdn"`, the
             host is determined when the endpoint starts. If `"static"`, the
@@ -66,12 +66,12 @@ class EndpointConfig(BaseModel):
 
     Raises:
         ValueError: If the name does not contain only alphanumeric, dash, or
-            underscore characters, if the UUID cannot be parsed, or if the
+            underscore characters, if the ID cannot be parsed, or if the
             port is not in the range [1, 65535].
     """
 
     name: str
-    uuid: str
+    id: EndpointId
     port: int
     host: str | None = None
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
@@ -90,16 +90,22 @@ class EndpointConfig(BaseModel):
             )
         return v
 
-    @field_validator('uuid')
+    @model_validator(mode='before')
     @classmethod
-    def _uuid_validator(cls, v: str) -> str:
-        try:
-            uuid.UUID(v, version=4)
-        except ValueError:
+    def _legacy_uuid_validator(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'uuid' in data and 'id' not in data:
             raise ValueError(
-                f'"{v}" is not a valid UUID4 string.',
-            ) from None
-        return v
+                'The configuration was created by an older version of '
+                'ProxyStore which identified endpoints by UUID. Remove the '
+                'endpoint and configure it again with '
+                '"proxystore-endpoint configure".',
+            )
+        return data
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def _id_validator(cls, v: Any) -> EndpointId:
+        return parse_endpoint_id(v)
 
     @field_validator('port')
     @classmethod

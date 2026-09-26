@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import platform
-import uuid
 from typing import Any
 
 import pytest
@@ -24,6 +23,7 @@ from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Versions
+from testing.endpoint import random_endpoint_id
 
 
 def test_versions_current() -> None:
@@ -117,10 +117,10 @@ _VERSIONS = Versions('1.0.0', '3.12.4')
         Hello(_NONCE, _VERSIONS),
         Challenge(_NONCE, _PROOF),
         Auth(_PROOF),
-        EndpointInfo(uuid.uuid4(), 'name', _VERSIONS, 100),
-        EndpointInfo(uuid.uuid4(), 'name', _VERSIONS, None),
+        EndpointInfo(random_endpoint_id(), 'name', _VERSIONS, 100),
+        EndpointInfo(random_endpoint_id(), 'name', _VERSIONS, None),
         Request('key'),
-        Request('key', uuid.uuid4()),
+        Request('key', random_endpoint_id()),
     ),
 )
 def test_message_meta_round_trip(
@@ -141,19 +141,23 @@ def test_message_meta_round_trip(
         (Hello, {'nonce': _NONCE.hex(), 'python': '3.12.4'}, 'proxystore'),
         (Challenge, {'nonce': _NONCE.hex()}, 'proof'),
         (Auth, {'proof': None}, 'proof'),
-        (EndpointInfo, {}, 'uuid'),
+        (EndpointInfo, {}, 'id'),
         (
             EndpointInfo,
             {
-                **EndpointInfo(uuid.uuid4(), 'n', _VERSIONS, 1).to_meta(),
-                'uuid': 'x',
+                **EndpointInfo(
+                    random_endpoint_id(), 'n', _VERSIONS, 1
+                ).to_meta(),
+                'id': 'x',
             },
-            'uuid',
+            'id',
         ),
         (
             EndpointInfo,
             {
-                **EndpointInfo(uuid.uuid4(), 'n', _VERSIONS, 1).to_meta(),
+                **EndpointInfo(
+                    random_endpoint_id(), 'n', _VERSIONS, 1
+                ).to_meta(),
                 'max_object_size': '1',
             },
             'max_object_size',
@@ -162,7 +166,7 @@ def test_message_meta_round_trip(
         (Request, {'key': '', 'endpoint': None}, 'key'),
         (Request, {'key': 'key'}, 'endpoint'),
         (Request, {'key': 'key', 'endpoint': 42}, 'endpoint'),
-        (Request, {'key': 'key', 'endpoint': 'not-a-uuid'}, 'endpoint'),
+        (Request, {'key': 'key', 'endpoint': 'not-an-id'}, 'endpoint'),
     ),
 )
 def test_message_meta_malformed(

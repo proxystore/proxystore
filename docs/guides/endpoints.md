@@ -37,8 +37,8 @@ the primary interface for clients to interact with endpoints.
     Until the migration is complete, endpoints only operate in isolation and
     requests for other endpoints fail.
 
-Clients interacting with an endpoint via typical object store operations (*get*, *set*, etc.) specify a *key* and an *endpoint UUID*.
-Endpoints that receive a request with a different endpoint UUID will attempt
+Clients interacting with an endpoint via typical object store operations (*get*, *set*, etc.) specify a *key* and an *endpoint ID*.
+Endpoints that receive a request with a different endpoint ID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.
 
@@ -50,7 +50,7 @@ command.
 
 ```bash
 $ proxystore-endpoint configure my-endpoint
-INFO: Configured endpoint: my-endpoint <a6c7f036-3e29-4a7a-bf90-5a5f21056e39>
+INFO: Configured endpoint: my-endpoint <ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173>
 INFO: Config and log file directory: ~/.local/share/proxystore/my-endpoint
 INFO: Start the endpoint with:
 INFO:   $ proxystore-endpoint start my-endpoint
@@ -59,7 +59,8 @@ INFO:   $ proxystore-endpoint start my-endpoint
 Endpoint configurations are stored in `$PROXYSTORE_HOME/{endpoint-name}`
 or `$XDG_DATA_HOME/proxystore/{endpoint-name}`
 (see [`home_dir()`][proxystore.utils.environment.home_dir]) and contain the
-name, UUID, host address, port, and more.
+name, ID, host address, port, and more. The endpoint's secret key
+is stored separately in the `secret.key` file which only the owner can read.
 
 !!! tip
 
@@ -74,7 +75,7 @@ A typical configuration looks like the following.
 
 ```toml title="config.toml" linenums="1"
 name = "my-endpoint"  # (1)!
-uuid = "d27cf8cb-45fa-46b0-b907-27c830da62e3"  # (2)!
+id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (2)!
 port = 8765  # (3)!
 host_type = "ip"  # (4)!
 tls = false  # (5)!
@@ -86,7 +87,8 @@ max_object_size = 10000000  # (7)!
 
 1. Human-readable name of this endpoint. Only used for logging and CLI
    operations.
-2. Unique identifier of this endpoint.
+2. Unique identifier of this endpoint. This is the public key of the
+   endpoint's secret key and must match the key in `secret.key`.
 3. Change the default port if running multiple endpoints on the same system.
 4. When the `host_type` is "ip" or "fqdn", the host of the endpoint will be
    determined at runtime and set as the IP address or fully-qualified domain
@@ -194,8 +196,8 @@ from proxystore.store import Store
 
 connector = EndpointConnector(
     endpoints=[
-        '5349ffce-edeb-4a8b-94a6-ab16ade1c1a1',
-        'd62910f6-0d29-452e-80b7-e0cd601949db',
+        'ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173',
+        '10999b2967c8d649c1e9a2f91fb3ae45f8e51b1acfa91eccdb94c630e628c2e0',
         ...,
     ],
 )
@@ -205,13 +207,13 @@ p = store.proxy(my_object)
 ```
 
 The [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] takes
-a list of endpoint UUIDs. This list represents any endpoint that proxies
+a list of endpoint IDs. This list represents any endpoint that proxies
 created by this store may interact with to resolve themselves. The
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will use this
 list to find its *home* endpoint, the endpoint that will be used to issue
 operations to. To find the *home* endpoint, the ProxyStore home directory
 will be scanned for any endpoint configurations matching
-one of the UUIDs. If a match is found, the
+one of the IDs. If a match is found, the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will attempt
 to connect to the endpoint using the `connection.json` file that the running
 endpoint writes to its directory (see [Security](#security)). This
@@ -276,11 +278,11 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 
 1. Host A creates a proxy of the *target* object. The serialized *target*
    is placed in Host A's home/local endpoint (Endpoint 1).
-   The proxy contains the key referencing the *target*, the endpoint UUID with
-   the *target* data (Endpoint 1's UUID), and the list of
-   all endpoint UUIDs configured with the
+   The proxy contains the key referencing the *target*, the endpoint ID with
+   the *target* data (Endpoint 1's ID), and the list of
+   all endpoint IDs configured with the
    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
-   (the UUIDs of Endpoints 1 and 2).
+   (the IDs of Endpoints 1 and 2).
 2. Host A communicates the proxy object to Host B. This communication is
    cheap because the proxy is just a thin reference to the object.
 3. Host B receives the proxy and attempts to use the proxy initiating the

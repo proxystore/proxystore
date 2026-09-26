@@ -13,6 +13,7 @@ from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import write_private_file
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.identity import SECRET_KEY_SIZE
 from proxystore.utils.config import dump
 from proxystore.utils.config import load
 
@@ -142,6 +143,33 @@ class EndpointDir:
         return self._join('daemon.pid')
 
     @property
+    def secret_key_path(self) -> str:
+        """Path to the secret key of the endpoint."""
+        return self._join('secret.key')
+
+    def write_secret_key(self, secret_key: bytes) -> None:
+        """Atomically write the secret key of the endpoint.
+
+        The file is only readable by the owner.
+        """
+        write_private_file(self.secret_key_path, secret_key)
+
+    def read_secret_key(self) -> bytes:
+        """Read the secret key of the endpoint.
+
+        Raises:
+            FileNotFoundError: If the secret key file does not exist.
+            ValueError: If the secret key file is malformed.
+        """
+        with open(self.secret_key_path, 'rb') as f:
+            secret_key = f.read()
+        if len(secret_key) != SECRET_KEY_SIZE:
+            raise ValueError(
+                f'Secret key file at {self.secret_key_path} is malformed.',
+            )
+        return secret_key
+
+    @property
     def connection_path(self) -> str:
         """Path to the connection file clients use to connect."""
         return self._join('connection.json')
@@ -230,17 +258,24 @@ class EndpointDir:
 
         Clients trust the connection file in the endpoint directory, so no
         one other than the owner may be able to create, replace, or rename
-        files in it. The directory also contains the endpoint's database and
-        log which may contain user data.
+        files in it. The directory also contains the endpoint's secret key,
+        database, and log which may contain user data. Group and other
+        permissions are also removed from the secret key file.
 
         Returns:
-            `True` if the permissions of the directory were changed.
+            `True` if the permissions of the directory or secret key file \
+            were changed.
         """
-        mode = stat.S_IMODE(os.stat(self.path).st_mode)
-        if mode & 0o077 == 0:
-            return False
-        os.chmod(self.path, mode & ~0o077)
-        return True
+        changed = False
+        for path in (self.path, self.secret_key_path):
+            try:
+                mode = stat.S_IMODE(os.stat(path).st_mode)
+            except FileNotFoundError:
+                continue
+            if mode & 0o077 != 0:
+                os.chmod(path, mode & ~0o077)
+                changed = True
+        return changed
 
     def _join(self, name: str) -> str:
         return os.path.join(self.path, name)

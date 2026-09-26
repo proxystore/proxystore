@@ -172,8 +172,8 @@ def stop(name: str) -> None:
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
     '--remote',
-    metavar='UUID',
-    help='Optional UUID of remote endpoint to use.',
+    metavar='ID',
+    help='Optional ID of remote endpoint to use.',
 )
 @click.pass_context
 def test(
@@ -185,7 +185,7 @@ def test(
     ctx.ensure_object(dict)
 
     ctx.obj['ENDPOINT_NAME'] = name
-    ctx.obj['REMOTE_ENDPOINT_UUID'] = remote
+    ctx.obj['REMOTE_ENDPOINT_ID'] = remote
 
 
 @contextlib.contextmanager
@@ -207,7 +207,7 @@ def _endpoint_client(
 def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
     with _endpoint_client(ctx) as client:
-        client.evict(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
+        client.evict(key, ctx.obj['REMOTE_ENDPOINT_ID'])
     logger.info('Evicted object from endpoint.')
 
 
@@ -217,7 +217,7 @@ def evict(ctx: click.Context, key: str) -> None:
 def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
     with _endpoint_client(ctx) as client:
-        res = client.exists(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
+        res = client.exists(key, ctx.obj['REMOTE_ENDPOINT_ID'])
     logger.info('Object exists: %s', res)
 
 
@@ -227,7 +227,7 @@ def exists(ctx: click.Context, key: str) -> None:
 def get(ctx: click.Context, key: str) -> None:
     """Get an object from an endpoint."""
     with _endpoint_client(ctx) as client:
-        res = client.get(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
+        res = client.get(key, ctx.obj['REMOTE_ENDPOINT_ID'])
 
     if res is None:
         logger.info('Object does not exist.')
@@ -243,5 +243,5 @@ def put(ctx: click.Context, data: str) -> None:
     """Put an object in an endpoint."""
     key = str(uuid.uuid4())
     with _endpoint_client(ctx) as client:
-        client.set(key, serialize(data), ctx.obj['REMOTE_ENDPOINT_UUID'])
+        client.set(key, serialize(data), ctx.obj['REMOTE_ENDPOINT_ID'])
     logger.info('Put object in endpoint with key %s', key)

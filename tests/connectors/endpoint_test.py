@@ -4,7 +4,6 @@ import asyncio
 import logging
 import pathlib
 import threading
-import uuid
 from typing import Any
 from unittest import mock
 
@@ -24,7 +23,8 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.serve import running_endpoint
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
-from testing.utils import open_port
+from testing.endpoint import random_endpoint_id
+from testing.endpoint import write_endpoint
 
 
 def test_no_endpoints_provided() -> None:
@@ -35,24 +35,24 @@ def test_no_endpoints_provided() -> None:
 def test_no_endpoints_match(endpoint_connector) -> None:
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
         EndpointConnector(
-            endpoints=[str(uuid.uuid4())],
+            endpoints=[random_endpoint_id()],
             proxystore_dir=endpoint_connector.config()['proxystore_dir'],
         )
 
 
 def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:
-    endpoint_uuid = uuid.uuid4()
-    config = EndpointConfig(name='test', uuid=str(endpoint_uuid), port=1)
+    endpoint_id = random_endpoint_id()
+    config = EndpointConfig(name='test', id=endpoint_id, port=1)
     EndpointDir(str(tmp_path / 'test')).write_config(config)
 
     with pytest.raises(EndpointConnectorError) as exc_info:
         EndpointConnector(
-            endpoints=[endpoint_uuid],
+            endpoints=[endpoint_id],
             proxystore_dir=str(tmp_path),
         )
     message = str(exc_info.value)
     assert 'Failed to connect' in message
-    assert f'test ({endpoint_uuid})' in message
+    assert f'test ({endpoint_id})' in message
     assert 'Is the endpoint running?' in message
 
 
@@ -66,27 +66,27 @@ def test_endpoint_wrong_token(
     copied_dir.write_connection(info._replace(token=generate_token()))
 
     with pytest.raises(EndpointConnectorError, match='failed to prove'):
-        EndpointConnector([endpoint.uuid], proxystore_dir=str(tmp_path))
+        EndpointConnector([endpoint.id], proxystore_dir=str(tmp_path))
 
 
-def test_endpoint_uuid_mismatch(
+def test_endpoint_id_mismatch(
     endpoint: EndpointConfig,
     endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
 ) -> None:
-    # Config has a different UUID than the endpoint running on the host/port
+    # Config has a different ID than the endpoint running on the host/port
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
     config = copied_dir.read_config()
-    config.uuid = str(uuid.uuid4())
+    config.id = random_endpoint_id()
     copied_dir.write_config(config)
 
     with pytest.raises(EndpointConnectorError, match='Expected endpoint'):
-        EndpointConnector([config.uuid], proxystore_dir=str(tmp_path))
+        EndpointConnector([config.id], proxystore_dir=str(tmp_path))
 
 
 def test_request_error(endpoint_connector) -> None:
     connector = EndpointConnector.from_config(endpoint_connector.config())
-    key = EndpointKey(object_id='key', endpoint_id='not-a-uuid')
+    key = EndpointKey(object_id='key', endpoint_id='not-an-id')
 
     with pytest.raises(EndpointConnectorError, match='Evict failed'):
         connector.evict(key)
@@ -274,19 +274,13 @@ async def test_connector_endpoint_restart(
     caplog,
 ) -> None:
     caplog.set_level(logging.DEBUG, logger='proxystore.connectors.endpoint')
-    config = EndpointConfig(
-        name='restart-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='127.0.0.1',
-        port=open_port(),
-    )
-    endpoint_dir = EndpointDir(str(tmp_path / config.name))
-    endpoint_dir.write_config(config)
+    endpoint_dir = EndpointDir(str(tmp_path / 'restart-endpoint'))
+    config = write_endpoint(endpoint_dir, host='127.0.0.1')
 
     async with running_endpoint(endpoint_dir):
         connector = await asyncio.to_thread(
             EndpointConnector,
-            [config.uuid],
+            [config.id],
             proxystore_dir=str(tmp_path),
         )
         key = await asyncio.to_thread(connector.put, b'value')
@@ -308,19 +302,12 @@ async def test_connector_endpoint_restart(
 
 
 async def test_connector_tls(tmp_path: pathlib.Path) -> None:
-    config = EndpointConfig(
-        name='tls-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='127.0.0.1',
-        port=open_port(),
-        tls=True,
-    )
-    endpoint_dir = EndpointDir(str(tmp_path / config.name))
-    endpoint_dir.write_config(config)
+    endpoint_dir = EndpointDir(str(tmp_path / 'tls-endpoint'))
+    config = write_endpoint(endpoint_dir, host='127.0.0.1', tls=True)
 
     def _run() -> None:
         with EndpointConnector(
-            [config.uuid],
+            [config.id],
             proxystore_dir=str(tmp_path),
         ) as connector:
             key = connector.put(b'value')

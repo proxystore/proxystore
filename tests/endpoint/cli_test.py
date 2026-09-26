@@ -21,7 +21,7 @@ from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.serve import running_endpoint
 from testing.endpoint import copy_endpoint_dir
-from testing.utils import open_port
+from testing.endpoint import write_endpoint
 
 CLICK_VERSION = tuple(
     int(x) for x in importlib.metadata.version('click').split('.')
@@ -227,7 +227,7 @@ def test_test_command_errors(
         ['test', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
     )
     assert result.exit_code == 1
-    assert 'not a valid endpoint UUID' in caplog.records[0].message
+    assert 'not a valid endpoint ID' in caplog.records[0].message
     caplog.clear()
 
     os.remove(copied_dir.connection_path)
@@ -238,15 +238,8 @@ def test_test_command_errors(
 
 async def test_test_command_tls(home_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
-    config = EndpointConfig(
-        name='tls-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='127.0.0.1',
-        port=open_port(),
-        tls=True,
-    )
-    endpoint_dir = EndpointDir(os.path.join(home_dir, config.name))
-    endpoint_dir.write_config(config)
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'tls-endpoint'))
+    config = write_endpoint(endpoint_dir, host='127.0.0.1', tls=True)
 
     runner = click.testing.CliRunner()
     async with running_endpoint(endpoint_dir):

@@ -31,5 +31,6 @@ repos:
         additional_dependencies:
           - click>=8.1.0,!= 8.1.4
           - globus-sdk>=4,<5
+          - iroh>=1.1,<2
           - pydantic>=2,<3
           - redis

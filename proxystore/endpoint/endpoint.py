@@ -6,19 +6,14 @@ import logging
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any
-from uuid import UUID
 
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import log_name
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
 
 logger = logging.getLogger(__name__)
-
-
-def log_name(uuid: UUID, name: str) -> str:
-    """Return string formatted as `#!python 'name(uuid-prefix)'`."""
-    uuid_ = str(uuid)
-    return f'{name}({uuid_[: min(8, len(uuid_))]})'
 
 
 class Endpoint:
@@ -28,7 +23,7 @@ class Endpoint:
 
     Example:
         ```python
-        async with Endpoint('ep1', uuid.uuid4()) as endpoint:
+        async with Endpoint('ep1', endpoint_id) as endpoint:
             serialized_data = b'data string'
             await endpoint.set('key', serialized_data)
             assert await endpoint.get('key') == serialized_data
@@ -43,7 +38,7 @@ class Endpoint:
 
     Args:
         name: Readable name of the endpoint.
-        uuid: UUID of the endpoint.
+        endpoint_id: ID of the endpoint.
         storage: Storage interface to use. If `None`,
             [`DictStorage`][proxystore.endpoint.storage.DictStorage] is used.
     """
@@ -51,12 +46,12 @@ class Endpoint:
     def __init__(
         self,
         name: str,
-        uuid: UUID,
+        endpoint_id: EndpointId,
         *,
         storage: Storage | None = None,
     ) -> None:
         self._name = name
-        self._uuid = uuid
+        self._id = endpoint_id
         self._storage = DictStorage() if storage is None else storage
         self._closed = False
 
@@ -64,7 +59,7 @@ class Endpoint:
 
     @property
     def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}]'
+        return f'{type(self).__name__}[{log_name(self.id, self.name)}]'
 
     @property
     def name(self) -> str:
@@ -72,9 +67,9 @@ class Endpoint:
         return self._name
 
     @property
-    def uuid(self) -> UUID:
-        """UUID of this endpoint."""
-        return self._uuid
+    def id(self) -> EndpointId:
+        """ID of this endpoint."""
+        return self._id
 
     async def __aenter__(self) -> Endpoint:
         return self
@@ -90,14 +85,16 @@ class Endpoint:
     def __await__(self) -> Generator[Any, None, Endpoint]:
         return self.__aenter__().__await__()
 
-    def _check_local(self, endpoint: UUID | None) -> None:
-        if endpoint is not None and endpoint != self.uuid:
+    def _check_local(self, endpoint: EndpointId | None) -> None:
+        if endpoint is not None and endpoint != self.id:
             raise PeeringNotAvailableError(
                 f'Cannot forward request to endpoint {endpoint} because '
                 'peering is not available.',
             )
 
-    async def evict(self, key: str, endpoint: UUID | None = None) -> None:
+    async def evict(
+        self, key: str, endpoint: EndpointId | None = None
+    ) -> None:
         """Evict key from endpoint.
 
         Args:
@@ -117,7 +114,9 @@ class Endpoint:
         self._check_local(endpoint)
         await self._storage.evict(key)
 
-    async def exists(self, key: str, endpoint: UUID | None = None) -> bool:
+    async def exists(
+        self, key: str, endpoint: EndpointId | None = None
+    ) -> bool:
         """Check if key exists on endpoint.
 
         Args:
@@ -143,7 +142,7 @@ class Endpoint:
     async def get(
         self,
         key: str,
-        endpoint: UUID | None = None,
+        endpoint: EndpointId | None = None,
     ) -> bytes | bytearray | None:
         """Get value associated with key on endpoint.
 
@@ -171,7 +170,7 @@ class Endpoint:
         self,
         key: str,
         data: bytes | bytearray,
-        endpoint: UUID | None = None,
+        endpoint: EndpointId | None = None,
     ) -> None:
         """Set key with data on endpoint.
 

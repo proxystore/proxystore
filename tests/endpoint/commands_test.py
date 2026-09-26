@@ -5,7 +5,6 @@ import multiprocessing
 import os
 import pathlib
 import time
-import uuid
 from collections.abc import Generator
 from unittest import mock
 
@@ -21,9 +20,10 @@ from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from testing.endpoint import random_endpoint_id
 
 _NAME = 'default'
-_UUID = uuid.uuid4()
+_ID = random_endpoint_id()
 _PORT = 1234
 
 
@@ -127,7 +127,7 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     assert cfg.port == _PORT
 
     assert any(
-        str(cfg.uuid) in record.message and record.levelname == 'INFO'
+        cfg.id in record.message and record.levelname == 'INFO'
         for record in caplog.records
     )
 
@@ -407,7 +407,7 @@ def test_start_endpoint_hanging_different_host(
 
     config = EndpointConfig(
         name=_NAME,
-        uuid=str(_UUID),
+        id=_ID,
         host='abcd',
         port=1234,
     )
@@ -434,7 +434,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
 
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
+    config = EndpointConfig(name=_NAME, id=_ID, host=None, port=1234)
     endpoint_dir.write_config(config)
 
     pid_file = endpoint_dir.pid_path
@@ -470,7 +470,7 @@ def test_start_endpoint_missing_static_host(
 
     config = EndpointConfig(
         name=_NAME,
-        uuid=str(_UUID),
+        id=_ID,
         host=None,
         host_type='static',
         port=1234,
@@ -550,7 +550,7 @@ def test_stop_endpoint_hanging_different_host(
 
     config = EndpointConfig(
         name=_NAME,
-        uuid=str(_UUID),
+        id=_ID,
         host='abcd',
         port=1234,
     )
@@ -578,7 +578,7 @@ def test_stop_endpoint_dangling_pid_file(
     caplog.set_level(logging.DEBUG)
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
+    config = EndpointConfig(name=_NAME, id=_ID, host=None, port=1234)
     endpoint_dir.write_config(config)
 
     pid_file = endpoint_dir.pid_path

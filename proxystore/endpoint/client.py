@@ -18,7 +18,6 @@ import hmac
 import os
 import socket
 import ssl
-import uuid
 import warnings
 from types import TracebackType
 from typing import Any
@@ -36,6 +35,9 @@ from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import parse_endpoint_id
+from proxystore.endpoint.identity import short_id
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -102,7 +104,7 @@ class EndpointClient:
 
     def __repr__(self) -> str:
         return (
-            f'{type(self).__name__}(uuid={self.info.uuid}, '
+            f'{type(self).__name__}(id={self.info.id}, '
             f'name={self.info.name!r})'
         )
 
@@ -176,8 +178,8 @@ class EndpointClient:
         mismatches = Versions.current().mismatches(info.versions)
         if len(mismatches) > 0:
             warnings.warn(
-                f'Endpoint {info.name} ({info.uuid}) uses different versions '
-                f'than this client: {"; ".join(mismatches)}. Objects '
+                f'Endpoint {info.name} ({short_id(info.id)}) uses different '
+                f'versions than this client: {"; ".join(mismatches)}. Objects '
                 'serialized in one environment may fail to deserialize in '
                 f'another. See {VERSION_DOCS_URL} for details.',
                 EndpointVersionWarning,
@@ -274,33 +276,31 @@ class EndpointClient:
             self.closed = True
             self._socket.close()
 
-    def evict(self, key: str, endpoint: uuid.UUID | str | None = None) -> None:
+    def evict(self, key: str, endpoint: str | None = None) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            endpoint: Optional ID of remote endpoint to forward operation to.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         self._request(Op.EVICT, key, endpoint)
 
-    def exists(
-        self, key: str, endpoint: uuid.UUID | str | None = None
-    ) -> bool:
+    def exists(self, key: str, endpoint: str | None = None) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
             key: Key potentially associated with stored object.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            endpoint: Optional ID of remote endpoint to forward operation to.
 
         Returns:
             If an object associated with the key exists.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         _, meta, _ = self._request(Op.EXISTS, key, endpoint)
@@ -315,19 +315,19 @@ class EndpointClient:
     def get(
         self,
         key: str,
-        endpoint: uuid.UUID | str | None = None,
+        endpoint: str | None = None,
     ) -> bytearray | None:
         """Get the serialized object associated with the key.
 
         Args:
             key: Key associated with object to retrieve.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            endpoint: Optional ID of remote endpoint to forward operation to.
 
         Returns:
             Serialized object or `None` if the object does not exist.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         status, _, data = self._request(Op.GET, key, endpoint)
@@ -337,19 +337,19 @@ class EndpointClient:
         self,
         key: str,
         data: BytesLike,
-        endpoint: uuid.UUID | str | None = None,
+        endpoint: str | None = None,
     ) -> None:
         """Set the serialized object associated with the key.
 
         Args:
             key: Key to associate with the object.
             data: Serialized object.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            endpoint: Optional ID of remote endpoint to forward operation to.
 
         Raises:
             ObjectSizeExceededError: If the size of `data` exceeds the
                 maximum object size of the endpoint.
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         size = memoryview(data).nbytes
@@ -365,7 +365,7 @@ class EndpointClient:
         self,
         op: Op,
         key: str,
-        endpoint: uuid.UUID | str | None,
+        endpoint: str | None,
         data: BytesLike | None = None,
     ) -> tuple[Status, dict[str, Any], bytearray]:
         if self.closed:
@@ -443,13 +443,8 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
     )
 
 
-def _parse_endpoint(endpoint: uuid.UUID | str | None) -> uuid.UUID | None:
-    if endpoint is None or isinstance(endpoint, uuid.UUID):
-        return endpoint
-    try:
-        return uuid.UUID(endpoint)
-    except ValueError:
-        raise ValueError(f'{endpoint} is not a valid endpoint UUID.') from None
+def _parse_endpoint(endpoint: str | None) -> EndpointId | None:
+    return None if endpoint is None else parse_endpoint_id(endpoint)
 
 
 def _as_bytes_view(data: BytesLike) -> memoryview:
