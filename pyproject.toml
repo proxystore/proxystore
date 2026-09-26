@@ -188,8 +188,6 @@ select = [
     "ISC",
     # flake8-pytest-style
     "PT",
-    # flake8-quotes
-    "Q",
     # flake8-debugger
     "T10",
     # flake8-simplify
@@ -199,7 +197,7 @@ select = [
     # ruff-specific
     "RUF",
 ]
-extend-ignore = [
+ignore = [
     # Conflicts with the formatter
     "COM812",
     # Do not require docstrings for magic methods
@@ -223,9 +221,6 @@ extend-ignore = [
 
 [tool.ruff.lint.flake8-pytest-style]
 parametrize-values-type = "tuple"
-
-[tool.ruff.lint.flake8-quotes]
-inline-quotes = "single"
 
 [tool.ruff.lint.isort]
 force-single-line = true
