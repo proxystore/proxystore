@@ -26,6 +26,7 @@ from testing.mocked.globus import MockTransferData
 from testing.mocked.redis import MockStrictRedis
 
 FIXTURE_LIST = [
+    'daos_connector',
     'endpoint_connector',
     'globus_connector',
     'file_connector',
@@ -34,6 +35,21 @@ FIXTURE_LIST = [
     'redis_connector',
 ]
 MOCK_REDIS_CACHE: dict[str, Any] = {}
+
+
+@pytest.fixture(scope='session')
+def daos_connector() -> Generator[Connector[Any], None, None]:
+    """DAOSConnector fixture using the mocked PyDAOS."""
+    # Imported here because tests/conftest.py replaces pydaos with a mocked
+    # version after this module is imported.
+    from proxystore.connectors.daos import DAOSConnector
+
+    with DAOSConnector(
+        pool='test-pool',
+        container='test-container',
+        namespace='test-namespace',
+    ) as connector:
+        yield connector
 
 
 @pytest.fixture(scope='session')

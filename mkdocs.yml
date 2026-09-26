@@ -114,6 +114,7 @@ nav:
       - Store: concepts/store.md
   - Guides:
       - guides/index.md
+      - DAOS: guides/daos.md
       - Dask Distributed: guides/dask-distributed.md
       - Globus Compute: guides/globus-compute.md
       - Endpoints Overview: guides/endpoints.md
