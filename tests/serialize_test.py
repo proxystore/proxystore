@@ -85,14 +85,16 @@ def test_deserialize_bad_identifier():
 
 
 def test_propagate_cloudpickle_dumps_error() -> None:
-    with mock.patch('cloudpickle.dump', side_effect=Exception()):
-        with pytest.raises(
+    with (
+        mock.patch('cloudpickle.dump', side_effect=Exception()),
+        pytest.raises(
             SerializationError,
             match=re.escape(
                 "Object of type <class 'function'> is not supported.",
             ),
-        ):
-            serialize(lambda x: x + x)  # pragma: no cover
+        ),
+    ):
+        serialize(lambda x: x + x)  # pragma: no cover
 
 
 def test_propagate_pickle_loads_error() -> None:
@@ -178,12 +180,14 @@ def test_supported_module_not_imported(
 
 def test_deserialize_module_not_installed() -> None:
     data = serialize(np.array([1, 2, 3]))
-    with mock.patch.dict(sys.modules, {'numpy': None}):
-        with pytest.raises(
+    with (
+        mock.patch.dict(sys.modules, {'numpy': None}),
+        pytest.raises(
             SerializationError,
             match='using the numpy serializer',
-        ):
-            deserialize(data)
+        ),
+    ):
+        deserialize(data)
 
 
 def test_import_does_not_import_optional_modules() -> None:

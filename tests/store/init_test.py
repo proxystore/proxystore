@@ -95,9 +95,11 @@ def test_store_registration() -> None:
         assert get_store(local1.name) is local1
         assert get_store(local2.name) is local2
 
-        with pytest.raises(StoreExistsError):
-            with store_registration(local1):
-                pass  # pragma: no cover
+        with (
+            pytest.raises(StoreExistsError),
+            store_registration(local1),
+        ):
+            pass  # pragma: no cover
 
         with store_registration(local1, exist_ok=True):
             pass

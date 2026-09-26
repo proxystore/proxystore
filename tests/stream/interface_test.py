@@ -30,9 +30,11 @@ from testing.stream import create_message_pubsub_pair
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
-    with Store('stream-test-fixture', FileConnector(str(tmp_path))) as store:
-        with store_registration(store):
-            yield store
+    with (
+        Store('stream-test-fixture', FileConnector(str(tmp_path))) as store,
+        store_registration(store),
+    ):
+        yield store
 
 
 @pytest.mark.parametrize('batch_size', (1, 2, 3))
@@ -95,10 +97,12 @@ def test_context_manager(store: Store[FileConnector]) -> None:
     topic = 'default'
     publisher, subscriber = create_message_pubsub_pair(topic)
 
-    with StreamProducer[str](publisher, stores={topic: store}) as producer:
-        with StreamConsumer[str](subscriber) as consumer:
-            producer.send('default', 'value')
-            assert next(consumer) == 'value'
+    with (
+        StreamProducer[str](publisher, stores={topic: store}) as producer,
+        StreamConsumer[str](subscriber) as consumer,
+    ):
+        producer.send('default', 'value')
+        assert next(consumer) == 'value'
 
 
 def test_close_without_closing_connectors(
@@ -114,10 +118,12 @@ def test_close_without_closing_connectors(
     consumer.close(stores=False, subscriber=False)
 
     # Reuse store, publisher, subscriber
-    with StreamProducer[str](publisher, stores={topic: store}) as producer:
-        with StreamConsumer[str](subscriber) as consumer:
-            producer.send('default', 'value')
-            assert next(consumer) == 'value'
+    with (
+        StreamProducer[str](publisher, stores={topic: store}) as producer,
+        StreamConsumer[str](subscriber) as consumer,
+    ):
+        producer.send('default', 'value')
+        assert next(consumer) == 'value'
 
 
 @pytest.mark.parametrize('use_event_queue', (True, False))
@@ -134,12 +140,14 @@ def test_producer_close_topic(
     else:
         publisher, subscriber = create_message_pubsub_pair(topic)
 
-    with StreamProducer[str](publisher, stores={topic: store}) as producer:
-        with StreamConsumer[str](subscriber) as consumer:
-            producer.close_topics(topic)
+    with (
+        StreamProducer[str](publisher, stores={topic: store}) as producer,
+        StreamConsumer[str](subscriber) as consumer,
+    ):
+        producer.close_topics(topic)
 
-            with pytest.raises(StopIteration):  # pragma: <3.14 cover
-                consumer.next()
+        with pytest.raises(StopIteration):  # pragma: <3.14 cover
+            consumer.next()
 
 
 def test_error_sending_to_closed_topic(store: Store[FileConnector]) -> None:

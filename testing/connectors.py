@@ -85,12 +85,12 @@ def globus_connector(
             'proxystore.connectors.globus.get_transfer_client',
             MockTransferClient,
         ),
-    ):
-        with globus.GlobusConnector(
+        globus.GlobusConnector(
             endpoints=endpoints,
             buffering=0,
-        ) as connector:
-            yield connector
+        ) as connector,
+    ):
+        yield connector
 
 
 @pytest.fixture(scope='session')
@@ -131,9 +131,11 @@ def redis_connector() -> Generator[Connector[Any], None, None]:
     def create_mocked_redis(*args: Any, **kwargs: Any) -> MockStrictRedis:
         return MockStrictRedis(MOCK_REDIS_CACHE, *args, **kwargs)
 
-    with mock.patch('redis.StrictRedis', side_effect=create_mocked_redis):
-        with redis.RedisConnector(redis_host, redis_port) as connector:
-            yield connector
+    with (
+        mock.patch('redis.StrictRedis', side_effect=create_mocked_redis),
+        redis.RedisConnector(redis_host, redis_port) as connector,
+    ):
+        yield connector
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)

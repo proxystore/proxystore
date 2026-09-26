@@ -96,10 +96,12 @@ async def test_running_endpoint_start_up_failure_cleans_up(
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     # The connection file cannot be written if its path is a directory
     os.mkdir(endpoint_dir.connection_path)
-    with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
-        with pytest.raises(IsADirectoryError):
-            async with running_endpoint(endpoint_dir):
-                pass  # pragma: no cover
+    with (
+        mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close,
+        pytest.raises(IsADirectoryError),
+    ):
+        async with running_endpoint(endpoint_dir):
+            pass  # pragma: no cover
     mock_close.assert_awaited_once()
 
 

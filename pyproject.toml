@@ -234,8 +234,6 @@ ignore = [
     "PT011",
     # Allow try-except-pass instead of contextlib.suppress
     "SIM105",
-    # Allow nested with statements
-    "SIM117",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

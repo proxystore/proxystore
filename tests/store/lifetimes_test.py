@@ -58,9 +58,11 @@ def test_context_lifetime_close_idempotency(
 def test_context_lifetime_add_bad_proxy(store: Store[LocalConnector]) -> None:
     proxy: Proxy[list[Any]] = Proxy(list)
 
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ProxyStoreFactoryError):
-            lifetime.add_proxy(proxy)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ProxyStoreFactoryError),
+    ):
+        lifetime.add_proxy(proxy)
 
 
 def test_context_lifetime_error_if_done(store: Store[LocalConnector]) -> None:

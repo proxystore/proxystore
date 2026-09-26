@@ -175,30 +175,32 @@ def test_multi_connector_from_config() -> None:
 
 
 def test_dormant_connectors() -> None:
-    with mock.patch('proxystore.utils.hostname') as mock_hostname:
-        with multi_connector_from_policies(
+    with (
+        mock.patch('proxystore.utils.hostname') as mock_hostname,
+        multi_connector_from_policies(
             Policy(host_pattern='testhost', subset_tags=['a']),
             Policy(host_pattern='otherhost', subset_tags=['b']),
-        ) as (multi_connector, _, _):
-            mock_hostname.return_value = 'otherhost'
-            key2 = multi_connector.put(b'data', subset_tags=['b'])
-            mock_hostname.return_value = 'testhost'
-            key1 = multi_connector.put(b'data', subset_tags=['a'])
+        ) as (multi_connector, _, _),
+    ):
+        mock_hostname.return_value = 'otherhost'
+        key2 = multi_connector.put(b'data', subset_tags=['b'])
+        mock_hostname.return_value = 'testhost'
+        key1 = multi_connector.put(b'data', subset_tags=['a'])
 
-            config = multi_connector.config()
-            # Reinitalizing the connector from a config will result in
-            # the second connector being dormant because it's host pattern
-            # did not match the hostname.
-            remote_connector = MultiConnector.from_config(config)
-            assert remote_connector.exists(key1)
+        config = multi_connector.config()
+        # Reinitalizing the connector from a config will result in
+        # the second connector being dormant because it's host pattern
+        # did not match the hostname.
+        remote_connector = MultiConnector.from_config(config)
+        assert remote_connector.exists(key1)
 
-            assert remote_connector.dormant_connectors is not None
-            assert len(remote_connector.dormant_connectors) == 1
+        assert remote_connector.dormant_connectors is not None
+        assert len(remote_connector.dormant_connectors) == 1
 
-            with pytest.raises(MultiConnectorError, match='constraints'):
-                remote_connector.put(b'data', subset_tags=['b'])
-            with pytest.raises(  # pragma: <3.14 cover
-                MultiConnectorError,
-                match='dormant',
-            ):
-                remote_connector.get(key2)
+        with pytest.raises(MultiConnectorError, match='constraints'):
+            remote_connector.put(b'data', subset_tags=['b'])
+        with pytest.raises(  # pragma: <3.14 cover
+            MultiConnectorError,
+            match='dormant',
+        ):
+            remote_connector.get(key2)

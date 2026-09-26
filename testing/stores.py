@@ -20,6 +20,8 @@ def store() -> Generator[Store[LocalConnector], None, None]:
     it is only suitable for use within a single process. The store is also
     registered and registered after the test.
     """
-    with Store(str(uuid.uuid4()), LocalConnector(), cache_size=0) as store:
-        with store_registration(store):
-            yield store
+    with (
+        Store(str(uuid.uuid4()), LocalConnector(), cache_size=0) as store,
+        store_registration(store),
+    ):
+        yield store

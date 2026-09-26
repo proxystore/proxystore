@@ -113,9 +113,11 @@ def test_connect_refused() -> None:
 
 
 def test_connect_unreachable() -> None:
-    with mock.patch('socket.create_connection', side_effect=TimeoutError):
-        with pytest.raises(EndpointConnectionError, match='Unable to connect'):
-            EndpointClient.connect('127.0.0.1', 1, TOKEN, timeout=1)
+    with (
+        mock.patch('socket.create_connection', side_effect=TimeoutError),
+        pytest.raises(EndpointConnectionError, match='Unable to connect'),
+    ):
+        EndpointClient.connect('127.0.0.1', 1, TOKEN, timeout=1)
 
 
 def test_connect_handshake_timeout(fake_server) -> None:
@@ -244,9 +246,11 @@ def test_exists_malformed_response(
     fake_server,
 ) -> None:
     port = fake_server(_respond_with(Status.OK, meta))
-    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        with pytest.raises(EndpointProtocolError, match='Malformed EXISTS'):
-            client.exists('key')
+    with (
+        EndpointClient.connect('127.0.0.1', port, TOKEN) as client,
+        pytest.raises(EndpointProtocolError, match='Malformed EXISTS'),
+    ):
+        client.exists('key')
 
 
 def test_request_error_no_message(fake_server) -> None:
@@ -401,12 +405,14 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
 
 def test_from_name_default_home(tmp_path: pathlib.Path) -> None:
     _write_config(tmp_path / 'test')
-    with mock.patch(
-        'proxystore.endpoint.client.home_dir',
-        return_value=str(tmp_path),
+    with (
+        mock.patch(
+            'proxystore.endpoint.client.home_dir',
+            return_value=str(tmp_path),
+        ),
+        pytest.raises(EndpointNotRunningError, match='Is the endpoint'),
     ):
-        with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
-            EndpointClient.from_name('test')
+        EndpointClient.from_name('test')
 
 
 def test_from_name_missing(tmp_path: pathlib.Path) -> None:

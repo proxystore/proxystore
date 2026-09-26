@@ -283,18 +283,21 @@ async def test_check_nat_requires_two_responses() -> None:
             'proxystore.p2p.nat._RETRANSMIT_DELAYS',
             (0.001, 0.001, 0.001),
         ),
+        pytest.raises(RuntimeError, match='Only 1 of 2 STUN servers'),
     ):
-        with pytest.raises(RuntimeError, match='Only 1 of 2 STUN servers'):
-            await check_nat()
+        await check_nat()
 
 
 async def test_check_nat_stops_at_timeout() -> None:
     # A network which blocks STUN must fail within the timeout rather than
     # running every retransmission round.
     patches = patch_stun({'1.1.1.1': None, '2.2.2.2': None})
-    with patches[0], patches[1]:
-        with pytest.raises(RuntimeError, match='Only 0 of 2 STUN servers'):
-            await check_nat(timeout=0)
+    with (
+        patches[0],
+        patches[1],
+        pytest.raises(RuntimeError, match='Only 0 of 2 STUN servers'),
+    ):
+        await check_nat(timeout=0)
 
 
 def test_local_address() -> None:
@@ -303,12 +306,14 @@ def test_local_address() -> None:
 
 
 async def test_check_nat_requires_two_servers() -> None:
-    with mock.patch(
-        'proxystore.p2p.nat._resolve_servers',
-        mock.AsyncMock(return_value=[('1.1.1.1', 3478)]),
+    with (
+        mock.patch(
+            'proxystore.p2p.nat._resolve_servers',
+            mock.AsyncMock(return_value=[('1.1.1.1', 3478)]),
+        ),
+        pytest.raises(RuntimeError, match='Only 1 STUN servers'),
     ):
-        with pytest.raises(RuntimeError, match='Only 1 STUN servers'):
-            await check_nat()
+        await check_nat()
 
 
 def test_stun_servers_are_distinct_hosts() -> None:

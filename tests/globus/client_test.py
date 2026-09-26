@@ -39,9 +39,11 @@ def test_get_confidential_app_auth_client_from_env() -> None:
 
 
 def test_get_confidential_app_auth_client_from_env_missing() -> None:
-    with mock.patch.dict(os.environ, {}):
-        with pytest.raises(ValueError, match='Either set both environment'):
-            get_confidential_app_auth_client()
+    with (
+        mock.patch.dict(os.environ, {}),
+        pytest.raises(ValueError, match='Either set both environment'),
+    ):
+        get_confidential_app_auth_client()
 
 
 def test_get_native_app_auth_client() -> None:
@@ -63,18 +65,20 @@ def test_get_transfer_client_custom() -> None:
     # App.add_scope_requirements() is called by
     # TransferClient.add_app_data_access_scope() which calls
     # TransferClient.add_app_scope().
-    with mock.patch.object(
-        globus_app,
-        'add_scope_requirements',
-    ) as mock_add_scope:
-        with mock.patch(
+    with (
+        mock.patch.object(
+            globus_app,
+            'add_scope_requirements',
+        ) as mock_add_scope,
+        mock.patch(
             'proxystore.globus.client.uses_data_access',
             side_effect=(True, False),
-        ) as mock_data_access:
-            client = get_transfer_client(
-                globus_app,
-                collections=[str(uuid.uuid4()), str(uuid.uuid4())],
-            )
+        ) as mock_data_access,
+    ):
+        client = get_transfer_client(
+            globus_app,
+            collections=[str(uuid.uuid4()), str(uuid.uuid4())],
+        )
     assert mock_add_scope.call_count == 2
     assert mock_data_access.call_count == 2
     assert isinstance(client, globus_sdk.TransferClient)

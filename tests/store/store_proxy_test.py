@@ -144,9 +144,11 @@ def test_proxy_from_key_mutex_options_error(
 ) -> None:
     key = store.put('test_value')
 
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy_from_key(key, evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy_from_key(key, evict=True, lifetime=lifetime)
 
 
 def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
@@ -237,9 +239,11 @@ def test_proxy_lifetime(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy_mutex_options_error(store: Store[LocalConnector]) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy('test_value', evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy('test_value', evict=True, lifetime=lifetime)
 
 
 def test_proxy_batch(store: Store[LocalConnector]) -> None:
@@ -317,9 +321,11 @@ def test_proxy_batch_lifetime(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy_batch_mutex_options_error(store: Store[LocalConnector]) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy_batch(['test_value'], evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy_batch(['test_value'], evict=True, lifetime=lifetime)
 
 
 def test_locked_proxy(store: Store[LocalConnector]) -> None:
@@ -347,9 +353,11 @@ def test_locked_proxy_lifetime(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_mutex_options_error(
     store: Store[LocalConnector],
 ) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.locked_proxy('test_value', evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.locked_proxy('test_value', evict=True, lifetime=lifetime)
 
 
 def test_owned_proxy(store: Store[LocalConnector]) -> None:

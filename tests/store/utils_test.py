@@ -29,21 +29,23 @@ def test_get_key_from_proxy_not_created_by_store() -> None:
 
 
 def test_async_resolve() -> None:
-    with Store('store', LocalConnector(), populate_target=False) as store:
-        with store_registration(store):
-            value = 'value'
-            p = store.proxy(value)
+    with (
+        Store('store', LocalConnector(), populate_target=False) as store,
+        store_registration(store),
+    ):
+        value = 'value'
+        p = store.proxy(value)
 
-            assert not is_resolved(p)
+        assert not is_resolved(p)
 
-            resolve_async(p)
-            assert p == value
+        resolve_async(p)
+        assert p == value
 
-            assert is_resolved(p)
+        assert is_resolved(p)
 
-            # Now async resolve should be a no-op
-            resolve_async(p)
-            assert p == value
+        # Now async resolve should be a no-op
+        resolve_async(p)
+        assert p == value
 
 
 def test_async_resolve_factory_error() -> None:

@@ -31,9 +31,11 @@ async def endpoints(
     )
     peer_manager_1 = await PeerManager(relay_client_1)
     peer_manager_2 = await PeerManager(relay_client_2)
-    async with Endpoint(peer_manager=peer_manager_1) as ep1:
-        async with Endpoint(peer_manager=peer_manager_2) as ep2:
-            yield (ep1, ep2)
+    async with (
+        Endpoint(peer_manager=peer_manager_1) as ep1,
+        Endpoint(peer_manager=peer_manager_2) as ep2,
+    ):
+        yield (ep1, ep2)
 
 
 @pytest.mark.asyncio

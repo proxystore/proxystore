@@ -1136,9 +1136,8 @@ class Store(Generic[ConnectorT]):
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
 
-        with self._lock:
-            with Timer() as connector_timer:
-                key = self.connector.put(obj, **kwargs)
+        with self._lock, Timer() as connector_timer:
+            key = self.connector.put(obj, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(key, store=self)
@@ -1201,9 +1200,8 @@ class Store(Generic[ConnectorT]):
         with Timer() as serialize_timer:
             _objs = list(map(_serialize, objs))
 
-        with self._lock:
-            with Timer() as connector_timer:
-                keys = self.connector.put_batch(_objs, **kwargs)
+        with self._lock, Timer() as connector_timer:
+            keys = self.connector.put_batch(_objs, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(*keys, store=self)
