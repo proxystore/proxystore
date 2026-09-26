@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -4644,7 +4644,9 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4669,7 +4671,9 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#Exception">Exception</a></code></p>
 
 
+
         <p>Base exception type for proxy references.</p>
+
 
 
 
@@ -4698,7 +4702,9 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxyError (proxystore.store.ref.BaseRefProxyError)" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
+
         <p>Exception raised when violating borrowing rules.</p>
+
 
 
 
@@ -4727,7 +4733,9 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxyError (proxystore.store.ref.BaseRefProxyError)" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
+
         <p>Exception raised when invoking an operation on a non-owned reference.</p>
+
 
 
 
@@ -4756,7 +4764,9 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxyError (proxystore.store.ref.BaseRefProxyError)" href="#proxystore.store.ref.BaseRefProxyError">BaseRefProxyError</a></code></p>
 
 
+
         <p>Exception raised when a reference instance has been invalidated.</p>
+
 
 
 
@@ -4791,6 +4801,7 @@ of <code>T</code>, forwarding operations on themselves to a locally cached insta
               Bases: <code><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="../../proxy/#proxystore.proxy.Proxy">Proxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
 
 
+
         <p>Base reference proxy type.</p>
 <p>This base type adds some features to <a class="autorefs autorefs-internal" title="            Proxy" href="../../proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a>
 that are shared by all the reference types:</p>
@@ -4810,7 +4821,8 @@ that are shared by all the reference types:</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/store/ref.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-144">144</a></span>
 <span class="normal"><a href="#__codelineno-0-145">145</a></span>
@@ -4834,7 +4846,8 @@ that are shared by all the reference types:</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4872,6 +4885,7 @@ that are shared by all the reference types:</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxy (proxystore.store.ref.BaseRefProxy)" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
+
 
 
         <p>Represents ownership over an object in a global store.</p>
@@ -4922,7 +4936,8 @@ to resolve the target object from the store.</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/store/ref.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-241">241</a></span>
 <span class="normal"><a href="#__codelineno-0-242">242</a></span>
@@ -4958,7 +4973,8 @@ to resolve the target object from the store.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4997,6 +5013,7 @@ to resolve the target object from the store.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxy (proxystore.store.ref.BaseRefProxy)" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
+
 
 
         <p>Represents a borrowed reference to an object in the global store.</p>
@@ -5057,7 +5074,8 @@ be <code>None</code>.</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/store/ref.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-299">299</a></span>
 <span class="normal"><a href="#__codelineno-0-300">300</a></span>
@@ -5093,7 +5111,8 @@ be <code>None</code>.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -5132,6 +5151,7 @@ be <code>None</code>.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><a class="autorefs autorefs-internal" title="            BaseRefProxy (proxystore.store.ref.BaseRefProxy)" href="#proxystore.store.ref.BaseRefProxy">BaseRefProxy</a>[<span title="proxystore.store.ref.T">T</span>]</code></p>
+
 
 
         <p>Represents a borrowed mutable reference to an object in the global store.</p>
@@ -5192,7 +5212,8 @@ be <code>None</code>.</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/store/ref.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-351">351</a></span>
 <span class="normal"><a href="#__codelineno-0-352">352</a></span>
@@ -5228,7 +5249,8 @@ be <code>None</code>.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -5315,7 +5337,7 @@ the returned proxy is already resolved.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/store/ref.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-403">403</a></span>
 <span class="normal"><a href="#__codelineno-0-404">404</a></span>
@@ -5459,7 +5481,7 @@ the returned proxy is already resolved.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/store/ref.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-439">439</a></span>
 <span class="normal"><a href="#__codelineno-0-440">440</a></span>
@@ -5572,7 +5594,7 @@ be deepcopied into the cloned proxy.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/store/ref.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-478">478</a></span>
 <span class="normal"><a href="#__codelineno-0-479">479</a></span>
@@ -5706,7 +5728,7 @@ the returned proxy is already resolved.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/store/ref.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-506">506</a></span>
 <span class="normal"><a href="#__codelineno-0-507">507</a></span>
@@ -5896,7 +5918,7 @@ protocol.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/store/ref.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-551">551</a></span>
 <span class="normal"><a href="#__codelineno-0-552">552</a></span>

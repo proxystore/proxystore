@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -4498,7 +4498,9 @@ Each queue topic may only have one subscriber.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -4525,6 +4527,7 @@ Each queue topic may only have one subscriber.</p>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
 
 
         <p>Publisher built on Python queues.</p>
@@ -4574,7 +4577,8 @@ to the queue.</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-31">31</a></span>
 <span class="normal"><a href="#__codelineno-0-32">32</a></span>
@@ -4606,7 +4610,8 @@ to the queue.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4632,7 +4637,7 @@ to the queue.</p>
         <p>Close this publisher.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-45">45</a></span>
 <span class="normal"><a href="#__codelineno-0-46">46</a></span>
@@ -4698,7 +4703,7 @@ to the queue.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-51">51</a></span>
 <span class="normal"><a href="#__codelineno-0-52">52</a></span>
@@ -4757,7 +4762,7 @@ to the queue.</p>
 
 <a href="#proxystore.stream.shims.queue.QueueSubscriber" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">QueueSubscriber</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">queue</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="multiprocessing.Queue" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue">Queue</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-external" title="queue.Queue" href="https://docs.python.org/3/library/queue.html#queue.Queue">Queue</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></span><span class="p">],</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">queue</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="multiprocessing.Queue" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue">Queue</a></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="proxystore.stream.shims.queue.QueueSubscriber(queue).Queue">Queue</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">block</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
@@ -4765,6 +4770,7 @@ to the queue.</p>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
 
 
         <p>Subscriber to a <a class="autorefs autorefs-internal" title="            QueuePublisher" href="#proxystore.stream.shims.queue.QueuePublisher"><code>QueuePublisher</code></a> topic.</p>
@@ -4779,7 +4785,7 @@ to the queue.</p>
     <ul>
         <li class="doc-section-item field-body">
             <b><code>queue</code></b>
-              (<code><a class="autorefs autorefs-external" title="multiprocessing.Queue" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue">Queue</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a>] | <a class="autorefs autorefs-external" title="queue.Queue" href="https://docs.python.org/3/library/queue.html#queue.Queue">Queue</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a>]</code>)
+              (<code><a class="autorefs autorefs-external" title="multiprocessing.Queue" href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue">Queue</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a>] | <span title="proxystore.stream.shims.queue.QueueSubscriber(queue).Queue">Queue</span>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a>]</code>)
           –
           <div class="doc-md-description">
             <p>Queue shared with the
@@ -4815,7 +4821,8 @@ pull messages from.</p>
 
 
 
-                  <details class="quote">
+
+                  <details class="mkdocstrings-source">
                     <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
                     <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-84">84</a></span>
 <span class="normal"><a href="#__codelineno-0-85">85</a></span>
@@ -4841,7 +4848,8 @@ pull messages from.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
+
 
 
 
@@ -4867,7 +4875,7 @@ pull messages from.</p>
         <p>Get the next message.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-101">101</a></span>
 <span class="normal"><a href="#__codelineno-0-102">102</a></span>
@@ -4906,7 +4914,7 @@ pull messages from.</p>
         <p>Close this subscriber.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/stream/shims/queue.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-110">110</a></span>
 <span class="normal"><a href="#__codelineno-0-111">111</a></span>

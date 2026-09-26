@@ -25,7 +25,7 @@
       
       
       <link rel="icon" href="../../../static/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+      <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
@@ -5580,7 +5580,8 @@ payload.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -5710,6 +5711,7 @@ payload.</p>
 </div>
 
 
+
 <div class="doc doc-object doc-class">
 
 
@@ -5726,6 +5728,7 @@ payload.</p>
               Bases: <code><a class="autorefs autorefs-external" title="enum.IntEnum" href="https://docs.python.org/3/library/enum.html#enum.IntEnum">IntEnum</a></code></p>
 
 
+
         <p>Operation codes of messages sent by a client.</p>
 
 
@@ -5737,7 +5740,8 @@ payload.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -5899,6 +5903,7 @@ payload.</p>
 
 
 
+
   </div>
 
     </div>
@@ -5921,6 +5926,7 @@ payload.</p>
               Bases: <code><a class="autorefs autorefs-external" title="enum.IntEnum" href="https://docs.python.org/3/library/enum.html#enum.IntEnum">IntEnum</a></code></p>
 
 
+
         <p>Status codes of messages sent by an endpoint.</p>
 
 
@@ -5932,7 +5938,8 @@ payload.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -6094,6 +6101,7 @@ payload.</p>
 
 
 
+
   </div>
 
     </div>
@@ -6124,6 +6132,7 @@ payload.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Preamble that starts every connection.</p>
 <p>The format of the preamble must never change so that clients and
 endpoints using different protocol versions can detect the mismatch.</p>
@@ -6150,7 +6159,8 @@ endpoints using different protocol versions can detect the mismatch.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -6171,7 +6181,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
   </span>
 
 <a href="#proxystore.endpoint.protocol.Preamble.FORMAT" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FORMAT</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span><span class="p">(</span><span class="s1">'!4sH'</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FORMAT</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/struct.html#module-struct">struct</a></span><span class="o">.</span><span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span><span class="p">(</span><span class="s1">'!4sH'</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6195,7 +6205,12 @@ endpoints using different protocol versions can detect the mismatch.</p>
   </span>
 
 <a href="#proxystore.endpoint.protocol.Preamble.SIZE" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SIZE</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><span title="proxystore.endpoint.protocol.Preamble.FORMAT.size">size</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SIZE</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            FORMAT
+
+
+  
+      class-attribute
+   (proxystore.endpoint.protocol.Preamble.FORMAT)" href="#proxystore.endpoint.protocol.Preamble.FORMAT">FORMAT</a></span><span class="o">.</span><span class="n"><span title="proxystore.endpoint.protocol.Preamble.FORMAT.size">size</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6205,6 +6220,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
     </div>
 
 </div>
+
 
 
 
@@ -6224,7 +6240,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
         <p>Pack the preamble.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-114">114</a></span>
 <span class="normal"><a href="#__codelineno-0-115">115</a></span>
@@ -6275,7 +6291,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-118">118</a></span>
 <span class="normal"><a href="#__codelineno-0-119">119</a></span>
@@ -6339,6 +6355,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Message header.</p>
 
 
@@ -6388,7 +6405,8 @@ endpoints using different protocol versions can detect the mismatch.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
 
 
 
@@ -6409,7 +6427,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
   </span>
 
 <a href="#proxystore.endpoint.protocol.Header.FORMAT" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FORMAT</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span><span class="p">(</span><span class="s1">'!BBIQ'</span><span class="p">)</span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">FORMAT</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/struct.html#module-struct">struct</a></span><span class="o">.</span><span class="n"><a class="autorefs autorefs-external" title="struct.Struct" href="https://docs.python.org/3/library/struct.html#struct.Struct">Struct</a></span><span class="p">(</span><span class="s1">'!BBIQ'</span><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6433,7 +6451,12 @@ endpoints using different protocol versions can detect the mismatch.</p>
   </span>
 
 <a href="#proxystore.endpoint.protocol.Header.SIZE" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SIZE</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><span title="proxystore.endpoint.protocol.Header.FORMAT.size">size</span></span>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">SIZE</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            FORMAT
+
+
+  
+      class-attribute
+   (proxystore.endpoint.protocol.Header.FORMAT)" href="#proxystore.endpoint.protocol.Header.FORMAT">FORMAT</a></span><span class="o">.</span><span class="n"><span title="proxystore.endpoint.protocol.Header.FORMAT.size">size</span></span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -6443,6 +6466,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
     </div>
 
 </div>
+
 
 
 
@@ -6462,7 +6486,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
         <p>Pack the header.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-157">157</a></span>
 <span class="normal"><a href="#__codelineno-0-158">158</a></span>
@@ -6523,7 +6547,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-166">166</a></span>
 <span class="normal"><a href="#__codelineno-0-167">167</a></span>
@@ -6584,6 +6608,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.NamedTuple" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">NamedTuple</a></code></p>
 
 
+
         <p>ProxyStore and Python versions of a client or endpoint.</p>
 
 
@@ -6616,7 +6641,9 @@ endpoints using different protocol versions can detect the mismatch.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -6646,7 +6673,7 @@ endpoints using different protocol versions can detect the mismatch.</p>
         <p>Get the ProxyStore and Python versions of this process.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-194">194</a></span>
 <span class="normal"><a href="#__codelineno-0-195">195</a></span>
@@ -6706,7 +6733,7 @@ compatible.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-199">199</a></span>
 <span class="normal"><a href="#__codelineno-0-200">200</a></span>
@@ -6794,6 +6821,7 @@ compatible.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>First message of the handshake sent by the client.</p>
 
 
@@ -6826,7 +6854,9 @@ compatible.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -6852,7 +6882,7 @@ compatible.</p>
         <p>Encode as message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-240">240</a></span>
 <span class="normal"><a href="#__codelineno-0-241">241</a></span>
@@ -6897,7 +6927,7 @@ compatible.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-244">244</a></span>
 <span class="normal"><a href="#__codelineno-0-245">245</a></span>
@@ -6953,6 +6983,7 @@ compatible.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Reply of the endpoint to <a class="autorefs autorefs-internal" title="            Hello
 
 
@@ -6990,7 +7021,9 @@ compatible.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -7016,7 +7049,7 @@ compatible.</p>
         <p>Encode as message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-269">269</a></span>
 <span class="normal"><a href="#__codelineno-0-270">270</a></span>
@@ -7061,7 +7094,7 @@ compatible.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-273">273</a></span>
 <span class="normal"><a href="#__codelineno-0-274">274</a></span>
@@ -7117,6 +7150,7 @@ compatible.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Second message of the handshake with the proof of the client.</p>
 
 
@@ -7141,7 +7175,9 @@ compatible.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -7167,7 +7203,7 @@ compatible.</p>
         <p>Encode as message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-296">296</a></span>
 <span class="normal"><a href="#__codelineno-0-297">297</a></span>
@@ -7212,7 +7248,7 @@ compatible.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-300">300</a></span>
 <span class="normal"><a href="#__codelineno-0-301">301</a></span>
@@ -7267,6 +7303,7 @@ compatible.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Information about an endpoint sent at the end of the handshake.</p>
 
 
@@ -7316,7 +7353,9 @@ on the endpoint or <code>None</code> if there is no limit.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -7342,7 +7381,7 @@ on the endpoint or <code>None</code> if there is no limit.</p>
         <p>Encode as message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-327">327</a></span>
 <span class="normal"><a href="#__codelineno-0-328">328</a></span>
@@ -7397,7 +7436,7 @@ on the endpoint or <code>None</code> if there is no limit.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-336">336</a></span>
 <span class="normal"><a href="#__codelineno-0-337">337</a></span>
@@ -7467,6 +7506,7 @@ on the endpoint or <code>None</code> if there is no limit.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Metadata of a request sent by a client after the handshake.</p>
 
 
@@ -7500,7 +7540,9 @@ for the local endpoint.</p>
 
 
 
-  <div class="doc doc-children">
+
+<div class="doc doc-children">
+
 
 
 
@@ -7526,7 +7568,7 @@ for the local endpoint.</p>
         <p>Encode as message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-369">369</a></span>
 <span class="normal"><a href="#__codelineno-0-370">370</a></span>
@@ -7573,7 +7615,7 @@ for the local endpoint.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-374">374</a></span>
 <span class="normal"><a href="#__codelineno-0-375">375</a></span>
@@ -7678,7 +7720,7 @@ being copied.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-441">441</a></span>
 <span class="normal"><a href="#__codelineno-0-442">442</a></span>
@@ -7735,7 +7777,7 @@ being copied.</p>
         <p>Encode message metadata.</p>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-460">460</a></span>
 <span class="normal"><a href="#__codelineno-0-461">461</a></span>
@@ -7776,7 +7818,7 @@ being copied.</p>
     </ul>
 
 
-            <details class="quote">
+            <details class="mkdocstrings-source">
               <summary>Source code in <code>proxystore/endpoint/protocol.py</code></summary>
               <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-465">465</a></span>
 <span class="normal"><a href="#__codelineno-0-466">466</a></span>
