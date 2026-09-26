@@ -189,7 +189,7 @@ class SQLiteStorage:
                     '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',
                 )
                 self._db = db
-        return self._db
+            return self._db
 
     async def evict(self, key: str) -> None:
         """Evict a blob from storage.
