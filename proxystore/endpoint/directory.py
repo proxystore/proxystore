@@ -72,10 +72,13 @@ class EndpointDir:
         if not os.path.isdir(proxystore_dir):
             return endpoints
 
-        for dirpath, _, _ in os.walk(proxystore_dir):
-            if os.path.samefile(proxystore_dir, dirpath):
-                continue
-            endpoint_dir = cls(dirpath)
+        # Endpoint directories are always direct children of the home
+        # directory (see from_home()).
+        with os.scandir(proxystore_dir) as entries:
+            paths = sorted(entry.path for entry in entries if entry.is_dir())
+
+        for path in paths:
+            endpoint_dir = cls(path)
             try:
                 config = endpoint_dir.read_config()
             except (FileNotFoundError, ValueError):

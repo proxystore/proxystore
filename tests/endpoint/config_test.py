@@ -88,8 +88,14 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
             )
         )
 
-    # Make invalid directory to make sure get_configs skips it
+    # Make invalid directory to make sure find_all skips it
     os.makedirs(os.path.join(tmp_dir, 'ep4'))
+    # Nested directories and files are not endpoints
+    EndpointDir(os.path.join(tmp_dir, 'ep1', 'nested')).write_config(
+        EndpointConfig(name='nested', uuid=str(uuid.uuid4()), port=1234),
+    )
+    with open(os.path.join(tmp_dir, 'file'), 'w') as f:
+        f.write('not an endpoint')
     # Make a bad config to make sure its skipped
     ep5 = os.path.join(tmp_dir, 'ep5')
     os.makedirs(ep5)
