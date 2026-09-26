@@ -1,6 +1,6 @@
 # Endpoints Debugging
 
-*Last updated 25 September 2026*
+*Last updated 26 September 2026*
 
 This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.
@@ -98,24 +98,60 @@ with EndpointClient.from_name('myendpoint') as client:
 
 ## Test a Remote Endpoint
 
-Consider I have an endpoint running on system A with ID
-`aaaa7ce803e5348b74920943c61322d9b38fcddf2decd628c9abc3c224610929` and another on System B
-with ID `bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e`.
+Consider I have an endpoint named "myendpoint" running on system A with ID
+`aaaa7ce803e5348b74920943c61322d9b38fcddf2decd628c9abc3c224610929` and another named "otherendpoint" on system B with ID
+`bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e`.
+
+### Check the Peers
+Each endpoint must have the other in its peers. On system A, check that
+system B's endpoint is listed, and vice versa on system B.
+```bash
+$ proxystore-endpoint peers list myendpoint
+NAME     ID
+=========================================================================
+system-b bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e
+```
+If an endpoint is missing, add it with
+[`proxystore-endpoint peers add`](../api/cli.md#proxystore-endpoint-peers-add).
+Also check that peering is enabled (`enabled = true` in the `[p2p]` section
+of the endpoint's `config.toml`).
+
+### Check the Endpoint Logs
+When peering is enabled, the endpoint logs the addresses it listens on for
+peer connections and whether it connected to its home relay.
+```
+INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: listening for peer connections on 0.0.0.0:41421, [::]:36871
+INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connected to home relay
+```
+If the endpoint does not connect to a home relay, it logs a warning. The
+endpoint can still connect directly to peers, but peers behind NATs may not
+be able to reach it. Check that the relays are reachable from the system or
+configure self-hosted relays (see
+[Relays](endpoints.md#relays)).
 
 ### Use the Test CLI
 The `proxystore-endpoint test` CLI can be used to establish a peer connection
 between two endpoints and invoke remote operations.
-Here, we will request the endpoint on system A (named "myendpoint") to invoke
-an `exists` operation on the endpoint on system B.
+Here, we will request the endpoint on system A to invoke an `exists`
+operation on the endpoint on system B.
 ```bash
 $ proxystore-endpoint test --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
 INFO: Object exists: False
 ```
 
-You will get an error if the peer connection fails. For example:
-```bash
-ERROR: Endpoint returned ERROR for EXISTS request: Request to peer bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e failed: ...
-```
-If this happens, check the logs for both endpoints for further error messages.
-Peer requests typically fail because one of the endpoints is not running
-(e.g., an endpoint crashed).
+You will get an error if the peer request fails. Check the logs of both
+endpoints for further error messages. Common errors are:
+
+* **Endpoint ... is not in the allowlist of peers**: The local endpoint does
+  not have the remote endpoint in its peers.
+* **Peer ... refused the connection because this endpoint is not in its
+  allowlist of peers**: The remote endpoint does not have the local endpoint
+  in its peers. The remote endpoint logs a warning that it refused the
+  connection.
+* **Failed to connect to peer ...** or **Connecting to peer ... timed out**:
+  The remote endpoint is not running, or the endpoints cannot reach each
+  other. If relays are disabled (`relays = "none"`), the endpoints can only
+  connect directly. If discovery is unavailable, an endpoint can only reach
+  peers whose addresses are cached in its `peer-addrs.json` file.
+* **Peer ...: Data size ... exceeds the maximum object size**: The object is
+  larger than the `max_object_size` of the remote endpoint.

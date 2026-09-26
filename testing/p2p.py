@@ -29,7 +29,7 @@ def local_peer_manager(path: str, **kwargs: Any) -> PeerManager:
         'preset': iroh.preset_minimal(),
         'relay_mode': iroh.RelayMode.disabled(),
         'bind_addr': '127.0.0.1:0',
-        'online_timeout': 0,
+        'online_timeout': None,
         **kwargs,
     }
     return PeerManager(

@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 25 September 2026*
+*Last updated 26 September 2026*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -31,10 +31,15 @@ the primary interface for clients to interact with endpoints.
 > any endpoint and those request will be forwarded to the correct endpoint.
 > Endpoints establish peer-to-peer connections using UDP hole-punching.
 
-Endpoints connect to peers with [iroh](https://www.iroh.computer/), and
-two endpoints can only communicate if each has the other in its allowlist of
-peers (see
-[`proxystore-endpoint peers`](../api/cli.md#proxystore-endpoint-peers)).
+Unlike popular in-memory data stores (Redis, Memcached, etc.), ProxyStore
+endpoints can operate as peers even from behind different NATs without the
+need to open ports or SSH tunnels. Endpoints connect to peers with
+[iroh](https://www.iroh.computer/){target=_blank}, a peer-to-peer library
+built on QUIC. Each endpoint is identified by its *endpoint ID*, the public
+key of the endpoint's secret key, and iroh finds the addresses of a peer from
+its ID, establishes a direct connection with UDP hole-punching when possible,
+and relays traffic otherwise. An endpoint only communicates with the peers in
+its allowlist (see [Peering](#peering)).
 
 Clients interacting with an endpoint via typical object store operations (*get*, *set*, etc.) specify a *key* and an *endpoint ID*.
 Endpoints that receive a request with a different endpoint ID will attempt
@@ -79,9 +84,13 @@ port = 8765  # (3)!
 host_type = "ip"  # (4)!
 tls = false  # (5)!
 
+[p2p]
+enabled = true  # (6)!
+relays = "n0"  # (7)!
+
 [storage]
-database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (6)!
-max_object_size = 10000000  # (7)!
+database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (8)!
+max_object_size = 10000000  # (9)!
 ```
 
 1. Human-readable name of this endpoint. Only used for logging and CLI
@@ -95,9 +104,12 @@ max_object_size = 10000000  # (7)!
    be specified in a `host` field (e.g., `host = "localhost"`).
 5. Encrypt connections between clients and the endpoint with TLS. See
    [Security](#security) for details.
-6. Optional path to a SQLite database for persisting endpoint objects. See
+6. Enable communication with peer endpoints. If `false`, the endpoint
+   operates in isolation. Configure with `--no-peering` to disable peering.
+7. Relays used to connect to peers. See [Relays](#relays).
+8. Optional path to a SQLite database for persisting endpoint objects. See
    the tip below for more details.
-7. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to `0`
+9. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to `0`
    to disable object size limits.
 
 !!! tip
@@ -131,6 +143,103 @@ $ proxystore-endpoint start my-endpoint
     `host` field (i.e. `host = "12.34.56.78"`). The `--host` flag can also
     be used during configuration to specify "ip" (default), "fqdn", or a
     static host.
+
+## Peering
+
+### Adding Peers
+
+Two endpoints can only communicate if each endpoint has the other in its
+allowlist of peers, the `peers.toml` file in the endpoint directory.
+Allowlisting the same peer on both sides is required, and the endpoint
+refuses connections from, and requests to, any other endpoint. Peer
+connections are encrypted and authenticated with TLS 1.3, so an endpoint
+cannot pretend to be another endpoint without its secret key.
+
+To connect endpoints on two systems, get the ID of each endpoint:
+
+```bash
+$ proxystore-endpoint id my-endpoint  # On system A
+ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173
+$ proxystore-endpoint id cluster-endpoint  # On system B
+00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741
+```
+
+Then add each endpoint to the peers of the other:
+
+```bash
+# On system A
+$ proxystore-endpoint peers add my-endpoint cluster 00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741
+# On system B
+$ proxystore-endpoint peers add cluster-endpoint laptop ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173
+```
+
+The names given to peers (e.g., `cluster` and `laptop`) are only used in logs
+and by the CLI. List peers with
+[`proxystore-endpoint peers list`](../api/cli.md#proxystore-endpoint-peers-list)
+and remove a peer with
+[`proxystore-endpoint peers remove`](../api/cli.md#proxystore-endpoint-peers-remove).
+Changes to the peers take effect immediately, even while the endpoint is
+running. Removing a peer closes its connections and denies its requests.
+
+Endpoints owned by other users are added in the same way, so share your
+endpoint's ID with a collaborator and add theirs to share data with them.
+
+### Relays
+
+Relays help peers establish direct connections and relay traffic between
+peers when a direct connection is not possible (e.g., because a firewall
+blocks UDP traffic). Relays only see encrypted traffic. Relayed transfers are
+slower than direct transfers. The relays are configured with the `relays`
+option in the `[p2p]` section of the configuration or the `--relays` flag
+when configuring an endpoint.
+
+* `"n0"` (default): Use the public relays operated by
+  [n0](https://n0.computer){target=_blank}, the developers of iroh.
+* `"none"`: Disable relays. Peers can only connect directly.
+* A list of URLs (e.g., `["https://relay.example.com"]`): Use self-hosted
+  [`iroh-relay`](https://docs.iroh.computer/concepts/relays){target=_blank}
+  servers. Sites that need reliability can run their own relay.
+
+By default, endpoints also publish their addresses to, and look up the
+addresses of peers from, n0's public DNS discovery service. ProxyStore does
+not operate any services, and n0's relays and discovery service are provided
+on an as-available basis. If they are unavailable:
+
+* Peers that can be reached directly (e.g., on the same network or with
+  public IP addresses) and existing connections still work.
+* Peers can be reached using their last known addresses. After each
+  connection, an endpoint caches the addresses of the peer in the
+  `peer-addrs.json` file in the endpoint directory, so peers can still be
+  reached as long as their addresses have not changed.
+* New connections between two peers that are both behind NATs fail unless
+  the endpoints are configured with self-hosted relays.
+
+### Platform Support
+
+Peering requires the [`iroh`](https://pypi.org/project/iroh/){target=_blank}
+package which is installed with the `endpoints` extra. `iroh` only provides
+wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS (arm64),
+and Windows (x86_64). Clients (e.g., the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]) do
+not require `iroh`.
+
+### Upgrading from ProxyStore v1
+
+ProxyStore v1 endpoints used WebRTC and a relay server hosted by the
+ProxyStore team to connect peers. The relay server has been removed, and
+endpoints are now identified by an endpoint ID rather than a UUID, so
+endpoints configured with ProxyStore v1 must be configured again.
+
+```bash
+$ proxystore-endpoint stop my-endpoint
+$ proxystore-endpoint remove my-endpoint
+$ proxystore-endpoint configure my-endpoint
+```
+
+Then, add the peers of the endpoint (see [Adding Peers](#adding-peers)) and
+update the endpoint UUIDs passed to the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] to
+the new endpoint IDs.
 
 ## Security
 

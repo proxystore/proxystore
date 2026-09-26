@@ -116,7 +116,8 @@ class PeerManager:
         bind_addr: Optional address to bind to (e.g., `"127.0.0.1:0"`).
         connect_timeout: Timeout in seconds when connecting to a peer.
         online_timeout: Timeout in seconds to wait for the endpoint to
-            connect to its home relay before logging a warning.
+            connect to its home relay before logging a warning. If `None`,
+            the endpoint does not wait (e.g., because relays are disabled).
         max_request_size: Maximum size in bytes of the data in a request from
             a peer or `None` for no limit.
         addr_cache_path: Optional path to a file where the addresses of peers
@@ -134,7 +135,7 @@ class PeerManager:
         relay_mode: iroh.RelayMode | None = None,
         bind_addr: str | None = None,
         connect_timeout: float = 30,
-        online_timeout: float = 10,
+        online_timeout: float | None = 10,
         max_request_size: int | None = None,
         addr_cache_path: str | None = None,
     ) -> None:
@@ -242,7 +243,10 @@ class PeerManager:
         self._endpoint = await iroh.Endpoint.bind(options)
         self._accept_task = spawn_guarded_background_task(self._accept_loop)
         self._accept_task.set_name(f'peer-manager-{self.id}-accept')
-        self._online_task = asyncio.create_task(self._wait_online())
+        if self._online_timeout is not None:
+            self._online_task = asyncio.create_task(
+                self._wait_online(self._online_timeout),
+            )
         logger.info(
             '%s: listening for peer connections on %s',
             self._log_prefix(),
@@ -487,18 +491,15 @@ class PeerManager:
         self._tasks.add(task)
         task.add_done_callback(self._tasks.discard)
 
-    async def _wait_online(self) -> None:
+    async def _wait_online(self, timeout: float) -> None:
         try:
-            await asyncio.wait_for(
-                self.endpoint.online(),
-                timeout=self._online_timeout,
-            )
+            await asyncio.wait_for(self.endpoint.online(), timeout=timeout)
         except TimeoutError:
             logger.warning(
                 '%s: not connected to a home relay after %s seconds. '
                 'Peers may only be able to connect directly',
                 self._log_prefix(),
-                self._online_timeout,
+                timeout,
             )
         else:
             logger.info('%s: connected to home relay', self._log_prefix())

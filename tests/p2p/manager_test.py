@@ -489,3 +489,13 @@ async def test_request_invalid_public_key(managers) -> None:
         pytest.raises(PeerConnectionError, match='not a valid public key'),
     ):
         await manager1.request(invalid, Op.GET)
+
+
+async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
+    # Relays are disabled so the endpoint never connects to a home relay.
+    manager = local_peer_manager(str(tmp_path), online_timeout=0.01)
+    await manager.start(_echo_handler([]))
+    assert manager._online_task is not None
+    await manager._online_task
+    await manager.close()
+    assert any('not connected to a home' in r.message for r in caplog.records)
