@@ -30,7 +30,7 @@ from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -148,11 +148,11 @@ def configure_endpoint(
 
     port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
-    secret_key = generate_secret_key()
+    secret_key = SecretKey.generate()
     try:
         cfg = EndpointConfig(
             name=name,
-            id=EndpointId.from_secret_key(secret_key),
+            id=secret_key.endpoint_id,
             host=host_addr,
             port=port,
             host_type=host_type,

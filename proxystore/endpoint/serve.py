@@ -32,7 +32,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
@@ -50,7 +50,7 @@ logger = logging.getLogger(__name__)
 def _check_secret_key(
     endpoint_dir: EndpointDir,
     config: EndpointConfig,
-) -> bytes:
+) -> SecretKey:
     try:
         secret_key = endpoint_dir.read_secret_key()
     except FileNotFoundError:
@@ -59,7 +59,7 @@ def _check_secret_key(
             'key. Remove the endpoint and configure it again with '
             '"proxystore-endpoint configure".',
         ) from None
-    endpoint_id = EndpointId.from_secret_key(secret_key)
+    endpoint_id = secret_key.endpoint_id
     if endpoint_id != config.id:
         raise ValueError(
             f'The endpoint ID in the configuration ({config.id}) does not '
@@ -71,7 +71,7 @@ def _check_secret_key(
 def _create_peer_manager(
     endpoint_dir: EndpointDir,
     config: EndpointConfig,
-    secret_key: bytes,
+    secret_key: SecretKey,
 ) -> PeerManager | None:
     if not config.p2p.enabled:
         return None

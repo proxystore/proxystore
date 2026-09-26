@@ -21,7 +21,6 @@ pinning).
 
 from __future__ import annotations
 
-import contextlib
 import datetime
 import hashlib
 import hmac
@@ -32,6 +31,7 @@ import tempfile
 from typing import Literal
 from typing import NamedTuple
 
+from proxystore.endpoint.files import write_private_file
 from proxystore.serialize import BytesLike
 
 TOKEN_SIZE = 32
@@ -57,27 +57,6 @@ class ConnectionInfo(NamedTuple):
     port: int
     token: bytes
     tls_fingerprint: str | None
-
-
-def write_private_file(path: str, data: BytesLike) -> None:
-    """Atomically write data to a file that only the owner can access.
-
-    The data is written to a temporary file with mode `0600` in the same
-    directory which then replaces `path`, so readers never observe a
-    partially written file.
-    """
-    fd, tmp_path = tempfile.mkstemp(
-        dir=os.path.dirname(path) or '.',
-        prefix=f'.{os.path.basename(path)}.',
-    )
-    try:
-        with os.fdopen(fd, 'wb') as f:
-            f.write(data)
-        os.replace(tmp_path, path)
-    except BaseException:
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(tmp_path)
-        raise
 
 
 def generate_token() -> bytes:

@@ -23,6 +23,7 @@ except ImportError as e:  # pragma: no cover
 
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
@@ -165,7 +166,7 @@ class PeerManager:
 
     def __init__(
         self,
-        secret_key: bytes,
+        secret_key: SecretKey,
         allowlist: Allowlist,
         *,
         preset: iroh.Preset | None = None,
@@ -177,7 +178,7 @@ class PeerManager:
         addr_cache_path: str | None = None,
     ) -> None:
         self._secret_key = secret_key
-        self._id = EndpointId.from_secret_key(secret_key)
+        self._id = secret_key.endpoint_id
         self._allowlist = allowlist
         self._preset = preset
         self._relay_mode = relay_mode
@@ -286,7 +287,7 @@ class PeerManager:
         # needed for callbacks from Rust into Python which are not used.
         options = iroh.EndpointOptions(
             preset=iroh.preset_n0() if self._preset is None else self._preset,
-            secret_key=self._secret_key,
+            secret_key=self._secret_key.to_bytes(),
             alpns=[ALPN],
             relay_mode=self._relay_mode,
             bind_addr=self._bind_addr,

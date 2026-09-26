@@ -47,7 +47,7 @@ import iroh
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.p2p.manager import PeerManager
 
@@ -90,7 +90,7 @@ def _relay_options(relays: str) -> dict[str, Any]:
 
 async def _endpoint(relays: str, tmp_dir: str) -> Endpoint:
     manager = PeerManager(
-        generate_secret_key(),
+        SecretKey.generate(),
         _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
         **_relay_options(relays),
     )

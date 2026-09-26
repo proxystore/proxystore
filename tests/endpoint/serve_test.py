@@ -21,7 +21,7 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
-from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import _relay_options
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
@@ -115,7 +115,7 @@ async def test_running_endpoint_secret_key_mismatch(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
-    endpoint_dir.write_secret_key(generate_secret_key())
+    endpoint_dir.write_secret_key(SecretKey.generate())
     with pytest.raises(ValueError, match='does not match the secret key'):
         async with running_endpoint(endpoint_dir):
             pass  # pragma: no cover

@@ -10,8 +10,8 @@ import pydantic
 import pytest
 
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.identity import SECRET_KEY_SIZE
+from proxystore.endpoint.identity import SecretKey
 
 # Well-formed and a valid public key
 _ID = 'aa' * 32
@@ -57,19 +57,33 @@ def test_short_and_log_name() -> None:
     assert endpoint_id.log_name('name') == f'name({_ID[:10]})'
 
 
-def test_from_secret_key() -> None:
-    secret_key = generate_secret_key()
-    assert len(secret_key) == SECRET_KEY_SIZE
-    endpoint_id = EndpointId.from_secret_key(secret_key)
+def test_secret_key() -> None:
+    secret_key = SecretKey.generate()
+    assert len(secret_key.to_bytes()) == SECRET_KEY_SIZE
+    endpoint_id = secret_key.endpoint_id
     assert isinstance(endpoint_id, EndpointId)
     # The ID is deterministic for a secret key
-    assert EndpointId.from_secret_key(secret_key) == endpoint_id
-    assert EndpointId.from_secret_key(generate_secret_key()) != endpoint_id
+    same = SecretKey(secret_key.to_bytes())
+    assert same == secret_key
+    assert hash(same) == hash(secret_key)
+    assert same.endpoint_id == endpoint_id
+    other = SecretKey.generate()
+    assert other != secret_key
+    assert other.endpoint_id != endpoint_id
+    assert secret_key != secret_key.to_bytes()
 
 
-def test_from_secret_key_bad_size() -> None:
+def test_secret_key_repr_hides_key() -> None:
+    secret_key = SecretKey.generate()
+    text = repr(secret_key)
+    assert text == f'SecretKey(endpoint_id={secret_key.endpoint_id!r})'
+    assert secret_key.to_bytes().hex() not in text
+    assert str(secret_key) == text
+
+
+def test_secret_key_bad_size() -> None:
     with pytest.raises(ValueError, match='must be 32 bytes'):
-        EndpointId.from_secret_key(b'abc')
+        SecretKey(b'abc')
 
 
 def test_random() -> None:

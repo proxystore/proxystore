@@ -8,14 +8,15 @@ identity when establishing a connection because only the endpoint which has
 the secret key can prove ownership of the public key.
 
 Parsing endpoint IDs only depends on the standard library so clients do not
-require any of the `endpoints` extra dependencies. Operations on keys (e.g.,
-[`EndpointId.from_secret_key()`][proxystore.endpoint.identity.EndpointId.from_secret_key])
-require the `iroh` package which is included in the `endpoints` extra.
+require any of the `endpoints` extra dependencies. Operations on secret keys
+(see [`SecretKey`][proxystore.endpoint.identity.SecretKey]) require the
+`iroh` package which is included in the `endpoints` extra.
 """
 
 from __future__ import annotations
 
 import functools
+import hmac
 import re
 from typing import Any
 from typing import Self
@@ -119,29 +120,13 @@ class EndpointId(str):
         return cls(value)
 
     @classmethod
-    def from_secret_key(cls, secret_key: bytes) -> Self:
-        """Get the ID of the endpoint with the secret key.
-
-        Raises:
-            ValueError: If `secret_key` is not a valid secret key.
-        """
-        import iroh
-
-        if len(secret_key) != SECRET_KEY_SIZE:
-            raise ValueError(
-                f'Endpoint secret key must be {SECRET_KEY_SIZE} bytes but got '
-                f'{len(secret_key)} bytes.',
-            )
-        return cls(str(iroh.SecretKey.from_bytes(secret_key).public()))
-
-    @classmethod
     def random(cls) -> Self:
         """Generate the ID of a new random endpoint.
 
         The secret key of the endpoint is discarded so this is only useful
         when an ID is needed but the endpoint is not (e.g., in tests).
         """
-        return cls.from_secret_key(generate_secret_key())
+        return cls(SecretKey.generate().endpoint_id)
 
     def short(self) -> str:
         """Get a short prefix of the ID for logging."""
@@ -165,14 +150,72 @@ class EndpointId(str):
         )
 
 
-def generate_secret_key() -> bytes:
-    """Generate a new endpoint secret key.
+class SecretKey:
+    """Secret key of an endpoint.
 
-    Returns:
-        The secret key as
-        [`SECRET_KEY_SIZE`][proxystore.endpoint.identity.SECRET_KEY_SIZE]
-        bytes.
+    The secret key is an ed25519 key which proves the identity of the
+    endpoint to peers. The key is never included in its `repr()` so it is not
+    accidentally logged.
+
+    Example:
+        ```python
+        secret_key = SecretKey.generate()
+        endpoint_id = secret_key.endpoint_id
+        same_key = SecretKey(secret_key.to_bytes())
+        ```
+
+    Note:
+        Operations on secret keys require the `iroh` package which is included
+        in the `endpoints` extra.
+
+    Args:
+        key: Secret key as
+            [`SECRET_KEY_SIZE`][proxystore.endpoint.identity.SECRET_KEY_SIZE]
+            bytes.
+
+    Raises:
+        ValueError: If `key` is not the correct size.
     """
-    import iroh
 
-    return iroh.SecretKey.generate().to_bytes()
+    __slots__ = ('_endpoint_id', '_key')
+
+    def __init__(self, key: bytes) -> None:
+        if len(key) != SECRET_KEY_SIZE:
+            raise ValueError(
+                f'Endpoint secret key must be {SECRET_KEY_SIZE} bytes but got '
+                f'{len(key)} bytes.',
+            )
+        self._key = bytes(key)
+        self._endpoint_id: EndpointId | None = None
+
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}(endpoint_id={self.endpoint_id!r})'
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, SecretKey):
+            return NotImplemented
+        return hmac.compare_digest(self._key, other._key)
+
+    def __hash__(self) -> int:
+        return hash(self.endpoint_id)
+
+    @classmethod
+    def generate(cls) -> Self:
+        """Generate a new random secret key."""
+        import iroh
+
+        return cls(iroh.SecretKey.generate().to_bytes())
+
+    @property
+    def endpoint_id(self) -> EndpointId:
+        """ID of the endpoint with this secret key (i.e., the public key)."""
+        if self._endpoint_id is None:
+            import iroh
+
+            public = iroh.SecretKey.from_bytes(self._key).public()
+            self._endpoint_id = EndpointId(str(public))
+        return self._endpoint_id
+
+    def to_bytes(self) -> bytes:
+        """Get the raw bytes of the secret key."""
+        return self._key

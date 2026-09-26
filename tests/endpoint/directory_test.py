@@ -13,7 +13,7 @@ from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
-from proxystore.endpoint.identity import SECRET_KEY_SIZE
+from proxystore.endpoint.identity import SecretKey
 
 
 def test_endpoint_dir_paths() -> None:
@@ -50,7 +50,7 @@ def test_restrict_permissions(
 def test_restrict_permissions_secret_key(tmp_path: pathlib.Path) -> None:
     os.chmod(tmp_path, 0o700)
     endpoint_dir = EndpointDir(str(tmp_path))
-    endpoint_dir.write_secret_key(b'x' * SECRET_KEY_SIZE)
+    endpoint_dir.write_secret_key(SecretKey.generate())
     assert not endpoint_dir.restrict_permissions()
 
     os.chmod(endpoint_dir.secret_key_path, 0o644)
@@ -64,7 +64,7 @@ def test_secret_key_read_write(tmp_path: pathlib.Path) -> None:
     with pytest.raises(FileNotFoundError):
         endpoint_dir.read_secret_key()
 
-    secret_key = os.urandom(SECRET_KEY_SIZE)
+    secret_key = SecretKey.generate()
     endpoint_dir.write_secret_key(secret_key)
     assert endpoint_dir.read_secret_key() == secret_key
     mode = stat.S_IMODE(os.stat(endpoint_dir.secret_key_path).st_mode)

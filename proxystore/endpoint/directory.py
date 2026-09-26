@@ -11,9 +11,9 @@ from typing import Self
 
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import TOKEN_SIZE
-from proxystore.endpoint.auth import write_private_file
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.identity import SECRET_KEY_SIZE
+from proxystore.endpoint.files import write_private_file
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import PeersConfig
 from proxystore.endpoint.peers import read_peers
 from proxystore.utils.config import dump
@@ -150,14 +150,14 @@ class EndpointDir:
         """Path to the secret key of the endpoint."""
         return self._join('secret.key')
 
-    def write_secret_key(self, secret_key: bytes) -> None:
+    def write_secret_key(self, secret_key: SecretKey) -> None:
         """Atomically write the secret key of the endpoint.
 
         The file is only readable by the owner.
         """
-        write_private_file(self.secret_key_path, secret_key)
+        write_private_file(self.secret_key_path, secret_key.to_bytes())
 
-    def read_secret_key(self) -> bytes:
+    def read_secret_key(self) -> SecretKey:
         """Read the secret key of the endpoint.
 
         Raises:
@@ -165,12 +165,13 @@ class EndpointDir:
             ValueError: If the secret key file is malformed.
         """
         with open(self.secret_key_path, 'rb') as f:
-            secret_key = f.read()
-        if len(secret_key) != SECRET_KEY_SIZE:
+            data = f.read()
+        try:
+            return SecretKey(data)
+        except ValueError:
             raise ValueError(
                 f'Secret key file at {self.secret_key_path} is malformed.',
-            )
-        return secret_key
+            ) from None
 
     @property
     def peers_path(self) -> str:

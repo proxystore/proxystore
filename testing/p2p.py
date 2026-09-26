@@ -8,7 +8,7 @@ from typing import Any
 import iroh
 
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.peers import PeersConfig
 from proxystore.p2p.manager import PeerManager
@@ -33,7 +33,7 @@ def local_peer_manager(path: str, **kwargs: Any) -> PeerManager:
         **kwargs,
     }
     return PeerManager(
-        generate_secret_key(),
+        SecretKey.generate(),
         Allowlist(EndpointDir(path).peers_path),
         **options,
     )

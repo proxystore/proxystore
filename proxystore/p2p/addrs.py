@@ -15,7 +15,7 @@ from typing import Any
 
 import iroh
 
-from proxystore.endpoint.auth import write_private_file
+from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
 
 logger = logging.getLogger(__name__)

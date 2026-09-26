@@ -16,7 +16,7 @@ from proxystore.endpoint.auth import pem_certificate_fingerprint
 from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import verify_proof
-from proxystore.endpoint.auth import write_private_file
+from proxystore.endpoint.files import write_private_file
 
 
 def _mode(path: pathlib.Path) -> int:

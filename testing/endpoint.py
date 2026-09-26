@@ -18,8 +18,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
 
@@ -39,7 +38,7 @@ def write_endpoint(
     Returns:
         The configuration.
     """
-    secret_key = generate_secret_key()
+    secret_key = SecretKey.generate()
     options: dict[str, Any] = {
         'name': os.path.basename(endpoint_dir.path),
         'port': open_port(),
@@ -47,7 +46,7 @@ def write_endpoint(
         # to avoid network access outside of the host in tests.
         'p2p': EndpointP2PConfig(enabled=False),
         **kwargs,
-        'id': EndpointId.from_secret_key(secret_key),
+        'id': secret_key.endpoint_id,
     }
     config = EndpointConfig(**options)
     endpoint_dir.write_config(config)
