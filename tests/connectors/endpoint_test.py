@@ -252,6 +252,20 @@ def test_connection_pool_does_not_retry_new_connection() -> None:
     assert len(pool._idle) == 0
 
 
+def test_connection_pool_discards_interrupted_connection() -> None:
+    pool = _ConnectionPool(lambda: _FakeClient(fail=False))  # type: ignore[arg-type,return-value]
+    client = _FakeClient(fail=False)
+    pool.add(client)  # type: ignore[arg-type]
+
+    def _interrupted(acquired: Any) -> None:
+        acquired.close()
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        pool.run(_interrupted)
+    assert len(pool._idle) == 0
+
+
 async def test_connector_endpoint_restart(
     tmp_path: pathlib.Path,
     caplog,

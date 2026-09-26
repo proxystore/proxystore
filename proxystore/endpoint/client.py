@@ -341,6 +341,11 @@ class EndpointClient:
             raise EndpointConnectionError(
                 f'Lost connection to the endpoint: {e}',
             ) from e
+        except BaseException:
+            # An interrupted request (e.g., KeyboardInterrupt) leaves the
+            # connection in an unknown state so it cannot be reused.
+            self.close()
+            raise
 
         try:
             status = Status(header.code)

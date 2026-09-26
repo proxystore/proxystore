@@ -10,6 +10,7 @@ import warnings
 from collections.abc import Callable
 from collections.abc import Generator
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -334,3 +335,21 @@ def test_from_dir_malformed_token(tmp_path: pathlib.Path) -> None:
         f.write('not a token')
     with pytest.raises(EndpointAuthError, match='malformed'):
         EndpointClient.from_dir(endpoint_dir)
+
+
+@pytest.mark.parametrize('method', ('sendall', 'recv_into'))
+def test_request_interrupted_closes_connection(fake_server, method) -> None:
+    def _script(conn: socket.socket) -> None:
+        _complete_handshake(conn)
+        conn.recv(65536)
+
+    port = fake_server(_script)
+    client = EndpointClient.connect('127.0.0.1', port, TOKEN)
+    sock = mock.MagicMock(wraps=client._socket)
+    getattr(sock, method).side_effect = KeyboardInterrupt
+    client._socket = sock
+
+    with pytest.raises(KeyboardInterrupt):
+        client.exists('key')
+    assert client.closed
+    sock.close.assert_called_once()
