@@ -112,7 +112,7 @@ async def test_running_endpoint_not_started(tmp_path: pathlib.Path) -> None:
 
 @pytest.mark.timeout(10)
 def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
-    endpoint_dir, config = _endpoint_dir(tmp_path)
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
 
     context = multiprocessing.get_context('spawn')
     process = context.Process(
@@ -123,8 +123,7 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     process.start()
 
     try:
-        assert config.host is not None
-        wait_for_endpoint(config.host, config.port)
+        wait_for_endpoint(endpoint_dir)
         with EndpointClient.from_dir(endpoint_dir) as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'

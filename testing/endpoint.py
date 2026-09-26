@@ -7,15 +7,16 @@ import logging
 import multiprocessing
 import os
 import shutil
-import socket
 import time
 import uuid
 from collections.abc import Generator
 
 import pytest
 
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
 
@@ -46,16 +47,22 @@ def terminate_process(
         process.join()
 
 
-def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
-    """Wait for the endpoint at host:port to accept connections."""
+def wait_for_endpoint(
+    endpoint_dir: EndpointDir, max_time_s: float = 5
+) -> None:
+    """Wait for the endpoint in the directory to accept clients.
+
+    The endpoint writes its connection file after it starts listening, so
+    this waits until a client can connect using the connection file.
+    """
     waited_s = 0.0
     sleep_s = 0.01
 
     while True:
         try:
-            with socket.create_connection((host, port), timeout=1):
+            with EndpointClient.from_dir(endpoint_dir, timeout=1):
                 break
-        except OSError as e:
+        except EndpointError as e:
             if waited_s >= max_time_s:  # pragma: no cover
                 raise RuntimeError(
                     'Unable to connect to endpoint within the timeout '
@@ -121,8 +128,7 @@ def endpoint(
     try:
         server_handle.start()
 
-        assert config.host is not None
-        wait_for_endpoint(config.host, config.port)
+        wait_for_endpoint(endpoint_dir)
     except BaseException:  # pragma: no cover
         # Setup failed so terminate the child before re-raising, otherwise
         # the orphaned non-daemon spawn process blocks interpreter exit.

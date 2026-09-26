@@ -98,7 +98,7 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
             handle.start()
             handles.append(handle)
 
-            wait_for_endpoint(cfg.host, cfg.port)
+            wait_for_endpoint(endpoint_dir)
 
         if not ss.is_alive():  # pragma: no cover
             raise RuntimeError('Relay server died.')
