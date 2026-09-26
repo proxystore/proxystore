@@ -55,10 +55,6 @@ Leveraging third-party libraries may require dependencies not installed by defau
 ```bash
 pip install proxystore[all]
 ```
-This will also install the [`proxystore-ex`](https://extensions.proxystore.dev/)
-package which contains extensions and experimental features.
-The extensions package can also be installed with `pip` using
-`proxystore[extensions]` or `proxystore-ex`.
 
 See the [Installation](https://docs.proxystore.dev/latest/installation) guide
 for more information about the available extras installation options.
