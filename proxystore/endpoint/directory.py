@@ -209,6 +209,22 @@ class EndpointDir:
         with contextlib.suppress(FileNotFoundError):
             os.remove(self.connection_path)
 
+    def running_pid(self) -> int | None:
+        """Get the PID of the endpoint daemon if it is running.
+
+        Returns:
+            The PID in the PID file if that process is running as the \
+            current user on this host, otherwise `None` (e.g., the PID file \
+            is missing or malformed, the endpoint stopped unexpectedly, or \
+            the endpoint is running on a different host).
+        """
+        try:
+            with open(self.pid_path) as f:
+                pid = int(f.read().strip())
+        except (OSError, ValueError):
+            return None
+        return pid if is_own_process(pid) else None
+
     def restrict_permissions(self) -> bool:
         """Remove all group and other permissions from the directory.
 
@@ -228,3 +244,17 @@ class EndpointDir:
 
     def _join(self, name: str) -> str:
         return os.path.join(self.path, name)
+
+
+def is_own_process(pid: int) -> bool:
+    """Check if a process with the PID exists and is owned by this user."""
+    if pid <= 0:
+        return False
+    try:
+        os.kill(pid, 0)
+    except (ProcessLookupError, PermissionError):
+        # PermissionError means the PID belongs to another user. The endpoint
+        # always runs as the current user, so the endpoint exited and its PID
+        # was reused by the OS.
+        return False
+    return True

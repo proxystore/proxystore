@@ -219,8 +219,7 @@ class EndpointClient:
             info = endpoint_dir.read_connection()
         except FileNotFoundError as e:
             raise EndpointNotRunningError(
-                f'Unable to find the connection file of the endpoint in '
-                f'{endpoint_dir}. Is the endpoint running?',
+                _missing_connection_file_message(endpoint_dir),
             ) from e
         except (OSError, ValueError) as e:
             raise EndpointAuthError(
@@ -424,6 +423,24 @@ class EndpointClient:
             self.close()
             raise ObjectSizeExceededError(description)
         raise EndpointRequestError(description)
+
+
+def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
+    message = (
+        'Unable to find the connection file of the endpoint in '
+        f'{endpoint_dir}.'
+    )
+    pid = endpoint_dir.running_pid()
+    if pid is None:
+        return f'{message} Is the endpoint running?'
+    # Endpoints started with older versions of ProxyStore (which used an
+    # HTTP API) never write a connection file.
+    return (
+        f'{message} The endpoint process (PID {pid}) is running, so the '
+        'endpoint is either still starting or was started with an older '
+        'version of ProxyStore. Restart the endpoint with the same version '
+        f'of ProxyStore as the client. See {VERSION_DOCS_URL} for details.'
+    )
 
 
 def _parse_endpoint(endpoint: uuid.UUID | str | None) -> uuid.UUID | None:

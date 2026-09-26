@@ -4,8 +4,6 @@ import logging
 import multiprocessing
 import os
 import pathlib
-import subprocess
-import sys
 import time
 import uuid
 from collections.abc import Generator
@@ -13,7 +11,6 @@ from unittest import mock
 
 import pytest
 
-from proxystore.endpoint.commands import _is_own_process
 from proxystore.endpoint.commands import _wait_for_exit
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import EndpointStatus
@@ -77,7 +74,7 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
             f.write('0')
 
         with mock.patch(
-            'proxystore.endpoint.commands._is_own_process'
+            'proxystore.endpoint.commands.is_own_process'
         ) as mock_exists:
             # Return RUNNING if PID exists
             mock_exists.return_value = True
@@ -94,25 +91,10 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
 
 
-def test_is_own_process() -> None:
-    assert _is_own_process(os.getpid())
-    assert not _is_own_process(0)
-    assert not _is_own_process(-1)
-
-    # Use a plain subprocess because, under coverage, a multiprocessing child
-    # that runs no measured code warns that no data was collected.
-    p = subprocess.Popen([sys.executable, '-c', ''])
-    p.wait()
-    assert not _is_own_process(p.pid)
-
-    with mock.patch('os.kill', side_effect=PermissionError):
-        assert not _is_own_process(os.getpid())
-
-
 def test_wait_for_exit() -> None:
     with (
         mock.patch(
-            'proxystore.endpoint.commands._is_own_process',
+            'proxystore.endpoint.commands.is_own_process',
             side_effect=[True, False],
         ),
         mock.patch('time.sleep') as mock_sleep,
@@ -121,7 +103,7 @@ def test_wait_for_exit() -> None:
     mock_sleep.assert_called_once()
 
     with mock.patch(
-        'proxystore.endpoint.commands._is_own_process',
+        'proxystore.endpoint.commands.is_own_process',
         return_value=True,
     ):
         assert not _wait_for_exit(os.getpid(), timeout=0)
@@ -457,7 +439,7 @@ def test_start_endpoint_hanging_different_host(
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands._is_own_process', return_value=False
+        'proxystore.endpoint.commands.is_own_process', return_value=False
     ):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
@@ -485,7 +467,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
 
     with (
         mock.patch(
-            'proxystore.endpoint.commands._is_own_process', return_value=False
+            'proxystore.endpoint.commands.is_own_process', return_value=False
         ),
         mock.patch(
             'proxystore.endpoint.commands.serve',
@@ -610,7 +592,7 @@ def test_stop_endpoint_hanging_different_host(
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands._is_own_process', return_value=False
+        'proxystore.endpoint.commands.is_own_process', return_value=False
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
@@ -638,7 +620,7 @@ def test_stop_endpoint_dangling_pid_file(
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands._is_own_process', return_value=False
+        'proxystore.endpoint.commands.is_own_process', return_value=False
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0

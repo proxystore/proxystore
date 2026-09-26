@@ -78,6 +78,9 @@ with EndpointClient.from_name('myendpoint') as client:
 * **Unable to find the connection file of the endpoint**: The endpoint is
   not running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
+  If the error says the endpoint process is running, the endpoint was likely
+  started with an older version of ProxyStore. Restart it with
+  `proxystore-endpoint stop NAME` and `proxystore-endpoint start NAME`.
 * **The endpoint failed to prove that it knows the endpoint token**: The
   endpoint was restarted while the client was connecting, or a different
   process is listening on the endpoint's address (e.g., after the endpoint

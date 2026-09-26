@@ -29,6 +29,7 @@ from proxystore.endpoint.config import EndpointRelayAuthConfig
 from proxystore.endpoint.config import EndpointRelayConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -92,7 +93,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     with open(pid_file) as f:
         pid = int(f.read().strip())
 
-    if _is_own_process(pid):
+    if is_own_process(pid):
         return EndpointStatus.RUNNING
     else:
         return EndpointStatus.HANGING
@@ -456,20 +457,6 @@ def _attached_pid_manager(pid_file: str) -> Generator[None, None, None]:
         os.remove(pid_file)
 
 
-def _is_own_process(pid: int) -> bool:
-    """Check if a process with the PID exists and is owned by this user."""
-    if pid <= 0:
-        return False
-    try:
-        os.kill(pid, 0)
-    except (ProcessLookupError, PermissionError):
-        # PermissionError means the PID belongs to another user. The endpoint
-        # always runs as the current user, so the endpoint exited and its PID
-        # was reused by the OS.
-        return False
-    return True
-
-
 def _wait_for_exit(pid: int, timeout: float) -> bool:
     """Wait for a process to exit.
 
@@ -482,7 +469,7 @@ def _wait_for_exit(pid: int, timeout: float) -> bool:
         # happens in tests; otherwise the zombie would appear alive.
         with contextlib.suppress(ChildProcessError):
             os.waitpid(pid, os.WNOHANG)
-        if not _is_own_process(pid):
+        if not is_own_process(pid):
             return True
         if time.monotonic() >= deadline:
             return False

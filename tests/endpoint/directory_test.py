@@ -3,12 +3,16 @@ from __future__ import annotations
 import os
 import pathlib
 import stat
+import subprocess
+import sys
+from unittest import mock
 
 import pytest
 
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import is_own_process
 
 
 def test_endpoint_dir_paths() -> None:
@@ -102,3 +106,37 @@ def test_read_connection_malformed(
         f.write(contents)
     with pytest.raises(ValueError, match='malformed'):
         endpoint_dir.read_connection()
+
+
+def test_is_own_process() -> None:
+    assert is_own_process(os.getpid())
+    assert not is_own_process(0)
+    assert not is_own_process(-1)
+
+    # Use a plain subprocess because, under coverage, a multiprocessing child
+    # that runs no measured code warns that no data was collected.
+    p = subprocess.Popen([sys.executable, '-c', ''])
+    p.wait()
+    assert not is_own_process(p.pid)
+
+    with mock.patch('os.kill', side_effect=PermissionError):
+        assert not is_own_process(os.getpid())
+
+
+def test_running_pid(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    assert endpoint_dir.running_pid() is None
+
+    with open(endpoint_dir.pid_path, 'w') as f:
+        f.write('not-a-pid')
+    assert endpoint_dir.running_pid() is None
+
+    with open(endpoint_dir.pid_path, 'w') as f:
+        f.write(f'{os.getpid()}\n')
+    assert endpoint_dir.running_pid() == os.getpid()
+
+    with mock.patch(
+        'proxystore.endpoint.directory.is_own_process',
+        return_value=False,
+    ):
+        assert endpoint_dir.running_pid() is None
