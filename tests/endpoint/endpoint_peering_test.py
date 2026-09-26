@@ -173,11 +173,9 @@ async def test_unsupported_peer_message(
     assert not (await endpoint1.exists(key, endpoint=endpoint2.uuid))
 
     assert any(
-        [
-            'unable to decode message from peer' in record.message
-            and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'unable to decode message from peer' in record.message
+        and record.levelname == 'ERROR'
+        for record in caplog.records
     )
 
 
@@ -210,8 +208,6 @@ async def test_unexpected_response(
     assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
 
     assert any(
-        [
-            'does not match' in record.message and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'does not match' in record.message and record.levelname == 'ERROR'
+        for record in caplog.records
     )

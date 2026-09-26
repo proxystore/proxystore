@@ -145,9 +145,7 @@ def test_remove_command(home_dir, caplog) -> None:
     result = runner.invoke(cli, ['remove', 'myendpoint'])
     assert result.exit_code == 1
     assert len(caplog.records) == 1
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 def test_start_command(home_dir, caplog) -> None:
@@ -157,9 +155,7 @@ def test_start_command(home_dir, caplog) -> None:
     result = runner.invoke(cli, ['start', 'myendpoint'])
     assert result.exit_code == 1
     assert len(caplog.records) == 2
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 def test_stop_command(home_dir, caplog) -> None:
@@ -169,9 +165,7 @@ def test_stop_command(home_dir, caplog) -> None:
     result = runner.invoke(cli, ['stop', 'myendpoint'])
     assert result.exit_code == 1
     assert len(caplog.records) == 2
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 def test_test_command_missing_endpoint(home_dir, caplog) -> None:

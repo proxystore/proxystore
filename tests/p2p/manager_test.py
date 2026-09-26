@@ -202,11 +202,8 @@ async def test_serialization_error(relay_server, caplog) -> None:
             await asyncio.sleep(0.01)
 
     assert any(
-        [
-            'error deserializing' in record.message
-            and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'error deserializing' in record.message and record.levelname == 'ERROR'
+        for record in caplog.records
     )
 
 
@@ -223,10 +220,8 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
             await asyncio.sleep(0.01)
 
     assert any(
-        [
-            'got unexpected' in record.message and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'got unexpected' in record.message and record.levelname == 'ERROR'
+        for record in caplog.records
     )
 
 
@@ -243,10 +238,8 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
             await asyncio.sleep(0.01)
 
     assert any(
-        [
-            'unknown message' in record.message and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'unknown message' in record.message and record.levelname == 'ERROR'
+        for record in caplog.records
     )
 
 

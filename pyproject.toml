@@ -230,11 +230,6 @@ ignore = [
     "D105",
     # Do not require docstrings for __init__ methods
     "D107",
-    # Ruff will change all([generator]) to all(generator) because the all/any
-    # generator expressions directly and the list comprehension is not needed.
-    # However, coverage marks unfinished generators as not covered and
-    # all/any can early exit before exhausting the generator.
-    "C419",
     # Allow pytest.raises() without match
     "PT011",
     # Allow try-except-pass instead of contextlib.suppress

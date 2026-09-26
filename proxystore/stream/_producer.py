@@ -260,7 +260,7 @@ class StreamProducer(Generic[T]):
 
         if self._aggregator is not None and len(objects) > 0:
             obj = self._aggregator([item.obj for item in objects])
-            evict = any([item.evict for item in objects])
+            evict = any(item.evict for item in objects)
             metadata: dict[str, Any] = {}
             for item in objects:
                 metadata.update(item.metadata)

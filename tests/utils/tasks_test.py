@@ -54,5 +54,5 @@ def test_background_task_error_is_logged(caplog) -> None:
         with pytest.raises(SystemExit):
             asyncio.run(run(bad_task))
 
-    assert any(['Traceback' in record.message for record in caplog.records])
-    assert any(['Oh no!' in record.message for record in caplog.records])
+    assert any('Traceback' in record.message for record in caplog.records)
+    assert any('Oh no!' in record.message for record in caplog.records)

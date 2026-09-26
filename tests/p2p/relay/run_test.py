@@ -51,17 +51,12 @@ async def test_periodic_client_logger(caplog) -> None:
         pass
 
     assert any(
-        [
-            'Connected clients: 1' in record.message
-            and record.levelname == 'INFO'
-            for record in caplog.records
-        ],
+        'Connected clients: 1' in record.message and record.levelname == 'INFO'
+        for record in caplog.records
     )
     assert any(
-        [
-            str(client.uuid) in record.message and record.levelname == 'INFO'
-            for record in caplog.records
-        ],
+        str(client.uuid) in record.message and record.levelname == 'INFO'
+        for record in caplog.records
     )
 
 
