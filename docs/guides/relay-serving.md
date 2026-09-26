@@ -73,8 +73,8 @@ configurations are optional with defaults defined in
 ```toml title="relay.toml"
 [logging]
 log_dir = "/path/to/log/dir"
-default_log_level = "INFO"
-websockets_log_level = "WARNING"
+default_level = "INFO"
+websockets_level = "WARNING"
 current_client_interval = 60
 current_client_limit = 32
 ```

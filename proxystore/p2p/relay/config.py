@@ -40,8 +40,8 @@ class RelayLoggingConfig(BaseModel):
         websockets_level: Log level for the `websockets` logger. Websockets
             logs with much higher frequency so it is suggested to set this
             to `WARNING` or higher.
-        current_clients_interval: Optional seconds between logging the
-            number of currently connected clients and user.
+        current_client_interval: Optional seconds between logging the
+            number of currently connected clients and users.
         current_client_limit: Max threshold for enumerating the
             detailed list of connected clients. If `None`, no detailed
             list will be logged.
@@ -60,7 +60,7 @@ class RelayServingConfig(BaseModel):
     Attributes:
         host: Network interface the server binds to.
         port: Network port the server binds to.
-        certfile: Certificate file (PEM format) use to enable TLS.
+        certfile: Certificate file (PEM format) used to enable TLS.
         keyfile: Private key file. If not specified, the key will be
             taken from the certfile.
         auth: Authentication configuration.
@@ -79,7 +79,7 @@ class RelayServingConfig(BaseModel):
 
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:
-        """Parse an TOML config file.
+        """Parse a TOML config file.
 
         Example:
             Minimal config without SSL and without authentication.
@@ -88,14 +88,14 @@ class RelayServingConfig(BaseModel):
 
             [logging]
             log_dir = "/path/to/log/dir"
-            default_log_level = "INFO"
-            websockets_log_level = "WARNING"
-            connected_client_logging_interval = 60
-            connected_client_logging_limit = 32
+            default_level = "INFO"
+            websockets_level = "WARNING"
+            current_client_interval = 60
+            current_client_limit = 32
             ```
 
             ```python
-            from proxystore.p2p.relay.globus.config
+            from proxystore.p2p.relay.config import RelayServingConfig
 
             config = RelayServingConfig.from_toml('relay.toml')
             ```
@@ -117,27 +117,28 @@ class RelayServingConfig(BaseModel):
 
             [logging]
             log_dir = "/path/to/log/dir"
-            default_log_level = "INFO"
-            websockets_log_level = "WARNING"
-            connected_client_logging_interval = 60
-            connected_client_logging_limit = 32
+            default_level = "INFO"
+            websockets_level = "WARNING"
+            current_client_interval = 60
+            current_client_limit = 32
             ```
 
         Note:
-            Omitted values will be set to their defaults (if they are an
-            optional value with a default).
+            Omitted values will be set to their defaults.
             ```toml title="relay.toml"
-            [serving]
             certfile = "/path/to/cert.pem"
             ```
 
             ```python
             from proxystore.p2p.relay.config import RelayServingConfig
 
-            config = RelayServingConfig.from_config('relay.toml')
+            config = RelayServingConfig.from_toml('relay.toml')
             assert config.certfile == '/path/to/cert.pem'
             assert config.keyfile is None
             ```
+
+        Args:
+            filepath: Path to the TOML file to parse.
         """
         with open(filepath, 'rb') as f:
             return load(cls, f)
