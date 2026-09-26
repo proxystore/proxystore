@@ -21,7 +21,6 @@ ProxyStore provides many features with extra dependencies that can be installed 
 | :------ | :------ |
 | `#!bash pip install proxystore[all]` | Install all extras except `dev` and `docs` |
 | `#!bash pip install proxystore[endpoints]` | Use [ProxyStore Endpoints](guides/endpoints.md) |
-| `#!bash pip install proxystore[extensions]` | Install the [`proxystore-ex`](https://github.com/proxystore/extensions){target=_blank} package |
 | `#!bash pip install proxystore[kafka]` | Use [Kafka stream shims][proxystore.stream.shims.kafka] |
 | `#!bash pip install proxystore[redis]` | Use [Redis stream shims][proxystore.stream.shims.redis] or the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
 | `#!bash pip install proxystore[zmq]` | Use [ZeroMQ stream shims][proxystore.stream.shims.zmq] |
@@ -39,24 +38,3 @@ Or everything can be installed at once (this does not install the development pa
 ```bash
 pip install proxystore[all]
 ```
-
-## ProxyStore Extensions
-
-Additional features are available in the
-[`proxystore-ex`](https://pypi.org/project/proxystore-ex/){target=_blank}
-package ([repository](https://github.com/proxystore/extensions){target=_blank}
-and [docs](https://extensions.proxystore.dev){target=_blank}).
-Features in the extensions package tend to be more experimental or have heavier
-not pip-installable dependencies.
-
-The extensions package can be installed alongside ProxyStore.
-```bash
-pip install proxystore[extensions]
-```
-Or standalone.
-```bash
-pip install proxystore-ex
-```
-
-Rather than importing from `proxystore_ex` directly, ProxyStore re-exports
-all packages and modules via the [`proxystore.ex`][proxystore.ex] submodule.
