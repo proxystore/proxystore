@@ -784,19 +784,19 @@ def get_interface_address(interface: str) -> str:
         NotImplementedError: If not on Linux.
         OSError: If the interface does not exist or has no IPv4 address.
     """
-    if not sys.platform.startswith('linux'):  # pragma: no cover
-        raise NotImplementedError(
-            'Getting the address of an interface is only supported on Linux. '
-            'Specify the address instead.',
-        )
+    if sys.platform.startswith('linux'):  # pragma: linux cover
+        import fcntl
 
-    import fcntl
+        siocgifaddr = 0x8915
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            request = struct.pack('256s', interface[:15].encode())
+            result = fcntl.ioctl(s.fileno(), siocgifaddr, request)
+        return socket.inet_ntoa(result[20:24])
 
-    siocgifaddr = 0x8915
-    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        request = struct.pack('256s', interface[:15].encode())
-        result = fcntl.ioctl(s.fileno(), siocgifaddr, request)
-    return socket.inet_ntoa(result[20:24])
+    raise NotImplementedError(
+        'Getting the address of an interface is only supported on Linux. '
+        'Specify the address instead.',
+    )
 
 
 def _main(argv: Sequence[str] | None = None) -> int:  # pragma: no cover

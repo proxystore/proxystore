@@ -370,7 +370,21 @@ def test_resolve_non_loopback_address_from_hostname() -> None:
     connector.close()
 
 
-@pytest.mark.skipif(
+def test_resolve_address_from_interface_unsupported_platform() -> None:
+    with (
+        mock.patch('sys.platform', 'darwin'),
+        pytest.raises(NotImplementedError, match='only supported on Linux'),
+    ):
+        get_interface_address('lo')
+
+    with (
+        mock.patch('sys.platform', 'darwin'),
+        pytest.raises(NotImplementedError, match='only supported on Linux'),
+    ):
+        ZeroMQConnector(open_port(), interface='lo')
+
+
+@pytest.mark.skipif(  # pragma: linux cover
     not sys.platform.startswith('linux'),
     reason='Getting the address of an interface is only supported on Linux.',
 )
