@@ -31,6 +31,7 @@ from typing import NamedTuple
 from typing import Self
 
 from proxystore.endpoint.config import EndpointFiles
+from proxystore.serialize import BytesLike
 
 TOKEN_SIZE = 32
 """Size in bytes of an endpoint token."""
@@ -124,7 +125,7 @@ def create_server_ssl_context(endpoint_dir: str) -> ssl.SSLContext:
     return context
 
 
-def write_private_file(path: str, data: bytes) -> None:
+def write_private_file(path: str, data: BytesLike) -> None:
     """Write data to a file that only the owner can read and write.
 
     The file is created with mode `0600`. If the file already exists, it is
@@ -150,7 +151,7 @@ def restrict_directory(path: str) -> bool:
     return True
 
 
-def _write_file(path: str, data: bytes, mode: int) -> None:
+def _write_file(path: str, data: BytesLike, mode: int) -> None:
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
     try:
         # The mode passed to open() only applies when the file is created
@@ -278,7 +279,7 @@ def generate_tls_certificate(
     )
 
 
-def certificate_fingerprint(der: bytes) -> str:
+def certificate_fingerprint(der: BytesLike) -> str:
     """Compute the SHA-256 fingerprint of a DER-encoded certificate."""
     return hashlib.sha256(der).hexdigest()
 
