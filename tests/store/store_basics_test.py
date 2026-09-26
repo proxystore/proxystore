@@ -18,7 +18,7 @@ from proxystore.store.lifetimes import ContextLifetime
 
 
 def test_negative_cache_size() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Cache size cannot be negative'):
         Store('test', LocalConnector(), cache_size=-1)
 
 

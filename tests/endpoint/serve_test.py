@@ -82,7 +82,7 @@ async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
         running = endpoint_dir.read_connection()
         # A second instance fails to start without replacing or removing
         # the connection file of the running instance
-        with pytest.raises(OSError):
+        with pytest.raises(OSError, match='address already in use'):
             async with running_endpoint(endpoint_dir):
                 pass  # pragma: no cover
         assert endpoint_dir.read_connection() == running

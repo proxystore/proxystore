@@ -86,11 +86,11 @@ def test_globus_endpoint_objects() -> None:
     assert EP1 == EP5
 
     # Check must pass at least one endpoint
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='at least one GlobusEndpoint'):
         GlobusEndpoints([])
 
     # Check not able to pass multiple endpoints same UUID
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='same Globus endpoint UUID'):
         GlobusEndpoints([EP1, EP5])
 
     eps = GlobusEndpoints([EP1, EP2, EP3, EP4])
@@ -105,9 +105,9 @@ def test_globus_endpoint_objects() -> None:
 
     assert eps.get_by_host('localhost') == EP1
     assert eps.get_by_host('host4') == EP4
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='matching host host2_'):
         eps.get_by_host('host2_')
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='matching host host3'):
         eps.get_by_host('host3')
 
 
@@ -169,7 +169,7 @@ def test_globus_connector_init(globus_connector) -> None:
     s3 = GlobusConnector(endpoints=eps.dict())
     assert s1.config() == s2.config() == s3.config()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='endpoints must be of type'):
         # Invalid endpoint type
         GlobusConnector(endpoints=None)  # type: ignore[arg-type]
 

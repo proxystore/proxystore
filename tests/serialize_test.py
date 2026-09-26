@@ -70,7 +70,7 @@ def test_serialize_lambda() -> None:
 
 
 def test_deserialize_bad_input_type():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Expected data to be a bytes-like'):
         deserialize('non-bytes-input')  # type: ignore[arg-type]
 
 

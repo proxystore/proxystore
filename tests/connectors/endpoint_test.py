@@ -28,7 +28,7 @@ from testing.utils import open_port
 
 
 def test_no_endpoints_provided() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='At least one endpoint'):
         EndpointConnector(endpoints=[])
 
 
