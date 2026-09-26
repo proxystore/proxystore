@@ -18,6 +18,10 @@ A connection starts with a handshake:
 4. The endpoint verifies the client's proof and replies with its
    information (UUID, name, and versions).
 
+The preamble format must never change so that clients and endpoints using
+different protocol versions can detect the mismatch. If the protocol versions
+differ, the endpoint replies with only its preamble and closes the connection.
+
 After the handshake, each request and response is a message consisting of a
 fixed-size header, JSON-encoded metadata (e.g., the key), and a raw data
 payload.
@@ -89,8 +93,6 @@ class Status(enum.IntEnum):
     """Request was malformed."""
     TOO_LARGE = 5
     """Request data exceeds the maximum object size of the endpoint."""
-    PROTOCOL_MISMATCH = 6
-    """Client and endpoint use incompatible protocol versions."""
 
 
 class Header(NamedTuple):

@@ -122,22 +122,13 @@ def test_connect_and_close(fake_server) -> None:
 
 
 def test_handshake_protocol_mismatch(fake_server) -> None:
-    port = fake_server(
-        lambda conn: _server_hello(
-            conn,
-            version=PROTOCOL_VERSION + 1,
-            status=Status.PROTOCOL_MISMATCH,
-            meta={'error': 'custom mismatch message'},
-        ),
-    )
-    with pytest.raises(EndpointProtocolError, match='custom mismatch'):
-        EndpointClient.connect('127.0.0.1', port, TOKEN)
+    def _script(conn: socket.socket) -> None:
+        _recv_exactly(conn, PREAMBLE.size)
+        # Nothing after the preamble of a different protocol version is
+        # parsed, so it may be in any format.
+        conn.sendall(pack_preamble(PROTOCOL_VERSION + 1) + b'\xff' * 64)
 
-
-def test_handshake_protocol_mismatch_no_message(fake_server) -> None:
-    port = fake_server(
-        lambda conn: _server_hello(conn, version=PROTOCOL_VERSION + 1),
-    )
+    port = fake_server(_script)
     with pytest.raises(EndpointProtocolError, match='protocol version'):
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 

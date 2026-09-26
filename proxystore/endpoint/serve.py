@@ -367,17 +367,7 @@ class EndpointServer:
                 f'Rejecting HTTP request from {peer}. The client is likely '
                 'using an older version of ProxyStore that uses the HTTP API.',
             )
-            conn.write(_http_upgrade_response())
-            await conn.drain()
-            # Closing the connection while the unread request is still in
-            # the receive buffer causes the OS to reset the connection so
-            # the client may never read the response. Instead, only close
-            # our side and give the client time to read the response and
-            # close the connection.
-            if conn.can_write_eof():  # pragma: no branch
-                conn.write_eof()
-                with contextlib.suppress(TimeoutError):
-                    await asyncio.wait_for(conn.wait_closed(), timeout=1)
+            await _reply_and_close(conn, _http_upgrade_response())
             return False
 
         version = unpack_preamble(preamble)
@@ -386,13 +376,9 @@ class EndpointServer:
                 f'Rejecting connection from {peer} with protocol version '
                 f'{version} (expected {PROTOCOL_VERSION})',
             )
-            error = (
-                f'Endpoint uses protocol version {PROTOCOL_VERSION} but the '
-                f'client uses protocol version {version}. Use the same '
-                'ProxyStore version for the client and endpoint.'
-            )
-            conn.write(pack_preamble())
-            await _send(conn, Status.PROTOCOL_MISMATCH, {'error': error})
+            # Only the preamble format is the same across protocol versions
+            # so the client detects the mismatch from our preamble.
+            await _reply_and_close(conn, pack_preamble())
             return False
 
         header, meta = await _read_message(conn)
@@ -587,6 +573,19 @@ async def _send(
     if data is not None:
         conn.write(data)
     await conn.drain()
+
+
+async def _reply_and_close(conn: ClientConnection, data: bytes) -> None:
+    conn.write(data)
+    await conn.drain()
+    # Closing the connection while an unread request is still in the
+    # receive buffer causes the OS to reset the connection so the client
+    # may never read the reply. Instead, only close our side and give the
+    # client time to read the reply and close the connection.
+    if conn.can_write_eof():  # pragma: no branch
+        conn.write_eof()
+        with contextlib.suppress(TimeoutError):
+            await asyncio.wait_for(conn.wait_closed(), timeout=1)
 
 
 def _http_upgrade_response() -> bytes:

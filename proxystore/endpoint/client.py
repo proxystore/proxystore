@@ -367,15 +367,16 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             f'the client. See {VERSION_DOCS_URL} for details.',
         )
     version = unpack_preamble(preamble)
-    header, meta = _recv_message(sock)
-    if version != PROTOCOL_VERSION or header.code == Status.PROTOCOL_MISMATCH:
+    if version != PROTOCOL_VERSION:
+        # Only the preamble format is the same across protocol versions so
+        # nothing after it can be parsed.
         raise EndpointProtocolError(
-            meta.get(
-                'error',
-                f'Endpoint uses protocol version {version} but the client '
-                f'uses protocol version {PROTOCOL_VERSION}.',
-            ),
+            f'Endpoint uses protocol version {version} but the client uses '
+            f'protocol version {PROTOCOL_VERSION}. Use the same version of '
+            f'ProxyStore for the client and endpoint. See {VERSION_DOCS_URL} '
+            'for details.',
         )
+    header, meta = _recv_message(sock)
     _check_status(header, meta, 'handshake')
 
     try:

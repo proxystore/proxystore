@@ -193,12 +193,11 @@ async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
 async def test_protocol_version_mismatch(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
-            sock.sendall(pack_preamble(PROTOCOL_VERSION + 1))
+            # The HELLO of a different protocol version is never read
+            hello = pack_message(Op.HELLO, {'future': 'format'})
+            sock.sendall(pack_preamble(PROTOCOL_VERSION + 1) + hello)
             preamble = _recv_exactly(sock, PREAMBLE.size)
             assert unpack_preamble(bytes(preamble)) == PROTOCOL_VERSION
-            header, meta = _recv_message(sock)
-            assert header.code == Status.PROTOCOL_MISMATCH
-            assert 'protocol version' in meta['error']
             assert _is_closed(sock)
 
     await asyncio.to_thread(_run)
