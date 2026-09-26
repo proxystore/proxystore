@@ -19,10 +19,8 @@ from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import EndpointStorageConfig
-from proxystore.endpoint.config import get_tls_cert_filepath
-from proxystore.endpoint.config import get_tls_key_filepath
-from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.serve import _get_auth_headers
@@ -48,7 +46,7 @@ def _endpoint_config(**kwargs: Any) -> EndpointConfig:
 
 async def test_serve_async_token_file(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config()
-    token_file = get_token_filepath(str(tmp_path))
+    token_file = EndpointFiles(str(tmp_path)).token
     stop = asyncio.Event()
     task = asyncio.create_task(_serve_async(config, str(tmp_path), stop))
 
@@ -96,7 +94,7 @@ async def test_serve_async_port_in_use(tmp_path: pathlib.Path) -> None:
         config = _endpoint_config(port=sock.getsockname()[1])
         with pytest.raises(OSError):
             await _serve_async(config, str(tmp_path))
-    assert not os.path.exists(get_token_filepath(str(tmp_path)))
+    assert not os.path.exists(EndpointFiles(str(tmp_path)).token)
 
 
 async def test_serve_async_start_up_failure_cleans_up(
@@ -134,7 +132,7 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
         process.terminate()
         process.join(timeout=5)
         assert process.exitcode == 0
-        assert not os.path.exists(get_token_filepath(endpoint_dir))
+        assert not os.path.exists(EndpointFiles(endpoint_dir).token)
     finally:
         terminate_process(process)
 
@@ -260,8 +258,8 @@ async def test_serve_cancels_nat_check(
 async def test_serve_async_tls(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config(tls=True)
     endpoint_dir = str(tmp_path)
-    cert_file = get_tls_cert_filepath(endpoint_dir)
-    key_file = get_tls_key_filepath(endpoint_dir)
+    cert_file = EndpointFiles(endpoint_dir).tls_cert
+    key_file = EndpointFiles(endpoint_dir).tls_key
     stop = asyncio.Event()
     task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
 

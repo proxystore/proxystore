@@ -28,9 +28,7 @@ import stat
 from typing import Literal
 from typing import NamedTuple
 
-from proxystore.endpoint.config import get_tls_cert_filepath
-from proxystore.endpoint.config import get_tls_key_filepath
-from proxystore.endpoint.config import get_token_filepath
+from proxystore.endpoint.config import EndpointFiles
 
 TOKEN_SIZE = 32
 """Size in bytes of an endpoint token."""
@@ -66,13 +64,13 @@ def create_credentials(
         tls: Generate a TLS certificate.
         common_name: Common name of the TLS certificate subject.
     """
-    token = generate_token_file(get_token_filepath(endpoint_dir))
+    token = generate_token_file(EndpointFiles(endpoint_dir).token)
     fingerprint = None
     if tls:
-        cert_path = get_tls_cert_filepath(endpoint_dir)
+        cert_path = EndpointFiles(endpoint_dir).tls_cert
         generate_tls_certificate(
             cert_path,
-            get_tls_key_filepath(endpoint_dir),
+            EndpointFiles(endpoint_dir).tls_key,
             common_name,
         )
         fingerprint = read_certificate_fingerprint(cert_path)
@@ -91,9 +89,9 @@ def load_credentials(endpoint_dir: str, *, tls: bool) -> Credentials:
             (e.g., because the endpoint is not running).
         ValueError: If the token file is malformed.
     """
-    token = read_token_file(get_token_filepath(endpoint_dir))
+    token = read_token_file(EndpointFiles(endpoint_dir).token)
     fingerprint = (
-        read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
+        read_certificate_fingerprint(EndpointFiles(endpoint_dir).tls_cert)
         if tls
         else None
     )
@@ -103,9 +101,9 @@ def load_credentials(endpoint_dir: str, *, tls: bool) -> Credentials:
 def remove_credentials(endpoint_dir: str) -> None:
     """Remove the credential files from an endpoint directory, if present."""
     for path in (
-        get_token_filepath(endpoint_dir),
-        get_tls_cert_filepath(endpoint_dir),
-        get_tls_key_filepath(endpoint_dir),
+        EndpointFiles(endpoint_dir).token,
+        EndpointFiles(endpoint_dir).tls_cert,
+        EndpointFiles(endpoint_dir).tls_key,
     ):
         try:
             os.remove(path)
@@ -121,8 +119,8 @@ def create_server_ssl_context(endpoint_dir: str) -> ssl.SSLContext:
     """
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain(
-        get_tls_cert_filepath(endpoint_dir),
-        get_tls_key_filepath(endpoint_dir),
+        EndpointFiles(endpoint_dir).tls_cert,
+        EndpointFiles(endpoint_dir).tls_key,
     )
     return context
 

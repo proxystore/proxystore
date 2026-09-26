@@ -17,7 +17,7 @@ from proxystore.connectors.endpoint import EndpointConnectorError
 from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import get_token_filepath
+from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -73,7 +73,7 @@ def test_endpoint_missing_token(
     caplog,
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    os.remove(get_token_filepath(copied_dir))
+    os.remove(EndpointFiles(copied_dir).token)
 
     caplog.set_level(logging.DEBUG)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
@@ -88,7 +88,7 @@ def test_endpoint_wrong_token(
     caplog,
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    generate_token_file(get_token_filepath(copied_dir))
+    generate_token_file(EndpointFiles(copied_dir).token)
 
     caplog.set_level(logging.WARNING)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):

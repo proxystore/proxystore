@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import os
 import re
 import uuid
@@ -22,13 +23,60 @@ from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.utils.config import dump
 from proxystore.utils.config import load
 
-ENDPOINT_CONFIG_FILE = 'config.toml'
-ENDPOINT_DATABASE_FILE = 'blobs.db'
-ENDPOINT_LOG_FILE = 'log.txt'
-ENDPOINT_PID_FILE = 'daemon.pid'
-ENDPOINT_TOKEN_FILE = 'client.token'
-ENDPOINT_TLS_CERT_FILE = 'tls.crt'
-ENDPOINT_TLS_KEY_FILE = 'tls.key'
+
+@dataclasses.dataclass(frozen=True)
+class EndpointFiles:
+    """Paths to the files in an endpoint directory.
+
+    Example:
+        ```python
+        files = EndpointFiles('/path/to/endpoint')
+        assert files.config == '/path/to/endpoint/config.toml'
+        ```
+
+    Attributes:
+        directory: Directory of the endpoint.
+    """
+
+    directory: str
+
+    @property
+    def config(self) -> str:
+        """Path to the endpoint configuration."""
+        return self._path('config.toml')
+
+    @property
+    def database(self) -> str:
+        """Path to the default SQLite database for persisting objects."""
+        return self._path('blobs.db')
+
+    @property
+    def log(self) -> str:
+        """Path to the log of the endpoint daemon."""
+        return self._path('log.txt')
+
+    @property
+    def pid(self) -> str:
+        """Path to the PID file of the endpoint daemon."""
+        return self._path('daemon.pid')
+
+    @property
+    def token(self) -> str:
+        """Path to the token clients use to authenticate."""
+        return self._path('client.token')
+
+    @property
+    def tls_cert(self) -> str:
+        """Path to the TLS certificate of the endpoint."""
+        return self._path('tls.crt')
+
+    @property
+    def tls_key(self) -> str:
+        """Path to the TLS private key of the endpoint."""
+        return self._path('tls.key')
+
+    def _path(self, name: str) -> str:
+        return os.path.join(self.directory, name)
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -222,66 +270,6 @@ def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
     return endpoints
 
 
-def get_log_filepath(endpoint_dir: str) -> str:
-    """Return path to log file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to log file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_LOG_FILE)
-
-
-def get_pid_filepath(endpoint_dir: str) -> str:
-    """Return path to PID file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to PID file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_PID_FILE)
-
-
-def get_token_filepath(endpoint_dir: str) -> str:
-    """Return path to the client token file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to the token file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_TOKEN_FILE)
-
-
-def get_tls_cert_filepath(endpoint_dir: str) -> str:
-    """Return path to the TLS certificate file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to the TLS certificate file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_TLS_CERT_FILE)
-
-
-def get_tls_key_filepath(endpoint_dir: str) -> str:
-    """Return path to the TLS private key file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to the TLS private key file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_TLS_KEY_FILE)
-
-
 def read_config(endpoint_dir: str) -> EndpointConfig:
     """Read endpoint config file.
 
@@ -295,7 +283,7 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
         FileNotFoundError: If a config files does not exist in the directory.
         ValueError: If config contains an invalid value or cannot be parsed.
     """
-    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
+    path = EndpointFiles(endpoint_dir).config
 
     if os.path.exists(path):
         with open(path, 'rb') as f:
@@ -327,6 +315,6 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
     # Clients trust the files in the endpoint directory (e.g., the token and
     # TLS certificate), so only the owner can create or replace files in it.
     os.makedirs(endpoint_dir, mode=0o700, exist_ok=True)
-    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
+    path = EndpointFiles(endpoint_dir).config
     with open(path, 'wb') as f:
         dump(cfg, f)
