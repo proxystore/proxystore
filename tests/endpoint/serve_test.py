@@ -419,6 +419,17 @@ async def test_serve_async_port_in_use(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(get_token_filepath(str(tmp_path)))
 
 
+async def test_serve_async_start_up_failure_cleans_up(
+    tmp_path: pathlib.Path,
+) -> None:
+    config = _endpoint_config()
+    # The token cannot be written to a directory that does not exist
+    with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
+        with pytest.raises(FileNotFoundError):
+            await _serve_async(config, str(tmp_path / 'missing'))
+    mock_close.assert_awaited_once()
+
+
 @pytest.mark.timeout(10)
 def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     config = _endpoint_config()

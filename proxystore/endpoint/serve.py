@@ -643,6 +643,75 @@ def _get_auth_headers(
         raise AssertionError('Unreachable.')
 
 
+def _create_storage(config: EndpointConfig) -> Storage:
+    database_path = config.storage.database_path
+    if database_path is not None:
+        logger.info(
+            f'Using SQLite database for storage (path: {database_path})',
+        )
+        return SQLiteStorage(
+            database_path,
+            max_object_size=config.storage.max_object_size,
+        )
+    logger.warning('Database path not provided. Data will not be persisted')
+    return DictStorage(max_object_size=config.storage.max_object_size)
+
+
+def _create_peer_manager(config: EndpointConfig) -> PeerManager | None:
+    if config.relay.address is None:
+        return None
+
+    headers = _get_auth_headers(
+        method=config.relay.auth.method,
+        **config.relay.auth.kwargs,
+    )
+    relay_client = RelayClient(
+        address=config.relay.address,
+        client_name=config.name,
+        client_uuid=uuid.UUID(config.uuid),
+        extra_headers=headers,
+        verify_certificate=config.relay.verify_certificate,
+    )
+    ice_servers = (
+        None
+        if config.relay.ice_servers is None
+        else [
+            RTCIceServer(
+                urls=server.urls,
+                username=server.username,
+                credential=server.credential,
+            )
+            for server in config.relay.ice_servers
+        ]
+    )
+    return PeerManager(
+        relay_client,
+        peer_channels=config.relay.peer_channels,
+        ice_servers=ice_servers,
+    )
+
+
+async def _cancel(task: asyncio.Task[Any]) -> None:
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+
+
+async def _close_server(
+    server: asyncio.Server,
+    handler: EndpointServer,
+) -> None:
+    server.close()
+    handler.close_connections()
+    await server.wait_closed()
+
+
+def _remove_files(*paths: str) -> None:
+    for path in paths:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(path)
+
+
 async def _serve_async(
     config: EndpointConfig,
     endpoint_dir: str,
@@ -651,82 +720,43 @@ async def _serve_async(
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
 
-    storage: Storage | None
-    database_path = config.storage.database_path
-    if database_path is not None:
-        logger.info(
-            f'Using SQLite database for storage (path: {database_path})',
+    stop = asyncio.Event() if stop is None else stop
+    loop = asyncio.get_running_loop()
+
+    # Resources are cleaned up in the reverse order they are created,
+    # including when start up fails partway through.
+    async with contextlib.AsyncExitStack() as stack:
+        peer_manager = _create_peer_manager(config)
+        if peer_manager is not None:
+            # The NAT check only produces diagnostic logs so it is run
+            # concurrently rather than delaying the endpoint from serving
+            # requests on networks where STUN is slow or blocked.
+            nat_check = asyncio.create_task(check_nat_and_log())
+            stack.push_async_callback(_cancel, nat_check)
+
+        endpoint = await stack.enter_async_context(
+            Endpoint(
+                name=config.name,
+                uuid=uuid.UUID(config.uuid),
+                peer_manager=peer_manager,
+                storage=_create_storage(config),
+            ),
         )
-        storage = SQLiteStorage(
-            database_path,
+
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, stop.set)
+            stack.callback(loop.remove_signal_handler, sig)
+
+        token_file = get_token_filepath(endpoint_dir)
+        cert_file = get_tls_cert_filepath(endpoint_dir)
+        key_file = get_tls_key_filepath(endpoint_dir)
+        stack.callback(_remove_files, token_file, cert_file, key_file)
+        handler = EndpointServer(
+            endpoint,
+            generate_token_file(token_file),
             max_object_size=config.storage.max_object_size,
         )
-    else:
-        logger.warning(
-            'Database path not provided. Data will not be persisted',
-        )
-        storage = DictStorage(max_object_size=config.storage.max_object_size)
 
-    peer_manager: PeerManager | None = None
-    nat_check: asyncio.Task[None] | None = None
-    if config.relay.address is not None:
-        headers = _get_auth_headers(
-            method=config.relay.auth.method,
-            **config.relay.auth.kwargs,
-        )
-        relay_client = RelayClient(
-            address=config.relay.address,
-            client_name=config.name,
-            client_uuid=uuid.UUID(config.uuid),
-            extra_headers=headers,
-            verify_certificate=config.relay.verify_certificate,
-        )
-        ice_servers = (
-            None
-            if config.relay.ice_servers is None
-            else [
-                RTCIceServer(
-                    urls=server.urls,
-                    username=server.username,
-                    credential=server.credential,
-                )
-                for server in config.relay.ice_servers
-            ]
-        )
-        peer_manager = PeerManager(
-            relay_client,
-            peer_channels=config.relay.peer_channels,
-            ice_servers=ice_servers,
-        )
-        # The NAT check only produces diagnostic logs so it is run
-        # concurrently rather than delaying the endpoint from serving
-        # requests on networks where STUN is slow or blocked.
-        nat_check = asyncio.create_task(check_nat_and_log())
-
-    endpoint = await Endpoint(
-        name=config.name,
-        uuid=uuid.UUID(config.uuid),
-        peer_manager=peer_manager,
-        storage=storage,
-    )
-
-    loop = asyncio.get_running_loop()
-    stop = asyncio.Event() if stop is None else stop
-    signals = (signal.SIGINT, signal.SIGTERM)
-    for sig in signals:
-        loop.add_signal_handler(sig, stop.set)
-
-    token_file = get_token_filepath(endpoint_dir)
-    cert_file = get_tls_cert_filepath(endpoint_dir)
-    key_file = get_tls_key_filepath(endpoint_dir)
-    handler = EndpointServer(
-        endpoint,
-        generate_token_file(token_file),
-        max_object_size=config.storage.max_object_size,
-    )
-    server: asyncio.Server | None = None
-
-    try:
         ssl_context: ssl.SSLContext | None = None
         if config.tls:
             generate_tls_certificate(
@@ -743,6 +773,7 @@ async def _serve_async(
             config.port,
             ssl_context=ssl_context,
         )
+        stack.push_async_callback(_close_server, server, handler)
         logger.info(
             f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
             f'{config.host}:{config.port}',
@@ -750,21 +781,6 @@ async def _serve_async(
         logger.info(f'Config: {config}')
         await stop.wait()
         logger.info('Shutting down endpoint server')
-    finally:
-        for sig in signals:
-            loop.remove_signal_handler(sig)
-        if server is not None:
-            server.close()
-            handler.close_connections()
-            await server.wait_closed()
-        if nat_check is not None and not nat_check.done():
-            nat_check.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await nat_check
-        await endpoint.close()
-        for path in (token_file, cert_file, key_file):
-            with contextlib.suppress(FileNotFoundError):
-                os.remove(path)
 
 
 def serve(
