@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import atexit
+import contextlib
+import json
 import os
 import socket
+import subprocess
 import sys
 import threading
 import warnings
@@ -31,10 +34,9 @@ from testing.utils import open_port
 ADDRESS = '127.0.0.1'
 
 
-@pytest.fixture
-def server_port() -> Generator[int, None, None]:
+@contextlib.contextmanager
+def thread_server(port: int) -> Generator[None, None, None]:
     """Run a server in a thread of this process so it is covered."""
-    port = open_port()
     stop = threading.Event()
     thread = threading.Thread(
         target=run_server,
@@ -42,10 +44,19 @@ def server_port() -> Generator[int, None, None]:
         kwargs={'stop': stop, 'poll_interval': 0.01},
     )
     thread.start()
-    wait_for_server(ADDRESS, port)
-    yield port
-    stop.set()
-    thread.join()
+    try:
+        wait_for_server(ADDRESS, port)
+        yield
+    finally:
+        stop.set()
+        thread.join()
+
+
+@pytest.fixture
+def server_port() -> Generator[int, None, None]:
+    port = open_port()
+    with thread_server(port):
+        yield port
 
 
 @pytest.fixture
@@ -124,6 +135,124 @@ def test_close_kill_server() -> None:
     connector.close(kill_server=True)
     assert connector.server is None
 
+    with pytest.raises(ServerTimeoutError):
+        wait_for_server(ADDRESS, port, timeout=0.1)
+
+
+def test_server_restart() -> None:
+    port = open_port()
+    with thread_server(port):
+        connector = ZeroMQConnector(port, address=ADDRESS, request_timeout=0.1)
+        key = connector.put(b'value')
+        assert connector.get(key) == b'value'
+
+    # Requests fail while the server is down
+    with pytest.raises(ServerTimeoutError):
+        connector.get(key)
+
+    # Reconnecting to the restarted server can take longer than 0.1 seconds
+    connector.request_timeout = 5
+    with thread_server(port):
+        # Objects stored in the previous server are lost
+        assert connector.get(key) is None
+        key = connector.put(b'value')
+        assert connector.get(key) == b'value'
+
+    # Idle sockets in the pool reconnect to the new server
+    with thread_server(port):
+        with connector._pool._lock:
+            idle = list(connector._pool._idle[connector.url])
+        assert len(idle) > 0
+        assert not connector.exists(key)
+        with connector._pool._lock:
+            assert connector._pool._idle[connector.url] == idle
+
+    connector.close()
+
+
+# Each process creates a connector to the same port at the same time then
+# reports the key of an object it put, the PID of the server, and if it
+# spawned the server. Then it checks it can get the objects put by the other
+# processes and waits for stdin to be closed before exiting because the
+# server exits with the process that spawned it.
+_SPAWN_RACE_SCRIPT = """\
+import json
+import sys
+from proxystore.connectors.zmq import ZeroMQConnector
+from proxystore.connectors.zmq import ZeroMQKey
+from proxystore.connectors.zmq import wait_for_server
+
+address, port, index = sys.argv[1], int(sys.argv[2]), sys.argv[3]
+print('ready', flush=True)
+sys.stdin.readline()
+
+connector = ZeroMQConnector(port, address=address, timeout=30)
+key = connector.put(index.encode())
+pid = wait_for_server(address, port)
+print(json.dumps([key, pid, connector.server is not None]), flush=True)
+
+keys = [ZeroMQKey(*key) for key in json.loads(sys.stdin.readline())]
+values = [bytes(connector.get(key)).decode() for key in keys]
+print(json.dumps(values), flush=True)
+sys.stdin.read()
+"""
+
+
+def _read_line(process: subprocess.Popen[str]) -> str:
+    assert process.stdout is not None
+    return process.stdout.readline().strip()
+
+
+def _write_line(process: subprocess.Popen[str], line: str) -> None:
+    assert process.stdin is not None
+    process.stdin.write(f'{line}\n')
+    process.stdin.flush()
+
+
+def test_spawn_race_between_processes() -> None:
+    port = open_port()
+    processes = [
+        subprocess.Popen(
+            [
+                sys.executable,
+                '-c',
+                _SPAWN_RACE_SCRIPT,
+                ADDRESS,
+                str(port),
+                str(i),
+            ],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        for i in range(8)
+    ]
+    try:
+        for process in processes:
+            assert _read_line(process) == 'ready'
+        # Start all processes at once after they have imported everything
+        for process in processes:
+            _write_line(process, 'go')
+
+        results = [json.loads(_read_line(p)) for p in processes]
+        keys = [key for key, _, _ in results]
+        # Exactly one process spawned the server and all use the same server
+        assert sum(spawned for _, _, spawned in results) == 1
+        assert len({pid for _, pid, _ in results}) == 1
+
+        for process in processes:
+            _write_line(process, json.dumps(keys))
+        expected = [str(i) for i in range(len(processes))]
+        for process in processes:
+            assert json.loads(_read_line(process)) == expected
+    finally:
+        for process in processes:
+            assert process.stdin is not None
+            process.stdin.close()
+        for process in processes:
+            assert process.wait(timeout=30) == 0
+
+    # The server exited with the process that spawned it
     with pytest.raises(ServerTimeoutError):
         wait_for_server(ADDRESS, port, timeout=0.1)
 
