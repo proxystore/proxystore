@@ -37,6 +37,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import datetime
 import decimal
 import gc
@@ -876,10 +877,8 @@ def test_precompute_unhashable() -> None:
     del proxy.__proxy_wrapped__
 
     assert not proxy.__proxy_resolved__
-    try:
+    with contextlib.suppress(TypeError):
         hash(proxy)
-    except TypeError:
-        pass
     assert not proxy.__proxy_resolved__
     assert isinstance(proxy, list)
     assert not proxy.__proxy_resolved__

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import datetime
 import logging
 import logging.handlers
@@ -137,10 +138,8 @@ async def serve(config: RelayServingConfig) -> None:
 
     if client_logger_task is not None:  # pragma: no branch
         client_logger_task.cancel()
-        try:
+        with contextlib.suppress(asyncio.CancelledError):
             await client_logger_task
-        except asyncio.CancelledError:
-            pass
 
     loop.remove_signal_handler(signal.SIGINT)
     loop.remove_signal_handler(signal.SIGTERM)

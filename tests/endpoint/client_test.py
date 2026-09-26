@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 import pathlib
 import socket
@@ -86,11 +87,8 @@ def fake_server() -> Generator[Callable[[Script], int], None, None]:
     def _start(script: Script) -> int:
         def _run() -> None:
             conn, _ = listener.accept()
-            with conn:
-                try:
-                    script(conn)
-                except OSError:  # pragma: no cover
-                    pass
+            with conn, contextlib.suppress(OSError):
+                script(conn)
 
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()

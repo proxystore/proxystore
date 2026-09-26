@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import multiprocessing
 import os
@@ -45,10 +46,8 @@ async def test_periodic_client_logger(caplog) -> None:
     task = periodic_client_logger(server, 0.001)
     await asyncio.sleep(0.01)
     task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        pass
 
     assert any(
         'Connected clients: 1' in record.message and record.levelname == 'INFO'

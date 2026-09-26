@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import enum
 import logging
 from collections.abc import Generator
@@ -525,10 +526,8 @@ class Endpoint:
         self._closed = True
         if self._peer_handler_task is not None:
             self._peer_handler_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._peer_handler_task
-            except asyncio.CancelledError:
-                pass
         if self._peer_manager is not None:
             await self._peer_manager.close()
         await self._storage.close()

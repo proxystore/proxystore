@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable
 from types import MappingProxyType
 from typing import Any
@@ -140,10 +141,8 @@ def test_union_type_bad_attribute_crash() -> None:
         return x
 
     x = Proxy(lambda: 42)
-    try:
+    with contextlib.suppress(AttributeError):
         _ = x.__factory__  # type: ignore[attr-defined]
-    except AttributeError:
-        pass
 
 
 def test_union_type_partial_attr() -> None:
@@ -155,11 +154,9 @@ def test_union_type_partial_attr() -> None:
 
     union: Proxy[Foo] | Bar = Proxy(Foo)
 
-    try:
+    with contextlib.suppress(AttributeError):
         # Item "Proxy[Foo]" of "Proxy[Foo] | Bar" has no attribute "y"
         assert isinstance(union.y, str)  # type: ignore[union-attr]
-    except AttributeError:
-        pass
 
     # Item "Bar" of "Proxy[Foo] | Bar" has no attribute "x"  [union-attr]
     assert isinstance(union.x, int)  # type: ignore[union-attr]

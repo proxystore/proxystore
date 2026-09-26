@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import contextlib
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -125,12 +126,10 @@ def test_lease_lifetime_extend(
     first_timer.join()
     time.sleep(0.001)
 
-    try:
-        # Wait on possible second timer
+    # Wait on possible second timer. AttributeError is raised if
+    # lifetime._timer is None because it has already been closed.
+    with contextlib.suppress(AttributeError):
         lifetime._timer.join()
-    except AttributeError:  # pragma: no cover
-        # Raised if lifetime._timer is None because it has already been closed.
-        pass
 
     assert lifetime.done()
 

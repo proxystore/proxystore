@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import logging
 import sys
 import time
@@ -68,10 +69,8 @@ async def amain(
         print('Serving remote endpoint. Use ctrl-C twice to stop')
         # Remote endpoint should wait until interrupted so let's just sleep
         # for 10 minutes (long enough for the test)
-        try:
+        with contextlib.suppress(asyncio.CancelledError, KeyboardInterrupt):
             await asyncio.sleep(10 * 60)
-        except (asyncio.CancelledError, KeyboardInterrupt):
-            pass
 
     await endpoint.close()
 

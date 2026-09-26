@@ -230,8 +230,6 @@ ignore = [
     "D105",
     # Do not require docstrings for __init__ methods
     "D107",
-    # Allow try-except-pass instead of contextlib.suppress
-    "SIM105",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]

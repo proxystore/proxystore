@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 from collections.abc import Generator
 from collections.abc import Iterable
@@ -21,11 +22,10 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
-try:
+# ImportError is handled by the aiortc import warning in
+# proxystore.p2p.connection.
+with contextlib.suppress(ImportError):
     from aiortc import RTCIceServer
-except ImportError:  # pragma: no cover
-    # Handled by the aiortc import warning in proxystore.p2p.connection.
-    pass
 
 from proxystore.p2p.connection import log_name
 from proxystore.p2p.connection import PeerConnection
@@ -289,17 +289,17 @@ class PeerManager:
         """
         if self._server_task is not None:
             self._server_task.cancel()
-            try:
+            with contextlib.suppress(
+                asyncio.CancelledError, SafeTaskExitError
+            ):
                 await self._server_task
-            except (asyncio.CancelledError, SafeTaskExitError):
-                pass
 
         for task in self._tasks.values():
             task.cancel()
-            try:
+            with contextlib.suppress(
+                asyncio.CancelledError, SafeTaskExitError
+            ):
                 await task
-            except (asyncio.CancelledError, SafeTaskExitError):
-                pass
 
         async with self._peers_lock:
             for connection in self._peers.values():
@@ -335,10 +335,10 @@ class PeerManager:
         task = self._tasks.pop(peers, None)
         if task is not None:
             task.cancel()
-            try:
+            with contextlib.suppress(
+                asyncio.CancelledError, SafeTaskExitError
+            ):
                 await task
-            except (asyncio.CancelledError, SafeTaskExitError):
-                pass
 
     async def recv(self) -> tuple[UUID, bytes | str]:
         """Receive next message from a peer.

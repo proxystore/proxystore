@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import uuid
 from unittest import mock
@@ -141,12 +142,10 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
     for task in asyncio.all_tasks():
         if task.get_name() not in task_names:
             task.cancel()
-            try:
-                await task
             # For note on AttributeError catching:
             # https://github.com/proxystore/proxystore/issues/405
-            except (asyncio.CancelledError, AttributeError):
-                pass
+            with contextlib.suppress(asyncio.CancelledError, AttributeError):
+                await task
 
 
 @pytest.mark.asyncio

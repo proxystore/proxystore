@@ -23,6 +23,8 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
+import contextlib
+
 from proxystore.p2p.relay.exceptions import RelayNotConnectedError
 from proxystore.p2p.relay.exceptions import RelayRegistrationError
 from proxystore.p2p.relay.messages import decode_relay_message
@@ -349,10 +351,8 @@ class RelayClient:
         """Close the connection to the relay server."""
         if self._reconnect_task is not None:
             self._reconnect_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._reconnect_task
-            except asyncio.CancelledError:
-                pass
 
         if self._websocket is not None:
             await self._websocket.close()
