@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import re
-import uuid
 from unittest import mock
 
 import globus_sdk
@@ -111,7 +111,7 @@ def test_globus_endpoint_objects() -> None:
         eps.get_by_host('host3')
 
 
-def test_globus_endpoints_from_json() -> None:
+def test_globus_endpoints_from_json(tmp_path: pathlib.Path) -> None:
     data = {
         'UUID1': {
             'endpoint_path': '/~/',
@@ -124,13 +124,11 @@ def test_globus_endpoints_from_json() -> None:
             'host_regex': 'host2',
         },
     }
-    filepath = f'/tmp/endpoints-{uuid.uuid4()}.json'
+    filepath = str(tmp_path / 'endpoints.json')
     with open(filepath, 'w') as f:
         f.write(json.dumps(data))
 
     endpoints = GlobusEndpoints.from_json(filepath)
-
-    os.remove(filepath)
 
     assert len(endpoints) == 2
     assert endpoints['UUID1'].endpoint_path == '/~/'

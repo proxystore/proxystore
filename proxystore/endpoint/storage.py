@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import pathlib
 from typing import Protocol
 from typing import runtime_checkable
 
 import aiosqlite
 
-from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+from proxystore.endpoint.config import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.utils.data import bytes_to_readable
 
@@ -40,7 +41,7 @@ class Storage(Protocol):
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -52,7 +53,7 @@ class Storage(Protocol):
         """
         ...
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -83,7 +84,7 @@ class DictStorage:
         *,
         max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
     ) -> None:
-        self._data: dict[str, bytes] = {}
+        self._data: dict[str, bytes | bytearray] = {}
         self._max_object_size = max_object_size
 
     async def evict(self, key: str) -> None:
@@ -109,7 +110,7 @@ class DictStorage:
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -121,7 +122,7 @@ class DictStorage:
         """
         return self._data.get(key, default)
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -171,16 +172,24 @@ class SQLiteStorage:
 
         self._max_object_size = max_object_size
         self._db: aiosqlite.Connection | None = None
+        self._db_lock = asyncio.Lock()
 
     async def db(self) -> aiosqlite.Connection:
         """Get the database connection object."""
-        if self._db is None:
-            self._db = await aiosqlite.connect(self.database_path)
-            await self._db.execute(
-                'CREATE TABLE IF NOT EXISTS blobs'
-                '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',
-            )
-        return self._db
+        if self._db is not None:
+            return self._db
+        # Concurrent first requests (e.g., when clients reconnect after the
+        # endpoint restarts) must share one connection. Separate connections
+        # can deadlock each other's write transactions.
+        async with self._db_lock:
+            if self._db is None:
+                db = await aiosqlite.connect(self.database_path)
+                await db.execute(
+                    'CREATE TABLE IF NOT EXISTS blobs'
+                    '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',
+                )
+                self._db = db
+            return self._db
 
     async def evict(self, key: str) -> None:
         """Evict a blob from storage.
@@ -216,7 +225,7 @@ class SQLiteStorage:
         self,
         key: str,
         default: bytes | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
@@ -237,7 +246,7 @@ class SQLiteStorage:
             else:
                 return result[0]
 
-    async def set(self, key: str, blob: bytes) -> None:
+    async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
 
         Args:

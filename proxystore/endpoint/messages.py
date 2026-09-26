@@ -25,6 +25,6 @@ class EndpointRequest:
     op: Literal['evict', 'exists', 'get', 'set']
     uuid: str
     key: str
-    data: bytes | None = None
+    data: bytes | bytearray | None = None
     exists: bool | None = None
     error: Exception | None = None

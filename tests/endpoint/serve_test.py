@@ -4,363 +4,145 @@ import asyncio
 import multiprocessing
 import os
 import pathlib
-import time
+import ssl
+import stat
 import uuid
-from collections.abc import AsyncGenerator
+from typing import Any
 from unittest import mock
 from unittest.mock import AsyncMock
 
 import pytest
-import pytest_asyncio
-import quart
-import requests
 from globus_sdk.token_storage import TokenValidationError
 
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.serve import _get_auth_headers
-from proxystore.endpoint.serve import _serve_async
-from proxystore.endpoint.serve import create_app
-from proxystore.endpoint.serve import MAX_CHUNK_LENGTH
+from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
-from proxystore.utils.data import chunk_bytes
-from testing.compat import randbytes
+from testing.endpoint import terminate_process
+from testing.endpoint import wait_for_endpoint
 from testing.mocked.globus import get_testing_app
 from testing.utils import open_port
 
 
-@pytest_asyncio.fixture()
-async def quart_app() -> AsyncGenerator[quart.typing.TestAppProtocol, None]:
-    async with Endpoint(
-        name='my-endpoint',
-        uuid=uuid.uuid4(),
-    ) as endpoint:
-        app = create_app(endpoint)
-        async with app.test_app() as test_app:
-            test_app.endpoint = endpoint  # type: ignore
-            yield test_app
+def _endpoint_dir(
+    path: pathlib.Path,
+    **kwargs: Any,
+) -> tuple[EndpointDir, EndpointConfig]:
+    options: dict[str, Any] = {
+        'name': 'my-endpoint',
+        'uuid': str(uuid.uuid4()),
+        'host': '127.0.0.1',
+        'port': open_port(),
+        'storage': EndpointStorageConfig(database_path=':memory:'),
+    }
+    options.update(kwargs)
+    config = EndpointConfig(**options)
+    endpoint_dir = EndpointDir(str(path))
+    endpoint_dir.write_config(config)
+    return endpoint_dir, config
 
 
-@pytest.mark.asyncio
-async def test_running(quart_app) -> None:
-    client = quart_app.test_client()
-    response = await client.get('/')
-    assert response.status_code == 200
+async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, config = _endpoint_dir(tmp_path)
+    connection_file = endpoint_dir.connection_path
 
-    response = await client.get('/endpoint')
-    assert len((await response.get_json())['uuid']) > 0
+    async with running_endpoint(endpoint_dir) as endpoint:
+        assert endpoint.uuid == uuid.UUID(config.uuid)
+        assert stat.S_IMODE(os.stat(connection_file).st_mode) == 0o600
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        assert client.info.uuid == endpoint.uuid
 
-
-@pytest.mark.asyncio
-async def test_set_request(quart_app) -> None:
-    client = quart_app.test_client()
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    # overwrite key should be okay
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
+    # Open connections are closed and the connection file is removed on
+    # shutdown
+    with pytest.raises(EndpointConnectionError):
+        await asyncio.to_thread(client.exists, 'key')
+    assert not os.path.exists(connection_file)
 
 
-@pytest.mark.asyncio
-async def test_get_request(quart_app) -> None:
-    client = quart_app.test_client()
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    get_response = await client.get('/get', query_string={'key': 'my-key'})
-    assert get_response.status_code == 200
-    assert (await get_response.get_data()) == data
-
-    get_response = await client.get(
-        '/get',
-        query_string={'key': 'missing-key'},
-    )
-    assert get_response.status_code == 404
+async def test_running_endpoint_restricts_endpoint_dir(
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    os.chmod(tmp_path, 0o777)
+    async with running_endpoint(endpoint_dir):
+        pass
+    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o700
+    assert any('other permissions' in r.message for r in caplog.records)
 
 
-@pytest.mark.asyncio
-async def test_chunked_data(quart_app) -> None:
-    client = quart_app.test_client()
-    # Data needs to be larger than MAX_CHUNK_LENGTH
-    data = randbytes((2 * MAX_CHUNK_LENGTH) + 1)
-
-    async with client.request(
-        '/set',
-        method='POST',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-    ) as connection:
-        for chunk in chunk_bytes(data, MAX_CHUNK_LENGTH):
-            await connection.send(chunk)
-            # Small sleep to simulate transfer time of chunks
-            await asyncio.sleep(0.01)
-        await connection.send_complete()
-    set_response = await connection.as_response()
-    assert set_response.status_code == 200
-
-    get_response = await client.get('/get', query_string={'key': 'my-key'})
-    assert get_response.status_code == 200
-    assert (await get_response.get_data()) == data
+async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    async with running_endpoint(endpoint_dir):
+        running = endpoint_dir.read_connection()
+        # A second instance fails to start without replacing or removing
+        # the connection file of the running instance
+        with pytest.raises(OSError):
+            async with running_endpoint(endpoint_dir):
+                pass  # pragma: no cover
+        assert endpoint_dir.read_connection() == running
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        await asyncio.to_thread(client.close)
 
 
-@pytest.mark.asyncio
-async def test_empty_chunked_data(quart_app) -> None:
-    client = quart_app.test_client()
-
-    async with client.request(
-        '/set',
-        method='POST',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-    ) as connection:
-        await connection.send_complete()
-    set_response = await connection.as_response()
-    assert set_response.status_code == 400
+async def test_running_endpoint_start_up_failure_cleans_up(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    # The connection file cannot be written if its path is a directory
+    os.mkdir(endpoint_dir.connection_path)
+    with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
+        with pytest.raises(IsADirectoryError):
+            async with running_endpoint(endpoint_dir):
+                pass  # pragma: no cover
+    mock_close.assert_awaited_once()
 
 
-@pytest.mark.asyncio
-async def test_exists_request(quart_app) -> None:
-    client = quart_app.test_client()
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert not (await exists_response.get_json())['exists']
-
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert (await exists_response.get_json())['exists']
+async def test_running_endpoint_not_started(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path, host=None)
+    with pytest.raises(ValueError, match='host'):
+        async with running_endpoint(endpoint_dir):
+            pass  # pragma: no cover
 
 
-@pytest.mark.asyncio
-async def test_evict_request(quart_app) -> None:
-    client = quart_app.test_client()
-    evict_response = await client.post('evict', query_string={'key': 'my-key'})
-    # No error if key does not exist
-    assert evict_response.status_code == 200
-
-    data = randbytes(100)
-    set_response = await client.post(
-        '/set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key'},
-        data=data,
-    )
-    assert set_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert (await exists_response.get_json())['exists']
-
-    evict_response = await client.post('evict', query_string={'key': 'my-key'})
-    assert evict_response.status_code == 200
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key'},
-    )
-    assert exists_response.status_code == 200
-    assert not (await exists_response.get_json())['exists']
-
-
-@pytest.mark.asyncio
-async def test_payload_too_big() -> None:
-    async with Endpoint(
-        name='my-endpoint',
-        uuid=uuid.uuid4(),
-    ) as endpoint:
-        app = create_app(endpoint, max_content_length=10)
-        async with app.test_app() as quart_app:
-            client = quart_app.test_client()
-            data = randbytes(100)
-            set_response = await client.post(
-                '/set',
-                headers={'Content-Type': 'application/octet-stream'},
-                query_string={'key': 'my-key'},
-                data=data,
-            )
-            assert set_response.status_code == 413
-
-
-@pytest.mark.asyncio
-async def test_bad_endpoint_uuid(quart_app) -> None:
-    client = quart_app.test_client()
-    bad_uuid = 'not a uuid'
-
-    evict_response = await client.post(
-        'evict',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-    )
-    assert evict_response.status_code == 400
-
-    exists_response = await client.get(
-        'exists',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-    )
-    assert exists_response.status_code == 400
-
-    get_response = await client.get(
-        'get',
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-    )
-    assert get_response.status_code == 400
-
-    data = randbytes(100)
-    set_response = await client.post(
-        'set',
-        headers={'Content-Type': 'application/octet-stream'},
-        query_string={'key': 'my-key', 'endpoint': bad_uuid},
-        data=data,
-    )
-    assert set_response.status_code == 400
-
-
-@pytest.mark.asyncio
-async def test_unknown_endpoint_uuid(quart_app) -> None:
-    client = quart_app.test_client()
-    unknown_uuid = uuid.uuid4()
-
-    with (
-        mock.patch(
-            'proxystore.endpoint.endpoint.Endpoint._is_peer_request',
-            return_value=True,
-        ),
-        mock.patch(
-            'proxystore.endpoint.endpoint.Endpoint.peer_manager',
-            new_callable=mock.PropertyMock,
-        ) as mock_peer_manager_property,
-    ):
-        mock_peer_manager = AsyncMock()
-        mock_peer_manager.send = AsyncMock(side_effect=Exception())
-        mock_peer_manager.close = AsyncMock()
-        mock_peer_manager_property.return_value = mock_peer_manager
-
-        evict_response = await client.post(
-            'evict',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert evict_response.status_code == 500
-
-        exists_response = await client.get(
-            'exists',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert exists_response.status_code == 500
-
-        get_response = await client.get(
-            'get',
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-        )
-        assert get_response.status_code == 500
-
-        data = randbytes(100)
-        set_response = await client.post(
-            'set',
-            headers={'Content-Type': 'application/octet-stream'},
-            query_string={'key': 'my-key', 'endpoint': unknown_uuid},
-            data=data,
-        )
-        assert set_response.status_code == 500
-
-
-@pytest.mark.asyncio
-async def test_missing_key(quart_app) -> None:
-    client = quart_app.test_client()
-
-    evict_response = await client.post('evict')
-    assert evict_response.status_code == 400
-
-    exists_response = await client.get('exists')
-    assert exists_response.status_code == 400
-
-    get_response = await client.get('get')
-    assert get_response.status_code == 400
-
-    data = randbytes(100)
-    set_response = await client.post(
-        'set',
-        headers={'Content-Type': 'application/octet-stream'},
-        data=data,
-    )
-    assert set_response.status_code == 400
-
-
-@pytest.mark.timeout(5)
-def test_serve(use_uvloop: bool) -> None:
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='localhost',
-        port=open_port(),
-        storage=EndpointStorageConfig(database_path=':memory:'),
-    )
+@pytest.mark.timeout(10)
+def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
 
     context = multiprocessing.get_context('spawn')
     process = context.Process(
         target=serve,
-        args=(config,),
+        args=(endpoint_dir,),
         kwargs={'use_uvloop': use_uvloop},
     )
     process.start()
 
     try:
-        while True:
-            try:
-                r = requests.get(f'http://{config.host}:{config.port}/')
-            except requests.exceptions.ConnectionError:
-                time.sleep(0.01)
-                continue
-            if r.status_code == 200:  # pragma: no branch
-                break
-    finally:
+        wait_for_endpoint(endpoint_dir)
+        with EndpointClient.from_dir(endpoint_dir) as client:
+            client.set('key', b'value')
+            assert client.get('key') == b'value'
+
+        # SIGTERM should cleanly shutdown the endpoint
         process.terminate()
+        process.join(timeout=5)
+        assert process.exitcode == 0
+        assert not os.path.exists(endpoint_dir.connection_path)
+    finally:
+        terminate_process(process)
 
 
-def test_serve_config_validation(use_uvloop: bool) -> None:
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host=None,
-        port=open_port(),
-    )
-    with pytest.raises(ValueError, match='host'):
-        serve(config, use_uvloop=use_uvloop)
+def test_serve_missing_config(
+    use_uvloop: bool,
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(FileNotFoundError):
+        serve(EndpointDir(str(tmp_path)), use_uvloop=use_uvloop)
 
 
 def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
@@ -368,15 +150,12 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     tmp_dir = os.path.join(tmp_path, 'log-dir')
 
     def _serve(log_file: str) -> None:
-        config = EndpointConfig(
-            name='name',
-            uuid=str(uuid.uuid4()),
-            host='0.0.0.0',
-            port=open_port(),
-        )
-        with mock.patch('uvicorn.Server.serve', AsyncMock()):
+        with mock.patch(
+            'proxystore.endpoint.serve._serve_async',
+            AsyncMock(),
+        ):
             serve(
-                config,
+                EndpointDir(str(tmp_path)),
                 log_level='INFO',
                 log_file=log_file,
                 use_uvloop=use_uvloop,
@@ -443,7 +222,10 @@ def test_get_auth_headers_globus_missing() -> None:
         assert _get_auth_headers('globus')
 
 
-async def test_serve_cancels_nat_check(relay_server) -> None:
+async def test_running_endpoint_cancels_nat_check(
+    relay_server,
+    tmp_path: pathlib.Path,
+) -> None:
     # The NAT check runs concurrently with serving so that a slow or blocked
     # network cannot delay the endpoint from accepting requests. Shutting the
     # endpoint down must therefore cancel a check which has not finished
@@ -457,22 +239,30 @@ async def test_serve_cancels_nat_check(relay_server) -> None:
             cancelled.set()
             raise
 
-    config = EndpointConfig(
-        name='my-endpoint',
-        uuid=str(uuid.uuid4()),
-        host='localhost',
-        port=open_port(),
-        storage=EndpointStorageConfig(database_path=':memory:'),
-    )
+    endpoint_dir, config = _endpoint_dir(tmp_path)
     config.relay.address = relay_server.address
+    endpoint_dir.write_config(config)
 
-    with (
-        mock.patch('uvicorn.Server.serve', AsyncMock()),
-        mock.patch(
-            'proxystore.endpoint.serve.check_nat_and_log',
-            side_effect=never_finishes,
-        ),
+    with mock.patch(
+        'proxystore.endpoint.serve.check_nat_and_log',
+        side_effect=never_finishes,
     ):
-        await _serve_async(config)
+        async with running_endpoint(endpoint_dir):
+            pass
 
-    assert cancelled.is_set()
+    # Coverage on Python 3.11 does not trace this line after the NAT check
+    # task is cancelled, but it is executed.
+    assert cancelled.is_set()  # pragma: >=3.12 cover
+
+
+async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, config = _endpoint_dir(tmp_path, tls=True)
+
+    async with running_endpoint(endpoint_dir):
+        assert endpoint_dir.read_connection().tls_fingerprint is not None
+        # The TLS certificate and key are not written to the directory
+        assert not any('tls' in f for f in os.listdir(endpoint_dir.path))
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        assert isinstance(client._socket, ssl.SSLSocket)
+        assert client.info.uuid == uuid.UUID(config.uuid)
+        await asyncio.to_thread(client.close)

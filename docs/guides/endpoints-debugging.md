@@ -1,6 +1,6 @@
 # Endpoints Debugging
 
-*Last updated 2 May 2023*
+*Last updated 25 September 2026*
 
 This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.
@@ -23,8 +23,8 @@ in this case is `~/.local/share/proxystore/myendpoint`
 (see [`home_dir()`][proxystore.utils.environment.home_dir] for the full
 specification).
 ```bash
-$ tail -n 1 ~/.local/share/proxystore/myendpoint/log.txt
-INFO  (uvicorn.error) :: Uvicorn running on http://127.0.1.1:8766 (Press CTRL+C to quit)
+$ grep "Serving endpoint" ~/.local/share/proxystore/myendpoint/log.txt
+INFO  (proxystore.endpoint.serve) :: Serving endpoint f4dc841d-377e-4785-8d66-8eade34f63cd (myendpoint) on 127.0.1.1:8766
 ```
 The logs are the first place to check for any potential issues.
 
@@ -54,21 +54,45 @@ As expected, an object with key `abcdef` does not exist in the store, but
 we got a valid response so we know the endpoint is running correctly.
 You can also validate that this request was logged by the endpoint.
 
-### Invoke a REST Request
-Endpoints serve a REST API so `curl` can be used to check if an endpoint
-is accessible. Note the `proxystore-endpoint test` CLI is preferred for
-debugging. The correct address the endpoint is listening on can be found in
-the logs.
-```bash
-$ curl http://127.0.0.1:8765/exists?key=abcdef
-{"exists": false}
+### Connect from Python
+The [`EndpointClient`][proxystore.endpoint.client.EndpointClient] can be used
+to connect to an endpoint directly. Clients find the endpoint's address,
+token, and TLS certificate fingerprint (if enabled) in the `connection.json`
+file that the endpoint writes to its directory when it starts, and
+[`EndpointClient.from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
+reads this file for you.
+```python
+from proxystore.endpoint.client import EndpointClient
+
+with EndpointClient.from_name('myendpoint') as client:
+    print(client.info)
+    print(client.exists('abcdef'))
 ```
 
-!!! warning
+### Common Errors
 
-    If the `curl` command hangs or returns an HTTP error related to being unable to resolve the URL, check if you have an HTTP proxy set.
-    The `proxystore-endpoint test` command ignores all HTTP proxies and should work in the case where `curl` does not.
-    Alternatively, try to unset the `http_proxy` and `HTTP_PROXY` environment variables when issuing the command.
+* **An endpoint named ... does not exist**: No endpoint with that name is
+  configured in the ProxyStore home directory. Check the name with
+  `proxystore-endpoint list` and that the client uses the same ProxyStore home
+  directory as the endpoint.
+* **Unable to find the connection file of the endpoint**: The endpoint is
+  not running, or the client cannot read the endpoint directory. Clients on
+  other nodes need the ProxyStore home directory on a shared file system.
+  If the error says the endpoint process is running, the endpoint was likely
+  started with an older version of ProxyStore. Restart it with
+  `proxystore-endpoint stop NAME` and `proxystore-endpoint start NAME`.
+* **The endpoint failed to prove that it knows the endpoint token**: The
+  endpoint was restarted while the client was connecting, or a different
+  process is listening on the endpoint's address (e.g., after the endpoint
+  stopped). Restart the endpoint and try again.
+* **The endpoint responded with HTTP**: The endpoint is running an older
+  version of ProxyStore. Restart the endpoint with the same version as the
+  client.
+* **Endpoint returned HTTP error code 426**: The client is using an older
+  version of ProxyStore than the endpoint. Upgrade ProxyStore on the client.
+* **`EndpointVersionWarning`**: The client and endpoint use different
+  ProxyStore versions or Python minor versions. See
+  [Version Compatibility](endpoints.md#version-compatibility).
 
 ## Test a Remote Endpoint
 
@@ -102,7 +126,7 @@ INFO: Object exists: False
 
 You will get an error if the peer connection fails. For example:
 ```bash
-ERROR: Endpoint returned HTTP error code 500. Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
+ERROR: Endpoint returned ERROR for EXISTS request: Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
 ```
 If this happens, check the logs for both endpoints for further error messages.
 Peer requests typically fail for two reasons:

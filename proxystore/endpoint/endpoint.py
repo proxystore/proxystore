@@ -420,7 +420,7 @@ class Endpoint:
         self,
         key: str,
         endpoint: UUID | None = None,
-    ) -> bytes | None:
+    ) -> bytes | bytearray | None:
         """Get value associated with key on endpoint.
 
         Args:
@@ -455,7 +455,7 @@ class Endpoint:
     async def set(
         self,
         key: str,
-        data: bytes,
+        data: bytes | bytearray,
         endpoint: UUID | None = None,
     ) -> None:
         """Set key with data on endpoint.
@@ -493,9 +493,7 @@ class Endpoint:
     async def close(self) -> None:
         """Close the endpoint and any open connections safely.
 
-        This is idempotent so that it is safe to call from both the Quart
-        `after_serving` shutdown hook and the
-        [`serve()`][proxystore.endpoint.serve.serve] cleanup path.
+        This is idempotent so it is safe to call multiple times.
         """
         if self._closed:
             return

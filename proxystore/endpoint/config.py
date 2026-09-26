@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import uuid
 from typing import Any
@@ -18,14 +17,8 @@ except ImportError:  # pragma: no cover
     # Pydantic v1 compatibility
     from pydantic import validator as field_validator  # type: ignore[no-redef]
 
-from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
-from proxystore.utils.config import dump
-from proxystore.utils.config import load
-
-ENDPOINT_CONFIG_FILE = 'config.toml'
-ENDPOINT_DATABASE_FILE = 'blobs.db'
-ENDPOINT_LOG_FILE = 'log.txt'
-ENDPOINT_PID_FILE = 'daemon.pid'
+MAX_OBJECT_SIZE_DEFAULT = 100_000_000
+"""Default maximum endpoint object size in bytes."""
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -135,6 +128,9 @@ class EndpointConfig(BaseModel):
         host: Host endpoint is running on.
         host_type: Type of host address to use (FQDN or IP).
         port: Port endpoint is running on.
+        tls: Encrypt connections between clients and the endpoint with TLS.
+            The endpoint generates a self-signed certificate each time it
+            starts, and clients only trust that certificate.
         peering: Peering configuration.
         storage: Storage configuration.
 
@@ -149,6 +145,7 @@ class EndpointConfig(BaseModel):
     port: int
     host: str | None = None
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
+    tls: bool = False
     relay: EndpointRelayConfig = Field(
         default_factory=EndpointRelayConfig,
     )
@@ -185,103 +182,6 @@ class EndpointConfig(BaseModel):
         return v
 
 
-def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
-    """Get all valid endpoint configurations in parent directory.
-
-    Args:
-        proxystore_dir: Parent directory containing possible endpoint
-            configurations.
-
-    Returns:
-        List of found configs.
-    """
-    endpoints: list[EndpointConfig] = []
-
-    if not os.path.isdir(proxystore_dir):
-        return endpoints
-
-    for dirpath, _, _ in os.walk(proxystore_dir):
-        if os.path.samefile(proxystore_dir, dirpath):
-            continue
-        try:
-            cfg = read_config(dirpath)
-        except FileNotFoundError:
-            continue
-        except ValueError:
-            continue
-        else:
-            endpoints.append(cfg)
-
-    return endpoints
-
-
-def get_log_filepath(endpoint_dir: str) -> str:
-    """Return path to log file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to log file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_LOG_FILE)
-
-
-def get_pid_filepath(endpoint_dir: str) -> str:
-    """Return path to PID file for endpoint.
-
-    Args:
-        endpoint_dir: Directory for the endpoint.
-
-    Returns:
-        Path to PID file.
-    """
-    return os.path.join(endpoint_dir, ENDPOINT_PID_FILE)
-
-
-def read_config(endpoint_dir: str) -> EndpointConfig:
-    """Read endpoint config file.
-
-    Args:
-        endpoint_dir: Directory containing endpoint configuration file.
-
-    Returns:
-        Config found in `endpoint_dir`.
-
-    Raises:
-        FileNotFoundError: If a config files does not exist in the directory.
-        ValueError: If config contains an invalid value or cannot be parsed.
-    """
-    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
-
-    if os.path.exists(path):
-        with open(path, 'rb') as f:
-            try:
-                return load(EndpointConfig, f)
-            except Exception as e:
-                raise ValueError(
-                    f'Unable to parse ({path}): {e!s}.',
-                ) from None
-    else:
-        raise FileNotFoundError(
-            f'Endpoint directory {endpoint_dir} does not contain a valid '
-            'configuration.',
-        )
-
-
 def validate_name(name: str) -> bool:
     """Validate name only contains alphanumeric or dash/underscore chars."""
     return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
-
-
-def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
-    """Write config to endpoint directory.
-
-    Args:
-        cfg: Configuration to write.
-        endpoint_dir: Directory to write config to.
-    """
-    os.makedirs(endpoint_dir, exist_ok=True)
-    path = os.path.join(endpoint_dir, ENDPOINT_CONFIG_FILE)
-    with open(path, 'wb') as f:
-        dump(cfg, f)

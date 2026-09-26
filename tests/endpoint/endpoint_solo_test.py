@@ -20,6 +20,8 @@ async def test_init() -> None:
     # Try again with awaitable initialization
     endpoint = await Endpoint(name=_NAME, uuid=_UUID)
     await endpoint.close()
+    # Closing again is a no-op
+    await endpoint.close()
 
 
 @pytest.mark.asyncio

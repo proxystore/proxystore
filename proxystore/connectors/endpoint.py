@@ -2,30 +2,36 @@
 
 from __future__ import annotations
 
+import collections
 import logging
+import os
+import threading
+import time
 import uuid
+import weakref
+from collections.abc import Callable
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Self
+from typing import TypeVar
 from uuid import UUID
 
-import requests
-
-from proxystore.endpoint import client
-from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import get_configs
+from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointConnectorError
+from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
+from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
-
-class EndpointConnectorError(Exception):
-    """Exception resulting from request to Endpoint."""
-
-    pass
+_T = TypeVar('_T')
 
 
 class EndpointKey(NamedTuple):
@@ -57,6 +63,9 @@ class EndpointConnector:
         proxystore_dir: Optionally specify the proxystore home
             directory. Defaults to
             [`home_dir()`][proxystore.utils.environment.home_dir].
+        reconnect_timeout: Seconds to keep trying to reconnect to the
+            endpoint if it is unavailable (e.g., because it is restarting)
+            before a request fails.
 
     Raises:
         ValueError: If endpoints is an empty list.
@@ -68,6 +77,7 @@ class EndpointConnector:
         self,
         endpoints: Sequence[str | UUID],
         proxystore_dir: str | None = None,
+        reconnect_timeout: float = 5,
     ) -> None:
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
@@ -75,62 +85,55 @@ class EndpointConnector:
             e if isinstance(e, UUID) else UUID(e, version=4) for e in endpoints
         ]
         self.proxystore_dir = proxystore_dir
-
-        # Maintain single session for connection pooling persistence to
-        # speed up repeat requests to same endpoint.
-        self._session = requests.Session()
+        self.reconnect_timeout = reconnect_timeout
 
         # Find the first locally accessible endpoint to use as our
         # home endpoint
-        available_endpoints = get_configs(
-            home_dir() if self.proxystore_dir is None else self.proxystore_dir,
+        home = (
+            home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
-        found_endpoint: EndpointConfig | None = None
-        for endpoint in available_endpoints:
+        failures: list[str] = []
+        found: tuple[UUID, EndpointDir, EndpointClient] | None = None
+        for endpoint_dir, endpoint in EndpointDir.find_all(home):
             endpoint_uuid = UUID(endpoint.uuid)
             if endpoint_uuid not in self.endpoints:
                 continue
-            if endpoint.host is None:
-                logger.warning(
-                    'Found valid configuration for endpoint '
-                    f'"{endpoint.name}" ({endpoint_uuid}), but the endpoint '
-                    'has not been started',
-                )
-                continue
+
             logger.debug(f'Attempting connection to {endpoint_uuid}')
-            response = self._session.get(
-                f'http://{endpoint.host}:{endpoint.port}/endpoint',
-            )
-            if response.status_code == 200:
-                uuid_ = response.json()['uuid']
-                if endpoint_uuid == UUID(uuid_):
-                    logger.debug(
-                        f'Connection to {endpoint_uuid} successful, using '
-                        'as local endpoint',
-                    )
-                    found_endpoint = endpoint
-                    break
-                else:
-                    logger.debug(
-                        f'Connection to {endpoint_uuid} returned '
-                        'different UUID',
-                    )
-            else:
-                logger.debug(f'Connection to {endpoint_uuid} failed')
+            try:
+                client = _connect(endpoint_dir, endpoint_uuid)
+            except EndpointError as e:
+                logger.debug(f'Connection to {endpoint_uuid} failed: {e!r}')
+                failures.append(f'{endpoint.name} ({endpoint_uuid}): {e}')
+                continue
 
-        if found_endpoint is None:
-            self._session.close()
+            logger.debug(
+                f'Connection to {endpoint_uuid} successful, using '
+                'as local endpoint',
+            )
+            found = (endpoint_uuid, endpoint_dir, client)
+            break
+
+        if found is None:
+            if len(failures) == 0:
+                raise EndpointConnectorError(
+                    'Failed to find an endpoint configuration in '
+                    f'{home} matching one of the provided endpoint UUIDs.',
+                )
+            reasons = '\n'.join(f'  - {failure}' for failure in failures)
             raise EndpointConnectorError(
-                'Failed to find an endpoint configuration matching one of the '
-                'provided endpoint UUIDs, or an endpoint configuration was '
-                'found but the endpoint could not be connected to. '
-                'Enable debug level logging for more more details.',
+                'Failed to connect to any of the endpoints matching the '
+                f'provided endpoint UUIDs:\n{reasons}',
             )
-        self.endpoint_uuid: uuid.UUID = uuid.UUID(found_endpoint.uuid)
-        self.endpoint_host: str | None = found_endpoint.host
-        self.endpoint_port: int = found_endpoint.port
+        endpoint_uuid, endpoint_dir, client = found
+        self.endpoint_uuid: uuid.UUID = endpoint_uuid
+        self.endpoint_dir = endpoint_dir
 
-        self.address = f'http://{self.endpoint_host}:{self.endpoint_port}'
+        self._pool = _ConnectionPool(
+            lambda: _connect(endpoint_dir, endpoint_uuid),
+            reconnect_timeout=reconnect_timeout,
+        )
+        self._pool.add(client)
 
     def __enter__(self) -> Self:
         return self
@@ -146,12 +149,12 @@ class EndpointConnector:
     def __repr__(self) -> str:
         return (
             f'{self.__class__.__name__}(connected to {self.endpoint_uuid} '
-            f'@ {self.address})'
+            f'in {self.endpoint_dir})'
         )
 
     def close(self) -> None:
         """Close the connector and clean up."""
-        self._session.close()
+        self._pool.close()
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.
@@ -162,6 +165,7 @@ class EndpointConnector:
         return {
             'endpoints': [str(ep) for ep in self.endpoints],
             'proxystore_dir': self.proxystore_dir,
+            'reconnect_timeout': self.reconnect_timeout,
         }
 
     @classmethod
@@ -173,24 +177,26 @@ class EndpointConnector:
         """
         return cls(**config)
 
+    def _request(
+        self,
+        name: str,
+        request: Callable[[EndpointClient], _T],
+    ) -> _T:
+        try:
+            return self._pool.run(request)
+        except (EndpointError, ValueError) as e:
+            raise EndpointConnectorError(f'{name} failed: {e}') from e
+
     def evict(self, key: EndpointKey) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
         """
-        try:
-            client.evict(
-                self.address,
-                key.object_id,
-                key.endpoint_id,
-                session=self._session,
-            )
-        except requests.exceptions.RequestException as e:
-            assert e.response is not None
-            raise EndpointConnectorError(
-                f'Evict failed with error code {e.response.status_code}.',
-            ) from e
+        self._request(
+            'Evict',
+            lambda client: client.evict(key.object_id, key.endpoint_id),
+        )
 
     def exists(self, key: EndpointKey) -> bool:
         """Check if an object associated with the key exists.
@@ -201,18 +207,10 @@ class EndpointConnector:
         Returns:
             If an object associated with the key exists.
         """
-        try:
-            return client.exists(
-                self.address,
-                key.object_id,
-                key.endpoint_id,
-                session=self._session,
-            )
-        except requests.exceptions.RequestException as e:
-            assert e.response is not None
-            raise EndpointConnectorError(
-                f'Exists failed with error code {e.response.status_code}.',
-            ) from e
+        return self._request(
+            'Exists',
+            lambda client: client.exists(key.object_id, key.endpoint_id),
+        )
 
     def get(self, key: EndpointKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
@@ -223,18 +221,10 @@ class EndpointConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        try:
-            return client.get(
-                self.address,
-                key.object_id,
-                key.endpoint_id,
-                session=self._session,
-            )
-        except requests.exceptions.RequestException as e:
-            assert e.response is not None
-            raise EndpointConnectorError(
-                f'Get failed with error code {e.response.status_code}.',
-            ) from e
+        return self._request(
+            'Get',
+            lambda client: client.get(key.object_id, key.endpoint_id),
+        )
 
     def get_batch(self, keys: Sequence[EndpointKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -314,16 +304,141 @@ class EndpointConnector:
             key: Key that the object will be associated with.
             obj: Object to associate with the key.
         """
+        self._request(
+            'Set',
+            lambda client: client.set(key.object_id, obj, key.endpoint_id),
+        )
+
+
+def _connect(endpoint_dir: EndpointDir, endpoint_uuid: UUID) -> EndpointClient:
+    client = EndpointClient.from_dir(endpoint_dir)
+    if client.info.uuid != endpoint_uuid:
+        client.close()
+        raise EndpointProtocolError(
+            f'Expected endpoint {endpoint_uuid} but the endpoint running in '
+            f'{endpoint_dir} is {client.info.uuid}.',
+        )
+    return client
+
+
+class _ConnectionPool:
+    """Thread-safe pool of connections to an endpoint.
+
+    A connection only processes one request at a time so concurrent requests
+    (e.g., from multiple threads) each use a separate connection. The pool
+    does not limit the number of connections, so it holds at most one idle
+    connection for each request that was made concurrently.
+
+    Args:
+        connect: Callable that returns a new connection.
+        reconnect_timeout: Seconds to keep trying to create a new connection
+            while the endpoint is unavailable.
+    """
+
+    _RETRYABLE_ERRORS = (
+        # The endpoint is stopped or restarting.
+        EndpointNotRunningError,
+        EndpointConnectionError,
+        # The connection file was read just before the endpoint restarted.
+        EndpointAuthError,
+    )
+    _MAX_BACKOFF = 0.5
+
+    def __init__(
+        self,
+        connect: Callable[[], EndpointClient],
+        *,
+        reconnect_timeout: float = 5,
+    ) -> None:
+        self._connect = connect
+        self._reconnect_timeout = reconnect_timeout
+        self._idle: collections.deque[EndpointClient] = collections.deque()
+        self._lock = threading.Lock()
+        _POOLS.add(self)
+
+    def run(self, request: Callable[[EndpointClient], _T]) -> _T:
+        """Run a request with a connection from the pool.
+
+        Connections can be closed by the endpoint (e.g., when the endpoint
+        is restarted), so a request that fails because its connection was
+        closed is retried once with a new connection. All requests are safe
+        to retry because objects are write-once.
+
+        Args:
+            request: Callable that makes a request with a connection.
+
+        Returns:
+            The result of the request.
+        """
+        client = self._acquire()
         try:
-            client.put(
-                self.address,
-                key.object_id,
-                bytes(obj),
-                key.endpoint_id,
-                session=self._session,
+            return request(client)
+        except EndpointConnectionError:
+            logger.debug(
+                'Retrying request with a new connection because the '
+                'connection to the endpoint was closed',
             )
-        except requests.exceptions.RequestException as e:
-            assert e.response is not None
-            raise EndpointConnectorError(
-                f'Put failed with error code {e.response.status_code}.',
-            ) from e
+        finally:
+            self._release(client)
+
+        client = self._reconnect()
+        try:
+            return request(client)
+        finally:
+            self._release(client)
+
+    def close(self) -> None:
+        """Close all idle connections in the pool."""
+        with self._lock:
+            while self._idle:
+                self._idle.pop().close()
+
+    def add(self, client: EndpointClient) -> None:
+        """Add an idle connection to the pool."""
+        self._release(client)
+
+    def _acquire(self) -> EndpointClient:
+        with self._lock:
+            if self._idle:
+                return self._idle.pop()
+        return self._reconnect()
+
+    def _reconnect(self) -> EndpointClient:
+        deadline = time.monotonic() + self._reconnect_timeout
+        backoff = 0.01
+        while True:
+            try:
+                return self._connect()
+            except self._RETRYABLE_ERRORS as e:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise
+                logger.debug(f'Retrying connection to the endpoint: {e!r}')
+                time.sleep(min(backoff, remaining))
+                backoff = min(backoff * 2, self._MAX_BACKOFF)
+
+    def _release(self, client: EndpointClient) -> None:
+        if client.closed:
+            return
+        with self._lock:
+            self._idle.append(client)
+
+    def _reset_after_fork(self) -> None:
+        # The idle connections are shared with the parent process so they
+        # cannot be used by the child, and the lock may have been held by
+        # another thread of the parent when the process was forked.
+        self._lock = threading.Lock()
+        while self._idle:
+            self._idle.pop().close()
+
+
+_POOLS: weakref.WeakSet[_ConnectionPool] = weakref.WeakSet()
+
+
+def _reset_pools_after_fork() -> None:
+    for pool in list(_POOLS):
+        pool._reset_after_fork()
+
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=_reset_pools_after_fork)

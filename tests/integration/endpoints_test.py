@@ -14,7 +14,7 @@ import pytest
 
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.config import RelayServingConfig
 from proxystore.p2p.relay.run import serve
@@ -86,19 +86,19 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
             # We want a unique proxystore_dir for each endpoint to simulate
             # different systems
             proxystore_dir = os.path.join(tmp_path, str(port))
-            endpoint_dir = os.path.join(proxystore_dir, cfg.name)
-            write_config(cfg, endpoint_dir)
+            endpoint_dir = EndpointDir.from_home(proxystore_dir, cfg.name)
+            endpoint_dir.write_config(cfg)
             uuids.append(uuid.UUID(cfg.uuid))
             dirs.append(proxystore_dir)
 
             handle = context.Process(
                 target=serve_endpoint_silent,
-                args=[cfg],
+                args=[endpoint_dir],
             )
             handle.start()
             handles.append(handle)
 
-            wait_for_endpoint(cfg.host, cfg.port)
+            wait_for_endpoint(endpoint_dir)
 
         if not ss.is_alive():  # pragma: no cover
             raise RuntimeError('Relay server died.')
@@ -207,9 +207,9 @@ def _produce_remote(
         return_value=home_dir,
     ):
         store = Store('store', EndpointConnector(endpoints))
-        # Send port to other process to compare
+        # Send the endpoint UUID to the other process to compare
         proxy: Proxy[Any] = store.proxy(
-            store.connector.endpoint_port,
+            store.connector.endpoint_uuid,
             populate_target=False,
         )
         queue.put(proxy)
@@ -221,14 +221,14 @@ def _consume_remote(queue: multiprocessing.Queue[Any], home_dir: str) -> None:
         'proxystore.connectors.endpoint.home_dir',
         return_value=home_dir,
     ):
-        port = queue.get()
+        endpoint_uuid = queue.get()
         # Just to force the proxy to resolve
-        assert isinstance(port, int)
+        assert isinstance(endpoint_uuid, uuid.UUID)
 
-        # Make sure consumer is using different port
+        # Make sure consumer is using a different endpoint
         store = get_store('store')
         assert isinstance(store, Store)
-        assert store.connector.endpoint_port != port
+        assert store.connector.endpoint_uuid != endpoint_uuid
 
 
 @pytest.mark.integration

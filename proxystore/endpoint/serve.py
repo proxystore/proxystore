@@ -1,26 +1,25 @@
-"""Endpoint serving."""
+"""Endpoint serving.
+
+Endpoints serve client requests over TCP using the
+[`ClientHandler`][proxystore.endpoint.server.ClientHandler].
+"""
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
-import json
 import logging
 import os
 import signal
+import ssl
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any
 from typing import Literal
 
 try:
-    import quart
-    import uvicorn
     import uvloop
-    from quart import request
-    from quart import Response
 except ImportError as e:  # pragma: no cover
-    # Usually we would just print a warning, but this file requires
-    # quart to be available to register functions to a top-level blueprint.
     raise ImportError(
         f'{e}. To enable endpoint serving, install proxystore with '
         '"pip install proxystore[endpoints]".',
@@ -29,10 +28,15 @@ except ImportError as e:  # pragma: no cover
 from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
+from proxystore.endpoint.auth import ConnectionInfo
+from proxystore.endpoint.auth import generate_tls_certificate
+from proxystore.endpoint.auth import generate_token
+from proxystore.endpoint.auth import pem_certificate_fingerprint
+from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.constants import MAX_CHUNK_LENGTH
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
@@ -41,39 +45,8 @@ from proxystore.globus.scopes import get_relay_scopes_by_resource_server
 from proxystore.p2p.manager import PeerManager
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.p2p.relay.client import RelayClient
-from proxystore.utils.data import chunk_bytes
 
 logger = logging.getLogger(__name__)
-
-routes_blueprint = quart.Blueprint('routes', __name__)
-
-
-def create_app(
-    endpoint: Endpoint,
-    max_content_length: int | None = None,
-    body_timeout: int = 300,
-) -> quart.Quart:
-    """Create quart app for endpoint and registers routes.
-
-    Args:
-        endpoint: Initialized endpoint to forward quart routes to.
-        max_content_length: Max request body size in bytes.
-        body_timeout: Number of seconds to wait for the body to be
-            completely received.
-
-    Returns:
-        Quart app.
-    """
-    app = quart.Quart(__name__)
-
-    app.config['endpoint'] = endpoint
-
-    app.register_blueprint(routes_blueprint, url_prefix='')
-
-    app.config['MAX_CONTENT_LENGTH'] = max_content_length
-    app.config['BODY_TIMEOUT'] = body_timeout
-
-    return app
 
 
 def _get_auth_headers(
@@ -104,116 +77,209 @@ def _get_auth_headers(
         raise AssertionError('Unreachable.')
 
 
-async def _serve_async(config: EndpointConfig) -> None:
-    if config.host is None:
-        raise ValueError('EndpointConfig has NoneType as host.')
-
-    storage: Storage | None
+def _create_storage(config: EndpointConfig) -> Storage:
     database_path = config.storage.database_path
     if database_path is not None:
         logger.info(
             f'Using SQLite database for storage (path: {database_path})',
         )
-        storage = SQLiteStorage(
+        return SQLiteStorage(
             database_path,
             max_object_size=config.storage.max_object_size,
         )
-    else:
-        logger.warning(
-            'Database path not provided. Data will not be persisted',
-        )
-        storage = DictStorage(max_object_size=config.storage.max_object_size)
+    logger.warning('Database path not provided. Data will not be persisted')
+    return DictStorage(max_object_size=config.storage.max_object_size)
 
-    peer_manager: PeerManager | None = None
-    nat_check: asyncio.Task[None] | None = None
-    if config.relay.address is not None:
-        headers = _get_auth_headers(
-            method=config.relay.auth.method,
-            **config.relay.auth.kwargs,
-        )
-        relay_client = RelayClient(
-            address=config.relay.address,
-            client_name=config.name,
-            client_uuid=uuid.UUID(config.uuid),
-            extra_headers=headers,
-            verify_certificate=config.relay.verify_certificate,
-        )
-        ice_servers = (
-            None
-            if config.relay.ice_servers is None
-            else [
-                RTCIceServer(
-                    urls=server.urls,
-                    username=server.username,
-                    credential=server.credential,
-                )
-                for server in config.relay.ice_servers
-            ]
-        )
-        peer_manager = PeerManager(
-            relay_client,
-            peer_channels=config.relay.peer_channels,
-            ice_servers=ice_servers,
-        )
-        # The NAT check only produces diagnostic logs so it is run
-        # concurrently rather than delaying the endpoint from serving
-        # requests on networks where STUN is slow or blocked.
-        nat_check = asyncio.create_task(check_nat_and_log())
 
-    endpoint = await Endpoint(
-        name=config.name,
-        uuid=uuid.UUID(config.uuid),
-        peer_manager=peer_manager,
-        storage=storage,
+def _create_peer_manager(config: EndpointConfig) -> PeerManager | None:
+    if config.relay.address is None:
+        return None
+
+    headers = _get_auth_headers(
+        method=config.relay.auth.method,
+        **config.relay.auth.kwargs,
     )
-    app = create_app(endpoint)
-
-    server_config = uvicorn.Config(
-        app,
-        host=config.host,
-        port=config.port,
-        log_config=None,
-        log_level=logger.level,
-        access_log=False,
+    relay_client = RelayClient(
+        address=config.relay.address,
+        client_name=config.name,
+        client_uuid=uuid.UUID(config.uuid),
+        extra_headers=headers,
+        verify_certificate=config.relay.verify_certificate,
     )
-    server = uvicorn.Server(server_config)
-
-    logger.info(
-        f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
-        f'{config.host}:{config.port}',
+    ice_servers = (
+        None
+        if config.relay.ice_servers is None
+        else [
+            RTCIceServer(
+                urls=server.urls,
+                username=server.username,
+                credential=server.credential,
+            )
+            for server in config.relay.ice_servers
+        ]
     )
-    logger.info(f'Config: {config}')
+    return PeerManager(
+        relay_client,
+        peer_channels=config.relay.peer_channels,
+        ice_servers=ice_servers,
+    )
 
+
+async def _cancel(task: asyncio.Task[Any]) -> None:
+    task.cancel()
+    with contextlib.suppress(asyncio.CancelledError):
+        await task
+
+
+async def _close_server(
+    server: asyncio.Server,
+    handler: ClientHandler,
+) -> None:
+    server.close()
+    await handler.close_connections()
+    await server.wait_closed()
+
+
+@contextlib.asynccontextmanager
+async def running_endpoint(
+    endpoint_dir: EndpointDir,
+) -> AsyncIterator[Endpoint]:
+    """Run an endpoint that serves clients until the context exits.
+
+    Once the context is entered, the endpoint is accepting client connections
+    and its connection file is in the endpoint directory. When the context
+    exits, the connection file is removed, client connections are closed,
+    and the endpoint is closed.
+
+    Example:
+        ```python
+        async with running_endpoint(endpoint_dir):
+            client = EndpointClient.from_dir(endpoint_dir)
+            ...
+        ```
+
+    Args:
+        endpoint_dir: Directory of the endpoint with its configuration.
+
+    Yields:
+        The running endpoint.
+
+    Raises:
+        FileNotFoundError: If the configuration does not exist.
+        ValueError: If the configuration is invalid or the host is not set
+            in the configuration.
+        OSError: If the endpoint cannot listen on its host and port.
+    """
+    config = endpoint_dir.read_config()
+    if config.host is None:
+        raise ValueError('EndpointConfig has NoneType as host.')
+
+    # Resources are cleaned up in the reverse order they are created,
+    # including when start up fails partway through.
+    async with contextlib.AsyncExitStack() as stack:
+        peer_manager = _create_peer_manager(config)
+        if peer_manager is not None:
+            # The NAT check only produces diagnostic logs so it is run
+            # concurrently rather than delaying the endpoint from serving
+            # requests on networks where STUN is slow or blocked.
+            nat_check = asyncio.create_task(check_nat_and_log())
+            stack.push_async_callback(_cancel, nat_check)
+
+        endpoint = await stack.enter_async_context(
+            Endpoint(
+                name=config.name,
+                uuid=uuid.UUID(config.uuid),
+                peer_manager=peer_manager,
+                storage=_create_storage(config),
+            ),
+        )
+
+        if endpoint_dir.restrict_permissions():
+            logger.warning(
+                'Removed group and other permissions from '
+                f'{endpoint_dir} because clients trust the files in the '
+                'endpoint directory',
+            )
+
+        token = generate_token()
+        ssl_context: ssl.SSLContext | None = None
+        tls_fingerprint: str | None = None
+        if config.tls:
+            cert_pem, key_pem = generate_tls_certificate(
+                f'proxystore-endpoint-{config.uuid}',
+            )
+            ssl_context = server_ssl_context(cert_pem, key_pem)
+            tls_fingerprint = pem_certificate_fingerprint(cert_pem)
+            logger.info('Encrypting client connections with TLS')
+
+        handler = ClientHandler(
+            endpoint,
+            token,
+            max_object_size=config.storage.max_object_size,
+        )
+        server = await handler.start_server(
+            config.host,
+            config.port,
+            ssl_context=ssl_context,
+        )
+        stack.push_async_callback(_close_server, server, handler)
+
+        # The connection file is only written once the server is listening
+        # so that a failed start (e.g., because another instance of the
+        # endpoint is using the port) does not replace or remove the
+        # connection file of the running instance.
+        connection = ConnectionInfo(
+            host=config.host,
+            port=config.port,
+            token=token,
+            tls_fingerprint=tls_fingerprint,
+        )
+        endpoint_dir.write_connection(connection)
+        stack.callback(endpoint_dir.remove_connection, connection)
+        logger.info(
+            f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
+            f'{config.host}:{config.port}',
+        )
+        logger.info(f'Config: {config}')
+        try:
+            yield endpoint
+        finally:
+            logger.info('Shutting down endpoint server')
+
+
+async def _serve_async(endpoint_dir: EndpointDir) -> None:
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    signals = (signal.SIGINT, signal.SIGTERM)
+    # Signal handlers are installed before starting the endpoint so that a
+    # signal received during start up stops the endpoint once it starts.
+    for sig in signals:
+        loop.add_signal_handler(sig, stop.set)
     try:
-        await server.serve()
+        async with running_endpoint(endpoint_dir):
+            await stop.wait()
     finally:
-        if nat_check is not None and not nat_check.done():
-            nat_check.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await nat_check
-        # Normally the endpoint is closed by the "after_app_serving" shutdown
-        # callback, but that callback only runs if the server's lifespan
-        # completes. Closing here as well ensures the endpoint's background
-        # tasks (e.g., the relay client's reconnect task) are always torn down
-        # so they cannot raise after serving has stopped. close() is
-        # idempotent so the redundant call in the normal path is a no-op.
-        await endpoint.close()
+        for sig in signals:
+            loop.remove_signal_handler(sig)
 
 
 def serve(
-    config: EndpointConfig,
+    endpoint_dir: EndpointDir,
     *,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,
     use_uvloop: bool = True,
 ) -> None:
-    """Initialize endpoint and serve Quart app.
+    """Initialize and serve an endpoint.
 
     Warning:
-        This function does not return until the Quart app is terminated.
+        This function does not return until the server receives SIGINT or
+        SIGTERM.
 
     Args:
-        config: Configuration object.
+        endpoint_dir: Directory of the endpoint with its configuration. The
+            connection file is written to this directory while the
+            endpoint is running.
         log_level: Logging level of endpoint.
         log_file: Optional file path to append log to.
         use_uvloop: Use uvloop as the event loop implementation.
@@ -234,21 +300,14 @@ def serve(
         )
     logging.getLogger().setLevel(log_level)
 
-    # Convert SIGTERM to SIGINT which will be handled by Uvicorn first,
-    # then passed on by this function.
-    signal.signal(
-        signal.SIGTERM,
-        lambda *_args: signal.raise_signal(signal.SIGINT),
-    )
-
     # The remaining set up and serving code is deferred to within the
     # _serve_async helper function which will be executed within an event loop.
     try:
         if use_uvloop:  # pragma: no cover
             logger.info('Using uvloop as the event loop')
-            uvloop.run(_serve_async(config))
+            uvloop.run(_serve_async(endpoint_dir))
         else:
-            asyncio.run(_serve_async(config))
+            asyncio.run(_serve_async(endpoint_dir))
     except Exception as e:
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see
@@ -256,222 +315,8 @@ def serve(
         logger.exception(f'Caught unhandled exception: {e!r}')
         raise
     except KeyboardInterrupt:  # pragma: no cover
-        # Uvicorn<0.29.0 captures SIGINT and does not propagate is.
-        # Uvicorn>=0.29.1 changes this behavior to propagate the SIGINT after
-        # Uvicorn has done it's cleanup, so we need to catch the exception
-        # here and pass on it since we let Uvicorn handle our clean up in
-        # the "after_app_serving" shutdown callback. This is excluded from
-        # coverage because it depends on the Uvicorn version.
-        # Relevant PR: https://github.com/encode/uvicorn/pull/1600
+        # SIGINT is handled by _serve_async once the event loop is running,
+        # but can still be raised before then.
         pass
     finally:
-        logger.info(f'Finished serving endpoint: {config.name}')
-
-
-@routes_blueprint.before_app_serving
-async def _startup() -> None:
-    endpoint = quart.current_app.config['endpoint']
-    # Typically async_init() is called when the endpoint is initialized
-    # with the await keyword, but we call it again here in case the endpoint
-    # object needed to be initialized outside of an event loop.
-    await endpoint.async_init()
-
-
-@routes_blueprint.after_app_serving
-async def _shutdown() -> None:
-    endpoint = quart.current_app.config['endpoint']
-    await endpoint.close()
-
-
-@routes_blueprint.route('/')
-async def _home() -> tuple[str, int]:
-    return ('', 200)
-
-
-@routes_blueprint.route('/endpoint', methods=['GET'])
-async def endpoint_handler() -> Response:
-    """Route handler for `GET /endpoint`.
-
-    Responses:
-
-    * `Status Code 200`: JSON containing the key `uuid` with the value as
-      the string UUID of this endpoint.
-    """
-    endpoint = quart.current_app.config['endpoint']
-    return Response(
-        json.dumps({'uuid': str(endpoint.uuid)}),
-        200,
-        content_type='application/json',
-    )
-
-
-@routes_blueprint.route('/evict', methods=['POST'])
-async def evict_handler() -> Response:
-    """Route handler for `POST /evict`.
-
-    Responses:
-
-    * `Status Code 200`: If the operation succeeds. The response message will
-      be empty.
-    * `Status Code 400`: If the key argument is missing or the endpoint UUID
-      argument is present but not a valid UUID.
-    * `Status Code 500`: If there was a peer request error. The response
-      will contain the string representation of the internal error.
-    """
-    key = request.args.get('key', None)
-    if key is None:
-        return Response('request missing key', 400)
-
-    endpoint_uuid: str | uuid.UUID | None = request.args.get(
-        'endpoint',
-        None,
-    )
-    endpoint = quart.current_app.config['endpoint']
-    if isinstance(endpoint_uuid, str):
-        try:
-            endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
-        except ValueError:
-            return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
-
-    try:
-        await endpoint.evict(key=key, endpoint=endpoint_uuid)
-        return Response('', 200)
-    except PeerRequestError as e:
-        return Response(str(e), 500)
-
-
-@routes_blueprint.route('/exists', methods=['GET'])
-async def exists_handler() -> Response:
-    """Route handler for `GET /exists`.
-
-    Responses:
-
-    * `Status Code 200`: If the operation succeeds. The response message will
-      be empty.
-    * `Status Code 400`: If the key argument is missing or the endpoint UUID
-      argument is present but not a valid UUID.
-    * `Status Code 500`: If there was a peer request error. The response
-      will contain the string representation of the internal error.
-    """
-    key = request.args.get('key', None)
-    if key is None:
-        return Response('request missing key', 400)
-
-    endpoint_uuid: str | uuid.UUID | None = request.args.get(
-        'endpoint',
-        None,
-    )
-    endpoint = quart.current_app.config['endpoint']
-    if isinstance(endpoint_uuid, str):
-        try:
-            endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
-        except ValueError:
-            return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
-
-    try:
-        exists = await endpoint.exists(key=key, endpoint=endpoint_uuid)
-        return Response(
-            json.dumps({'exists': exists}),
-            200,
-            content_type='application/json',
-        )
-    except PeerRequestError as e:
-        return Response(str(e), 500)
-
-
-@routes_blueprint.route('/get', methods=['GET'])
-async def get_handler() -> Response:
-    """Route handler for `GET /get`.
-
-    Responses:
-
-    * `Status Code 200`: If the operation succeeds. The response message will
-       contain the octet-stream of the requested data.
-    * `Status Code 400`: If the key argument is missing or the endpoint UUID
-      argument is present but not a valid UUID.
-    * `Status Code 404`: If there is no data associated with the provided key.
-    * `Status Code 500`: If there was a peer request error. The response
-      will contain the string representation of the internal error.
-    """
-    key = request.args.get('key', None)
-    if key is None:
-        return Response('request missing key', 400)
-
-    endpoint_uuid: str | uuid.UUID | None = request.args.get(
-        'endpoint',
-        None,
-    )
-    endpoint = quart.current_app.config['endpoint']
-    if isinstance(endpoint_uuid, str):
-        try:
-            endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
-        except ValueError:
-            return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
-
-    try:
-        data = await endpoint.get(key=key, endpoint=endpoint_uuid)
-    except PeerRequestError as e:
-        return Response(str(e), 500)
-
-    if data is not None:
-        return Response(
-            response=chunk_bytes(data, MAX_CHUNK_LENGTH),
-            content_type='application/octet-stream',
-        )
-    else:
-        return Response('no data associated with request key', 404)
-
-
-@routes_blueprint.route('/set', methods=['POST'])
-async def set_handler() -> Response:
-    """Route handler for `POST /set`.
-
-    Responses:
-
-    * `Status Code 200`: If the operation succeeds. The response message will
-      be empty.
-    * `Status Code 400`: If the key argument is missing, the endpoint UUID
-      argument is present but not a valid UUID, or the request is missing
-      the data payload.
-    * `Status Code 413`: If the data payload exceeds the maximum content
-      length configured for the app.
-    * `Status Code 500`: If there was a peer request error. The response
-      will contain the string representation of the internal error.
-    """
-    key = request.args.get('key', None)
-    if key is None:
-        return Response('request missing key', 400)
-
-    endpoint_uuid: str | uuid.UUID | None = request.args.get(
-        'endpoint',
-        None,
-    )
-    endpoint = quart.current_app.config['endpoint']
-    if isinstance(endpoint_uuid, str):
-        try:
-            endpoint_uuid = uuid.UUID(endpoint_uuid, version=4)
-        except ValueError:
-            return Response(f'{endpoint_uuid} is not a valid UUID4', 400)
-
-    max_length = quart.current_app.config['MAX_CONTENT_LENGTH']
-    data = bytearray()
-    # Note: tests/endpoint/serve_test.py::test_empty_chunked_data handles
-    # the branching case for where the code in the for loop is not executed
-    # but coverage is not detecting that hence the pragma here
-    async for chunk in request.body:  # pragma: no branch
-        data += chunk
-        # Quart>=0.23 no longer enforces MAX_CONTENT_LENGTH when iterating
-        # over the request body so we must check the length ourselves.
-        # Quart>=0.23 requires Python>=3.13 so this is only reachable there.
-        if max_length is not None and len(data) > max_length:
-            return Response('payload too large', 413)  # pragma: >=3.13 cover
-
-    if len(data) == 0:
-        return Response('received empty payload', 400)
-
-    try:
-        await endpoint.set(key=key, data=bytes(data), endpoint=endpoint_uuid)
-    except PeerRequestError as e:
-        return Response(str(e), 500)
-    else:
-        return Response('', 200)
+        logger.info(f'Finished serving endpoint in {endpoint_dir}')
