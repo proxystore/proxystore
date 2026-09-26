@@ -224,8 +224,17 @@ class _ClientConnection(asyncio.BufferedProtocol):
             self._reading_paused = False
 
     def write(self, data: bytes | bytearray | memoryview) -> None:
-        """Write data to the connection."""
+        """Write data to the connection.
+
+        Raises:
+            ConnectionResetError: If the connection is closed.
+        """
         assert self._transport is not None
+        # uvloop raises a RuntimeError when writing to a closed transport
+        # (e.g., when the endpoint closes connections on shutdown) whereas
+        # asyncio ignores the write.
+        if self._transport.is_closing():
+            raise ConnectionResetError('Connection lost')
         self._transport.write(data)
 
     async def drain(self) -> None:

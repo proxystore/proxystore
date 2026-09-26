@@ -544,6 +544,14 @@ async def test_connection_eof_during_read() -> None:
     assert exc_info.value.partial == b'abcd'
 
 
+async def test_connection_write_after_close() -> None:
+    conn, transport = await _fake_connection()
+    transport.close()
+    with pytest.raises(ConnectionResetError):
+        conn.write(b'data')
+    assert transport.written == b''
+
+
 async def test_connection_drain() -> None:
     conn, transport = await _fake_connection()
     conn.write(b'data')
