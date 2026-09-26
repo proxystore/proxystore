@@ -28,10 +28,8 @@ except ImportError as e:  # pragma: no cover
 from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
-from proxystore.endpoint.auth import create_server_ssl_context
-from proxystore.endpoint.auth import Credentials
-from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
@@ -190,15 +188,15 @@ async def running_endpoint(
             ),
         )
 
-        if restrict_directory(endpoint_dir):
+        directory = EndpointDir(endpoint_dir)
+        if directory.restrict_permissions():
             logger.warning(
                 'Removed group and other write permissions from '
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )
-        stack.callback(Credentials.remove, endpoint_dir)
-        credentials = Credentials.create(
-            endpoint_dir,
+        stack.callback(directory.remove_credentials)
+        credentials = directory.create_credentials(
             tls=config.tls,
             common_name=f'proxystore-endpoint-{config.uuid}',
         )
@@ -210,7 +208,7 @@ async def running_endpoint(
 
         ssl_context: ssl.SSLContext | None = None
         if config.tls:
-            ssl_context = create_server_ssl_context(endpoint_dir)
+            ssl_context = directory.server_ssl_context()
             logger.info('Encrypting client connections with TLS')
 
         server = await handler.start_server(

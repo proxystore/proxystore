@@ -17,8 +17,8 @@ from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.serve import _get_auth_headers
@@ -45,7 +45,7 @@ def _endpoint_config(**kwargs: Any) -> EndpointConfig:
 async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config()
     endpoint_dir = str(tmp_path)
-    token_file = EndpointFiles(endpoint_dir).token
+    token_file = EndpointDir(endpoint_dir).token_path
 
     async with running_endpoint(config, endpoint_dir) as endpoint:
         assert endpoint.uuid == uuid.UUID(config.uuid)
@@ -82,7 +82,7 @@ async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
         with pytest.raises(OSError):
             async with running_endpoint(config, str(tmp_path)):
                 pass  # pragma: no cover
-    assert not os.path.exists(EndpointFiles(str(tmp_path)).token)
+    assert not os.path.exists(EndpointDir(str(tmp_path)).token_path)
 
 
 async def test_running_endpoint_start_up_failure_cleans_up(
@@ -121,7 +121,7 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
         process.terminate()
         process.join(timeout=5)
         assert process.exitcode == 0
-        assert not os.path.exists(EndpointFiles(endpoint_dir).token)
+        assert not os.path.exists(EndpointDir(endpoint_dir).token_path)
     finally:
         terminate_process(process)
 
@@ -246,10 +246,10 @@ async def test_running_endpoint_cancels_nat_check(
 async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config(tls=True)
     endpoint_dir = str(tmp_path)
-    files = EndpointFiles(endpoint_dir)
+    files = EndpointDir(endpoint_dir)
 
     async with running_endpoint(config, endpoint_dir):
-        assert stat.S_IMODE(os.stat(files.tls_key).st_mode) == 0o600
+        assert stat.S_IMODE(os.stat(files.tls_key_path).st_mode) == 0o600
         client = await asyncio.to_thread(
             EndpointClient.from_config,
             config,
@@ -259,5 +259,5 @@ async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
         assert client.info.uuid == uuid.UUID(config.uuid)
         await asyncio.to_thread(client.close)
 
-    assert not os.path.exists(files.tls_cert)
-    assert not os.path.exists(files.tls_key)
+    assert not os.path.exists(files.tls_cert_path)
+    assert not os.path.exists(files.tls_key_path)

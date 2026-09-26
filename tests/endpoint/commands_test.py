@@ -23,10 +23,10 @@ from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 
 _NAME = 'default'
 _UUID = uuid.uuid4()
@@ -79,7 +79,7 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
         # Returns STOPPED if PID file does not exist
         assert get_status(_NAME, str(tmp_path)) == EndpointStatus.STOPPED
 
-        with open(EndpointFiles(endpoint_dir).pid, 'w') as f:
+        with open(EndpointDir(endpoint_dir).pid_path, 'w') as f:
             f.write('0')
 
         with mock.patch(
@@ -94,7 +94,7 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
 
         # Return HANGING if PID was reused by another user's process
-        with open(EndpointFiles(endpoint_dir).pid, 'w') as f:
+        with open(EndpointDir(endpoint_dir).pid_path, 'w') as f:
             f.write('1234')
         with mock.patch('os.kill', side_effect=PermissionError):
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
@@ -426,7 +426,7 @@ def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
 
     endpoint_dir = os.path.join(tmp_path, _NAME)
     os.makedirs(endpoint_dir)
-    with open(EndpointFiles(endpoint_dir).config, 'w') as f:
+    with open(EndpointDir(endpoint_dir).config_path, 'w') as f:
         f.write('not valid toml')
 
     rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
@@ -454,7 +454,7 @@ def test_start_endpoint_hanging_different_host(
     )
     write_config(config, endpoint_dir)
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -481,7 +481,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
     write_config(config, endpoint_dir)
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -550,7 +550,7 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
     p = context.Process(target=time.sleep, args=(1000,))
     p.start()
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     with open(pid_file, 'w') as f:
         f.write(str(p.pid))
 
@@ -607,7 +607,7 @@ def test_stop_endpoint_hanging_different_host(
     )
     write_config(config, endpoint_dir)
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -635,7 +635,7 @@ def test_stop_endpoint_dangling_pid_file(
     config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
     write_config(config, endpoint_dir)
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 

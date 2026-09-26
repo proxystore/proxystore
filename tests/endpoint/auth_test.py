@@ -9,13 +9,10 @@ import pytest
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import create_server_ssl_context
-from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
-from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.auth import write_private_file
@@ -47,22 +44,6 @@ def test_write_private_file_resets_existing_mode(
 
     assert _mode(path) == 0o600
     assert path.read_bytes() == b'new'
-
-
-@pytest.mark.parametrize(
-    ('mode', 'expected'),
-    ((0o700, 0o700), (0o755, 0o755), (0o775, 0o755), (0o777, 0o755)),
-)
-def test_restrict_directory(
-    mode: int,
-    expected: int,
-    tmp_path: pathlib.Path,
-) -> None:
-    path = tmp_path / 'dir'
-    path.mkdir()
-    os.chmod(path, mode)
-    assert restrict_directory(str(path)) == (mode != expected)
-    assert _mode(path) == expected
 
 
 def test_token_file_round_trip(tmp_path: pathlib.Path) -> None:
@@ -136,22 +117,3 @@ def test_generate_tls_certificate(tmp_path: pathlib.Path) -> None:
     # A new certificate is generated each time
     generate_tls_certificate(str(cert_path), str(key_path), 'test')
     assert read_certificate_fingerprint(str(cert_path)) != fingerprint
-
-
-@pytest.mark.parametrize('tls', (True, False))
-def test_credentials_lifecycle(tls: bool, tmp_path: pathlib.Path) -> None:
-    endpoint_dir = str(tmp_path)
-    with pytest.raises(FileNotFoundError):
-        Credentials.load(endpoint_dir, tls=tls)
-
-    credentials = Credentials.create(endpoint_dir, tls=tls, common_name='x')
-    assert len(credentials.token) == TOKEN_SIZE
-    assert (credentials.tls_fingerprint is not None) == tls
-    assert Credentials.load(endpoint_dir, tls=tls) == credentials
-    if tls:
-        create_server_ssl_context(endpoint_dir)
-
-    Credentials.remove(endpoint_dir)
-    assert os.listdir(endpoint_dir) == []
-    # Removing again is a no-op
-    Credentials.remove(endpoint_dir)

@@ -16,12 +16,11 @@ import pytest
 import pytest_asyncio
 
 from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import create_server_ssl_context
-from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -557,13 +556,11 @@ class _TLSServer(NamedTuple):
 async def tls_server(
     tmp_path: pathlib.Path,
 ) -> AsyncGenerator[_TLSServer, None]:
-    credentials = Credentials.create(
-        str(tmp_path),
-        tls=True,
-        common_name='test',
+    credentials = EndpointDir(str(tmp_path)).create_credentials(
+        tls=True, common_name='test'
     )
     assert credentials.tls_fingerprint is not None
-    context = create_server_ssl_context(str(tmp_path))
+    context = EndpointDir(str(tmp_path)).server_ssl_context()
 
     async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
         token = credentials.token

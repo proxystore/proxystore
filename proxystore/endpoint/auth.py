@@ -18,19 +18,15 @@ certificate in the endpoint's directory (i.e., certificate pinning).
 
 from __future__ import annotations
 
-import contextlib
 import datetime
 import hashlib
 import hmac
 import os
 import secrets
 import ssl
-import stat
 from typing import Literal
 from typing import NamedTuple
-from typing import Self
 
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.serialize import BytesLike
 
 TOKEN_SIZE = 32
@@ -40,8 +36,9 @@ TOKEN_SIZE = 32
 class Credentials(NamedTuple):
     """Credentials that clients use to connect to an endpoint.
 
-    The endpoint creates new credentials each time it starts and removes
-    them when it stops.
+    The endpoint creates new credentials in its directory each time it
+    starts and removes them when it stops (see
+    [`EndpointDir`][proxystore.endpoint.directory.EndpointDir]).
 
     Attributes:
         token: Token that the client and endpoint prove they know.
@@ -52,78 +49,6 @@ class Credentials(NamedTuple):
     token: bytes
     tls_fingerprint: str | None
 
-    @classmethod
-    def create(
-        cls,
-        endpoint_dir: str,
-        *,
-        tls: bool,
-        common_name: str,
-    ) -> Self:
-        """Create new credentials in an endpoint directory.
-
-        This writes a new token and, if `tls` is set, a new self-signed TLS
-        certificate and private key to the endpoint directory, replacing any
-        existing files.
-
-        Args:
-            endpoint_dir: Directory of the endpoint.
-            tls: Generate a TLS certificate.
-            common_name: Common name of the TLS certificate subject.
-        """
-        files = EndpointFiles(endpoint_dir)
-        token = generate_token_file(files.token)
-        fingerprint = None
-        if tls:
-            generate_tls_certificate(
-                files.tls_cert, files.tls_key, common_name
-            )
-            fingerprint = read_certificate_fingerprint(files.tls_cert)
-        return cls(token, fingerprint)
-
-    @classmethod
-    def load(cls, endpoint_dir: str, *, tls: bool) -> Self:
-        """Load the credentials of a running endpoint.
-
-        Args:
-            endpoint_dir: Directory of the endpoint.
-            tls: Load the fingerprint of the endpoint's TLS certificate.
-
-        Raises:
-            FileNotFoundError: If the token or certificate file does not
-                exist (e.g., because the endpoint is not running).
-            ValueError: If the token file is malformed.
-        """
-        files = EndpointFiles(endpoint_dir)
-        token = read_token_file(files.token)
-        fingerprint = (
-            read_certificate_fingerprint(files.tls_cert) if tls else None
-        )
-        return cls(token, fingerprint)
-
-    @staticmethod
-    def remove(endpoint_dir: str) -> None:
-        """Remove the credential files from an endpoint directory.
-
-        Files that do not exist are ignored.
-        """
-        files = EndpointFiles(endpoint_dir)
-        for path in (files.token, files.tls_cert, files.tls_key):
-            with contextlib.suppress(FileNotFoundError):
-                os.remove(path)
-
-
-def create_server_ssl_context(endpoint_dir: str) -> ssl.SSLContext:
-    """Create an SSL context with the TLS certificate of an endpoint.
-
-    The certificate must have been created by
-    [`Credentials.create()`][proxystore.endpoint.auth.Credentials.create].
-    """
-    files = EndpointFiles(endpoint_dir)
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(files.tls_cert, files.tls_key)
-    return context
-
 
 def write_private_file(path: str, data: BytesLike) -> None:
     """Write data to a file that only the owner can read and write.
@@ -132,23 +57,6 @@ def write_private_file(path: str, data: BytesLike) -> None:
     truncated and its mode is reset to `0600`.
     """
     _write_file(path, data, 0o600)
-
-
-def restrict_directory(path: str) -> bool:
-    """Remove group and other write permissions from a directory.
-
-    Clients trust the token and TLS certificate in the endpoint directory,
-    so no one other than the owner may be able to create, replace, or
-    rename files in it.
-
-    Returns:
-        `True` if the permissions of the directory were changed.
-    """
-    mode = stat.S_IMODE(os.stat(path).st_mode)
-    if mode & 0o022 == 0:
-        return False
-    os.chmod(path, mode & ~0o022)
-    return True
 
 
 def _write_file(path: str, data: BytesLike, mode: int) -> None:

@@ -16,9 +16,9 @@ import pytest
 import proxystore
 from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.p2p.nat import NatMapping
@@ -272,7 +272,7 @@ def test_test_command_errors(
         assert 'not a valid endpoint UUID' in caplog.records[0].message
         caplog.clear()
 
-        os.remove(EndpointFiles(copied_dir).token)
+        os.remove(EndpointDir(copied_dir).token_path)
         result = runner.invoke(cli, args)
         assert result.exit_code == 1
         assert 'Is the endpoint running?' in caplog.records[0].message

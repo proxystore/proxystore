@@ -25,13 +25,13 @@ import daemon.pidfile
 
 from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import EndpointRelayAuthConfig
 from proxystore.endpoint.config import EndpointRelayConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -88,7 +88,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
         logger.error(e)
         return EndpointStatus.UNKNOWN
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
     if not os.path.isfile(pid_file):
         return EndpointStatus.STOPPED
 
@@ -140,7 +140,7 @@ def configure_endpoint(
     endpoint_dir = os.path.join(proxystore_dir, name)
 
     database_path = (
-        EndpointFiles(endpoint_dir).database if persist_data else None
+        EndpointDir(endpoint_dir).database_path if persist_data else None
     )
 
     host_addr: str | None = None
@@ -320,7 +320,7 @@ def start_endpoint(  # noqa: C901
     elif cfg.host_type == 'ip':
         hostname = socket.gethostbyname(utils.hostname())
     elif cfg.host_type == 'static' and cfg.host is None:
-        path = EndpointFiles(endpoint_dir).config
+        path = EndpointDir(endpoint_dir).config_path
         logger.error('Missing static host address in config.')
         logger.error(
             'Set the `host` field or change the `host_type` to '
@@ -333,7 +333,7 @@ def start_endpoint(  # noqa: C901
     else:
         raise AssertionError('Unreachable.')
 
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
 
     if (
         status == EndpointStatus.HANGING
@@ -355,7 +355,7 @@ def start_endpoint(  # noqa: C901
     cfg.host = hostname
     write_config(cfg, endpoint_dir)
 
-    log_file = EndpointFiles(endpoint_dir).log
+    log_file = EndpointDir(endpoint_dir).log_path
 
     if detach:
         logger.info('Starting endpoint process as daemon.')
@@ -411,7 +411,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     endpoint_dir = os.path.join(proxystore_dir, name)
     cfg = read_config(endpoint_dir)
     hostname = utils.hostname()
-    pid_file = EndpointFiles(endpoint_dir).pid
+    pid_file = EndpointDir(endpoint_dir).pid_path
 
     if (
         status == EndpointStatus.HANGING

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import dataclasses
 import os
 import re
 import uuid
@@ -20,63 +19,9 @@ except ImportError:  # pragma: no cover
     from pydantic import validator as field_validator  # type: ignore[no-redef]
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.utils.config import dump
 from proxystore.utils.config import load
-
-
-@dataclasses.dataclass(frozen=True)
-class EndpointFiles:
-    """Paths to the files in an endpoint directory.
-
-    Example:
-        ```python
-        files = EndpointFiles('/path/to/endpoint')
-        assert files.config == '/path/to/endpoint/config.toml'
-        ```
-
-    Attributes:
-        directory: Directory of the endpoint.
-    """
-
-    directory: str
-
-    @property
-    def config(self) -> str:
-        """Path to the endpoint configuration."""
-        return self._path('config.toml')
-
-    @property
-    def database(self) -> str:
-        """Path to the default SQLite database for persisting objects."""
-        return self._path('blobs.db')
-
-    @property
-    def log(self) -> str:
-        """Path to the log of the endpoint daemon."""
-        return self._path('log.txt')
-
-    @property
-    def pid(self) -> str:
-        """Path to the PID file of the endpoint daemon."""
-        return self._path('daemon.pid')
-
-    @property
-    def token(self) -> str:
-        """Path to the token clients use to authenticate."""
-        return self._path('client.token')
-
-    @property
-    def tls_cert(self) -> str:
-        """Path to the TLS certificate of the endpoint."""
-        return self._path('tls.crt')
-
-    @property
-    def tls_key(self) -> str:
-        """Path to the TLS private key of the endpoint."""
-        return self._path('tls.key')
-
-    def _path(self, name: str) -> str:
-        return os.path.join(self.directory, name)
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -283,7 +228,7 @@ def read_config(endpoint_dir: str) -> EndpointConfig:
         FileNotFoundError: If a config files does not exist in the directory.
         ValueError: If config contains an invalid value or cannot be parsed.
     """
-    path = EndpointFiles(endpoint_dir).config
+    path = EndpointDir(endpoint_dir).config_path
 
     if os.path.exists(path):
         with open(path, 'rb') as f:
@@ -315,6 +260,6 @@ def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
     # Clients trust the files in the endpoint directory (e.g., the token and
     # TLS certificate), so only the owner can create or replace files in it.
     os.makedirs(endpoint_dir, mode=0o700, exist_ok=True)
-    path = EndpointFiles(endpoint_dir).config
+    path = EndpointDir(endpoint_dir).config_path
     with open(path, 'wb') as f:
         dump(cfg, f)

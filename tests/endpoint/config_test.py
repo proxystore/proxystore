@@ -9,7 +9,6 @@ from typing import Any
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import EndpointRelayConfig
 from proxystore.endpoint.config import EndpointRelayICEServerConfig
 from proxystore.endpoint.config import EndpointStorageConfig
@@ -17,6 +16,7 @@ from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 
 
 def test_write_read_config(tmp_path: pathlib.Path) -> None:
@@ -97,12 +97,12 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
     # Make a bad config to make sure its skipped
     ep5 = os.path.join(tmp_dir, 'ep5')
     os.makedirs(ep5)
-    with open(EndpointFiles(ep5).config, 'w') as f:
+    with open(EndpointDir(ep5).config_path, 'w') as f:
         f.write('this is not json')
     # Make another bad config to make sure its skipped
     ep6 = os.path.join(tmp_dir, 'ep6')
     os.makedirs(ep6)
-    with open(EndpointFiles(ep6).config, 'w') as f:
+    with open(EndpointDir(ep6).config_path, 'w') as f:
         f.write('{"name": "this is missing keys"}')
 
     configs = get_configs(tmp_dir)
@@ -189,18 +189,3 @@ def test_validate_storage_config(bad_cfg: Any, valid: bool) -> None:
     else:
         with pytest.raises(ValueError):
             EndpointStorageConfig(**bad_cfg)
-
-
-def test_endpoint_files() -> None:
-    files = EndpointFiles('/path/to/endpoint')
-    paths = [
-        files.config,
-        files.database,
-        files.log,
-        files.pid,
-        files.token,
-        files.tls_cert,
-        files.tls_key,
-    ]
-    assert all(os.path.dirname(p) == '/path/to/endpoint' for p in paths)
-    assert len(set(paths)) == len(paths)

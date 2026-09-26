@@ -27,8 +27,8 @@ from typing import TYPE_CHECKING
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
@@ -125,10 +125,10 @@ class EndpointClient:
             host: Host address of the endpoint.
             port: Port of the endpoint.
             token: Token of the endpoint (see
-                [`Credentials.load()`][proxystore.endpoint.auth.Credentials.load]).
+                [`EndpointDir.load_credentials()`][proxystore.endpoint.directory.EndpointDir.load_credentials]).
             tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
                 certificate (see
-                [`Credentials.load()`][proxystore.endpoint.auth.Credentials.load]).
+                [`EndpointDir.load_credentials()`][proxystore.endpoint.directory.EndpointDir.load_credentials]).
                 If provided, the connection is encrypted with TLS and the
                 endpoint's certificate must match the fingerprint.
             timeout: Timeout in seconds for connecting and completing the
@@ -200,7 +200,9 @@ class EndpointClient:
         """
         if config.host is None:
             raise ValueError(f'Endpoint {config.name} has not been started.')
-        credentials = Credentials.load(endpoint_dir, tls=config.tls)
+        credentials = EndpointDir(endpoint_dir).load_credentials(
+            tls=config.tls
+        )
         return cls.connect(
             config.host,
             config.port,
