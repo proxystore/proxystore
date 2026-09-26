@@ -21,7 +21,7 @@ ProxyStore is used to build:
 * [Distributed futures](https://docs.proxystore.dev/latest/guides/proxy-futures/)
 * [Bulk data streaming](https://docs.proxystore.dev/latest/guides/streaming/)
 
-Objects can be stored in and transferred via shared file systems, Redis, Globus Transfer, or [ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/) for peer-to-peer transfer.
+Objects can be stored in and transferred via shared file systems, Redis, ZeroMQ, Globus Transfer, or [ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/) for peer-to-peer transfer.
 See the [Connectors](https://docs.proxystore.dev/latest/api/connectors/) reference for all options or to implement your own.
 
 Learn more in the [Concepts](https://docs.proxystore.dev/latest/concepts/) overview and the complete documentation at [docs.proxystore.dev](https://docs.proxystore.dev).
