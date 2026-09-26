@@ -251,7 +251,9 @@ async def test_running_endpoint_cancels_nat_check(
         async with running_endpoint(endpoint_dir):
             pass
 
-    assert cancelled.is_set()
+    # Coverage on Python 3.11 does not trace this line after the NAT check
+    # task is cancelled, but it is executed.
+    assert cancelled.is_set()  # pragma: >=3.12 cover
 
 
 async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
