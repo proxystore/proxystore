@@ -157,7 +157,8 @@ max_object_size = 10000000  # (12)!
     Typically only used for testing and development purposes.
 11. Optional path to a SQLite database for persisting endpoint objects. See
     the tip below for more details.
-12. Maximum object size in bytes. Defaults to 100 MB if omitted.
+12. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to `0`
+    to disable object size limits.
 
 !!! tip
 

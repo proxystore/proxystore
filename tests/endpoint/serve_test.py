@@ -64,6 +64,33 @@ async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(connection_file)
 
 
+@pytest.mark.parametrize(
+    ('database_path', 'max_object_size', 'expected'),
+    ((None, 0, None), (':memory:', 0, None), (None, 100, 100)),
+)
+async def test_running_endpoint_object_size_limit(
+    database_path: str | None,
+    max_object_size: int,
+    expected: int | None,
+    tmp_path: pathlib.Path,
+) -> None:
+    storage = EndpointStorageConfig(
+        database_path=database_path,
+        max_object_size=max_object_size,
+    )
+    endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
+
+    async with running_endpoint(endpoint_dir):
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        assert client.info.max_object_size == expected
+        # An object larger than the limit can be set if there is no limit
+        data = b'x' * 1000
+        if expected is None:
+            await asyncio.to_thread(client.set, 'key', data)
+            assert await asyncio.to_thread(client.get, 'key') == data
+        client.close()
+
+
 async def test_running_endpoint_restricts_endpoint_dir(
     tmp_path: pathlib.Path,
     caplog,

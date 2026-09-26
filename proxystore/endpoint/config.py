@@ -101,7 +101,8 @@ class EndpointStorageConfig(BaseModel):
         database_path: Optional path to SQLite database file that will be used
             for storing endpoint data. If `None`, data will only be stored
             in-memory.
-        max_object_size: Maximum object size in bytes.
+        max_object_size: Maximum object size in bytes. If `0`, there is no
+            limit on object sizes.
     """
 
     database_path: str | None = None
@@ -109,12 +110,17 @@ class EndpointStorageConfig(BaseModel):
 
     @field_validator('max_object_size')
     @classmethod
-    def _max_object_size_validator(cls, v: int | None) -> int | None:
-        if v is not None and v < 1:
+    def _max_object_size_validator(cls, v: int) -> int:
+        if v < 0:
             raise ValueError(
-                'Max object size must be None or greater than zero.',
+                'Max object size must be zero (no limit) or greater.',
             )
         return v
+
+    @property
+    def object_size_limit(self) -> int | None:
+        """Maximum object size in bytes or `None` if there is no limit."""
+        return self.max_object_size if self.max_object_size > 0 else None
 
 
 class EndpointConfig(BaseModel):
