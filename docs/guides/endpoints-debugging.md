@@ -56,11 +56,11 @@ You can also validate that this request was logged by the endpoint.
 
 ### Connect from Python
 The [`EndpointClient`][proxystore.endpoint.client.EndpointClient] can be used
-to connect to an endpoint directly. Clients authenticate with the token (and
-TLS certificate, if enabled) that the endpoint writes to its directory when it
-starts, and
+to connect to an endpoint directly. Clients find the endpoint's address,
+token, and TLS certificate fingerprint (if enabled) in the `connection.json`
+file that the endpoint writes to its directory when it starts, and
 [`EndpointClient.from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]
-reads these files for you.
+reads this file for you.
 ```python
 import os
 
@@ -75,8 +75,8 @@ with EndpointClient.from_dir(EndpointDir(path)) as client:
 
 ### Common Errors
 
-* **Unable to find the credentials of endpoint**: The endpoint is not
-  running, or the client cannot read the endpoint directory. Clients on
+* **Unable to find the connection file of the endpoint**: The endpoint is
+  not running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
 * **The endpoint failed to prove that it knows the endpoint token**: The
   endpoint was restarted while the client was connecting, or a different

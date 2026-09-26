@@ -28,6 +28,11 @@ except ImportError as e:  # pragma: no cover
 from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
+from proxystore.endpoint.auth import ConnectionInfo
+from proxystore.endpoint.auth import generate_tls_certificate
+from proxystore.endpoint.auth import generate_token
+from proxystore.endpoint.auth import pem_certificate_fingerprint
+from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
@@ -142,9 +147,9 @@ async def running_endpoint(
     """Run an endpoint that serves clients until the context exits.
 
     Once the context is entered, the endpoint is accepting client connections
-    and its credentials are in the endpoint directory. When the context
-    exits, client connections are closed, the credentials are removed, and
-    the endpoint is closed.
+    and its connection file is in the endpoint directory. When the context
+    exits, the connection file is removed, client connections are closed,
+    and the endpoint is closed.
 
     Example:
         ```python
@@ -195,28 +200,42 @@ async def running_endpoint(
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )
-        stack.callback(endpoint_dir.remove_credentials)
-        credentials = endpoint_dir.create_credentials(
-            tls=config.tls,
-            common_name=f'proxystore-endpoint-{config.uuid}',
-        )
-        handler = ClientHandler(
-            endpoint,
-            credentials.token,
-            max_object_size=config.storage.max_object_size,
-        )
 
+        token = generate_token()
         ssl_context: ssl.SSLContext | None = None
+        tls_fingerprint: str | None = None
         if config.tls:
-            ssl_context = endpoint_dir.server_ssl_context()
+            cert_pem, key_pem = generate_tls_certificate(
+                f'proxystore-endpoint-{config.uuid}',
+            )
+            ssl_context = server_ssl_context(cert_pem, key_pem)
+            tls_fingerprint = pem_certificate_fingerprint(cert_pem)
             logger.info('Encrypting client connections with TLS')
 
+        handler = ClientHandler(
+            endpoint,
+            token,
+            max_object_size=config.storage.max_object_size,
+        )
         server = await handler.start_server(
             config.host,
             config.port,
             ssl_context=ssl_context,
         )
         stack.push_async_callback(_close_server, server, handler)
+
+        # The connection file is only written once the server is listening
+        # so that a failed start (e.g., because another instance of the
+        # endpoint is using the port) does not replace or remove the
+        # connection file of the running instance.
+        connection = ConnectionInfo(
+            host=config.host,
+            port=config.port,
+            token=token,
+            tls_fingerprint=tls_fingerprint,
+        )
+        endpoint_dir.write_connection(connection)
+        stack.callback(endpoint_dir.remove_connection, connection)
         logger.info(
             f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
             f'{config.host}:{config.port}',
@@ -259,7 +278,7 @@ def serve(
 
     Args:
         endpoint_dir: Directory of the endpoint with its configuration. The
-            client credentials are written to this directory while the
+            connection file is written to this directory while the
             endpoint is running.
         log_level: Logging level of endpoint.
         log_file: Optional file path to append log to.

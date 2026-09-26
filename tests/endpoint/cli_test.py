@@ -272,18 +272,10 @@ def test_test_command_errors(
         assert 'not a valid endpoint UUID' in caplog.records[0].message
         caplog.clear()
 
-        os.remove(copied_dir.token_path)
+        os.remove(copied_dir.connection_path)
         result = runner.invoke(cli, args)
         assert result.exit_code == 1
         assert 'Is the endpoint running?' in caplog.records[0].message
-        caplog.clear()
-
-        config = copied_dir.read_config()
-        config.host = None
-        copied_dir.write_config(config)
-        result = runner.invoke(cli, args)
-        assert result.exit_code == 1
-        assert 'has not been started' in caplog.records[0].message
 
 
 async def test_test_command_tls(home_dir, caplog) -> None:

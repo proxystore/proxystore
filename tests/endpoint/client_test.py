@@ -317,22 +317,16 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     return endpoint_dir
 
 
-def test_from_dir_not_started(tmp_path: pathlib.Path) -> None:
+def test_from_dir_not_running(tmp_path: pathlib.Path) -> None:
     endpoint_dir = _write_config(tmp_path)
-    with pytest.raises(EndpointNotRunningError, match='has not been started'):
-        EndpointClient.from_dir(endpoint_dir)
-
-
-def test_from_dir_missing_credentials(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = _write_config(tmp_path, host='localhost')
     with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
         EndpointClient.from_dir(endpoint_dir)
 
 
-def test_from_dir_malformed_token(tmp_path: pathlib.Path) -> None:
+def test_from_dir_malformed_connection_file(tmp_path: pathlib.Path) -> None:
     endpoint_dir = _write_config(tmp_path, host='localhost')
-    with open(endpoint_dir.token_path, 'w') as f:
-        f.write('not a token')
+    with open(endpoint_dir.connection_path, 'w') as f:
+        f.write('not json')
     with pytest.raises(EndpointAuthError, match='malformed'):
         EndpointClient.from_dir(endpoint_dir)
 

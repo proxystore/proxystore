@@ -194,8 +194,8 @@ $ proxystore-endpoint start my-endpoint
 ## Security
 
 Clients connect to their local endpoint over TCP. Each time an endpoint
-starts, it writes a random token to the `client.token` file in the endpoint
-directory, and only the owner can read that file. When a client connects,
+starts, it writes its address and a random token to the `connection.json`
+file in the endpoint directory, and only the owner can read that file. When a client connects,
 the client and endpoint each prove that they know the token without sending
 it over the network. This means:
 
@@ -229,9 +229,9 @@ $ proxystore-endpoint configure my-endpoint --tls
 ```
 
 Or, set `tls = true` in the endpoint's `config.toml` and restart the endpoint.
-The endpoint generates a new self-signed certificate (`tls.crt` and
-`tls.key` in the endpoint directory) each time it starts, and clients only
-trust the certificate in the endpoint directory. TLS reduces the throughput of
+The endpoint generates a new self-signed certificate each time it starts and
+writes its fingerprint to `connection.json`, and clients only trust that
+certificate. TLS reduces the throughput of
 large transfers by about half.
 
 Connections between peer endpoints are separate. They are encrypted by WebRTC

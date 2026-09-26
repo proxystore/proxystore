@@ -1,9 +1,11 @@
 """Authentication between clients and their local endpoint.
 
-Each time an endpoint starts, it generates a random token and writes it to
-a file in the endpoint's directory that only the owner can read. Clients
-read the token from the same directory, so any process that can read the
-user's ProxyStore home directory is trusted.
+Each time an endpoint starts, it generates a random token and writes it,
+along with its address, to a connection file in the endpoint's directory
+that only the owner can read (see
+[`ConnectionInfo`][proxystore.endpoint.auth.ConnectionInfo]). Clients read
+the connection file, so any process that can read the user's ProxyStore
+home directory is trusted.
 
 The token is never sent over the network. Instead, the client and endpoint
 each prove they know the token by computing an HMAC over random nonces
@@ -13,17 +15,20 @@ address cannot impersonate the endpoint).
 
 Optionally, connections can be encrypted with TLS. The endpoint generates a
 new self-signed certificate each time it starts, and clients only trust the
-certificate in the endpoint's directory (i.e., certificate pinning).
+certificate whose fingerprint is in the connection file (i.e., certificate
+pinning).
 """
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import hashlib
 import hmac
 import os
 import secrets
 import ssl
+import tempfile
 from typing import Literal
 from typing import NamedTuple
 
@@ -33,73 +38,51 @@ TOKEN_SIZE = 32
 """Size in bytes of an endpoint token."""
 
 
-class Credentials(NamedTuple):
-    """Credentials that clients use to connect to an endpoint.
+class ConnectionInfo(NamedTuple):
+    """Information that clients use to connect to a running endpoint.
 
-    The endpoint creates new credentials in its directory each time it
-    starts and removes them when it stops (see
+    The endpoint writes this to its directory each time it starts and
+    removes it when it stops (see
     [`EndpointDir`][proxystore.endpoint.directory.EndpointDir]).
 
     Attributes:
+        host: Host address the endpoint is listening on.
+        port: Port the endpoint is listening on.
         token: Token that the client and endpoint prove they know.
         tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
             certificate or `None` if the endpoint does not use TLS.
     """
 
+    host: str
+    port: int
     token: bytes
     tls_fingerprint: str | None
 
 
 def write_private_file(path: str, data: BytesLike) -> None:
-    """Write data to a file that only the owner can read and write.
+    """Atomically write data to a file that only the owner can access.
 
-    The file is created with mode `0600`. If the file already exists, it is
-    truncated and its mode is reset to `0600`.
+    The data is written to a temporary file with mode `0600` in the same
+    directory which then replaces `path`, so readers never observe a
+    partially written file.
     """
-    _write_file(path, data, 0o600)
-
-
-def _write_file(path: str, data: BytesLike, mode: int) -> None:
-    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, mode)
+    fd, tmp_path = tempfile.mkstemp(
+        dir=os.path.dirname(path) or '.',
+        prefix=f'.{os.path.basename(path)}.',
+    )
     try:
-        # The mode passed to open() only applies when the file is created
-        # and is masked by the umask, so always set the mode.
-        os.fchmod(fd, mode)
-        os.write(fd, data)
-    finally:
-        os.close(fd)
+        with os.fdopen(fd, 'wb') as f:
+            f.write(data)
+        os.replace(tmp_path, path)
+    except BaseException:
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(tmp_path)
+        raise
 
 
-def generate_token_file(path: str) -> bytes:
-    """Generate a new random token and write it to a file.
-
-    Args:
-        path: Path of the token file.
-
-    Returns:
-        The token.
-    """
-    token = secrets.token_bytes(TOKEN_SIZE)
-    write_private_file(path, token.hex().encode())
-    return token
-
-
-def read_token_file(path: str) -> bytes:
-    """Read a token from a file.
-
-    Raises:
-        FileNotFoundError: If the token file does not exist.
-        ValueError: If the file does not contain a valid token.
-    """
-    with open(path) as f:
-        contents = f.read().strip()
-    try:
-        token = bytes.fromhex(contents)
-    except ValueError:
-        raise ValueError(f'Token file at {path} is malformed.') from None
-    if len(token) != TOKEN_SIZE:
-        raise ValueError(f'Token file at {path} is malformed.')
-    return token
+def generate_token() -> bytes:
+    """Generate a new random endpoint token."""
+    return secrets.token_bytes(TOKEN_SIZE)
 
 
 def compute_proof(
@@ -135,11 +118,7 @@ def verify_proof(
     return hmac.compare_digest(expected, proof)
 
 
-def generate_tls_certificate(
-    cert_path: str,
-    key_path: str,
-    common_name: str,
-) -> None:
+def generate_tls_certificate(common_name: str) -> tuple[bytes, bytes]:
     """Generate a self-signed TLS certificate and private key.
 
     Note:
@@ -147,10 +126,10 @@ def generate_tls_certificate(
         `endpoints` extra.
 
     Args:
-        cert_path: Path to write the PEM-encoded certificate to.
-        key_path: Path to write the PEM-encoded private key to. The file
-            is only readable by the owner.
         common_name: Common name of the certificate subject.
+
+    Returns:
+        Tuple of the PEM-encoded certificate and private key.
     """
     from cryptography import x509
     from cryptography.hazmat.primitives import hashes
@@ -171,20 +150,31 @@ def generate_tls_certificate(
         .not_valid_after(now + datetime.timedelta(days=3650))
         .sign(key, hashes.SHA256())
     )
+    cert_pem = cert.public_bytes(serialization.Encoding.PEM)
+    key_pem = key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption(),
+    )
+    return cert_pem, key_pem
 
-    write_private_file(
-        key_path,
-        key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        ),
-    )
-    # Clients trust whatever certificate is in this file, so only the owner
-    # can modify it.
-    _write_file(
-        cert_path, cert.public_bytes(serialization.Encoding.PEM), 0o644
-    )
+
+def server_ssl_context(cert_pem: bytes, key_pem: bytes) -> ssl.SSLContext:
+    """Create a server SSL context from a PEM-encoded certificate and key.
+
+    The certificate and key are never written to the endpoint directory.
+    [`SSLContext.load_cert_chain()`][ssl.SSLContext.load_cert_chain] only
+    accepts file paths, so they are briefly written to a private temporary
+    directory.
+    """
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        cert_path = os.path.join(tmp_dir, 'tls.crt')
+        key_path = os.path.join(tmp_dir, 'tls.key')
+        write_private_file(cert_path, cert_pem)
+        write_private_file(key_path, key_pem)
+        context.load_cert_chain(cert_path, key_path)
+    return context
 
 
 def certificate_fingerprint(der: BytesLike) -> str:
@@ -192,12 +182,6 @@ def certificate_fingerprint(der: BytesLike) -> str:
     return hashlib.sha256(der).hexdigest()
 
 
-def read_certificate_fingerprint(cert_path: str) -> str:
-    """Read a PEM-encoded certificate and compute its fingerprint.
-
-    Raises:
-        FileNotFoundError: If the certificate file does not exist.
-    """
-    with open(cert_path) as f:
-        der = ssl.PEM_cert_to_DER_cert(f.read())
-    return certificate_fingerprint(der)
+def pem_certificate_fingerprint(cert_pem: bytes) -> str:
+    """Compute the SHA-256 fingerprint of a PEM-encoded certificate."""
+    return certificate_fingerprint(ssl.PEM_cert_to_DER_cert(cert_pem.decode()))

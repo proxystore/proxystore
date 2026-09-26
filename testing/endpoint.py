@@ -71,8 +71,8 @@ def copy_endpoint_dir(
 ) -> EndpointDir:
     """Copy an endpoint directory into another ProxyStore home directory.
 
-    This copies the config and token files so clients using `proxystore_dir`
-    can connect to the endpoint.
+    This copies the config and connection files so clients using
+    `proxystore_dir` can connect to the endpoint.
 
     Returns:
         The copied endpoint directory.

@@ -4,15 +4,16 @@ import os
 import pathlib
 import ssl
 import stat
+from unittest import mock
 
 import pytest
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import generate_tls_certificate
-from proxystore.endpoint.auth import generate_token_file
-from proxystore.endpoint.auth import read_certificate_fingerprint
-from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.auth import generate_token
+from proxystore.endpoint.auth import pem_certificate_fingerprint
+from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.auth import write_private_file
@@ -46,31 +47,22 @@ def test_write_private_file_resets_existing_mode(
     assert path.read_bytes() == b'new'
 
 
-def test_token_file_round_trip(tmp_path: pathlib.Path) -> None:
-    path = str(tmp_path / 'token')
-    token = generate_token_file(path)
+def test_write_private_file_is_atomic(tmp_path: pathlib.Path) -> None:
+    path = tmp_path / 'file'
+    path.write_bytes(b'old')
+    with mock.patch('os.replace', side_effect=OSError('failed')):
+        with pytest.raises(OSError, match='failed'):
+            write_private_file(str(path), b'new')
+
+    # The original file is untouched and the temporary file is removed
+    assert path.read_bytes() == b'old'
+    assert os.listdir(tmp_path) == ['file']
+
+
+def test_generate_token() -> None:
+    token = generate_token()
     assert len(token) == TOKEN_SIZE
-    assert read_token_file(path) == token
-    assert _mode(tmp_path / 'token') == 0o600
-
-    # A new token is generated each time
-    assert generate_token_file(path) != token
-
-
-@pytest.mark.parametrize('contents', ('not hex', 'abcd'))
-def test_read_token_file_malformed(
-    contents: str,
-    tmp_path: pathlib.Path,
-) -> None:
-    path = tmp_path / 'token'
-    path.write_text(contents)
-    with pytest.raises(ValueError, match='malformed'):
-        read_token_file(str(path))
-
-
-def test_read_token_file_missing(tmp_path: pathlib.Path) -> None:
-    with pytest.raises(FileNotFoundError):
-        read_token_file(str(tmp_path / 'token'))
+    assert generate_token() != token
 
 
 def test_proof_verification() -> None:
@@ -95,25 +87,17 @@ def test_proof_verification() -> None:
     assert not verify_proof(token, 'server', client_nonce, server_nonce, proof)
 
 
-def test_generate_tls_certificate(tmp_path: pathlib.Path) -> None:
-    cert_path, key_path = tmp_path / 'tls.crt', tmp_path / 'tls.key'
-    # Permissive umask like the endpoint daemon uses
-    old_umask = os.umask(0o002)
-    try:
-        generate_tls_certificate(str(cert_path), str(key_path), 'test')
-    finally:
-        os.umask(old_umask)
-    assert _mode(key_path) == 0o600
-    assert _mode(cert_path) == 0o644
+def test_generate_tls_certificate() -> None:
+    cert_pem, key_pem = generate_tls_certificate('test')
 
     # Certificate and key are a valid pair
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(str(cert_path), str(key_path))
+    context = server_ssl_context(cert_pem, key_pem)
+    assert isinstance(context, ssl.SSLContext)
 
-    der = ssl.PEM_cert_to_DER_cert(cert_path.read_text())
-    fingerprint = read_certificate_fingerprint(str(cert_path))
+    der = ssl.PEM_cert_to_DER_cert(cert_pem.decode())
+    fingerprint = pem_certificate_fingerprint(cert_pem)
     assert fingerprint == certificate_fingerprint(der)
 
     # A new certificate is generated each time
-    generate_tls_certificate(str(cert_path), str(key_path), 'test')
-    assert read_certificate_fingerprint(str(cert_path)) != fingerprint
+    new_cert_pem, _ = generate_tls_certificate('test')
+    assert pem_certificate_fingerprint(new_cert_pem) != fingerprint

@@ -4,7 +4,6 @@ import asyncio
 import multiprocessing
 import os
 import pathlib
-import socket
 import ssl
 import stat
 import uuid
@@ -50,18 +49,19 @@ def _endpoint_dir(
 
 async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path)
-    token_file = endpoint_dir.token_path
+    connection_file = endpoint_dir.connection_path
 
     async with running_endpoint(endpoint_dir) as endpoint:
         assert endpoint.uuid == uuid.UUID(config.uuid)
-        assert stat.S_IMODE(os.stat(token_file).st_mode) == 0o600
+        assert stat.S_IMODE(os.stat(connection_file).st_mode) == 0o600
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert client.info.uuid == endpoint.uuid
 
-    # Open connections are closed and the token is removed on shutdown
+    # Open connections are closed and the connection file is removed on
+    # shutdown
     with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
-    assert not os.path.exists(token_file)
+    assert not os.path.exists(connection_file)
 
 
 async def test_running_endpoint_restricts_endpoint_dir(
@@ -77,22 +77,25 @@ async def test_running_endpoint_restricts_endpoint_dir(
 
 
 async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
-    with socket.socket() as sock:
-        sock.bind(('127.0.0.1', 0))
-        sock.listen()
-        endpoint_dir, _ = _endpoint_dir(tmp_path, port=sock.getsockname()[1])
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    async with running_endpoint(endpoint_dir):
+        running = endpoint_dir.read_connection()
+        # A second instance fails to start without replacing or removing
+        # the connection file of the running instance
         with pytest.raises(OSError):
             async with running_endpoint(endpoint_dir):
                 pass  # pragma: no cover
-    assert not os.path.exists(endpoint_dir.token_path)
+        assert endpoint_dir.read_connection() == running
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        await asyncio.to_thread(client.close)
 
 
 async def test_running_endpoint_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
-    # The token cannot be written if its path is a directory
-    os.mkdir(endpoint_dir.token_path)
+    # The connection file cannot be written if its path is a directory
+    os.mkdir(endpoint_dir.connection_path)
     with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
         with pytest.raises(IsADirectoryError):
             async with running_endpoint(endpoint_dir):
@@ -130,7 +133,7 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
         process.terminate()
         process.join(timeout=5)
         assert process.exitcode == 0
-        assert not os.path.exists(endpoint_dir.token_path)
+        assert not os.path.exists(endpoint_dir.connection_path)
     finally:
         terminate_process(process)
 
@@ -255,13 +258,10 @@ async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path, tls=True)
 
     async with running_endpoint(endpoint_dir):
-        assert (
-            stat.S_IMODE(os.stat(endpoint_dir.tls_key_path).st_mode) == 0o600
-        )
+        assert endpoint_dir.read_connection().tls_fingerprint is not None
+        # The TLS certificate and key are not written to the directory
+        assert not any('tls' in f for f in os.listdir(endpoint_dir.path))
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert isinstance(client._socket, ssl.SSLSocket)
         assert client.info.uuid == uuid.UUID(config.uuid)
         await asyncio.to_thread(client.close)
-
-    assert not os.path.exists(endpoint_dir.tls_cert_path)
-    assert not os.path.exists(endpoint_dir.tls_key_path)

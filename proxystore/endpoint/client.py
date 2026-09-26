@@ -124,10 +124,10 @@ class EndpointClient:
             host: Host address of the endpoint.
             port: Port of the endpoint.
             token: Token of the endpoint (see
-                [`EndpointDir.load_credentials()`][proxystore.endpoint.directory.EndpointDir.load_credentials]).
+                [`EndpointDir.read_connection()`][proxystore.endpoint.directory.EndpointDir.read_connection]).
             tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
                 certificate (see
-                [`EndpointDir.load_credentials()`][proxystore.endpoint.directory.EndpointDir.load_credentials]).
+                [`EndpointDir.read_connection()`][proxystore.endpoint.directory.EndpointDir.read_connection]).
                 If provided, the connection is encrypted with TLS and the
                 endpoint's certificate must match the fingerprint.
             timeout: Timeout in seconds for connecting and completing the
@@ -175,10 +175,10 @@ class EndpointClient:
         *,
         timeout: float | None = 10,
     ) -> Self:
-        """Connect to a local endpoint using the files in its directory.
+        """Connect to a local endpoint using its connection file.
 
-        The configuration and credentials are read each time because they
-        change each time the endpoint is restarted.
+        The connection file is read each time because the endpoint writes
+        a new one each time it starts.
 
         Args:
             endpoint_dir: Directory of the endpoint.
@@ -186,35 +186,28 @@ class EndpointClient:
                 handshake.
 
         Raises:
-            FileNotFoundError: If the configuration does not exist.
-            ValueError: If the configuration is malformed.
-            EndpointNotRunningError: If the endpoint has not been started or
-                its credential files do not exist.
-            EndpointAuthError: If the token file is malformed or the client
-                or endpoint fails authentication.
+            EndpointNotRunningError: If the endpoint's connection file does
+                not exist (i.e., the endpoint is not running).
+            EndpointAuthError: If the connection file is malformed or the
+                client or endpoint fails authentication.
             OSError: If the connection cannot be established.
             EndpointError: If the handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
-        config = endpoint_dir.read_config()
-        if config.host is None:
-            raise EndpointNotRunningError(
-                f'Endpoint {config.name} has not been started.',
-            )
         try:
-            credentials = endpoint_dir.load_credentials(tls=config.tls)
+            info = endpoint_dir.read_connection()
         except FileNotFoundError as e:
             raise EndpointNotRunningError(
-                f'Unable to find the credentials of endpoint {config.name} '
-                f'in {endpoint_dir}. Is the endpoint running?',
+                f'Unable to find the connection file of the endpoint in '
+                f'{endpoint_dir}. Is the endpoint running?',
             ) from e
         except ValueError as e:
             raise EndpointAuthError(str(e)) from e
         return cls.connect(
-            config.host,
-            config.port,
-            credentials.token,
-            tls_fingerprint=credentials.tls_fingerprint,
+            info.host,
+            info.port,
+            info.token,
+            tls_fingerprint=info.tls_fingerprint,
             timeout=timeout,
         )
 
@@ -389,7 +382,7 @@ def _as_bytes_view(data: BytesLike) -> memoryview:
 def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
     # The endpoint's certificate is self-signed so it cannot be verified
     # against a certificate authority. Instead, the certificate is pinned:
-    # it must match the certificate in the endpoint's directory.
+    # it must match the fingerprint in the endpoint's connection file.
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.check_hostname = False
     context.verify_mode = ssl.CERT_NONE
@@ -407,9 +400,9 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
         tls_sock.close()
         raise EndpointAuthError(
             'The TLS certificate of the endpoint does not match the '
-            'certificate in the endpoint directory. Another process may be '
+            'fingerprint in the connection file. Another process may be '
             'listening on the address of the endpoint, or the endpoint was '
-            'restarted since the certificate was read.',
+            'restarted since the connection file was read.',
         )
     return tls_sock
 
@@ -448,8 +441,8 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
         raise EndpointAuthError(
             'The endpoint failed to prove that it knows the endpoint token. '
             'Another process may be listening on the address of the '
-            'endpoint, or the endpoint was restarted since the token was '
-            'read.',
+            'endpoint, or the endpoint was restarted since the connection '
+            'file was read.',
         )
 
     proof = compute_proof(token, 'client', hello.nonce, challenge.nonce)
@@ -463,7 +456,7 @@ def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
     if header.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
-            'have been restarted since the token was read.',
+            'have been restarted since the connection file was read.',
         )
     elif header.code != Status.OK:
         error = meta.get('error', 'no error message provided')
