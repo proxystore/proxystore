@@ -104,7 +104,7 @@ deserializer = Callable[[BytesLike], Any]
 ```
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
-innefficient. E.g.,
+inefficient. E.g.,
 
 ```python linenums="1"
 import torch

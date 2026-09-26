@@ -106,7 +106,7 @@ class Store(Generic[ConnectorT]):
         This class cannot be pickled. If you need to recreate a
         [`Store`][proxystore.store.base.Store] within another process, share
         a [`StoreConfig`][proxystore.store.config.StoreConfig], a serializable
-        and pickle-compatbile type, that can be created using
+        and pickle-compatible type, that can be created using
         [`Store.config()`][proxystore.store.base.Store.config].
 
         To reconstruct the instance from the config, use
@@ -336,7 +336,7 @@ class Store(Generic[ConnectorT]):
             with Store('future-example', FileConnector(...)) as store:
                 future = store.future()
 
-                # The invoke_remove function invokes a provided function
+                # The invoke_remote function invokes a provided function
                 # on a remote process. For example, this could be a serverless
                 # function execution.
                 foo_result_future = invoke_remote(remote_foo, future)

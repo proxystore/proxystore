@@ -89,7 +89,7 @@ class RelayMessageDecodeError(RelayMessageError):
 
 
 class RelayMessageEncodeError(RelayMessageError):
-    """Exception raised when an message cannot be encoded."""
+    """Exception raised when a message cannot be encoded."""
 
 
 def uuid_to_str(data: dict[str, Any]) -> dict[str, Any]:

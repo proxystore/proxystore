@@ -104,7 +104,7 @@ with Store('proxy-future-example', RedisConnector(...)) as store:
     future: Future[MyData] = store.future()
 
     # The invoke_remote function will execute the function with
-    # the provided on arguments on an arbitrary remote process.
+    # the provided arguments on an arbitrary remote process.
     foo_result_future = invoke_remote(foo, future)
     bar_result_future = invoke_remote(bar, future.proxy())
 

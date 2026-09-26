@@ -107,7 +107,7 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
 
     Tip:
         Use the [`store_registration`][proxystore.store.store_registration]
-        context manager to automatically register and unregister as store.
+        context manager to automatically register and unregister a store.
 
     Args:
         store: Store instance to register.

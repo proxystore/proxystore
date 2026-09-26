@@ -433,7 +433,7 @@ def mut_borrow(
     *,
     populate_target: bool = True,
 ) -> RefMutProxy[T]:
-    """Mutably borrow `T` by creating an mutable reference of `T`.
+    """Mutably borrow `T` by creating a mutable reference of `T`.
 
     Note:
         This mutates `proxy`.

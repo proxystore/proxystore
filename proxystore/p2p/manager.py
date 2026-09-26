@@ -142,7 +142,7 @@ class PeerManager:
         )
 
     async def async_init(self) -> None:
-        """Connect to relay server and being listening to incoming messages."""
+        """Connect to relay server and begin listening to incoming messages."""
         await self._relay_client.connect()
         if self._server_task is None:
             self._server_task = spawn_guarded_background_task(
@@ -278,7 +278,7 @@ class PeerManager:
         """Close the connection manager.
 
         Warning:
-            This will close all create peer connections and close the
+            This will close all created peer connections and close the
             connection to the relay server.
         """
         if self._server_task is not None:

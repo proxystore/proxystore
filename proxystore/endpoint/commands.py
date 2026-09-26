@@ -125,7 +125,7 @@ def configure_endpoint(
             Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
         relay_server: Optional relay server address for P2P endpoint
             connections.
-        relay_auth: Relay server used Globus Auth.
+        relay_auth: Authenticate with the relay server using Globus Auth.
         tls: Encrypt connections between clients and the endpoint with TLS.
 
     Returns:
@@ -395,7 +395,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     """Stop endpoint.
 
     Args:
-        name: Name of endpoint to start.
+        name: Name of endpoint to stop.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
 

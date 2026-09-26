@@ -16,7 +16,7 @@ $ proxystore-relay --port 8700
 ```
 
 This relay server would be accessible at `ws://localhost:8700`. For example,
-an endpoint can be configure with this URI and will connect this instance
+an endpoint can be configured with this URI and will connect to this instance
 when started.
 
 ```bash

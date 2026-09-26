@@ -70,7 +70,7 @@ the request along and facilitate returning the response back to the client.
     [`proxystore-endpoint check-nat`](../api/cli.md#proxystore-endpoint-check-nat)
     CLI tool.
 
-Endpoints can be configure and started with the
+Endpoints can be configured and started with the
 [`proxystore-endpoint`](../api/cli.md#proxystore-endpoint)
 command. By default, an Endpoint is configured to connect to ProxyStore's
 cloud-hosted relay server. This relay server uses

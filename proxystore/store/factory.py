@@ -138,7 +138,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
 
 class PollingStoreFactory(StoreFactory[ConnectorT, T]):
-    """Factory that polls a store until and object can be resolved.
+    """Factory that polls a store until an object can be resolved.
 
     This is an extension of the
     [`StoreFactory`][proxystore.store.factory.StoreFactory] with the

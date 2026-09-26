@@ -138,7 +138,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         degradation for expensive factories, such as those that require
         significant I/O or produce target objects that require a lot of memory.
         The `target` and `cache_defaults` parameters of
-        [`Proxy`][proxystore.proxy.Proxy] can prevent these unintenional
+        [`Proxy`][proxystore.proxy.Proxy] can prevent these unintentional
         proxy resolves by caching the `__class__` and `__hash__` values of the
         target object in the proxy.
 

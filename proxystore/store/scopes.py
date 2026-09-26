@@ -132,7 +132,7 @@ def submit(
         the destructor of the owned proxy to evict the associated data.
 
     Args:
-        submit_func: Function with submits a function with args and kwargs to
+        submit_func: Function which submits a function with args and kwargs to
             be executed (e.g.,
             [`Executor.submit()`][concurrent.futures.Executor.submit]{target=_blank}).
         args: Positional arguments to pass to `submit_func`. Any proxy

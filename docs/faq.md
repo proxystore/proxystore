@@ -1,12 +1,12 @@
 # Frequently Asked Questions
 
-*[Open a new issue](https://github.com/proxystore/proxystore/issues){target=_bank} if you have a question not answered in the FAQ, Guides, or API docs.*
+*[Open a new issue](https://github.com/proxystore/proxystore/issues){target=_blank} if you have a question not answered in the FAQ, Guides, or API docs.*
 
 ## Working with Proxies
 
 ### What is resolving my proxy?
 
-Certain data structures can unintenionally resolve a proxy.
+Certain data structures can unintentionally resolve a proxy.
 This is because the [`Proxy`][proxystore.proxy.Proxy] type forwards *all* special methods to the target object.
 For example, data structures which use the hash of an object, such as [`set()`][set] or [`dict()`][dict], will cause a proxy to resolve because `proxy.__hash__()` is forwarded to the target object's `__hash__()`.
 
@@ -117,7 +117,7 @@ To check if an object is a proxy, use `#!python isinstance(obj, Proxy)`.
 This will not resolve the proxy.
 
 Checking the type of a proxy's target object requires more care because `#!python isinstance(proxy, MyType)` will resolve the proxy.
-This can be avoided by doing a direct type comparisons (e.g., `#!python type(proxy) == MyType)`) but this will mean that type comparisons with subclasses will not work.
+This can be avoided by doing a direct type comparison (e.g., `#!python type(proxy) == MyType`) but this will mean that type comparisons with subclasses will not work.
 
 ```python linenums="1"
 from proxystore.proxy import Proxy

@@ -16,7 +16,7 @@ $ . venv/bin/activate
 
     Running Tox in a Conda environment is possible but it may conflict with
     Tox's ability to find the correct Python versions. E.g., if your
-    Conda environment is Python 3.12, running `#!bash $ tox -e p311` may still
+    Conda environment is Python 3.12, running `#!bash $ tox -e py311` may still
     use Python 3.12.
 
 To install manually:

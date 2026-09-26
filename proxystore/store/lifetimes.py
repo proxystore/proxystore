@@ -135,7 +135,7 @@ class ContextLifetime:
         ```
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance use to create
+        store: [`Store`][proxystore.store.base.Store] instance used to create
             the objects associated with this lifetime and that will be used
             to evict them when the lifetime has ended.
         name: Specify a name for this lifetime used in logging. Otherwise,
@@ -284,7 +284,7 @@ class LeaseLifetime(ContextLifetime):
         ```
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance use to create
+        store: [`Store`][proxystore.store.base.Store] instance used to create
             the objects associated with this lifetime and that will be used
             to evict them when the lifetime has ended.
         expiry: Initial expiry time of the lease. Can either be a
@@ -457,7 +457,7 @@ class StaticLifetime:
         """Associate a new object with the lifetime.
 
         Warning:
-            This method will initialized new
+            This method will initialize new
             [`Store`][proxystore.store.base.Store] instances if the stores
             which were used to create the input proxies have not been
             registered by setting the `register` flag or by calling

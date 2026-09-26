@@ -131,7 +131,7 @@ class DeferrableConnector(Protocol[KeyT]):
 
     Extends the [`Connector`][proxystore.connectors.protocols.Connector]
     protocol with additional methods necessary for creating a key while
-    deferring associated an object with the key.
+    deferring associating an object with the key.
     """  # noqa: E501
 
     def new_key(self, obj: bytes | None = None) -> KeyT:

@@ -7,7 +7,7 @@
 > moving through a specified path (e.g., through a network socket, cloud
 > server, workflow engine, etc.) while the true path the data takes is
 > different. Transporting the lightweight proxies through the application or
-> systems can be more efficient---reduce overheads in the system.
+> systems can be more efficient and reduce overheads in the system.
 
 ## Overview
 
@@ -128,7 +128,7 @@ def my_function(input: MyDataType) -> None:
 1. Always true even if input is a proxy.
 
 In this model, only the producer of the data needs to be aware of which
-communication and storage system is being used, and no modification to the consumer code are required.
+communication and storage system is being used, and no modifications to the consumer code are required.
 
 **How is this more efficient?**
 

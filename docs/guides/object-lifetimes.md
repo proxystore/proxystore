@@ -3,7 +3,7 @@
 *Last updated 20 April 2024*
 
 The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
-For example, a object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
+For example, an object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
 Some [`Connectors`][proxystore.connectors.protocols.Connector], and therefore [`Stores`][proxystore.store.base.Store], delete all of their objects when closed but this is not a specified requirement of the protocol.
 
 ProxyStore, however, provides optional mechanisms for more automated management of shared objects.
@@ -155,7 +155,7 @@ Additional tips:
 1. Closing the [`Store`][proxystore.store.base.Store] at the end of the program but before the [atexit][atexit] handler has executed can cause undefined behaviour.
    Let the handler perform all cleanup.
 2. The [`StaticLifetime`][proxystore.store.lifetimes.StaticLifetime] can be closed manually, but only once.
-   This may be useful if the the associated stores need to be closed manually or outside of the atexit handler.
+   This may be useful if the associated stores need to be closed manually or outside of the atexit handler.
    (Close the lifetime before the stores.)
 3. [atexit][atexit] does not guarantee that the handler will be called in some unexpected process shutdown cases.
    This can lead to a memory leak in the connector(s).

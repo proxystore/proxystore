@@ -65,7 +65,7 @@ to stream objects using a file system and Redis server.
 This configuration is optimized for storage of large objects using the
 file system while maintaining low latency event notifications via Redis
 pub/sub. However, the configuration can easily be optimized for different
-applications or deployments but using a different
+applications or deployments by using a different
 [`Connector`][proxystore.connectors.protocols.Connector] with the
 [`Store`][proxystore.store.Store] for data storage and/or a different
 [`Publisher`][proxystore.stream.protocols.Publisher] and
@@ -180,13 +180,13 @@ and [`StreamConsumer`][proxystore.stream.StreamConsumer] can support
 multi-producer and multi-consumer deployments, respectively.
 However, it is *not* a requirement that the
 [`Publisher`][proxystore.stream.protocols.Publisher] or
-[`Subscriber`][proxystore.stream.protocols.Subscriber] protocols to
-implements multi-producer or multi-consumer support.
+[`Subscriber`][proxystore.stream.protocols.Subscriber] protocols
+implement multi-producer or multi-consumer support.
 In other words, it is up to each
 [`Publisher`][proxystore.stream.protocols.Publisher]/
 [`Subscriber`][proxystore.stream.protocols.Subscriber] implementation
 to decide on and document their support for these features, and users
-should confirm that the specific implementations or configurations parameters
+should confirm that the specific implementations or configuration parameters
 produce the behavior they want.
 
 **Multi-producer.** If a [`Publisher`][proxystore.stream.protocols.Publisher]
@@ -199,9 +199,9 @@ and [`StreamProducer`][proxystore.stream.StreamProducer] and begin
 sending objects to the stream.
 
 **Multi-consumer.** If a [`Subscriber`][proxystore.stream.protocols.Subscriber]
-support multiple consumers, attention should be given to the manner in which
+supports multiple consumers, attention should be given to the manner in which
 the consumers behave. If all consumers receive the full stream (i.e., each
-consumer receives each object in the stream), then the the `evict` flag of
+consumer receives each object in the stream), then the `evict` flag of
 [`StreamProducer.send()`][proxystore.stream.StreamProducer.send]
 should be set to `False`. This ensures that the first consumer to resolve a
 proxy from the stream does not delete the object data for the other consumers,
