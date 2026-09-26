@@ -18,7 +18,7 @@ class SamplingFilter:
     """Filter that randomly filters out objects.
 
     Args:
-        p: Probability of the filter return `True`. I.e., the object gets
+        p: Probability of the filter returning `True`. I.e., the object gets
             filtered out.
 
     Raises:

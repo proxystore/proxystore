@@ -26,7 +26,7 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
 
     Raises:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
-            [`StoreFactory`][proxystore.store.base.StoreFactory].
+            [`StoreFactory`][proxystore.store.factory.StoreFactory].
     """
     factory = get_factory(proxy)
     if isinstance(factory, base.StoreFactory):
@@ -55,15 +55,15 @@ def resolve_async(proxy: Proxy[T]) -> None:
 
     Note:
         The asynchronous resolving functionality is implemented
-        by [`StoreFactory`][proxystore.store.base.StoreFactory]. Factories that
-        are not of this type will error when used with this function.
+        by [`StoreFactory`][proxystore.store.factory.StoreFactory]. Factories
+        that are not of this type will error when used with this function.
 
     Args:
         proxy: Proxy instance to begin asynchronously resolving.
 
     Raises:
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
-            [`StoreFactory`][proxystore.store.base.StoreFactory].
+            [`StoreFactory`][proxystore.store.factory.StoreFactory].
     """
     factory = get_factory(proxy)
     if isinstance(factory, base.StoreFactory):

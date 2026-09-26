@@ -1,6 +1,6 @@
 # Performance Tracking
 
-*Last updated 20 April 2024*
+*Last updated 26 September 2026*
 
 The [`Store`][proxystore.store.base.Store] can record metrics on executed operations (e.g., `get` and `put`).
 Metric collection is disabled by default and can be enabled by passing `#!python metrics=True` to a [`Store`][proxystore.store.base.Store] constructor.
@@ -34,13 +34,6 @@ will be `None` when metrics are disabled.
     [`Store.metrics`][proxystore.store.base.Store.metrics] will only represent
     a partial view of the overall performance.
 
-!!! warning
-    ProxyStore v0.6.4 and older have a bug that causes the conversion from
-    nanoseconds to milliseconds in the
-    [`Metrics`][proxystore.store.metrics.Metrics] class to be incorrect.
-    This was fixed in v0.6.5 (see
-    [PR #538](https://github.com/proxystore/proxystore/pull/538){target=_blank}).
-
 Three types of metrics are collected.
 
 * Attributes: arbitrary attributes associated with an operation.
@@ -68,36 +61,42 @@ is a [`dataclass`][dataclasses.dataclass] with three fields:
 `attributes`, `counters`, and `times`. We can further inspect these fields.
 ```python
 >>> metrics.attributes
-{'store.get.object_size': 219, 'store.put.object_size': 219}
+{'store.put.object_size': 31, 'store.get.object_size': 31}
 >>> metrics.counters
 {'store.get.cache_misses': 1}
 >>> metrics.times
 {
     'store.put.serialize': TimeStats(
-        count=1, avg_time_ms=9.9, min_time_ms=9.9, max_time_ms=9.9
+        count=1, avg_time_ms=0.011, min_time_ms=0.011, max_time_ms=0.011,
+        last_time_ms=0.011, last_timestamp=1790454225.539,
     ),
     'store.put.connector': TimeStats(
-       count=1, avg_time_ms=36.9, min_time_ms=36.9, max_time_ms=36.9
+        count=1, avg_time_ms=0.047, min_time_ms=0.047, max_time_ms=0.047,
+        last_time_ms=0.047, last_timestamp=1790454225.539,
     ),
     'store.put': TimeStats(
-       count=1, avg_time_ms=53.4, min_time_ms=53.4, max_time_ms=53.4
+        count=1, avg_time_ms=0.066, min_time_ms=0.066, max_time_ms=0.066,
+        last_time_ms=0.066, last_timestamp=1790454225.539,
     ),
     'store.get.connector': TimeStats(
-       count=1, avg_time_ms=16.1, min_time_ms=16.1, max_time_ms=16.1
+        count=1, avg_time_ms=0.016, min_time_ms=0.016, max_time_ms=0.016,
+        last_time_ms=0.016, last_timestamp=1790454225.539,
     ),
     'store.get.deserialize': TimeStats(
-       count=1, avg_time_ms=7.6, min_time_ms=7.6, max_time_ms=7.6
+        count=1, avg_time_ms=0.008, min_time_ms=0.008, max_time_ms=0.008,
+        last_time_ms=0.008, last_timestamp=1790454225.539,
     ),
-   'store.get': TimeStats(
-       count=1, avg_time_ms=45.6, min_time_ms=45.6, max_time_ms=45.6
-   ),
+    'store.get': TimeStats(
+        count=1, avg_time_ms=0.037, min_time_ms=0.037, max_time_ms=0.037,
+        last_time_ms=0.037, last_timestamp=1790454225.539,
+    ),
 }
 ```
 
 Operations or events are represented by a hierarchical namespace.
 E.g., `store.get.object_size` is the serialized object size from the call to
 [`Store.get()`][proxystore.store.base.Store.get].
-In `metrics.attributes`, we see the serialized object was 219 bytes.
+In `metrics.attributes`, we see the serialized object was 31 bytes.
 In `metrics.counters`, we see we had one cache miss when getting the object.
 In `metrics.times`, we see statistics about the duration of each operation.
 For example, `store.get` is the overall time
@@ -112,9 +111,12 @@ If we get the object again, we'll see the metrics change.
 >>> store.get(key)
 >>> metrics = store.metrics.get_metrics(key)
 >>> metrics.counters
-{'store.get.cache_hits': 1, 'store.get.cache_misses': 1}
+{'store.get.cache_misses': 1, 'store.get.cache_hits': 1}
 >>> metrics.times['store.get']
-TimeStats(count=2, avg_time_ms=24.4, min_time_ms=3.2, max_time_ms=45.6)
+TimeStats(
+    count=2, avg_time_ms=0.020, min_time_ms=0.002, max_time_ms=0.037,
+    last_time_ms=0.002, last_timestamp=1790454225.539,
+)
 ```
 Here, we see that the second get resulted in a cache hit, and our average
 time for `store.get` dropped significantly.
@@ -123,22 +125,24 @@ Attributes of a [`TimeStats`][proxystore.store.metrics.TimeStats] instance
 can be directly accessed.
 ```python
 >>> metrics.times['store.get'].avg_time_ms
-24.4
+0.020
 ```
 
 ## Metrics with Proxies
 
 Metrics are also tracked on proxy operations.
+Here, `populate_target=False` is passed so the returned proxy is not already
+resolved (see [`Store.proxy()`][proxystore.store.base.Store.proxy]).
 ```python
->>> proxy = store.proxy(target)
+>>> proxy = store.proxy([0, 1, 2, 3, 4, 5], populate_target=False)
 
 # Access the proxy to force it to resolve.
->>> assert target_proxy[0] == 0
+>>> assert proxy[0] == 0
 
 >>> metrics = store.metrics.get_metrics(proxy)
 >>> metrics.times
 {
-    'factory.call': TimeStats(...)
+    'factory.call': TimeStats(...),
     'factory.resolve': TimeStats(...),
     'store.get': TimeStats(...),
     'store.get.connector': TimeStats(...),

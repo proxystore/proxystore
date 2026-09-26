@@ -81,7 +81,7 @@ def get_client_credentials_from_env() -> tuple[str, str]:
         Tuple containing the client ID and secret.
 
     Raises:
-        ValueError: if one of the environment variables is set.
+        ValueError: if one or both of the environment variables are not set.
     """
     try:
         client_id = os.environ[PROXYSTORE_GLOBUS_CLIENT_ID_ENV_NAME]

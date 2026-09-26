@@ -19,8 +19,8 @@ else:  # pragma: <3.12 cover
 
 import cloudpickle
 
-# Pickle protocol 5 is available in Python 3.8 version so that is ProxyStore's
-# minimum version. If higher version come out in the future, prefer those.
+# Use at least pickle protocol 5 (added in Python 3.8), but prefer newer
+# protocols if they become available.
 _PICKLE_PROTOCOL = max(pickle.HIGHEST_PROTOCOL, 5)
 
 
@@ -290,7 +290,7 @@ def deserialize(buffer: BytesLike) -> Any:
 
     Warning:
         Pickled data is not secure, and malicious pickled object can execute
-        arbitrary code when upickled. Only unpickle data you trust.
+        arbitrary code when unpickled. Only unpickle data you trust.
 
     Args:
         buffer: Bytes-like object produced by
@@ -301,7 +301,7 @@ def deserialize(buffer: BytesLike) -> Any:
 
     Raises:
         ValueError: If `buffer` is not bytes-like.
-        SerializationError: If the identifier of `data` is missing or
+        SerializationError: If the identifier of `buffer` is missing or
             invalid. The identifier is prepended to the string in
             [`serialize()`][proxystore.serialize.serialize] to indicate which
             serialization method was used (e.g., no serialization, pickle,

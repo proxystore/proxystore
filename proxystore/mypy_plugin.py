@@ -41,7 +41,7 @@ in your
 
 * `pyproject.toml`
   ```toml
-  [tools.mypy]
+  [tool.mypy]
   plugins = ["proxystore.mypy_plugin"]
   ```
 * `mypy.ini` and `setup.cfg`

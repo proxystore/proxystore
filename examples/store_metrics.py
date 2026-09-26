@@ -1,7 +1,7 @@
 """Store metrics example.
 
 Source code for:
-    https://proxystore.readthedocs.io/en/latest/guides/performance.html
+    https://docs.proxystore.dev/latest/guides/performance/
 """
 
 from __future__ import annotations
@@ -44,7 +44,8 @@ print('Get Time:')
 pprint(metrics.times['store.get'])
 print(f'Access by attribute: {metrics.times["store.get"].avg_time_ms}')
 
-proxy = store.proxy(target)
+# Disable populate_target so the proxy is not already resolved
+proxy = store.proxy(target, populate_target=False)
 # Force proxy to resolve
 assert proxy[0] == 0
 

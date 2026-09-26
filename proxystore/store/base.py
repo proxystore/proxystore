@@ -106,7 +106,7 @@ class Store(Generic[ConnectorT]):
         This class cannot be pickled. If you need to recreate a
         [`Store`][proxystore.store.base.Store] within another process, share
         a [`StoreConfig`][proxystore.store.config.StoreConfig], a serializable
-        and pickle-compatbile type, that can be created using
+        and pickle-compatible type, that can be created using
         [`Store.config()`][proxystore.store.base.Store.config].
 
         To reconstruct the instance from the config, use
@@ -336,7 +336,7 @@ class Store(Generic[ConnectorT]):
             with Store('future-example', FileConnector(...)) as store:
                 future = store.future()
 
-                # The invoke_remove function invokes a provided function
+                # The invoke_remote function invokes a provided function
                 # on a remote process. For example, this could be a serverless
                 # function execution.
                 foo_result_future = invoke_remote(remote_foo, future)
@@ -501,7 +501,7 @@ class Store(Generic[ConnectorT]):
                 associated with the key does not exist.
 
         Returns:
-            Object or `None` if the object does not exist.
+            Object or `default` if the object does not exist.
 
         Raises:
             SerializationError: If an exception is caught when deserializing
@@ -645,10 +645,9 @@ class Store(Generic[ConnectorT]):
                 return a proxy that (1) is already resolved, (2) can be used
                 in [`isinstance`][isinstance] checks without resolving, and (3)
                 is hashable without resolving if `obj` is a hashable type.
-                This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage
-                collecting `obj`. If `None`, defaults to the store-wide
-                setting.
+                Note that the returned proxy will hold a reference to `obj`
+                which will prevent garbage collecting `obj`. If `None`,
+                defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -657,7 +656,7 @@ class Store(Generic[ConnectorT]):
 
         Returns:
             A proxy of the object unless `obj` is a non-proxiable type \
-            `#!python skip_nonproxiable is True` in which case `obj` is \
+            and `#!python skip_nonproxiable is True` in which case `obj` is \
             returned directly.
 
         Raises:
@@ -988,7 +987,7 @@ class Store(Generic[ConnectorT]):
         Returns:
             A proxy wrapped in a \
             [`ProxyLocker`][proxystore.proxy.ProxyLocker] unless `obj` is a \
-            non-proxiable type `#!python skip_nonproxiable is True` in which \
+            non-proxiable type and `#!python skip_nonproxiable is True` in which \
             case `obj` is returned directly.
 
         Raises:
@@ -1073,7 +1072,7 @@ class Store(Generic[ConnectorT]):
 
         Returns:
             A proxy of the object unless `obj` is a non-proxiable type \
-            `#!python skip_nonproxiable is True` in which case `obj` is \
+            and `#!python skip_nonproxiable is True` in which case `obj` is \
             returned directly.
 
         Raises:
@@ -1254,10 +1253,7 @@ class Store(Generic[ConnectorT]):
             serializer: Optionally override the default serializer for the
                 store instance.
             kwargs: Additional keyword arguments to pass to
-                [`Connector.set()`][proxystore.connectors.protocols.Connector.set].
-
-        Returns:
-            A key which can be used to retrieve the object.
+                [`DeferrableConnector.set()`][proxystore.connectors.protocols.DeferrableConnector.set].
 
         Raises:
             NotImplementedError: If the `connector` is not of type

@@ -16,11 +16,11 @@ $ proxystore-relay --port 8700
 ```
 
 This relay server would be accessible at `ws://localhost:8700`. For example,
-an endpoint can be configure with this URI and will connect this instance
+an endpoint can be configured with this URI and will connect to this instance
 when started.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --relay-server ws://localhost:8700
+$ proxystore-endpoint configure my-endpoint --relay-address ws://localhost:8700
 $ proxystore-endpoint start my-endpoint --no-detach
 ```
 
@@ -41,6 +41,9 @@ encryption if a valid SSL certificate is provided.
     corresponding `privkey.pem` exist.
 
 Advanced serving, such as TLS encryption, requires a relay configuration file.
+All options in the configuration file are described in
+[`RelayServingConfig`][proxystore.p2p.relay.config.RelayServingConfig],
+and unknown options raise an error.
 
 ```toml title="relay.toml"
 port = 8700
@@ -73,8 +76,8 @@ configurations are optional with defaults defined in
 ```toml title="relay.toml"
 [logging]
 log_dir = "/path/to/log/dir"
-default_log_level = "INFO"
-websockets_log_level = "WARNING"
+default_level = "INFO"
+websockets_level = "WARNING"
 current_client_interval = 60
 current_client_limit = 32
 ```
@@ -219,19 +222,22 @@ the relay that is being served with Globus Auth.
 ```python
 import asyncio
 
-from proxystore.globus.manager import NativeAppAuthManager
+from globus_sdk.scopes import Scope
+
+from proxystore.globus.app import get_user_app
 from proxystore.p2p.relay.client import RelayClient
 
 RELAY_APP_UUID = '...'
-RELAY_APP_SCOPE = 'relay_all'
+RELAY_APP_SCOPE = Scope(
+    f'https://auth.globus.org/scopes/{RELAY_APP_UUID}/relay_all',
+)
 
 
 async def main() -> None:
-    manager = NativeAppAuthManager(
-        resource_server_scopes={RELAY_APP_UUID: [RELAY_APP_SCOPE]},
-    )
-    manager.login()
-    authorizer = manager.get_authorizer(RELAY_APP_UUID)
+    app = get_user_app()
+    app.add_scope_requirements({RELAY_APP_UUID: [RELAY_APP_SCOPE]})
+    # Starts a login flow if valid tokens for the scope are not found
+    authorizer = app.get_authorizer(RELAY_APP_UUID)
 
     async with RelayClient(
         'wss://localhost:8700',

@@ -197,7 +197,7 @@ class MultiConnector:
             'small': (file_connector, Policy(max_size_bytes=1000000)),
             'large': (redis_connector, Policy(min_size_bytes=1000000)),
         }
-        connector = MultiConnector(connector)
+        connector = MultiConnector(connectors)
         ```
 
     Note:
@@ -418,9 +418,9 @@ class MultiConnector:
 
         Warning:
             This method calls
-            [`put()`][proxystore.connectors.multi.MultiConnector] individually
-            for each item in the batch so items in the batch can potentially
-            be placed in different connectors.
+            [`put()`][proxystore.connectors.multi.MultiConnector.put]
+            individually for each item in the batch so items in the batch
+            can potentially be placed in different connectors.
 
         Args:
             objs: Sequence of serialized objects to put in the store.

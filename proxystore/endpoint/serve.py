@@ -85,10 +85,10 @@ def _create_storage(config: EndpointConfig) -> Storage:
         )
         return SQLiteStorage(
             database_path,
-            max_object_size=config.storage.max_object_size,
+            max_object_size=config.storage.object_size_limit,
         )
     logger.warning('Database path not provided. Data will not be persisted')
-    return DictStorage(max_object_size=config.storage.max_object_size)
+    return DictStorage(max_object_size=config.storage.object_size_limit)
 
 
 def _create_peer_manager(config: EndpointConfig) -> PeerManager | None:
@@ -216,7 +216,7 @@ async def running_endpoint(
         handler = ClientHandler(
             endpoint,
             token,
-            max_object_size=config.storage.max_object_size,
+            max_object_size=config.storage.object_size_limit,
         )
         server = await handler.start_server(
             config.host,

@@ -75,7 +75,7 @@ class GlobusUser:
     """Globus Auth user information.
 
     Fields are retrieved via the
-    [token introspection API](https://docs.globus.org/api/auth/reference/#token-introspec).
+    [token introspection API](https://docs.globus.org/api/auth/reference/#token-introspect).
 
     Attributes:
         username: Identity username.
@@ -104,7 +104,7 @@ class GlobusUser:
 
 
 class GlobusAuthenticator:
-    """Globus Auth authorizer.
+    """Globus Auth authenticator.
 
     Args:
         client_id: Globus application client ID. If either `client_id`
@@ -115,7 +115,7 @@ class GlobusAuthenticator:
         client_secret: Globus application client secret. See `client_id` for
             details. Ignored if `auth_client` is provided.
         audience: Intended audience of the token. This should typically be
-            the resource server of the the token was issued for. E.g.,
+            the resource server the token was issued for. E.g.,
             the UUID of the ProxyStore Relay Server application.
         auth_client: Optional confidential application authentication client
             which is used for introspecting client tokens.

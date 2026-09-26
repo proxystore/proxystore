@@ -7,7 +7,7 @@
 > moving through a specified path (e.g., through a network socket, cloud
 > server, workflow engine, etc.) while the true path the data takes is
 > different. Transporting the lightweight proxies through the application or
-> systems can be more efficient---reduce overheads in the system.
+> systems can be more efficient and reduce overheads in the system.
 
 ## Overview
 
@@ -86,7 +86,7 @@ the underlying storage connector is accessible by all processes. (Here,
 the [`LocalConnector`][proxystore.connectors.local.LocalConnector] is only
 accessible within the local process and is used for illustrative purposes.)
 Once the proxy is used on the remote process, the underlying factory function
-will be executed to retrieve the target object from the Redis server.
+will be executed to retrieve the target object from the store.
 
 Using the [`Store`][proxystore.store.base.Store] interface allows
 developers to write code without needing to worry about how data communication
@@ -128,7 +128,7 @@ def my_function(input: MyDataType) -> None:
 1. Always true even if input is a proxy.
 
 In this model, only the producer of the data needs to be aware of which
-communication and storage system is being used, and no modification to the consumer code are required.
+communication and storage system is being used, and no modifications to the consumer code are required.
 
 **How is this more efficient?**
 

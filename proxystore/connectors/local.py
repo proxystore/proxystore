@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class LocalKey(NamedTuple):
-    """Key to objects store in a `LocalConnector`.
+    """Key to objects stored in a `LocalConnector`.
 
     Attributes:
         id: Unique object ID.
@@ -26,7 +26,7 @@ class LocalKey(NamedTuple):
 
 
 class LocalConnector:
-    """Connector that store objects in the local process's memory.
+    """Connector that stores objects in the local process's memory.
 
     Warning:
         This connector exists primarily for testing purposes.
@@ -35,7 +35,7 @@ class LocalConnector:
         store_dict: Dictionary to store data in. If not specified,
             a new empty dict will be generated.
         include_data_in_config: Include the data in the connector in the
-            connector's state. This is very innefficient and only useful for
+            connector's state. This is very inefficient and only useful for
             testing.
     """
 

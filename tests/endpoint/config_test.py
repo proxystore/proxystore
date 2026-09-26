@@ -180,9 +180,9 @@ def test_validate_relay_config(bad_cfg: Any, error: str | None) -> None:
 @pytest.mark.parametrize(
     ('bad_cfg', 'error'),
     (
-        ({'max_object_size': 0}, 'greater than zero'),
+        ({'max_object_size': 0}, None),
         ({'max_object_size': 1}, None),
-        ({'max_object_size': -1}, 'greater than zero'),
+        ({'max_object_size': -1}, 'zero \\(no limit\\) or greater'),
     ),
 )
 def test_validate_storage_config(bad_cfg: Any, error: str | None) -> None:
@@ -191,3 +191,11 @@ def test_validate_storage_config(bad_cfg: Any, error: str | None) -> None:
     else:
         with pytest.raises(ValueError, match=error):
             EndpointStorageConfig(**bad_cfg)
+
+
+def test_storage_config_object_size_limit() -> None:
+    assert EndpointStorageConfig().object_size_limit == (
+        EndpointStorageConfig().max_object_size
+    )
+    assert EndpointStorageConfig(max_object_size=10).object_size_limit == 10
+    assert EndpointStorageConfig(max_object_size=0).object_size_limit is None

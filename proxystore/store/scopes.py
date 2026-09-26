@@ -109,6 +109,7 @@ def submit(
         from concurrent.futures import ProcessPoolExecutor
         from proxystore.store.base import Store
         from proxystore.store.ref import borrow
+        from proxystore.store.scopes import submit
 
         store = Store('example', ...)
         proxy = store.owned_proxy([1, 2, 3])
@@ -131,7 +132,7 @@ def submit(
         the destructor of the owned proxy to evict the associated data.
 
     Args:
-        submit_func: Function with submits a function with args and kwargs to
+        submit_func: Function which submits a function with args and kwargs to
             be executed (e.g.,
             [`Executor.submit()`][concurrent.futures.Executor.submit]{target=_blank}).
         args: Positional arguments to pass to `submit_func`. Any proxy

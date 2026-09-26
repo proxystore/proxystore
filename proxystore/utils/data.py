@@ -78,7 +78,7 @@ def readable_to_bytes(size: str) -> int:
         >>> readable_to_bytes('1.2 KB')
         1200
         >>> readable_to_bytes('0.6 MiB')
-        629146
+        629145
         ```
 
     Args:

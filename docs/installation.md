@@ -25,7 +25,7 @@ ProxyStore provides many features with extra dependencies that can be installed 
 | `#!bash pip install proxystore[redis]` | Use [Redis stream shims][proxystore.stream.shims.redis] or the [`RedisConnector`][proxystore.connectors.redis.RedisConnector] |
 | `#!bash pip install proxystore[zmq]` | Use [ZeroMQ stream shims][proxystore.stream.shims.zmq] |
 
-Multiple extras options can be install at the same time.
+Multiple extras options can be installed at the same time.
 
 ```bash
 pip install proxystore[endpoints,redis]

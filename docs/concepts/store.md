@@ -2,7 +2,7 @@ A [`Store`][proxystore.store.base.Store] is initialized with a
 [`Connector`][proxystore.connectors.protocols.Connector] instance and provides
 extra functionality. Similar to the
 [`Connector`][proxystore.connectors.protocols.Connector], the
-[`Store`][proxystore.store.base.Store] exposes `evict`, `exist`, `get`, and `put`
+[`Store`][proxystore.store.base.Store] exposes `evict`, `exists`, `get`, and `put`
 operations; however, these operations act on Python objects rather than
 [`bytes`][bytes]. The [`Store`][proxystore.store.base.Store] will (de)serialize
 objects accordingly before invoking the corresponding operation on the
@@ -19,7 +19,7 @@ mediated channel and returns a proxy (see example below). The object is
 serialized before being put in the mediated channel, a factory with the key
 returned by the [`Connector`][proxystore.connectors.protocols.Connector] and
 other information necessary to retrieve the object from the mediated channel
-is generated, and then a new proxy, internalized with the factory, is returned.
+is generated, and then a new proxy, initialized with the factory, is returned.
 
 ```python title="Base Store Usage" linenums="1"
 from proxystore.connectors.local import LocalConnector
@@ -104,7 +104,7 @@ deserializer = Callable[[BytesLike], Any]
 ```
 Implementing a custom serializer may be beneficial for complex structures
 where pickle/cloudpickle (the default serializers used by ProxyStore) are
-innefficient. E.g.,
+inefficient. E.g.,
 
 ```python linenums="1"
 import torch
@@ -151,6 +151,6 @@ with Store(
     However, `populate_target=False` should also be set in this case to avoid prepopulating the proxy with the serialized target object.
     See the [`Store`][proxystore.store.base.Store] docstring for more information.
 
-Alternative, custom serializers and deserializers can be passed to [`Store`][proxystore.store.base.Store], overriding the class defaults.
+Custom serializers and deserializers can also be passed to individual operations, such as [`Store.put()`][proxystore.store.base.Store.put], [`Store.get()`][proxystore.store.base.Store.get], or [`Store.proxy()`][proxystore.store.base.Store.proxy], to override the defaults of the [`Store`][proxystore.store.base.Store] instance.
 See Issue [#146](https://github.com/proxystore/proxystore/issues/146){target=_blank}
 for further discussion on where custom serializers can be helpful.

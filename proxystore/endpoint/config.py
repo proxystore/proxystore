@@ -64,8 +64,8 @@ class EndpointRelayConfig(BaseModel):
             gathering entirely, which is useful when all peers are on the same
             host or when STUN servers are unreachable.
         peer_channels: Number of peer channels to multiplex communication over.
-        verify_certificates: Validate the relay server's SSL certificate. This
-            should only be disabled when testing endpoint with local relay
+        verify_certificate: Validate the relay server's SSL certificate. This
+            should only be disabled when testing endpoints with local relay
             servers using self-signed certificates.
     """
 
@@ -101,7 +101,8 @@ class EndpointStorageConfig(BaseModel):
         database_path: Optional path to SQLite database file that will be used
             for storing endpoint data. If `None`, data will only be stored
             in-memory.
-        max_object_size: Optional maximum object size.
+        max_object_size: Maximum object size in bytes. If `0`, there is no
+            limit on object sizes.
     """
 
     database_path: str | None = None
@@ -109,12 +110,17 @@ class EndpointStorageConfig(BaseModel):
 
     @field_validator('max_object_size')
     @classmethod
-    def _max_object_size_validator(cls, v: int | None) -> int | None:
-        if v is not None and v < 1:
+    def _max_object_size_validator(cls, v: int) -> int:
+        if v < 0:
             raise ValueError(
-                'Max object size must be None or greater than zero.',
+                'Max object size must be zero (no limit) or greater.',
             )
         return v
+
+    @property
+    def object_size_limit(self) -> int | None:
+        """Maximum object size in bytes or `None` if there is no limit."""
+        return self.max_object_size if self.max_object_size > 0 else None
 
 
 class EndpointConfig(BaseModel):
@@ -124,12 +130,14 @@ class EndpointConfig(BaseModel):
         name: Endpoint name.
         uuid: Endpoint UUID.
         host: Host endpoint is running on.
-        host_type: Type of host address to use (FQDN or IP).
+        host_type: Type of host address to use. If `"ip"` or `"fqdn"`, the
+            host is determined when the endpoint starts. If `"static"`, the
+            `host` field is used.
         port: Port endpoint is running on.
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
             starts, and clients only trust that certificate.
-        peering: Peering configuration.
+        relay: Relay server configuration used for peering.
         storage: Storage configuration.
 
     Raises:

@@ -433,7 +433,7 @@ def mut_borrow(
     *,
     populate_target: bool = True,
 ) -> RefMutProxy[T]:
-    """Mutably borrow `T` by creating an mutable reference of `T`.
+    """Mutably borrow `T` by creating a mutable reference of `T`.
 
     Note:
         This mutates `proxy`.
@@ -510,7 +510,7 @@ def into_owned(
         This will unset the `evict` flag on the proxy.
 
     Args:
-        proxy: Proxy reference to borrow.
+        proxy: Proxy to convert.
         populate_target: If the target of `proxy` has already been resolved,
             copy the reference to the target into the returned proxy such that
             the returned proxy is already resolved.
@@ -519,7 +519,7 @@ def into_owned(
         ValueError: if `proxy` is already a
             [`BaseRefProxy`][proxystore.store.ref.BaseRefProxy] instance.
         ProxyStoreFactoryError: If the proxy's factory is not an instance of
-            [`StoreFactory`][proxystore.store.base.StoreFactory].
+            [`StoreFactory`][proxystore.store.factory.StoreFactory].
     """
     if type(proxy) in (OwnedProxy, RefProxy, RefMutProxy):
         # We don't use isinstance to prevent resolving the proxy.

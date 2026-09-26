@@ -52,7 +52,7 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
     Raises:
         ProxyStoreFactoryError: If the value is a proxy but does not contain a
             factory of type
-            [`StoreFactory`][proxystore.store.base.StoreFactory].
+            [`StoreFactory`][proxystore.store.factory.StoreFactory].
     """
     if isinstance(val, Proxy):
         # If the object is a proxy, get the factory that will access the store
@@ -107,7 +107,7 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
 
     Tip:
         Use the [`store_registration`][proxystore.store.store_registration]
-        context manager to automatically register and unregister as store.
+        context manager to automatically register and unregister a store.
 
     Args:
         store: Store instance to register.

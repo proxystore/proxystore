@@ -138,7 +138,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         degradation for expensive factories, such as those that require
         significant I/O or produce target objects that require a lot of memory.
         The `target` and `cache_defaults` parameters of
-        [`Proxy`][proxystore.proxy.Proxy] can prevent these unintenional
+        [`Proxy`][proxystore.proxy.Proxy] can prevent these unintentional
         proxy resolves by caching the `__class__` and `__hash__` values of the
         target object in the proxy.
 
@@ -154,9 +154,10 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
 
         value = 'value'
         proxy = Proxy(lambda: value, cache_defaults=True, target=value)  # (2)!
+        del proxy.__proxy_wrapped__  # (3)!
         assert not is_resolved(proxy)
 
-        assert isinstance(proxy, str)  # (3)!
+        assert isinstance(proxy, str)  # (4)!
         assert not is_resolved(proxy)
         ```
 
@@ -167,7 +168,10 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         2. If the target is available when constructing the proxy, the
            proxy can precompute and cache the `__class__` and `__hash__` values
            of the target.
-        3. Using [`isinstance`][isinstance] no longer requires the proxy
+        3. Passing `target` creates a proxy that is already resolved.
+           Deleting the wrapped target "unresolves" the proxy, as would
+           happen when the proxy is serialized and sent to another process.
+        4. Using [`isinstance`][isinstance] no longer requires the proxy
            to be resolved, instead using the precomputed value.
 
     Warning:

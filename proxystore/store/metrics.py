@@ -30,10 +30,10 @@ When a `ProxyT` is passed, the keys are extracted from the proxies.
 
 @dataclasses.dataclass
 class TimeStats:
-    """Tracks time statistics of a reoccuring event.
+    """Tracks time statistics of a recurring event.
 
     Attributes:
-        count: Number of times this event as occurred.
+        count: Number of times this event has occurred.
         avg_time_ms: Average time in milliseconds of the event.
         min_time_ms: Minimum time in milliseconds of all event occurrences.
         max_time_ms: Maximum time in milliseconds of all event occurrences.

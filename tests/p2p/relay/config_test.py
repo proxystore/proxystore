@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 import pathlib
 
+import pytest
+
 from proxystore.p2p.relay.config import RelayAuthConfig
 from proxystore.p2p.relay.config import RelayLoggingConfig
 from proxystore.p2p.relay.config import RelayServingConfig
@@ -19,14 +21,33 @@ def test_logging_config_default() -> None:
 
 
 def test_read_from_config_file_empty(tmp_path: pathlib.Path) -> None:
-    data = '[serving]'
-
     filepath = tmp_path / 'relay.toml'
-    with open(filepath, 'w') as f:
-        f.write(data)
+    filepath.write_text('')
 
     config = RelayServingConfig.from_toml(filepath)
     assert config == RelayServingConfig()
+
+
+@pytest.mark.parametrize(
+    'data',
+    (
+        # Unknown top-level section
+        '[serving]\nport = 1234',
+        # Unknown top-level option
+        'hostname = "localhost"',
+        # Unknown logging option
+        '[logging]\ndefault_log_level = "DEBUG"',
+    ),
+)
+def test_read_from_config_file_unknown_option(
+    data: str,
+    tmp_path: pathlib.Path,
+) -> None:
+    filepath = tmp_path / 'relay.toml'
+    filepath.write_text(data)
+
+    with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+        RelayServingConfig.from_toml(filepath)
 
 
 def test_read_from_config_file(tmp_path: pathlib.Path) -> None:

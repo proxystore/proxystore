@@ -3,7 +3,7 @@
 *Last updated 20 April 2024*
 
 The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
-For example, a object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
+For example, an object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
 Some [`Connectors`][proxystore.connectors.protocols.Connector], and therefore [`Stores`][proxystore.store.base.Store], delete all of their objects when closed but this is not a specified requirement of the protocol.
 
 ProxyStore, however, provides optional mechanisms for more automated management of shared objects.
@@ -41,7 +41,7 @@ If you run into these errors, try:
 * Enabling `DEBUG` level logging to determine where unintentional proxy resolution is occurring.
   The [`Store`][proxystore.store.base.Store] will log every `GET` and `EVICT` operation on a key.
 * Avoid use of datastructures or functions which unnecessarily resolve proxies.
-* If avoiding use of the datastructures or functions causing the problem is not possible, consider using the `populate_target=True` flag when creating the proxy.
+* If avoiding use of the datastructures or functions causing the problem is not possible, make sure `populate_target=True` (the default) when creating the proxy.
   The `populate_target` flag will return a proxy that is already resolved so the factory, which would evict the target object, does not need to be called until the proxy is serialized and then deserialized and resolved on a different process.
   The flag will also cache the class type and hash value of the target such that the proxy can be used in datastructures which rely on [`hash()`][hash] or in [`isinstance`][isinstance] checks without needing to resolve the proxy.
 
@@ -103,6 +103,8 @@ Each [`LeaseLifetime`][proxystore.store.lifetimes.LeaseLifetime] has an associat
 The lease can be extended as needed with [`extend()`][proxystore.store.lifetimes.LeaseLifetime.extend] or ended early [`close()`][proxystore.store.lifetimes.LeaseLifetime.close].
 
 ```python linenums="1" title="Leased Lifetime"
+import time
+
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import LeaseLifetime
 
@@ -153,7 +155,7 @@ Additional tips:
 1. Closing the [`Store`][proxystore.store.base.Store] at the end of the program but before the [atexit][atexit] handler has executed can cause undefined behaviour.
    Let the handler perform all cleanup.
 2. The [`StaticLifetime`][proxystore.store.lifetimes.StaticLifetime] can be closed manually, but only once.
-   This may be useful if the the associated stores need to be closed manually or outside of the atexit handler.
+   This may be useful if the associated stores need to be closed manually or outside of the atexit handler.
    (Close the lifetime before the stores.)
 3. [atexit][atexit] does not guarantee that the handler will be called in some unexpected process shutdown cases.
    This can lead to a memory leak in the connector(s).
@@ -187,9 +189,10 @@ from concurrent.futures import Future
 from concurrent.futures import ProcessPoolExecutor
 from proxystore.store.base import Store
 from proxystore.store.ref import borrow
+from proxystore.store.scopes import submit
 
 store = Store(...)
-proxy = store.owned_proxy('value')
+proxy = store.owned_proxy([1, 2, 3])
 borrowed = borrow(proxy)  # (1)!
 
 with ProcessPoolExecutor() as pool:

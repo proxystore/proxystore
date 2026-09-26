@@ -75,7 +75,7 @@ class Lifetime(Protocol):
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
         """
         ...
 
@@ -135,7 +135,7 @@ class ContextLifetime:
         ```
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance use to create
+        store: [`Store`][proxystore.store.base.Store] instance used to create
             the objects associated with this lifetime and that will be used
             to evict them when the lifetime has ended.
         name: Specify a name for this lifetime used in logging. Otherwise,
@@ -212,7 +212,7 @@ class ContextLifetime:
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
             RuntimeError: If this lifetime has ended.
         """
         keys: list[ConnectorKeyT] = []
@@ -284,7 +284,7 @@ class LeaseLifetime(ContextLifetime):
         ```
 
     Args:
-        store: [`Store`][proxystore.store.base.Store] instance use to create
+        store: [`Store`][proxystore.store.base.Store] instance used to create
             the objects associated with this lifetime and that will be used
             to evict them when the lifetime has ended.
         expiry: Initial expiry time of the lease. Can either be a
@@ -402,9 +402,9 @@ class StaticLifetime:
         1. The atexit handler will call `store.close()` at the end of the
            program. Setting `register=True` is recommended to prevent another
            instance being created internally when a proxy is resolved.
-        3. The object associated with `key` will be evicted at the end of
+        2. The object associated with `key` will be evicted at the end of
            the program.
-        4. The object associated with `proxy` will be evicted at the end of
+        3. The object associated with `proxy` will be evicted at the end of
            the program.
     """
 
@@ -457,7 +457,7 @@ class StaticLifetime:
         """Associate a new object with the lifetime.
 
         Warning:
-            This method will initialized new
+            This method will initialize new
             [`Store`][proxystore.store.base.Store] instances if the stores
             which were used to create the input proxies have not been
             registered by setting the `register` flag or by calling
@@ -469,7 +469,7 @@ class StaticLifetime:
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
             RuntimeError: If this lifetime has ended.
         """
         for proxy in proxies:

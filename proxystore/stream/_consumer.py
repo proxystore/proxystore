@@ -254,8 +254,9 @@ class StreamConsumer(Generic[T]):
             producer can map topic names to
             [`Store`][proxystore.store.Store] instances. This class will
             keep track of the [`Store`][proxystore.store.Store] instances
-            used by the stream and will close and unregister them when this
-            class is closed.
+            used by the stream and will close and unregister them if
+            [`close()`][proxystore.stream.StreamConsumer.close] is called
+            with `stores=True`.
 
         Returns:
             [`Proxy[T]`][proxystore.proxy.Proxy] is returned if the topic \

@@ -333,7 +333,6 @@ class GlobusConnector:
         timeout: Timeout in seconds for waiting on Globus Transfer tasks.
 
     Raises:
-        GlobusAuthFileError: If the Globus authentication file cannot be found.
         ValueError: If `endpoints` is of an incorrect type.
         ValueError: If fewer than two endpoints are provided.
     """

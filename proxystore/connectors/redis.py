@@ -15,7 +15,7 @@ from proxystore.serialize import BytesLike
 
 
 class RedisKey(NamedTuple):
-    """Key to objects store in a Redis server.
+    """Key to objects stored in a Redis server.
 
     Attributes:
         redis_key: Unique object ID.

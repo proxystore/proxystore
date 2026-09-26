@@ -70,7 +70,7 @@ class StreamProducer(Generic[T]):
         ```python
         with StreamProducer(...) as stream:
             for item in ...:
-                stream.send(item)
+                stream.send('topic', item)
         ```
 
     Tip:
@@ -176,7 +176,7 @@ class StreamProducer(Generic[T]):
 
         Warning:
             Objects buffered in an incomplete batch will be lost. Call
-            [`flush()`][proxystore.stream.StreamProducer] to ensure
+            [`flush()`][proxystore.stream.StreamProducer.flush] to ensure
             that all objects are sent before closing, or pass a list of
             topics to flush and close.
 
@@ -349,9 +349,6 @@ class StreamProducer(Generic[T]):
         Raises:
             TopicClosedError: If the `topic` has already been closed via
                 [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
-            ValueError: If a store associated with `topic` is not found
-                in the mapping of topics to stores nor a default store is
-                provided.
         """
         if self._buffer[topic].closed:
             raise TopicClosedError(f'Topic "{topic}" has been closed.')

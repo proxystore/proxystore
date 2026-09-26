@@ -14,6 +14,6 @@ by the [StreamProducer][proxystore.stream.StreamProducer]
 and [StreamConsumer][proxystore.stream.StreamConsumer].
 
 Warning:
-    Most of the provided shims have a external dependency that may not be
+    Most of the provided shims have an external dependency that may not be
     installed by default with ProxyStore.
 """

@@ -8,7 +8,7 @@ Here, we create a [`Store`][proxystore.store.base.Store] using a
 [`StoreExecutor`][proxystore.store.executor.StoreExecutor] takes a
 `should_proxy` argument which is a callable used to determine which inputs
 and output values should be proxied. In this example, we use
-[`ProxyType(str)`][proxystore.store.executor.ProxyType] which cause only
+[`ProxyType(str)`][proxystore.store.executor.ProxyType] which causes only
 instances of [`str`][str] to be proxied. All other input or output types
 will be ignored.
 
@@ -38,7 +38,7 @@ with StoreExecutor(
     assert result == 'foobar-42'
 ```
 
-The execution of `concat`, above, uses a [`str`][str] and [`int`][int] inputs
+The execution of `concat`, above, uses [`str`][str] and [`int`][int] inputs
 and produces a [`str`][str] output. Because we configured the
 [`StoreExecutor`][proxystore.store.executor.StoreExecutor] to proxy only
 [`str`][str] instances, only the [str][str] input and output were proxied.
@@ -263,7 +263,7 @@ class StoreExecutor(Executor):
         compatible with every executor type. If you encounter errors such as
         [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError],
         set `ownership=False` and consider using alternate mechanisms for
-        evicted data associated with proxies.
+        evicting data associated with proxies.
 
         For example, `ownership=True` is not currently compatible with the
         Dask Distributed `Client` because Dask will maintain multiple

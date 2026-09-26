@@ -54,14 +54,14 @@ def login(
     relay server. Collections can be strung together. E.g., request transfer
     scopes for multiple collections with:
 
-    $ proxystore-globus-auth -c UUID -c UUID -c UUID
+    $ proxystore-globus-auth login -c UUID -c UUID -c UUID
 
     Providing UUIDs for High-Assurance GCS Mapped Collections will result
     in "Unknown Scope" errors during the login flow because those Collections
     do not use data_access. Do not provide those Collection UUIDs to the CLI.
     In this case, you may need to provide a domain for the collection:
 
-    $ proxystore-globus-auth -d <domain>
+    $ proxystore-globus-auth login -d <domain>
     """
     app = get_user_app()
     scopes = get_all_scopes_by_resource_server(collection)

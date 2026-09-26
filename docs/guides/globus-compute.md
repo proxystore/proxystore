@@ -1,6 +1,6 @@
 # Globus Compute with ProxyStore
 
-*Last updated 20 April 2024*
+*Last updated 26 September 2026*
 
 This guide walks through integrating ProxyStore into a
 [Globus Compute](https://www.globus.org/compute){target=_blank} application.
@@ -29,7 +29,7 @@ and ProxyStore.
 ```bash
 $ python -m venv venv
 $ . venv/bin/activate
-$ pip install globus-compute-sdk==2.18.1 globus-compute-endpoint==2.18.1 proxystore==0.6.5
+$ pip install globus-compute-sdk==4.17.1 globus-compute-endpoint==4.17.1 proxystore==1.1.0
 ```
 
 ## Using Globus Compute
@@ -70,7 +70,7 @@ with Executor(endpoint_id=ENDPOINT_UUID) as gce:  # (3)!
 4. Submit the function for execution.
 5. Wait on the result future.
 
-Running this script will return `50000`.
+Running this script will print `50000.0`.
 ```bash
 $ python example.py
 50000.0
@@ -154,7 +154,7 @@ def average(x: list[float]) -> float:
 1. Globus Compute functions will be executed in a different process so we must
    import inside the function.
 2. If our input data was communicated via a proxy, we get the same `Store` that
-   create our input proxy which we then use to proxy the output.
+   created our input proxy which we then use to proxy the output.
 
 ## Closing Thoughts
 
@@ -164,7 +164,7 @@ the [`Proxy`][proxystore.proxy.Proxy] model simplifies the process of moving
 data via alternate means between the Globus Compute client and executors.
 
 More complex applications where the Globus Compute endpoints live elsewhere
-(e.g., on an HPC) cluster or that move larger data will benefit from the
+(e.g., on an HPC cluster) or that move larger data will benefit from the
 various [`Connector`][proxystore.connectors.protocols.Connector]
 implementations provided.
 
