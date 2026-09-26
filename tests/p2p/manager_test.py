@@ -20,7 +20,9 @@ from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.exceptions import PeerNotAllowedError
 from proxystore.p2p.manager import _closed_with
 from proxystore.p2p.manager import CloseCode
+from proxystore.p2p.manager import PathInfo
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.manager import selected_path
 from testing.p2p import allow_peer
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
@@ -499,3 +501,118 @@ async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
     await manager._online_task
     await manager.close()
     assert any('not connected to a home' in r.message for r in caplog.records)
+
+
+def _path(*, selected: bool, relay: bool, addr: str, rtt: int = 5) -> Any:
+    return mock.MagicMock(
+        is_selected=selected,
+        is_relay=relay,
+        remote_addr=addr,
+        rtt_ms=rtt,
+    )
+
+
+def test_selected_path() -> None:
+    connection = mock.MagicMock()
+    connection.paths.return_value = [
+        _path(selected=False, relay=True, addr='https://relay'),
+        _path(selected=True, relay=False, addr='1.2.3.4:5', rtt=7),
+    ]
+    path = selected_path(connection)
+    assert path == PathInfo(relayed=False, remote_addr='1.2.3.4:5', rtt_ms=7)
+    assert path.describe() == 'direct to 1.2.3.4:5 (rtt 7 ms)'
+
+    connection.paths.return_value = [
+        _path(selected=True, relay=True, addr='https://relay'),
+    ]
+    path = selected_path(connection)
+    assert path is not None
+    assert path.describe() == 'relayed via https://relay (rtt 5 ms)'
+
+    connection.paths.return_value = []
+    assert selected_path(connection) is None
+
+
+async def test_path(managers, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    manager1, manager2, _ = managers
+    assert manager1.path(manager2.id) is None
+
+    await manager1.request(manager2.id, Op.GET)
+    path = manager1.path(manager2.id)
+    assert path is not None
+    assert not path.relayed
+    assert path.remote_addr.startswith('127.0.0.1:')
+    messages = [r.message for r in caplog.records]
+    assert any(
+        f'[self({manager1.id[:10]})]: connection to peer' in m
+        and 'is direct to 127.0.0.1' in m
+        for m in messages
+    )
+    # The accepting peer also reports the path
+    assert any(
+        f'[self({manager2.id[:10]})]: connection from peer' in m
+        and 'is direct to 127.0.0.1' in m
+        for m in messages
+    )
+
+    manager1._outgoing[manager2.id].close(CloseCode.SHUTDOWN, b'close')
+    assert manager1.path(manager2.id) is None
+
+
+async def test_report_path_changes(managers, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    manager1, manager2, _ = managers
+    connection = mock.MagicMock()
+    connection.stable_id.return_value = 42
+
+    def _report(*paths: Any) -> list[str]:
+        caplog.clear()
+        connection.paths.return_value = list(paths)
+        manager1._report_path(manager2.id, connection, outgoing=True)
+        return [r.message for r in caplog.records]
+
+    relay = _path(selected=True, relay=True, addr='https://relay')
+    direct = _path(selected=True, relay=False, addr='1.2.3.4:5')
+    assert 'relayed via https://relay' in _report(relay)[0]
+    # Unchanged paths are not reported again, even if the RTT changes
+    assert (
+        _report(_path(selected=True, relay=True, addr='https://relay', rtt=9))
+        == []
+    )
+    assert 'direct to 1.2.3.4:5' in _report(direct)[0]
+    assert 'has no path' in _report()[0]
+
+    manager1._drop_outgoing(manager2.id, connection)
+    assert 42 not in manager1._paths
+
+
+async def test_watch_path_changes(managers) -> None:
+    manager1, manager2, _ = managers
+    connection = mock.MagicMock()
+    connection.close_reason.side_effect = [None, 'closed']
+    with (
+        mock.patch('proxystore.p2p.manager._PATH_WATCH_INTERVAL', 0),
+        mock.patch.object(manager1, '_report_path') as report,
+    ):
+        await manager1._watch_path_changes(
+            manager2.id,
+            connection,
+            outgoing=True,
+        )
+    # Reported once then stopped when the connection closed
+    assert report.call_count == 1
+
+    connection.close_reason.side_effect = None
+    connection.close_reason.return_value = None
+    with (
+        mock.patch('proxystore.p2p.manager._PATH_WATCH_INTERVAL', 0),
+        mock.patch('proxystore.p2p.manager._PATH_WATCH_DURATION', 0.01),
+        mock.patch.object(manager1, '_report_path'),
+    ):
+        # Stops after the watch duration
+        await manager1._watch_path_changes(
+            manager2.id,
+            connection,
+            outgoing=True,
+        )

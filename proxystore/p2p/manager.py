@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import collections
 import contextlib
+import dataclasses
 import enum
 import logging
 from collections.abc import Awaitable
@@ -67,6 +68,45 @@ The handler is called with the ID of the peer and the op code, metadata, and
 data of the request and returns the status code, metadata, and data of the
 response.
 """
+
+
+_PATH_WATCH_INTERVAL = 1.0
+_PATH_WATCH_DURATION = 15.0
+# A new connection often starts relayed and switches to a direct path once
+# hole-punching succeeds, so the path is watched for a short time after
+# connecting to log the change even if the connection is idle.
+
+
+@dataclasses.dataclass(frozen=True)
+class PathInfo:
+    """Network path used by a connection to a peer.
+
+    Attributes:
+        relayed: If traffic is relayed rather than sent directly to the peer.
+        remote_addr: Address of the peer (or relay) on this path.
+        rtt_ms: Round-trip time in milliseconds estimated by QUIC.
+    """
+
+    relayed: bool
+    remote_addr: str
+    rtt_ms: int
+
+    def describe(self) -> str:
+        """Describe the path for logging."""
+        kind = 'relayed via' if self.relayed else 'direct to'
+        return f'{kind} {self.remote_addr} (rtt {self.rtt_ms} ms)'
+
+
+def selected_path(connection: iroh.Connection) -> PathInfo | None:
+    """Get the path currently selected for sending on a connection."""
+    for path in connection.paths():
+        if path.is_selected:
+            return PathInfo(
+                relayed=path.is_relay,
+                remote_addr=path.remote_addr,
+                rtt_ms=path.rtt_ms,
+            )
+    return None
 
 
 class CloseCode(enum.IntEnum):
@@ -163,6 +203,8 @@ class PeerManager:
         ] = collections.defaultdict(asyncio.Lock)
         self._outgoing: dict[EndpointId, iroh.Connection] = {}
         self._incoming: dict[EndpointId, set[iroh.Connection]] = {}
+        # Last reported path of each connection by stable ID.
+        self._paths: dict[int, tuple[bool, str] | None] = {}
         self._closed = False
 
     @property
@@ -180,6 +222,18 @@ class PeerManager:
         if self._endpoint is None:
             raise RuntimeError('The peer manager has not been started.')
         return self._endpoint
+
+    def path(self, peer_id: EndpointId) -> PathInfo | None:
+        """Get the path used by the connection to a peer.
+
+        Returns:
+            The path of the connection this endpoint opened to the peer or \
+            `None` if there is no open connection.
+        """
+        connection = self._outgoing.get(peer_id)
+        if connection is None or connection.close_reason() is not None:
+            return None
+        return selected_path(connection)
 
     def addr(self) -> iroh.EndpointAddr:
         """Get the current address of this endpoint.
@@ -305,7 +359,9 @@ class PeerManager:
         for attempt in range(2):
             connection, fresh = await self._get_connection(peer_id)
             try:
-                return await self._exchange(connection, code, meta, data)
+                response = await self._exchange(connection, code, meta, data)
+                self._report_path(peer_id, connection, outgoing=True)
+                return response
             except iroh.IrohError as e:
                 reason = connection.close_reason()
                 self._drop_outgoing(peer_id, connection)
@@ -408,6 +464,7 @@ class PeerManager:
                 self._peer_name(peer_id),
             )
             await self._remember_addr(peer_id)
+            self._watch_path(peer_id, connection, outgoing=True)
             return connection, True
 
     async def _dial(
@@ -460,8 +517,67 @@ class PeerManager:
         peer_id: EndpointId,
         connection: iroh.Connection,
     ) -> None:
+        self._paths.pop(connection.stable_id(), None)
         if self._outgoing.get(peer_id) is connection:
             del self._outgoing[peer_id]
+
+    def _report_path(
+        self,
+        peer_id: EndpointId,
+        connection: iroh.Connection,
+        *,
+        outgoing: bool,
+    ) -> None:
+        """Log the path of a connection if it changed."""
+        direction = 'connection to' if outgoing else 'connection from'
+        path = selected_path(connection)
+        key = None if path is None else (path.relayed, path.remote_addr)
+        stable_id = connection.stable_id()
+        if stable_id in self._paths and self._paths[stable_id] == key:
+            return
+        self._paths[stable_id] = key
+        if path is None:
+            logger.info(
+                '%s: %s peer %s has no path',
+                self._log_prefix(),
+                direction,
+                self._peer_name(peer_id),
+            )
+        else:
+            logger.info(
+                '%s: %s peer %s is %s',
+                self._log_prefix(),
+                direction,
+                self._peer_name(peer_id),
+                path.describe(),
+            )
+
+    def _watch_path(
+        self,
+        peer_id: EndpointId,
+        connection: iroh.Connection,
+        *,
+        outgoing: bool,
+    ) -> None:
+        self._report_path(peer_id, connection, outgoing=outgoing)
+        self._spawn(
+            self._watch_path_changes(peer_id, connection, outgoing=outgoing),
+        )
+
+    async def _watch_path_changes(
+        self,
+        peer_id: EndpointId,
+        connection: iroh.Connection,
+        *,
+        outgoing: bool,
+    ) -> None:
+        loop = asyncio.get_running_loop()
+        end = loop.time() + _PATH_WATCH_DURATION
+        while loop.time() < end:
+            await asyncio.sleep(_PATH_WATCH_INTERVAL)
+            if connection.close_reason() is not None:
+                return
+            self._report_path(peer_id, connection, outgoing=outgoing)
 
     def _is_allowed(self, peer_id: EndpointId) -> bool:
         for removed in self._allowlist.reload():
@@ -543,6 +659,7 @@ class PeerManager:
         connections = self._incoming.setdefault(peer_id, set())
         connections.add(connection)
         await self._remember_addr(peer_id)
+        self._watch_path(peer_id, connection, outgoing=False)
         try:
             while True:
                 try:
@@ -556,6 +673,7 @@ class PeerManager:
                 self._spawn(self._handle_stream(peer_id, stream))
         finally:
             connections.discard(connection)
+            self._paths.pop(connection.stable_id(), None)
             if len(connections) == 0 and (
                 self._incoming.get(peer_id) is connections
             ):
