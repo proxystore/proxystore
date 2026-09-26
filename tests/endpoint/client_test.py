@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import os
 import socket
+import struct
 import threading
-import time
 import uuid
 import warnings
 from collections.abc import Callable
@@ -247,18 +247,19 @@ def test_request_connection_closed(fake_server) -> None:
 
 
 def test_request_connection_reset(fake_server) -> None:
+    reset = threading.Event()
+
     def _script(conn: socket.socket) -> None:
         _complete_handshake(conn)
-        conn.setsockopt(
-            socket.SOL_SOCKET,
-            socket.SO_LINGER,
-            b'\x01\x00\x00\x00\x00\x00\x00\x00',
-        )
+        # Closing with a zero linger timeout resets the connection
+        linger = struct.pack('ii', 1, 0)
+        conn.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, linger)
+        conn.close()
+        reset.set()
 
     port = fake_server(_script)
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        # Wait for the server to reset the connection
-        time.sleep(0.2)
+        assert reset.wait(timeout=5)
         with pytest.raises(EndpointConnectionError, match='Lost connection'):
             # Large enough that the send cannot complete before the reset
             client.set('key', b'x' * 10_000_000)

@@ -122,12 +122,12 @@ async def test_operations(server: _Server) -> None:
 async def test_client_closes_between_requests(server: _Server) -> None:
     client = await _connect(server)
     await asyncio.to_thread(client.exists, 'key')
+    (conn,) = server.handler._connections
     await asyncio.to_thread(client.close)
-    # Wait for the server to notice the closed connection
-    for _ in range(100):  # pragma: no branch
-        if len(server.handler._connections) == 0:
-            break
-        await asyncio.sleep(0.01)
+
+    # The server's connection handler returns once the client disconnects
+    assert conn._task is not None
+    await asyncio.wait_for(conn._task, timeout=5)
     assert len(server.handler._connections) == 0
 
 
