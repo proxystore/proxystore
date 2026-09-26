@@ -418,9 +418,9 @@ class MultiConnector:
 
         Warning:
             This method calls
-            [`put()`][proxystore.connectors.multi.MultiConnector] individually
-            for each item in the batch so items in the batch can potentially
-            be placed in different connectors.
+            [`put()`][proxystore.connectors.multi.MultiConnector.put]
+            individually for each item in the batch so items in the batch
+            can potentially be placed in different connectors.
 
         Args:
             objs: Sequence of serialized objects to put in the store.

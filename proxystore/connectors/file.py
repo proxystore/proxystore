@@ -38,8 +38,8 @@ class FileConnector:
         store_dir: Path to directory to store data in. Note this
             directory will be deleted upon closing the store.
         clear: Clear all objects on
-            [`close()`][proxystore.connectors.file.FileConnector] by removing
-            `store_dir`.
+            [`close()`][proxystore.connectors.file.FileConnector.close] by
+            removing `store_dir`.
         buffering: Buffering policy used with [`open()`][open].
     """
 

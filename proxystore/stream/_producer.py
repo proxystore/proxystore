@@ -176,7 +176,7 @@ class StreamProducer(Generic[T]):
 
         Warning:
             Objects buffered in an incomplete batch will be lost. Call
-            [`flush()`][proxystore.stream.StreamProducer] to ensure
+            [`flush()`][proxystore.stream.StreamProducer.flush] to ensure
             that all objects are sent before closing, or pass a list of
             topics to flush and close.
 

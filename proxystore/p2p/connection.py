@@ -158,7 +158,7 @@ class PeerConnection:
 
         Note:
             This will not call
-            [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient].
+            [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient.close].
         """
         logger.info('%s: closing connection', self._log_prefix)
         # Flush send buffers before close

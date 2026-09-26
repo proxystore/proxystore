@@ -57,7 +57,7 @@ Result: 4950
 
 ## Using ProxyStore
 
-Dask Distributed has many builtin optimizations for data management when working with array-like data (e.g., NumPy arrays for Pandas dataframes).
+Dask Distributed has many builtin optimizations for data management when working with array-like data (e.g., NumPy arrays or Pandas dataframes).
 However, other large objects can cause performance degradation when serialized along with the task graph.
 ProxyStore provides a seamless alternative for passing objects to and from task invocations.
 
@@ -110,7 +110,7 @@ The transparent nature of `proxy` means that when used by the task, `proxy` will
 ### Performance Tips
 
 In the above example, we set two flags (`register` and `populate_target`) which will improve performance with ProxyStore in Dask Distributed applications.
-Passing `#!python register=True` will call [`register_store()`][proxystore.store.base.Store] automatically to register the [`Store`][proxystore.store.base.Store] instance globally by name.
+Passing `#!python register=True` will call [`register_store()`][proxystore.store.register_store] automatically to register the [`Store`][proxystore.store.base.Store] instance globally by name.
 This enables proxies to reuse the same store instance, improving performance by sharing the same cache and stateful connections.
 
 Most important for ProxyStore performance in Dask Distributed is `#!python populate_target=True`.
@@ -141,14 +141,14 @@ INFO:proxystore.store:Unregistered a store named dask
 
 Each `GET` message corresponds to an instance of `proxy` being resolved.
 In this example, this happens (1) when the Dask client serializes `proxy`, (2) on the Dask scheduler when the task request message is processed, and (3) on the Dask worker when `proxy` is actually used in the computation.
-If `x` was very large or costly to retrieve, this could significantly increase the application's memory usage or harmfully reduce task dispatch latency.
+If `x` was very large or costly to retrieve, this could significantly increase the application's memory usage or increase task dispatch latency.
 Running the example again with logging enabled but `#!python populate_target=True` will produce a single `GET` message corresponding to the Dask worker resolving `proxy` when the sum is computed which is optimal for performance.
 
 ### Memory Management
 
 The [`Store`][proxystore.store.base.Store], by default, will not delete stored objects once they are no longer needed.
-In the above example, this means that `x` will be stored in the [`FileConnector`][proxystore.connectors.file.FileConnector] until [`Store.close()`][proxystore.store.base.Store] is called and the directory `/tmp/proxystore-cache` is deleted.
-(Here, [`Store.close()`][proxystore.store.base.Store] is called when exiting the `with` context block.)
+In the above example, this means that `x` will be stored in the [`FileConnector`][proxystore.connectors.file.FileConnector] until [`Store.close()`][proxystore.store.base.Store.close] is called and the directory `/tmp/proxystore-cache` is deleted.
+(Here, [`Store.close()`][proxystore.store.base.Store.close] is called when exiting the `with` context block.)
 However, it is not a requirement that [`Connector`][proxystore.connectors.protocols.Connector] implementations clear stored objects when closed.
 In this case, the shared object `x` would be "leaked" because it was never deleted when no longer needed by the application.
 

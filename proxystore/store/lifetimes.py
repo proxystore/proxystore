@@ -75,7 +75,7 @@ class Lifetime(Protocol):
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
         """
         ...
 
@@ -212,7 +212,7 @@ class ContextLifetime:
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
             RuntimeError: If this lifetime has ended.
         """
         keys: list[ConnectorKeyT] = []
@@ -402,9 +402,9 @@ class StaticLifetime:
         1. The atexit handler will call `store.close()` at the end of the
            program. Setting `register=True` is recommended to prevent another
            instance being created internally when a proxy is resolved.
-        3. The object associated with `key` will be evicted at the end of
+        2. The object associated with `key` will be evicted at the end of
            the program.
-        4. The object associated with `proxy` will be evicted at the end of
+        3. The object associated with `proxy` will be evicted at the end of
            the program.
     """
 
@@ -469,7 +469,7 @@ class StaticLifetime:
 
         Raises:
             ProxyStoreFactoryError: If the proxy's factory is not an instance
-                of [`StoreFactory`][proxystore.store.base.StoreFactory].
+                of [`StoreFactory`][proxystore.store.factory.StoreFactory].
             RuntimeError: If this lifetime has ended.
         """
         for proxy in proxies:

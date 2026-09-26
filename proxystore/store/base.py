@@ -656,7 +656,7 @@ class Store(Generic[ConnectorT]):
 
         Returns:
             A proxy of the object unless `obj` is a non-proxiable type \
-            `#!python skip_nonproxiable is True` in which case `obj` is \
+            and `#!python skip_nonproxiable is True` in which case `obj` is \
             returned directly.
 
         Raises:
@@ -987,7 +987,7 @@ class Store(Generic[ConnectorT]):
         Returns:
             A proxy wrapped in a \
             [`ProxyLocker`][proxystore.proxy.ProxyLocker] unless `obj` is a \
-            non-proxiable type `#!python skip_nonproxiable is True` in which \
+            non-proxiable type and `#!python skip_nonproxiable is True` in which \
             case `obj` is returned directly.
 
         Raises:
@@ -1072,7 +1072,7 @@ class Store(Generic[ConnectorT]):
 
         Returns:
             A proxy of the object unless `obj` is a non-proxiable type \
-            `#!python skip_nonproxiable is True` in which case `obj` is \
+            and `#!python skip_nonproxiable is True` in which case `obj` is \
             returned directly.
 
         Raises:

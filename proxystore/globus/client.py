@@ -86,7 +86,7 @@ def get_transfer_client(
             [`get_user_app()`][proxystore.globus.app.get_user_app].
         collections: Iterable of collection UUIDs to add dependent
             `data_access` scopes for (via
-            [`add_app_data_access_scope()`][globus_sdk.TransferClient.add_app_data_access_scope].
+            [`add_app_data_access_scope()`][globus_sdk.TransferClient.add_app_data_access_scope]).
 
     Returns:
         Transfer client.

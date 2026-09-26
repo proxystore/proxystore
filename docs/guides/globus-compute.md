@@ -154,7 +154,7 @@ def average(x: list[float]) -> float:
 1. Globus Compute functions will be executed in a different process so we must
    import inside the function.
 2. If our input data was communicated via a proxy, we get the same `Store` that
-   create our input proxy which we then use to proxy the output.
+   created our input proxy which we then use to proxy the output.
 
 ## Closing Thoughts
 
@@ -164,7 +164,7 @@ the [`Proxy`][proxystore.proxy.Proxy] model simplifies the process of moving
 data via alternate means between the Globus Compute client and executors.
 
 More complex applications where the Globus Compute endpoints live elsewhere
-(e.g., on an HPC) cluster or that move larger data will benefit from the
+(e.g., on an HPC cluster) or that move larger data will benefit from the
 various [`Connector`][proxystore.connectors.protocols.Connector]
 implementations provided.
 
