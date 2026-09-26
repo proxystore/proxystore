@@ -29,7 +29,7 @@ from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import get_tls_cert_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
-from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
@@ -294,7 +294,7 @@ def _endpoint_client(
         logger.error(f'Unable to connect to endpoint at {address}.')
         logger.debug(e)
         sys.exit(1)
-    except (EndpointClientError, ValueError) as e:
+    except (EndpointError, ValueError) as e:
         logger.error(e)
         sys.exit(1)
 

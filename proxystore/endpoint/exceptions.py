@@ -9,12 +9,6 @@ class FileDumpNotAvailableError(Exception):
     pass
 
 
-class ObjectSizeExceededError(Exception):
-    """Exception raised when an object exceeds the max allowable size."""
-
-    pass
-
-
 class PeeringNotAvailableError(Exception):
     """Exception when a peer request is made but peering is not available."""
 
@@ -27,25 +21,41 @@ class PeerRequestError(Exception):
     pass
 
 
-class EndpointClientError(Exception):
+class EndpointError(Exception):
     """Base exception for errors communicating with an endpoint."""
 
     pass
 
 
-class EndpointAuthError(EndpointClientError):
+class EndpointAuthError(EndpointError):
     """Exception raised when the client or endpoint fails authentication."""
 
     pass
 
 
-class EndpointProtocolError(EndpointClientError):
+class EndpointConnectionError(EndpointError):
+    """Exception raised when the connection to an endpoint is closed or lost.
+
+    This is only raised by a client when the connection closes unexpectedly
+    (e.g., because the endpoint was stopped).
+    """
+
+    pass
+
+
+class EndpointProtocolError(EndpointError):
     """Exception raised for malformed or incompatible protocol messages."""
 
     pass
 
 
-class EndpointRequestError(EndpointClientError):
+class EndpointRequestError(EndpointError):
     """Exception raised when the endpoint returns an error for a request."""
+
+    pass
+
+
+class ObjectSizeExceededError(EndpointRequestError):
+    """Exception raised when an object exceeds the max allowable size."""
 
     pass

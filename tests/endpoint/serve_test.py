@@ -33,9 +33,10 @@ from proxystore.endpoint.config import get_tls_key_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointAuthError
-from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import local_versions
@@ -309,7 +310,7 @@ async def test_data_too_large(server: _Server) -> None:
 
     # The client checks the size before sending the data
     data = randbytes(MAX_OBJECT_SIZE + 1)
-    with pytest.raises(EndpointRequestError, match='exceeds the maximum'):
+    with pytest.raises(ObjectSizeExceededError, match='exceeds the maximum'):
         await asyncio.to_thread(client.set, 'key', data)
     assert not client.closed
 
@@ -328,7 +329,7 @@ async def test_data_too_large(server: _Server) -> None:
 async def test_storage_object_size_exceeded(server: _Server) -> None:
     server.endpoint._storage = DictStorage(max_object_size=10)
     client = await _connect(server)
-    with pytest.raises(EndpointRequestError, match='TOO_LARGE'):
+    with pytest.raises(ObjectSizeExceededError, match='TOO_LARGE'):
         await asyncio.to_thread(client.set, 'key', randbytes(100))
     await asyncio.to_thread(client.close)
 
@@ -360,7 +361,7 @@ async def test_unexpected_error(server: _Server) -> None:
 async def test_close_connections(server: _Server) -> None:
     client = await _connect(server)
     server.handler.close_connections()
-    with pytest.raises(EndpointClientError):
+    with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert client.closed
 
@@ -403,7 +404,7 @@ async def test_serve_async_token_file(tmp_path: pathlib.Path) -> None:
     stop.set()
     await task
     # Open connections are closed and the token is removed on shutdown
-    with pytest.raises(EndpointClientError):
+    with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert not os.path.exists(token_file)
 
@@ -826,7 +827,7 @@ async def test_tls_wrong_fingerprint(tls_server: _TLSServer) -> None:
 
 
 async def test_tls_client_without_tls(tls_server: _TLSServer) -> None:
-    with pytest.raises(EndpointClientError):
+    with pytest.raises(EndpointConnectionError):
         await _connect(tls_server.server)
 
 

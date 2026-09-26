@@ -25,7 +25,7 @@ from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.config import get_tls_cert_filepath
 from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.exceptions import EndpointAuthError
-from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
@@ -33,7 +33,7 @@ from proxystore.utils.environment import home_dir
 logger = logging.getLogger(__name__)
 
 
-class EndpointConnectorError(Exception):
+class EndpointConnectorError(EndpointError):
     """Exception resulting from request to Endpoint."""
 
     pass
@@ -114,7 +114,7 @@ class EndpointConnector:
                     f'Connection to {endpoint_uuid} failed: {e}',
                 )
                 continue
-            except (EndpointClientError, OSError, ValueError) as e:
+            except (EndpointError, OSError, ValueError) as e:
                 # OSError includes a missing token file which indicates the
                 # endpoint is not running, and ValueError is a malformed
                 # token file.
@@ -197,7 +197,7 @@ class EndpointConnector:
         try:
             with self._pool.connection() as client:
                 yield client
-        except (EndpointClientError, OSError, ValueError) as e:
+        except (EndpointError, OSError, ValueError) as e:
             raise EndpointConnectorError(f'{name} failed: {e}') from e
 
     def evict(self, key: EndpointKey) -> None:

@@ -29,9 +29,11 @@ from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.exceptions import EndpointAuthError
-from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
@@ -199,7 +201,7 @@ class EndpointClient:
             endpoint: Optional UUID of remote endpoint to forward operation to.
 
         Raises:
-            EndpointClientError: If the request fails.
+            EndpointError: If the request fails.
         """
         self._request(Op.EVICT, key, endpoint)
 
@@ -216,7 +218,7 @@ class EndpointClient:
             If an object associated with the key exists.
 
         Raises:
-            EndpointClientError: If the request fails.
+            EndpointError: If the request fails.
         """
         _, meta, _ = self._request(Op.EXISTS, key, endpoint)
         return bool(meta.get('exists'))
@@ -236,7 +238,7 @@ class EndpointClient:
             Serialized object or `None` if the object does not exist.
 
         Raises:
-            EndpointClientError: If the request fails.
+            EndpointError: If the request fails.
         """
         status, _, data = self._request(Op.GET, key, endpoint)
         return None if status == Status.NOT_FOUND else data
@@ -255,14 +257,14 @@ class EndpointClient:
             endpoint: Optional UUID of remote endpoint to forward operation to.
 
         Raises:
-            EndpointRequestError: If the size of `data` exceeds the maximum
-                object size of the endpoint.
-            EndpointClientError: If the request fails.
+            ObjectSizeExceededError: If the size of `data` exceeds the
+                maximum object size of the endpoint.
+            EndpointError: If the request fails.
         """
         size = memoryview(data).nbytes
         max_size = self.info.max_object_size
         if max_size is not None and size > max_size:
-            raise EndpointRequestError(
+            raise ObjectSizeExceededError(
                 f'Data size ({size} bytes) exceeds the maximum object size '
                 f'of the endpoint ({max_size} bytes).',
             )
@@ -276,7 +278,9 @@ class EndpointClient:
         data: BytesLike | None = None,
     ) -> tuple[Status, dict[str, Any], bytearray]:
         if self.closed:
-            raise EndpointClientError('Connection to the endpoint is closed.')
+            raise EndpointConnectionError(
+                'Connection to the endpoint is closed.',
+            )
 
         meta = {
             'key': key,
@@ -297,11 +301,12 @@ class EndpointClient:
 
             header, response_meta = _recv_message(self._socket)
             response_data = _recv_exactly(self._socket, header.data_len)
-        except (OSError, EndpointClientError) as e:
+        except EndpointError:
             self.close()
-            if isinstance(e, EndpointClientError):
-                raise
-            raise EndpointClientError(
+            raise
+        except OSError as e:
+            self.close()
+            raise EndpointConnectionError(
                 f'Lost connection to the endpoint: {e}',
             ) from e
 
@@ -316,13 +321,15 @@ class EndpointClient:
             return status, response_meta, response_data
 
         error = response_meta.get('error', 'no error message provided')
+        description = (
+            f'Endpoint returned {status.name} for {op.name} request: {error}'
+        )
         if status == Status.TOO_LARGE:
-            # The endpoint closes the connection because it did not read
+            # The endpoint may close the connection because it did not read
             # the data of the request.
             self.close()
-        raise EndpointRequestError(
-            f'Endpoint returned {status.name} for {op.name} request: {error}',
-        )
+            raise ObjectSizeExceededError(description)
+        raise EndpointRequestError(description)
 
 
 def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
@@ -446,7 +453,7 @@ def _recv_exactly(sock: socket.socket, size: int) -> bytearray:
     while received < size:
         n = sock.recv_into(view[received:])
         if n == 0:
-            raise EndpointClientError(
+            raise EndpointConnectionError(
                 'The endpoint closed the connection unexpectedly.',
             )
         received += n

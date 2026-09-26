@@ -18,7 +18,7 @@ from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.exceptions import EndpointAuthError
-from proxystore.endpoint.exceptions import EndpointClientError
+from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.protocol import local_versions
@@ -117,7 +117,7 @@ def test_connect_and_close(fake_server) -> None:
     # Closing again is a no-op
     client.close()
 
-    with pytest.raises(EndpointClientError, match='closed'):
+    with pytest.raises(EndpointConnectionError, match='closed'):
         client.exists('key')
 
 
@@ -214,7 +214,9 @@ def test_request_connection_closed(fake_server) -> None:
 
     port = fake_server(_script)
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        with pytest.raises(EndpointClientError, match='closed the connection'):
+        with pytest.raises(
+            EndpointConnectionError, match='closed the connection'
+        ):
             client.exists('key')
         assert client.closed
 
@@ -232,7 +234,7 @@ def test_request_connection_reset(fake_server) -> None:
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
         # Wait for the server to reset the connection
         time.sleep(0.2)
-        with pytest.raises(EndpointClientError, match='Lost connection'):
+        with pytest.raises(EndpointConnectionError, match='Lost connection'):
             # Large enough that the send cannot complete before the reset
             client.set('key', b'x' * 10_000_000)
         assert client.closed
