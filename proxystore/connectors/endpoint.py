@@ -3,18 +3,18 @@
 from __future__ import annotations
 
 import collections
-import contextlib
 import logging
 import os
 import threading
 import uuid
+import weakref
 from collections.abc import Callable
-from collections.abc import Generator
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
 from typing import NamedTuple
 from typing import Self
+from typing import TypeVar
 from uuid import UUID
 
 from proxystore.endpoint.client import connect_to_endpoint
@@ -22,12 +22,15 @@ from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
 from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
+
+_T = TypeVar('_T')
 
 
 class EndpointConnectorError(EndpointError):
@@ -148,7 +151,7 @@ class EndpointConnector:
         self._pool = _ConnectionPool(
             lambda: connect_to_endpoint(found_config, found_dir),
         )
-        self._pool.release(client)
+        self._pool.add(client)
 
     def __enter__(self) -> Self:
         return self
@@ -191,11 +194,13 @@ class EndpointConnector:
         """
         return cls(**config)
 
-    @contextlib.contextmanager
-    def _request(self, name: str) -> Generator[EndpointClient, None, None]:
+    def _request(
+        self,
+        name: str,
+        request: Callable[[EndpointClient], _T],
+    ) -> _T:
         try:
-            with self._pool.connection() as client:
-                yield client
+            return self._pool.run(request)
         except (EndpointError, OSError, ValueError) as e:
             raise EndpointConnectorError(f'{name} failed: {e}') from e
 
@@ -205,8 +210,10 @@ class EndpointConnector:
         Args:
             key: Key associated with object to evict.
         """
-        with self._request('Evict') as client:
-            client.evict(key.object_id, key.endpoint_id)
+        self._request(
+            'Evict',
+            lambda client: client.evict(key.object_id, key.endpoint_id),
+        )
 
     def exists(self, key: EndpointKey) -> bool:
         """Check if an object associated with the key exists.
@@ -217,8 +224,10 @@ class EndpointConnector:
         Returns:
             If an object associated with the key exists.
         """
-        with self._request('Exists') as client:
-            return client.exists(key.object_id, key.endpoint_id)
+        return self._request(
+            'Exists',
+            lambda client: client.exists(key.object_id, key.endpoint_id),
+        )
 
     def get(self, key: EndpointKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
@@ -229,8 +238,10 @@ class EndpointConnector:
         Returns:
             Serialized object or `None` if the object does not exist.
         """
-        with self._request('Get') as client:
-            return client.get(key.object_id, key.endpoint_id)
+        return self._request(
+            'Get',
+            lambda client: client.get(key.object_id, key.endpoint_id),
+        )
 
     def get_batch(self, keys: Sequence[EndpointKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.
@@ -310,15 +321,19 @@ class EndpointConnector:
             key: Key that the object will be associated with.
             obj: Object to associate with the key.
         """
-        with self._request('Set') as client:
-            client.set(key.object_id, obj, key.endpoint_id)
+        self._request(
+            'Set',
+            lambda client: client.set(key.object_id, obj, key.endpoint_id),
+        )
 
 
 class _ConnectionPool:
     """Thread-safe pool of connections to an endpoint.
 
     A connection only processes one request at a time so concurrent requests
-    (e.g., from multiple threads) each use a separate connection.
+    (e.g., from multiple threads) each use a separate connection. The pool
+    does not limit the number of connections, so it holds at most one idle
+    connection for each request that was made concurrently.
 
     Args:
         connect: Callable that returns a new connection.
@@ -328,30 +343,40 @@ class _ConnectionPool:
         self._connect = connect
         self._idle: collections.deque[EndpointClient] = collections.deque()
         self._lock = threading.Lock()
-        self._pid = os.getpid()
+        _POOLS.add(self)
 
-    @contextlib.contextmanager
-    def connection(self) -> Generator[EndpointClient, None, None]:
-        """Context manager that yields a connection from the pool.
+    def run(self, request: Callable[[EndpointClient], _T]) -> _T:
+        """Run a request with a connection from the pool.
 
-        The connection is returned to the pool on exit unless the connection
-        was closed because of an error.
+        Idle connections can be closed by the endpoint (e.g., when the
+        endpoint is restarted), so a request that fails because an idle
+        connection was closed is retried once with a new connection. All
+        requests are safe to retry because objects are write-once.
+
+        Args:
+            request: Callable that makes a request with a connection.
+
+        Returns:
+            The result of the request.
         """
-        client = self._acquire()
+        client, reused = self._acquire()
         try:
-            yield client
+            return request(client)
+        except EndpointConnectionError:
+            if not reused:
+                raise
+            logger.debug(
+                'Retrying request with a new connection because an idle '
+                'connection to the endpoint was closed',
+            )
         finally:
-            self.release(client)
+            self._release(client)
 
-    def release(self, client: EndpointClient) -> None:
-        """Return a connection to the pool."""
-        if client.closed:
-            return
-        with self._lock:
-            if os.getpid() == self._pid:
-                self._idle.append(client)
-                return
-        client.close()
+        client = self._connect()
+        try:
+            return request(client)
+        finally:
+            self._release(client)
 
     def close(self) -> None:
         """Close all idle connections in the pool."""
@@ -359,14 +384,38 @@ class _ConnectionPool:
             while self._idle:
                 self._idle.pop().close()
 
-    def _acquire(self) -> EndpointClient:
+    def add(self, client: EndpointClient) -> None:
+        """Add an idle connection to the pool."""
+        self._release(client)
+
+    def _acquire(self) -> tuple[EndpointClient, bool]:
         with self._lock:
-            if os.getpid() != self._pid:
-                # This process was forked so the idle connections are shared
-                # with the parent process and cannot be used.
-                while self._idle:
-                    self._idle.pop().close()
-                self._pid = os.getpid()
             if self._idle:
-                return self._idle.pop()
-        return self._connect()
+                return self._idle.pop(), True
+        return self._connect(), False
+
+    def _release(self, client: EndpointClient) -> None:
+        if client.closed:
+            return
+        with self._lock:
+            self._idle.append(client)
+
+    def _reset_after_fork(self) -> None:
+        # The idle connections are shared with the parent process so they
+        # cannot be used by the child, and the lock may have been held by
+        # another thread of the parent when the process was forked.
+        self._lock = threading.Lock()
+        while self._idle:
+            self._idle.pop().close()
+
+
+_POOLS: weakref.WeakSet[_ConnectionPool] = weakref.WeakSet()
+
+
+def _reset_pools_after_fork() -> None:
+    for pool in list(_POOLS):
+        pool._reset_after_fork()
+
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=_reset_pools_after_fork)
