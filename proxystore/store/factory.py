@@ -46,7 +46,7 @@ class StoreFactory(Generic[ConnectorT, T]):
         store_config: Store configuration used to reinitialize the store if
             needed.
         evict: If True, evict the object from the store once
-            [`resolve()`][proxystore.store.base.StoreFactory.resolve]
+            [`resolve()`][proxystore.store.factory.StoreFactory.resolve]
             is called.
         deserializer: Optional callable used to deserialize the byte string.
             If `None`, the default deserializer
@@ -153,7 +153,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
             If `None`, the default deserializer
             ([`deserialize()`][proxystore.serialize.deserialize]) will be used.
         evict: If True, evict the object from the store once
-            [`resolve()`][proxystore.store.base.StoreFactory.resolve]
+            [`resolve()`][proxystore.store.factory.StoreFactory.resolve]
             is called.
         polling_interval: Initial seconds to sleep between polling the store
             for the object.
