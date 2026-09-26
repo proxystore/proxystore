@@ -25,10 +25,10 @@ jobs:
           echo "PACKAGE_VERSION=$VERSION" >> $GITHUB_ENV
           echo "Extracted version from tag: $VERSION"
 
-      - name: Setup Python 3.12
+      - name: Setup Python 3.14
         uses: actions/setup-python@v7
         with:
-          python-version: '3.12'
+          python-version: '3.14'
 
       - name: Install pypa/build and build
         run: |
