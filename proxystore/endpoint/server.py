@@ -379,18 +379,27 @@ class ClientHandler:
             ssl=ssl_context,
         )
 
-    async def close_connections(self) -> None:
+    async def close_connections(self, timeout: float = 1) -> None:
         """Close all open client connections.
 
-        Requests that are still being handled (e.g., waiting on a peer
-        endpoint) are cancelled.
+        Connection handlers waiting on the client finish once their
+        connection is closed. Handlers that do not finish within `timeout`
+        seconds (e.g., because a request is waiting on a peer endpoint) are
+        cancelled.
+
+        Args:
+            timeout: Seconds to wait for connection handlers to finish
+                before cancelling them.
         """
         for conn in list(self._connections):
             conn.close()
         tasks = list(self._tasks)
-        for task in tasks:
+        if len(tasks) == 0:
+            return
+        _, pending = await asyncio.wait(tasks, timeout=timeout)
+        for task in pending:
             task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
+        await asyncio.gather(*pending, return_exceptions=True)
 
     async def _handle_connection(self, conn: _ClientConnection) -> None:
         self._connections.add(conn)

@@ -414,7 +414,7 @@ async def test_close_connections_cancels_requests(server: _Server) -> None:
     with mock.patch.object(server.endpoint, 'exists', _never_finishes):
         request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
         await started.wait()
-        await server.handler.close_connections()
+        await server.handler.close_connections(timeout=0.1)
         assert cancelled.is_set()
         assert len(server.handler._tasks) == 0
         with pytest.raises(EndpointConnectionError):
