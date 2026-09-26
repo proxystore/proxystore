@@ -46,5 +46,8 @@ jobs:
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Deploy docs for main:latest to gh-pages branch
+        env:
+          # Source links in the API docs point to this git ref
+          GRIFFE_GIT_COMMIT_HASH: main
         run: |
           mike deploy --push --update-aliases main

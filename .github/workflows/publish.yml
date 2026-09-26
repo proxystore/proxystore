@@ -52,6 +52,9 @@ jobs:
 
       - name: Deploy docs for release version to gh-pages branch
         if: startsWith(github.ref, 'refs/tags/')
+        env:
+          # Source links in the API docs point to this git ref
+          GRIFFE_GIT_COMMIT_HASH: ${{ github.ref_name }}
         run: |
           pip install --upgrade pip
           pip install .[endpoints] --group docs
