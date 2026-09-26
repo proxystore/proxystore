@@ -9,10 +9,14 @@ import pytest
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import create_credentials
+from proxystore.endpoint.auth import create_server_ssl_context
 from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
+from proxystore.endpoint.auth import load_credentials
 from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.auth import remove_credentials
 from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import verify_proof
@@ -134,3 +138,22 @@ def test_generate_tls_certificate(tmp_path: pathlib.Path) -> None:
     # A new certificate is generated each time
     generate_tls_certificate(str(cert_path), str(key_path), 'test')
     assert read_certificate_fingerprint(str(cert_path)) != fingerprint
+
+
+@pytest.mark.parametrize('tls', (True, False))
+def test_credentials_lifecycle(tls: bool, tmp_path: pathlib.Path) -> None:
+    endpoint_dir = str(tmp_path)
+    with pytest.raises(FileNotFoundError):
+        load_credentials(endpoint_dir, tls=tls)
+
+    credentials = create_credentials(endpoint_dir, tls=tls, common_name='x')
+    assert len(credentials.token) == TOKEN_SIZE
+    assert (credentials.tls_fingerprint is not None) == tls
+    assert load_credentials(endpoint_dir, tls=tls) == credentials
+    if tls:
+        create_server_ssl_context(endpoint_dir)
+
+    remove_credentials(endpoint_dir)
+    assert os.listdir(endpoint_dir) == []
+    # Removing again is a no-op
+    remove_credentials(endpoint_dir)

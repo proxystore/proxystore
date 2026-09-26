@@ -17,13 +17,10 @@ from typing import NamedTuple
 from typing import Self
 from uuid import UUID
 
-from proxystore.endpoint.auth import read_certificate_fingerprint
-from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import get_configs
-from proxystore.endpoint.config import get_tls_cert_filepath
-from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -108,7 +105,7 @@ class EndpointConnector:
             endpoint_dir = os.path.join(home, endpoint.name)
             logger.debug(f'Attempting connection to {endpoint_uuid}')
             try:
-                client = _connect(endpoint, endpoint_dir)
+                client = connect_to_endpoint(endpoint, endpoint_dir)
             except (EndpointAuthError, EndpointProtocolError) as e:
                 logger.warning(
                     f'Connection to {endpoint_uuid} failed: {e}',
@@ -148,7 +145,9 @@ class EndpointConnector:
         self.endpoint_port: int = found_config.port
         self.address = f'{self.endpoint_host}:{self.endpoint_port}'
 
-        self._pool = _ConnectionPool(lambda: _connect(found_config, found_dir))
+        self._pool = _ConnectionPool(
+            lambda: connect_to_endpoint(found_config, found_dir),
+        )
         self._pool.release(client)
 
     def __enter__(self) -> Self:
@@ -313,24 +312,6 @@ class EndpointConnector:
         """
         with self._request('Set') as client:
             client.set(key.object_id, obj, key.endpoint_id)
-
-
-def _connect(config: EndpointConfig, endpoint_dir: str) -> EndpointClient:
-    assert config.host is not None
-    # The token and certificate are read on every connection because they
-    # change each time the endpoint is restarted.
-    token = read_token_file(get_token_filepath(endpoint_dir))
-    fingerprint = (
-        read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
-        if config.tls
-        else None
-    )
-    return EndpointClient.connect(
-        config.host,
-        config.port,
-        token,
-        tls_fingerprint=fingerprint,
-    )
 
 
 class _ConnectionPool:

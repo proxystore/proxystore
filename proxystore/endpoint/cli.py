@@ -18,16 +18,13 @@ from typing import ClassVar
 import click
 
 import proxystore
-from proxystore.endpoint.auth import read_certificate_fingerprint
-from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
-from proxystore.endpoint.config import get_tls_cert_filepath
-from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.p2p.nat import check_nat_and_log
@@ -264,25 +261,8 @@ def _endpoint_client(
 ) -> Generator[EndpointClient, None, None]:
     """Connect to the endpoint of a test command and handle errors."""
     cfg = ctx.obj['ENDPOINT_CONFIG']
-    if cfg.host is None:
-        logger.error(f'Endpoint {cfg.name} has not been started.')
-        sys.exit(1)
-
-    address = f'{cfg.host}:{cfg.port}'
     try:
-        endpoint_dir = ctx.obj['ENDPOINT_DIR']
-        token = read_token_file(get_token_filepath(endpoint_dir))
-        fingerprint = (
-            read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
-            if cfg.tls
-            else None
-        )
-        with EndpointClient.connect(
-            cfg.host,
-            cfg.port,
-            token,
-            tls_fingerprint=fingerprint,
-        ) as client:
+        with connect_to_endpoint(cfg, ctx.obj['ENDPOINT_DIR']) as client:
             yield client
     except FileNotFoundError:
         logger.error(
@@ -291,7 +271,9 @@ def _endpoint_client(
         )
         sys.exit(1)
     except OSError as e:
-        logger.error(f'Unable to connect to endpoint at {address}.')
+        logger.error(
+            f'Unable to connect to endpoint at {cfg.host}:{cfg.port}.'
+        )
         logger.debug(e)
         sys.exit(1)
     except (EndpointError, ValueError) as e:

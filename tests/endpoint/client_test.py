@@ -16,7 +16,9 @@ from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
+from proxystore.endpoint.client import connect_to_endpoint
 from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -298,3 +300,9 @@ def test_python_patch_version_no_warning(fake_server) -> None:
         warnings.simplefilter('error', EndpointVersionWarning)
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
+
+
+def test_connect_to_endpoint_not_started(tmp_path) -> None:
+    config = EndpointConfig(name='test', uuid=str(uuid.uuid4()), port=1)
+    with pytest.raises(ValueError, match='has not been started'):
+        connect_to_endpoint(config, str(tmp_path))

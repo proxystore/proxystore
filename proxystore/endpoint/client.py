@@ -8,8 +8,8 @@ Note:
     with an endpoint this way. (Rather, they should connect to their own
     local endpoint, which peers with remote endpoints.)
 
-This module only depends on the standard library so clients do not need
-to install the `endpoints` extra dependencies.
+This module does not depend on the `endpoints` extra dependencies so clients
+do not need to install them.
 """
 
 from __future__ import annotations
@@ -23,9 +23,11 @@ import warnings
 from types import TracebackType
 from typing import Any
 from typing import Self
+from typing import TYPE_CHECKING
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import load_credentials
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -55,6 +57,9 @@ from proxystore.endpoint.protocol import version_mismatches
 from proxystore.serialize import BytesLike
 from proxystore.warnings import EndpointVersionWarning
 
+if TYPE_CHECKING:
+    from proxystore.endpoint.config import EndpointConfig
+
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
 _COALESCE_THRESHOLD = 64 * 1024
@@ -72,13 +77,20 @@ class EndpointClient:
 
     Example:
         ```python
-        from proxystore.endpoint.auth import read_token_file
+        from proxystore.endpoint.auth import load_credentials
 
-        token = read_token_file('/path/to/endpoint/client.token')
-        with EndpointClient.connect('localhost', 8765, token) as client:
+        credentials = load_credentials('/path/to/endpoint', tls=False)
+        with EndpointClient.connect(
+            'localhost', 8765, credentials.token
+        ) as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'
         ```
+
+    Tip:
+        Use
+        [`connect_to_endpoint()`][proxystore.endpoint.client.connect_to_endpoint]
+        to connect with the configuration and credentials of an endpoint.
 
     Args:
         sock: Connected socket that has completed the handshake.
@@ -123,10 +135,10 @@ class EndpointClient:
             host: Host address of the endpoint.
             port: Port of the endpoint.
             token: Token of the endpoint (see
-                [`read_token_file()`][proxystore.endpoint.auth.read_token_file]).
+                [`load_credentials()`][proxystore.endpoint.auth.load_credentials]).
             tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
                 certificate (see
-                [`read_certificate_fingerprint()`][proxystore.endpoint.auth.read_certificate_fingerprint]).
+                [`load_credentials()`][proxystore.endpoint.auth.load_credentials]).
                 If provided, the connection is encrypted with TLS and the
                 endpoint's certificate must match the fingerprint.
             timeout: Timeout in seconds for connecting and completing the
@@ -310,6 +322,44 @@ class EndpointClient:
             self.close()
             raise ObjectSizeExceededError(description)
         raise EndpointRequestError(description)
+
+
+def connect_to_endpoint(
+    config: EndpointConfig,
+    endpoint_dir: str,
+    *,
+    timeout: float | None = 10,
+) -> EndpointClient:
+    """Connect to a local endpoint.
+
+    The credentials are read from the endpoint directory each time because
+    they change each time the endpoint is restarted.
+
+    Args:
+        config: Configuration of the endpoint.
+        endpoint_dir: Directory of the endpoint.
+        timeout: Timeout in seconds for connecting and completing the
+            handshake.
+
+    Raises:
+        ValueError: If the endpoint has not been started (i.e., the host
+            is not set in the configuration) or the token file is malformed.
+        FileNotFoundError: If the token or certificate file does not exist
+            (e.g., because the endpoint is not running).
+        OSError: If the connection cannot be established.
+        EndpointError: If the handshake fails (see
+            [`EndpointClient.connect()`][proxystore.endpoint.client.EndpointClient.connect]).
+    """
+    if config.host is None:
+        raise ValueError(f'Endpoint {config.name} has not been started.')
+    credentials = load_credentials(endpoint_dir, tls=config.tls)
+    return EndpointClient.connect(
+        config.host,
+        config.port,
+        credentials.token,
+        tls_fingerprint=credentials.tls_fingerprint,
+        timeout=timeout,
+    )
 
 
 def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:

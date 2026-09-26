@@ -56,24 +56,23 @@ You can also validate that this request was logged by the endpoint.
 
 ### Connect from Python
 The [`EndpointClient`][proxystore.endpoint.client.EndpointClient] can be used
-to connect to an endpoint directly. Clients authenticate with the token that
-the endpoint writes to its directory when it starts.
+to connect to an endpoint directly. Clients authenticate with the token (and
+TLS certificate, if enabled) that the endpoint writes to its directory when it
+starts, and
+[`connect_to_endpoint()`][proxystore.endpoint.client.connect_to_endpoint]
+reads these files for you.
 ```python
 import os
 
-from proxystore.endpoint.auth import read_token_file
-from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.client import connect_to_endpoint
+from proxystore.endpoint.config import read_config
 
-path = '~/.local/share/proxystore/myendpoint/client.token'
-token = read_token_file(os.path.expanduser(path))
-with EndpointClient.connect('127.0.1.1', 8766, token) as client:
+endpoint_dir = os.path.expanduser('~/.local/share/proxystore/myendpoint')
+config = read_config(endpoint_dir)
+with connect_to_endpoint(config, endpoint_dir) as client:
     print(client.info)
     print(client.exists('abcdef'))
 ```
-If the endpoint is configured with `tls = true`, also pass the certificate
-fingerprint from
-[`read_certificate_fingerprint()`][proxystore.endpoint.auth.read_certificate_fingerprint]
-as `tls_fingerprint`.
 
 ### Common Errors
 

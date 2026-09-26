@@ -32,14 +32,12 @@ from aiortc import RTCIceServer
 from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import generate_tls_certificate
-from proxystore.endpoint.auth import generate_token_file
+from proxystore.endpoint.auth import create_credentials
+from proxystore.endpoint.auth import create_server_ssl_context
+from proxystore.endpoint.auth import remove_credentials
 from proxystore.endpoint.auth import restrict_directory
 from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import get_tls_cert_filepath
-from proxystore.endpoint.config import get_tls_key_filepath
-from proxystore.endpoint.config import get_token_filepath
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
@@ -689,12 +687,6 @@ async def _close_server(
     await server.wait_closed()
 
 
-def _remove_files(*paths: str) -> None:
-    for path in paths:
-        with contextlib.suppress(FileNotFoundError):
-            os.remove(path)
-
-
 async def _serve_async(
     config: EndpointConfig,
     endpoint_dir: str,
@@ -736,25 +728,21 @@ async def _serve_async(
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )
-        token_file = get_token_filepath(endpoint_dir)
-        cert_file = get_tls_cert_filepath(endpoint_dir)
-        key_file = get_tls_key_filepath(endpoint_dir)
-        stack.callback(_remove_files, token_file, cert_file, key_file)
+        stack.callback(remove_credentials, endpoint_dir)
+        credentials = create_credentials(
+            endpoint_dir,
+            tls=config.tls,
+            common_name=f'proxystore-endpoint-{config.uuid}',
+        )
         handler = EndpointServer(
             endpoint,
-            generate_token_file(token_file),
+            credentials.token,
             max_object_size=config.storage.max_object_size,
         )
 
         ssl_context: ssl.SSLContext | None = None
         if config.tls:
-            generate_tls_certificate(
-                cert_file,
-                key_file,
-                common_name=f'proxystore-endpoint-{config.uuid}',
-            )
-            ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            ssl_context.load_cert_chain(cert_file, key_file)
+            ssl_context = create_server_ssl_context(endpoint_dir)
             logger.info('Encrypting client connections with TLS')
 
         server = await handler.start_server(

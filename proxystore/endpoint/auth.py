@@ -26,9 +26,105 @@ import secrets
 import ssl
 import stat
 from typing import Literal
+from typing import NamedTuple
+
+from proxystore.endpoint.config import get_tls_cert_filepath
+from proxystore.endpoint.config import get_tls_key_filepath
+from proxystore.endpoint.config import get_token_filepath
 
 TOKEN_SIZE = 32
 """Size in bytes of an endpoint token."""
+
+
+class Credentials(NamedTuple):
+    """Credentials that clients use to connect to an endpoint.
+
+    Attributes:
+        token: Token that the client and endpoint prove they know.
+        tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
+            certificate or `None` if the endpoint does not use TLS.
+    """
+
+    token: bytes
+    tls_fingerprint: str | None
+
+
+def create_credentials(
+    endpoint_dir: str,
+    *,
+    tls: bool,
+    common_name: str,
+) -> Credentials:
+    """Create new credentials in an endpoint directory.
+
+    This writes a new token and, if `tls` is set, a new self-signed TLS
+    certificate and private key to the endpoint directory, replacing any
+    existing files.
+
+    Args:
+        endpoint_dir: Directory of the endpoint.
+        tls: Generate a TLS certificate.
+        common_name: Common name of the TLS certificate subject.
+    """
+    token = generate_token_file(get_token_filepath(endpoint_dir))
+    fingerprint = None
+    if tls:
+        cert_path = get_tls_cert_filepath(endpoint_dir)
+        generate_tls_certificate(
+            cert_path,
+            get_tls_key_filepath(endpoint_dir),
+            common_name,
+        )
+        fingerprint = read_certificate_fingerprint(cert_path)
+    return Credentials(token, fingerprint)
+
+
+def load_credentials(endpoint_dir: str, *, tls: bool) -> Credentials:
+    """Load the credentials of a running endpoint.
+
+    Args:
+        endpoint_dir: Directory of the endpoint.
+        tls: Load the fingerprint of the endpoint's TLS certificate.
+
+    Raises:
+        FileNotFoundError: If the token or certificate file does not exist
+            (e.g., because the endpoint is not running).
+        ValueError: If the token file is malformed.
+    """
+    token = read_token_file(get_token_filepath(endpoint_dir))
+    fingerprint = (
+        read_certificate_fingerprint(get_tls_cert_filepath(endpoint_dir))
+        if tls
+        else None
+    )
+    return Credentials(token, fingerprint)
+
+
+def remove_credentials(endpoint_dir: str) -> None:
+    """Remove the credential files from an endpoint directory, if present."""
+    for path in (
+        get_token_filepath(endpoint_dir),
+        get_tls_cert_filepath(endpoint_dir),
+        get_tls_key_filepath(endpoint_dir),
+    ):
+        try:
+            os.remove(path)
+        except FileNotFoundError:
+            pass
+
+
+def create_server_ssl_context(endpoint_dir: str) -> ssl.SSLContext:
+    """Create an SSL context with the TLS certificate of an endpoint.
+
+    The certificate must have been created by
+    [`create_credentials()`][proxystore.endpoint.auth.create_credentials].
+    """
+    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+    context.load_cert_chain(
+        get_tls_cert_filepath(endpoint_dir),
+        get_tls_key_filepath(endpoint_dir),
+    )
+    return context
 
 
 def write_private_file(path: str, data: bytes) -> None:
