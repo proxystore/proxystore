@@ -41,8 +41,9 @@ def exit_on_error(task: asyncio.Task[Any]) -> None:
         and not isinstance(task.exception(), SafeTaskExitError)
     ):
         logger.error(
-            f'Exception in background task (name="{task.get_name()}"): '
-            f'{task.exception()!r}',
+            'Exception in background task (name="%s"): %r',
+            task.get_name(),
+            task.exception(),
         )
         raise SystemExit(1)
 

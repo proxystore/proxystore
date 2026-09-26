@@ -133,7 +133,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
-        logger.debug(f'Starting asynchronous resolve of {self.key}')
+        logger.debug('Starting asynchronous resolve of %s', self.key)
         self._obj_future = _default_pool.submit(self.resolve)
 
 

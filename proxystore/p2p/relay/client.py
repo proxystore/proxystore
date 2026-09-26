@@ -200,8 +200,11 @@ class RelayClient:
             if message.success:
                 logger.info(
                     'Established client connection to relay server at '
-                    f'{self._address} with client uuid={self.uuid} '
-                    f'and name={self.name}',
+                    '%s with client uuid=%s '
+                    'and name=%s',
+                    self._address,
+                    self.uuid,
+                    self.name,
                 )
                 return websocket
             raise RelayRegistrationError(
@@ -328,9 +331,12 @@ class RelayClient:
                         raise
 
                     logger.warning(
-                        f'Registration with relay server at {self._address} '
-                        f'failed because of {e}. Retrying connection in '
-                        f'{backoff_seconds} seconds',
+                        'Registration with relay server at %s '
+                        'failed because of %s. Retrying connection in '
+                        '%s seconds',
+                        self._address,
+                        e,
+                        backoff_seconds,
                     )
                     await asyncio.sleep(backoff_seconds)
                     backoff_seconds = min(backoff_seconds * 2, 60)

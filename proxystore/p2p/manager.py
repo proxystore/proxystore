@@ -199,15 +199,17 @@ class PeerManager:
         assert connection._peer_name is not None
         peer_name = log_name(peer_uuid, connection._peer_name)
         logger.info(
-            f'{self._log_prefix}: listening for messages from peer '
-            f'{peer_name}',
+            '%s: listening for messages from peer %s',
+            self._log_prefix,
+            peer_name,
         )
         while True:
             message = await connection.recv()
             await self._message_queue.put((peer_uuid, message))
             logger.debug(
-                f'{self._log_prefix}: placed message from {peer_name} on '
-                'queue',
+                '%s: placed message from %s on queue',
+                self._log_prefix,
+                peer_name,
             )
 
     async def _handle_server_messages(self) -> None:
@@ -216,7 +218,8 @@ class PeerManager:
         Forwards the message to the correct P2PConnection instance.
         """
         logger.info(
-            f'{self._log_prefix}: listening for messages from relay server',
+            '%s: listening for messages from relay server',
+            self._log_prefix,
         )
         while True:
             try:
@@ -227,16 +230,20 @@ class PeerManager:
                 break
             except RelayMessageDecodeError as e:
                 logger.error(
-                    f'{self._log_prefix}: error deserializing message from '
-                    f'relay server: {e} ...skipping message',
+                    '%s: error deserializing message from '
+                    'relay server: %s ...skipping message',
+                    self._log_prefix,
+                    e,
                 )
                 continue
 
             if isinstance(message, PeerConnectionRequest):
                 logger.debug(
-                    f'{self._log_prefix}: relay server forwarded peer '
+                    '%s: relay server forwarded peer '
                     'connection message from '
-                    f'{log_name(message.source_uuid, message.source_name)}',
+                    '%s',
+                    self._log_prefix,
+                    log_name(message.source_uuid, message.source_name),
                 )
                 peers = frozenset({message.source_uuid, message.peer_uuid})
                 if peers not in self._peers:
@@ -262,13 +269,15 @@ class PeerManager:
                 # The peer manager should never send something to the
                 # relay server that warrants a ServerResponse
                 logger.error(
-                    f'{self._log_prefix}: got unexpected ServerResponse '
-                    f'from relay server: {message}',
+                    '%s: got unexpected ServerResponse from relay server: %s',
+                    self._log_prefix,
+                    message,
                 )
             else:
                 logger.error(
-                    f'{self._log_prefix}: received unknown message type '
-                    f'{type(message).__name__} from relay server',
+                    '%s: received unknown message type %s from relay server',
+                    self._log_prefix,
+                    type(message).__name__,
                 )
 
     async def close(self) -> None:
@@ -297,7 +306,7 @@ class PeerManager:
                 await connection.close()
 
         await self.relay_client.close()
-        logger.info(f'{self._log_prefix}: peer manager closed')
+        logger.info('%s: peer manager closed', self._log_prefix)
 
     async def close_connection(self, peers: Iterable[UUID]) -> None:
         """Close a peer connection if it exists.
@@ -318,8 +327,9 @@ class PeerManager:
             connection = self._peers.pop(peers, None)
         if connection is not None:
             logger.info(
-                f'{self._log_prefix} Closing connection between peers: '
-                f'{", ".join(str(peer) for peer in peers)}',
+                '%s Closing connection between peers: %s',
+                self._log_prefix,
+                ', '.join(str(peer) for peer in peers),
             )
             await connection.close()
         task = self._tasks.pop(peers, None)
@@ -382,7 +392,9 @@ class PeerManager:
             self._peers[peers] = connection
 
         logger.info(
-            f'{self._log_prefix}: opening peer connection with {peer_uuid}',
+            '%s: opening peer connection with %s',
+            self._log_prefix,
+            peer_uuid,
         )
         await connection.send_offer(peer_uuid)
 

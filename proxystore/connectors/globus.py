@@ -688,15 +688,15 @@ def _submit_transfer_action(
         if isinstance(task, globus_sdk.DeleteData):
             response = client.submit_delete(task)
             logger.debug(
-                'Submitted DeleteData Globus task with ID '
-                f'{response["task_id"]}',
+                'Submitted DeleteData Globus task with ID %s',
+                response['task_id'],
             )
             return response
         if isinstance(task, globus_sdk.TransferData):
             response = client.submit_transfer(task)
             logger.debug(
-                'Submitted TransferData Globus task with ID '
-                f'{response["task_id"]}',
+                'Submitted TransferData Globus task with ID %s',
+                response['task_id'],
             )
             return response
         raise AssertionError('Unreachable.')

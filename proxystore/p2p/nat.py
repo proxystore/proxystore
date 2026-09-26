@@ -205,13 +205,13 @@ async def _resolve_servers(
 
     for (host, port), result in zip(servers, results, strict=True):
         if isinstance(result, BaseException) or not result:
-            logger.debug(f'Failed to resolve STUN server {host}:{port}')
+            logger.debug('Failed to resolve STUN server %s:%s', host, port)
             continue
 
         ip = str(result[0][4][0])
         # Servers sharing an IP only provide one measurement point.
         if ip in seen:
-            logger.debug(f'Skipping {host}:{port} which duplicates {ip}')
+            logger.debug('Skipping %s:%s which duplicates %s', host, port, ip)
             continue
 
         seen.add(ip)
@@ -340,12 +340,12 @@ async def check_nat_and_log(
             timeout=timeout,
         )
     except Exception as e:
-        logger.error(f'Failed to determine NAT behavior: {e}')
+        logger.error('Failed to determine NAT behavior: %s', e)
         return
 
-    logger.info(f'NAT Behavior:   {result.mapping.value}')
-    logger.info(f'External IP:    {result.external_ip}')
-    logger.info(f'External Port:  {result.external_port}')
+    logger.info('NAT Behavior:   %s', result.mapping.value)
+    logger.info('External IP:    %s', result.external_ip)
+    logger.info('External Port:  %s', result.external_port)
 
     if result.hole_punching_likely:
         logger.info(

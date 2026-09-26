@@ -164,8 +164,9 @@ class Endpoint:
             # Initialization is not complete for endpoints in peering mode
             # until async_init() is called.
             logger.info(
-                f'{self._log_prefix}: initialized endpoint operating '
-                f'in {self._mode.name} mode',
+                '%s: initialized endpoint operating in %s mode',
+                self._log_prefix,
+                self._mode.name,
             )
 
     @property
@@ -247,14 +248,15 @@ class Endpoint:
                 f'endpoint-{self.uuid}-handle-peer-requests',
             )
             logger.info(
-                f'{self._log_prefix}: initialized endpoint operating '
-                f'in {self._mode.name} mode',
+                '%s: initialized endpoint operating in %s mode',
+                self._log_prefix,
+                self._mode.name,
             )
 
     async def _handle_peer_requests(self) -> None:  # noqa: C901
         """Coroutine to listen for request from peer endpoints."""
         assert self.peer_manager is not None
-        logger.info(f'{self._log_prefix}: listening for peer requests')
+        logger.info('%s: listening for peer requests', self._log_prefix)
 
         while True:
             source_endpoint, message_ = await self.peer_manager.recv()
@@ -263,17 +265,22 @@ class Endpoint:
                 message: EndpointRequest = deserialize(message_)
             except SerializationError as e:
                 logger.error(
-                    f'{self._log_prefix}: unable to decode message from peer '
-                    f'endpoint {source_endpoint}: {e}',
+                    '%s: unable to decode message from peer endpoint %s: %s',
+                    self._log_prefix,
+                    source_endpoint,
+                    e,
                 )
                 continue
 
             if message.kind == 'response':
                 if message.uuid not in self._pending_requests:
                     logger.error(
-                        f'{self._log_prefix}: received '
-                        f'{type(message).__name__} with ID {message.uuid} '
+                        '%s: received '
+                        '%s with ID %s '
                         'that does not match a pending request',
+                        self._log_prefix,
+                        type(message).__name__,
+                        message.uuid,
                     )
                 else:
                     fut = self._pending_requests.pop(message.uuid)
@@ -284,9 +291,12 @@ class Endpoint:
                 continue
 
             logger.debug(
-                f'{self._log_prefix}: received {type(message).__name__}'
-                f'(id={message.uuid}, key={message.key}) from '
-                f'{source_endpoint}',
+                '%s: received %s(id=%s, key=%s) from %s',
+                self._log_prefix,
+                type(message).__name__,
+                message.uuid,
+                message.key,
+                source_endpoint,
             )
 
             try:
@@ -309,9 +319,12 @@ class Endpoint:
 
             message.kind = 'response'
             logger.debug(
-                f'{self._log_prefix}: sending {message.op} response with '
-                f'id={message.uuid} and key={message.key} to '
-                f'{source_endpoint}',
+                '%s: sending %s response with id=%s and key=%s to %s',
+                self._log_prefix,
+                message.op,
+                message.uuid,
+                message.key,
+                source_endpoint,
             )
             await self.peer_manager.send(source_endpoint, serialize(message))
 
@@ -332,8 +345,12 @@ class Endpoint:
             asyncio.get_running_loop().create_future()
         )
         logger.debug(
-            f'{self._log_prefix}: sending {request.op} request with '
-            f'id={request.uuid} and key={request.key}) to {endpoint}',
+            '%s: sending %s request with id=%s and key=%s) to %s',
+            self._log_prefix,
+            request.op,
+            request.uuid,
+            request.key,
+            endpoint,
         )
         try:
             await self.peer_manager.send(endpoint, serialize(request))
@@ -366,7 +383,10 @@ class Endpoint:
             PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
-            f'{self._log_prefix}: EVICT key={key} on endpoint={endpoint}',
+            '%s: EVICT key=%s on endpoint=%s',
+            self._log_prefix,
+            key,
+            endpoint,
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
@@ -397,7 +417,10 @@ class Endpoint:
             PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
-            f'{self._log_prefix}: EXISTS key={key} on endpoint={endpoint}',
+            '%s: EXISTS key=%s on endpoint=%s',
+            self._log_prefix,
+            key,
+            endpoint,
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
@@ -433,7 +456,10 @@ class Endpoint:
             PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
-            f'{self._log_prefix}: GET key={key} on endpoint={endpoint}',
+            '%s: GET key=%s on endpoint=%s',
+            self._log_prefix,
+            key,
+            endpoint,
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
@@ -469,7 +495,10 @@ class Endpoint:
             PeerRequestError: If request to a peer endpoint fails.
         """
         logger.debug(
-            f'{self._log_prefix}: SET key={key} on endpoint={endpoint}',
+            '%s: SET key=%s on endpoint=%s',
+            self._log_prefix,
+            key,
+            endpoint,
         )
 
         if self._is_peer_request(endpoint):
@@ -503,4 +532,4 @@ class Endpoint:
         if self._peer_manager is not None:
             await self._peer_manager.close()
         await self._storage.close()
-        logger.info(f'{self._log_prefix}: endpoint closed')
+        logger.info('%s: endpoint closed', self._log_prefix)

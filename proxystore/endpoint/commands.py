@@ -172,16 +172,16 @@ def configure_endpoint(
         return 1
 
     if os.path.exists(endpoint_dir):
-        logger.error(f'An endpoint named {name} already exists.')
+        logger.error('An endpoint named %s already exists.', name)
         logger.info('To reconfigure the endpoint, remove and try again.')
         return 1
 
     endpoint_dir.write_config(cfg)
 
-    logger.info(f'Configured endpoint: {cfg.name} <{cfg.uuid}>')
-    logger.info(f'Config and log file directory: {endpoint_dir}')
+    logger.info('Configured endpoint: %s <%s>', cfg.name, cfg.uuid)
+    logger.info('Config and log file directory: %s', endpoint_dir)
     logger.info('Start the endpoint with:')
-    logger.info(f'  $ proxystore-endpoint start {cfg.name}')
+    logger.info('  $ proxystore-endpoint start %s', cfg.name)
 
     return 0
 
@@ -214,13 +214,17 @@ def list_endpoints(
     max_endpoint_chars = max([18] + [len(e.name) for e in endpoints])
 
     if len(endpoints) == 0:
-        logger.info(f'No valid endpoint configurations in {proxystore_dir}.')
+        logger.info('No valid endpoint configurations in %s.', proxystore_dir)
         return 0
 
     eps = [(e.name, str(e.uuid)) for e in endpoints]
     eps = sorted(eps, key=lambda x: x[0])
     logger.info(
-        f'{"NAME":<{max_endpoint_chars}} {"STATUS":<{max_status_chars}} UUID',
+        '%-*s %-*s UUID',
+        max_endpoint_chars,
+        'NAME',
+        max_status_chars,
+        'STATUS',
         extra={'simple': True},
     )
 
@@ -230,8 +234,14 @@ def list_endpoints(
     for name, uuid_ in eps:
         status = get_status(name, proxystore_dir)
         logger.info(
-            f'{name:{max_endpoint_chars}.{max_endpoint_chars}} '
-            f'{status.name:<{max_status_chars}.{max_status_chars}} {uuid_}',
+            '%-*.*s %-*.*s %s',
+            max_endpoint_chars,
+            max_endpoint_chars,
+            name,
+            max_status_chars,
+            max_status_chars,
+            status.name,
+            uuid_,
             extra={'simple': True},
         )
 
@@ -259,18 +269,18 @@ def remove_endpoint(
     endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
 
     if not os.path.exists(endpoint_dir):
-        logger.error(f'An endpoint named {name} does not exist.')
+        logger.error('An endpoint named %s does not exist.', name)
         return 1
 
     status = get_status(name, proxystore_dir)
     if status in (EndpointStatus.RUNNING, EndpointStatus.HANGING):
         logger.error('Endpoint must be stopped before removing.')
-        logger.error(f'  $ proxystore-endpoint stop {name}')
+        logger.error('  $ proxystore-endpoint stop %s', name)
         return 1
 
     shutil.rmtree(endpoint_dir)
 
-    logger.info(f'Removed endpoint named {name}.')
+    logger.info('Removed endpoint named %s.', name)
 
     return 0
 
@@ -300,10 +310,10 @@ def start_endpoint(  # noqa: C901
 
     status = get_status(name, proxystore_dir)
     if status == EndpointStatus.RUNNING:
-        logger.error(f'Endpoint {name} is already running.')
+        logger.error('Endpoint %s is already running.', name)
         return 1
     if status == EndpointStatus.UNKNOWN:
-        logger.error(f'A valid endpoint named {name} does not exist.')
+        logger.error('A valid endpoint named %s does not exist.', name)
         logger.error('Use `list` to see available endpoints.')
         return 1
 
@@ -321,7 +331,7 @@ def start_endpoint(  # noqa: C901
             'Set the `host` field or change the `host_type` to '
             '"ip" or "fqdn" in the config.',
         )
-        logger.error(f'  Config: {path}')
+        logger.error('  Config: %s', path)
         return 1
     elif cfg.host_type == 'static' and cfg.host is not None:
         hostname = cfg.host
@@ -337,13 +347,16 @@ def start_endpoint(  # noqa: C901
     ):
         logger.error(
             'A PID file exists for the endpoint, but the config indicates the '
-            f'endpoint is running on a host named {cfg.host}. Try stopping '
-            f'the endpoint on {cfg.host}. Otherwise, delete the PID file at '
-            f'{pid_file} and try again.',
+            'endpoint is running on a host named %s. Try stopping '
+            'the endpoint on %s. Otherwise, delete the PID file at '
+            '%s and try again.',
+            cfg.host,
+            cfg.host,
+            pid_file,
         )
         return 1
     if status == EndpointStatus.HANGING:
-        logger.debug(f'Removing invalid PID file ({pid_file}).')
+        logger.debug('Removing invalid PID file (%s).', pid_file)
         os.remove(pid_file)
 
     # Write out new config with host so clients can see the current host
@@ -354,7 +367,7 @@ def start_endpoint(  # noqa: C901
 
     if detach:
         logger.info('Starting endpoint process as daemon.')
-        logger.info(f'Logs will be written to {log_file}')
+        logger.info('Logs will be written to %s', log_file)
 
         context = daemon.DaemonContext(
             working_directory=endpoint_dir.path,
@@ -395,11 +408,11 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
 
     status = get_status(name, proxystore_dir)
     if status == EndpointStatus.UNKNOWN:
-        logger.error(f'A valid endpoint named {name} does not exist.')
+        logger.error('A valid endpoint named %s does not exist.', name)
         logger.error('Use `list` to see available endpoints.')
         return 1
     if status == EndpointStatus.STOPPED:
-        logger.info(f'Endpoint {name} is not running.')
+        logger.info('Endpoint %s is not running.', name)
         return 0
 
     endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
@@ -414,22 +427,25 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
     ):
         logger.error(
             'A PID file exists for the endpoint, but the config indicates the '
-            f'endpoint is running on a host named {cfg.host}. Try stopping '
-            f'the endpoint on {cfg.host}. Otherwise, delete the PID file at '
-            f'{pid_file} and try again.',
+            'endpoint is running on a host named %s. Try stopping '
+            'the endpoint on %s. Otherwise, delete the PID file at '
+            '%s and try again.',
+            cfg.host,
+            cfg.host,
+            pid_file,
         )
         return 1
     if status == EndpointStatus.HANGING:
-        logger.debug(f'Removing invalid PID file ({pid_file}).')
+        logger.debug('Removing invalid PID file (%s).', pid_file)
         os.remove(pid_file)
-        logger.info(f'Endpoint {name} is not running.')
+        logger.info('Endpoint %s is not running.', name)
         return 0
 
     assert status == EndpointStatus.RUNNING
     with open(pid_file) as f:
         pid = int(f.read().strip())
 
-    logger.debug(f'Terminating endpoint process (PID: {pid}).')
+    logger.debug('Terminating endpoint process (PID: %s).', pid)
     with contextlib.suppress(ProcessLookupError):
         os.kill(pid, signal.SIGTERM)
 
@@ -438,10 +454,10 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
             os.kill(pid, signal.SIGKILL)
 
     if os.path.isfile(pid_file):  # pragma: no branch
-        logger.debug(f'Cleaning up PID file ({pid_file}).')
+        logger.debug('Cleaning up PID file (%s).', pid_file)
         os.remove(pid_file)
 
-    logger.info(f'Endpoint {name} has been stopped.')
+    logger.info('Endpoint %s has been stopped.', name)
     return 0
 
 

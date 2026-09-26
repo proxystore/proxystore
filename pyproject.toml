@@ -198,6 +198,8 @@ select = [
     "FLY",
     # refurb
     "FURB",
+    # flake8-logging-format
+    "G",
     # flake8-import-conventions
     "ICN",
     # flake8-logging

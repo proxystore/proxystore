@@ -122,7 +122,7 @@ async def serve(config: RelayServingConfig) -> None:
         )
 
     config_repr = pprint.pformat(config, indent=2)
-    logger.info(f'Relay serving configuration:\n{config_repr}')
+    logger.info('Relay serving configuration:\n%s', config_repr)
 
     async with websockets.asyncio.server.serve(
         server.handler,
@@ -131,7 +131,7 @@ async def serve(config: RelayServingConfig) -> None:
         logger=None,
         ssl=ssl_context,
     ):
-        logger.info(f'Relay server listening on port {config.port}')
+        logger.info('Relay server listening on port %s', config.port)
         logger.info('Use ctrl-C to stop')
         await stop
 
