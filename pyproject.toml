@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: Implementation :: CPython",
+    "Typing :: Typed",
 ]
 dependencies = [
     # Click 8.1.4 fails mypy: https://github.com/pallets/click/issues/2558
