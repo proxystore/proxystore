@@ -19,10 +19,10 @@ from collections.abc import Callable
 from collections.abc import Coroutine
 from typing import Any
 from typing import cast
+from typing import TYPE_CHECKING
 
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
-from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
@@ -41,6 +41,9 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
+
+if TYPE_CHECKING:
+    from proxystore.endpoint.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
 
