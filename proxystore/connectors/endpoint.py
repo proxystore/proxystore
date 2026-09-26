@@ -107,7 +107,7 @@ class EndpointConnector:
                     f'Connection to {endpoint_uuid} failed: {e}',
                 )
                 continue
-            except (EndpointError, OSError) as e:
+            except EndpointError as e:
                 logger.debug(f'Connection to {endpoint_uuid} failed: {e!r}')
                 continue
 
@@ -191,7 +191,7 @@ class EndpointConnector:
     ) -> _T:
         try:
             return self._pool.run(request)
-        except (EndpointError, OSError, ValueError) as e:
+        except (EndpointError, ValueError) as e:
             raise EndpointConnectorError(f'{name} failed: {e}') from e
 
     def evict(self, key: EndpointKey) -> None:

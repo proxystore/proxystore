@@ -243,13 +243,10 @@ def test(
 
     proxystore_dir = home_dir()
     endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
-    if os.path.isdir(endpoint_dir):
-        cfg = endpoint_dir.read_config()
-    else:
+    if not os.path.isdir(endpoint_dir):
         logger.error(f'An endpoint named {name} does not exist.')
         raise SystemExit(1)
 
-    ctx.obj['ENDPOINT_CONFIG'] = cfg
     ctx.obj['ENDPOINT_DIR'] = endpoint_dir
     ctx.obj['REMOTE_ENDPOINT_UUID'] = remote
 
@@ -259,16 +256,9 @@ def _endpoint_client(
     ctx: click.Context,
 ) -> Generator[EndpointClient, None, None]:
     """Connect to the endpoint of a test command and handle errors."""
-    cfg = ctx.obj['ENDPOINT_CONFIG']
     try:
         with EndpointClient.from_dir(ctx.obj['ENDPOINT_DIR']) as client:
             yield client
-    except OSError as e:
-        logger.error(
-            f'Unable to connect to endpoint at {cfg.host}:{cfg.port}.'
-        )
-        logger.debug(e)
-        sys.exit(1)
     except (EndpointError, ValueError) as e:
         logger.error(e)
         sys.exit(1)

@@ -139,19 +139,38 @@ class EndpointClient:
                 ProxyStore version or Python minor version than this client.
 
         Raises:
-            OSError: If the connection cannot be established.
+            EndpointNotRunningError: If the connection is refused.
+            EndpointConnectionError: If the connection cannot be established
+                or is lost during the handshake (e.g., a timeout).
             EndpointAuthError: If the client or endpoint fails
                 authentication.
             EndpointProtocolError: If the endpoint uses an incompatible
                 protocol.
         """
-        sock = socket.create_connection((host, port), timeout=timeout)
+        try:
+            sock = socket.create_connection((host, port), timeout=timeout)
+        except ConnectionRefusedError as e:
+            raise EndpointNotRunningError(
+                f'Connection to the endpoint at {host}:{port} was refused. '
+                'Is the endpoint running?',
+            ) from e
+        except OSError as e:
+            raise EndpointConnectionError(
+                f'Unable to connect to the endpoint at {host}:{port}: {e}',
+            ) from e
+
         try:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             if tls_fingerprint is not None:
                 sock = _wrap_tls(sock, tls_fingerprint)
             info = _handshake(sock, token)
             sock.settimeout(None)
+        except OSError as e:
+            sock.close()
+            raise EndpointConnectionError(
+                f'Lost connection to the endpoint at {host}:{port} during '
+                f'the handshake: {e}',
+            ) from e
         except BaseException:
             sock.close()
             raise
@@ -188,10 +207,9 @@ class EndpointClient:
         Raises:
             EndpointNotRunningError: If the endpoint's connection file does
                 not exist (i.e., the endpoint is not running).
-            EndpointAuthError: If the connection file is malformed or the
-                client or endpoint fails authentication.
-            OSError: If the connection cannot be established.
-            EndpointError: If the handshake fails (see
+            EndpointAuthError: If the connection file cannot be read or is
+                malformed.
+            EndpointError: If the connection or handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
         try:
@@ -201,8 +219,11 @@ class EndpointClient:
                 f'Unable to find the connection file of the endpoint in '
                 f'{endpoint_dir}. Is the endpoint running?',
             ) from e
-        except ValueError as e:
-            raise EndpointAuthError(str(e)) from e
+        except (OSError, ValueError) as e:
+            raise EndpointAuthError(
+                f'Unable to read the connection file of the endpoint in '
+                f'{endpoint_dir}: {e}',
+            ) from e
         return cls.connect(
             info.host,
             info.port,

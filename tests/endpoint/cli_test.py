@@ -18,6 +18,7 @@ from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.p2p.nat import NatMapping
 from proxystore.p2p.nat import Result
@@ -248,11 +249,11 @@ def test_test_command_errors(
 
         with mock.patch(
             'proxystore.endpoint.client.EndpointClient.connect',
-            side_effect=ConnectionRefusedError,
+            side_effect=EndpointNotRunningError('connection refused'),
         ):
             result = runner.invoke(cli, args)
         assert result.exit_code == 1
-        assert 'Unable to connect' in caplog.records[0].message
+        assert 'connection refused' in caplog.records[0].message
         caplog.clear()
 
         with mock.patch(

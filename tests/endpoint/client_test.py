@@ -106,8 +106,24 @@ def test_connect_refused() -> None:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         port = sock.getsockname()[1]
-    with pytest.raises(OSError):
+    with pytest.raises(EndpointNotRunningError, match='refused'):
         EndpointClient.connect('127.0.0.1', port, TOKEN, timeout=1)
+
+
+def test_connect_unreachable() -> None:
+    with mock.patch('socket.create_connection', side_effect=TimeoutError):
+        with pytest.raises(EndpointConnectionError, match='Unable to connect'):
+            EndpointClient.connect('127.0.0.1', 1, TOKEN, timeout=1)
+
+
+def test_connect_handshake_timeout(fake_server) -> None:
+    done = threading.Event()
+    port = fake_server(lambda conn: done.wait(timeout=5))
+    try:
+        with pytest.raises(EndpointConnectionError, match='handshake'):
+            EndpointClient.connect('127.0.0.1', port, TOKEN, timeout=0.1)
+    finally:
+        done.set()
 
 
 def test_connect_and_close(fake_server) -> None:
@@ -320,6 +336,13 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
 def test_from_dir_not_running(tmp_path: pathlib.Path) -> None:
     endpoint_dir = _write_config(tmp_path)
     with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
+        EndpointClient.from_dir(endpoint_dir)
+
+
+def test_from_dir_unreadable_connection_file(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = _write_config(tmp_path, host='localhost')
+    os.mkdir(endpoint_dir.connection_path)
+    with pytest.raises(EndpointAuthError, match='Unable to read'):
         EndpointClient.from_dir(endpoint_dir)
 
 
