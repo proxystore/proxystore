@@ -146,9 +146,6 @@ plugins:
       enable_inventory: true
       handlers:
         python:
-          setup_commands:
-            - import pytkdocs_tweaks
-            - pytkdocs_tweaks.main()
           inventories:
             - https://docs.python.org/3/objects.inv
             - https://quart.palletsprojects.com/en/latest/objects.inv
