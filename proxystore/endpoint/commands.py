@@ -580,7 +580,6 @@ def add_peer(
         return 1
     try:
         endpoint_id = EndpointId.from_str(peer_id)
-        endpoint_id.validate_public_key()
         peers = endpoint_dir.read_peers()
     except ValueError as e:
         logger.error(str(e))

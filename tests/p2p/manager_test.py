@@ -483,16 +483,6 @@ async def test_stale_addr_timeout_not_retried(managers) -> None:
     assert dial.call_count == 1
 
 
-async def test_request_invalid_public_key(managers) -> None:
-    manager1, _, _ = managers
-    invalid = EndpointId('02' * 32)
-    with (
-        mock.patch.object(manager1, '_is_allowed', return_value=True),
-        pytest.raises(PeerConnectionError, match='not a valid public key'),
-    ):
-        await manager1.request(invalid, Op.GET)
-
-
 async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
     # Relays are disabled so the endpoint never connects to a home relay.
     manager = local_peer_manager(str(tmp_path), online_timeout=0.01)

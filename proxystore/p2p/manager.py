@@ -425,13 +425,11 @@ class PeerManager:
                 self._log_prefix(),
                 self._peer_name(peer_id),
             )
-            try:
-                iroh_id = iroh.EndpointId.from_string(peer_id)
-            except iroh.IrohError:
-                raise PeerConnectionError(
-                    f'Endpoint ID {peer_id} is not a valid public key.',
-                ) from None
-            id_only = iroh.EndpointAddr(iroh_id, None, [])
+            id_only = iroh.EndpointAddr(
+                iroh.EndpointId.from_string(peer_id),
+                None,
+                [],
+            )
             hint = self._addr_hints.get(peer_id)
             try:
                 connection = await self._dial(

@@ -15,6 +15,7 @@ require the `iroh` package which is included in the `endpoints` extra.
 
 from __future__ import annotations
 
+import functools
 import re
 from typing import Any
 from typing import Self
@@ -29,6 +30,32 @@ SECRET_KEY_SIZE = 32
 
 _ENDPOINT_ID_PATTERN = re.compile(r'[0-9a-f]{64}')
 
+# Parameters of the edwards25519 curve (RFC 8032).
+_P = 2**255 - 19
+_D = (-121665 * pow(121666, -1, _P)) % _P
+
+
+@functools.lru_cache(maxsize=1024)
+def _is_public_key(value: str) -> bool:
+    """Check if a hex-encoded value is a valid ed25519 public key.
+
+    Implements point decoding from RFC 8032 (Section 5.1.3) so that IDs can
+    be validated without `iroh`. To match the ed25519 implementation used by
+    iroh, non-canonical encodings of the y-coordinate and a set sign bit
+    when x is zero are accepted, which RFC 8032 rejects.
+    """
+    y = int.from_bytes(bytes.fromhex(value), 'little')
+    # The sign bit of x does not affect whether the point exists.
+    y = (y & ((1 << 255) - 1)) % _P
+    u = (y * y - 1) % _P
+    v = (_D * y * y + 1) % _P
+    # Candidate square root of u / v.
+    x = (u * pow(v, 3, _P) * pow(u * pow(v, 7, _P), (_P - 5) // 8, _P)) % _P
+    vx2 = (v * x * x) % _P
+    # If neither x nor x * sqrt(-1) is a root, u / v is not a square so
+    # there is no point with this y.
+    return vx2 in (u, (-u) % _P)
+
 
 class EndpointId(str):
     """ID of an endpoint.
@@ -36,6 +63,8 @@ class EndpointId(str):
     The ID is the endpoint's ed25519 public key encoded as 64 lowercase
     hexadecimal characters. An `EndpointId` is a `str` so it can be used
     anywhere a string is expected (e.g., serialized in configuration files).
+    Every instance is a valid public key (not every 32-byte value is), and
+    validation only depends on the standard library.
     The constructor only accepts the exact format. Use
     [`from_str()`][proxystore.endpoint.identity.EndpointId.from_str] to also
     accept surrounding whitespace and uppercase characters.
@@ -60,6 +89,11 @@ class EndpointId(str):
             raise ValueError(
                 f'"{value}" is not a valid endpoint ID. An endpoint ID is 64 '
                 'hexadecimal characters.',
+            )
+        if not _is_public_key(value):
+            raise ValueError(
+                f'"{value}" is not a valid endpoint ID because it is not a '
+                'valid public key.',
             )
         return super().__new__(cls, value)
 
@@ -116,25 +150,6 @@ class EndpointId(str):
     def log_name(self, name: str) -> str:
         """Format the ID with a name as `#!python 'name(id-prefix)'`."""
         return f'{name}({self.short()})'
-
-    def validate_public_key(self) -> None:
-        """Check that the ID is a valid ed25519 public key.
-
-        Creating an ID only checks its format because it does not depend on
-        `iroh`. Not every 32-byte value is a valid public key.
-
-        Raises:
-            ValueError: If the ID is not a valid public key.
-        """
-        import iroh
-
-        try:
-            iroh.EndpointId.from_string(self)
-        except iroh.IrohError:
-            raise ValueError(
-                f'"{self}" is not a valid endpoint ID because it is not '
-                'a valid public key.',
-            ) from None
 
     @classmethod
     def __get_pydantic_core_schema__(
