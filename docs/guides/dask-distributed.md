@@ -92,7 +92,7 @@ if __name__ == '__main__':
     main()
 ```
 
-1. Setting `populate_target=True` is always recommended with Dask Distributed.
+1. Setting `populate_target=True` is always recommended with Dask Distributed. This is the default, but it is set explicitly here for clarity.
 2. Setting `register=True` is always recommended with Dask Distributed.
 
 As expected, the result is the same.

@@ -34,13 +34,6 @@ will be `None` when metrics are disabled.
     [`Store.metrics`][proxystore.store.base.Store.metrics] will only represent
     a partial view of the overall performance.
 
-!!! warning
-    ProxyStore v0.6.4 and older have a bug that causes the conversion from
-    nanoseconds to milliseconds in the
-    [`Metrics`][proxystore.store.metrics.Metrics] class to be incorrect.
-    This was fixed in v0.6.5 (see
-    [PR #538](https://github.com/proxystore/proxystore/pull/538){target=_blank}).
-
 Three types of metrics are collected.
 
 * Attributes: arbitrary attributes associated with an operation.
@@ -129,16 +122,18 @@ can be directly accessed.
 ## Metrics with Proxies
 
 Metrics are also tracked on proxy operations.
+Here, `populate_target=False` is passed so the returned proxy is not already
+resolved (see [`Store.proxy()`][proxystore.store.base.Store.proxy]).
 ```python
->>> proxy = store.proxy(target)
+>>> proxy = store.proxy([0, 1, 2, 3, 4, 5], populate_target=False)
 
 # Access the proxy to force it to resolve.
->>> assert target_proxy[0] == 0
+>>> assert proxy[0] == 0
 
 >>> metrics = store.metrics.get_metrics(proxy)
 >>> metrics.times
 {
-    'factory.call': TimeStats(...)
+    'factory.call': TimeStats(...),
     'factory.resolve': TimeStats(...),
     'store.get': TimeStats(...),
     'store.get.connector': TimeStats(...),

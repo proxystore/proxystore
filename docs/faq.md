@@ -26,7 +26,7 @@ assert is_resolved(proxy)
 
     The `#!python cache_defaults=True` and `target` flags can be used inside the [`Proxy`][proxystore.proxy.Proxy] constructor to cache the `__hash__` value of the target which will make the proxy hashable without needing to be resolved first.
     This only applies to hashable target objects.
-    Similarly, passing `#!python populate_target=True` to [`Store.proxy()`][proxystore.store.base.Store.proxy] will automatically set these flags on the returned proxy.
+    Similarly, [`Store.proxy()`][proxystore.store.base.Store.proxy] sets these flags on the returned proxy by default (`#!python populate_target=True`).
 
 There are a few mechanisms for determining when a proxy is getting resolved while debugging.
 
