@@ -59,10 +59,11 @@ class RelayClient:
         WebSocket connections are not opened until a message is sent,
         a message is received, or
         [`connect()`][proxystore.p2p.relay.client.RelayClient.connect]
-        is called. Initializing the client with `await` will call
+        is called. Entering the async context manager also calls
         [`connect()`][proxystore.p2p.relay.client.RelayClient.connect].
         ```python
-        client = await RelayClient(...)
+        client = RelayClient(...)
+        await client.connect()
         ```
 
     Args:

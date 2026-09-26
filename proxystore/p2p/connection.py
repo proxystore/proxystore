@@ -63,13 +63,13 @@ class PeerConnection:
     Example:
         ```python
         from proxystore.p2p.connection import PeerConnection
-        from proxystore.p2p.relay import BasicRelayClient
+        from proxystore.p2p.relay.client import RelayClient
 
-        client1 = BasicRelayClient(relay_server_address)
+        client1 = RelayClient(relay_server_address)
         await client1.connect()
         connection1 = PeerConnection(client1)
 
-        client2 = BasicRelayClient(relay_server_address)
+        client2 = RelayClient(relay_server_address)
         await client2.connect()
         connection2 = PeerConnection(client2)
 

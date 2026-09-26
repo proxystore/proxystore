@@ -197,7 +197,7 @@ class MultiConnector:
             'small': (file_connector, Policy(max_size_bytes=1000000)),
             'large': (redis_connector, Policy(min_size_bytes=1000000)),
         }
-        connector = MultiConnector(connector)
+        connector = MultiConnector(connectors)
         ```
 
     Note:

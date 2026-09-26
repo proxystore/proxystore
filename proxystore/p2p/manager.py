@@ -53,12 +53,10 @@ class PeerManager:
     Example:
         ```python
         from proxystore.p2p.manager import PeerManager
-        from proxystore.p2p.relay import BasicRelayClient
+        from proxystore.p2p.relay.client import RelayClient
 
-        relay_client = BasicRelayClient(relay_server_address)
-
-        pm1 = await PeerManager(relay_client)
-        pm2 = await PeerManager(relay_client)
+        pm1 = await PeerManager(RelayClient(relay_server_address))
+        pm2 = await PeerManager(RelayClient(relay_server_address))
 
         await pm1.send(pm2.uuid, 'hello hello')
         source_uuid, message = await pm2.recv()
@@ -88,10 +86,6 @@ class PeerManager:
             gathering ICE candidates. If `None`, aiortc's default set of
             public STUN servers is used. An empty list disables
             server-reflexive candidate gathering.
-
-    Raises:
-        ValueError: If the relay server address does not start with "ws://"
-            or "wss://".
     """
 
     def __init__(

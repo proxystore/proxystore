@@ -12,7 +12,7 @@ class Timer:
 
     Example:
         ```python
-        from proxystore.timer import Timer
+        from proxystore.utils.timer import Timer
 
         with Timer() as timer:
             ...
@@ -22,7 +22,7 @@ class Timer:
 
     Example:
         ```python
-        from proxystore.timer import Timer
+        from proxystore.utils.timer import Timer
 
         timer = Timer()
         timer.start()

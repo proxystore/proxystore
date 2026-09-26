@@ -70,7 +70,7 @@ class StreamProducer(Generic[T]):
         ```python
         with StreamProducer(...) as stream:
             for item in ...:
-                stream.send(item)
+                stream.send('topic', item)
         ```
 
     Tip:
