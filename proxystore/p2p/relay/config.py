@@ -47,6 +47,8 @@ class RelayLoggingConfig(BaseModel):
             list will be logged.
     """
 
+    model_config = ConfigDict(extra='forbid')
+
     log_dir: str | None = None
     default_level: int | str = logging.INFO
     websockets_level: int | str = logging.WARNING
@@ -68,6 +70,8 @@ class RelayServingConfig(BaseModel):
         max_message_bytes: Maximum size in bytes of messages received by
             the relay server.
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     host: str | None = None
     port: int = 8700
@@ -139,6 +143,9 @@ class RelayServingConfig(BaseModel):
 
         Args:
             filepath: Path to the TOML file to parse.
+
+        Raises:
+            ValueError: If the file contains unknown or invalid options.
         """
         with open(filepath, 'rb') as f:
             return load(cls, f)

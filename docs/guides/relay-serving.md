@@ -41,6 +41,9 @@ encryption if a valid SSL certificate is provided.
     corresponding `privkey.pem` exist.
 
 Advanced serving, such as TLS encryption, requires a relay configuration file.
+All options in the configuration file are described in
+[`RelayServingConfig`][proxystore.p2p.relay.config.RelayServingConfig],
+and unknown options raise an error.
 
 ```toml title="relay.toml"
 port = 8700
