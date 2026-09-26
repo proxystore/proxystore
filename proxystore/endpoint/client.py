@@ -36,8 +36,6 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
-from proxystore.endpoint.identity import short_id
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -180,7 +178,7 @@ class EndpointClient:
         mismatches = Versions.current().mismatches(info.versions)
         if len(mismatches) > 0:
             warnings.warn(
-                f'Endpoint {info.name} ({short_id(info.id)}) uses different '
+                f'Endpoint {info.name} ({info.id.short()}) uses different '
                 f'versions than this client: {"; ".join(mismatches)}. Objects '
                 'serialized in one environment may fail to deserialize in '
                 f'another. See {VERSION_DOCS_URL} for details.',
@@ -472,7 +470,7 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
 
 
 def _parse_endpoint(endpoint: str | None) -> EndpointId | None:
-    return None if endpoint is None else parse_endpoint_id(endpoint)
+    return None if endpoint is None else EndpointId.from_str(endpoint)
 
 
 def _as_bytes_view(data: BytesLike) -> memoryview:

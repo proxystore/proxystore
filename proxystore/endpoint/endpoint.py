@@ -14,7 +14,6 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import log_name
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
@@ -104,7 +103,7 @@ class Endpoint:
 
     @property
     def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.id, self.name)}]'
+        return f'{type(self).__name__}[{self.id.log_name(self.name)}]'
 
     @property
     def name(self) -> str:

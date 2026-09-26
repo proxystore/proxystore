@@ -8,6 +8,7 @@ import pytest
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -25,7 +26,6 @@ from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Versions
-from testing.endpoint import random_endpoint_id
 
 
 def test_versions_current() -> None:
@@ -119,10 +119,10 @@ _VERSIONS = Versions('1.0.0', '3.12.4')
         Hello(_NONCE, _VERSIONS),
         Challenge(_NONCE, _PROOF),
         Auth(_PROOF),
-        EndpointInfo(random_endpoint_id(), 'name', _VERSIONS, 100),
-        EndpointInfo(random_endpoint_id(), 'name', _VERSIONS, None),
+        EndpointInfo(EndpointId.random(), 'name', _VERSIONS, 100),
+        EndpointInfo(EndpointId.random(), 'name', _VERSIONS, None),
         Request('key'),
-        Request('key', random_endpoint_id()),
+        Request('key', EndpointId.random()),
     ),
 )
 def test_message_meta_round_trip(
@@ -148,7 +148,7 @@ def test_message_meta_round_trip(
             EndpointInfo,
             {
                 **EndpointInfo(
-                    random_endpoint_id(), 'n', _VERSIONS, 1
+                    EndpointId.random(), 'n', _VERSIONS, 1
                 ).to_meta(),
                 'id': 'x',
             },
@@ -158,7 +158,7 @@ def test_message_meta_round_trip(
             EndpointInfo,
             {
                 **EndpointInfo(
-                    random_endpoint_id(), 'n', _VERSIONS, 1
+                    EndpointId.random(), 'n', _VERSIONS, 1
                 ).to_meta(),
                 'max_object_size': '1',
             },
@@ -184,7 +184,7 @@ def test_message_meta_malformed(
     'message',
     (
         PingRequest(),
-        PingRequest(random_endpoint_id()),
+        PingRequest(EndpointId.random()),
         PingResult(),
         PingResult(12.5, True, 'https://relay.example.com', 10),
         PingResult(1, False, '1.2.3.4:5', 0),

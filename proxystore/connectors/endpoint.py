@@ -26,7 +26,6 @@ from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
 
@@ -84,7 +83,7 @@ class EndpointConnector:
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
         self.endpoints: list[EndpointId] = [
-            parse_endpoint_id(e) for e in endpoints
+            EndpointId.from_str(e) for e in endpoints
         ]
         self.proxystore_dir = proxystore_dir
         self.reconnect_timeout = reconnect_timeout

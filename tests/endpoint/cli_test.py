@@ -20,10 +20,10 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.serve import running_endpoint
 from testing.endpoint import copy_endpoint_dir
-from testing.endpoint import random_endpoint_id
 from testing.endpoint import write_endpoint
 
 CLICK_VERSION = tuple(
@@ -288,7 +288,7 @@ def test_id_and_peers_commands(home_dir, caplog) -> None:
     assert runner.invoke(cli, ['id', 'ep']).exit_code == 0
     assert caplog.records[-1].message == endpoint_dir.read_config().id
 
-    peer_id = random_endpoint_id()
+    peer_id = EndpointId.random()
     result = runner.invoke(cli, ['peers', 'add', 'ep', 'peer', peer_id])
     assert result.exit_code == 0
     assert endpoint_dir.read_peers().peers == {'peer': peer_id}
@@ -321,7 +321,7 @@ def test_ping_command_local(
 
 def test_ping_command_remote(home_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
-    remote = random_endpoint_id()
+    remote = EndpointId.random()
     results = [
         PingResult(200.0, True, 'https://relay.example.com', 30),
         PingResult(2.0, False, '1.2.3.4:5', 1),

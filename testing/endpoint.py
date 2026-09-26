@@ -18,16 +18,10 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.identity import endpoint_id_from_secret_key
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
-
-
-def random_endpoint_id() -> EndpointId:
-    """Generate the ID of a random endpoint without saving its secret key."""
-    return endpoint_id_from_secret_key(generate_secret_key())
 
 
 def write_endpoint(
@@ -53,7 +47,7 @@ def write_endpoint(
         # to avoid network access outside of the host in tests.
         'p2p': EndpointP2PConfig(enabled=False),
         **kwargs,
-        'id': endpoint_id_from_secret_key(secret_key),
+        'id': EndpointId.from_secret_key(secret_key),
     }
     config = EndpointConfig(**options)
     endpoint_dir.write_config(config)

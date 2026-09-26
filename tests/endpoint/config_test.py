@@ -13,7 +13,7 @@ from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
-from testing.endpoint import random_endpoint_id
+from proxystore.endpoint.identity import EndpointId
 
 
 def test_write_read_config(tmp_path: pathlib.Path) -> None:
@@ -22,7 +22,7 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
 
     cfg = EndpointConfig(
         name='name',
-        id=random_endpoint_id(),
+        id=EndpointId.random(),
         host='host',
         port=1234,
     )
@@ -59,7 +59,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
         endpoint_dir.write_config(
             EndpointConfig(
                 name=name,
-                id=random_endpoint_id(),
+                id=EndpointId.random(),
                 host='host',
                 port=1234,
             )
@@ -69,7 +69,7 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
     os.makedirs(os.path.join(tmp_dir, 'ep4'))
     # Nested directories and files are not endpoints
     EndpointDir(os.path.join(tmp_dir, 'ep1', 'nested')).write_config(
-        EndpointConfig(name='nested', id=random_endpoint_id(), port=1234),
+        EndpointConfig(name='nested', id=EndpointId.random(), port=1234),
     )
     with open(os.path.join(tmp_dir, 'file'), 'w') as f:
         f.write('not an endpoint')
@@ -123,7 +123,7 @@ def test_validate_name(name: str, valid: bool) -> None:
 def test_validate_config(bad_cfg: Any, error: str | None) -> None:
     options = {
         'name': 'name',
-        'id': random_endpoint_id(),
+        'id': EndpointId.random(),
         'host': 'host',
         'port': 1234,
     }
@@ -195,7 +195,7 @@ def test_validate_p2p_relays(relays: Any, error: str | None) -> None:
 def test_p2p_config_round_trip(tmp_path: pathlib.Path) -> None:
     config = EndpointConfig(
         name='name',
-        id=random_endpoint_id(),
+        id=EndpointId.random(),
         port=1234,
         p2p=EndpointP2PConfig(relays=['https://relay.example.com']),
     )

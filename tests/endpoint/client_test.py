@@ -28,16 +28,16 @@ from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
-from testing.endpoint import random_endpoint_id
 
 TOKEN = os.urandom(TOKEN_SIZE)
-ENDPOINT_ID = random_endpoint_id()
+ENDPOINT_ID = EndpointId.random()
 
 Script = Callable[[socket.socket], None]
 
@@ -340,7 +340,7 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     endpoint_dir = EndpointDir(str(tmp_path))
     config = EndpointConfig(
         name='test',
-        id=random_endpoint_id(),
+        id=EndpointId.random(),
         port=1,
         **kwargs,
     )

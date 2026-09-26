@@ -22,10 +22,7 @@ except ImportError as e:  # pragma: no cover
     ) from e
 
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.identity import endpoint_id_from_secret_key
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import log_name
-from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
@@ -180,7 +177,7 @@ class PeerManager:
         addr_cache_path: str | None = None,
     ) -> None:
         self._secret_key = secret_key
-        self._id = endpoint_id_from_secret_key(secret_key)
+        self._id = EndpointId.from_secret_key(secret_key)
         self._allowlist = allowlist
         self._preset = preset
         self._relay_mode = relay_mode
@@ -250,15 +247,15 @@ class PeerManager:
 
         This is useful when discovery is unavailable.
         """
-        peer_id = parse_endpoint_id(str(addr.id()))
+        peer_id = EndpointId.from_str(str(addr.id()))
         self._addr_hints[peer_id] = addr
 
     def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.id, "self")}]'
+        return f'{type(self).__name__}[{self.id.log_name("self")}]'
 
     def _peer_name(self, peer_id: EndpointId) -> str:
         name = self._allowlist.name_of(peer_id)
-        return log_name(peer_id, 'unknown' if name is None else name)
+        return peer_id.log_name('unknown' if name is None else name)
 
     async def start(self, handler: RequestHandler) -> None:
         """Bind the endpoint and start accepting connections from peers.
@@ -585,7 +582,7 @@ class PeerManager:
                 '%s: closing connections to peer %s which was removed from '
                 'the allowlist',
                 self._log_prefix(),
-                log_name(removed, 'removed'),
+                removed.log_name('removed'),
             )
             self._close_peer(removed, CloseCode.NOT_ALLOWED, b'not allowed')
         return self._allowlist.allowed(peer_id)
@@ -640,7 +637,7 @@ class PeerManager:
             )
             return
 
-        peer_id = parse_endpoint_id(str(connection.remote_id()))
+        peer_id = EndpointId.from_str(str(connection.remote_id()))
         if not self._is_allowed(peer_id):
             logger.warning(
                 '%s: refused connection from endpoint %s which is not in the '

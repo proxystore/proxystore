@@ -20,10 +20,10 @@ from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.serve import running_endpoint
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
-from testing.endpoint import random_endpoint_id
 from testing.endpoint import write_endpoint
 
 
@@ -35,13 +35,13 @@ def test_no_endpoints_provided() -> None:
 def test_no_endpoints_match(endpoint_connector) -> None:
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
         EndpointConnector(
-            endpoints=[random_endpoint_id()],
+            endpoints=[EndpointId.random()],
             proxystore_dir=endpoint_connector.config()['proxystore_dir'],
         )
 
 
 def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:
-    endpoint_id = random_endpoint_id()
+    endpoint_id = EndpointId.random()
     config = EndpointConfig(name='test', id=endpoint_id, port=1)
     EndpointDir(str(tmp_path / 'test')).write_config(config)
 
@@ -77,7 +77,7 @@ def test_endpoint_id_mismatch(
     # Config has a different ID than the endpoint running on the host/port
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
     config = copied_dir.read_config()
-    config.id = random_endpoint_id()
+    config.id = EndpointId.random()
     copied_dir.write_config(config)
 
     with pytest.raises(EndpointConnectorError, match='Expected endpoint'):

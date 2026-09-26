@@ -30,7 +30,6 @@ from pydantic import field_validator
 
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.utils.config import load
 
 logger = logging.getLogger(__name__)
@@ -66,7 +65,7 @@ class PeersConfig(BaseModel):
                     'Peer names must only contain alphanumeric characters, '
                     f'dashes, and underscores. Got {name}.',
                 )
-            endpoint_id = parse_endpoint_id(value)
+            endpoint_id = EndpointId.from_str(value)
             if endpoint_id in seen:
                 raise ValueError(
                     f'Peers {seen[endpoint_id]} and {name} have the same '

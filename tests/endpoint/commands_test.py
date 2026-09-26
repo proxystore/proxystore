@@ -25,10 +25,10 @@ from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
-from testing.endpoint import random_endpoint_id
+from proxystore.endpoint.identity import EndpointId
 
 _NAME = 'default'
-_ID = random_endpoint_id()
+_ID = EndpointId.random()
 _PORT = 1234
 
 
@@ -640,7 +640,7 @@ def test_add_list_remove_peer(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
     home = str(tmp_path)
     _configure(tmp_path)
-    peer_id = random_endpoint_id()
+    peer_id = EndpointId.random()
 
     assert list_peers(_NAME, proxystore_dir=home) == 0
     assert any('has no peers' in r.message for r in caplog.records)
@@ -663,7 +663,7 @@ def test_add_peer_errors(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.ERROR)
     home = str(tmp_path)
     config = _configure(tmp_path)
-    peer_id = random_endpoint_id()
+    peer_id = EndpointId.random()
     assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 0
 
     def _error(*args: str) -> str:
@@ -676,7 +676,7 @@ def test_add_peer_errors(tmp_path: pathlib.Path, caplog) -> None:
     assert 'not a valid public key' in _error(_NAME, 'p', '02' * 32)
     assert 'peer of itself' in _error(_NAME, 'p', config.id)
     caplog.clear()
-    _error(_NAME, 'peer', random_endpoint_id())
+    _error(_NAME, 'peer', EndpointId.random())
     assert 'already exists' in caplog.records[0].message
     assert 'already a peer named peer' in _error(_NAME, 'p', peer_id)
 
@@ -689,7 +689,7 @@ def test_peer_commands_malformed_peers(tmp_path: pathlib.Path, caplog) -> None:
     with open(endpoint_dir.peers_path, 'w') as f:
         f.write('not toml')
 
-    peer_id = random_endpoint_id()
+    peer_id = EndpointId.random()
     assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 1
     assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 1
     assert list_peers(_NAME, proxystore_dir=home) == 1

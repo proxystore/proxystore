@@ -17,7 +17,6 @@ import iroh
 
 from proxystore.endpoint.auth import write_private_file
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +46,7 @@ def load_peer_addrs(path: str) -> dict[EndpointId, iroh.EndpointAddr]:
         return addrs
     for key, value in data.items():
         try:
-            addrs[parse_endpoint_id(key)] = _decode_addr(key, value)
+            addrs[EndpointId.from_str(key)] = _decode_addr(key, value)
         except (TypeError, ValueError, iroh.IrohError):
             logger.warning(
                 'Ignoring malformed entry for %s in peer address cache %s',

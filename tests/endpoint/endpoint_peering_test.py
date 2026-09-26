@@ -10,13 +10,13 @@ import pytest
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import DictStorage
 from testing.compat import randbytes
-from testing.endpoint import random_endpoint_id
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
 
@@ -43,7 +43,7 @@ async def endpoints(
 async def test_init_mismatched_id(tmp_path: pathlib.Path) -> None:
     manager = local_peer_manager(str(tmp_path))
     with pytest.raises(ValueError, match='does not match'):
-        Endpoint('ep', random_endpoint_id(), peer_manager=manager)
+        Endpoint('ep', EndpointId.random(), peer_manager=manager)
 
 
 async def test_init_idempotent(tmp_path: pathlib.Path) -> None:
@@ -125,7 +125,7 @@ async def test_handle_peer_request_errors(endpoints) -> None:
     assert status == Status.BAD_REQUEST
     assert meta is not None
 
-    forward = Request('key', random_endpoint_id()).to_meta()
+    forward = Request('key', EndpointId.random()).to_meta()
     status, meta, _ = await handle(ep1.id, Op.GET, forward, b'')
     assert status == Status.BAD_REQUEST
     assert meta == {'error': 'requests from peers cannot be forwarded'}

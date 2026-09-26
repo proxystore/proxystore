@@ -13,7 +13,6 @@ from pydantic import field_validator
 from pydantic import model_validator
 
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
@@ -144,11 +143,6 @@ class EndpointConfig(BaseModel):
                 '"proxystore-endpoint configure".',
             )
         return data
-
-    @field_validator('id', mode='before')
-    @classmethod
-    def _id_validator(cls, v: Any) -> EndpointId:
-        return parse_endpoint_id(v)
 
     @field_validator('port')
     @classmethod

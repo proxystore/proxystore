@@ -48,7 +48,6 @@ import iroh
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import generate_secret_key
-from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.endpoint.peers import Allowlist
 from proxystore.p2p.manager import PeerManager
 
@@ -243,7 +242,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if args.remote_id is None:
                 parser.error('the remote_id is required for local')
             coro = run_local(
-                parse_endpoint_id(args.remote_id),
+                EndpointId.from_str(args.remote_id),
                 args.addr,
                 args.sizes,
                 args.repeat,

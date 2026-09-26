@@ -29,10 +29,8 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
-from proxystore.endpoint.identity import endpoint_id_from_secret_key
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import generate_secret_key
-from proxystore.endpoint.identity import parse_endpoint_id
-from proxystore.endpoint.identity import validate_public_key
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -154,7 +152,7 @@ def configure_endpoint(
     try:
         cfg = EndpointConfig(
             name=name,
-            id=endpoint_id_from_secret_key(secret_key),
+            id=EndpointId.from_secret_key(secret_key),
             host=host_addr,
             port=port,
             host_type=host_type,
@@ -581,8 +579,8 @@ def add_peer(
         )
         return 1
     try:
-        endpoint_id = parse_endpoint_id(peer_id)
-        validate_public_key(endpoint_id)
+        endpoint_id = EndpointId.from_str(peer_id)
+        endpoint_id.validate_public_key()
         peers = endpoint_dir.read_peers()
     except ValueError as e:
         logger.error(str(e))

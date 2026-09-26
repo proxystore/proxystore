@@ -7,20 +7,20 @@ from typing import Any
 import pytest
 
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.peers import PeersConfig
 from proxystore.endpoint.peers import read_peers
-from testing.endpoint import random_endpoint_id
 
-_ID1 = random_endpoint_id()
-_ID2 = random_endpoint_id()
+_ID1 = EndpointId.random()
+_ID2 = EndpointId.random()
 
 
 def test_peers_config() -> None:
     peers = PeersConfig(peers={'a': _ID1, 'b': _ID2.upper()})
     assert peers.peers == {'a': _ID1, 'b': _ID2}
     assert peers.name_of(_ID1) == 'a'
-    assert peers.name_of(random_endpoint_id()) is None
+    assert peers.name_of(EndpointId.random()) is None
     assert PeersConfig().peers == {}
 
 

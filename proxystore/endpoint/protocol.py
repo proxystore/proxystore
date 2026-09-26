@@ -42,7 +42,6 @@ from typing import Self
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.serialize import BytesLike
 
 MAGIC = b'PSEP'
@@ -465,7 +464,7 @@ class PingResult:
 
 def _parse_id(value: str, field: str, message: type) -> EndpointId:
     try:
-        return parse_endpoint_id(value)
+        return EndpointId.from_str(value)
     except ValueError:
         raise _malformed(message, field) from None
 

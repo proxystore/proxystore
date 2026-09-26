@@ -32,8 +32,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.identity import endpoint_id_from_secret_key
-from proxystore.endpoint.identity import short_id
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
@@ -60,7 +59,7 @@ def _check_secret_key(
             'key. Remove the endpoint and configure it again with '
             '"proxystore-endpoint configure".',
         ) from None
-    endpoint_id = endpoint_id_from_secret_key(secret_key)
+    endpoint_id = EndpointId.from_secret_key(secret_key)
     if endpoint_id != config.id:
         raise ValueError(
             f'The endpoint ID in the configuration ({config.id}) does not '
@@ -199,7 +198,7 @@ async def running_endpoint(
         tls_fingerprint: str | None = None
         if config.tls:
             cert_pem, key_pem = generate_tls_certificate(
-                f'proxystore-endpoint-{short_id(config.id)}',
+                f'proxystore-endpoint-{config.id.short()}',
             )
             ssl_context = server_ssl_context(cert_pem, key_pem)
             tls_fingerprint = pem_certificate_fingerprint(cert_pem)

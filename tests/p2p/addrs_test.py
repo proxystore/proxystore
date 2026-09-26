@@ -7,9 +7,9 @@ import stat
 
 import iroh
 
+from proxystore.endpoint.identity import EndpointId
 from proxystore.p2p.addrs import load_peer_addrs
 from proxystore.p2p.addrs import save_peer_addrs
-from testing.endpoint import random_endpoint_id
 
 
 def test_load_missing(tmp_path: pathlib.Path) -> None:
@@ -18,7 +18,7 @@ def test_load_missing(tmp_path: pathlib.Path) -> None:
 
 def test_save_load_round_trip(tmp_path: pathlib.Path) -> None:
     path = str(tmp_path / 'peer-addrs.json')
-    id1, id2 = random_endpoint_id(), random_endpoint_id()
+    id1, id2 = EndpointId.random(), EndpointId.random()
     addrs = {
         id1: iroh.EndpointAddr(
             iroh.EndpointId.from_string(id1),
@@ -50,14 +50,14 @@ def test_load_malformed_file(tmp_path: pathlib.Path, caplog) -> None:
 
 
 def test_load_malformed_entries(tmp_path: pathlib.Path, caplog) -> None:
-    good = random_endpoint_id()
+    good = EndpointId.random()
     data = {
         good: {'relay_url': None, 'addresses': ['127.0.0.1:1']},
         'not-an-id': {'relay_url': None, 'addresses': []},
-        random_endpoint_id(): 'not a dict',
-        random_endpoint_id(): {'relay_url': 42},
-        random_endpoint_id(): {'addresses': 'not a list'},
-        random_endpoint_id(): {'addresses': [42]},
+        EndpointId.random(): 'not a dict',
+        EndpointId.random(): {'relay_url': 42},
+        EndpointId.random(): {'addresses': 'not a list'},
+        EndpointId.random(): {'addresses': [42]},
     }
     path = tmp_path / 'peer-addrs.json'
     path.write_text(json.dumps(data))

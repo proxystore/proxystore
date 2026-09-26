@@ -30,6 +30,7 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
@@ -45,7 +46,6 @@ from proxystore.endpoint.server import _ClientConnection
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from testing.compat import randbytes
-from testing.endpoint import random_endpoint_id
 
 MAX_OBJECT_SIZE = 10_000_000
 
@@ -61,7 +61,7 @@ class _Server(NamedTuple):
 @pytest_asyncio.fixture()
 async def server() -> AsyncGenerator[_Server, None]:
     async with Endpoint(
-        name='my-endpoint', endpoint_id=random_endpoint_id()
+        name='my-endpoint', endpoint_id=EndpointId.random()
     ) as endpoint:
         token = os.urandom(TOKEN_SIZE)
         handler = ClientHandler(
@@ -378,7 +378,7 @@ async def test_peer_request_error(server: _Server) -> None:
         ),
         pytest.raises(EndpointRequestError, match='peer failed'),
     ):
-        await asyncio.to_thread(client.get, 'key', random_endpoint_id())
+        await asyncio.to_thread(client.get, 'key', EndpointId.random())
     await asyncio.to_thread(client.close)
 
 
@@ -657,7 +657,7 @@ async def tls_server(
     context = server_ssl_context(cert_pem, key_pem)
 
     async with Endpoint(
-        name='my-endpoint', endpoint_id=random_endpoint_id()
+        name='my-endpoint', endpoint_id=EndpointId.random()
     ) as endpoint:
         token = generate_token()
         handler = ClientHandler(endpoint, token, handshake_timeout=1)
@@ -717,7 +717,7 @@ async def test_ping(server: _Server) -> None:
     client = await _connect(server)
     assert await asyncio.to_thread(client.ping) == PingResult()
     with pytest.raises(EndpointRequestError, match='peering is not enabled'):
-        await asyncio.to_thread(client.ping, random_endpoint_id())
+        await asyncio.to_thread(client.ping, EndpointId.random())
     with pytest.raises(ValueError, match='not a valid endpoint ID'):
         await asyncio.to_thread(client.ping, 'not-an-id')
     await asyncio.to_thread(client.close)
