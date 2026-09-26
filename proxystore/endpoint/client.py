@@ -278,7 +278,7 @@ class EndpointClient:
             'key': key,
             'endpoint': None if endpoint is None else str(endpoint),
         }
-        payload = memoryview(data).cast('B') if data is not None else None
+        payload = _as_bytes_view(data) if data is not None else None
         data_len = 0 if payload is None else len(payload)
         message = pack_message(op, meta, data_len)
 
@@ -360,6 +360,14 @@ def connect_to_endpoint(
         tls_fingerprint=credentials.tls_fingerprint,
         timeout=timeout,
     )
+
+
+def _as_bytes_view(data: BytesLike) -> memoryview:
+    view = memoryview(data)
+    if not view.c_contiguous:
+        # Only contiguous buffers can be sent without copying.
+        view = memoryview(view.tobytes())
+    return view.cast('B')
 
 
 def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:

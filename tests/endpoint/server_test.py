@@ -110,6 +110,10 @@ async def test_operations(server: _Server) -> None:
     assert await asyncio.to_thread(client.get, 'large') == large
     assert await asyncio.to_thread(client.exists, 'small')
 
+    # Non-contiguous buffers are copied before sending
+    await asyncio.to_thread(client.set, 'strided', memoryview(b'abcdef')[::2])
+    assert await asyncio.to_thread(client.get, 'strided') == b'ace'
+
     await asyncio.to_thread(client.evict, 'small')
     assert not await asyncio.to_thread(client.exists, 'small')
     assert await asyncio.to_thread(client.get, 'small') is None

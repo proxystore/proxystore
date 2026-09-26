@@ -32,7 +32,6 @@ from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import HEADER
-from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import HTTP_METHODS
 from proxystore.endpoint.protocol import local_versions
@@ -127,7 +126,7 @@ class _ClientConnection(asyncio.BufferedProtocol):
                 self._wake_reader()
             return
 
-        self._pending += self._spare[:nbytes]
+        self._pending += memoryview(self._spare)[:nbytes]
         if (
             len(self._pending) > self._MAX_PENDING_SIZE
             and not self._reading_paused
@@ -494,7 +493,7 @@ class ClientHandler:
                 else b''
             )
             status, response_meta, response_data = await self._handle_request(
-                header,
+                header.code,
                 meta,
                 data,
             )
@@ -502,7 +501,7 @@ class ClientHandler:
 
     async def _handle_request(
         self,
-        header: Header,
+        op: int,
         meta: dict[str, Any],
         data: bytes | bytearray,
     ) -> _Response:
@@ -512,15 +511,13 @@ class ClientHandler:
             return Status.BAD_REQUEST, {'error': str(e)}, None
 
         try:
-            return await self._dispatch(header.code, key, endpoint_uuid, data)
+            return await self._dispatch(op, key, endpoint_uuid, data)
         except PeerRequestError as e:
             return Status.ERROR, {'error': str(e)}, None
         except ObjectSizeExceededError as e:
             return Status.TOO_LARGE, {'error': str(e)}, None
         except Exception as e:
-            logger.exception(
-                f'Unexpected error handling {header.code} request'
-            )
+            logger.exception(f'Unexpected error handling op {op} request')
             return Status.ERROR, {'error': f'unexpected error: {e!r}'}, None
 
     async def _dispatch(
