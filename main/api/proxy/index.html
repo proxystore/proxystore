@@ -6,10 +6,10 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Documentation for ProxyStore.">
+        <meta name="description" content="Pass-by-reference for distributed Python applications via transparent object proxies">
       
       
-        <meta name="author" content="Globus Labs">
+        <meta name="author" content="Greg Pauloski and Globus Labs">
       
       
         <link rel="canonical" href="https://docs.proxystore.dev/latest/api/proxy/">
@@ -4528,7 +4528,7 @@
 
 <a href="#proxystore.proxy.ProxyOr" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">ProxyOr</span> <span class="o">=</span> <span class="n"><span title="typing_extensions.TypeAliasType">TypeAliasType</span></span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s2">"ProxyOr"</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">,</span> <span class="n"><span title="typing_extensions.TypeAliasType(type_params)">type_params</span></span><span class="o">=</span><span class="p">(</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">,)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="s1">'ProxyOr'</span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Proxy (proxystore.proxy.Proxy)" href="#proxystore.proxy.Proxy">Proxy</a></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">,</span> <span class="n"><span title="typing_extensions.TypeAliasType(type_params)">type_params</span></span><span class="o">=</span><span class="p">(</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">,)</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
@@ -4639,7 +4639,7 @@ return mixed types involving proxies.</p>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">factory</span><span class="p">:</span> <span class="n"><span title="proxystore.proxy.FactoryType">FactoryType</span></span><span class="p">[</span><span class="n"><span title="proxystore.proxy.T">T</span></span><span class="p">],</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">cache_defaults</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#bool">bool</a></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.proxy.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="proxystore.proxy.T">T</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
 </span></code></pre></div>
 
