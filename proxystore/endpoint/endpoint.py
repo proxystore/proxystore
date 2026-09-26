@@ -314,7 +314,7 @@ class Endpoint:
                     raise AssertionError(
                         f'unsupported request type {type(message).__name__}',
                     )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 message.error = e
 
             message.kind = 'response'
@@ -354,7 +354,7 @@ class Endpoint:
         )
         try:
             await self.peer_manager.send(endpoint, serialize(request))
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self._pending_requests[request.uuid].set_exception(
                 PeerRequestError(
                     f'Request to peer {endpoint} failed: {e!s}',

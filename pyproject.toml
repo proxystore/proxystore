@@ -192,6 +192,8 @@ select = [
     "T10",
     # flake8-simplify
     "SIM",
+    # flake8-blind-except
+    "BLE",
     # flake8-executable
     "EXE",
     # flynt

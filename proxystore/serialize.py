@@ -276,7 +276,7 @@ def serialize(obj: Any) -> bytes:
                 buffer.write(identifier + b'\n')
                 serializer.serialize(obj, buffer)
                 return buffer.getvalue()
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 last_exception = e
 
     assert last_exception is not None

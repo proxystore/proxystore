@@ -339,7 +339,7 @@ async def check_nat_and_log(
             source_port=source_port,
             timeout=timeout,
         )
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.error('Failed to determine NAT behavior: %s', e)
         return
 

@@ -134,7 +134,7 @@ def test_connection_pool_concurrent_requests(endpoint_connector) -> None:
             for _ in range(20):
                 key = connector.put(b'value')
                 assert connector.get(key) == b'value'
-        except Exception as e:  # pragma: no cover
+        except Exception as e:  # pragma: no cover  # noqa: BLE001
             errors.append(e)
 
     threads = [threading.Thread(target=_worker) for _ in range(4)]
