@@ -323,7 +323,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __name__(self) -> str:
         return self.__proxy_wrapped__.__name__  # type: ignore[attr-defined]
 
-    @__name__.setter
+    @__name__.setter  # noqa: A003
     def __name__(self, value: str) -> None:
         self.__proxy_wrapped__.__name__ = value  # type: ignore[attr-defined]
 
@@ -332,8 +332,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         default = object.__getattribute__(self, '__proxy_default_class__')
         if not self.__proxy_resolved__ and default is not None:
             return default
-        else:
-            return self.__proxy_wrapped__.__class__
+        return self.__proxy_wrapped__.__class__
 
     @__class__.setter
     def __class__(self, value: Any) -> None:  # pragma: no cover
@@ -367,12 +366,10 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         wrapped = self.__proxy_wrapped__
         if isinstance(wrapped, (bytes, str)):
             return wrapped
-        else:
-            fspath = getattr(wrapped, '__fspath__', None)
-            if fspath is None:
-                return wrapped
-            else:
-                return fspath()
+        fspath = getattr(wrapped, '__fspath__', None)
+        if fspath is None:
+            return wrapped
+        return fspath()
 
     def __reversed__(self) -> Any:
         return reversed(self.__proxy_wrapped__)  # type: ignore[call-overload]
@@ -403,10 +400,8 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
         if not self.__proxy_resolved__ and default is not None:
             if isinstance(default, Exception):
                 raise default
-            else:
-                return default
-        else:
-            return hash(self.__proxy_wrapped__)
+            return default
+        return hash(self.__proxy_wrapped__)
 
     def __bool__(self) -> bool:
         return bool(self.__proxy_wrapped__)
@@ -420,8 +415,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __getattr__(self, name: str) -> Any:
         if name in ('__proxy_wrapped__', '__proxy_factory__'):
             raise AttributeError(name)  # pragma: no cover
-        else:
-            return getattr(self.__proxy_wrapped__, name)
+        return getattr(self.__proxy_wrapped__, name)
 
     def __delattr__(self, name: str) -> None:
         if hasattr(type(self), name):
@@ -589,8 +583,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __index__(self) -> int:
         if hasattr(self.__proxy_wrapped__, '__index__'):
             return operator.index(self.__proxy_wrapped__)
-        else:
-            return int(self.__proxy_wrapped__)  # type: ignore[call-overload]
+        return int(self.__proxy_wrapped__)  # type: ignore[call-overload]
 
     def __len__(self) -> int:
         return len(self.__proxy_wrapped__)  # type: ignore[arg-type]
@@ -671,8 +664,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
             or isinstance(self.__proxy_wrapped__, Awaitable)
         ):
             return _do_await(self.__proxy_wrapped__).__await__()
-        else:
-            return _do_yield_from(self.__proxy_wrapped__)
+        return _do_yield_from(self.__proxy_wrapped__)
 
     def __aenter__(self) -> Any:
         return self.__proxy_wrapped__.__aenter__()  # type: ignore[attr-defined]

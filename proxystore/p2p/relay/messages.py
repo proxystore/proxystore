@@ -26,8 +26,6 @@ class RelayMessageType(enum.Enum):
 class RelayMessage:
     """Base message."""
 
-    pass
-
 
 @dataclasses.dataclass
 class RelayRegistrationRequest(RelayMessage):
@@ -85,19 +83,13 @@ class PeerConnectionRequest(RelayMessage):
 class RelayMessageError(Exception):
     """Base exception type for relay messages."""
 
-    pass
-
 
 class RelayMessageDecodeError(RelayMessageError):
     """Exception raised when a message cannot be decoded."""
 
-    pass
-
 
 class RelayMessageEncodeError(RelayMessageError):
     """Exception raised when an message cannot be encoded."""
-
-    pass
 
 
 def uuid_to_str(data: dict[str, Any]) -> dict[str, Any]:

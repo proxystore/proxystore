@@ -43,7 +43,7 @@ class _ProxyMethods:
     def __doc__(self) -> str:
         return self.__proxy_wrapped__.__doc__
 
-    @__doc__.setter
+    @__doc__.setter  # noqa: A003
     def __doc__set(self, value: str) -> None:
         self.__proxy_wrapped__.__doc__ = value
 

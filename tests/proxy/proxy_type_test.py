@@ -37,6 +37,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import datetime
 import decimal
 import gc
@@ -112,7 +113,7 @@ def test_set_wrapped() -> None:
 
     assert not hasattr(function1, '__proxy_wrapped__')
 
-    assert function2 == None  # noqa
+    assert function2 == None  # noqa: E711
     assert function2.__proxy_wrapped__ is None
     assert not hasattr(function2, '__name__')
 
@@ -157,11 +158,8 @@ def test_special_writeable_attributes(kind: str) -> None:
     class TestClass:
         """Test class."""
 
-        pass
-
     def test_function() -> None:  # pragma: no cover
         """Test function."""
-        pass
 
     target: Any
     if kind == 'class':
@@ -171,7 +169,7 @@ def test_special_writeable_attributes(kind: str) -> None:
     elif kind == 'function':
         target = test_function
     else:
-        raise AssertionError()
+        raise AssertionError
 
     wrapper = Proxy(lambda: target)
 
@@ -208,11 +206,8 @@ def test_annotations(kind: str) -> None:
     class TestClass:
         """Test class."""
 
-        pass
-
     def test_function() -> None:  # pragma: no cover
         """Test function."""
-        pass
 
     target: Any
     if kind == 'class':
@@ -220,7 +215,7 @@ def test_annotations(kind: str) -> None:
     elif kind == 'function':
         target = test_function
     else:
-        raise AssertionError()
+        raise AssertionError
 
     wrapper = Proxy(lambda: target)
 
@@ -315,12 +310,12 @@ def test_function_invocation() -> None:
     def function(*args, **kwargs):
         return args, kwargs
 
-    _args, _kwargs = (), {}  # type: ignore
+    _args, _kwargs = (), {}  # type: ignore[var-annotated]
     wrapper = Proxy(lambda: function)
     result = wrapper()
     assert result == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {}  # type: ignore
+    _args, _kwargs = (1, 2), {}  # type: ignore[assignment]
     wrapper = Proxy(lambda: function)
     result = wrapper(*_args)
     assert result == (_args, _kwargs)
@@ -330,7 +325,7 @@ def test_function_invocation() -> None:
     result = wrapper(**_kwargs)
     assert result == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore
+    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore[assignment]
     wrapper = Proxy(lambda: function)
     result = wrapper(*_args, **_kwargs)
     assert result == (_args, _kwargs)
@@ -341,11 +336,11 @@ def test_instancemethod_invocation() -> None:
         def function(self, *args, **kwargs):
             return args, kwargs
 
-    _args, _kwargs = (), {}  # type: ignore
+    _args, _kwargs = (), {}  # type: ignore[var-annotated]
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper() == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {}  # type: ignore
+    _args, _kwargs = (1, 2), {}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper(*_args) == (_args, _kwargs)
 
@@ -353,7 +348,7 @@ def test_instancemethod_invocation() -> None:
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper(**_kwargs) == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore
+    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper(*_args, **_kwargs) == (_args, _kwargs)
 
@@ -364,13 +359,13 @@ def test_classmethod_invocation() -> None:
         def function(cls, *args, **kwargs):
             return args, kwargs
 
-    _args, _kwargs = (), {}  # type: ignore
+    _args, _kwargs = (), {}  # type: ignore[var-annotated]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper() == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper() == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {}  # type: ignore
+    _args, _kwargs = (1, 2), {}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper(*_args) == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
@@ -382,7 +377,7 @@ def test_classmethod_invocation() -> None:
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper(**_kwargs) == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore
+    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper(*_args, **_kwargs) == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
@@ -395,13 +390,13 @@ def test_staticmethod_invocation() -> None:
         def function(*args, **kwargs):
             return args, kwargs
 
-    _args, _kwargs = (), {}  # type: ignore
+    _args, _kwargs = (), {}  # type: ignore[var-annotated]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper() == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper() == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {}  # type: ignore
+    _args, _kwargs = (1, 2), {}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper(*_args) == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
@@ -413,7 +408,7 @@ def test_staticmethod_invocation() -> None:
     wrapper = Proxy(lambda: TestClass().function)
     assert wrapper(**_kwargs) == (_args, _kwargs)
 
-    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore
+    _args, _kwargs = (1, 2), {'one': 1, 'two': 2}  # type: ignore[assignment]
     wrapper = Proxy(lambda: TestClass.function)
     assert wrapper(*_args, **_kwargs) == (_args, _kwargs)
     wrapper = Proxy(lambda: TestClass().function)
@@ -754,7 +749,7 @@ def test_pickling_factory_only():
 
 
 def test_garbage_collection() -> None:
-    leaky = lambda: 'foobar'  # noqa
+    leaky = lambda: 'foobar'  # noqa: E731
     proxy = Proxy(leaky)
     leaky.leak = proxy  # type: ignore[attr-defined]
     ref = weakref.ref(leaky)
@@ -882,10 +877,8 @@ def test_precompute_unhashable() -> None:
     del proxy.__proxy_wrapped__
 
     assert not proxy.__proxy_resolved__
-    try:
+    with contextlib.suppress(TypeError):
         hash(proxy)
-    except TypeError:
-        pass
     assert not proxy.__proxy_resolved__
     assert isinstance(proxy, list)
     assert not proxy.__proxy_resolved__

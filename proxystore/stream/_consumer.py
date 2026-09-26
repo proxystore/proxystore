@@ -168,13 +168,12 @@ class StreamConsumer(Generic[T]):
     def _next_batch(self) -> EventBatch:
         if isinstance(self.subscriber, EventSubscriber):
             return next(self.subscriber)
-        elif isinstance(self.subscriber, MessageSubscriber):
+        if isinstance(self.subscriber, MessageSubscriber):
             message = next(self.subscriber)
             event = bytes_to_event(message)
             assert isinstance(event, EventBatch)
             return event
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
 
     def _next_event(self) -> NewObjectEvent | NewObjectKeyEvent:
         if self._current_batch is None or len(self._current_batch.events) == 0:
@@ -190,10 +189,9 @@ class StreamConsumer(Generic[T]):
         event = self._current_batch.events.pop()
         if isinstance(event, (NewObjectEvent, NewObjectKeyEvent)):
             return event
-        elif isinstance(event, EndOfStreamEvent):
+        if isinstance(event, EndOfStreamEvent):
             raise StopIteration
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
 
     def _next_event_with_filter(self) -> NewObjectEvent | NewObjectKeyEvent:
         while True:
@@ -293,15 +291,14 @@ class StreamConsumer(Generic[T]):
 
         if isinstance(event, NewObjectEvent):
             return event.metadata, cast(T, event.obj)
-        elif isinstance(event, NewObjectKeyEvent):
+        if isinstance(event, NewObjectKeyEvent):
             store = self._get_store(event)
             proxy: Proxy[T] = store.proxy_from_key(
                 event.get_key(),
                 evict=event.evict,
             )
             return event.metadata, proxy
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
 
     def next_object(self) -> T:
         """Get the next object in the stream.
@@ -340,7 +337,7 @@ class StreamConsumer(Generic[T]):
 
         if isinstance(event, NewObjectEvent):
             return event.metadata, cast(T, event.obj)
-        elif isinstance(event, NewObjectKeyEvent):
+        if isinstance(event, NewObjectKeyEvent):
             store = self._get_store(event)
             key = event.get_key()
             obj = store.get(key)
@@ -351,5 +348,4 @@ class StreamConsumer(Generic[T]):
             if event.evict:
                 store.evict(key)
             return event.metadata, cast(T, obj)
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')

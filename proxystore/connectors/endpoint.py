@@ -99,17 +99,17 @@ class EndpointConnector:
             if endpoint_uuid not in self.endpoints:
                 continue
 
-            logger.debug(f'Attempting connection to {endpoint_uuid}')
+            logger.debug('Attempting connection to %s', endpoint_uuid)
             try:
                 client = _connect(endpoint_dir, endpoint_uuid)
             except EndpointError as e:
-                logger.debug(f'Connection to {endpoint_uuid} failed: {e!r}')
+                logger.debug('Connection to %s failed: %r', endpoint_uuid, e)
                 failures.append(f'{endpoint.name} ({endpoint_uuid}): {e}')
                 continue
 
             logger.debug(
-                f'Connection to {endpoint_uuid} successful, using '
-                'as local endpoint',
+                'Connection to %s successful, using as local endpoint',
+                endpoint_uuid,
             )
             found = (endpoint_uuid, endpoint_dir, client)
             break
@@ -413,7 +413,7 @@ class _ConnectionPool:
                 remaining = deadline - time.monotonic()
                 if remaining <= 0:
                     raise
-                logger.debug(f'Retrying connection to the endpoint: {e!r}')
+                logger.debug('Retrying connection to the endpoint: %r', e)
                 time.sleep(min(backoff, remaining))
                 backoff = min(backoff * 2, self._MAX_BACKOFF)
 

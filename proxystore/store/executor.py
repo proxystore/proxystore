@@ -103,8 +103,7 @@ class _FunctionWrapper(Generic[P, R]):
                 if self.return_owned_proxy
                 else store.proxy(result)
             )
-        else:
-            return result
+        return result
 
     def get_store(self) -> Store[Any]:
         store = get_store(self.store_config.name)
@@ -125,8 +124,7 @@ def _proxy_iterable(
             proxy = store.proxy(item)
             keys.append(get_key(proxy))
             return proxy
-        else:
-            return item
+        return item
 
     output = tuple(map(_apply, items))
     return output, keys

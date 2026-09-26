@@ -126,8 +126,7 @@ def event_to_dict(event: Event | EventBatch) -> dict[str, Any]:
 def dict_to_event(data: dict[str, Any]) -> Event | EventBatch:
     """Convert dict to event."""
     event_type = data.pop('event_type')
-    event = _EventMapping[event_type].value.from_dict(data)
-    return event
+    return _EventMapping[event_type].value.from_dict(data)
 
 
 def event_to_bytes(event: Event | EventBatch) -> bytes:

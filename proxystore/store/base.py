@@ -175,7 +175,7 @@ class Store(Generic[ConnectorT]):
 
         self._lock = threading.RLock()
 
-        logger.info(f'Initialized {self}')
+        logger.info('Initialized %s', self)
 
     def __enter__(self) -> Self:
         return self
@@ -415,8 +415,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.future', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): FUTURE {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): FUTURE %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
         return future
 
@@ -443,8 +445,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.evict', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): EVICT {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): EVICT %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
 
     def exists(self, key: ConnectorKeyT) -> bool:
@@ -473,8 +477,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.exists', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): EXISTS {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): EXISTS %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
         return res
 
@@ -512,8 +518,10 @@ class Store(Generic[ConnectorT]):
                     self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
                 logger.debug(
-                    f'Store(name="{self.name}"): GET {key} in '
-                    f'{timer.elapsed_ms:.3f} ms (cached=True)',
+                    'Store(name="%s"): GET %s in %.3f ms (cached=True)',
+                    self.name,
+                    key,
+                    timer.elapsed_ms,
                 )
                 return cached
 
@@ -560,8 +568,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): GET {key} in '
-            f'{timer.elapsed_ms:.3f} ms (cached=False)',
+            'Store(name="%s"): GET %s in %.3f ms (cached=False)',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
         return result
 
@@ -669,10 +679,9 @@ class Store(Generic[ConnectorT]):
                 #     Incompatible return value type (got "Optional[bool]",
                 #     expected "Optional[Proxy[T]]")  [return-value]
                 return obj  # type: ignore[return-value]
-            else:
-                raise NonProxiableTypeError(
-                    f'Object of {type(obj)} is not proxiable.',
-                )
+            raise NonProxiableTypeError(
+                f'Object of {type(obj)} is not proxiable.',
+            )
 
         with Timer() as timer:
             key = self.put(obj, serializer=serializer, **kwargs)
@@ -702,8 +711,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.proxy', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): PROXY {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): PROXY %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
         return proxy
 
@@ -854,8 +865,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): PROXY_BATCH ({len(proxies)} items) '
-            f'in {timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): PROXY_BATCH (%s items) in %.3f ms',
+            self.name,
+            len(proxies),
+            timer.elapsed_ms,
         )
         return cast(list[Proxy[T] | NonProxiableT], proxies)
 
@@ -900,7 +913,7 @@ class Store(Generic[ConnectorT]):
         )
         proxy = Proxy(factory)
 
-        logger.debug(f'Store(name="{self.name}"): PROXY_FROM_KEY {key}')
+        logger.debug('Store(name="%s"): PROXY_FROM_KEY %s', self.name, key)
 
         if lifetime is not None:
             lifetime.add_proxy(proxy)
@@ -1123,9 +1136,8 @@ class Store(Generic[ConnectorT]):
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
 
-        with self._lock:
-            with Timer() as connector_timer:
-                key = self.connector.put(obj, **kwargs)
+        with self._lock, Timer() as connector_timer:
+            key = self.connector.put(obj, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(key, store=self)
@@ -1140,8 +1152,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.put', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): PUT {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): PUT %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )
         return key
 
@@ -1186,9 +1200,8 @@ class Store(Generic[ConnectorT]):
         with Timer() as serialize_timer:
             _objs = list(map(_serialize, objs))
 
-        with self._lock:
-            with Timer() as connector_timer:
-                keys = self.connector.put_batch(_objs, **kwargs)
+        with self._lock, Timer() as connector_timer:
+            keys = self.connector.put_batch(_objs, **kwargs)
 
         if lifetime is not None:
             lifetime.add_key(*keys, store=self)
@@ -1208,8 +1221,10 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.put_batch', keys, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): PUT_BATCH ({len(keys)} items) in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): PUT_BATCH (%s items) in %.3f ms',
+            self.name,
+            len(keys),
+            timer.elapsed_ms,
         )
         return keys
 
@@ -1284,6 +1299,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.set', key, timer.elapsed_ms)
 
         logger.debug(
-            f'Store(name="{self.name}"): SET {key} in '
-            f'{timer.elapsed_ms:.3f} ms',
+            'Store(name="%s"): SET %s in %.3f ms',
+            self.name,
+            key,
+            timer.elapsed_ms,
         )

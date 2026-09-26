@@ -45,7 +45,6 @@ class MockStrictRedis:
 
     def close(self) -> None:
         """Close the client."""
-        pass
 
     def delete(self, key: str) -> None:
         """Delete key."""
@@ -109,7 +108,6 @@ class MockPubSub:
 
     def close(self) -> None:
         """Close the pub/sub client."""
-        pass
 
     def get_message(
         self,
@@ -128,8 +126,7 @@ class MockPubSub:
                 continue
             if message['type'] == 'subscribe' and ignore_subscribe_messages:
                 return None
-            else:
-                return message
+            return message
 
     def subscribe(self, *topics: str) -> None:
         """Subscribe to a topic."""

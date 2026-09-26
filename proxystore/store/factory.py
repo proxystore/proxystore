@@ -133,7 +133,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
-        logger.debug(f'Starting asynchronous resolve of {self.key}')
+        logger.debug('Starting asynchronous resolve of %s', self.key)
         self._obj_future = _default_pool.submit(self.resolve)
 
 
@@ -230,7 +230,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                     type(store),
                     store.name,
                 )
-            elif self.evict:
+            if self.evict:
                 store.evict(self.key)
 
         if store.metrics is not None:

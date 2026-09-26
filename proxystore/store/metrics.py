@@ -200,8 +200,7 @@ def _hash_key(key_or_proxy: KeyT | ProxyT) -> int:
 
     if isinstance(key, Sequence) and not isinstance(key, tuple):
         return hash(tuple(key))
-    else:
-        return hash(key)
+    return hash(key)
 
 
 def _weighted_avg(a1: float, n1: int, a2: float, n2: float) -> float:

@@ -69,25 +69,17 @@ FactoryType: TypeAlias = StoreFactory[Any, T]
 class BaseRefProxyError(Exception):
     """Base exception type for proxy references."""
 
-    pass
-
 
 class MutableBorrowError(BaseRefProxyError):
     """Exception raised when violating borrowing rules."""
-
-    pass
 
 
 class ReferenceNotOwnedError(BaseRefProxyError):
     """Exception raised when invoking an operation on a non-owned reference."""
 
-    pass
-
 
 class ReferenceInvalidError(BaseRefProxyError):
     """Exception raised when a reference instance has been invalidated."""
-
-    pass
 
 
 class _WeakRefFinalizer:

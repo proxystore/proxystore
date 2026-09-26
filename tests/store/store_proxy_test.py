@@ -144,9 +144,11 @@ def test_proxy_from_key_mutex_options_error(
 ) -> None:
     key = store.put('test_value')
 
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy_from_key(key, evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy_from_key(key, evict=True, lifetime=lifetime)
 
 
 def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
@@ -184,7 +186,7 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
     key = store.put(None)
     p: Proxy[None] = store.proxy_from_key(key)
     assert isinstance(p, Proxy)
-    assert isinstance(p, type(None))
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_proxy_recreates_store() -> None:
@@ -237,9 +239,11 @@ def test_proxy_lifetime(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy_mutex_options_error(store: Store[LocalConnector]) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy('test_value', evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy('test_value', evict=True, lifetime=lifetime)
 
 
 def test_proxy_batch(store: Store[LocalConnector]) -> None:
@@ -317,9 +321,11 @@ def test_proxy_batch_lifetime(store: Store[LocalConnector]) -> None:
 
 
 def test_proxy_batch_mutex_options_error(store: Store[LocalConnector]) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.proxy_batch(['test_value'], evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.proxy_batch(['test_value'], evict=True, lifetime=lifetime)
 
 
 def test_locked_proxy(store: Store[LocalConnector]) -> None:
@@ -329,7 +335,7 @@ def test_locked_proxy(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     p = store.locked_proxy(None, skip_nonproxiable=True)
     assert not isinstance(p, Proxy)
-    assert p is None
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_locked_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
@@ -347,9 +353,11 @@ def test_locked_proxy_lifetime(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_mutex_options_error(
     store: Store[LocalConnector],
 ) -> None:
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ValueError, match='The evict and lifetime'):
-            store.locked_proxy('test_value', evict=True, lifetime=lifetime)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ValueError, match='The evict and lifetime'),
+    ):
+        store.locked_proxy('test_value', evict=True, lifetime=lifetime)
 
 
 def test_owned_proxy(store: Store[LocalConnector]) -> None:
@@ -374,7 +382,7 @@ def test_owned_proxy_populate_target(store: Store[LocalConnector]) -> None:
 def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     p = store.owned_proxy(None, skip_nonproxiable=True)
     assert not isinstance(p, (Proxy, OwnedProxy))
-    assert p is None
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:

@@ -20,7 +20,7 @@ store = Store('example', FileConnector(fp.name), metrics=True)
 register_store(store)
 assert store.metrics is not None
 
-target = list(range(0, 100))
+target = list(range(100))
 key = store.put(target)
 store.get(key)
 

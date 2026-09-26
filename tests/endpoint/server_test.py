@@ -86,8 +86,7 @@ async def _connect(server: _Server, token: bytes | None = None) -> Any:
 
 
 def _raw_socket(server: _Server) -> socket.socket:
-    sock = socket.create_connection((server.host, server.port), timeout=5)
-    return sock
+    return socket.create_connection((server.host, server.port), timeout=5)
 
 
 def _is_closed(sock: socket.socket) -> bool:
@@ -368,25 +367,29 @@ async def test_storage_object_size_exceeded(server: _Server) -> None:
 
 async def test_peer_request_error(server: _Server) -> None:
     client = await _connect(server)
-    with mock.patch.object(
-        server.endpoint,
-        'get',
-        AsyncMock(side_effect=PeerRequestError('peer failed')),
+    with (
+        mock.patch.object(
+            server.endpoint,
+            'get',
+            AsyncMock(side_effect=PeerRequestError('peer failed')),
+        ),
+        pytest.raises(EndpointRequestError, match='peer failed'),
     ):
-        with pytest.raises(EndpointRequestError, match='peer failed'):
-            await asyncio.to_thread(client.get, 'key', str(uuid.uuid4()))
+        await asyncio.to_thread(client.get, 'key', str(uuid.uuid4()))
     await asyncio.to_thread(client.close)
 
 
 async def test_unexpected_error(server: _Server) -> None:
     client = await _connect(server)
-    with mock.patch.object(
-        server.endpoint,
-        'exists',
-        AsyncMock(side_effect=RuntimeError('oops')),
+    with (
+        mock.patch.object(
+            server.endpoint,
+            'exists',
+            AsyncMock(side_effect=RuntimeError('oops')),
+        ),
+        pytest.raises(EndpointRequestError, match='unexpected error'),
     ):
-        with pytest.raises(EndpointRequestError, match='unexpected error'):
-            await asyncio.to_thread(client.exists, 'key')
+        await asyncio.to_thread(client.exists, 'key')
     await asyncio.to_thread(client.close)
 
 

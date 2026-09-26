@@ -144,8 +144,7 @@ def _proxy_attribute_access(
         member = find_member(attr, instance, instance)
         if member is None:
             return ctx.default_attr_type
-        else:
-            return member
+        return member
 
     # After the above check, we know instance is a Proxy type and Proxy
     # types are generic with one generic type.
@@ -155,7 +154,7 @@ def _proxy_attribute_access(
     if isinstance(generic_type, TypeVarType):
         # We have an unbound Proxy[T] so return the default type.
         return ctx.default_attr_type
-    elif isinstance(generic_type, Instance):
+    if isinstance(generic_type, Instance):
         # We have a bound Proxy[T] so lookup the attr on T.
         member = find_member(attr, generic_type, generic_type)
         if member is None:
@@ -171,10 +170,8 @@ def _proxy_attribute_access(
                 code=code,
             )
             return ctx.default_attr_type
-        else:
-            return member
-    else:
-        return ctx.default_attr_type
+        return member
+    return ctx.default_attr_type
 
 
 @_assertion_fallback
@@ -185,10 +182,9 @@ def proxy_attribute_access(ctx: AttributeContext, *, attr: str) -> Type:  # noqa
             for instance in ctx.type.items
         )
         return UnionType(resolved)
-    elif isinstance(ctx.type, Instance):
+    if isinstance(ctx.type, Instance):
         return _proxy_attribute_access(ctx.type, attr, ctx)
-    else:
-        return ctx.default_attr_type
+    return ctx.default_attr_type
 
 
 def plugin(version: str) -> type[ProxyStoreMypyPlugin]:  # noqa: D103

@@ -260,7 +260,7 @@ class StreamProducer(Generic[T]):
 
         if self._aggregator is not None and len(objects) > 0:
             obj = self._aggregator([item.obj for item in objects])
-            evict = any([item.evict for item in objects])
+            evict = any(item.evict for item in objects)
             metadata: dict[str, Any] = {}
             for item in objects:
                 metadata.update(item.metadata)
@@ -284,14 +284,14 @@ class StreamProducer(Generic[T]):
                     ),
                 )
         elif len(objects) > 0 and store is None:
-            for item in objects:
-                events.append(
-                    NewObjectEvent(
-                        topic=topic,
-                        obj=item.obj,
-                        metadata=item.metadata,
-                    ),
+            events.extend(
+                NewObjectEvent(
+                    topic=topic,
+                    obj=item.obj,
+                    metadata=item.metadata,
                 )
+                for item in objects
+            )
 
         if closed:
             events.append(EndOfStreamEvent(topic))

@@ -18,7 +18,7 @@ from proxystore.store.lifetimes import ContextLifetime
 
 
 def test_negative_cache_size() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Cache size cannot be negative'):
         Store('test', LocalConnector(), cache_size=-1)
 
 
@@ -122,7 +122,7 @@ def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
     key = store.put('value')
 
     def _deserialize(x: BytesLike) -> Any:
-        raise Exception()
+        raise Exception
 
     with pytest.raises(
         SerializationError,
@@ -161,9 +161,11 @@ def test_set() -> None:
 
 def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
     key = store.connector.new_key()
-    with mock.patch.object(store, 'connector', object()):
-        with pytest.raises(NotImplementedError, match='DeferrableConnector'):
-            store._set(key, 'new-value')
+    with (
+        mock.patch.object(store, 'connector', object()),
+        pytest.raises(NotImplementedError, match='DeferrableConnector'),
+    ):
+        store._set(key, 'new-value')
 
 
 def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
@@ -211,9 +213,11 @@ def test_future_in_threads(store: Store[LocalConnector]) -> None:
 
 
 def test_future_bad_connector_type(store: Store[LocalConnector]) -> None:
-    with mock.patch.object(store, 'connector', object()):
-        with pytest.raises(NotImplementedError, match='DeferrableConnector'):
-            store.future()
+    with (
+        mock.patch.object(store, 'connector', object()),
+        pytest.raises(NotImplementedError, match='DeferrableConnector'),
+    ):
+        store.future()
 
 
 def test_put_lifetime(store: Store[LocalConnector]) -> None:

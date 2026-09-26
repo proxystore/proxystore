@@ -153,7 +153,7 @@ class ContextLifetime:
         self._done = False
         self._keys: set[ConnectorKeyT] = set()
 
-        logger.info(f'Initialized lifetime manager (name={self.name})')
+        logger.info('Initialized lifetime manager (name=%s)', self.name)
 
     def __enter__(self) -> Self:
         return self
@@ -192,8 +192,9 @@ class ContextLifetime:
         """
         self._keys.update(keys)
         logger.debug(
-            f'Added keys to lifetime manager (name={self.name}): '
-            f'{", ".join(repr(key) for key in keys)}',
+            'Added keys to lifetime manager (name=%s): %s',
+            self.name,
+            ', '.join(repr(key) for key in keys),
         )
 
     @_error_if_done
@@ -241,8 +242,10 @@ class ContextLifetime:
             self.store.evict(key)
         self._done = True
         logger.info(
-            f'Closed lifetime manager and evicted {len(self._keys)} '
-            f'associated objects (name={self.name})',
+            'Closed lifetime manager and evicted %s '
+            'associated objects (name=%s)',
+            len(self._keys),
+            self.name,
         )
         self._keys.clear()
 
@@ -444,8 +447,9 @@ class StaticLifetime:
             )
         self._keys[store].update(keys)
         logger.debug(
-            f'Added keys to lifetime manager (name={self.name}): '
-            f'{", ".join(repr(key) for key in keys)}',
+            'Added keys to lifetime manager (name=%s): %s',
+            self.name,
+            ', '.join(repr(key) for key in keys),
         )
 
     @_error_if_done
@@ -506,8 +510,10 @@ class StaticLifetime:
 
         self._done = True
         logger.info(
-            f'Closed lifetime manager and evicted {count} '
-            f'associated objects (name={self.name})',
+            'Closed lifetime manager and evicted %s '
+            'associated objects (name=%s)',
+            count,
+            self.name,
         )
         self._keys.clear()
 
@@ -551,6 +557,7 @@ def register_lifetime_atexit(
 
     atexit.register(_lifetime_atexit_callback)
     logger.debug(
-        f'Registered atexit callback for {lifetime!r}',
+        'Registered atexit callback for %r',
+        lifetime,
     )
     return _lifetime_atexit_callback

@@ -80,9 +80,7 @@ class EndpointRelayConfig(BaseModel):
     @field_validator('address')
     @classmethod
     def _address_validator(cls, v: str | None) -> str | None:
-        if v is not None and not (
-            v.startswith('ws://') or v.startswith('wss://')
-        ):
+        if v is not None and not v.startswith(('ws://', 'wss://')):
             raise ValueError(
                 'Server must start with ws:// or wss://.',
             )

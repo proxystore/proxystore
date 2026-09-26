@@ -160,7 +160,7 @@ class PeerConnection:
             This will not call
             [`RelayClient.close()`][proxystore.p2p.relay.client.RelayClient].
         """
-        logger.info(f'{self._log_prefix}: closing connection')
+        logger.info('%s: closing connection', self._log_prefix)
         # Flush send buffers before close
         # https://github.com/aiortc/aiortc/issues/547
         for channel in self._channels.values():
@@ -187,8 +187,9 @@ class PeerConnection:
         async def _on_close() -> None:
             if self.state in ('closed', 'failed'):
                 logger.info(
-                    f'{self._log_prefix}: connection entered {self.state} '
-                    'state, invoking callback',
+                    '%s: connection entered %s state, invoking callback',
+                    self._log_prefix,
+                    self.state,
                 )
                 await callback(*args, **kwargs)
 
@@ -225,7 +226,7 @@ class PeerConnection:
                 buffer_low.clear()
             channel.send(bytes(chunk))
 
-        logger.debug(f'{self._log_prefix}: sending message to peer')
+        logger.debug('%s: sending message to peer', self._log_prefix)
 
     async def recv(self) -> bytes | str:
         """Receive next message from peer.
@@ -272,7 +273,7 @@ class PeerConnection:
             description_type='offer',
             description=object_to_string(self._pc.localDescription),
         )
-        logger.info(f'{self._log_prefix}: sending offer to {peer_uuid}')
+        logger.info('%s: sending offer to %s', self._log_prefix, peer_uuid)
         await self._relay_client.send(message)
 
     async def send_answer(self, peer_uuid: UUID) -> None:
@@ -284,7 +285,7 @@ class PeerConnection:
 
         @self._pc.on('datachannel')
         def on_datachannel(channel: RTCDataChannel) -> None:
-            logger.info(f'{self._log_prefix}: peer channel established')
+            logger.info('%s: peer channel established', self._log_prefix)
             # TODO: note this is first channel opened
             match = re.search(r'(\d+)-(\d+)$', channel.label)
             if match is None:
@@ -319,7 +320,7 @@ class PeerConnection:
             description_type='answer',
             description=object_to_string(self._pc.localDescription),
         )
-        logger.info(f'{self._log_prefix}: sending answer to {peer_uuid}')
+        logger.info('%s: sending answer to %s', self._log_prefix, peer_uuid)
         await self._relay_client.send(message)
 
     async def _on_message(self, data: bytes) -> None:
@@ -330,11 +331,11 @@ class PeerConnection:
             chunks = self._incoming_chunks.pop(chunk.stream_id)
             message = reconstruct(chunks)
             await self._incoming_queue.put(message)
-            logger.debug(f'{self._log_prefix}: received message from peer')
+            logger.debug('%s: received message from peer', self._log_prefix)
 
     def _on_datachannel_open(self) -> None:
         # Note: this callback is only used on the offerer/initiators side
-        logger.info(f'{self._log_prefix}: peer channels established')
+        logger.info('%s: peer channels established', self._log_prefix)
         self._ready += 1
         if self._ready >= self._max_channels:
             self._handshake_success.set_result(True)
@@ -359,14 +360,18 @@ class PeerConnection:
 
         if message.description_type == 'offer':
             logger.info(
-                f'{self._log_prefix}: received offer from '
-                f'{message.source_uuid} ({message.source_name})',
+                '%s: received offer from %s (%s)',
+                self._log_prefix,
+                message.source_uuid,
+                message.source_name,
             )
             obj = object_from_string(message.description)
         elif message.description_type == 'answer':
             logger.info(
-                f'{self._log_prefix}: received answer from '
-                f'{message.source_uuid} ({message.source_name})',
+                '%s: received answer from %s (%s)',
+                self._log_prefix,
+                message.source_uuid,
+                message.source_name,
             )
             obj = object_from_string(message.description)
         else:

@@ -50,9 +50,11 @@ def test_write_private_file_resets_existing_mode(
 def test_write_private_file_is_atomic(tmp_path: pathlib.Path) -> None:
     path = tmp_path / 'file'
     path.write_bytes(b'old')
-    with mock.patch('os.replace', side_effect=OSError('failed')):
-        with pytest.raises(OSError, match='failed'):
-            write_private_file(str(path), b'new')
+    with (
+        mock.patch('os.replace', side_effect=OSError('failed')),
+        pytest.raises(OSError, match='failed'),
+    ):
+        write_private_file(str(path), b'new')
 
     # The original file is untouched and the temporary file is removed
     assert path.read_bytes() == b'old'

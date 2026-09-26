@@ -688,19 +688,18 @@ def _submit_transfer_action(
         if isinstance(task, globus_sdk.DeleteData):
             response = client.submit_delete(task)
             logger.debug(
-                'Submitted DeleteData Globus task with ID '
-                f'{response["task_id"]}',
+                'Submitted DeleteData Globus task with ID %s',
+                response['task_id'],
             )
             return response
-        elif isinstance(task, globus_sdk.TransferData):
+        if isinstance(task, globus_sdk.TransferData):
             response = client.submit_transfer(task)
             logger.debug(
-                'Submitted TransferData Globus task with ID '
-                f'{response["task_id"]}',
+                'Submitted TransferData Globus task with ID %s',
+                response['task_id'],
             )
             return response
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
     except globus_sdk.TransferAPIError as e:  # pragma: no cover
         raise Exception(
             f'Failure initiating Globus Transfer. Error info: {e.info}',

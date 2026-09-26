@@ -133,16 +133,16 @@ def test_validate_name(name: str, valid: bool) -> None:
 
 
 @pytest.mark.parametrize(
-    ('bad_cfg', 'valid'),
+    ('bad_cfg', 'error'),
     (
-        ({}, True),
-        ({'name': 'bad name'}, False),
-        ({'uuid': 'abc-abc-abc'}, False),
-        ({'port': 0}, False),
-        ({'port': 1000000}, False),
+        ({}, None),
+        ({'name': 'bad name'}, 'alphanumeric characters'),
+        ({'uuid': 'abc-abc-abc'}, 'not a valid UUID4 string'),
+        ({'port': 0}, 'Port must be in range'),
+        ({'port': 1000000}, 'Port must be in range'),
     ),
 )
-def test_validate_config(bad_cfg: Any, valid: bool) -> None:
+def test_validate_config(bad_cfg: Any, error: str | None) -> None:
     options = {
         'name': 'name',
         'uuid': str(uuid.uuid4()),
@@ -151,43 +151,43 @@ def test_validate_config(bad_cfg: Any, valid: bool) -> None:
     }
     options.update(bad_cfg)
 
-    if valid:
+    if error is None:
         EndpointConfig(**options)
     else:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=error):
             EndpointConfig(**options)
 
 
 @pytest.mark.parametrize(
-    ('bad_cfg', 'valid'),
+    ('bad_cfg', 'error'),
     (
-        ({'address': 'ws://'}, True),
-        ({'address': 'wss://'}, True),
-        ({'address': ''}, False),
-        ({'address': 'https://'}, False),
-        ({'peer_channels': 1}, True),
-        ({'peer_channels': 0}, False),
+        ({'address': 'ws://'}, None),
+        ({'address': 'wss://'}, None),
+        ({'address': ''}, 'must start with ws:// or wss://'),
+        ({'address': 'https://'}, 'must start with ws:// or wss://'),
+        ({'peer_channels': 1}, None),
+        ({'peer_channels': 0}, 'Peer channels must be >= 1'),
     ),
 )
-def test_validate_relay_config(bad_cfg: Any, valid: bool) -> None:
-    if valid:
+def test_validate_relay_config(bad_cfg: Any, error: str | None) -> None:
+    if error is None:
         EndpointRelayConfig(**bad_cfg)
     else:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=error):
             EndpointRelayConfig(**bad_cfg)
 
 
 @pytest.mark.parametrize(
-    ('bad_cfg', 'valid'),
+    ('bad_cfg', 'error'),
     (
-        ({'max_object_size': 0}, False),
-        ({'max_object_size': 1}, True),
-        ({'max_object_size': -1}, False),
+        ({'max_object_size': 0}, 'greater than zero'),
+        ({'max_object_size': 1}, None),
+        ({'max_object_size': -1}, 'greater than zero'),
     ),
 )
-def test_validate_storage_config(bad_cfg: Any, valid: bool) -> None:
-    if valid:
+def test_validate_storage_config(bad_cfg: Any, error: str | None) -> None:
+    if error is None:
         EndpointStorageConfig(**bad_cfg)
     else:
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match=error):
             EndpointStorageConfig(**bad_cfg)

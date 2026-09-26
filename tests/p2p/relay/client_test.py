@@ -70,74 +70,84 @@ async def test_send_recv(relay_server) -> None:
 @pytest.mark.asyncio
 async def test_recv_wrong_type(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
-        with mock.patch.object(
-            client.websocket,
-            'recv',
-            AsyncMock(return_value=b''),
-        ):
-            with pytest.raises(  # pragma: <3.14 cover
+        with (
+            mock.patch.object(
+                client.websocket,
+                'recv',
+                AsyncMock(return_value=b''),
+            ),
+            pytest.raises(  # pragma: <3.14 cover
                 AssertionError,
                 match='non-string',
-            ):
-                await client.recv()
+            ),
+        ):
+            await client.recv()
 
 
 @pytest.mark.asyncio
 async def test_connect_received_non_string(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
-        with mock.patch(
-            'websockets.asyncio.client.ClientConnection.recv',
-            AsyncMock(return_value=b''),
-        ):
-            with pytest.raises(
+        with (
+            mock.patch(
+                'websockets.asyncio.client.ClientConnection.recv',
+                AsyncMock(return_value=b''),
+            ),
+            pytest.raises(
                 AssertionError,
                 match='non-string',
-            ):  # pragma: <3.14 cover
-                await client._register(_WAIT_FOR)
+            ),
+        ):  # pragma: <3.14 cover
+            await client._register(_WAIT_FOR)
 
 
 @pytest.mark.asyncio
 async def test_connect_received_bad_message(relay_server) -> None:
     async with RelayClient(relay_server.address) as client:
-        with mock.patch(
-            'websockets.asyncio.client.ClientConnection.recv',
-            AsyncMock(return_value='bad message'),
-        ):
-            with pytest.raises(  # pragma: <3.14 cover
+        with (
+            mock.patch(
+                'websockets.asyncio.client.ClientConnection.recv',
+                AsyncMock(return_value='bad message'),
+            ),
+            pytest.raises(  # pragma: <3.14 cover
                 RelayRegistrationError,
                 match='Unable to decode response message',
-            ):
-                await client._register(_WAIT_FOR)
+            ),
+        ):
+            await client._register(_WAIT_FOR)
 
 
 @pytest.mark.asyncio
 async def test_connect_failure(relay_server) -> None:
     message = RelayResponse(success=False, message='test error', error=True)
     async with RelayClient(relay_server.address) as client:
-        with mock.patch(
-            'websockets.asyncio.client.ClientConnection.recv',
-            AsyncMock(return_value=encode_relay_message(message)),
-        ):
-            with pytest.raises(
+        with (
+            mock.patch(
+                'websockets.asyncio.client.ClientConnection.recv',
+                AsyncMock(return_value=encode_relay_message(message)),
+            ),
+            pytest.raises(
                 RelayRegistrationError,
                 match='test error',
-            ):  # pragma: <3.14 cover
-                await client._register(_WAIT_FOR)
+            ),
+        ):  # pragma: <3.14 cover
+            await client._register(_WAIT_FOR)
 
 
 @pytest.mark.asyncio
 async def test_connect_unknown_response(relay_server) -> None:
     message = RelayRegistrationRequest('name', uuid.uuid4())
     async with RelayClient(relay_server.address) as client:
-        with mock.patch(
-            'websockets.asyncio.client.ClientConnection.recv',
-            AsyncMock(return_value=encode_relay_message(message)),
-        ):
-            with pytest.raises(  # pragma: <3.14 cover
+        with (
+            mock.patch(
+                'websockets.asyncio.client.ClientConnection.recv',
+                AsyncMock(return_value=encode_relay_message(message)),
+            ),
+            pytest.raises(  # pragma: <3.14 cover
                 RelayRegistrationError,
                 match='unknown message type',
-            ):
-                await client._register(_WAIT_FOR)
+            ),
+        ):
+            await client._register(_WAIT_FOR)
 
 
 @pytest.mark.asyncio

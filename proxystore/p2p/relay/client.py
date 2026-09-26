@@ -23,6 +23,8 @@ except ImportError as e:  # pragma: no cover
         stacklevel=2,
     )
 
+import contextlib
+
 from proxystore.p2p.relay.exceptions import RelayNotConnectedError
 from proxystore.p2p.relay.exceptions import RelayRegistrationError
 from proxystore.p2p.relay.messages import decode_relay_message
@@ -109,7 +111,7 @@ class RelayClient:
         timeout: float = 10,
         verify_certificate: bool = True,
     ) -> None:
-        if not (address.startswith('ws://') or address.startswith('wss://')):
+        if not address.startswith(('ws://', 'wss://')):
             raise ValueError(
                 'Relay server address must start with ws:// or wss://.'
                 f'Got {address}.',
@@ -200,20 +202,21 @@ class RelayClient:
             if message.success:
                 logger.info(
                     'Established client connection to relay server at '
-                    f'{self._address} with client uuid={self.uuid} '
-                    f'and name={self.name}',
+                    '%s with client uuid=%s '
+                    'and name=%s',
+                    self._address,
+                    self.uuid,
+                    self.name,
                 )
                 return websocket
-            else:
-                raise RelayRegistrationError(
-                    'Failed to register as peer with the relay server. '
-                    f'Got exception: {message.message}',
-                )
-        else:
             raise RelayRegistrationError(
-                'Relay server replied with unknown message type: '
-                f'{type(message).__name__}.',
+                'Failed to register as peer with the relay server. '
+                f'Got exception: {message.message}',
             )
+        raise RelayRegistrationError(
+            'Relay server replied with unknown message type: '
+            f'{type(message).__name__}.',
+        )
 
     async def _reconnect_on_close(self) -> None:
         """Wait for websocket to close and immediately reconnect.
@@ -252,11 +255,10 @@ class RelayClient:
             and self._websocket.state is websockets.protocol.State.OPEN
         ):
             return self._websocket
-        else:
-            raise RelayNotConnectedError(
-                'Websocket connection to the relay server is not open. '
-                'Try calling connect() first.',
-            )
+        raise RelayNotConnectedError(
+            'Websocket connection to the relay server is not open. '
+            'Try calling connect() first.',
+        )
 
     async def connect(self, retry: bool = True) -> None:
         """Connect to the relay server.
@@ -331,9 +333,12 @@ class RelayClient:
                         raise
 
                     logger.warning(
-                        f'Registration with relay server at {self._address} '
-                        f'failed because of {e}. Retrying connection in '
-                        f'{backoff_seconds} seconds',
+                        'Registration with relay server at %s '
+                        'failed because of %s. Retrying connection in '
+                        '%s seconds',
+                        self._address,
+                        e,
+                        backoff_seconds,
                     )
                     await asyncio.sleep(backoff_seconds)
                     backoff_seconds = min(backoff_seconds * 2, 60)
@@ -346,10 +351,8 @@ class RelayClient:
         """Close the connection to the relay server."""
         if self._reconnect_task is not None:
             self._reconnect_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._reconnect_task
-            except asyncio.CancelledError:
-                pass
 
         if self._websocket is not None:
             await self._websocket.close()

@@ -18,7 +18,7 @@ from proxystore.serialize import serialize
 def test_proxy_utils() -> None:
     with pytest.raises(TypeError):
         # Proxy requires a callable type
-        Proxy('not a factory')  # type: ignore
+        Proxy('not a factory')  # type: ignore[arg-type]
 
     x = [1, 2, 3]
     f = SimpleFactory(x)
@@ -42,7 +42,7 @@ def test_proxy_utils() -> None:
     assert not isinstance(x_, Proxy)
     assert x == x_
 
-    p = p + [1]  # noqa
+    p = p + [1]  # noqa: RUF005
     assert not isinstance(p, Proxy)
     assert p == [1, 2, 3, 1]
     assert len(p) == 4
@@ -99,7 +99,7 @@ def test_proxy_locker_attr_access():
     assert not is_resolved(locker.unlock())
 
     # Not _proxy attributes should still work normally
-    locker._test = 1  # type: ignore
+    locker._test = 1  # type: ignore[attr-defined]
     assert locker._test == 1
 
 

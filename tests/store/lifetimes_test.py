@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import atexit
+import contextlib
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -23,6 +24,13 @@ def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
     lifetime = ContextLifetime(store)
     assert isinstance(lifetime, Lifetime)
     lifetime.close()
+
+
+def test_context_lifetime_repr(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store, name='test-lifetime') as lifetime:
+        assert repr(lifetime) == (
+            f'Lifetime(name=test-lifetime, store={store!r})'
+        )
 
 
 def test_context_lifetime_cleanup(store: Store[LocalConnector]) -> None:
@@ -58,9 +66,11 @@ def test_context_lifetime_close_idempotency(
 def test_context_lifetime_add_bad_proxy(store: Store[LocalConnector]) -> None:
     proxy: Proxy[list[Any]] = Proxy(list)
 
-    with ContextLifetime(store) as lifetime:
-        with pytest.raises(ProxyStoreFactoryError):
-            lifetime.add_proxy(proxy)
+    with (
+        ContextLifetime(store) as lifetime,
+        pytest.raises(ProxyStoreFactoryError),
+    ):
+        lifetime.add_proxy(proxy)
 
 
 def test_context_lifetime_error_if_done(store: Store[LocalConnector]) -> None:
@@ -123,12 +133,10 @@ def test_lease_lifetime_extend(
     first_timer.join()
     time.sleep(0.001)
 
-    try:
-        # Wait on possible second timer
+    # Wait on possible second timer. AttributeError is raised if
+    # lifetime._timer is None because it has already been closed.
+    with contextlib.suppress(AttributeError):
         lifetime._timer.join()
-    except AttributeError:  # pragma: no cover
-        # Raised if lifetime._timer is None because it has already been closed.
-        pass
 
     assert lifetime.done()
 

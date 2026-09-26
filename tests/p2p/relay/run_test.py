@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
 import multiprocessing
 import os
@@ -45,23 +46,16 @@ async def test_periodic_client_logger(caplog) -> None:
     task = periodic_client_logger(server, 0.001)
     await asyncio.sleep(0.01)
     task.cancel()
-    try:
+    with contextlib.suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        pass
 
     assert any(
-        [
-            'Connected clients: 1' in record.message
-            and record.levelname == 'INFO'
-            for record in caplog.records
-        ],
+        'Connected clients: 1' in record.message and record.levelname == 'INFO'
+        for record in caplog.records
     )
     assert any(
-        [
-            str(client.uuid) in record.message and record.levelname == 'INFO'
-            for record in caplog.records
-        ],
+        str(client.uuid) in record.message and record.levelname == 'INFO'
+        for record in caplog.records
     )
 
 
@@ -153,11 +147,10 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
                 with open(os.path.join(tmp_path, log)) as f:
                     assert 'DEBUG' not in f.read()
             break
-        elif waited_time >= max_wait_time:  # pragma: no cover
+        if waited_time >= max_wait_time:  # pragma: no cover
             raise TimeoutError('Timeout waiting for log file to be written.')
-        else:  # pragma: no cover
-            time.sleep(sleep_time)
-            waited_time += sleep_time
+        time.sleep(sleep_time)  # pragma: no cover
+        waited_time += sleep_time  # pragma: no cover
 
 
 def _serve(config: RelayServingConfig) -> None:

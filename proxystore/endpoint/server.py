@@ -381,9 +381,11 @@ class ClientHandler:
                 )
             except TimeoutError:
                 logger.warning(
-                    f'Closing connection from {peer} because the client did '
-                    f'not complete the handshake within '
-                    f'{self.handshake_timeout} seconds',
+                    'Closing connection from %s because the client did '
+                    'not complete the handshake within '
+                    '%s seconds',
+                    peer,
+                    self.handshake_timeout,
                 )
                 return
             if authenticated:
@@ -393,9 +395,9 @@ class ClientHandler:
             asyncio.IncompleteReadError,
             EndpointProtocolError,
         ) as e:
-            logger.debug(f'Closing connection from {peer}: {e!r}')
+            logger.debug('Closing connection from %s: %r', peer, e)
         except Exception:
-            logger.exception(f'Unexpected error handling client {peer}')
+            logger.exception('Unexpected error handling client %s', peer)
         finally:
             self._connections.discard(conn)
             conn.close()
@@ -405,8 +407,9 @@ class ClientHandler:
         preamble = await conn.readexactly(Preamble.SIZE)
         if bytes(preamble[:4]) in _HTTP_METHODS:
             logger.warning(
-                f'Rejecting HTTP request from {peer}. The client is likely '
+                'Rejecting HTTP request from %s. The client is likely '
                 'using an older version of ProxyStore that uses the HTTP API.',
+                peer,
             )
             await _reply_and_close(conn, _http_upgrade_response())
             return False
@@ -414,8 +417,11 @@ class ClientHandler:
         version = Preamble.unpack(preamble).version
         if version != PROTOCOL_VERSION:
             logger.warning(
-                f'Rejecting connection from {peer} with protocol version '
-                f'{version} (expected {PROTOCOL_VERSION})',
+                'Rejecting connection from %s with protocol version '
+                '%s (expected %s)',
+                peer,
+                version,
+                PROTOCOL_VERSION,
             )
             # Only the preamble format is the same across protocol versions
             # so the client detects the mismatch from our preamble.
@@ -440,8 +446,9 @@ class ClientHandler:
             auth.proof,
         ):
             logger.warning(
-                f'Rejecting connection from {peer} because the client '
+                'Rejecting connection from %s because the client '
                 'failed authentication',
+                peer,
             )
             await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
             return False
@@ -462,10 +469,13 @@ class ClientHandler:
             # Only warn once for each combination of client versions.
             self._warned_versions.add(versions)
             logger.warning(
-                f'Client {peer} uses different versions than this endpoint: '
-                f'{"; ".join(mismatches)}. Objects serialized in one '
+                'Client %s uses different versions than this endpoint: '
+                '%s. Objects serialized in one '
                 'environment may fail to deserialize in another. See '
-                f'{VERSION_DOCS_URL} for details.',
+                '%s for details.',
+                peer,
+                '; '.join(mismatches),
+                VERSION_DOCS_URL,
             )
 
     async def _serve_requests(self, conn: _ClientConnection) -> None:
@@ -525,7 +535,7 @@ class ClientHandler:
         except ObjectSizeExceededError as e:
             return Status.TOO_LARGE, {'error': str(e)}, None
         except Exception as e:
-            logger.exception(f'Unexpected error handling op {op} request')
+            logger.exception('Unexpected error handling op %s request', op)
             return Status.ERROR, {'error': f'unexpected error: {e!r}'}, None
 
     async def _dispatch(
@@ -540,17 +550,16 @@ class ClientHandler:
             if result is None:
                 return Status.NOT_FOUND, None, None
             return Status.OK, None, result
-        elif op == Op.SET:
+        if op == Op.SET:
             await self.endpoint.set(key, data, endpoint=endpoint_uuid)
             return Status.OK, None, None
-        elif op == Op.EXISTS:
+        if op == Op.EXISTS:
             exists = await self.endpoint.exists(key, endpoint=endpoint_uuid)
             return Status.OK, {'exists': exists}, None
-        elif op == Op.EVICT:
+        if op == Op.EVICT:
             await self.endpoint.evict(key, endpoint=endpoint_uuid)
             return Status.OK, None, None
-        else:
-            return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
+        return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
 
 
 async def _read_handshake_message(
@@ -562,7 +571,7 @@ async def _read_handshake_message(
         raise EndpointProtocolError(
             f'Expected {expected.name} message but got op {header.code}.',
         )
-    elif header.data_len != 0:
+    if header.data_len != 0:
         raise EndpointProtocolError(
             f'Client sent data in a {expected.name} message.',
         )

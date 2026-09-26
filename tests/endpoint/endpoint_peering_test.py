@@ -31,9 +31,11 @@ async def endpoints(
     )
     peer_manager_1 = await PeerManager(relay_client_1)
     peer_manager_2 = await PeerManager(relay_client_2)
-    async with Endpoint(peer_manager=peer_manager_1) as ep1:
-        async with Endpoint(peer_manager=peer_manager_2) as ep2:
-            yield (ep1, ep2)
+    async with (
+        Endpoint(peer_manager=peer_manager_1) as ep1,
+        Endpoint(peer_manager=peer_manager_2) as ep2,
+    ):
+        yield (ep1, ep2)
 
 
 @pytest.mark.asyncio
@@ -107,7 +109,7 @@ async def test_remote_error_propogation(
     endpoint1, endpoint2 = endpoints
     key = str(uuid.uuid4())
     with pytest.raises(AssertionError):
-        await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore
+        await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio
@@ -173,11 +175,9 @@ async def test_unsupported_peer_message(
     assert not (await endpoint1.exists(key, endpoint=endpoint2.uuid))
 
     assert any(
-        [
-            'unable to decode message from peer' in record.message
-            and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'unable to decode message from peer' in record.message
+        and record.levelname == 'ERROR'
+        for record in caplog.records
     )
 
 
@@ -210,8 +210,6 @@ async def test_unexpected_response(
     assert not (await endpoint1.exists('key', endpoint=endpoint2.uuid))
 
     assert any(
-        [
-            'does not match' in record.message and record.levelname == 'ERROR'
-            for record in caplog.records
-        ],
+        'does not match' in record.message and record.levelname == 'ERROR'
+        for record in caplog.records
     )

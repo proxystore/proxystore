@@ -10,19 +10,13 @@ from proxystore.store import base
 class StoreError(Exception):
     """Base exception class for store errors."""
 
-    pass
-
 
 class StoreExistsError(StoreError):
     """Exception raised when a store with the same name already exists."""
 
-    pass
-
 
 class ProxyStoreFactoryError(StoreError):
     """Exception raised when a proxy was not created by a Store."""
-
-    pass
 
 
 class ProxyResolveMissingKeyError(Exception):

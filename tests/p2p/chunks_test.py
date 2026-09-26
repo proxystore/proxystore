@@ -34,7 +34,7 @@ def test_chunk_to_bytes(dtype: bytes | str) -> None:
 
 
 def test_chunk_validation() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='must be less than seq_len'):
         Chunk(0, 2, 1, '')
 
 

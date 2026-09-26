@@ -21,7 +21,6 @@ from proxystore.globus.scopes import get_all_scopes_by_resource_server
 @click.group()
 def cli() -> None:  # pragma: no cover
     """ProxyStore Globus Auth."""
-    pass
 
 
 @cli.command()

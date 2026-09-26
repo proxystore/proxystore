@@ -50,8 +50,7 @@ class Client(Generic[UserT]):
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Client):
             return (self.uuid == other.uuid) and (self.user == other.user)
-        else:
-            return False
+        return False
 
     __hash__ = object.__hash__
 

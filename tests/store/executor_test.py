@@ -240,7 +240,7 @@ class BadExecutor:
         *args: P.args,
         **kwargs: P.kwargs,
     ) -> Future[R]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def map(
         self,
@@ -249,7 +249,7 @@ class BadExecutor:
         timeout: float | None = None,
         chunksize: int = 1,
     ) -> Iterator[Future[R]]:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def test_warn_unsupported_shutdown_method() -> None:

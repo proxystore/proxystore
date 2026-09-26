@@ -59,14 +59,12 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
         factory = get_factory(val)
         if isinstance(factory, StoreFactory):
             return factory.get_store()
-        else:
-            raise ProxyStoreFactoryError(
-                'The proxy must contain a factory with type '
-                f'{StoreFactory.__name__}. {type(factory).__name__} '
-                'is not supported.',
-            )
-    else:
-        name = val
+        raise ProxyStoreFactoryError(
+            'The proxy must contain a factory with type '
+            f'{StoreFactory.__name__}. {type(factory).__name__} '
+            'is not supported.',
+        )
+    name = val
 
     with _stores_lock:
         if name in _stores:
@@ -126,7 +124,7 @@ def register_store(store: Store[Any], exist_ok: bool = False) -> None:
             )
 
         _stores[store.name] = store
-        logger.info(f'Registered a store named "{store.name}"')
+        logger.info('Registered a store named "%s"', store.name)
 
 
 @contextlib.contextmanager
@@ -188,4 +186,4 @@ def unregister_store(name_or_store: str | Store[Any]) -> None:
     with _stores_lock:
         if name in _stores:
             del _stores[name]
-            logger.info(f'Unregistered a store named {name}')
+            logger.info('Unregistered a store named %s', name)

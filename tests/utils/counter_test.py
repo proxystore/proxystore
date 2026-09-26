@@ -21,5 +21,5 @@ def test_counter_max_size() -> None:
     counter.increment()
     counter.increment()
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Max counter size exceeded'):
         counter.increment()

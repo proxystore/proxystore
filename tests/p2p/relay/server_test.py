@@ -122,10 +122,8 @@ async def test_server_register_override_same_websocket(caplog) -> None:
 
     assert server.client_manager.get_client_by_uuid(request.uuid) is not None
     assert not any(
-        [
-            f'Previously registered client {request.uuid}' in record.message
-            for record in caplog.records
-        ],
+        f'Previously registered client {request.uuid}' in record.message
+        for record in caplog.records
     )
 
 
@@ -155,10 +153,8 @@ async def test_server_register_override_different_websocket(caplog) -> None:
 
     assert server.client_manager.get_client_by_uuid(request.uuid) is not None
     assert any(
-        [
-            f'Previously registered client {request.uuid}' in record.message
-            for record in caplog.records
-        ],
+        f'Previously registered client {request.uuid}' in record.message
+        for record in caplog.records
     )
 
 
@@ -203,10 +199,8 @@ async def test_server_unregister(caplog) -> None:
 
     assert server.client_manager.get_client_by_uuid(client.uuid) is None
     assert any(
-        [
-            f'Unregistering client {client.uuid}' in record.message
-            for record in caplog.records
-        ],
+        f'Unregistering client {client.uuid}' in record.message
+        for record in caplog.records
     )
 
 

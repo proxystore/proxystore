@@ -130,10 +130,8 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     assert cfg.relay.address == _SERVER
 
     assert any(
-        [
-            str(cfg.uuid) in record.message and record.levelname == 'INFO'
-            for record in caplog.records
-        ],
+        str(cfg.uuid) in record.message and record.levelname == 'INFO'
+        for record in caplog.records
     )
 
 
@@ -167,7 +165,7 @@ def test_configure_endpoint_invalid_name(
     )
     assert rv == 1
 
-    assert any(['alphanumeric' in record.message for record in caplog.records])
+    assert any('alphanumeric' in record.message for record in caplog.records)
 
 
 def test_configure_endpoint_already_exists_error(
@@ -192,9 +190,7 @@ def test_configure_endpoint_already_exists_error(
     )
     assert rv == 1
 
-    assert any(
-        ['already exists' in record.message for record in caplog.records],
-    )
+    assert any('already exists' in record.message for record in caplog.records)
 
 
 def test_list_endpoints(tmp_path: pathlib.Path, caplog) -> None:
@@ -217,7 +213,7 @@ def test_list_endpoints(tmp_path: pathlib.Path, caplog) -> None:
 
     assert len(caplog.records) == len(names) + 2
     for name in names:
-        assert any([name in record.message for record in caplog.records])
+        assert any(name in record.message for record in caplog.records)
 
 
 def test_list_endpoints_empty(tmp_path: pathlib.Path, caplog) -> None:
@@ -249,7 +245,7 @@ def test_remove_endpoint(tmp_path: pathlib.Path, caplog) -> None:
     assert len([c for _, c in EndpointDir.find_all(str(tmp_path))]) == 0
 
     assert any(
-        ['Removed endpoint' in record.message for record in caplog.records],
+        'Removed endpoint' in record.message for record in caplog.records
     )
 
 
@@ -266,9 +262,7 @@ def test_remove_endpoints_does_not_exist(
         rv = remove_endpoint(_NAME)
     assert rv == 1
 
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 @pytest.mark.parametrize(
@@ -296,7 +290,7 @@ def test_remove_endpoint_running(
     assert rv == 1
 
     assert any(
-        ['must be stopped' in record.message for record in caplog.records],
+        'must be stopped' in record.message for record in caplog.records
     )
 
 
@@ -347,7 +341,7 @@ def test_start_endpoint_detached(tmp_path: pathlib.Path, caplog) -> None:
         rv = start_endpoint(_NAME, detach=True, proxystore_dir=str(tmp_path))
     assert rv == 0
 
-    assert any(['daemon' in record.message for record in caplog.records])
+    assert any('daemon' in record.message for record in caplog.records)
 
 
 def test_start_endpoint_running(tmp_path: pathlib.Path, caplog) -> None:
@@ -367,7 +361,7 @@ def test_start_endpoint_running(tmp_path: pathlib.Path, caplog) -> None:
     assert rv == 1
 
     assert any(
-        ['already running' in record.message for record in caplog.records],
+        'already running' in record.message for record in caplog.records
     )
 
 
@@ -381,9 +375,7 @@ def test_start_endpoint_does_not_exist(tmp_path: pathlib.Path, caplog) -> None:
         rv = start_endpoint(_NAME)
     assert rv == 1
 
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 def test_start_endpoint_missing_config(tmp_path: pathlib.Path, caplog) -> None:
@@ -394,10 +386,8 @@ def test_start_endpoint_missing_config(tmp_path: pathlib.Path, caplog) -> None:
     assert rv == 1
 
     assert any(
-        [
-            'does not contain a valid configuration' in record.message
-            for record in caplog.records
-        ],
+        'does not contain a valid configuration' in record.message
+        for record in caplog.records
     )
 
 
@@ -413,7 +403,7 @@ def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
     assert rv == 1
 
     assert any(
-        ['Unable to parse' in record.message for record in caplog.records],
+        'Unable to parse' in record.message for record in caplog.records
     )
 
 
@@ -445,10 +435,7 @@ def test_start_endpoint_hanging_different_host(
     assert rv == 1
 
     assert any(
-        [
-            'on a host named abcd' in record.message
-            for record in caplog.records
-        ],
+        'on a host named abcd' in record.message for record in caplog.records
     )
 
 
@@ -478,11 +465,9 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     assert rv == 0
 
     assert any(
-        [
-            'Removing invalid PID file' in record.message
-            for record in caplog.records
-            if record.levelno == logging.DEBUG
-        ],
+        'Removing invalid PID file' in record.message
+        for record in caplog.records
+        if record.levelno == logging.DEBUG
     )
 
 
@@ -507,11 +492,9 @@ def test_start_endpoint_missing_static_host(
     assert rv == 1
 
     assert any(
-        [
-            'Missing static host address in config.' in record.message
-            for record in caplog.records
-            if record.levelno == logging.ERROR
-        ],
+        'Missing static host address in config.' in record.message
+        for record in caplog.records
+        if record.levelno == logging.ERROR
     )
 
 
@@ -555,9 +538,7 @@ def test_stop_endpoint_unknown(tmp_path: pathlib.Path, caplog) -> None:
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
-    assert any(
-        ['does not exist' in record.message for record in caplog.records],
-    )
+    assert any('does not exist' in record.message for record in caplog.records)
 
 
 def test_stop_endpoint_not_running(tmp_path: pathlib.Path, caplog) -> None:
@@ -569,7 +550,7 @@ def test_stop_endpoint_not_running(tmp_path: pathlib.Path, caplog) -> None:
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0
 
-    assert any(['not running' in record.message for record in caplog.records])
+    assert any('not running' in record.message for record in caplog.records)
 
 
 def test_stop_endpoint_hanging_different_host(
@@ -598,10 +579,7 @@ def test_stop_endpoint_hanging_different_host(
     assert rv == 1
 
     assert any(
-        [
-            'on a host named abcd' in record.message
-            for record in caplog.records
-        ],
+        'on a host named abcd' in record.message for record in caplog.records
     )
 
 
@@ -628,16 +606,12 @@ def test_stop_endpoint_dangling_pid_file(
     assert not os.path.exists(pid_file)
 
     assert any(
-        [
-            'Removing invalid PID file' in record.message
-            for record in caplog.records
-            if record.levelno == logging.DEBUG
-        ],
+        'Removing invalid PID file' in record.message
+        for record in caplog.records
+        if record.levelno == logging.DEBUG
     )
     assert any(
-        [
-            'not running' in record.message
-            for record in caplog.records
-            if record.levelno == logging.INFO
-        ],
+        'not running' in record.message
+        for record in caplog.records
+        if record.levelno == logging.INFO
     )

@@ -61,10 +61,9 @@ class ProxyProperty(Generic[T]):
                 f'property {self._name!r} has of {objtype.__name__!r} '
                 'no default value',
             )
-        elif obj is None and self.default is not None:
+        if obj is None and self.default is not None:
             return self.default
-        else:
-            return self.fget(obj)
+        return self.fget(obj)
 
     def __set__(self, obj: Any, value: T) -> None:
         if self.fset is None:
@@ -131,9 +130,8 @@ def proxy_property(
     # ProxyProperty[T] | Callable[[Callable[P, T]], ProxyProperty[T]]:
     if function is not None:
         return ProxyProperty(function, default=default)
-    else:
 
-        def _wrapper(_function: Callable[P, T]) -> ProxyProperty[T]:
-            return ProxyProperty(_function, default=default)
+    def _wrapper(_function: Callable[P, T]) -> ProxyProperty[T]:
+        return ProxyProperty(_function, default=default)
 
-        return _wrapper
+    return _wrapper

@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 class SafeTaskExitError(Exception):
     """Exception that can be raised inside a task to safely exit it."""
 
-    pass
-
 
 async def _execute_and_log_traceback(
     coro: Callable[..., Coroutine[Any, Any, None]],
@@ -43,8 +41,9 @@ def exit_on_error(task: asyncio.Task[Any]) -> None:
         and not isinstance(task.exception(), SafeTaskExitError)
     ):
         logger.error(
-            f'Exception in background task (name="{task.get_name()}"): '
-            f'{task.exception()!r}',
+            'Exception in background task (name="%s"): %r',
+            task.get_name(),
+            task.exception(),
         )
         raise SystemExit(1)
 

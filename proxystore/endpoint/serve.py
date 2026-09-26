@@ -55,7 +55,7 @@ def _get_auth_headers(
 ) -> dict[str, str]:
     if method is None:
         return {}
-    elif method == 'globus':
+    if method == 'globus':
         app = get_globus_app()
         scopes = get_relay_scopes_by_resource_server()
         assert len(scopes) == 1
@@ -73,15 +73,15 @@ def _get_auth_headers(
         bearer = authorizer.get_authorization_header()
         assert bearer is not None
         return {'Authorization': bearer}
-    else:
-        raise AssertionError('Unreachable.')
+    raise AssertionError('Unreachable.')
 
 
 def _create_storage(config: EndpointConfig) -> Storage:
     database_path = config.storage.database_path
     if database_path is not None:
         logger.info(
-            f'Using SQLite database for storage (path: {database_path})',
+            'Using SQLite database for storage (path: %s)',
+            database_path,
         )
         return SQLiteStorage(
             database_path,
@@ -197,8 +197,9 @@ async def running_endpoint(
         if endpoint_dir.restrict_permissions():
             logger.warning(
                 'Removed group and other permissions from '
-                f'{endpoint_dir} because clients trust the files in the '
+                '%s because clients trust the files in the '
                 'endpoint directory',
+                endpoint_dir,
             )
 
         token = generate_token()
@@ -237,10 +238,13 @@ async def running_endpoint(
         endpoint_dir.write_connection(connection)
         stack.callback(endpoint_dir.remove_connection, connection)
         logger.info(
-            f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
-            f'{config.host}:{config.port}',
+            'Serving endpoint %s (%s) on %s:%s',
+            endpoint.uuid,
+            endpoint.name,
+            config.host,
+            config.port,
         )
-        logger.info(f'Config: {config}')
+        logger.info('Config: %s', config)
         try:
             yield endpoint
         finally:
@@ -312,11 +316,11 @@ def serve(
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see
         # the exception.
-        logger.exception(f'Caught unhandled exception: {e!r}')
+        logger.exception('Caught unhandled exception: %r', e)
         raise
     except KeyboardInterrupt:  # pragma: no cover
         # SIGINT is handled by _serve_async once the event loop is running,
         # but can still be raised before then.
         pass
     finally:
-        logger.info(f'Finished serving endpoint in {endpoint_dir}')
+        logger.info('Finished serving endpoint in %s', endpoint_dir)

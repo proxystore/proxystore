@@ -56,9 +56,8 @@ class _CLIFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
         if hasattr(record, 'simple') and record.simple:
             return record.getMessage()
-        else:
-            formatter = logging.Formatter(self.FORMATS[record.levelno])
-            return formatter.format(record)
+        formatter = logging.Formatter(self.FORMATS[record.levelno])
+        return formatter.format(record)
 
 
 @click.group()
@@ -272,7 +271,7 @@ def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
     with _endpoint_client(ctx) as client:
         res = client.exists(key, ctx.obj['REMOTE_ENDPOINT_UUID'])
-    logger.info(f'Object exists: {res}')
+    logger.info('Object exists: %s', res)
 
 
 @test.command()
@@ -287,7 +286,7 @@ def get(ctx: click.Context, key: str) -> None:
         logger.info('Object does not exist.')
     else:
         obj = deserialize(res)
-        logger.info(f'Result: {obj}')
+        logger.info('Result: %s', obj)
 
 
 @test.command()
@@ -298,4 +297,4 @@ def put(ctx: click.Context, data: str) -> None:
     key = str(uuid.uuid4())
     with _endpoint_client(ctx) as client:
         client.set(key, serialize(data), ctx.obj['REMOTE_ENDPOINT_UUID'])
-    logger.info(f'Put object in endpoint with key {key}')
+    logger.info('Put object in endpoint with key %s', key)

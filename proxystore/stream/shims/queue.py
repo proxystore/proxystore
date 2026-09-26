@@ -109,4 +109,3 @@ class QueueSubscriber:
 
     def close(self) -> None:
         """Close this subscriber."""
-        pass

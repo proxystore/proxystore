@@ -6,7 +6,7 @@ from proxystore.store.cache import LRUCache
 
 
 def test_lru_raises() -> None:
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match='Cache size must'):
         LRUCache(-1)
 
 

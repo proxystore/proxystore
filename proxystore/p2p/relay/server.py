@@ -104,7 +104,7 @@ class RelayServer(Generic[UserT]):
         try:
             message_str = encode_relay_message(message)
         except RelayMessageEncodeError as e:
-            logger.error(f'Failed to encode message: {e}')
+            logger.error('Failed to encode message: %s', e)
             return
 
         try:
@@ -137,9 +137,11 @@ class RelayServer(Generic[UserT]):
                 websocket.request.headers,
             )
         except RelayServerError as e:
-            logging.warning(
-                'Failed to authenticate connection request from '
-                f'{websocket.remote_address}. {e.__class__.__name__}: {e}',
+            logger.warning(
+                'Failed to authenticate connection request from %s. %s: %s',
+                websocket.remote_address,
+                e.__class__.__name__,
+                e,
             )
             raise
 
@@ -150,9 +152,10 @@ class RelayServer(Generic[UserT]):
                 and existing_client.websocket != websocket
             ):
                 logger.info(
-                    f'Previously registered client {request.uuid} attempting '
+                    'Previously registered client %s attempting '
                     'to reregister on new socket so old socket associated '
                     'with existing registration will be closed',
+                    request.uuid,
                 )
                 await self.unregister(
                     existing_client,
@@ -165,8 +168,10 @@ class RelayServer(Generic[UserT]):
                 )
             elif existing_client.user != auth_user:
                 logger.warning(
-                    f'User {auth_user} is attempting to register with a UUID'
-                    f' ({request.uuid}) that is owned by a different user.',
+                    'User %s is attempting to register with a UUID'
+                    ' (%s) that is owned by a different user.',
+                    auth_user,
+                    request.uuid,
                 )
                 raise ForbiddenError(
                     f'The client UUID {request.uuid} is already registered '
@@ -180,7 +185,7 @@ class RelayServer(Generic[UserT]):
             websocket=websocket,
         )
         self.client_manager.add_client(client)
-        logger.info(f'Registered client: {client}')
+        logger.info('Registered client: %s', client)
 
         await self.send(client, RelayResponse(success=True))
 
@@ -198,8 +203,10 @@ class RelayServer(Generic[UserT]):
             reason: Close reason.
         """
         logger.info(
-            f'Unregistering client {client.uuid} ({client.name}) '
-            f'with code {code}',
+            'Unregistering client %s (%s) with code %s',
+            client.uuid,
+            client.name,
+            code,
         )
         self.client_manager.remove_client(client)
         await client.websocket.close(code=code, reason=reason)
@@ -223,9 +230,10 @@ class RelayServer(Generic[UserT]):
         )
         if target_client is None:
             logger.warning(
-                f'Client {source_client.uuid} ({source_client.name}) '
-                'attempting to send message to unknown peer '
-                f'{request.peer_uuid}',
+                'Client %s (%s) attempting to send message to unknown peer %s',
+                source_client.uuid,
+                source_client.name,
+                request.peer_uuid,
             )
             request.error = (
                 'Cannot forward peer connection message to peer '
@@ -237,9 +245,12 @@ class RelayServer(Generic[UserT]):
 
         if source_client.user != target_client.user:
             logger.warning(
-                f'Client {source_client.uuid} ({source_client.name}) '
+                'Client %s (%s) '
                 'attempting to send message to peer '
-                f'{request.peer_uuid} owned by another user',
+                '%s owned by another user',
+                source_client.uuid,
+                source_client.name,
+                request.peer_uuid,
             )
             request.error = (
                 f'The requested peer {request.peer_uuid} is owned by a '
@@ -248,9 +259,11 @@ class RelayServer(Generic[UserT]):
             await self.send(source_client, request)
         else:
             logger.info(
-                f'Transmitting message from {source_client.uuid} '
-                f'({source_client.name}) to {target_client.uuid} '
-                f'({target_client.name})',
+                'Transmitting message from %s (%s) to %s (%s)',
+                source_client.uuid,
+                source_client.name,
+                target_client.uuid,
+                target_client.name,
             )
             await self.send(target_client, request)
 
@@ -266,10 +279,12 @@ class RelayServer(Generic[UserT]):
             client = self.client_manager.get_client_by_websocket(websocket)
             if client is None:
                 logger.warning(
-                    f'Unregistered client at {websocket.remote_address} '
-                    f'and claimed client UUID {message.source_uuid} '
+                    'Unregistered client at %s '
+                    'and claimed client UUID %s '
                     'attempting to forward peer request without being '
                     'registered.',
+                    websocket.remote_address,
+                    message.source_uuid,
                 )
                 raise ForbiddenError(
                     'Client has not registered and authenticated with the '
@@ -316,10 +331,13 @@ class RelayServer(Generic[UserT]):
                     reason='Message length exceeds limit.',
                 )
                 logger.warning(
-                    f'Client at {websocket.remote_address} sent message with '
-                    f'size {sys.getsizeof(message_str)} bytes which exceeds '
-                    f'the max configured size of {self._max_message_bytes} '
+                    'Client at %s sent message with '
+                    'size %s bytes which exceeds '
+                    'the max configured size of %s '
                     'bytes. Connection closed with error code 4003',
+                    websocket.remote_address,
+                    sys.getsizeof(message_str),
+                    self._max_message_bytes,
                 )
                 break
 
@@ -333,7 +351,9 @@ class RelayServer(Generic[UserT]):
                 logger.error(
                     'Closing websocket because deserialization error was '
                     'caught on message received from '
-                    f'{websocket.remote_address}. {e}',
+                    '%s. %s',
+                    websocket.remote_address,
+                    e,
                 )
                 await websocket.close(4000, reason='Unknown message type.')
                 break

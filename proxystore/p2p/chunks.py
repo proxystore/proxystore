@@ -147,8 +147,7 @@ def reconstruct(chunks: list[Chunk]) -> bytes | str:
         raise ValueError(f'Got {len(chunks)} but expected {seq_len}.')
     chunks = sorted(chunks, key=lambda c: c.seq_id)
     if isinstance(chunks[0].data, bytes):
-        return b''.join(c.data for c in chunks)  # type: ignore
-    elif isinstance(chunks[0].data, str):
-        return ''.join(c.data for c in chunks)  # type: ignore
-    else:
-        raise AssertionError('Unreachable.')
+        return b''.join(c.data for c in chunks)  # type: ignore[misc]
+    if isinstance(chunks[0].data, str):
+        return ''.join(c.data for c in chunks)  # type: ignore[misc]
+    raise AssertionError('Unreachable.')
