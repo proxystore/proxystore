@@ -39,6 +39,7 @@ from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import HEADER
+from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Op
@@ -48,6 +49,7 @@ from proxystore.endpoint.protocol import PREAMBLE
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import unpack_preamble
+from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import _serve_async
 from proxystore.endpoint.serve import ClientConnection
@@ -115,8 +117,7 @@ async def test_operations(server: _Server) -> None:
     client = await _connect(server)
     assert client.info.uuid == server.endpoint.uuid
     assert client.info.name == server.endpoint.name
-    assert client.info.proxystore_version == local_versions()['proxystore']
-    assert client.info.python_version == local_versions()['python']
+    assert client.info.versions == local_versions()
 
     small, large = b'value', randbytes(5_000_000)
     await asyncio.to_thread(client.set, 'small', small)
@@ -153,7 +154,7 @@ async def test_client_wrong_token(server: _Server) -> None:
 
 def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     client_nonce = os.urandom(32)
-    hello = {'nonce': client_nonce.hex(), **local_versions()}
+    hello = Hello(client_nonce, local_versions()).to_meta()
     sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
     assert unpack_preamble(bytes(_recv_exactly(sock, PREAMBLE.size))) == 1
     header, meta = _recv_message(sock)
@@ -215,6 +216,20 @@ async def test_protocol_version_mismatch(server: _Server) -> None:
         pack_preamble() + pack_message(Op.HELLO, {}),
         # HELLO has malformed metadata
         pack_preamble() + HEADER.pack(Op.HELLO, 0, 2, 0) + b'[]',
+        # HELLO nonce is too short
+        pack_preamble()
+        + pack_message(
+            Op.HELLO,
+            Hello(os.urandom(16), local_versions()).to_meta(),
+        ),
+        # HELLO contains data
+        pack_preamble()
+        + pack_message(
+            Op.HELLO,
+            Hello(os.urandom(32), local_versions()).to_meta(),
+            data_len=1,
+        )
+        + b'x',
     ),
 )
 async def test_bad_handshake_closes_connection(
@@ -727,10 +742,10 @@ async def test_http_request_rejected(server: _Server, caplog) -> None:
     assert any('Rejecting HTTP request' in r.message for r in caplog.records)
 
 
-def _raw_handshake(server: _Server, versions: dict[str, str]) -> None:
+def _raw_handshake(server: _Server, versions: Versions) -> None:
     with _raw_socket(server) as sock:
         client_nonce = os.urandom(32)
-        hello = {'nonce': client_nonce.hex(), **versions}
+        hello = Hello(client_nonce, versions).to_meta()
         sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
         _recv_exactly(sock, PREAMBLE.size)
         _, meta = _recv_message(sock)
@@ -759,7 +774,7 @@ async def test_client_version_mismatch_logged_once(
     await asyncio.to_thread(_raw_handshake, server, local_versions())
     assert len(_warnings()) == 0
 
-    versions = {'proxystore': '0.0.1', 'python': '2.7.18'}
+    versions = Versions(proxystore='0.0.1', python='2.7.18')
     await asyncio.to_thread(_raw_handshake, server, versions)
     await asyncio.to_thread(_raw_handshake, server, versions)
     assert len(_warnings()) == 1

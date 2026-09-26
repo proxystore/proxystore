@@ -22,7 +22,6 @@ import uuid
 import warnings
 from types import TracebackType
 from typing import Any
-from typing import NamedTuple
 from typing import Self
 
 from proxystore.endpoint.auth import certificate_fingerprint
@@ -34,9 +33,13 @@ from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.protocol import Auth
+from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
+from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
@@ -55,25 +58,6 @@ from proxystore.warnings import EndpointVersionWarning
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
 _COALESCE_THRESHOLD = 64 * 1024
-
-
-class EndpointInfo(NamedTuple):
-    """Information about an endpoint received during the handshake.
-
-    Attributes:
-        uuid: UUID of the endpoint.
-        name: Name of the endpoint.
-        proxystore_version: ProxyStore version of the endpoint.
-        python_version: Python version of the endpoint.
-        max_object_size: Maximum size in bytes of objects that can be set
-            on the endpoint or `None` if there is no limit.
-    """
-
-    uuid: uuid.UUID
-    name: str
-    proxystore_version: str
-    python_version: str
-    max_object_size: int | None
 
 
 class EndpointClient:
@@ -171,11 +155,7 @@ class EndpointClient:
             sock.close()
             raise
 
-        endpoint_versions = {
-            'proxystore': info.proxystore_version,
-            'python': info.python_version,
-        }
-        mismatches = version_mismatches(local_versions(), endpoint_versions)
+        mismatches = version_mismatches(local_versions(), info.versions)
         if len(mismatches) > 0:
             warnings.warn(
                 f'Endpoint {info.name} ({info.uuid}) uses different versions '
@@ -361,9 +341,8 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
 
 
 def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
-    client_nonce = os.urandom(NONCE_SIZE)
-    hello = {'nonce': client_nonce.hex(), **local_versions()}
-    sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello))
+    hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=local_versions())
+    sock.sendall(pack_preamble() + pack_message(Op.HELLO, hello.to_meta()))
 
     preamble = _recv_exactly(sock, PREAMBLE.size)
     if preamble.startswith(b'HTTP/'):
@@ -383,22 +362,14 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             f'ProxyStore for the client and endpoint. See {VERSION_DOCS_URL} '
             'for details.',
         )
-    header, meta = _recv_message(sock)
-    _check_status(header, meta, 'handshake')
 
-    try:
-        server_nonce = bytes.fromhex(meta['nonce'])
-        server_proof = bytes.fromhex(meta['proof'])
-    except (KeyError, TypeError, ValueError) as e:
-        raise EndpointProtocolError(
-            f'Malformed handshake response from endpoint: {e!r}',
-        ) from e
+    challenge = Challenge.from_meta(_recv_handshake_message(sock))
     if not verify_proof(
         token,
         'server',
-        server_nonce,
-        client_nonce,
-        server_proof,
+        challenge.nonce,
+        hello.nonce,
+        challenge.proof,
     ):
         raise EndpointAuthError(
             'The endpoint failed to prove that it knows the endpoint token. '
@@ -407,37 +378,30 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             'read.',
         )
 
-    client_proof = compute_proof(token, 'client', client_nonce, server_nonce)
-    sock.sendall(pack_message(Op.AUTH, {'proof': client_proof.hex()}))
+    proof = compute_proof(token, 'client', hello.nonce, challenge.nonce)
+    sock.sendall(pack_message(Op.AUTH, Auth(proof).to_meta()))
 
+    return EndpointInfo.from_meta(_recv_handshake_message(sock))
+
+
+def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
     header, meta = _recv_message(sock)
     if header.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
             'have been restarted since the token was read.',
         )
-    _check_status(header, meta, 'handshake')
-
-    try:
-        return EndpointInfo(
-            uuid=uuid.UUID(meta['uuid']),
-            name=meta['name'],
-            proxystore_version=meta['proxystore'],
-            python_version=meta['python'],
-            max_object_size=meta['max_object_size'],
-        )
-    except (KeyError, TypeError, ValueError) as e:
-        raise EndpointProtocolError(
-            f'Malformed handshake response from endpoint: {e!r}',
-        ) from e
-
-
-def _check_status(header: Header, meta: dict[str, Any], stage: str) -> None:
-    if header.code != Status.OK:
+    elif header.code != Status.OK:
         error = meta.get('error', 'no error message provided')
         raise EndpointProtocolError(
-            f'Endpoint returned status {header.code} during {stage}: {error}',
+            f'Endpoint returned status {header.code} during the handshake: '
+            f'{error}',
         )
+    elif header.data_len != 0:
+        raise EndpointProtocolError(
+            'Endpoint sent data in a handshake message.',
+        )
+    return meta
 
 
 def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:

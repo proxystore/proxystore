@@ -40,7 +40,7 @@ def _info(**overrides: Any) -> dict[str, Any]:
         'uuid': str(ENDPOINT_UUID),
         'name': 'fake',
         'max_object_size': None,
-        **local_versions(),
+        **local_versions()._asdict(),
     }
     info.update(overrides)
     return info
@@ -144,6 +144,31 @@ def test_handshake_error_status(fake_server) -> None:
 def test_handshake_malformed_hello_response(fake_server) -> None:
     port = fake_server(lambda conn: _server_hello(conn, meta={'nonce': 'x'}))
     with pytest.raises(EndpointProtocolError, match='Malformed'):
+        EndpointClient.connect('127.0.0.1', port, TOKEN)
+
+
+def test_handshake_short_nonce(fake_server) -> None:
+    nonce, proof = os.urandom(16), os.urandom(32)
+    port = fake_server(
+        lambda conn: _server_hello(
+            conn,
+            meta={'nonce': nonce.hex(), 'proof': proof.hex()},
+        ),
+    )
+    with pytest.raises(EndpointProtocolError, match="invalid 'nonce'"):
+        EndpointClient.connect('127.0.0.1', port, TOKEN)
+
+
+def test_handshake_message_with_data(fake_server) -> None:
+    def _script(conn: socket.socket) -> None:
+        _recv_exactly(conn, PREAMBLE.size)
+        _recv_message(conn)
+        conn.sendall(
+            pack_preamble() + pack_message(Status.OK, {}, data_len=1) + b'x',
+        )
+
+    port = fake_server(_script)
+    with pytest.raises(EndpointProtocolError, match='sent data'):
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 
@@ -267,7 +292,7 @@ def test_version_mismatch_warning(fake_server) -> None:
 
 
 def test_python_patch_version_no_warning(fake_server) -> None:
-    major, minor, _ = local_versions()['python'].split('.', 2)
+    major, minor, _ = local_versions().python.split('.', 2)
     port = fake_server(_handshake_with_info(python=f'{major}.{minor}.999'))
     with warnings.catch_warnings():
         warnings.simplefilter('error', EndpointVersionWarning)

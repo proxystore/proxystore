@@ -29,12 +29,15 @@ payload.
 
 from __future__ import annotations
 
+import dataclasses
 import enum
 import json
 import platform
 import struct
+import uuid
 from typing import Any
 from typing import NamedTuple
+from typing import Self
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -112,18 +115,24 @@ class Header(NamedTuple):
     data_len: int
 
 
-def local_versions() -> dict[str, str]:
+class Versions(NamedTuple):
+    """ProxyStore and Python versions of a client or endpoint.
+
+    Attributes:
+        proxystore: ProxyStore version.
+        python: Python version.
+    """
+
+    proxystore: str
+    python: str
+
+
+def local_versions() -> Versions:
     """Get the ProxyStore and Python versions of this process."""
-    return {
-        'proxystore': proxystore.__version__,
-        'python': platform.python_version(),
-    }
+    return Versions(proxystore.__version__, platform.python_version())
 
 
-def version_mismatches(
-    client: dict[str, str],
-    endpoint: dict[str, str],
-) -> list[str]:
+def version_mismatches(client: Versions, endpoint: Versions) -> list[str]:
     """Find version differences between a client and endpoint.
 
     The ProxyStore versions must match exactly. The Python versions must
@@ -132,8 +141,7 @@ def version_mismatches(
     compatible.
 
     Args:
-        client: Versions of the client (see
-            [`local_versions()`][proxystore.endpoint.protocol.local_versions]).
+        client: Versions of the client.
         endpoint: Versions of the endpoint.
 
     Returns:
@@ -141,22 +149,191 @@ def version_mismatches(
         are compatible.
     """
     mismatches = []
-
-    client_ps = client.get('proxystore', 'unknown')
-    endpoint_ps = endpoint.get('proxystore', 'unknown')
-    if client_ps != endpoint_ps:
+    if client.proxystore != endpoint.proxystore:
         mismatches.append(
-            f'ProxyStore {client_ps} (client) vs. {endpoint_ps} (endpoint)',
+            f'ProxyStore {client.proxystore} (client) vs. '
+            f'{endpoint.proxystore} (endpoint)',
         )
-
-    client_py = client.get('python', 'unknown')
-    endpoint_py = endpoint.get('python', 'unknown')
-    if client_py.split('.')[:2] != endpoint_py.split('.')[:2]:
+    if client.python.split('.')[:2] != endpoint.python.split('.')[:2]:
         mismatches.append(
-            f'Python {client_py} (client) vs. {endpoint_py} (endpoint)',
+            f'Python {client.python} (client) vs. {endpoint.python} '
+            '(endpoint)',
         )
-
     return mismatches
+
+
+@dataclasses.dataclass(frozen=True)
+class Hello:
+    """First message of the handshake sent by the client.
+
+    Attributes:
+        nonce: Random nonce chosen by the client.
+        versions: Versions of the client.
+    """
+
+    nonce: bytes
+    versions: Versions
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return {'nonce': self.nonce.hex(), **self.versions._asdict()}
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        return cls(
+            nonce=_get_hex(meta, 'nonce', cls, size=NONCE_SIZE),
+            versions=_get_versions(meta, cls),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class Challenge:
+    """Reply of the endpoint to [`Hello`][proxystore.endpoint.protocol.Hello].
+
+    Attributes:
+        nonce: Random nonce chosen by the endpoint.
+        proof: Proof that the endpoint knows the token.
+    """
+
+    nonce: bytes
+    proof: bytes
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return {'nonce': self.nonce.hex(), 'proof': self.proof.hex()}
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        return cls(
+            nonce=_get_hex(meta, 'nonce', cls, size=NONCE_SIZE),
+            proof=_get_hex(meta, 'proof', cls),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class Auth:
+    """Second message of the handshake with the proof of the client.
+
+    Attributes:
+        proof: Proof that the client knows the token.
+    """
+
+    proof: bytes
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return {'proof': self.proof.hex()}
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        return cls(proof=_get_hex(meta, 'proof', cls))
+
+
+@dataclasses.dataclass(frozen=True)
+class EndpointInfo:
+    """Information about an endpoint sent at the end of the handshake.
+
+    Attributes:
+        uuid: UUID of the endpoint.
+        name: Name of the endpoint.
+        versions: Versions of the endpoint.
+        max_object_size: Maximum size in bytes of objects that can be set
+            on the endpoint or `None` if there is no limit.
+    """
+
+    uuid: uuid.UUID
+    name: str
+    versions: Versions
+    max_object_size: int | None
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return {
+            'uuid': str(self.uuid),
+            'name': self.name,
+            'max_object_size': self.max_object_size,
+            **self.versions._asdict(),
+        }
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        uuid_str = _get(meta, 'uuid', str, cls)
+        try:
+            endpoint_uuid = uuid.UUID(uuid_str)
+        except ValueError:
+            raise _malformed(cls, 'uuid') from None
+        return cls(
+            uuid=endpoint_uuid,
+            name=_get(meta, 'name', str, cls),
+            versions=_get_versions(meta, cls),
+            max_object_size=_get(
+                meta,
+                'max_object_size',
+                (int, type(None)),
+                cls,
+            ),
+        )
+
+
+def _malformed(message: type, field: str) -> EndpointProtocolError:
+    return EndpointProtocolError(
+        f'Malformed {message.__name__} message: missing or invalid '
+        f'{field!r} field.',
+    )
+
+
+def _get(
+    meta: dict[str, Any],
+    field: str,
+    kind: type | tuple[type, ...],
+    message: type,
+) -> Any:
+    if field not in meta or not isinstance(meta[field], kind):
+        raise _malformed(message, field)
+    return meta[field]
+
+
+def _get_hex(
+    meta: dict[str, Any],
+    field: str,
+    message: type,
+    *,
+    size: int | None = None,
+) -> bytes:
+    try:
+        value = bytes.fromhex(_get(meta, field, str, message))
+    except ValueError:
+        raise _malformed(message, field) from None
+    if size is not None and len(value) != size:
+        raise _malformed(message, field)
+    return value
+
+
+def _get_versions(meta: dict[str, Any], message: type) -> Versions:
+    return Versions(
+        proxystore=_get(meta, 'proxystore', str, message),
+        python=_get(meta, 'python', str, message),
+    )
 
 
 def pack_preamble(version: int = PROTOCOL_VERSION) -> bytes:

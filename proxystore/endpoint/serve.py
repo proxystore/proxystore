@@ -44,9 +44,13 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.protocol import Auth
+from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
+from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import HEADER
 from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import HTTP_METHODS
 from proxystore.endpoint.protocol import local_versions
 from proxystore.endpoint.protocol import NONCE_SIZE
@@ -60,6 +64,7 @@ from proxystore.endpoint.protocol import unpack_header
 from proxystore.endpoint.protocol import unpack_preamble
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import version_mismatches
+from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
@@ -296,7 +301,7 @@ class EndpointServer:
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
         self._connections: set[ClientConnection] = set()
-        self._warned_versions: set[tuple[str, str]] = set()
+        self._warned_versions: set[Versions] = set()
 
     async def start_server(
         self,
@@ -381,38 +386,22 @@ class EndpointServer:
             await _reply_and_close(conn, pack_preamble())
             return False
 
-        header, meta = await _read_message(conn)
-        if header.code != Op.HELLO:
-            raise EndpointProtocolError(
-                f'Expected HELLO message but got op {header.code}.',
-            )
-        client_nonce = _decode_hex(meta, 'nonce')
-        client_versions = {
-            'proxystore': str(meta.get('proxystore', 'unknown')),
-            'python': str(meta.get('python', 'unknown')),
-        }
-
-        server_nonce = os.urandom(NONCE_SIZE)
-        proof = compute_proof(self.token, 'server', server_nonce, client_nonce)
-        conn.write(pack_preamble())
-        await _send(
-            conn,
-            Status.OK,
-            {'nonce': server_nonce.hex(), 'proof': proof.hex()},
+        hello = Hello.from_meta(await _read_handshake_message(conn, Op.HELLO))
+        nonce = os.urandom(NONCE_SIZE)
+        challenge = Challenge(
+            nonce=nonce,
+            proof=compute_proof(self.token, 'server', nonce, hello.nonce),
         )
+        conn.write(pack_preamble())
+        await _send(conn, Status.OK, challenge.to_meta())
 
-        header, meta = await _read_message(conn)
-        if header.code != Op.AUTH:
-            raise EndpointProtocolError(
-                f'Expected AUTH message but got op {header.code}.',
-            )
-        client_proof = _decode_hex(meta, 'proof')
+        auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
         if not verify_proof(
             self.token,
             'client',
-            client_nonce,
-            server_nonce,
-            client_proof,
+            hello.nonce,
+            challenge.nonce,
+            auth.proof,
         ):
             logger.warning(
                 f'Rejecting connection from {peer} because the client '
@@ -421,26 +410,21 @@ class EndpointServer:
             await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
             return False
 
-        self._check_client_versions(peer, client_versions)
-        info = {
-            'uuid': str(self.endpoint.uuid),
-            'name': self.endpoint.name,
-            'max_object_size': self.max_object_size,
-            **local_versions(),
-        }
-        await _send(conn, Status.OK, info)
+        self._check_client_versions(peer, hello.versions)
+        info = EndpointInfo(
+            uuid=self.endpoint.uuid,
+            name=self.endpoint.name,
+            versions=local_versions(),
+            max_object_size=self.max_object_size,
+        )
+        await _send(conn, Status.OK, info.to_meta())
         return True
 
-    def _check_client_versions(
-        self,
-        peer: Any,
-        client_versions: dict[str, str],
-    ) -> None:
-        mismatches = version_mismatches(client_versions, local_versions())
-        key = (client_versions['proxystore'], client_versions['python'])
-        if len(mismatches) > 0 and key not in self._warned_versions:
+    def _check_client_versions(self, peer: Any, versions: Versions) -> None:
+        mismatches = version_mismatches(versions, local_versions())
+        if len(mismatches) > 0 and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.
-            self._warned_versions.add(key)
+            self._warned_versions.add(versions)
             logger.warning(
                 f'Client {peer} uses different versions than this endpoint: '
                 f'{"; ".join(mismatches)}. Objects serialized in one '
@@ -554,12 +538,20 @@ def _parse_request(meta: dict[str, Any]) -> tuple[str, uuid.UUID | None]:
         raise ValueError(f'{endpoint_str} is not a valid UUID4') from None
 
 
-async def _read_message(
+async def _read_handshake_message(
     conn: ClientConnection,
-) -> tuple[Header, dict[str, Any]]:
+    expected: Op,
+) -> dict[str, Any]:
     header = unpack_header(await conn.readexactly(HEADER.size))
-    meta = decode_meta(await conn.readexactly(header.meta_len))
-    return header, meta
+    if header.code != expected:
+        raise EndpointProtocolError(
+            f'Expected {expected.name} message but got op {header.code}.',
+        )
+    elif header.data_len != 0:
+        raise EndpointProtocolError(
+            f'Client sent data in a {expected.name} message.',
+        )
+    return decode_meta(await conn.readexactly(header.meta_len))
 
 
 async def _send(
@@ -589,7 +581,7 @@ async def _reply_and_close(conn: ClientConnection, data: bytes) -> None:
 
 
 def _http_upgrade_response() -> bytes:
-    version = local_versions()['proxystore']
+    version = local_versions().proxystore
     body = (
         f'This endpoint uses ProxyStore {version} which no longer supports '
         'the HTTP API used by older versions of ProxyStore. Upgrade '
@@ -604,15 +596,6 @@ def _http_upgrade_response() -> bytes:
         '\r\n'
     ).encode()
     return headers + body
-
-
-def _decode_hex(meta: dict[str, Any], field: str) -> bytes:
-    try:
-        return bytes.fromhex(meta[field])
-    except (KeyError, TypeError, ValueError) as e:
-        raise EndpointProtocolError(
-            f'Handshake message has missing or invalid {field!r} field.',
-        ) from e
 
 
 def _get_auth_headers(
