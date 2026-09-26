@@ -268,7 +268,13 @@ class EndpointClient:
             EndpointError: If the request fails.
         """
         _, meta, _ = self._request(Op.EXISTS, key, endpoint)
-        return bool(meta.get('exists'))
+        exists = meta.get('exists')
+        if not isinstance(exists, bool):
+            raise EndpointProtocolError(
+                'Malformed EXISTS response: missing or invalid '
+                "'exists' field.",
+            )
+        return exists
 
     def get(
         self,

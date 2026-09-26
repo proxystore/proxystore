@@ -236,6 +236,17 @@ def _respond_with(status: int, meta: dict[str, Any] | None = None) -> Script:
     return _script
 
 
+@pytest.mark.parametrize('meta', (None, {'exists': 'yes'}))
+def test_exists_malformed_response(
+    meta: dict[str, Any] | None,
+    fake_server,
+) -> None:
+    port = fake_server(_respond_with(Status.OK, meta))
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        with pytest.raises(EndpointProtocolError, match='Malformed EXISTS'):
+            client.exists('key')
+
+
 def test_request_error_no_message(fake_server) -> None:
     port = fake_server(_respond_with(Status.ERROR))
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
