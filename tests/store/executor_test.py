@@ -47,7 +47,9 @@ def test_default_behavior(
     base_executor: Executor
     if base_executor_type is ProcessPoolExecutor:
         context = multiprocessing.get_context('spawn')
-        base_executor = base_executor_type(mp_context=context)
+        # Spawned workers are all started up front, and idle workers that
+        # never run a task make coverage warn that no data was collected.
+        base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
     store = Store(
@@ -88,7 +90,9 @@ def test_proxy_behavior(
     base_executor: Executor
     if base_executor_type is ProcessPoolExecutor:
         context = multiprocessing.get_context('spawn')
-        base_executor = base_executor_type(mp_context=context)
+        # Spawned workers are all started up front, and idle workers that
+        # never run a task make coverage warn that no data was collected.
+        base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
     store = Store(

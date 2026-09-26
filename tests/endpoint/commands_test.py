@@ -4,6 +4,8 @@ import logging
 import multiprocessing
 import os
 import pathlib
+import subprocess
+import sys
 import time
 import uuid
 from collections.abc import Generator
@@ -104,11 +106,10 @@ def test_is_own_process() -> None:
     assert not _is_own_process(0)
     assert not _is_own_process(-1)
 
-    context = multiprocessing.get_context('spawn')
-    p = context.Process(target=time.sleep, args=(0,))
-    p.start()
-    p.join()
-    assert p.pid is not None
+    # Use a plain subprocess because, under coverage, a multiprocessing child
+    # that runs no measured code warns that no data was collected.
+    p = subprocess.Popen([sys.executable, '-c', ''])
+    p.wait()
     assert not _is_own_process(p.pid)
 
     with mock.patch('os.kill', side_effect=PermissionError):
