@@ -221,9 +221,12 @@ permissions from its directory when it starts.
     configuration so the endpoint is not reachable from other nodes.
 
 By default, objects are sent between clients and the endpoint unencrypted.
-This is usually acceptable within a cluster because reading network traffic
-typically requires root access. To encrypt connections, configure the
-endpoint with TLS.
+The token only authenticates each side when a connection is established;
+the requests and responses that follow are not protected against tampering.
+This is usually acceptable within a cluster because reading or modifying
+network traffic typically requires root access. If clients connect to the
+endpoint over a network you do not trust, configure the endpoint with TLS to
+encrypt connections.
 
 ```bash
 $ proxystore-endpoint configure my-endpoint --tls
