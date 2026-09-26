@@ -207,9 +207,9 @@ def _produce_remote(
         return_value=home_dir,
     ):
         store = Store('store', EndpointConnector(endpoints))
-        # Send port to other process to compare
+        # Send the endpoint UUID to the other process to compare
         proxy: Proxy[Any] = store.proxy(
-            store.connector.endpoint_port,
+            store.connector.endpoint_uuid,
             populate_target=False,
         )
         queue.put(proxy)
@@ -221,14 +221,14 @@ def _consume_remote(queue: multiprocessing.Queue[Any], home_dir: str) -> None:
         'proxystore.connectors.endpoint.home_dir',
         return_value=home_dir,
     ):
-        port = queue.get()
+        endpoint_uuid = queue.get()
         # Just to force the proxy to resolve
-        assert isinstance(port, int)
+        assert isinstance(endpoint_uuid, uuid.UUID)
 
-        # Make sure consumer is using different port
+        # Make sure consumer is using a different endpoint
         store = get_store('store')
         assert isinstance(store, Store)
-        assert store.connector.endpoint_port != port
+        assert store.connector.endpoint_uuid != endpoint_uuid
 
 
 @pytest.mark.integration

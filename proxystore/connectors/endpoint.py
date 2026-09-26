@@ -18,9 +18,7 @@ from typing import TypeVar
 from uuid import UUID
 
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointError
@@ -86,60 +84,45 @@ class EndpointConnector:
         home = (
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
-        found: tuple[EndpointConfig, EndpointDir, EndpointClient] | None = None
+        failures: list[str] = []
+        found: tuple[UUID, EndpointDir, EndpointClient] | None = None
         for endpoint_dir, endpoint in EndpointDir.find_all(home):
             endpoint_uuid = UUID(endpoint.uuid)
             if endpoint_uuid not in self.endpoints:
                 continue
-            if endpoint.host is None:
-                logger.warning(
-                    'Found valid configuration for endpoint '
-                    f'"{endpoint.name}" ({endpoint_uuid}), but the endpoint '
-                    'has not been started',
-                )
-                continue
 
             logger.debug(f'Attempting connection to {endpoint_uuid}')
             try:
-                client = EndpointClient.from_dir(endpoint_dir)
-            except (EndpointAuthError, EndpointProtocolError) as e:
-                logger.warning(
-                    f'Connection to {endpoint_uuid} failed: {e}',
-                )
-                continue
+                client = _connect(endpoint_dir, endpoint_uuid)
             except EndpointError as e:
                 logger.debug(f'Connection to {endpoint_uuid} failed: {e!r}')
-                continue
-
-            if client.info.uuid != endpoint_uuid:
-                logger.debug(
-                    f'Connection to {endpoint_uuid} returned different UUID',
-                )
-                client.close()
+                failures.append(f'{endpoint.name} ({endpoint_uuid}): {e}')
                 continue
 
             logger.debug(
                 f'Connection to {endpoint_uuid} successful, using '
                 'as local endpoint',
             )
-            found = (endpoint, endpoint_dir, client)
+            found = (endpoint_uuid, endpoint_dir, client)
             break
 
         if found is None:
+            if len(failures) == 0:
+                raise EndpointConnectorError(
+                    'Failed to find an endpoint configuration in '
+                    f'{home} matching one of the provided endpoint UUIDs.',
+                )
+            reasons = '\n'.join(f'  - {failure}' for failure in failures)
             raise EndpointConnectorError(
-                'Failed to find an endpoint configuration matching one of the '
-                'provided endpoint UUIDs, or an endpoint configuration was '
-                'found but the endpoint could not be connected to. '
-                'Enable debug level logging for more more details.',
+                'Failed to connect to any of the endpoints matching the '
+                f'provided endpoint UUIDs:\n{reasons}',
             )
-        found_config, found_dir, client = found
-        self.endpoint_uuid: uuid.UUID = uuid.UUID(found_config.uuid)
-        self.endpoint_host: str | None = found_config.host
-        self.endpoint_port: int = found_config.port
-        self.address = f'{self.endpoint_host}:{self.endpoint_port}'
+        endpoint_uuid, endpoint_dir, client = found
+        self.endpoint_uuid: uuid.UUID = endpoint_uuid
+        self.endpoint_dir = endpoint_dir
 
         self._pool = _ConnectionPool(
-            lambda: EndpointClient.from_dir(found_dir),
+            lambda: _connect(endpoint_dir, endpoint_uuid),
         )
         self._pool.add(client)
 
@@ -157,7 +140,7 @@ class EndpointConnector:
     def __repr__(self) -> str:
         return (
             f'{self.__class__.__name__}(connected to {self.endpoint_uuid} '
-            f'@ {self.address})'
+            f'in {self.endpoint_dir})'
         )
 
     def close(self) -> None:
@@ -315,6 +298,17 @@ class EndpointConnector:
             'Set',
             lambda client: client.set(key.object_id, obj, key.endpoint_id),
         )
+
+
+def _connect(endpoint_dir: EndpointDir, endpoint_uuid: UUID) -> EndpointClient:
+    client = EndpointClient.from_dir(endpoint_dir)
+    if client.info.uuid != endpoint_uuid:
+        client.close()
+        raise EndpointProtocolError(
+            f'Expected endpoint {endpoint_uuid} but the endpoint running in '
+            f'{endpoint_dir} is {client.info.uuid}.',
+        )
+    return client
 
 
 class _ConnectionPool:

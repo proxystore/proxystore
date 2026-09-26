@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import pathlib
 import threading
 import uuid
@@ -38,67 +37,39 @@ def test_no_endpoints_match(endpoint_connector) -> None:
         )
 
 
-def test_endpoint_not_started(tmp_path: pathlib.Path, caplog) -> None:
+def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:
     endpoint_uuid = uuid.uuid4()
-    config = EndpointConfig(
-        name='test',
-        uuid=str(endpoint_uuid),
-        port=1,
-        host=None,
-    )
-    config_path = tmp_path / 'test'
-    EndpointDir(str(config_path)).write_config(config)
+    config = EndpointConfig(name='test', uuid=str(endpoint_uuid), port=1)
+    EndpointDir(str(tmp_path / 'test')).write_config(config)
 
-    caplog.set_level(logging.INFO)
-    with pytest.raises(EndpointConnectorError, match='Failed to find'):
+    with pytest.raises(EndpointConnectorError) as exc_info:
         EndpointConnector(
             endpoints=[endpoint_uuid],
             proxystore_dir=str(tmp_path),
         )
-
-    message = (
-        f'Found valid configuration for endpoint "test" ({endpoint_uuid}), '
-        'but the endpoint has not been started'
-    )
-    assert any([message == record.message for record in caplog.records])
-
-
-def test_endpoint_missing_token(
-    endpoint: EndpointConfig,
-    endpoint_dir: EndpointDir,
-    tmp_path: pathlib.Path,
-    caplog,
-) -> None:
-    copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    os.remove(copied_dir.connection_path)
-
-    caplog.set_level(logging.DEBUG)
-    with pytest.raises(EndpointConnectorError, match='Failed to find'):
-        EndpointConnector([endpoint.uuid], proxystore_dir=str(tmp_path))
-    assert any('Is the endpoint running?' in r.message for r in caplog.records)
+    message = str(exc_info.value)
+    assert 'Failed to connect' in message
+    assert f'test ({endpoint_uuid})' in message
+    assert 'Is the endpoint running?' in message
 
 
 def test_endpoint_wrong_token(
     endpoint: EndpointConfig,
     endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
-    caplog,
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
     info = copied_dir.read_connection()
     copied_dir.write_connection(info._replace(token=generate_token()))
 
-    caplog.set_level(logging.WARNING)
-    with pytest.raises(EndpointConnectorError, match='Failed to find'):
+    with pytest.raises(EndpointConnectorError, match='failed to prove'):
         EndpointConnector([endpoint.uuid], proxystore_dir=str(tmp_path))
-    assert any('failed to prove' in r.message for r in caplog.records)
 
 
 def test_endpoint_uuid_mismatch(
     endpoint: EndpointConfig,
     endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
-    caplog,
 ) -> None:
     # Config has a different UUID than the endpoint running on the host/port
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
@@ -106,10 +77,8 @@ def test_endpoint_uuid_mismatch(
     config.uuid = str(uuid.uuid4())
     copied_dir.write_config(config)
 
-    caplog.set_level(logging.DEBUG)
-    with pytest.raises(EndpointConnectorError, match='Failed to find'):
+    with pytest.raises(EndpointConnectorError, match='Expected endpoint'):
         EndpointConnector([config.uuid], proxystore_dir=str(tmp_path))
-    assert any('different UUID' in r.message for r in caplog.records)
 
 
 def test_request_error(endpoint_connector) -> None:
