@@ -112,10 +112,7 @@ class EndpointConnector:
                     f'Connection to {endpoint_uuid} failed: {e}',
                 )
                 continue
-            except (EndpointError, OSError, ValueError) as e:
-                # OSError includes a missing token file which indicates the
-                # endpoint is not running, and ValueError is a malformed
-                # token file.
+            except (EndpointError, OSError) as e:
                 logger.debug(f'Connection to {endpoint_uuid} failed: {e!r}')
                 continue
 

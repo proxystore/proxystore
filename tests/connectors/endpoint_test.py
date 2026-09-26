@@ -75,7 +75,7 @@ def test_endpoint_missing_token(
     caplog.set_level(logging.DEBUG)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
         EndpointConnector([endpoint.uuid], proxystore_dir=str(tmp_path))
-    assert any('No such file' in r.message for r in caplog.records)
+    assert any('Is the endpoint running?' in r.message for r in caplog.records)
 
 
 def test_endpoint_wrong_token(

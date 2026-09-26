@@ -43,6 +43,16 @@ class EndpointConnectionError(EndpointError):
     pass
 
 
+class EndpointNotRunningError(EndpointError):
+    """Exception raised when connecting to an endpoint that is not running.
+
+    This is raised when the endpoint has never been started (i.e., its
+    configuration has no host) or its credential files do not exist.
+    """
+
+    pass
+
+
 class EndpointProtocolError(EndpointError):
     """Exception raised for malformed or incompatible protocol messages."""
 

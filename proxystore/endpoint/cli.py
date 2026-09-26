@@ -263,12 +263,6 @@ def _endpoint_client(
     try:
         with EndpointClient.from_dir(ctx.obj['ENDPOINT_DIR']) as client:
             yield client
-    except FileNotFoundError:
-        logger.error(
-            f'Unable to find the token or certificate file of endpoint '
-            f'{cfg.name}. Is the endpoint running?',
-        )
-        sys.exit(1)
     except OSError as e:
         logger.error(
             f'Unable to connect to endpoint at {cfg.host}:{cfg.port}.'

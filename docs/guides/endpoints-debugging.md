@@ -75,7 +75,7 @@ with EndpointClient.from_dir(EndpointDir(path)) as client:
 
 ### Common Errors
 
-* **Unable to find the token or certificate file**: The endpoint is not
+* **Unable to find the credentials of endpoint**: The endpoint is not
   running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
 * **The endpoint failed to prove that it knows the endpoint token**: The

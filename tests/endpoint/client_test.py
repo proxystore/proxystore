@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import pathlib
 import socket
 import struct
 import threading
@@ -21,6 +22,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.protocol import pack_message
@@ -302,9 +304,33 @@ def test_python_patch_version_no_warning(fake_server) -> None:
     client.close()
 
 
-def test_from_dir_not_started(tmp_path) -> None:
+def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     endpoint_dir = EndpointDir(str(tmp_path))
-    config = EndpointConfig(name='test', uuid=str(uuid.uuid4()), port=1)
+    config = EndpointConfig(
+        name='test',
+        uuid=str(uuid.uuid4()),
+        port=1,
+        **kwargs,
+    )
     endpoint_dir.write_config(config)
-    with pytest.raises(ValueError, match='has not been started'):
+    return endpoint_dir
+
+
+def test_from_dir_not_started(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = _write_config(tmp_path)
+    with pytest.raises(EndpointNotRunningError, match='has not been started'):
+        EndpointClient.from_dir(endpoint_dir)
+
+
+def test_from_dir_missing_credentials(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = _write_config(tmp_path, host='localhost')
+    with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
+        EndpointClient.from_dir(endpoint_dir)
+
+
+def test_from_dir_malformed_token(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = _write_config(tmp_path, host='localhost')
+    with open(endpoint_dir.token_path, 'w') as f:
+        f.write('not a token')
+    with pytest.raises(EndpointAuthError, match='malformed'):
         EndpointClient.from_dir(endpoint_dir)

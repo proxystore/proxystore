@@ -31,6 +31,7 @@ from proxystore.endpoint.auth import verify_proof
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
@@ -185,20 +186,30 @@ class EndpointClient:
                 handshake.
 
         Raises:
-            ValueError: If the endpoint has not been started (i.e., the host
-                is not set in the configuration) or the configuration or
-                token file is malformed.
-            FileNotFoundError: If the configuration, token, or certificate
-                file does not exist (e.g., because the endpoint is not
-                running).
+            FileNotFoundError: If the configuration does not exist.
+            ValueError: If the configuration is malformed.
+            EndpointNotRunningError: If the endpoint has not been started or
+                its credential files do not exist.
+            EndpointAuthError: If the token file is malformed or the client
+                or endpoint fails authentication.
             OSError: If the connection cannot be established.
             EndpointError: If the handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
         config = endpoint_dir.read_config()
         if config.host is None:
-            raise ValueError(f'Endpoint {config.name} has not been started.')
-        credentials = endpoint_dir.load_credentials(tls=config.tls)
+            raise EndpointNotRunningError(
+                f'Endpoint {config.name} has not been started.',
+            )
+        try:
+            credentials = endpoint_dir.load_credentials(tls=config.tls)
+        except FileNotFoundError as e:
+            raise EndpointNotRunningError(
+                f'Unable to find the credentials of endpoint {config.name} '
+                f'in {endpoint_dir}. Is the endpoint running?',
+            ) from e
+        except ValueError as e:
+            raise EndpointAuthError(str(e)) from e
         return cls.connect(
             config.host,
             config.port,
