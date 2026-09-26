@@ -568,9 +568,6 @@ class ClientHandler:
                 return Status.NOT_FOUND, None, None
             return Status.OK, None, result
         elif op == Op.SET:
-            if len(data) == 0:
-                error = 'received empty payload'
-                return Status.BAD_REQUEST, {'error': error}, None
             await self.endpoint.set(key, data, endpoint=endpoint_uuid)
             return Status.OK, None, None
         elif op == Op.EXISTS:

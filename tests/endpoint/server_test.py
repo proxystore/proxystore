@@ -114,6 +114,10 @@ async def test_operations(server: _Server) -> None:
     await asyncio.to_thread(client.set, 'strided', memoryview(b'abcdef')[::2])
     assert await asyncio.to_thread(client.get, 'strided') == b'ace'
 
+    # Empty objects are valid
+    await asyncio.to_thread(client.set, 'empty', b'')
+    assert await asyncio.to_thread(client.get, 'empty') == b''
+
     await asyncio.to_thread(client.evict, 'small')
     assert not await asyncio.to_thread(client.exists, 'small')
     assert await asyncio.to_thread(client.get, 'small') is None
@@ -290,9 +294,6 @@ async def test_bad_requests(server: _Server) -> None:
     # The client validates the endpoint UUID before sending the request
     with pytest.raises(ValueError, match='not a valid endpoint UUID'):
         await asyncio.to_thread(client.get, 'key', 'not-a-uuid')
-
-    with pytest.raises(EndpointRequestError, match='empty payload'):
-        await asyncio.to_thread(client.set, 'key', b'')
 
     # The connection is still usable after these errors
     assert not await asyncio.to_thread(client.exists, 'key')
