@@ -197,7 +197,7 @@ class Versions(NamedTuple):
         return cls(proxystore.__version__, platform.python_version())
 
     def mismatches(self, endpoint: Versions) -> list[str]:
-        """Find differences between these client and the endpoint versions.
+        """Find differences between this client's and the endpoint's versions.
 
         The ProxyStore versions must match exactly. The Python versions must
         have the same major and minor version because objects pickled by one
