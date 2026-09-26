@@ -333,6 +333,30 @@ async def test_data_too_large(server: _Server) -> None:
     await asyncio.to_thread(client.close)
 
 
+async def test_data_too_large_reply_not_lost(server: _Server) -> None:
+    client = await _connect(server)
+
+    def _run() -> tuple[int, dict[str, Any]]:
+        # Unread data in the endpoint's receive buffer must not cause the
+        # connection to be reset before the client reads the reply
+        message = pack_message(
+            Op.SET,
+            {'key': 'key'},
+            data_len=MAX_OBJECT_SIZE + 1,
+        )
+        client._socket.sendall(message + randbytes(1_000_000))
+        header, meta = _recv_message(client._socket)
+        return header.code, meta
+
+    for _ in range(10):
+        code, meta = await asyncio.to_thread(_run)
+        assert code == Status.TOO_LARGE
+        assert 'exceeds the maximum' in meta['error']
+        await asyncio.to_thread(client.close)
+        client = await _connect(server)
+    await asyncio.to_thread(client.close)
+
+
 async def test_storage_object_size_exceeded(server: _Server) -> None:
     server.endpoint._storage = DictStorage(max_object_size=10)
     client = await _connect(server)
@@ -432,6 +456,19 @@ async def test_connection_pending_data_flow_control() -> None:
 
     assert await conn.readexactly(len(data)) == data
     assert not transport.reading_paused
+
+
+async def test_connection_discard_incoming() -> None:
+    conn, transport = await _fake_connection()
+    _feed(conn, randbytes(_ClientConnection._MAX_PENDING_SIZE + 1))
+    assert transport.reading_paused
+
+    # Discarding resumes reading and drops pending and future data
+    conn.discard_incoming()
+    assert not transport.reading_paused
+    _feed(conn, randbytes(_ClientConnection._MAX_PENDING_SIZE + 1))
+    assert not transport.reading_paused
+    assert len(conn._pending) == 0
 
 
 async def test_connection_read_split_across_buffers() -> None:

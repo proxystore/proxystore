@@ -92,6 +92,7 @@ class _ClientConnection(asyncio.BufferedProtocol):
         self._target_pos = 0
         self._read_waiter: asyncio.Future[None] | None = None
         self._reading_paused = False
+        self._discarding = False
         self._eof = False
 
         self._writing_paused = False
@@ -124,6 +125,8 @@ class _ClientConnection(asyncio.BufferedProtocol):
                 self._wake_reader()
             return
 
+        if self._discarding:
+            return
         self._pending += memoryview(self._spare)[:nbytes]
         if (
             len(self._pending) > self._MAX_PENDING_SIZE
@@ -197,6 +200,20 @@ class _ClientConnection(asyncio.BufferedProtocol):
             if received < n:
                 raise asyncio.IncompleteReadError(bytes(view[:received]), n)
         return buffer
+
+    def discard_incoming(self) -> None:
+        """Discard all data received from now on.
+
+        This is used when the connection will be closed after replying so
+        that a client that is still sending data is not blocked by flow
+        control before it reads the reply.
+        """
+        self._discarding = True
+        self._pending.clear()
+        if self._reading_paused:
+            assert self._transport is not None
+            self._transport.resume_reading()
+            self._reading_paused = False
 
     def write(self, data: bytes | bytearray | memoryview) -> None:
         """Write data to the connection."""
@@ -482,7 +499,10 @@ class ClientHandler:
                     f'object size of the endpoint ({self.max_object_size} '
                     'bytes).'
                 )
-                await _send(conn, Status.TOO_LARGE, {'error': error})
+                await _reply_and_close(
+                    conn,
+                    pack_message(Status.TOO_LARGE, {'error': error}),
+                )
                 return
 
             data = (
@@ -576,6 +596,7 @@ async def _send(
 
 
 async def _reply_and_close(conn: _ClientConnection, data: bytes) -> None:
+    conn.discard_incoming()
     conn.write(data)
     await conn.drain()
     # Closing the connection while an unread request is still in the
