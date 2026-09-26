@@ -51,9 +51,9 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
+from proxystore.endpoint.warnings import EndpointVersionWarning
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
-from proxystore.warnings import EndpointVersionWarning
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.

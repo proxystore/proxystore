@@ -33,7 +33,7 @@ from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
-from proxystore.warnings import EndpointVersionWarning
+from proxystore.endpoint.warnings import EndpointVersionWarning
 
 TOKEN = os.urandom(TOKEN_SIZE)
 ENDPOINT_UUID = uuid.uuid4()
