@@ -71,7 +71,7 @@ async def server() -> AsyncGenerator[_Server, None]:
         port = tcp_server.sockets[0].getsockname()[1]
         yield _Server(handler, endpoint, token, '127.0.0.1', port)
         tcp_server.close()
-        handler.close_connections()
+        await handler.close_connections()
         await tcp_server.wait_closed()
 
 
@@ -391,10 +391,52 @@ async def test_unexpected_error(server: _Server) -> None:
 
 async def test_close_connections(server: _Server) -> None:
     client = await _connect(server)
-    server.handler.close_connections()
+    await server.handler.close_connections()
     with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert client.closed
+
+
+async def test_close_connections_cancels_requests(server: _Server) -> None:
+    started = asyncio.Event()
+    cancelled = asyncio.Event()
+
+    async def _never_finishes(*args: Any, **kwargs: Any) -> None:
+        started.set()
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            cancelled.set()
+            raise
+
+    client = await _connect(server)
+    with mock.patch.object(server.endpoint, 'exists', _never_finishes):
+        request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
+        await started.wait()
+        await server.handler.close_connections()
+        assert cancelled.is_set()
+        assert len(server.handler._tasks) == 0
+        with pytest.raises(EndpointConnectionError):
+            await request
+
+
+async def test_unexpected_connection_error_logged(
+    server: _Server,
+    caplog,
+) -> None:
+    with mock.patch.object(
+        server.handler,
+        '_handshake',
+        AsyncMock(side_effect=RuntimeError('oops')),
+    ):
+        client_error = asyncio.to_thread(_connect_sync, server)
+        with pytest.raises(EndpointConnectionError):
+            await client_error
+    assert any('Unexpected error' in r.message for r in caplog.records)
+
+
+def _connect_sync(server: _Server) -> EndpointClient:
+    return EndpointClient.connect(server.host, server.port, server.token)
 
 
 class _FakeTransport:
@@ -426,7 +468,7 @@ class _FakeTransport:
 
 
 async def _fake_connection() -> tuple[_ClientConnection, _FakeTransport]:
-    conn = _ClientConnection(AsyncMock())
+    conn = _ClientConnection(AsyncMock(), set())
     transport = _FakeTransport()
     transport.protocol = conn
     conn.connection_made(transport)  # type: ignore[arg-type]
@@ -611,7 +653,7 @@ async def tls_server(
         server = _Server(handler, endpoint, token, '127.0.0.1', port)
         yield _TLSServer(server, pem_certificate_fingerprint(cert_pem))
         tcp_server.close()
-        handler.close_connections()
+        await handler.close_connections()
         await tcp_server.wait_closed()
 
 

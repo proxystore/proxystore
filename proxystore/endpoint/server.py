@@ -69,6 +69,8 @@ class _ClientConnection(asyncio.BufferedProtocol):
     Args:
         callback: Coroutine function called with this connection once the
             connection is made.
+        tasks: Set that the task running the callback is added to until
+            the task is done.
     """
 
     _SPARE_SIZE = 64 * 1024
@@ -77,8 +79,10 @@ class _ClientConnection(asyncio.BufferedProtocol):
     def __init__(
         self,
         callback: Callable[[_ClientConnection], Coroutine[Any, Any, None]],
+        tasks: set[asyncio.Task[None]],
     ) -> None:
         self._callback = callback
+        self._tasks = tasks
         self._transport: asyncio.Transport | None = None
         self._task: asyncio.Task[None] | None = None
         loop = asyncio.get_running_loop()
@@ -106,6 +110,8 @@ class _ClientConnection(asyncio.BufferedProtocol):
         self._task = asyncio.get_running_loop().create_task(
             self._callback(self),
         )
+        self._tasks.add(self._task)
+        self._task.add_done_callback(self._tasks.discard)
 
     def get_buffer(self, sizehint: int) -> memoryview:
         """Get the buffer that the transport should write data into."""
@@ -320,7 +326,7 @@ class ClientHandler:
         server = await handler.start_server('localhost', 8765)
         ...
         server.close()
-        handler.close_connections()
+        await handler.close_connections()
         await server.wait_closed()
         ```
 
@@ -348,6 +354,7 @@ class ClientHandler:
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
         self._connections: set[_ClientConnection] = set()
+        self._tasks: set[asyncio.Task[None]] = set()
         self._warned_versions: set[Versions] = set()
 
     async def start_server(
@@ -366,16 +373,24 @@ class ClientHandler:
         """
         loop = asyncio.get_running_loop()
         return await loop.create_server(
-            lambda: _ClientConnection(self._handle_connection),
+            lambda: _ClientConnection(self._handle_connection, self._tasks),
             host=host,
             port=port,
             ssl=ssl_context,
         )
 
-    def close_connections(self) -> None:
-        """Close all open client connections."""
+    async def close_connections(self) -> None:
+        """Close all open client connections.
+
+        Requests that are still being handled (e.g., waiting on a peer
+        endpoint) are cancelled.
+        """
         for conn in list(self._connections):
             conn.close()
+        tasks = list(self._tasks)
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _handle_connection(self, conn: _ClientConnection) -> None:
         self._connections.add(conn)
@@ -406,6 +421,8 @@ class ClientHandler:
             EndpointProtocolError,
         ) as e:
             logger.debug(f'Closing connection from {peer}: {e!r}')
+        except Exception:
+            logger.exception(f'Unexpected error handling client {peer}')
         finally:
             self._connections.discard(conn)
             conn.close()

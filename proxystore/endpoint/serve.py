@@ -136,7 +136,7 @@ async def _close_server(
     handler: ClientHandler,
 ) -> None:
     server.close()
-    handler.close_connections()
+    await handler.close_connections()
     await server.wait_closed()
 
 
