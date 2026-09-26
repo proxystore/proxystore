@@ -9,8 +9,6 @@ from typing import Any
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointRelayConfig
-from proxystore.endpoint.config import EndpointRelayICEServerConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
@@ -31,29 +29,6 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
     assert stat.S_IMODE(os.stat(tmp_dir).st_mode) == 0o700
 
     # Overwriting is okay
-    EndpointDir(tmp_dir).write_config(cfg)
-
-    new_cfg = EndpointDir(tmp_dir).read_config()
-    assert cfg == new_cfg
-
-
-def test_write_read_config_with_ice_servers(tmp_path: pathlib.Path) -> None:
-    tmp_dir = os.path.join(tmp_path, 'config-dir')
-
-    cfg = EndpointConfig(
-        name='name',
-        uuid=str(uuid.uuid4()),
-        host='host',
-        port=1234,
-    )
-    cfg.relay.ice_servers = [
-        EndpointRelayICEServerConfig(urls='stun:stun.example.com:3478'),
-        EndpointRelayICEServerConfig(
-            urls=['turn:turn.example.com:3478'],
-            username='user',
-            credential='secret',
-        ),
-    ]
     EndpointDir(tmp_dir).write_config(cfg)
 
     new_cfg = EndpointDir(tmp_dir).read_config()
@@ -156,25 +131,6 @@ def test_validate_config(bad_cfg: Any, error: str | None) -> None:
     else:
         with pytest.raises(ValueError, match=error):
             EndpointConfig(**options)
-
-
-@pytest.mark.parametrize(
-    ('bad_cfg', 'error'),
-    (
-        ({'address': 'ws://'}, None),
-        ({'address': 'wss://'}, None),
-        ({'address': ''}, 'must start with ws:// or wss://'),
-        ({'address': 'https://'}, 'must start with ws:// or wss://'),
-        ({'peer_channels': 1}, None),
-        ({'peer_channels': 0}, 'Peer channels must be >= 1'),
-    ),
-)
-def test_validate_relay_config(bad_cfg: Any, error: str | None) -> None:
-    if error is None:
-        EndpointRelayConfig(**bad_cfg)
-    else:
-        with pytest.raises(ValueError, match=error):
-            EndpointRelayConfig(**bad_cfg)
 
 
 @pytest.mark.parametrize(

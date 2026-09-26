@@ -25,8 +25,6 @@ import daemon.pidfile
 
 from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointRelayAuthConfig
-from proxystore.endpoint.config import EndpointRelayConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
@@ -102,12 +100,9 @@ def configure_endpoint(
     name: str,
     *,
     host: str = 'ip',
-    peer_channels: int = 1,
     persist_data: bool = False,
     port: int | None,
     proxystore_dir: str | None = None,
-    relay_auth: bool = True,
-    relay_server: str | None,
     tls: bool = False,
 ) -> int:
     """Configure a new endpoint.
@@ -116,16 +111,11 @@ def configure_endpoint(
         name: Name of endpoint.
         host: Method to resolve the hostname of the endpoint ("ip" or "fqdn")
             or a static address to use.
-        peer_channels: Number of datachannels per peer connection
-            to another endpoint to communicate over.
         persist_data: Persist data stored in the endpoint.
         port: Port for endpoint to listen on. If `None`, a random port is
             selected.
         proxystore_dir: Optionally specify the proxystore home directory.
             Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
-        relay_server: Optional relay server address for P2P endpoint
-            connections.
-        relay_auth: Authenticate with the relay server using Globus Auth.
         tls: Encrypt connections between clients and the endpoint with TLS.
 
     Returns:
@@ -158,13 +148,6 @@ def configure_endpoint(
             port=port,
             host_type=host_type,
             tls=tls,
-            relay=EndpointRelayConfig(
-                address=relay_server,
-                auth=EndpointRelayAuthConfig(
-                    method='globus' if relay_auth else None,
-                ),
-                peer_channels=peer_channels,
-            ),
             storage=EndpointStorageConfig(database_path=database_path),
         )
     except ValueError as e:

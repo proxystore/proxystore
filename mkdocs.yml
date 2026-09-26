@@ -122,7 +122,6 @@ nav:
       - Object Lifetimes: guides/object-lifetimes.md
       - Performance Tracking: guides/performance.md
       - Proxy Futures: guides/proxy-futures.md
-      - Relay Serving: guides/relay-serving.md
       - Streaming: guides/streaming.md
   - API Reference:
       - ProxyStore: api/
@@ -151,9 +150,7 @@ plugins:
         python:
           inventories:
             - https://docs.python.org/3/objects.inv
-            - https://aiortc.readthedocs.io/en/latest/objects.inv
             - https://globus-sdk-python.readthedocs.io/en/stable/objects.inv
-            - https://websockets.readthedocs.io/en/stable/objects.inv
             - https://redis.readthedocs.io/en/stable/objects.inv
             - https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/objects.inv
             - https://distributed.dask.org/en/latest/objects.inv

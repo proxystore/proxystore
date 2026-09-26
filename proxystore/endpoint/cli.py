@@ -6,7 +6,6 @@ See the CLI Reference for the
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
 import sys
@@ -24,7 +23,6 @@ from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
@@ -93,25 +91,6 @@ def version() -> None:
     click.echo(f'ProxyStore v{proxystore.__version__}')
 
 
-@cli.command(name='check-nat')
-@click.option(
-    '--host',
-    default='0.0.0.0',
-    metavar='ADDR',
-    help='Network interface address to listen on.',
-)
-@click.option(
-    '--port',
-    default=0,
-    type=int,
-    metavar='PORT',
-    help='Port to listen on. Defaults to an ephemeral port.',
-)
-def check_nat_command(host: str, port: int) -> None:
-    """Check the NAT mapping behavior of your network."""
-    asyncio.run(check_nat_and_log(host, port))
-
-
 @cli.command()
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
@@ -126,31 +105,6 @@ def check_nat_command(host: str, port: int) -> None:
     type=int,
     metavar='PORT',
     help='Port to listen on.',
-)
-@click.option(
-    '--relay-address',
-    default='wss://relay.proxystore.dev',
-    metavar='ADDR',
-    help='Relay server address.',
-)
-@click.option(
-    '--relay-auth/--no-relay-auth',
-    default=True,
-    metavar='BOOL',
-    help='Disable relay server authentication.',
-)
-@click.option(
-    '--relay-server/--no-relay-server',
-    default=True,
-    metavar='BOOL',
-    help='Disable connecting to the relay server on start.',
-)
-@click.option(
-    '--peer-channels',
-    default=1,
-    type=int,
-    metavar='COUNT',
-    help='Datachannels to use per peer connection.',
 )
 @click.option(
     '--persist/--no-persist',
@@ -168,10 +122,6 @@ def configure(
     name: str,
     host: str,
     port: int | None,
-    relay_address: str,
-    relay_auth: bool,
-    relay_server: bool,
-    peer_channels: int,
     persist: bool,
     tls: bool,
 ) -> None:
@@ -180,12 +130,9 @@ def configure(
         configure_endpoint(
             name,
             host=host,
-            peer_channels=peer_channels,
             persist_data=persist,
             port=port,
-            relay_auth=relay_auth,
             tls=tls,
-            relay_server=relay_address if relay_server else None,
         ),
     )
 
