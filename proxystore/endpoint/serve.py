@@ -13,6 +13,7 @@ import os
 import signal
 import ssl
 from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 try:
     import uvloop
@@ -32,17 +33,22 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import endpoint_id_from_secret_key
 from proxystore.endpoint.identity import short_id
+from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 
+if TYPE_CHECKING:
+    from proxystore.p2p.manager import PeerManager
+
 logger = logging.getLogger(__name__)
 
 
 def _check_secret_key(
-    endpoint_dir: EndpointDir, config: EndpointConfig
-) -> None:
+    endpoint_dir: EndpointDir,
+    config: EndpointConfig,
+) -> bytes:
     try:
         secret_key = endpoint_dir.read_secret_key()
     except FileNotFoundError:
@@ -57,6 +63,27 @@ def _check_secret_key(
             f'The endpoint ID in the configuration ({config.id}) does not '
             f'match the secret key ({endpoint_id}) in {endpoint_dir}.',
         )
+    return secret_key
+
+
+def _create_peer_manager(
+    endpoint_dir: EndpointDir,
+    config: EndpointConfig,
+    secret_key: bytes,
+) -> PeerManager | None:
+    if not config.p2p.enabled:
+        return None
+
+    from proxystore.p2p.manager import PeerManager
+
+    allowlist = Allowlist(endpoint_dir.peers_path)
+    peers = len(allowlist.peers.peers)
+    logger.info('Loaded %d peer(s) from %s', peers, allowlist.path)
+    return PeerManager(
+        secret_key,
+        allowlist,
+        max_request_size=config.storage.object_size_limit,
+    )
 
 
 def _create_storage(config: EndpointConfig) -> Storage:
@@ -117,7 +144,7 @@ async def running_endpoint(
     config = endpoint_dir.read_config()
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
-    _check_secret_key(endpoint_dir, config)
+    secret_key = _check_secret_key(endpoint_dir, config)
 
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.
@@ -126,6 +153,11 @@ async def running_endpoint(
             Endpoint(
                 name=config.name,
                 endpoint_id=config.id,
+                peer_manager=_create_peer_manager(
+                    endpoint_dir,
+                    config,
+                    secret_key,
+                ),
                 storage=_create_storage(config),
             ),
         )

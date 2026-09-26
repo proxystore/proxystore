@@ -91,6 +91,19 @@ def _guard_uvloop_run(
         yield
 
 
+@pytest.fixture(scope='session', autouse=True)
+def _disable_n0_services() -> Generator[None, None, None]:
+    """Prevent iroh endpoints from using n0's public relays and discovery.
+
+    Endpoints in the test suite always connect to peers on the same host
+    using known addresses so relays and discovery are never needed.
+    """
+    import iroh
+
+    with mock.patch('iroh.preset_n0', iroh.preset_minimal):
+        yield
+
+
 @pytest.fixture(autouse=True)
 def _verify_no_registered_stores() -> Generator[None, None, None]:
     yield

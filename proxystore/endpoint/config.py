@@ -7,6 +7,7 @@ from typing import Any
 from typing import Literal
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
@@ -47,6 +48,20 @@ class EndpointStorageConfig(BaseModel):
         return self.max_object_size if self.max_object_size > 0 else None
 
 
+class EndpointP2PConfig(BaseModel):
+    """Endpoint peer-to-peer configuration.
+
+    Attributes:
+        enabled: Enable communication with peer endpoints. Only endpoints
+            in the allowlist of peers (`peers.toml` in the endpoint
+            directory) can communicate with this endpoint.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    enabled: bool = True
+
+
 class EndpointConfig(BaseModel):
     """Endpoint configuration.
 
@@ -62,6 +77,7 @@ class EndpointConfig(BaseModel):
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
             starts, and clients only trust that certificate.
+        p2p: Peer-to-peer configuration.
         storage: Storage configuration.
 
     Raises:
@@ -76,6 +92,7 @@ class EndpointConfig(BaseModel):
     host: str | None = None
     host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
     tls: bool = False
+    p2p: EndpointP2PConfig = Field(default_factory=EndpointP2PConfig)
     storage: EndpointStorageConfig = Field(
         default_factory=EndpointStorageConfig,
     )

@@ -95,7 +95,7 @@ dist,
 docs/publications/index.md,
 """
 # These words get caught because they are written as {O}bject in bibtex citations.
-ignore-words-list = "pplications,bject"
+ignore-words-list = "pplications,bject,bistream"
 
 [tool.coverage.run]
 plugins = ["covdefaults"]

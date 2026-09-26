@@ -111,6 +111,12 @@ def version() -> None:
     help='Port to listen on.',
 )
 @click.option(
+    '--peering/--no-peering',
+    default=True,
+    metavar='BOOL',
+    help='Enable communication with peer endpoints.',
+)
+@click.option(
     '--persist/--no-persist',
     default=False,
     metavar='BOOL',
@@ -126,6 +132,7 @@ def configure(
     name: str,
     host: str,
     port: int | None,
+    peering: bool,
     persist: bool,
     tls: bool,
 ) -> None:
@@ -134,6 +141,7 @@ def configure(
         configure_endpoint(
             name,
             host=host,
+            peering=peering,
             persist_data=persist,
             port=port,
             tls=tls,

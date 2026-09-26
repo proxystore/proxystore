@@ -16,6 +16,7 @@ import pytest
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.identity import endpoint_id_from_secret_key
@@ -39,7 +40,8 @@ def write_endpoint(
     Args:
         endpoint_dir: Directory to write the endpoint to.
         kwargs: Fields of the configuration. The `name` defaults to the
-            base name of the directory and the `port` to an open port.
+            base name of the directory, the `port` to an open port, and
+            peering is disabled.
 
     Returns:
         The configuration.
@@ -48,6 +50,9 @@ def write_endpoint(
     options: dict[str, Any] = {
         'name': os.path.basename(endpoint_dir.path),
         'port': open_port(),
+        # Peering connects to n0's public relays so it is disabled by default
+        # to avoid network access outside of the host in tests.
+        'p2p': EndpointP2PConfig(enabled=False),
         **kwargs,
         'id': endpoint_id_from_secret_key(secret_key),
     }

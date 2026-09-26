@@ -31,11 +31,10 @@ the primary interface for clients to interact with endpoints.
 > any endpoint and those request will be forwarded to the correct endpoint.
 > Endpoints establish peer-to-peer connections using UDP hole-punching.
 
-!!! warning "Peering is unavailable"
-    Peering is being migrated from WebRTC to [iroh](https://www.iroh.computer/)
-    (see [#792](https://github.com/proxystore/proxystore/issues/792)).
-    Until the migration is complete, endpoints only operate in isolation and
-    requests for other endpoints fail.
+Endpoints connect to peers with [iroh](https://www.iroh.computer/), and
+two endpoints can only communicate if each has the other in its allowlist of
+peers (see
+[`proxystore-endpoint peers`](../api/cli.md#proxystore-endpoint-peers)).
 
 Clients interacting with an endpoint via typical object store operations (*get*, *set*, etc.) specify a *key* and an *endpoint ID*.
 Endpoints that receive a request with a different endpoint ID will attempt

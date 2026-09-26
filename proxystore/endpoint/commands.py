@@ -24,6 +24,7 @@ import daemon.pidfile
 
 from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
@@ -103,6 +104,7 @@ def configure_endpoint(
     name: str,
     *,
     host: str = 'ip',
+    peering: bool = True,
     persist_data: bool = False,
     port: int | None,
     proxystore_dir: str | None = None,
@@ -114,6 +116,7 @@ def configure_endpoint(
         name: Name of endpoint.
         host: Method to resolve the hostname of the endpoint ("ip" or "fqdn")
             or a static address to use.
+        peering: Enable communication with peer endpoints.
         persist_data: Persist data stored in the endpoint.
         port: Port for endpoint to listen on. If `None`, a random port is
             selected.
@@ -152,6 +155,7 @@ def configure_endpoint(
             port=port,
             host_type=host_type,
             tls=tls,
+            p2p=EndpointP2PConfig(enabled=peering),
             storage=EndpointStorageConfig(database_path=database_path),
         )
     except ValueError as e:
@@ -170,6 +174,12 @@ def configure_endpoint(
     logger.info('Config and log file directory: %s', endpoint_dir)
     logger.info('Start the endpoint with:')
     logger.info('  $ proxystore-endpoint start %s', cfg.name)
+    if peering:
+        logger.info('Allow a peer endpoint to communicate with this one with:')
+        logger.info(
+            '  $ proxystore-endpoint peers add %s PEER_NAME PEER_ID',
+            cfg.name,
+        )
 
     return 0
 

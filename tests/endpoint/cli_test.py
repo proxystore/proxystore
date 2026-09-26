@@ -86,6 +86,13 @@ def test_configure_command(home_dir) -> None:
     assert cfg.port == port
     assert not cfg.tls
 
+    assert cfg.p2p.enabled
+
+    result = runner.invoke(cli, ['configure', 'solo', '--no-peering'])
+    assert result.exit_code == 0
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'solo'))
+    assert not endpoint_dir.read_config().p2p.enabled
+
     result = runner.invoke(cli, ['configure', 'tls-endpoint', '--tls'])
     assert result.exit_code == 0
     assert (

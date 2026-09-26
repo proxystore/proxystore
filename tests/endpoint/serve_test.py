@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import multiprocessing
 import os
 import pathlib
@@ -14,6 +15,7 @@ import pytest
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
@@ -229,3 +231,17 @@ async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
         assert isinstance(client._socket, ssl.SSLSocket)
         assert client.info.id == config.id
         await asyncio.to_thread(client.close)
+
+
+async def test_running_endpoint_peering(
+    tmp_path: pathlib.Path, caplog
+) -> None:
+    caplog.set_level(logging.INFO)
+    endpoint_dir, _ = _endpoint_dir(
+        tmp_path,
+        p2p=EndpointP2PConfig(enabled=True),
+    )
+    async with running_endpoint(endpoint_dir) as endpoint:
+        assert endpoint.peer_manager is not None
+        assert endpoint.peer_manager.id == endpoint.id
+    assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
