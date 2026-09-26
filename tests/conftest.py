@@ -14,6 +14,7 @@ import proxystore
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
 from testing.connectors import connectors
+from testing.connectors import daos_connector
 from testing.connectors import endpoint_connector
 from testing.connectors import file_connector
 from testing.connectors import globus_connector
@@ -22,9 +23,14 @@ from testing.connectors import multi_connector
 from testing.connectors import redis_connector
 from testing.endpoint import endpoint
 from testing.endpoint import endpoint_dir
+from testing.mocked import pydaos as mocked_pydaos
 from testing.relay_server import relay_server
 from testing.ssl import ssl_context
 from testing.stores import store
+
+# PyDAOS is not available on PyPI so we always use the mocked version. This
+# must happen before any imports of proxystore.connectors.daos.
+sys.modules['pydaos'] = mocked_pydaos
 
 
 def pytest_addoption(parser):

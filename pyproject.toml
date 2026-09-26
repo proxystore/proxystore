@@ -104,6 +104,7 @@ plugins = ["covdefaults"]
 concurrency = ["multiprocessing", "thread"]
 omit = [
     "proxystore/mypy_plugin.py",
+    "testing/mocked/pydaos.py",
     "testing/scripts/*",
     "version_check.py",
 ]
@@ -125,6 +126,11 @@ no_implicit_optional = true
 warn_redundant_casts = true
 warn_unused_configs = true
 warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+# PyDAOS is not available on PyPI so is not installed in the environment.
+module = "pydaos"
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "testing.*"

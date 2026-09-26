@@ -1,5 +1,6 @@
 # Guides
 
+* [DAOS](daos.md)
 * [Dask Distributed](dask-distributed.md)
 * [Globus Compute](globus-compute.md)
 * [Endpoints Overview](endpoints.md)

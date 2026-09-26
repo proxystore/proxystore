@@ -36,3 +36,10 @@ Or everything can be installed at once (this does not install the development pa
 ```bash
 pip install proxystore[all]
 ```
+
+!!! note
+
+    Some features depend on packages which cannot be installed with `pip`.
+    For example, the [`DAOSConnector`][proxystore.connectors.daos.DAOSConnector]
+    requires PyDAOS which is installed alongside DAOS.
+    See the [DAOS guide](guides/daos.md) for details.
