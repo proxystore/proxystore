@@ -35,6 +35,7 @@ from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingRequest
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
@@ -524,11 +525,17 @@ class ClientHandler:
         data: bytes | bytearray,
     ) -> _Response:
         try:
-            request = Request.from_meta(meta)
+            if op == Op.PING:
+                ping = PingRequest.from_meta(meta)
+            else:
+                request = Request.from_meta(meta)
         except EndpointProtocolError as e:
             return Status.BAD_REQUEST, {'error': str(e)}, None
 
         try:
+            if op == Op.PING:
+                result = await self.endpoint.ping(ping.endpoint)
+                return Status.OK, result.to_meta(), None
             return await self._dispatch(op, request, data)
         except PeerRequestError as e:
             return Status.ERROR, {'error': str(e)}, None

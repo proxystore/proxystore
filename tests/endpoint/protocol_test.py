@@ -19,6 +19,8 @@ from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingRequest
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
@@ -171,6 +173,44 @@ def test_message_meta_round_trip(
 )
 def test_message_meta_malformed(
     message: type[Hello | Challenge | Auth | EndpointInfo | Request],
+    meta: dict[str, Any],
+    field: str,
+) -> None:
+    with pytest.raises(EndpointProtocolError, match=f"invalid '{field}'"):
+        message.from_meta(meta)
+
+
+@pytest.mark.parametrize(
+    'message',
+    (
+        PingRequest(),
+        PingRequest(random_endpoint_id()),
+        PingResult(),
+        PingResult(12.5, True, 'https://relay.example.com', 10),
+        PingResult(1, False, '1.2.3.4:5', 0),
+    ),
+)
+def test_ping_meta_round_trip(message: PingRequest | PingResult) -> None:
+    meta = decode_meta(encode_meta(message.to_meta()))
+    assert type(message).from_meta(meta) == message
+
+
+@pytest.mark.parametrize(
+    ('message', 'meta', 'field'),
+    (
+        (PingRequest, {}, 'endpoint'),
+        (PingRequest, {'endpoint': 'not-an-id'}, 'endpoint'),
+        (PingResult, {}, 'peer_rtt_ms'),
+        (PingResult, {**PingResult().to_meta(), 'relayed': 'yes'}, 'relayed'),
+        (
+            PingResult,
+            {**PingResult().to_meta(), 'path_rtt_ms': 1.5},
+            'path_rtt_ms',
+        ),
+    ),
+)
+def test_ping_meta_malformed(
+    message: type[PingRequest | PingResult],
     meta: dict[str, Any],
     field: str,
 ) -> None:

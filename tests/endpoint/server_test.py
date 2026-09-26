@@ -35,6 +35,7 @@ from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
@@ -710,3 +711,26 @@ async def test_tls_client_without_tls(tls_server: _TLSServer) -> None:
 async def test_tls_client_with_plain_server(server: _Server) -> None:
     with pytest.raises(EndpointProtocolError, match='TLS handshake'):
         await asyncio.to_thread(_connect_tls, server, '0' * 64)
+
+
+async def test_ping(server: _Server) -> None:
+    client = await _connect(server)
+    assert await asyncio.to_thread(client.ping) == PingResult()
+    with pytest.raises(EndpointRequestError, match='peering is not enabled'):
+        await asyncio.to_thread(client.ping, random_endpoint_id())
+    with pytest.raises(ValueError, match='not a valid endpoint ID'):
+        await asyncio.to_thread(client.ping, 'not-an-id')
+    await asyncio.to_thread(client.close)
+
+
+async def test_ping_malformed(server: _Server) -> None:
+    client = await _connect(server)
+    # Reuse the authenticated connection of the client to send a raw message
+    await asyncio.to_thread(
+        client._socket.sendall,
+        pack_message(Op.PING, {'endpoint': 42}),
+    )
+    header, meta = await asyncio.to_thread(_recv_message, client._socket)
+    assert header.code == Status.BAD_REQUEST
+    assert "invalid 'endpoint'" in meta['error']
+    await asyncio.to_thread(client.close)

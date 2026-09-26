@@ -9,6 +9,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import sys
+import time
 import uuid
 from collections.abc import Generator
 from typing import ClassVar
@@ -297,6 +298,78 @@ def get(ctx: click.Context, key: str) -> None:
     else:
         obj = deserialize(res)
         logger.info('Result: %s', obj)
+
+
+@test.command()
+@click.option(
+    '--count',
+    default=4,
+    type=click.IntRange(min=1),
+    metavar='COUNT',
+    help='Number of pings to send.',
+)
+@click.option(
+    '--interval',
+    default=0.5,
+    type=click.FloatRange(min=0),
+    metavar='SECONDS',
+    help='Seconds to wait between pings.',
+)
+@click.pass_context
+def ping(ctx: click.Context, count: int, interval: float) -> None:
+    """Measure the latency of and path to a peer endpoint.
+
+    The endpoint sends each ping to the peer given by --remote and reports
+    the time until it received the response and if the connection is direct
+    or relayed. The first ping includes the time to connect to the peer if
+    the endpoint is not already connected. Without --remote, the time is the
+    round trip between this client and the endpoint.
+    """
+    remote = ctx.obj['REMOTE_ENDPOINT_ID']
+    times: list[float] = []
+    with _endpoint_client(ctx) as client:
+        for i in range(count):
+            if i > 0:
+                time.sleep(interval)
+            start = time.perf_counter()
+            try:
+                result = client.ping(remote)
+            except (EndpointError, ValueError) as e:
+                logger.error(e)
+                raise SystemExit(1) from None
+            client_ms = (time.perf_counter() - start) * 1000
+
+            if result.peer_rtt_ms is None:
+                times.append(client_ms)
+                logger.info(
+                    'Reply from local endpoint: time=%.2f ms',
+                    client_ms,
+                )
+                continue
+
+            times.append(result.peer_rtt_ms)
+            if result.relayed is None:  # pragma: no cover
+                path = 'unknown'
+            else:
+                kind = 'relayed via' if result.relayed else 'direct to'
+                path = (
+                    f'{kind} {result.remote_addr} '
+                    f'(rtt {result.path_rtt_ms} ms)'
+                )
+            logger.info(
+                'Reply from %s: time=%.2f ms path=%s',
+                remote,
+                result.peer_rtt_ms,
+                path,
+            )
+
+    logger.info(
+        '%d ping(s): min/avg/max = %.2f/%.2f/%.2f ms',
+        len(times),
+        min(times),
+        sum(times) / len(times),
+        max(times),
+    )
 
 
 @test.command()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any
@@ -15,6 +16,7 @@ from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import log_name
 from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import DictStorage
@@ -156,24 +158,24 @@ class Endpoint:
         self,
         endpoint: EndpointId,
         op: Op,
-        key: str,
+        meta: dict[str, Any],
         data: bytes | bytearray | None = None,
     ) -> tuple[Status, dict[str, Any], bytes | bytearray]:
         from proxystore.p2p.exceptions import PeerConnectionError
 
         assert self._peer_manager is not None
         logger.debug(
-            '%s: sending %s request with key=%s to %s',
+            '%s: sending %s request with meta=%s to %s',
             self._log_prefix,
             op.name,
-            key,
+            meta,
             endpoint,
         )
         try:
             code, meta, response_data = await self._peer_manager.request(
                 endpoint,
                 op,
-                Request(key).to_meta(),
+                meta,
                 data,
             )
         except PeerConnectionError as e:
@@ -196,6 +198,8 @@ class Endpoint:
         data: bytes | bytearray,
     ) -> tuple[int, dict[str, Any] | None, bytes | bytearray | None]:
         """Handle a request from a peer endpoint on the local storage."""
+        if op == Op.PING:
+            return Status.OK, None, None
         try:
             request = Request.from_meta(meta)
         except EndpointProtocolError as e:
@@ -260,7 +264,9 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            await self._request_peer(endpoint, Op.EVICT, key)
+            await self._request_peer(
+                endpoint, Op.EVICT, Request(key).to_meta()
+            )
         else:
             await self._storage.evict(key)
 
@@ -292,7 +298,11 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            _, meta, _ = await self._request_peer(endpoint, Op.EXISTS, key)
+            _, meta, _ = await self._request_peer(
+                endpoint,
+                Op.EXISTS,
+                Request(key).to_meta(),
+            )
             exists = meta.get('exists')
             if not isinstance(exists, bool):
                 raise PeerRequestError(
@@ -329,7 +339,11 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            status, _, data = await self._request_peer(endpoint, Op.GET, key)
+            status, _, data = await self._request_peer(
+                endpoint,
+                Op.GET,
+                Request(key).to_meta(),
+            )
             return None if status == Status.NOT_FOUND else data
         return await self._storage.get(key, None)
 
@@ -362,9 +376,48 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            await self._request_peer(endpoint, Op.SET, key, data)
+            await self._request_peer(
+                endpoint,
+                Op.SET,
+                Request(key).to_meta(),
+                data,
+            )
         else:
             await self._storage.set(key, data)
+
+    async def ping(self, endpoint: EndpointId | None = None) -> PingResult:
+        """Measure the latency of and path to a peer endpoint.
+
+        Args:
+            endpoint: Peer endpoint to ping. If unspecified, the local endpoint
+                is pinged which returns immediately.
+
+        Returns:
+            The round-trip time to the peer and the path of the connection.
+
+        Raises:
+            PeeringNotAvailableError: If `endpoint` is a different endpoint
+                and peering is not enabled.
+            PeerRequestError: If the request to the peer endpoint fails.
+        """
+        if not self._is_peer_request(endpoint):
+            return PingResult()
+        assert endpoint is not None
+        assert self._peer_manager is not None
+
+        start = time.perf_counter()
+        await self._request_peer(endpoint, Op.PING, {})
+        rtt_ms = (time.perf_counter() - start) * 1000
+        path = self._peer_manager.path(endpoint)
+        if path is None:  # pragma: no cover
+            # The connection closed after the response was received.
+            return PingResult(peer_rtt_ms=rtt_ms)
+        return PingResult(
+            peer_rtt_ms=rtt_ms,
+            relayed=path.relayed,
+            remote_addr=path.remote_addr,
+            path_rtt_ms=path.rtt_ms,
+        )
 
     async def close(self) -> None:
         """Close the endpoint and its peer manager.

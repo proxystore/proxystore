@@ -19,6 +19,8 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
+from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.serve import running_endpoint
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import random_endpoint_id
@@ -298,3 +300,77 @@ def test_id_and_peers_commands(home_dir, caplog) -> None:
     result = runner.invoke(cli, ['peers', 'remove', 'ep', 'peer'])
     assert result.exit_code == 0
     assert endpoint_dir.read_peers().peers == {}
+
+
+def test_ping_command_local(
+    home_dir,
+    caplog,
+    endpoint: EndpointConfig,
+    endpoint_dir: EndpointDir,
+) -> None:
+    caplog.set_level(logging.INFO)
+    copy_endpoint_dir(endpoint_dir, home_dir)
+    runner = click.testing.CliRunner()
+    args = ['test', endpoint.name, 'ping', '--count', '2', '--interval', '0']
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 0
+    messages = [r.message for r in caplog.records]
+    assert sum('Reply from local endpoint' in m for m in messages) == 2
+    assert '2 ping(s): min/avg/max' in messages[-1]
+
+
+def test_ping_command_remote(home_dir, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    remote = random_endpoint_id()
+    results = [
+        PingResult(200.0, True, 'https://relay.example.com', 30),
+        PingResult(2.0, False, '1.2.3.4:5', 1),
+    ]
+    client = mock.MagicMock()
+    client.ping.side_effect = results
+    client.__enter__.return_value = client
+    runner = click.testing.CliRunner()
+    with mock.patch(
+        'proxystore.endpoint.cli.EndpointClient.from_name',
+        return_value=client,
+    ):
+        result = runner.invoke(
+            cli,
+            [
+                'test',
+                '--remote',
+                remote,
+                'ep',
+                'ping',
+                '--interval',
+                '0',
+                '--count',
+                '2',
+            ],
+        )
+    assert result.exit_code == 0
+    messages = [r.message for r in caplog.records]
+    assert messages[0] == (
+        f'Reply from {remote}: time=200.00 ms '
+        'path=relayed via https://relay.example.com (rtt 30 ms)'
+    )
+    assert messages[1] == (
+        f'Reply from {remote}: time=2.00 ms '
+        'path=direct to 1.2.3.4:5 (rtt 1 ms)'
+    )
+    assert messages[2] == '2 ping(s): min/avg/max = 2.00/101.00/200.00 ms'
+
+
+def test_ping_command_error(home_dir, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+    client = mock.MagicMock()
+    client.ping.side_effect = EndpointRequestError('peer failed')
+    client.__enter__.return_value = client
+    runner = click.testing.CliRunner()
+    with mock.patch(
+        'proxystore.endpoint.cli.EndpointClient.from_name',
+        return_value=client,
+    ):
+        result = runner.invoke(cli, ['test', 'ep', 'ping'])
+    assert result.exit_code == 1
+    assert 'peer failed' in caplog.records[-1].message

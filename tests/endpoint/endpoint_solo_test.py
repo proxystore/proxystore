@@ -4,6 +4,7 @@ import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
+from proxystore.endpoint.protocol import PingResult
 from testing.compat import randbytes
 from testing.endpoint import random_endpoint_id
 
@@ -74,3 +75,11 @@ async def test_exists() -> None:
         assert not (await endpoint.exists('key'))
         await endpoint.set('key', data)
         assert await endpoint.exists('key')
+
+
+@pytest.mark.asyncio
+async def test_ping() -> None:
+    async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
+        assert await endpoint.ping() == PingResult()
+        with pytest.raises(PeeringNotAvailableError):
+            await endpoint.ping(random_endpoint_id())

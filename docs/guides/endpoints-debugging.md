@@ -129,6 +129,32 @@ be able to reach it. Check that the relays are reachable from the system or
 configure self-hosted relays (see
 [Relays](endpoints.md#relays)).
 
+The endpoint also logs the network path of each peer connection when it is
+established and when the path changes. A connection often starts relayed
+and becomes direct once hole-punching succeeds.
+```
+INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is relayed via https://usw1-1.relay.n0.iroh.link./ (rtt 16 ms)
+INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is direct to 203.0.113.7:57600 (rtt 12 ms)
+```
+
+### Ping a Peer
+The `proxystore-endpoint test ... ping` command measures the latency between
+two endpoints and reports whether their connection is direct or relayed.
+```bash
+$ proxystore-endpoint test --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
+INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.25 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+INFO: 4 ping(s): min/avg/max = 13.09/64.44/218.10 ms
+```
+The time is measured by the local endpoint, and the first ping includes the
+time to connect to the peer. If the connection stays relayed, transfers
+between the endpoints will be slower. This typically happens when both
+endpoints are behind NATs which prevent hole-punching or a firewall blocks
+UDP traffic. Without `--remote`, the command measures the latency between
+the client and the local endpoint.
+
 ### Use the Test CLI
 The `proxystore-endpoint test` CLI can be used to establish a peer connection
 between two endpoints and invoke remote operations.

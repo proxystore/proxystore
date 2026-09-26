@@ -11,6 +11,7 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import DictStorage
@@ -138,3 +139,25 @@ async def test_handle_peer_request_errors(endpoints) -> None:
         ep1.id, Op.SET, Request('k').to_meta(), too_large
     )
     assert status == Status.TOO_LARGE
+
+
+async def test_ping(endpoints) -> None:
+    ep1, ep2 = endpoints
+    assert await ep1.ping() == PingResult()
+    assert await ep1.ping(ep1.id) == PingResult()
+
+    result = await ep1.ping(ep2.id)
+    assert result.peer_rtt_ms is not None
+    assert result.peer_rtt_ms > 0
+    assert result.relayed is False
+    assert result.remote_addr is not None
+    assert result.remote_addr.startswith('127.0.0.1:')
+    assert result.path_rtt_ms is not None
+
+
+async def test_ping_not_allowed(endpoints) -> None:
+    ep1, ep2 = endpoints
+    assert ep2.peer_manager is not None
+    os.remove(ep2.peer_manager._allowlist.path)
+    with pytest.raises(PeerRequestError, match='refused the connection'):
+        await ep1.ping(ep2.id)

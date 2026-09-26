@@ -47,6 +47,8 @@ from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingRequest
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
@@ -287,7 +289,7 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        self._request(Op.EVICT, key, endpoint)
+        self._request(Op.EVICT, Request(key, _parse_endpoint(endpoint)))
 
     def exists(self, key: str, endpoint: str | None = None) -> bool:
         """Check if an object associated with the key exists.
@@ -303,7 +305,10 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        _, meta, _ = self._request(Op.EXISTS, key, endpoint)
+        _, meta, _ = self._request(
+            Op.EXISTS,
+            Request(key, _parse_endpoint(endpoint)),
+        )
         exists = meta.get('exists')
         if not isinstance(exists, bool):
             raise EndpointProtocolError(
@@ -330,7 +335,10 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        status, _, data = self._request(Op.GET, key, endpoint)
+        status, _, data = self._request(
+            Op.GET,
+            Request(key, _parse_endpoint(endpoint)),
+        )
         return None if status == Status.NOT_FOUND else data
 
     def set(
@@ -359,13 +367,34 @@ class EndpointClient:
                 f'Data size ({size} bytes) exceeds the maximum object size '
                 f'of the endpoint ({max_size} bytes).',
             )
-        self._request(Op.SET, key, endpoint, data)
+        self._request(Op.SET, Request(key, _parse_endpoint(endpoint)), data)
+
+    def ping(self, endpoint: str | None = None) -> PingResult:
+        """Measure the latency of and path to a peer endpoint.
+
+        The local endpoint sends a request to the peer and reports the time
+        until it received the response and the network path of the
+        connection. The first ping to a peer includes the time to establish
+        the connection.
+
+        Args:
+            endpoint: Optional ID of the peer endpoint to ping. If `None`,
+                the local endpoint is pinged.
+
+        Raises:
+            ValueError: If `endpoint` is not a valid endpoint ID.
+            EndpointError: If the request fails.
+        """
+        _, meta, _ = self._request(
+            Op.PING,
+            PingRequest(_parse_endpoint(endpoint)),
+        )
+        return PingResult.from_meta(meta)
 
     def _request(
         self,
         op: Op,
-        key: str,
-        endpoint: str | None,
+        request: Request | PingRequest,
         data: BytesLike | None = None,
     ) -> tuple[Status, dict[str, Any], bytearray]:
         if self.closed:
@@ -373,7 +402,6 @@ class EndpointClient:
                 'Connection to the endpoint is closed.',
             )
 
-        request = Request(key, _parse_endpoint(endpoint))
         payload = _as_bytes_view(data) if data is not None else None
         data_len = 0 if payload is None else len(payload)
         message = pack_message(op, request.to_meta(), data_len)

@@ -75,6 +75,8 @@ class Op(enum.IntEnum):
     """Check if an object associated with a key exists."""
     EVICT = 6
     """Evict the object associated with a key."""
+    PING = 7
+    """Measure the latency of and path to an endpoint."""
 
 
 class Status(enum.IntEnum):
@@ -387,6 +389,77 @@ class Request:
             endpoint=None
             if endpoint is None
             else _parse_id(endpoint, 'endpoint', cls),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class PingRequest:
+    """Metadata of a [`PING`][proxystore.endpoint.protocol.Op.PING] request.
+
+    Attributes:
+        endpoint: ID of the peer endpoint to ping or `None` for the local
+            endpoint.
+    """
+
+    endpoint: EndpointId | None = None
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return {'endpoint': self.endpoint}
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        endpoint = _get(meta, 'endpoint', (str, type(None)), cls)
+        return cls(
+            endpoint=None
+            if endpoint is None
+            else _parse_id(endpoint, 'endpoint', cls),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class PingResult:
+    """Result of a [`PING`][proxystore.endpoint.protocol.Op.PING] request.
+
+    Attributes:
+        peer_rtt_ms: Time in milliseconds for the local endpoint to send a
+            request to the peer and receive the response or `None` if the
+            local endpoint was pinged. The time of the first ping to a peer
+            includes establishing the connection.
+        relayed: If the connection to the peer is relayed, or `None` if the
+            path is unknown or the local endpoint was pinged.
+        remote_addr: Address of the peer (or relay) on the path.
+        path_rtt_ms: Round-trip time in milliseconds of the path estimated
+            by QUIC.
+    """
+
+    peer_rtt_ms: float | None = None
+    relayed: bool | None = None
+    remote_addr: str | None = None
+    path_rtt_ms: int | None = None
+
+    def to_meta(self) -> dict[str, Any]:
+        """Encode as message metadata."""
+        return dataclasses.asdict(self)
+
+    @classmethod
+    def from_meta(cls, meta: dict[str, Any]) -> Self:
+        """Decode from message metadata.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        none = type(None)
+        return cls(
+            peer_rtt_ms=_get(meta, 'peer_rtt_ms', (int, float, none), cls),
+            relayed=_get(meta, 'relayed', (bool, none), cls),
+            remote_addr=_get(meta, 'remote_addr', (str, none), cls),
+            path_rtt_ms=_get(meta, 'path_rtt_ms', (int, none), cls),
         )
 
 
