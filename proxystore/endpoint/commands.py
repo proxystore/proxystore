@@ -25,10 +25,12 @@ import daemon.pidfile
 from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.identity import endpoint_id_from_secret_key
 from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -475,3 +477,213 @@ def _wait_for_exit(pid: int, timeout: float) -> bool:
         if time.monotonic() >= deadline:
             return False
         time.sleep(0.01)
+
+
+def _read_endpoint(
+    name: str,
+    proxystore_dir: str | None,
+) -> tuple[EndpointDir, EndpointConfig] | None:
+    if proxystore_dir is None:
+        proxystore_dir = home_dir()
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    if not os.path.exists(endpoint_dir):
+        logger.error('An endpoint named %s does not exist.', name)
+        return None
+    try:
+        config = endpoint_dir.read_config()
+    except (FileNotFoundError, ValueError) as e:
+        logger.error(str(e))
+        return None
+    return endpoint_dir, config
+
+
+def get_endpoint_id(
+    name: str,
+    *,
+    proxystore_dir: str | None = None,
+) -> int:
+    """Print the ID of an endpoint.
+
+    Share the ID with the owners of other endpoints so they can add this
+    endpoint to their allowlist of peers.
+
+    Args:
+        name: Name of the endpoint.
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+
+    Returns:
+        Exit code where 0 is success and 1 is failure. Failure messages \
+        are logged to the default logger.
+    """
+    endpoint = _read_endpoint(name, proxystore_dir)
+    if endpoint is None:
+        return 1
+    _, config = endpoint
+    logger.info(config.id, extra={'simple': True})
+    return 0
+
+
+def add_peer(
+    name: str,
+    peer_name: str,
+    peer_id: str,
+    *,
+    proxystore_dir: str | None = None,
+) -> int:
+    """Add a peer endpoint to the allowlist of an endpoint.
+
+    Args:
+        name: Name of the endpoint.
+        peer_name: Name to give the peer in the allowlist.
+        peer_id: ID of the peer endpoint.
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+
+    Returns:
+        Exit code where 0 is success and 1 is failure. Failure messages \
+        are logged to the default logger.
+    """
+    endpoint = _read_endpoint(name, proxystore_dir)
+    if endpoint is None:
+        return 1
+    endpoint_dir, config = endpoint
+
+    if not validate_name(peer_name):
+        logger.error(
+            'Peer names must only contain alphanumeric characters, dashes, '
+            'and underscores. Got %s.',
+            peer_name,
+        )
+        return 1
+    try:
+        endpoint_id = parse_endpoint_id(peer_id)
+        peers = endpoint_dir.read_peers()
+    except ValueError as e:
+        logger.error(str(e))
+        return 1
+
+    if endpoint_id == config.id:
+        logger.error('An endpoint cannot be a peer of itself.')
+        return 1
+    if peer_name in peers.peers:
+        logger.error(
+            'A peer named %s already exists. Remove it first with:',
+            peer_name,
+        )
+        logger.error(
+            '  $ proxystore-endpoint peers remove %s %s', name, peer_name
+        )
+        return 1
+    existing = peers.name_of(endpoint_id)
+    if existing is not None:
+        logger.error(
+            'Endpoint %s is already a peer named %s.',
+            endpoint_id,
+            existing,
+        )
+        return 1
+
+    peers.peers[peer_name] = endpoint_id
+    endpoint_dir.write_peers(peers)
+    logger.info(
+        'Added peer %s <%s> to endpoint %s.', peer_name, endpoint_id, name
+    )
+    logger.info(
+        'The peer must also add this endpoint <%s> to its peers.',
+        config.id,
+    )
+    return 0
+
+
+def remove_peer(
+    name: str,
+    peer_name: str,
+    *,
+    proxystore_dir: str | None = None,
+) -> int:
+    """Remove a peer endpoint from the allowlist of an endpoint.
+
+    If the endpoint is running, the peer is denied access immediately.
+
+    Args:
+        name: Name of the endpoint.
+        peer_name: Name of the peer in the allowlist.
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+
+    Returns:
+        Exit code where 0 is success and 1 is failure. Failure messages \
+        are logged to the default logger.
+    """
+    endpoint = _read_endpoint(name, proxystore_dir)
+    if endpoint is None:
+        return 1
+    endpoint_dir, _ = endpoint
+
+    try:
+        peers = endpoint_dir.read_peers()
+    except ValueError as e:
+        logger.error(str(e))
+        return 1
+
+    endpoint_id = peers.peers.pop(peer_name, None)
+    if endpoint_id is None:
+        logger.error('Endpoint %s has no peer named %s.', name, peer_name)
+        return 1
+
+    endpoint_dir.write_peers(peers)
+    logger.info(
+        'Removed peer %s <%s> from endpoint %s.',
+        peer_name,
+        endpoint_id,
+        name,
+    )
+    return 0
+
+
+def list_peers(
+    name: str,
+    *,
+    proxystore_dir: str | None = None,
+) -> int:
+    """List the peers in the allowlist of an endpoint.
+
+    Args:
+        name: Name of the endpoint.
+        proxystore_dir: Optionally specify the proxystore home directory.
+            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
+
+    Returns:
+        Exit code where 0 is success and 1 is failure. Failure messages \
+        are logged to the default logger.
+    """
+    endpoint = _read_endpoint(name, proxystore_dir)
+    if endpoint is None:
+        return 1
+    endpoint_dir, _ = endpoint
+
+    try:
+        peers = endpoint_dir.read_peers()
+    except ValueError as e:
+        logger.error(str(e))
+        return 1
+
+    if len(peers.peers) == 0:
+        logger.info('Endpoint %s has no peers.', name)
+        logger.info('Add a peer with:')
+        logger.info('  $ proxystore-endpoint peers add %s NAME ID', name)
+        return 0
+
+    max_name_chars = max(len('NAME'), *(len(n) for n in peers.peers))
+    logger.info('%-*s ID', max_name_chars, 'NAME', extra={'simple': True})
+    logger.info('=' * (max_name_chars + 65), extra={'simple': True})
+    for peer_name, endpoint_id in sorted(peers.peers.items()):
+        logger.info(
+            '%-*s %s',
+            max_name_chars,
+            peer_name,
+            endpoint_id,
+            extra={'simple': True},
+        )
+    return 0

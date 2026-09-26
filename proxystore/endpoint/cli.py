@@ -17,9 +17,13 @@ import click
 
 import proxystore
 from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.commands import add_peer
 from proxystore.endpoint.commands import configure_endpoint
+from proxystore.endpoint.commands import get_endpoint_id
 from proxystore.endpoint.commands import list_endpoints
+from proxystore.endpoint.commands import list_peers
 from proxystore.endpoint.commands import remove_endpoint
+from proxystore.endpoint.commands import remove_peer
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.exceptions import EndpointError
@@ -141,6 +145,46 @@ def configure(
 def list_all() -> None:
     """List all user endpoints."""
     raise SystemExit(list_endpoints())
+
+
+@cli.command(name='id')
+@click.argument('name', metavar='NAME', required=True)
+def endpoint_id(name: str) -> None:
+    """Print the ID of an endpoint."""
+    raise SystemExit(get_endpoint_id(name))
+
+
+@cli.group()
+def peers() -> None:
+    """Manage the peers an endpoint can communicate with.
+
+    Two endpoints can only communicate if each endpoint has the other in its
+    peers. Get the ID of an endpoint with "proxystore-endpoint id NAME".
+    """
+
+
+@peers.command(name='add')
+@click.argument('name', metavar='NAME', required=True)
+@click.argument('peer_name', metavar='PEER_NAME', required=True)
+@click.argument('peer_id', metavar='PEER_ID', required=True)
+def peers_add(name: str, peer_name: str, peer_id: str) -> None:
+    """Allow endpoint NAME to communicate with peer PEER_ID."""
+    raise SystemExit(add_peer(name, peer_name, peer_id))
+
+
+@peers.command(name='remove')
+@click.argument('name', metavar='NAME', required=True)
+@click.argument('peer_name', metavar='PEER_NAME', required=True)
+def peers_remove(name: str, peer_name: str) -> None:
+    """Stop endpoint NAME from communicating with peer PEER_NAME."""
+    raise SystemExit(remove_peer(name, peer_name))
+
+
+@peers.command(name='list')
+@click.argument('name', metavar='NAME', required=True)
+def peers_list(name: str) -> None:
+    """List the peers of endpoint NAME."""
+    raise SystemExit(list_peers(name))
 
 
 @cli.command()

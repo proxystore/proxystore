@@ -6,16 +6,21 @@ import os
 import pathlib
 import time
 from collections.abc import Generator
+from typing import Any
 from unittest import mock
 
 import pytest
 
 from proxystore.endpoint.commands import _wait_for_exit
+from proxystore.endpoint.commands import add_peer
 from proxystore.endpoint.commands import configure_endpoint
 from proxystore.endpoint.commands import EndpointStatus
+from proxystore.endpoint.commands import get_endpoint_id
 from proxystore.endpoint.commands import get_status
 from proxystore.endpoint.commands import list_endpoints
+from proxystore.endpoint.commands import list_peers
 from proxystore.endpoint.commands import remove_endpoint
+from proxystore.endpoint.commands import remove_peer
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
@@ -603,3 +608,105 @@ def test_stop_endpoint_dangling_pid_file(
         for record in caplog.records
         if record.levelno == logging.INFO
     )
+
+
+def _configure(tmp_path: pathlib.Path, name: str = _NAME) -> EndpointConfig:
+    assert (
+        configure_endpoint(name, port=_PORT, proxystore_dir=str(tmp_path)) == 0
+    )
+    return EndpointDir.from_home(str(tmp_path), name).read_config()
+
+
+def test_get_endpoint_id(tmp_path: pathlib.Path, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    config = _configure(tmp_path)
+    caplog.clear()
+
+    assert get_endpoint_id(_NAME, proxystore_dir=str(tmp_path)) == 0
+    assert caplog.records[-1].message == config.id
+
+    assert get_endpoint_id('missing', proxystore_dir=str(tmp_path)) == 1
+    assert 'does not exist' in caplog.records[-1].message
+
+
+def test_get_endpoint_id_bad_config(tmp_path: pathlib.Path, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+    os.makedirs(tmp_path / _NAME)
+    assert get_endpoint_id(_NAME, proxystore_dir=str(tmp_path)) == 1
+    assert 'valid configuration' in caplog.records[-1].message
+
+
+def test_add_list_remove_peer(tmp_path: pathlib.Path, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    home = str(tmp_path)
+    _configure(tmp_path)
+    peer_id = random_endpoint_id()
+
+    assert list_peers(_NAME, proxystore_dir=home) == 0
+    assert any('has no peers' in r.message for r in caplog.records)
+
+    assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 0
+    endpoint_dir = EndpointDir.from_home(home, _NAME)
+    assert endpoint_dir.read_peers().peers == {'peer': peer_id}
+
+    caplog.clear()
+    assert list_peers(_NAME, proxystore_dir=home) == 0
+    assert caplog.records[-1].message.split() == ['peer', peer_id]
+
+    assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 0
+    assert endpoint_dir.read_peers().peers == {}
+    assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 1
+    assert 'no peer named peer' in caplog.records[-1].message
+
+
+def test_add_peer_errors(tmp_path: pathlib.Path, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+    home = str(tmp_path)
+    config = _configure(tmp_path)
+    peer_id = random_endpoint_id()
+    assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 0
+
+    def _error(*args: str) -> str:
+        assert add_peer(*args, proxystore_dir=home) == 1
+        return caplog.records[-1].message
+
+    assert 'does not exist' in _error('missing', 'p', peer_id)
+    assert 'alphanumeric' in _error(_NAME, 'bad name', peer_id)
+    assert 'not a valid endpoint ID' in _error(_NAME, 'p', 'xyz')
+    assert 'peer of itself' in _error(_NAME, 'p', config.id)
+    caplog.clear()
+    _error(_NAME, 'peer', random_endpoint_id())
+    assert 'already exists' in caplog.records[0].message
+    assert 'already a peer named peer' in _error(_NAME, 'p', peer_id)
+
+
+def test_peer_commands_malformed_peers(tmp_path: pathlib.Path, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+    home = str(tmp_path)
+    _configure(tmp_path)
+    endpoint_dir = EndpointDir.from_home(home, _NAME)
+    with open(endpoint_dir.peers_path, 'w') as f:
+        f.write('not toml')
+
+    peer_id = random_endpoint_id()
+    assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 1
+    assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 1
+    assert list_peers(_NAME, proxystore_dir=home) == 1
+    assert all('Unable to parse' in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize('command', (remove_peer, list_peers))
+def test_peer_commands_missing_endpoint(
+    command: Any,
+    tmp_path: pathlib.Path,
+) -> None:
+    args = ('missing', 'peer') if command is remove_peer else ('missing',)
+    assert command(*args, proxystore_dir=str(tmp_path)) == 1
+
+
+def test_peer_commands_default_home(tmp_path: pathlib.Path) -> None:
+    with mock.patch(
+        'proxystore.endpoint.commands.home_dir',
+        return_value=str(tmp_path),
+    ):
+        assert get_endpoint_id('missing') == 1

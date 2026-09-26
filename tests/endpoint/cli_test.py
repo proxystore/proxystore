@@ -250,3 +250,27 @@ async def test_test_command_tls(home_dir, caplog) -> None:
         )
     assert result.exit_code == 0
     assert any('Object exists: False' in r.message for r in caplog.records)
+
+
+def test_id_and_peers_commands(home_dir, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    runner = click.testing.CliRunner()
+    assert runner.invoke(cli, ['configure', 'ep']).exit_code == 0
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'ep'))
+
+    caplog.clear()
+    assert runner.invoke(cli, ['id', 'ep']).exit_code == 0
+    assert caplog.records[-1].message == endpoint_dir.read_config().id
+
+    peer_id = 'ab' * 32
+    result = runner.invoke(cli, ['peers', 'add', 'ep', 'peer', peer_id])
+    assert result.exit_code == 0
+    assert endpoint_dir.read_peers().peers == {'peer': peer_id}
+
+    caplog.clear()
+    assert runner.invoke(cli, ['peers', 'list', 'ep']).exit_code == 0
+    assert caplog.records[-1].message.split() == ['peer', peer_id]
+
+    result = runner.invoke(cli, ['peers', 'remove', 'ep', 'peer'])
+    assert result.exit_code == 0
+    assert endpoint_dir.read_peers().peers == {}

@@ -14,7 +14,10 @@ from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.auth import write_private_file
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.identity import SECRET_KEY_SIZE
+from proxystore.endpoint.peers import PeersConfig
+from proxystore.endpoint.peers import read_peers
 from proxystore.utils.config import dump
+from proxystore.utils.config import dumps
 from proxystore.utils.config import load
 
 
@@ -168,6 +171,26 @@ class EndpointDir:
                 f'Secret key file at {self.secret_key_path} is malformed.',
             )
         return secret_key
+
+    @property
+    def peers_path(self) -> str:
+        """Path to the allowlist of peer endpoints."""
+        return self._join('peers.toml')
+
+    def read_peers(self) -> PeersConfig:
+        """Read the allowlist of peer endpoints.
+
+        Returns:
+            The allowlist or an empty allowlist if the file does not exist.
+
+        Raises:
+            ValueError: If the allowlist cannot be parsed or is invalid.
+        """
+        return read_peers(self.peers_path)
+
+    def write_peers(self, peers: PeersConfig) -> None:
+        """Atomically write the allowlist of peer endpoints."""
+        write_private_file(self.peers_path, dumps(peers).encode())
 
     @property
     def connection_path(self) -> str:
