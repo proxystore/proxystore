@@ -12,31 +12,31 @@
         <meta name="author" content="Globus Labs">
       
       
-        <link rel="canonical" href="https://docs.proxystore.dev/latest/api/connectors/">
+        <link rel="canonical" href="https://docs.proxystore.dev/latest/api/endpoint/server/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../serve/">
       
       
-        <link rel="next" href="dim/">
+        <link rel="next" href="../storage/">
       
       
         
       
       
-      <link rel="icon" href="../../static/favicon.png">
+      <link rel="icon" href="../../../static/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
-        <title>proxystore.connectors - ProxyStore</title>
+        <title>server - ProxyStore</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,13 +55,13 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/extra.css">
+      <link rel="stylesheet" href="../../../css/extra.css">
     
-      <link rel="stylesheet" href="../../css/mkdocstrings.css">
+      <link rel="stylesheet" href="../../../css/mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -86,7 +86,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#proxystoreconnectors" class="md-skip">
+        <a href="#proxystoreendpointserver" class="md-skip">
           Skip to content
         </a>
       
@@ -104,9 +104,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href="../../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../static/icon-white.svg" alt="logo">
+  <img src="../../../static/icon-white.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -123,7 +123,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              proxystore.connectors
+              server
             
           </span>
         </div>
@@ -253,7 +253,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+        <a href="../../.." class="md-tabs__link">
           
   
   
@@ -271,7 +271,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../concepts/" class="md-tabs__link">
+      <a href="../../../concepts/" class="md-tabs__link">
         
   
   
@@ -290,7 +290,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../guides/" class="md-tabs__link">
+      <a href="../../../guides/" class="md-tabs__link">
         
   
   
@@ -322,7 +322,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../" class="md-tabs__link">
+        <a href="../../" class="md-tabs__link">
           
   
   
@@ -343,7 +343,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../contributing/" class="md-tabs__link">
+      <a href="../../../contributing/" class="md-tabs__link">
         
   
   
@@ -362,7 +362,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../publications/" class="md-tabs__link">
+      <a href="../../../publications/" class="md-tabs__link">
         
   
   
@@ -397,9 +397,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href="../../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../static/icon-white.svg" alt="logo">
+  <img src="../../../static/icon-white.svg" alt="logo">
 
     </a>
     ProxyStore
@@ -478,7 +478,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -506,7 +506,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../../../installation/" class="md-nav__link">
         
   
   
@@ -534,7 +534,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../get-started/" class="md-nav__link">
+      <a href="../../../get-started/" class="md-nav__link">
         
   
   
@@ -562,7 +562,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../../../examples/" class="md-nav__link">
         
   
   
@@ -590,7 +590,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../../../faq/" class="md-nav__link">
         
   
   
@@ -698,7 +698,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../concepts/" class="md-nav__link ">
+            <a href="../../../concepts/" class="md-nav__link ">
               
   
   
@@ -740,7 +740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/proxy/" class="md-nav__link">
+      <a href="../../../concepts/proxy/" class="md-nav__link">
         
   
   
@@ -768,7 +768,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/connector/" class="md-nav__link">
+      <a href="../../../concepts/connector/" class="md-nav__link">
         
   
   
@@ -796,7 +796,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/store/" class="md-nav__link">
+      <a href="../../../concepts/store/" class="md-nav__link">
         
   
   
@@ -848,7 +848,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../guides/" class="md-nav__link ">
+            <a href="../../../guides/" class="md-nav__link ">
               
   
   
@@ -890,7 +890,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/dask-distributed/" class="md-nav__link">
+      <a href="../../../guides/dask-distributed/" class="md-nav__link">
         
   
   
@@ -918,7 +918,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/globus-compute/" class="md-nav__link">
+      <a href="../../../guides/globus-compute/" class="md-nav__link">
         
   
   
@@ -946,7 +946,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/endpoints/" class="md-nav__link">
+      <a href="../../../guides/endpoints/" class="md-nav__link">
         
   
   
@@ -974,7 +974,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/endpoints-debugging/" class="md-nav__link">
+      <a href="../../../guides/endpoints-debugging/" class="md-nav__link">
         
   
   
@@ -1002,7 +1002,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/object-lifetimes/" class="md-nav__link">
+      <a href="../../../guides/object-lifetimes/" class="md-nav__link">
         
   
   
@@ -1030,7 +1030,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/performance/" class="md-nav__link">
+      <a href="../../../guides/performance/" class="md-nav__link">
         
   
   
@@ -1058,7 +1058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/proxy-futures/" class="md-nav__link">
+      <a href="../../../guides/proxy-futures/" class="md-nav__link">
         
   
   
@@ -1086,7 +1086,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/relay-serving/" class="md-nav__link">
+      <a href="../../../guides/relay-serving/" class="md-nav__link">
         
   
   
@@ -1114,7 +1114,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/streaming/" class="md-nav__link">
+      <a href="../../../guides/streaming/" class="md-nav__link">
         
   
   
@@ -1263,7 +1263,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../" class="md-nav__link">
         
   
   
@@ -1288,8 +1288,6 @@
                 
   
   
-    
-  
   
   
     
@@ -1302,15 +1300,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_2" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="./" class="md-nav__link md-nav__link--active">
+            <a href="../../connectors/" class="md-nav__link ">
               
   
   
@@ -1328,13 +1326,13 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_4_1_2" id="__nav_4_1_2_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_2_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_1_2">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1352,7 +1350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="dim/" class="md-nav__link">
+      <a href="../../connectors/dim/" class="md-nav__link">
         
   
   
@@ -1380,7 +1378,7 @@
   
   
     <li class="md-nav__item">
-      <a href="endpoint/" class="md-nav__link">
+      <a href="../../connectors/endpoint/" class="md-nav__link">
         
   
   
@@ -1408,7 +1406,7 @@
   
   
     <li class="md-nav__item">
-      <a href="file/" class="md-nav__link">
+      <a href="../../connectors/file/" class="md-nav__link">
         
   
   
@@ -1436,7 +1434,7 @@
   
   
     <li class="md-nav__item">
-      <a href="globus/" class="md-nav__link">
+      <a href="../../connectors/globus/" class="md-nav__link">
         
   
   
@@ -1464,7 +1462,7 @@
   
   
     <li class="md-nav__item">
-      <a href="local/" class="md-nav__link">
+      <a href="../../connectors/local/" class="md-nav__link">
         
   
   
@@ -1492,7 +1490,7 @@
   
   
     <li class="md-nav__item">
-      <a href="multi/" class="md-nav__link">
+      <a href="../../connectors/multi/" class="md-nav__link">
         
   
   
@@ -1520,7 +1518,7 @@
   
   
     <li class="md-nav__item">
-      <a href="protocols/" class="md-nav__link">
+      <a href="../../connectors/protocols/" class="md-nav__link">
         
   
   
@@ -1548,7 +1546,7 @@
   
   
     <li class="md-nav__item">
-      <a href="redis/" class="md-nav__link">
+      <a href="../../connectors/redis/" class="md-nav__link">
         
   
   
@@ -1581,8 +1579,10 @@
                 
   
   
+    
   
   
+  
     
     
     
@@ -1593,15 +1593,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../endpoint/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -1625,7 +1625,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_1_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4_1_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1643,7 +1643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/auth/" class="md-nav__link">
+      <a href="../auth/" class="md-nav__link">
         
   
   
@@ -1671,7 +1671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/cli/" class="md-nav__link">
+      <a href="../cli/" class="md-nav__link">
         
   
   
@@ -1699,7 +1699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/client/" class="md-nav__link">
+      <a href="../client/" class="md-nav__link">
         
   
   
@@ -1727,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/commands/" class="md-nav__link">
+      <a href="../commands/" class="md-nav__link">
         
   
   
@@ -1755,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/config/" class="md-nav__link">
+      <a href="../config/" class="md-nav__link">
         
   
   
@@ -1783,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/directory/" class="md-nav__link">
+      <a href="../directory/" class="md-nav__link">
         
   
   
@@ -1811,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/endpoint/" class="md-nav__link">
+      <a href="../endpoint/" class="md-nav__link">
         
   
   
@@ -1839,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/exceptions/" class="md-nav__link">
+      <a href="../exceptions/" class="md-nav__link">
         
   
   
@@ -1867,7 +1867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/messages/" class="md-nav__link">
+      <a href="../messages/" class="md-nav__link">
         
   
   
@@ -1895,7 +1895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/protocol/" class="md-nav__link">
+      <a href="../protocol/" class="md-nav__link">
         
   
   
@@ -1923,7 +1923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/serve/" class="md-nav__link">
+      <a href="../serve/" class="md-nav__link">
         
   
   
@@ -1948,10 +1948,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../endpoint/server/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1967,6 +1994,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;server
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.HANDSHAKE_TIMEOUT" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;HANDSHAKE_TIMEOUT
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ClientHandler
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" ClientHandler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler.start_server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;start_server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler.close_connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close_connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1979,7 +2087,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/storage/" class="md-nav__link">
+      <a href="../storage/" class="md-nav__link">
         
   
   
@@ -2007,7 +2115,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../endpoint/warnings/" class="md-nav__link">
+      <a href="../warnings/" class="md-nav__link">
         
   
   
@@ -2043,7 +2151,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../ex/" class="md-nav__link">
+      <a href="../../ex/" class="md-nav__link">
         
   
   
@@ -2071,7 +2179,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../factory/" class="md-nav__link">
+      <a href="../../factory/" class="md-nav__link">
         
   
   
@@ -2116,7 +2224,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../globus/" class="md-nav__link ">
+            <a href="../../globus/" class="md-nav__link ">
               
   
   
@@ -2158,7 +2266,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../globus/app/" class="md-nav__link">
+      <a href="../../globus/app/" class="md-nav__link">
         
   
   
@@ -2186,7 +2294,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../globus/cli/" class="md-nav__link">
+      <a href="../../globus/cli/" class="md-nav__link">
         
   
   
@@ -2214,7 +2322,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../globus/client/" class="md-nav__link">
+      <a href="../../globus/client/" class="md-nav__link">
         
   
   
@@ -2242,7 +2350,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../globus/scopes/" class="md-nav__link">
+      <a href="../../globus/scopes/" class="md-nav__link">
         
   
   
@@ -2278,7 +2386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../mypy_plugin/" class="md-nav__link">
+      <a href="../../mypy_plugin/" class="md-nav__link">
         
   
   
@@ -2323,7 +2431,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../p2p/" class="md-nav__link ">
+            <a href="../../p2p/" class="md-nav__link ">
               
   
   
@@ -2365,7 +2473,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/chunks/" class="md-nav__link">
+      <a href="../../p2p/chunks/" class="md-nav__link">
         
   
   
@@ -2393,7 +2501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/connection/" class="md-nav__link">
+      <a href="../../p2p/connection/" class="md-nav__link">
         
   
   
@@ -2421,7 +2529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/exceptions/" class="md-nav__link">
+      <a href="../../p2p/exceptions/" class="md-nav__link">
         
   
   
@@ -2449,7 +2557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/manager/" class="md-nav__link">
+      <a href="../../p2p/manager/" class="md-nav__link">
         
   
   
@@ -2477,7 +2585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/nat/" class="md-nav__link">
+      <a href="../../p2p/nat/" class="md-nav__link">
         
   
   
@@ -2522,7 +2630,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../p2p/relay/" class="md-nav__link ">
+            <a href="../../p2p/relay/" class="md-nav__link ">
               
   
   
@@ -2564,7 +2672,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/authenticate/" class="md-nav__link">
+      <a href="../../p2p/relay/authenticate/" class="md-nav__link">
         
   
   
@@ -2592,7 +2700,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/client/" class="md-nav__link">
+      <a href="../../p2p/relay/client/" class="md-nav__link">
         
   
   
@@ -2620,7 +2728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/config/" class="md-nav__link">
+      <a href="../../p2p/relay/config/" class="md-nav__link">
         
   
   
@@ -2648,7 +2756,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/exceptions/" class="md-nav__link">
+      <a href="../../p2p/relay/exceptions/" class="md-nav__link">
         
   
   
@@ -2676,7 +2784,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/manager/" class="md-nav__link">
+      <a href="../../p2p/relay/manager/" class="md-nav__link">
         
   
   
@@ -2704,7 +2812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/messages/" class="md-nav__link">
+      <a href="../../p2p/relay/messages/" class="md-nav__link">
         
   
   
@@ -2732,7 +2840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/run/" class="md-nav__link">
+      <a href="../../p2p/relay/run/" class="md-nav__link">
         
   
   
@@ -2760,7 +2868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../p2p/relay/server/" class="md-nav__link">
+      <a href="../../p2p/relay/server/" class="md-nav__link">
         
   
   
@@ -2804,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../proxy/" class="md-nav__link">
+      <a href="../../proxy/" class="md-nav__link">
         
   
   
@@ -2832,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../serialize/" class="md-nav__link">
+      <a href="../../serialize/" class="md-nav__link">
         
   
   
@@ -2877,7 +2985,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../store/" class="md-nav__link ">
+            <a href="../../store/" class="md-nav__link ">
               
   
   
@@ -2919,7 +3027,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/base/" class="md-nav__link">
+      <a href="../../store/base/" class="md-nav__link">
         
   
   
@@ -2947,7 +3055,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/cache/" class="md-nav__link">
+      <a href="../../store/cache/" class="md-nav__link">
         
   
   
@@ -2975,7 +3083,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/config/" class="md-nav__link">
+      <a href="../../store/config/" class="md-nav__link">
         
   
   
@@ -3003,7 +3111,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/exceptions/" class="md-nav__link">
+      <a href="../../store/exceptions/" class="md-nav__link">
         
   
   
@@ -3031,7 +3139,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/executor/" class="md-nav__link">
+      <a href="../../store/executor/" class="md-nav__link">
         
   
   
@@ -3059,7 +3167,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/factory/" class="md-nav__link">
+      <a href="../../store/factory/" class="md-nav__link">
         
   
   
@@ -3087,7 +3195,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/future/" class="md-nav__link">
+      <a href="../../store/future/" class="md-nav__link">
         
   
   
@@ -3115,7 +3223,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/lifetimes/" class="md-nav__link">
+      <a href="../../store/lifetimes/" class="md-nav__link">
         
   
   
@@ -3143,7 +3251,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/metrics/" class="md-nav__link">
+      <a href="../../store/metrics/" class="md-nav__link">
         
   
   
@@ -3171,7 +3279,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/ref/" class="md-nav__link">
+      <a href="../../store/ref/" class="md-nav__link">
         
   
   
@@ -3199,7 +3307,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/scopes/" class="md-nav__link">
+      <a href="../../store/scopes/" class="md-nav__link">
         
   
   
@@ -3227,7 +3335,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/types/" class="md-nav__link">
+      <a href="../../store/types/" class="md-nav__link">
         
   
   
@@ -3255,7 +3363,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../store/utils/" class="md-nav__link">
+      <a href="../../store/utils/" class="md-nav__link">
         
   
   
@@ -3308,7 +3416,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../stream/" class="md-nav__link ">
+            <a href="../../stream/" class="md-nav__link ">
               
   
   
@@ -3350,7 +3458,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/events/" class="md-nav__link">
+      <a href="../../stream/events/" class="md-nav__link">
         
   
   
@@ -3378,7 +3486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/exceptions/" class="md-nav__link">
+      <a href="../../stream/exceptions/" class="md-nav__link">
         
   
   
@@ -3406,7 +3514,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/filters/" class="md-nav__link">
+      <a href="../../stream/filters/" class="md-nav__link">
         
   
   
@@ -3434,7 +3542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/protocols/" class="md-nav__link">
+      <a href="../../stream/protocols/" class="md-nav__link">
         
   
   
@@ -3479,7 +3587,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../stream/shims/" class="md-nav__link ">
+            <a href="../../stream/shims/" class="md-nav__link ">
               
   
   
@@ -3521,7 +3629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/shims/kafka/" class="md-nav__link">
+      <a href="../../stream/shims/kafka/" class="md-nav__link">
         
   
   
@@ -3549,7 +3657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/shims/queue/" class="md-nav__link">
+      <a href="../../stream/shims/queue/" class="md-nav__link">
         
   
   
@@ -3577,7 +3685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/shims/redis/" class="md-nav__link">
+      <a href="../../stream/shims/redis/" class="md-nav__link">
         
   
   
@@ -3605,7 +3713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stream/shims/zmq/" class="md-nav__link">
+      <a href="../../stream/shims/zmq/" class="md-nav__link">
         
   
   
@@ -3666,7 +3774,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../utils/" class="md-nav__link ">
+            <a href="../../utils/" class="md-nav__link ">
               
   
   
@@ -3708,7 +3816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/config/" class="md-nav__link">
+      <a href="../../utils/config/" class="md-nav__link">
         
   
   
@@ -3736,7 +3844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/counter/" class="md-nav__link">
+      <a href="../../utils/counter/" class="md-nav__link">
         
   
   
@@ -3764,7 +3872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/data/" class="md-nav__link">
+      <a href="../../utils/data/" class="md-nav__link">
         
   
   
@@ -3792,7 +3900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/environment/" class="md-nav__link">
+      <a href="../../utils/environment/" class="md-nav__link">
         
   
   
@@ -3820,7 +3928,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/imports/" class="md-nav__link">
+      <a href="../../utils/imports/" class="md-nav__link">
         
   
   
@@ -3848,7 +3956,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/tasks/" class="md-nav__link">
+      <a href="../../utils/tasks/" class="md-nav__link">
         
   
   
@@ -3876,7 +3984,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../utils/timer/" class="md-nav__link">
+      <a href="../../utils/timer/" class="md-nav__link">
         
   
   
@@ -3912,7 +4020,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../warnings/" class="md-nav__link">
+      <a href="../../warnings/" class="md-nav__link">
         
   
   
@@ -3948,7 +4056,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../cli/" class="md-nav__link">
+      <a href="../../cli/" class="md-nav__link">
         
   
   
@@ -4000,7 +4108,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../contributing/" class="md-nav__link ">
+            <a href="../../../contributing/" class="md-nav__link ">
               
   
   
@@ -4042,7 +4150,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/style-guide/" class="md-nav__link">
+      <a href="../../../contributing/style-guide/" class="md-nav__link">
         
   
   
@@ -4070,7 +4178,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/issues-pull-requests/" class="md-nav__link">
+      <a href="../../../contributing/issues-pull-requests/" class="md-nav__link">
         
   
   
@@ -4098,7 +4206,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/releases/" class="md-nav__link">
+      <a href="../../../contributing/releases/" class="md-nav__link">
         
   
   
@@ -4133,7 +4241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../publications/" class="md-nav__link">
+      <a href="../../../publications/" class="md-nav__link">
         
   
   
@@ -4180,13 +4288,63 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#proxystore.connectors" class="md-nav__link">
+  <a href="#proxystore.endpoint.server" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;connectors
+        <code class="doc-symbol doc-symbol-toc doc-symbol-module"></code>&nbsp;server
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.HANDSHAKE_TIMEOUT" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;HANDSHAKE_TIMEOUT
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;ClientHandler
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label=" ClientHandler">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler.start_server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;start_server
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#proxystore.endpoint.server.ClientHandler.close_connections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;close_connections
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4221,7 +4379,7 @@
     
     
       <li class="md-path__item">
-        <a href="../" class="md-path__link">
+        <a href="../../" class="md-path__link">
           
   <span class="md-ellipsis">
     API Reference
@@ -4242,10 +4400,28 @@
     
     
       <li class="md-path__item">
-        <a href="../" class="md-path__link">
+        <a href="../../" class="md-path__link">
           
   <span class="md-ellipsis">
     ProxyStore
+  </span>
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+    
+      <li class="md-path__item">
+        <a href="../auth/" class="md-path__link">
+          
+  <span class="md-ellipsis">
+    proxystore.endpoint
   </span>
 
         </a>
@@ -4267,66 +4443,31 @@
   
 
 
-<h1 id="proxystoreconnectors">proxystore.connectors<a class="headerlink" href="#proxystoreconnectors" title="Permanent link">&para;</a></h1>
+<h1 id="proxystoreendpointserver">proxystore.endpoint.server<a class="headerlink" href="#proxystoreendpointserver" title="Permanent link">&para;</a></h1>
 
 
 <div class="doc doc-object doc-module">
 
 
 
-<a id="proxystore.connectors"></a>
+<a id="proxystore.endpoint.server"></a>
     <div class="doc doc-contents first">
   <div style="display:flex; align-items: center">
   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="bi bi-github" viewBox="0 0 16 16" style="padding-right: 8px">
     <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
   </svg>
-  <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/connectors/__init__.py">
-      <code>proxystore/connectors/__init__.py</code>
+  <a target="_blank" href="https://github.com/proxystore/proxystore/blob/main/proxystore/endpoint/server.py">
+      <code>proxystore/endpoint/server.py</code>
   </a>
   </div>
   
-        <p>Connector implementations.</p>
-<p>A <a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is an interface
-to a mediated communication channel or object store. Connectors operate on
-low-level bytes and are used by the <a class="autorefs autorefs-internal" title="            Store" href="../store/base/#proxystore.store.base.Store"><code>Store</code></a>
-to store and get serialized Python objects.</p>
-<p>Third-party code can provide custom connectors by implementing the
-<a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol. (Note:
-because <a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> is a
-<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.Protocol"><code>Protocol</code></a>, custom connectors do not need
-to inherit from <a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>.)</p>
+        <p>Server that handles client connections to an endpoint.</p>
+<p>Clients connect to their local endpoint over TCP using the protocol defined
+in <a class="autorefs autorefs-internal" href="../protocol/#proxystore.endpoint.protocol"><code>proxystore.endpoint.protocol</code></a>. The
+<a class="autorefs autorefs-internal" title="            ClientHandler" href="#proxystore.endpoint.server.ClientHandler"><code>ClientHandler</code></a> authenticates
+clients and forwards their requests to an
+<a class="autorefs autorefs-internal" title="            Endpoint" href="../endpoint/#proxystore.endpoint.endpoint.Endpoint"><code>Endpoint</code></a>.</p>
 
-
-<details class="example" open>
-  <summary>Example</summary>
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">FileConnector</span><span class="p">(</span><span class="s1">'./data-store'</span><span class="p">)</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="sa">b</span><span class="s1">'hello'</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">connector</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="o">&gt;&gt;&gt;</span> <span class="sa">b</span><span class="s1">'hello'</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="n">connector</span><span class="o">.</span><span class="n">evict</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="n">connector</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="o">&gt;&gt;&gt;</span> <span class="kc">False</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">connector</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</span></code></pre></div>
-</details>
-
-<details class="tip" open>
-  <summary>Tip</summary>
-  <p>All of the <a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a>
-implementations in this module can be used as context managers.
-Context manager support is not a required component of the
-<a class="autorefs autorefs-internal" title="            Connector" href="protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> protocol. It is
-simply provided for convenience with the native implementations.
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.file</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileConnector</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">FileConnector</span><span class="p">(</span><span class="s1">'./data-store'</span><span class="p">)</span> <span class="k">as</span> <span class="n">connector</span><span class="p">:</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="c1"># connector.close() will be automatically called when the</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="c1"># context manager is exited</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="o">...</span>
-</span></code></pre></div></p>
-</details>
 
 
 
@@ -4343,6 +4484,376 @@ simply provided for convenience with the native implementations.
 
 
 
+<div class="doc doc-object doc-attribute">
+
+
+
+<h2 id="proxystore.endpoint.server.HANDSHAKE_TIMEOUT" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">HANDSHAKE_TIMEOUT</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#proxystore.endpoint.server.HANDSHAKE_TIMEOUT" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">HANDSHAKE_TIMEOUT</span> <span class="o">=</span> <span class="mi">10</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Seconds a client has to complete the handshake after connecting.</p>
+
+    </div>
+
+</div>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.endpoint.server.ClientHandler" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">ClientHandler</span>
+
+
+<a href="#proxystore.endpoint.server.ClientHandler" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ClientHandler</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">endpoint</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Endpoint (proxystore.endpoint.endpoint.Endpoint)" href="../endpoint/#proxystore.endpoint.endpoint.Endpoint">Endpoint</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">token</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_object_size</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">handshake_timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="            HANDSHAKE_TIMEOUT
+
+
+  
+      module-attribute
+   (proxystore.endpoint.server.HANDSHAKE_TIMEOUT)" href="#proxystore.endpoint.server.HANDSHAKE_TIMEOUT">HANDSHAKE_TIMEOUT</a></span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+
+        <p>Handles client connections to an endpoint.</p>
+<p>The handler authenticates each client with the handshake defined in
+<a class="autorefs autorefs-internal" href="../protocol/#proxystore.endpoint.protocol"><code>proxystore.endpoint.protocol</code></a> then
+forwards the client's requests to the endpoint.</p>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">ClientHandler</span><span class="p">(</span><span class="n">endpoint</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">server</span> <span class="o">=</span> <span class="k">await</span> <span class="n">handler</span><span class="o">.</span><span class="n">start_server</span><span class="p">(</span><span class="s1">'localhost'</span><span class="p">,</span> <span class="mi">8765</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="o">...</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">server</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="k">await</span> <span class="n">handler</span><span class="o">.</span><span class="n">close_connections</span><span class="p">()</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">await</span> <span class="n">server</span><span class="o">.</span><span class="n">wait_closed</span><span class="p">()</span>
+</span></code></pre></div>
+</details>
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>endpoint</code></b>
+              (<code><a class="autorefs autorefs-internal" title="            Endpoint (proxystore.endpoint.endpoint.Endpoint)" href="../endpoint/#proxystore.endpoint.endpoint.Endpoint">Endpoint</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Endpoint to forward client requests to.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>token</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes">bytes</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Token that clients must prove they know.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>max_object_size</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional maximum size in bytes of objects that
+clients can set. Requests exceeding this size are rejected
+before the data is read. This should match the maximum object
+size of the endpoint's storage, which rejects objects only after
+the data is read.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>handshake_timeout</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></code>, default:
+                  <code><a class="autorefs autorefs-internal" title="            HANDSHAKE_TIMEOUT
+
+
+  
+      module-attribute
+   (proxystore.endpoint.server.HANDSHAKE_TIMEOUT)" href="#proxystore.endpoint.server.HANDSHAKE_TIMEOUT">HANDSHAKE_TIMEOUT</a></code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Seconds a client has to complete the handshake.</p>
+          </div>
+        </li>
+    </ul>
+
+
+
+
+
+
+
+                  <details class="quote">
+                    <summary>Source code in <code>proxystore/endpoint/server.py</code></summary>
+                    <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-308">308</a></span>
+<span class="normal"><a href="#__codelineno-0-309">309</a></span>
+<span class="normal"><a href="#__codelineno-0-310">310</a></span>
+<span class="normal"><a href="#__codelineno-0-311">311</a></span>
+<span class="normal"><a href="#__codelineno-0-312">312</a></span>
+<span class="normal"><a href="#__codelineno-0-313">313</a></span>
+<span class="normal"><a href="#__codelineno-0-314">314</a></span>
+<span class="normal"><a href="#__codelineno-0-315">315</a></span>
+<span class="normal"><a href="#__codelineno-0-316">316</a></span>
+<span class="normal"><a href="#__codelineno-0-317">317</a></span>
+<span class="normal"><a href="#__codelineno-0-318">318</a></span>
+<span class="normal"><a href="#__codelineno-0-319">319</a></span>
+<span class="normal"><a href="#__codelineno-0-320">320</a></span>
+<span class="normal"><a href="#__codelineno-0-321">321</a></span>
+<span class="normal"><a href="#__codelineno-0-322">322</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-308"><a id="__codelineno-0-308" name="__codelineno-0-308"></a><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+</span><span id="__span-0-309"><a id="__codelineno-0-309" name="__codelineno-0-309"></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-310"><a id="__codelineno-0-310" name="__codelineno-0-310"></a>    <span class="n">endpoint</span><span class="p">:</span> <span class="n">Endpoint</span><span class="p">,</span>
+</span><span id="__span-0-311"><a id="__codelineno-0-311" name="__codelineno-0-311"></a>    <span class="n">token</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+</span><span id="__span-0-312"><a id="__codelineno-0-312" name="__codelineno-0-312"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-313"><a id="__codelineno-0-313" name="__codelineno-0-313"></a>    <span class="n">max_object_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-314"><a id="__codelineno-0-314" name="__codelineno-0-314"></a>    <span class="n">handshake_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">HANDSHAKE_TIMEOUT</span><span class="p">,</span>
+</span><span id="__span-0-315"><a id="__codelineno-0-315" name="__codelineno-0-315"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-316"><a id="__codelineno-0-316" name="__codelineno-0-316"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span> <span class="o">=</span> <span class="n">endpoint</span>
+</span><span id="__span-0-317"><a id="__codelineno-0-317" name="__codelineno-0-317"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token</span>
+</span><span id="__span-0-318"><a id="__codelineno-0-318" name="__codelineno-0-318"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">max_object_size</span> <span class="o">=</span> <span class="n">max_object_size</span>
+</span><span id="__span-0-319"><a id="__codelineno-0-319" name="__codelineno-0-319"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">handshake_timeout</span> <span class="o">=</span> <span class="n">handshake_timeout</span>
+</span><span id="__span-0-320"><a id="__codelineno-0-320" name="__codelineno-0-320"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">_ClientConnection</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="__span-0-321"><a id="__codelineno-0-321" name="__codelineno-0-321"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">asyncio</span><span class="o">.</span><span class="n">Task</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span><span id="__span-0-322"><a id="__codelineno-0-322" name="__codelineno-0-322"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_warned_versions</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Versions</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+</span></code></pre></div></td></tr></table></div>
+                  </details>
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.endpoint.server.ClientHandler.start_server" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">start_server</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#proxystore.endpoint.server.ClientHandler.start_server" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">start_server</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">host</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">port</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">ssl_context</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" title="ssl.SSLContext" href="https://docs.python.org/3/library/ssl.html#ssl.SSLContext">SSLContext</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-external" title="asyncio.Server" href="https://docs.python.org/3/library/asyncio-eventloop.html#asyncio.Server">Server</a></span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Start a server that handles connections on the host and port.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>host</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/stdtypes.html#str">str</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Address to listen on.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>port</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#int">int</a></code>)
+          –
+          <div class="doc-md-description">
+            <p>Port to listen on.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+            <b><code>ssl_context</code></b>
+              (<code><a class="autorefs autorefs-external" title="ssl.SSLContext" href="https://docs.python.org/3/library/ssl.html#ssl.SSLContext">SSLContext</a> | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Optional SSL context to encrypt connections with TLS.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/endpoint/server.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-324">324</a></span>
+<span class="normal"><a href="#__codelineno-0-325">325</a></span>
+<span class="normal"><a href="#__codelineno-0-326">326</a></span>
+<span class="normal"><a href="#__codelineno-0-327">327</a></span>
+<span class="normal"><a href="#__codelineno-0-328">328</a></span>
+<span class="normal"><a href="#__codelineno-0-329">329</a></span>
+<span class="normal"><a href="#__codelineno-0-330">330</a></span>
+<span class="normal"><a href="#__codelineno-0-331">331</a></span>
+<span class="normal"><a href="#__codelineno-0-332">332</a></span>
+<span class="normal"><a href="#__codelineno-0-333">333</a></span>
+<span class="normal"><a href="#__codelineno-0-334">334</a></span>
+<span class="normal"><a href="#__codelineno-0-335">335</a></span>
+<span class="normal"><a href="#__codelineno-0-336">336</a></span>
+<span class="normal"><a href="#__codelineno-0-337">337</a></span>
+<span class="normal"><a href="#__codelineno-0-338">338</a></span>
+<span class="normal"><a href="#__codelineno-0-339">339</a></span>
+<span class="normal"><a href="#__codelineno-0-340">340</a></span>
+<span class="normal"><a href="#__codelineno-0-341">341</a></span>
+<span class="normal"><a href="#__codelineno-0-342">342</a></span>
+<span class="normal"><a href="#__codelineno-0-343">343</a></span>
+<span class="normal"><a href="#__codelineno-0-344">344</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-324"><a id="__codelineno-0-324" name="__codelineno-0-324"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">start_server</span><span class="p">(</span>
+</span><span id="__span-0-325"><a id="__codelineno-0-325" name="__codelineno-0-325"></a>    <span class="bp">self</span><span class="p">,</span>
+</span><span id="__span-0-326"><a id="__codelineno-0-326" name="__codelineno-0-326"></a>    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+</span><span id="__span-0-327"><a id="__codelineno-0-327" name="__codelineno-0-327"></a>    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+</span><span id="__span-0-328"><a id="__codelineno-0-328" name="__codelineno-0-328"></a>    <span class="o">*</span><span class="p">,</span>
+</span><span id="__span-0-329"><a id="__codelineno-0-329" name="__codelineno-0-329"></a>    <span class="n">ssl_context</span><span class="p">:</span> <span class="n">ssl</span><span class="o">.</span><span class="n">SSLContext</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-330"><a id="__codelineno-0-330" name="__codelineno-0-330"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Server</span><span class="p">:</span>
+</span><span id="__span-0-331"><a id="__codelineno-0-331" name="__codelineno-0-331"></a><span class="w">    </span><span class="sd">"""Start a server that handles connections on the host and port.</span>
+</span><span id="__span-0-332"><a id="__codelineno-0-332" name="__codelineno-0-332"></a>
+</span><span id="__span-0-333"><a id="__codelineno-0-333" name="__codelineno-0-333"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-334"><a id="__codelineno-0-334" name="__codelineno-0-334"></a><span class="sd">        host: Address to listen on.</span>
+</span><span id="__span-0-335"><a id="__codelineno-0-335" name="__codelineno-0-335"></a><span class="sd">        port: Port to listen on.</span>
+</span><span id="__span-0-336"><a id="__codelineno-0-336" name="__codelineno-0-336"></a><span class="sd">        ssl_context: Optional SSL context to encrypt connections with TLS.</span>
+</span><span id="__span-0-337"><a id="__codelineno-0-337" name="__codelineno-0-337"></a><span class="sd">    """</span>
+</span><span id="__span-0-338"><a id="__codelineno-0-338" name="__codelineno-0-338"></a>    <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_running_loop</span><span class="p">()</span>
+</span><span id="__span-0-339"><a id="__codelineno-0-339" name="__codelineno-0-339"></a>    <span class="k">return</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">create_server</span><span class="p">(</span>
+</span><span id="__span-0-340"><a id="__codelineno-0-340" name="__codelineno-0-340"></a>        <span class="k">lambda</span><span class="p">:</span> <span class="n">_ClientConnection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_handle_connection</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">),</span>
+</span><span id="__span-0-341"><a id="__codelineno-0-341" name="__codelineno-0-341"></a>        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+</span><span id="__span-0-342"><a id="__codelineno-0-342" name="__codelineno-0-342"></a>        <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+</span><span id="__span-0-343"><a id="__codelineno-0-343" name="__codelineno-0-343"></a>        <span class="n">ssl</span><span class="o">=</span><span class="n">ssl_context</span><span class="p">,</span>
+</span><span id="__span-0-344"><a id="__codelineno-0-344" name="__codelineno-0-344"></a>    <span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="proxystore.endpoint.server.ClientHandler.close_connections" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">close_connections</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#proxystore.endpoint.server.ClientHandler.close_connections" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">close_connections</span><span class="p">(</span><span class="n">timeout</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Close all open client connections.</p>
+<p>Connection handlers waiting on the client finish once their
+connection is closed. Handlers that do not finish within <code>timeout</code>
+seconds (e.g., because a request is waiting on a peer endpoint) are
+cancelled.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+            <b><code>timeout</code></b>
+              (<code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/functions.html#float">float</a></code>, default:
+                  <code>1</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Seconds to wait for connection handlers to finish
+before cancelling them.</p>
+          </div>
+        </li>
+    </ul>
+
+
+            <details class="quote">
+              <summary>Source code in <code>proxystore/endpoint/server.py</code></summary>
+              <div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-346">346</a></span>
+<span class="normal"><a href="#__codelineno-0-347">347</a></span>
+<span class="normal"><a href="#__codelineno-0-348">348</a></span>
+<span class="normal"><a href="#__codelineno-0-349">349</a></span>
+<span class="normal"><a href="#__codelineno-0-350">350</a></span>
+<span class="normal"><a href="#__codelineno-0-351">351</a></span>
+<span class="normal"><a href="#__codelineno-0-352">352</a></span>
+<span class="normal"><a href="#__codelineno-0-353">353</a></span>
+<span class="normal"><a href="#__codelineno-0-354">354</a></span>
+<span class="normal"><a href="#__codelineno-0-355">355</a></span>
+<span class="normal"><a href="#__codelineno-0-356">356</a></span>
+<span class="normal"><a href="#__codelineno-0-357">357</a></span>
+<span class="normal"><a href="#__codelineno-0-358">358</a></span>
+<span class="normal"><a href="#__codelineno-0-359">359</a></span>
+<span class="normal"><a href="#__codelineno-0-360">360</a></span>
+<span class="normal"><a href="#__codelineno-0-361">361</a></span>
+<span class="normal"><a href="#__codelineno-0-362">362</a></span>
+<span class="normal"><a href="#__codelineno-0-363">363</a></span>
+<span class="normal"><a href="#__codelineno-0-364">364</a></span>
+<span class="normal"><a href="#__codelineno-0-365">365</a></span>
+<span class="normal"><a href="#__codelineno-0-366">366</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-346"><a id="__codelineno-0-346" name="__codelineno-0-346"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">close_connections</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-347"><a id="__codelineno-0-347" name="__codelineno-0-347"></a><span class="w">    </span><span class="sd">"""Close all open client connections.</span>
+</span><span id="__span-0-348"><a id="__codelineno-0-348" name="__codelineno-0-348"></a>
+</span><span id="__span-0-349"><a id="__codelineno-0-349" name="__codelineno-0-349"></a><span class="sd">    Connection handlers waiting on the client finish once their</span>
+</span><span id="__span-0-350"><a id="__codelineno-0-350" name="__codelineno-0-350"></a><span class="sd">    connection is closed. Handlers that do not finish within `timeout`</span>
+</span><span id="__span-0-351"><a id="__codelineno-0-351" name="__codelineno-0-351"></a><span class="sd">    seconds (e.g., because a request is waiting on a peer endpoint) are</span>
+</span><span id="__span-0-352"><a id="__codelineno-0-352" name="__codelineno-0-352"></a><span class="sd">    cancelled.</span>
+</span><span id="__span-0-353"><a id="__codelineno-0-353" name="__codelineno-0-353"></a>
+</span><span id="__span-0-354"><a id="__codelineno-0-354" name="__codelineno-0-354"></a><span class="sd">    Args:</span>
+</span><span id="__span-0-355"><a id="__codelineno-0-355" name="__codelineno-0-355"></a><span class="sd">        timeout: Seconds to wait for connection handlers to finish</span>
+</span><span id="__span-0-356"><a id="__codelineno-0-356" name="__codelineno-0-356"></a><span class="sd">            before cancelling them.</span>
+</span><span id="__span-0-357"><a id="__codelineno-0-357" name="__codelineno-0-357"></a><span class="sd">    """</span>
+</span><span id="__span-0-358"><a id="__codelineno-0-358" name="__codelineno-0-358"></a>    <span class="k">for</span> <span class="n">conn</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_connections</span><span class="p">):</span>
+</span><span id="__span-0-359"><a id="__codelineno-0-359" name="__codelineno-0-359"></a>        <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</span><span id="__span-0-360"><a id="__codelineno-0-360" name="__codelineno-0-360"></a>    <span class="n">tasks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_tasks</span><span class="p">)</span>
+</span><span id="__span-0-361"><a id="__codelineno-0-361" name="__codelineno-0-361"></a>    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tasks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-0-362"><a id="__codelineno-0-362" name="__codelineno-0-362"></a>        <span class="k">return</span>
+</span><span id="__span-0-363"><a id="__codelineno-0-363" name="__codelineno-0-363"></a>    <span class="n">_</span><span class="p">,</span> <span class="n">pending</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+</span><span id="__span-0-364"><a id="__codelineno-0-364" name="__codelineno-0-364"></a>    <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+</span><span id="__span-0-365"><a id="__codelineno-0-365" name="__codelineno-0-365"></a>        <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+</span><span id="__span-0-366"><a id="__codelineno-0-366" name="__codelineno-0-366"></a>    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="n">pending</span><span class="p">,</span> <span class="n">return_exceptions</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
 
 
 
@@ -4412,10 +4923,10 @@ simply provided for convenience with the native implementations.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

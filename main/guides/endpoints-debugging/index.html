@@ -1082,10 +1082,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#invoke-a-rest-request" class="md-nav__link">
+  <a href="#connect-from-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Invoke a REST Request
+        Connect from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Errors
       
     </span>
   </a>
@@ -1792,6 +1803,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/cli/" class="md-nav__link">
         
   
@@ -1904,14 +1943,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/constants/" class="md-nav__link">
+      <a href="../../api/endpoint/directory/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    constants
+    directory
   
 
     
@@ -2016,6 +2055,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/serve/" class="md-nav__link">
         
   
@@ -2044,6 +2111,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/storage/" class="md-nav__link">
         
   
@@ -2052,6 +2147,34 @@
     
   
     storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/endpoint/warnings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    warnings
   
 
     
@@ -4262,10 +4385,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#invoke-a-rest-request" class="md-nav__link">
+  <a href="#connect-from-python" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Invoke a REST Request
+        Connect from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#common-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Common Errors
       
     </span>
   </a>
@@ -4354,7 +4488,7 @@
 
 
 <h1 id="endpoints-debugging">Endpoints Debugging<a class="headerlink" href="#endpoints-debugging" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 2 May 2023</em></p>
+<p><em>Last updated 25 September 2026</em></p>
 <p>This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.</p>
 <h2 id="test-a-local-endpoint">Test a Local Endpoint<a class="headerlink" href="#test-a-local-endpoint" title="Permanent link">&para;</a></h2>
@@ -4371,8 +4505,8 @@ are encountering issues using ProxyStore Endpoints.</p>
 in this case is <code>~/.local/share/proxystore/myendpoint</code>
 (see <a class="autorefs autorefs-internal" title="            home_dir" href="../../api/utils/environment/#proxystore.utils.environment.home_dir"><code>home_dir()</code></a> for the full
 specification).
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>tail<span class="w"> </span>-n<span class="w"> </span><span class="m">1</span><span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>INFO<span class="w">  </span><span class="o">(</span>uvicorn.error<span class="o">)</span><span class="w"> </span>::<span class="w"> </span>Uvicorn<span class="w"> </span>running<span class="w"> </span>on<span class="w"> </span>http://127.0.1.1:8766<span class="w"> </span><span class="o">(</span>Press<span class="w"> </span>CTRL+C<span class="w"> </span>to<span class="w"> </span>quit<span class="o">)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>grep<span class="w"> </span><span class="s2">"Serving endpoint"</span><span class="w"> </span>~/.local/share/proxystore/myendpoint/log.txt
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>INFO<span class="w">  </span><span class="o">(</span>proxystore.endpoint.serve<span class="o">)</span><span class="w"> </span>::<span class="w"> </span>Serving<span class="w"> </span>endpoint<span class="w"> </span>f4dc841d-377e-4785-8d66-8eade34f63cd<span class="w"> </span><span class="o">(</span>myendpoint<span class="o">)</span><span class="w"> </span>on<span class="w"> </span><span class="m">127</span>.0.1.1:8766
 </span></code></pre></div>
 The logs are the first place to check for any potential issues.</p>
 <p>If you see an error similar to:
@@ -4395,20 +4529,49 @@ See the <a href="../../api/cli/#proxystore-endpoint-test" target="_blank">CLI Re
 As expected, an object with key <code>abcdef</code> does not exist in the store, but
 we got a valid response so we know the endpoint is running correctly.
 You can also validate that this request was logged by the endpoint.</p>
-<h3 id="invoke-a-rest-request">Invoke a REST Request<a class="headerlink" href="#invoke-a-rest-request" title="Permanent link">&para;</a></h3>
-<p>Endpoints serve a REST API so <code>curl</code> can be used to check if an endpoint
-is accessible. Note the <code>proxystore-endpoint test</code> CLI is preferred for
-debugging. The correct address the endpoint is listening on can be found in
-the logs.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>$<span class="w"> </span>curl<span class="w"> </span>http://127.0.0.1:8765/exists?key<span class="o">=</span>abcdef
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="o">{</span><span class="s2">"exists"</span>:<span class="w"> </span>false<span class="o">}</span>
+<h3 id="connect-from-python">Connect from Python<a class="headerlink" href="#connect-from-python" title="Permanent link">&para;</a></h3>
+<p>The <a class="autorefs autorefs-internal" title="            EndpointClient" href="../../api/endpoint/client/#proxystore.endpoint.client.EndpointClient"><code>EndpointClient</code></a> can be used
+to connect to an endpoint directly. Clients find the endpoint's address,
+token, and TLS certificate fingerprint (if enabled) in the <code>connection.json</code>
+file that the endpoint writes to its directory when it starts, and
+<a class="autorefs autorefs-internal" title="            from_name
+
+
+  
+      classmethod
+  " href="../../api/endpoint/client/#proxystore.endpoint.client.EndpointClient.from_name"><code>EndpointClient.from_name()</code></a>
+reads this file for you.
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.endpoint.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">EndpointClient</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">with</span> <span class="n">EndpointClient</span><span class="o">.</span><span class="n">from_name</span><span class="p">(</span><span class="s1">'myendpoint'</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">info</span><span class="p">)</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="s1">'abcdef'</span><span class="p">))</span>
 </span></code></pre></div></p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>If the <code>curl</code> command hangs or returns an HTTP error related to being unable to resolve the URL, check if you have an HTTP proxy set.
-The <code>proxystore-endpoint test</code> command ignores all HTTP proxies and should work in the case where <code>curl</code> does not.
-Alternatively, try to unset the <code>http_proxy</code> and <code>HTTP_PROXY</code> environment variables when issuing the command.</p>
-</div>
+<h3 id="common-errors">Common Errors<a class="headerlink" href="#common-errors" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>An endpoint named ... does not exist</strong>: No endpoint with that name is
+  configured in the ProxyStore home directory. Check the name with
+  <code>proxystore-endpoint list</code> and that the client uses the same ProxyStore home
+  directory as the endpoint.</li>
+<li><strong>Unable to find the connection file of the endpoint</strong>: The endpoint is
+  not running, or the client cannot read the endpoint directory. Clients on
+  other nodes need the ProxyStore home directory on a shared file system.
+  If the error says the endpoint process is running, the endpoint was likely
+  started with an older version of ProxyStore. Restart it with
+  <code>proxystore-endpoint stop NAME</code> and <code>proxystore-endpoint start NAME</code>.</li>
+<li><strong>The endpoint failed to prove that it knows the endpoint token</strong>: The
+  endpoint was restarted while the client was connecting, or a different
+  process is listening on the endpoint's address (e.g., after the endpoint
+  stopped). Restart the endpoint and try again.</li>
+<li><strong>The endpoint responded with HTTP</strong>: The endpoint is running an older
+  version of ProxyStore. Restart the endpoint with the same version as the
+  client.</li>
+<li><strong>Endpoint returned HTTP error code 426</strong>: The client is using an older
+  version of ProxyStore than the endpoint. Upgrade ProxyStore on the client.</li>
+<li><strong><code>EndpointVersionWarning</code></strong>: The client and endpoint use different
+  ProxyStore versions or Python minor versions. See
+  <a href="../endpoints/#version-compatibility">Version Compatibility</a>.</li>
+</ul>
 <h2 id="test-a-remote-endpoint">Test a Remote Endpoint<a class="headerlink" href="#test-a-remote-endpoint" title="Permanent link">&para;</a></h2>
 <p>Consider I have an endpoint running on system A with UUID
 <code>aaaa0259-5a8c-454b-b17d-61f010d874d4</code> and another on System B
@@ -4433,7 +4596,7 @@ an <code>exists</code> operation on the endpoint on system B.
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>INFO:<span class="w"> </span>Object<span class="w"> </span>exists:<span class="w"> </span>False
 </span></code></pre></div></p>
 <p>You will get an error if the peer connection fails. For example:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ERROR:<span class="w"> </span>Endpoint<span class="w"> </span>returned<span class="w"> </span>HTTP<span class="w"> </span>error<span class="w"> </span>code<span class="w"> </span><span class="m">500</span>.<span class="w"> </span>Request<span class="w"> </span>to<span class="w"> </span>peer<span class="w"> </span>bbbbab4d-c73a-44ee-a316-58ec8857e83a<span class="w"> </span>failed:<span class="w"> </span>...
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>ERROR:<span class="w"> </span>Endpoint<span class="w"> </span>returned<span class="w"> </span>ERROR<span class="w"> </span><span class="k">for</span><span class="w"> </span>EXISTS<span class="w"> </span>request:<span class="w"> </span>Request<span class="w"> </span>to<span class="w"> </span>peer<span class="w"> </span>bbbbab4d-c73a-44ee-a316-58ec8857e83a<span class="w"> </span>failed:<span class="w"> </span>...
 </span></code></pre></div>
 If this happens, check the logs for both endpoints for further error messages.
 Peer requests typically fail for two reasons:</p>

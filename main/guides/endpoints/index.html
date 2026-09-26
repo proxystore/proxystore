@@ -1031,10 +1031,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#endpointconnector" class="md-nav__link">
     <span class="md-ellipsis">
       
         EndpointConnector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Compatibility
       
     </span>
   </a>
@@ -1736,6 +1758,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/auth/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    auth
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/cli/" class="md-nav__link">
         
   
@@ -1848,14 +1898,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/constants/" class="md-nav__link">
+      <a href="../../api/endpoint/directory/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    constants
+    directory
   
 
     
@@ -1960,6 +2010,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/serve/" class="md-nav__link">
         
   
@@ -1988,6 +2066,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/endpoint/server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    server
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/endpoint/storage/" class="md-nav__link">
         
   
@@ -1996,6 +2102,34 @@
     
   
     storage
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/endpoint/warnings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    warnings
   
 
     
@@ -4183,10 +4317,32 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#endpointconnector" class="md-nav__link">
     <span class="md-ellipsis">
       
         EndpointConnector
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-compatibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version Compatibility
       
     </span>
   </a>
@@ -4242,7 +4398,7 @@
 
 
 <h1 id="peer-to-peer-endpoints">Peer-to-Peer Endpoints<a class="headerlink" href="#peer-to-peer-endpoints" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 26 September 2023</em></p>
+<p><em>Last updated 25 September 2026</em></p>
 <p>ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.</p>
@@ -4252,10 +4408,18 @@ between multiple sites using NAT traversal.</p>
 implementations may change. Refer to the API docs for the most
 up-to-date information.</p>
 </div>
+<div class="admonition warning">
+<p class="admonition-title">Use the same ProxyStore and Python versions everywhere</p>
+<p>Clients and endpoints should use the same versions of ProxyStore and
+Python. Mismatched versions can cause errors when objects are serialized
+in one environment and deserialized in another. See
+<a href="#version-compatibility">Version Compatibility</a> for details.</p>
+</div>
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>At its core, the <a class="autorefs autorefs-internal" title="            Endpoint" href="../../api/endpoint/endpoint/#proxystore.endpoint.endpoint.Endpoint"><code>Endpoint</code></a> is
-an in-memory data store built on asyncio. Endpoints provide a REST API, served
-using <a href="https://pgjones.gitlab.io/quart/">Quart</a>, and ProxyStore provides the
+an in-memory data store built on asyncio. Endpoints serve clients on the local
+network over an authenticated TCP protocol (see <a href="#security">Security</a>), and
+ProxyStore provides the
 <a class="autorefs autorefs-internal" title="            EndpointConnector" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> as
 the primary interface for clients to interact with endpoints.</p>
 <p><img alt="ProxyStore Endpoints" src="../../static/endpoint-peering.svg" width="100%" /></p>
@@ -4284,8 +4448,7 @@ of the endpoints which can be used to complete the peer-to-peer connection (5).
 <a href="https://webrtc.org/getting-started/peer-connections">https://webrtc.org/getting-started/peer-connections</a>.) The peers will then
 keep a data channel open between themselves for the remainder of their
 lifetime.</p>
-<p>Clients interacting with an endpoint via the REST API and typical object store
-operations (<em>get</em>, <em>set</em>, etc.) specify a <em>key</em> and an <em>endpoint UUID</em>.
+<p>Clients interacting with an endpoint via typical object store operations (<em>get</em>, <em>set</em>, etc.) specify a <em>key</em> and an <em>endpoint UUID</em>.
 Endpoints that receive a request with a different endpoint UUID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.</p>
@@ -4352,24 +4515,26 @@ name, UUID, host address, port, relay server address, and more.</p>
 <span class="normal"><a href="#__codelineno-2-15">15</a></span>
 <span class="normal"><a href="#__codelineno-2-16">16</a></span>
 <span class="normal"><a href="#__codelineno-2-17">17</a></span>
-<span class="normal"><a href="#__codelineno-2-18">18</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my-endpoint"</span><span class="w">  </span><span class="c1"># (1)!</span>
+<span class="normal"><a href="#__codelineno-2-18">18</a></span>
+<span class="normal"><a href="#__codelineno-2-19">19</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my-endpoint"</span><span class="w">  </span><span class="c1"># (1)!</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a><span class="n">uuid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"d27cf8cb-45fa-46b0-b907-27c830da62e3"</span><span class="w">  </span><span class="c1"># (2)!</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8765</span><span class="w">  </span><span class="c1"># (3)!</span>
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">host_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"ip"</span><span class="w">  </span><span class="c1"># (4)!</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a><span class="k">[relay]</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wss://relay.proxystore.dev"</span><span class="w">  </span><span class="c1"># (5)!</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (6)!</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (7)!</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a><span class="k">[relay.auth]</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"globus"</span><span class="w">  </span><span class="c1"># (8)!</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a><span class="k">[relay.auth.kwargs]</span><span class="w">  </span><span class="c1"># (9)!</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a><span class="k">[storage]</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"~/.local/share/proxystore/my-endpoint/blobs.db"</span><span class="w">  </span><span class="c1"># (10)!</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (11)!</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5"></a><span class="n">tls</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span><span class="w">  </span><span class="c1"># (5)!</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6"></a>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7"></a><span class="k">[relay]</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8"></a><span class="n">address</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"wss://relay.proxystore.dev"</span><span class="w">  </span><span class="c1"># (6)!</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9"></a><span class="n">peer_channels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w">  </span><span class="c1"># (7)!</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10"></a><span class="n">verify_certificate</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">  </span><span class="c1"># (8)!</span>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11"></a>
+</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12"></a><span class="k">[relay.auth]</span>
+</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13"></a><span class="n">method</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"globus"</span><span class="w">  </span><span class="c1"># (9)!</span>
+</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14"></a>
+</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15"></a><span class="k">[relay.auth.kwargs]</span><span class="w">  </span><span class="c1"># (10)!</span>
+</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16"></a>
+</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17"></a><span class="k">[storage]</span>
+</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18"></a><span class="n">database_path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"~/.local/share/proxystore/my-endpoint/blobs.db"</span><span class="w">  </span><span class="c1"># (11)!</span>
+</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19"></a><span class="n">max_object_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10000000</span><span class="w">  </span><span class="c1"># (12)!</span>
 </span></code></pre></div></td></tr></table></div>
 <ol>
 <li>Human-readable name of this endpoint. Only used for logging and CLI
@@ -4380,6 +4545,8 @@ name, UUID, host address, port, relay server address, and more.</p>
    determined at runtime and set as the IP address or fully-qualified domain
    name, respectively. If <code>host_type</code> is "static", a static address can
    be specified in a <code>host</code> field (e.g., <code>host = "localhost"</code>).</li>
+<li>Encrypt connections between clients and the endpoint with TLS. See
+   <a href="#security">Security</a> for details.</li>
 <li>Comment out the relay address if you want to start the endpoint in SOLO
    mode. Peering will not be available, but all other functionality will
    remain.</li>
@@ -4390,7 +4557,7 @@ name, UUID, host address, port, relay server address, and more.</p>
 <li>Authentication method to use with the relay server. Comment this out when
    using a local relay server without authentication.</li>
 <li>Optional keyword arguments to use when creating the authorization headers.
-   Typically only used for testing and development purposes.</li>
+    Typically only used for testing and development purposes.</li>
 <li>Optional path to a SQLite database for persisting endpoint objects. See
     the tip below for more details.</li>
 <li>Maximum object size. Comment out to disable object size limits.</li>
@@ -4406,7 +4573,7 @@ file. Note this will result in slower performance.</p>
 <p>An up-to-date configuration description can found in the
 <a class="autorefs autorefs-internal" title="            EndpointConfig" href="../../api/endpoint/config/#proxystore.endpoint.config.EndpointConfig"><code>EndpointConfig</code></a> docstring.</p>
 <p>Starting the endpoint will load the configuration from the ProxyStore home
-directory, initialize the endpoint, and start a Quart app using the host and
+directory, initialize the endpoint, and start serving clients on the host and
 port.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div>
@@ -4415,15 +4582,56 @@ port.</p>
 <p>By default, the <code>host</code> address that an endpoint is served on is set to
 the IP address of the node where the endpoint is started (so that an
 endpoint can be configured and started on different nodes).
-IP addresses can be incompatible with certain HTTP proxies, causing
-clients to be unable to connect to their local endpoint (such as at ALCF).
-Changing the <code>host_type</code> in the configuration from "ip" to "fqdn" will
+If clients cannot reach the endpoint at that IP address,
+changing the <code>host_type</code> in the configuration from "ip" to "fqdn" will
 use the fully-qualified domain name instead. Alternatively,
 <code>host_type = "static"</code> will use a static host address specified in the
 <code>host</code> field (i.e. <code>host = "12.34.56.78"</code>). The <code>--host</code> flag can also
 be used during configuration to specify "ip" (default), "fqdn", or a
 static host.</p>
 </div>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>Clients connect to their local endpoint over TCP. Each time an endpoint
+starts, it writes its address and a random token to the <code>connection.json</code>
+file in the endpoint directory, and only the owner can read that file. When a client connects,
+the client and endpoint each prove that they know the token without sending
+it over the network. This means:</p>
+<ul>
+<li>Only processes that can read your endpoint directory can use your
+  endpoint. Other users on a shared system cannot read, write, or evict
+  your objects.</li>
+<li>A different server listening on the endpoint's address cannot impersonate
+  your endpoint, so clients never send objects to it.</li>
+</ul>
+<p>Clients on other nodes find the endpoint's address and token in the
+ProxyStore home directory, so the home directory must be on a shared file
+system that is private to your user.</p>
+<p>Clients also trust every file in the endpoint directory, and the directory
+contains the endpoint's database and log, so new endpoint directories are only
+accessible by the owner, and the endpoint removes all group and other
+permissions from its directory when it starts.</p>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If all clients run on the same node as the endpoint, set
+<code>host_type = "static"</code> and <code>host = "127.0.0.1"</code> in the endpoint
+configuration so the endpoint is not reachable from other nodes.</p>
+</div>
+<p>By default, objects are sent between clients and the endpoint unencrypted.
+The token only authenticates each side when a connection is established;
+the requests and responses that follow are not protected against tampering.
+This is usually acceptable within a cluster because reading or modifying
+network traffic typically requires root access. If clients connect to the
+endpoint over a network you do not trust, configure the endpoint with TLS to
+encrypt connections.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint<span class="w"> </span>--tls
+</span></code></pre></div>
+<p>Or, set <code>tls = true</code> in the endpoint's <code>config.toml</code> and restart the endpoint.
+The endpoint generates a new self-signed certificate each time it starts and
+writes its fingerprint to <code>connection.json</code>, and clients only trust that
+certificate. TLS reduces the throughput of
+large transfers by about half.</p>
+<p>Connections between peer endpoints are separate. They are encrypted by WebRTC
+and established through the relay server.</p>
 <h2 id="endpointconnector">EndpointConnector<a class="headerlink" href="#endpointconnector" title="Permanent link">&para;</a></h2>
 <p>The primary interface to endpoints is the
 <a class="autorefs autorefs-internal" title="            EndpointConnector" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</p>
@@ -4433,31 +4641,31 @@ static host.</p>
 <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> interface. See the
 <a href="../../get-started/">Get Started</a> guide before getting started with endpoints.</p>
 </div>
-<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Endpoint Client Example</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>
-<span class="normal"><a href="#__codelineno-4-2"> 2</a></span>
-<span class="normal"><a href="#__codelineno-4-3"> 3</a></span>
-<span class="normal"><a href="#__codelineno-4-4"> 4</a></span>
-<span class="normal"><a href="#__codelineno-4-5"> 5</a></span>
-<span class="normal"><a href="#__codelineno-4-6"> 6</a></span>
-<span class="normal"><a href="#__codelineno-4-7"> 7</a></span>
-<span class="normal"><a href="#__codelineno-4-8"> 8</a></span>
-<span class="normal"><a href="#__codelineno-4-9"> 9</a></span>
-<span class="normal"><a href="#__codelineno-4-10">10</a></span>
-<span class="normal"><a href="#__codelineno-4-11">11</a></span>
-<span class="normal"><a href="#__codelineno-4-12">12</a></span>
-<span class="normal"><a href="#__codelineno-4-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.endpoint</span><span class="w"> </span><span class="kn">import</span> <span class="n">EndpointConnector</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3"></a>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5"></a>    <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6"></a>        <span class="s1">'5349ffce-edeb-4a8b-94a6-ab16ade1c1a1'</span><span class="p">,</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7"></a>        <span class="s1">'d62910f6-0d29-452e-80b7-e0cd601949db'</span><span class="p">,</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8"></a>        <span class="o">...</span><span class="p">,</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9"></a>    <span class="p">],</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10"></a><span class="p">)</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'default'</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
-</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12"></a>
-</span><span id="__span-4-13"><a id="__codelineno-4-13" name="__codelineno-4-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
+<div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Endpoint Client Example</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-5-1"> 1</a></span>
+<span class="normal"><a href="#__codelineno-5-2"> 2</a></span>
+<span class="normal"><a href="#__codelineno-5-3"> 3</a></span>
+<span class="normal"><a href="#__codelineno-5-4"> 4</a></span>
+<span class="normal"><a href="#__codelineno-5-5"> 5</a></span>
+<span class="normal"><a href="#__codelineno-5-6"> 6</a></span>
+<span class="normal"><a href="#__codelineno-5-7"> 7</a></span>
+<span class="normal"><a href="#__codelineno-5-8"> 8</a></span>
+<span class="normal"><a href="#__codelineno-5-9"> 9</a></span>
+<span class="normal"><a href="#__codelineno-5-10">10</a></span>
+<span class="normal"><a href="#__codelineno-5-11">11</a></span>
+<span class="normal"><a href="#__codelineno-5-12">12</a></span>
+<span class="normal"><a href="#__codelineno-5-13">13</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.endpoint</span><span class="w"> </span><span class="kn">import</span> <span class="n">EndpointConnector</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3"></a>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5"></a>    <span class="n">endpoints</span><span class="o">=</span><span class="p">[</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6"></a>        <span class="s1">'5349ffce-edeb-4a8b-94a6-ab16ade1c1a1'</span><span class="p">,</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7"></a>        <span class="s1">'d62910f6-0d29-452e-80b7-e0cd601949db'</span><span class="p">,</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8"></a>        <span class="o">...</span><span class="p">,</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9"></a>    <span class="p">],</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10"></a><span class="p">)</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'default'</span><span class="p">,</span> <span class="n">connector</span><span class="o">=</span><span class="n">connector</span><span class="p">)</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12"></a>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13"></a><span class="n">p</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">proxy</span><span class="p">(</span><span class="n">my_object</span><span class="p">)</span>
 </span></code></pre></div></td></tr></table></div>
 <p>The <a class="autorefs autorefs-internal" title="            EndpointConnector" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a> takes
 a list of endpoint UUIDs. This list represents any endpoint that proxies
@@ -4472,6 +4680,68 @@ to connect to the endpoint using the host and port in the configuration. This
 process is repeated until a reachable endpoint is found. While the user could
 specify the home endpoint directly, the home endpoint may change when a proxy
 travels to a different machine.</p>
+<h2 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h2>
+<p>Objects are serialized by one client and deserialized by another, possibly
+on a different system after being transferred between peer endpoints.
+Pickle and cloudpickle do not guarantee that data pickled by one Python
+version can be unpickled by another (in particular, functions and classes
+pickled by value with cloudpickle), and ProxyStore's internal formats can
+change between versions.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Use the same ProxyStore version and the same Python major and minor
+version (e.g., 3.12) for all clients and endpoints. After upgrading
+ProxyStore, restart your endpoints.
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+</span></code></pre></div></p>
+</div>
+<p>Clients and endpoints exchange their versions each time a client connects.</p>
+<table>
+<thead>
+<tr>
+<th>Mismatch</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Client and endpoint protocol versions</td>
+<td>Error. The connection is refused.</td>
+</tr>
+<tr>
+<td>Client uses the older HTTP API</td>
+<td>The client receives HTTP error 426 explaining that the client should be upgraded.</td>
+</tr>
+<tr>
+<td>Endpoint uses the older HTTP API</td>
+<td>Error explaining that the endpoint should be restarted with the client's version.</td>
+</tr>
+<tr>
+<td>ProxyStore versions</td>
+<td>The client warns with an <a class="autorefs autorefs-internal" title="            EndpointVersionWarning" href="../../api/endpoint/warnings/#proxystore.endpoint.warnings.EndpointVersionWarning"><code>EndpointVersionWarning</code></a>, and the endpoint logs a warning.</td>
+</tr>
+<tr>
+<td>Python major or minor versions</td>
+<td>Same as above.</td>
+</tr>
+<tr>
+<td>Python patch versions (e.g., 3.12.1 vs. 3.12.4)</td>
+<td>None. Patch releases are compatible.</td>
+</tr>
+</tbody>
+</table>
+<p>Versions are only checked between a client and its local endpoint. Versions
+are <strong>not</strong> checked between peer endpoints or between the client that
+created an object and the client that resolves it on another system, so keep
+the environments on all systems consistent (e.g., with a lock file).</p>
+<p>To turn the warning into an error, use a
+<a href="https://docs.python.org/3/library/warnings.html#the-warnings-filter">warnings filter</a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.endpoint.warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">EndpointVersionWarning</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span> <span class="n">EndpointVersionWarning</span><span class="p">)</span>
+</span></code></pre></div>
 <h2 id="proxy-lifecycle">Proxy Lifecycle<a class="headerlink" href="#proxy-lifecycle" title="Permanent link">&para;</a></h2>
 <p><img alt="Dataflow with Proxies and Endpoints" src="../../static/endpoint-overview.svg" style="display: block; margin: 0 auto" width="75%" /></p>
 <blockquote>
