@@ -38,6 +38,10 @@ def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
             return_value=str(tmp_path),
         ),
         mock.patch(
+            'proxystore.endpoint.client.home_dir',
+            return_value=str(tmp_path),
+        ),
+        mock.patch(
             'proxystore.endpoint.commands.home_dir',
             return_value=str(tmp_path),
         ),
@@ -172,16 +176,13 @@ def test_stop_command(home_dir, caplog) -> None:
 
 def test_test_command_missing_endpoint(home_dir, caplog) -> None:
     caplog.set_level(logging.ERROR)
-
-    with mock.patch('proxystore.endpoint.cli.home_dir', return_value=home_dir):
-        runner = click.testing.CliRunner()
-
-        result = runner.invoke(cli, ['test', 'fake-name', 'exists', 'key'])
-        assert result.exit_code == 1
-        assert (
-            'An endpoint named fake-name does not exist.'
-            in caplog.records[0].message
-        )
+    runner = click.testing.CliRunner()
+    result = runner.invoke(cli, ['test', 'fake-name', 'exists', 'key'])
+    assert result.exit_code == 1
+    assert (
+        'An endpoint named fake-name does not exist'
+        in caplog.records[0].message
+    )
 
 
 def test_test_command(
@@ -191,45 +192,41 @@ def test_test_command(
     endpoint_dir: EndpointDir,
 ) -> None:
     caplog.set_level(logging.INFO)
+    copy_endpoint_dir(endpoint_dir, home_dir)
+    runner = click.testing.CliRunner()
+    value = 'hello hello'
+    key_uuid = uuid.uuid4()
+    key = str(key_uuid)
 
-    with mock.patch('proxystore.endpoint.cli.home_dir', return_value=home_dir):
-        copy_endpoint_dir(endpoint_dir, home_dir)
+    with mock.patch('uuid.uuid4', return_value=key_uuid):
+        result = runner.invoke(cli, ['test', endpoint.name, 'put', value])
+    assert result.exit_code == 0
+    assert key in caplog.records[0].message
+    caplog.clear()
 
-        runner = click.testing.CliRunner()
+    result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
+    assert result.exit_code == 0
+    assert 'True' in caplog.records[0].message
+    caplog.clear()
 
-        value = 'hello hello'
-        key_uuid = uuid.uuid4()
-        key = str(key_uuid)
+    result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
+    assert result.exit_code == 0
+    assert value in caplog.records[0].message
+    caplog.clear()
 
-        with mock.patch('uuid.uuid4', return_value=key_uuid):
-            result = runner.invoke(cli, ['test', endpoint.name, 'put', value])
-        assert result.exit_code == 0
-        assert key in caplog.records[0].message
-        caplog.clear()
+    result = runner.invoke(cli, ['test', endpoint.name, 'evict', key])
+    assert result.exit_code == 0
+    caplog.clear()
 
-        result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
-        assert result.exit_code == 0
-        assert 'True' in caplog.records[0].message
-        caplog.clear()
+    result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
+    assert result.exit_code == 0
+    assert 'False' in caplog.records[0].message
+    caplog.clear()
 
-        result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
-        assert result.exit_code == 0
-        assert value in caplog.records[0].message
-        caplog.clear()
-
-        result = runner.invoke(cli, ['test', endpoint.name, 'evict', key])
-        assert result.exit_code == 0
-        caplog.clear()
-
-        result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
-        assert result.exit_code == 0
-        assert 'False' in caplog.records[0].message
-        caplog.clear()
-
-        result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
-        assert result.exit_code == 0
-        assert 'does not exist' in caplog.records[0].message
-        caplog.clear()
+    result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
+    assert result.exit_code == 0
+    assert 'does not exist' in caplog.records[0].message
+    caplog.clear()
 
 
 @pytest.mark.parametrize('command', ('evict', 'exists', 'get', 'put'))
@@ -243,40 +240,38 @@ def test_test_command_errors(
     caplog.set_level(logging.ERROR)
     runner = click.testing.CliRunner()
     args = ['test', endpoint.name, command, 'fake-key']
+    copied_dir = copy_endpoint_dir(endpoint_dir, home_dir)
 
-    with mock.patch('proxystore.endpoint.cli.home_dir', return_value=home_dir):
-        copied_dir = copy_endpoint_dir(endpoint_dir, home_dir)
-
-        with mock.patch(
-            'proxystore.endpoint.client.EndpointClient.connect',
-            side_effect=EndpointNotRunningError('connection refused'),
-        ):
-            result = runner.invoke(cli, args)
-        assert result.exit_code == 1
-        assert 'connection refused' in caplog.records[0].message
-        caplog.clear()
-
-        with mock.patch(
-            'proxystore.endpoint.client.EndpointClient.connect',
-            side_effect=EndpointAuthError('auth failed'),
-        ):
-            result = runner.invoke(cli, args)
-        assert result.exit_code == 1
-        assert 'auth failed' in caplog.records[0].message
-        caplog.clear()
-
-        result = runner.invoke(
-            cli,
-            ['test', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
-        )
-        assert result.exit_code == 1
-        assert 'not a valid endpoint UUID' in caplog.records[0].message
-        caplog.clear()
-
-        os.remove(copied_dir.connection_path)
+    with mock.patch(
+        'proxystore.endpoint.client.EndpointClient.connect',
+        side_effect=EndpointNotRunningError('connection refused'),
+    ):
         result = runner.invoke(cli, args)
-        assert result.exit_code == 1
-        assert 'Is the endpoint running?' in caplog.records[0].message
+    assert result.exit_code == 1
+    assert 'connection refused' in caplog.records[0].message
+    caplog.clear()
+
+    with mock.patch(
+        'proxystore.endpoint.client.EndpointClient.connect',
+        side_effect=EndpointAuthError('auth failed'),
+    ):
+        result = runner.invoke(cli, args)
+    assert result.exit_code == 1
+    assert 'auth failed' in caplog.records[0].message
+    caplog.clear()
+
+    result = runner.invoke(
+        cli,
+        ['test', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
+    )
+    assert result.exit_code == 1
+    assert 'not a valid endpoint UUID' in caplog.records[0].message
+    caplog.clear()
+
+    os.remove(copied_dir.connection_path)
+    result = runner.invoke(cli, args)
+    assert result.exit_code == 1
+    assert 'Is the endpoint running?' in caplog.records[0].message
 
 
 async def test_test_command_tls(home_dir, caplog) -> None:
@@ -292,12 +287,11 @@ async def test_test_command_tls(home_dir, caplog) -> None:
     endpoint_dir.write_config(config)
 
     runner = click.testing.CliRunner()
-    with mock.patch('proxystore.endpoint.cli.home_dir', return_value=home_dir):
-        async with running_endpoint(endpoint_dir):
-            result = await asyncio.to_thread(
-                runner.invoke,
-                cli,
-                ['test', config.name, 'exists', 'key'],
-            )
+    async with running_endpoint(endpoint_dir):
+        result = await asyncio.to_thread(
+            runner.invoke,
+            cli,
+            ['test', config.name, 'exists', 'key'],
+        )
     assert result.exit_code == 0
     assert any('Object exists: False' in r.message for r in caplog.records)

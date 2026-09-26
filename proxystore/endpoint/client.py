@@ -23,14 +23,15 @@ import warnings
 from types import TracebackType
 from typing import Any
 from typing import Self
-from typing import TYPE_CHECKING
 
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
@@ -51,10 +52,8 @@ from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
 from proxystore.serialize import BytesLike
+from proxystore.utils.environment import home_dir
 from proxystore.warnings import EndpointVersionWarning
-
-if TYPE_CHECKING:
-    from proxystore.endpoint.directory import EndpointDir
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
@@ -64,8 +63,10 @@ _COALESCE_THRESHOLD = 64 * 1024
 class EndpointClient:
     """Connection to a local endpoint.
 
-    Use [`connect()`][proxystore.endpoint.client.EndpointClient.connect]
-    to create a client.
+    Use [`from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
+    to connect to a local endpoint by name, or
+    [`connect()`][proxystore.endpoint.client.EndpointClient.connect] to
+    connect to an address directly.
 
     Warning:
         A client is not thread-safe because a connection can only process one
@@ -73,10 +74,7 @@ class EndpointClient:
 
     Example:
         ```python
-        from proxystore.endpoint.directory import EndpointDir
-
-        endpoint_dir = EndpointDir('/path/to/endpoint')
-        with EndpointClient.from_dir(endpoint_dir) as client:
+        with EndpointClient.from_name('my-endpoint') as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'
         ```
@@ -205,6 +203,7 @@ class EndpointClient:
                 handshake.
 
         Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
             EndpointNotRunningError: If the endpoint's connection file does
                 not exist (i.e., the endpoint is not running).
             EndpointAuthError: If the connection file cannot be read or is
@@ -212,6 +211,10 @@ class EndpointClient:
             EndpointError: If the connection or handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
+        if not os.path.isdir(endpoint_dir):
+            raise EndpointNotFoundError(
+                f'The endpoint directory {endpoint_dir} does not exist.',
+            )
         try:
             info = endpoint_dir.read_connection()
         except FileNotFoundError as e:
@@ -231,6 +234,40 @@ class EndpointClient:
             tls_fingerprint=info.tls_fingerprint,
             timeout=timeout,
         )
+
+    @classmethod
+    def from_name(
+        cls,
+        name: str,
+        *,
+        proxystore_dir: str | None = None,
+        timeout: float | None = 10,
+    ) -> Self:
+        """Connect to a local endpoint by name.
+
+        Args:
+            name: Name of the endpoint.
+            proxystore_dir: ProxyStore home directory containing the
+                endpoint. Defaults to
+                [`home_dir()`][proxystore.utils.environment.home_dir].
+            timeout: Timeout in seconds for connecting and completing the
+                handshake.
+
+        Raises:
+            EndpointNotFoundError: If no endpoint with the name exists.
+            EndpointError: If connecting to the endpoint fails (see
+                [`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]).
+        """
+        proxystore_dir = (
+            home_dir() if proxystore_dir is None else proxystore_dir
+        )
+        endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+        if not os.path.isdir(endpoint_dir):
+            raise EndpointNotFoundError(
+                f'An endpoint named {name} does not exist in '
+                f'{proxystore_dir}.',
+            )
+        return cls.from_dir(endpoint_dir, timeout=timeout)
 
     def close(self) -> None:
         """Close the connection."""

@@ -9,7 +9,6 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
-import os
 import sys
 import uuid
 from collections.abc import Generator
@@ -24,12 +23,10 @@ from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
-from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
-from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -241,13 +238,7 @@ def test(
     """Execute test commands on an endpoint."""
     ctx.ensure_object(dict)
 
-    proxystore_dir = home_dir()
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
-    if not os.path.isdir(endpoint_dir):
-        logger.error(f'An endpoint named {name} does not exist.')
-        raise SystemExit(1)
-
-    ctx.obj['ENDPOINT_DIR'] = endpoint_dir
+    ctx.obj['ENDPOINT_NAME'] = name
     ctx.obj['REMOTE_ENDPOINT_UUID'] = remote
 
 
@@ -257,11 +248,11 @@ def _endpoint_client(
 ) -> Generator[EndpointClient, None, None]:
     """Connect to the endpoint of a test command and handle errors."""
     try:
-        with EndpointClient.from_dir(ctx.obj['ENDPOINT_DIR']) as client:
+        with EndpointClient.from_name(ctx.obj['ENDPOINT_NAME']) as client:
             yield client
     except (EndpointError, ValueError) as e:
         logger.error(e)
-        sys.exit(1)
+        raise SystemExit(1) from None
 
 
 @test.command()

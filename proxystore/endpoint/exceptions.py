@@ -54,11 +54,22 @@ class EndpointConnectorError(EndpointError):
     pass
 
 
+class EndpointNotFoundError(EndpointError):
+    """Exception raised when connecting to an endpoint that does not exist.
+
+    This is raised when the endpoint's directory does not exist (e.g.,
+    because the endpoint was never configured or the name is misspelled).
+    """
+
+    pass
+
+
 class EndpointNotRunningError(EndpointError):
     """Exception raised when connecting to an endpoint that is not running.
 
-    This is raised when the endpoint has never been started (i.e., its
-    configuration has no host) or its credential files do not exist.
+    This is raised when the endpoint's connection file does not exist (i.e.,
+    the endpoint has not been started or has stopped) or when the connection
+    to the endpoint's address is refused.
     """
 
     pass

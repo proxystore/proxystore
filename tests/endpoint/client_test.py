@@ -15,6 +15,7 @@ from unittest import mock
 import pytest
 
 from proxystore.endpoint.auth import compute_proof
+from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
@@ -23,6 +24,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
@@ -344,6 +346,12 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     return endpoint_dir
 
 
+def test_from_dir_missing_directory(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path / 'missing'))
+    with pytest.raises(EndpointNotFoundError, match='does not exist'):
+        EndpointClient.from_dir(endpoint_dir)
+
+
 def test_from_dir_not_running(tmp_path: pathlib.Path) -> None:
     endpoint_dir = _write_config(tmp_path)
     with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
@@ -363,6 +371,39 @@ def test_from_dir_malformed_connection_file(tmp_path: pathlib.Path) -> None:
         f.write('not json')
     with pytest.raises(EndpointAuthError, match='malformed'):
         EndpointClient.from_dir(endpoint_dir)
+
+
+def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
+    port = fake_server(_complete_handshake)
+    endpoint_dir = _write_config(tmp_path / 'test')
+    endpoint_dir.write_connection(
+        ConnectionInfo(
+            host='127.0.0.1',
+            port=port,
+            token=TOKEN,
+            tls_fingerprint=None,
+        ),
+    )
+    with EndpointClient.from_name('test', proxystore_dir=str(tmp_path)) as c:
+        assert c.info.uuid == ENDPOINT_UUID
+
+
+def test_from_name_default_home(tmp_path: pathlib.Path) -> None:
+    _write_config(tmp_path / 'test')
+    with mock.patch(
+        'proxystore.endpoint.client.home_dir',
+        return_value=str(tmp_path),
+    ):
+        with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
+            EndpointClient.from_name('test')
+
+
+def test_from_name_missing(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(
+        EndpointNotFoundError,
+        match='An endpoint named test does not exist',
+    ):
+        EndpointClient.from_name('test', proxystore_dir=str(tmp_path))
 
 
 @pytest.mark.parametrize('method', ('sendall', 'recv_into'))

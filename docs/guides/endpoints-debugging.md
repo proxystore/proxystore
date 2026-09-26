@@ -59,22 +59,22 @@ The [`EndpointClient`][proxystore.endpoint.client.EndpointClient] can be used
 to connect to an endpoint directly. Clients find the endpoint's address,
 token, and TLS certificate fingerprint (if enabled) in the `connection.json`
 file that the endpoint writes to its directory when it starts, and
-[`EndpointClient.from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]
+[`EndpointClient.from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
 reads this file for you.
 ```python
-import os
-
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.directory import EndpointDir
 
-path = os.path.expanduser('~/.local/share/proxystore/myendpoint')
-with EndpointClient.from_dir(EndpointDir(path)) as client:
+with EndpointClient.from_name('myendpoint') as client:
     print(client.info)
     print(client.exists('abcdef'))
 ```
 
 ### Common Errors
 
+* **An endpoint named ... does not exist**: No endpoint with that name is
+  configured in the ProxyStore home directory. Check the name with
+  `proxystore-endpoint list` and that the client uses the same ProxyStore home
+  directory as the endpoint.
 * **Unable to find the connection file of the endpoint**: The endpoint is
   not running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
