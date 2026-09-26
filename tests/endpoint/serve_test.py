@@ -11,6 +11,7 @@ from typing import Any
 from unittest import mock
 from unittest.mock import AsyncMock
 
+import iroh
 import pytest
 
 from proxystore.endpoint.client import EndpointClient
@@ -21,6 +22,7 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import generate_secret_key
+from proxystore.endpoint.serve import _relay_options
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
 from testing.endpoint import terminate_process
@@ -245,3 +247,29 @@ async def test_running_endpoint_peering(
         assert endpoint.peer_manager is not None
         assert endpoint.peer_manager.id == endpoint.id
     assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
+
+
+@pytest.mark.parametrize(
+    'relays',
+    ('n0', 'none', ['https://relay.example.com']),
+)
+def test_relay_options(relays: Any) -> None:
+    preset, relay_mode = _relay_options(EndpointP2PConfig(relays=relays))
+    assert isinstance(preset, iroh.Preset)
+    if relays == 'n0':
+        assert relay_mode is None
+    else:
+        assert isinstance(relay_mode, iroh.RelayMode)
+
+
+async def test_running_endpoint_peering_addr_cache(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(
+        tmp_path,
+        p2p=EndpointP2PConfig(enabled=True, relays='none'),
+    )
+    async with running_endpoint(endpoint_dir) as endpoint:
+        assert endpoint.peer_manager is not None
+        path = endpoint.peer_manager._addr_cache_path
+        assert path == endpoint_dir.peer_addrs_path

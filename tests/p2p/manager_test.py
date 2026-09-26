@@ -14,6 +14,7 @@ import pytest
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
+from proxystore.p2p.addrs import load_peer_addrs
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.exceptions import PeerNotAllowedError
@@ -378,3 +379,113 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
     ):
         await manager1._exchange(connection, Op.SET, None, b'x')
     assert exc_info.value is (write_error if write_fails else read_error)
+
+
+async def test_addr_cache(tmp_path: pathlib.Path) -> None:
+    cache1 = str(tmp_path / 'm1' / 'peer-addrs.json')
+    cache2 = str(tmp_path / 'm2' / 'peer-addrs.json')
+    manager1 = local_peer_manager(str(tmp_path / 'm1'), addr_cache_path=cache1)
+    manager2 = local_peer_manager(str(tmp_path / 'm2'), addr_cache_path=cache2)
+    await manager1.start(_echo_handler([]))
+    await manager2.start(_echo_handler([]))
+    try:
+        allow_peer(manager1, manager2, 'peer')
+        allow_peer(manager2, manager1, 'peer')
+        manager1.add_peer_addr(manager2.addr())
+
+        await manager1.request(manager2.id, Op.GET)
+        # Both the dialing and accepting peer save the address of the other
+        assert list(load_peer_addrs(cache1)) == [manager2.id]
+        assert list(load_peer_addrs(cache2)) == [manager1.id]
+
+        # Manager 2 can now reach manager 1 without being given its address
+        status, _, _ = await manager2.request(manager1.id, Op.GET)
+        assert status == Status.OK
+    finally:
+        await manager1.close()
+        await manager2.close()
+
+    # A new manager with the same key loads the cached addresses
+    manager3 = PeerManager(
+        manager1._secret_key,
+        manager1._allowlist,
+        preset=iroh.preset_minimal(),
+        relay_mode=iroh.RelayMode.disabled(),
+        bind_addr='127.0.0.1:0',
+        online_timeout=0,
+        addr_cache_path=cache1,
+    )
+    await manager3.start(_echo_handler([]))
+    try:
+        assert list(manager3._addr_hints) == [manager2.id]
+    finally:
+        await manager3.close()
+
+
+async def test_addr_cache_prunes_removed_peers(managers, tmp_path) -> None:
+    manager1, manager2, _ = managers
+    cache = str(tmp_path / 'peer-addrs.json')
+    manager1._addr_cache_path = cache
+    removed = local_peer_manager(str(tmp_path / 'removed'))
+    await removed.start(_echo_handler([]))
+    try:
+        manager1.add_peer_addr(removed.addr())
+        await manager1.request(manager2.id, Op.GET)
+        assert list(load_peer_addrs(cache)) == [manager2.id]
+    finally:
+        await removed.close()
+
+
+async def test_addr_cache_save_error(managers, caplog) -> None:
+    manager1, manager2, _ = managers
+    manager1._addr_cache_path = '/does/not/exist/peer-addrs.json'
+    status, _, _ = await manager1.request(manager2.id, Op.GET)
+    assert status == Status.OK
+    assert any('failed to save' in r.message for r in caplog.records)
+
+
+async def test_stale_addr_falls_back_to_discovery(managers) -> None:
+    manager1, manager2, _ = managers
+    good = manager1._addr_hints[manager2.id]
+    stale = iroh.EndpointAddr(good.id(), None, ['127.0.0.1:1'])
+    manager1.add_peer_addr(stale)
+
+    real_dial = manager1._dial
+    calls: list[iroh.EndpointAddr] = []
+
+    async def _dial(peer_id: EndpointId, addr: iroh.EndpointAddr) -> Any:
+        calls.append(addr)
+        if len(calls) == 1:
+            raise PeerConnectionError('stale')
+        # Discovery is not available in tests so use the good address.
+        return await real_dial(peer_id, good)
+
+    with mock.patch.object(manager1, '_dial', _dial):
+        status, _, _ = await manager1.request(manager2.id, Op.GET)
+    assert status == Status.OK
+    assert calls[0] is stale
+    assert calls[1].direct_addresses() == []
+
+
+async def test_stale_addr_timeout_not_retried(managers) -> None:
+    manager1, manager2, _ = managers
+    with (
+        mock.patch.object(
+            manager1,
+            '_dial',
+            side_effect=PeerConnectionTimeoutError('timeout'),
+        ) as dial,
+        pytest.raises(PeerConnectionTimeoutError),
+    ):
+        await manager1.request(manager2.id, Op.GET)
+    assert dial.call_count == 1
+
+
+async def test_request_invalid_public_key(managers) -> None:
+    manager1, _, _ = managers
+    invalid = EndpointId('02' * 32)
+    with (
+        mock.patch.object(manager1, '_is_allowed', return_value=True),
+        pytest.raises(PeerConnectionError, match='not a valid public key'),
+    ):
+        await manager1.request(invalid, Op.GET)

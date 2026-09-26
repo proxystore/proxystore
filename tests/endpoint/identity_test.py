@@ -10,6 +10,7 @@ from proxystore.endpoint.identity import log_name
 from proxystore.endpoint.identity import parse_endpoint_id
 from proxystore.endpoint.identity import SECRET_KEY_SIZE
 from proxystore.endpoint.identity import short_id
+from proxystore.endpoint.identity import validate_public_key
 
 _ID = 'ab' * 32
 
@@ -47,3 +48,10 @@ def test_endpoint_id_from_secret_key() -> None:
 def test_endpoint_id_from_secret_key_bad_size() -> None:
     with pytest.raises(ValueError, match='must be 32 bytes'):
         endpoint_id_from_secret_key(b'abc')
+
+
+def test_validate_public_key() -> None:
+    validate_public_key(endpoint_id_from_secret_key(generate_secret_key()))
+    # Well-formed but not a valid ed25519 public key
+    with pytest.raises(ValueError, match='not a valid public key'):
+        validate_public_key(parse_endpoint_id('02' * 32))

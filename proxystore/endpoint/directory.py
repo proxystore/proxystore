@@ -193,6 +193,11 @@ class EndpointDir:
         write_private_file(self.peers_path, dumps(peers).encode())
 
     @property
+    def peer_addrs_path(self) -> str:
+        """Path to the cache of peer addresses written by the endpoint."""
+        return self._join('peer-addrs.json')
+
+    @property
     def connection_path(self) -> str:
         """Path to the connection file clients use to connect."""
         return self._join('connection.json')

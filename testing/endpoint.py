@@ -6,7 +6,6 @@ import contextlib
 import logging
 import multiprocessing
 import os
-import secrets
 import shutil
 import time
 from collections.abc import Generator
@@ -27,8 +26,8 @@ from testing.utils import open_port
 
 
 def random_endpoint_id() -> EndpointId:
-    """Generate a random endpoint ID without a secret key."""
-    return EndpointId(secrets.token_hex(32))
+    """Generate the ID of a random endpoint without saving its secret key."""
+    return endpoint_id_from_secret_key(generate_secret_key())
 
 
 def write_endpoint(

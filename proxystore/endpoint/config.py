@@ -55,11 +55,37 @@ class EndpointP2PConfig(BaseModel):
         enabled: Enable communication with peer endpoints. Only endpoints
             in the allowlist of peers (`peers.toml` in the endpoint
             directory) can communicate with this endpoint.
+        relays: Relay servers used to establish connections with peers
+            and to relay traffic when a direct connection is not possible.
+            `"n0"` uses the public relays operated by n0 (the developers of
+            iroh), `"none"` disables relays, and a list of URLs uses
+            self-hosted `iroh-relay` servers.
     """
 
     model_config = ConfigDict(extra='forbid')
 
     enabled: bool = True
+    relays: Literal['n0', 'none'] | list[str] = 'n0'
+
+    @field_validator('relays')
+    @classmethod
+    def _relays_validator(
+        cls,
+        v: Literal['n0', 'none'] | list[str],
+    ) -> Literal['n0', 'none'] | list[str]:
+        if isinstance(v, list):
+            if len(v) == 0:
+                raise ValueError(
+                    'Relays must contain at least one URL. Use "none" to '
+                    'disable relays.',
+                )
+            for url in v:
+                if not url.startswith(('http://', 'https://')):
+                    raise ValueError(
+                        f'Relay URL must start with http:// or https://. '
+                        f'Got {url}.',
+                    )
+        return v
 
 
 class EndpointConfig(BaseModel):

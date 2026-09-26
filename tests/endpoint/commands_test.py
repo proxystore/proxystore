@@ -673,6 +673,7 @@ def test_add_peer_errors(tmp_path: pathlib.Path, caplog) -> None:
     assert 'does not exist' in _error('missing', 'p', peer_id)
     assert 'alphanumeric' in _error(_NAME, 'bad name', peer_id)
     assert 'not a valid endpoint ID' in _error(_NAME, 'p', 'xyz')
+    assert 'not a valid public key' in _error(_NAME, 'p', '02' * 32)
     assert 'peer of itself' in _error(_NAME, 'p', config.id)
     caplog.clear()
     _error(_NAME, 'peer', random_endpoint_id())

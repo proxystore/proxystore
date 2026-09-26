@@ -9,6 +9,7 @@ from typing import Any
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
@@ -170,3 +171,34 @@ def test_legacy_uuid_config(tmp_path: pathlib.Path) -> None:
         f.write(f'name = "name"\nuuid = "{uuid.uuid4()}"\nport = 1234\n')
     with pytest.raises(ValueError, match='configure it again'):
         endpoint_dir.read_config()
+
+
+@pytest.mark.parametrize(
+    ('relays', 'error'),
+    (
+        ('n0', None),
+        ('none', None),
+        (['https://relay.example.com', 'http://localhost:3340'], None),
+        ('other', 'Input should be'),
+        ([], 'at least one URL'),
+        (['relay.example.com'], 'must start with http'),
+    ),
+)
+def test_validate_p2p_relays(relays: Any, error: str | None) -> None:
+    if error is None:
+        assert EndpointP2PConfig(relays=relays).relays == relays
+    else:
+        with pytest.raises(ValueError, match=error):
+            EndpointP2PConfig(relays=relays)
+
+
+def test_p2p_config_round_trip(tmp_path: pathlib.Path) -> None:
+    config = EndpointConfig(
+        name='name',
+        id=random_endpoint_id(),
+        port=1234,
+        p2p=EndpointP2PConfig(relays=['https://relay.example.com']),
+    )
+    endpoint_dir = EndpointDir(str(tmp_path))
+    endpoint_dir.write_config(config)
+    assert endpoint_dir.read_config() == config

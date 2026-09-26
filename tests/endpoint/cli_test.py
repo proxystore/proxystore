@@ -21,6 +21,7 @@ from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.serve import running_endpoint
 from testing.endpoint import copy_endpoint_dir
+from testing.endpoint import random_endpoint_id
 from testing.endpoint import write_endpoint
 
 CLICK_VERSION = tuple(
@@ -87,6 +88,22 @@ def test_configure_command(home_dir) -> None:
     assert not cfg.tls
 
     assert cfg.p2p.enabled
+
+    assert cfg.p2p.relays == 'n0'
+
+    urls = 'https://a.example.com, https://b.example.com'
+    result = runner.invoke(cli, ['configure', 'relays', '--relays', urls])
+    assert result.exit_code == 0
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'relays'))
+    assert endpoint_dir.read_config().p2p.relays == [
+        'https://a.example.com',
+        'https://b.example.com',
+    ]
+
+    result = runner.invoke(cli, ['configure', 'norelay', '--relays', 'none'])
+    assert result.exit_code == 0
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'norelay'))
+    assert endpoint_dir.read_config().p2p.relays == 'none'
 
     result = runner.invoke(cli, ['configure', 'solo', '--no-peering'])
     assert result.exit_code == 0
@@ -269,7 +286,7 @@ def test_id_and_peers_commands(home_dir, caplog) -> None:
     assert runner.invoke(cli, ['id', 'ep']).exit_code == 0
     assert caplog.records[-1].message == endpoint_dir.read_config().id
 
-    peer_id = 'ab' * 32
+    peer_id = random_endpoint_id()
     result = runner.invoke(cli, ['peers', 'add', 'ep', 'peer', peer_id])
     assert result.exit_code == 0
     assert endpoint_dir.read_peers().peers == {'peer': peer_id}

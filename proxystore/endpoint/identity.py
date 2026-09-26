@@ -77,6 +77,27 @@ def generate_secret_key() -> bytes:
     return iroh.SecretKey.generate().to_bytes()
 
 
+def validate_public_key(endpoint_id: EndpointId) -> None:
+    """Check that an endpoint ID is a valid ed25519 public key.
+
+    [`parse_endpoint_id()`][proxystore.endpoint.identity.parse_endpoint_id]
+    only checks the format of an ID because it does not depend on `iroh`.
+    Not every 32-byte value is a valid public key.
+
+    Raises:
+        ValueError: If `endpoint_id` is not a valid public key.
+    """
+    import iroh
+
+    try:
+        iroh.EndpointId.from_string(endpoint_id)
+    except iroh.IrohError:
+        raise ValueError(
+            f'"{endpoint_id}" is not a valid endpoint ID because it is not '
+            'a valid public key.',
+        ) from None
+
+
 def endpoint_id_from_secret_key(secret_key: bytes) -> EndpointId:
     """Get the ID of the endpoint with the secret key.
 

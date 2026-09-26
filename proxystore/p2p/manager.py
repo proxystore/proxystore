@@ -30,6 +30,8 @@ from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
+from proxystore.p2p.addrs import load_peer_addrs
+from proxystore.p2p.addrs import save_peer_addrs
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.exceptions import PeerNotAllowedError
@@ -117,6 +119,10 @@ class PeerManager:
             connect to its home relay before logging a warning.
         max_request_size: Maximum size in bytes of the data in a request from
             a peer or `None` for no limit.
+        addr_cache_path: Optional path to a file where the addresses of peers
+            are cached (see [`proxystore.p2p.addrs`][proxystore.p2p.addrs]).
+            Cached addresses are used when connecting to peers so peers can
+            be reached even if discovery is unavailable.
     """
 
     def __init__(
@@ -130,6 +136,7 @@ class PeerManager:
         connect_timeout: float = 30,
         online_timeout: float = 10,
         max_request_size: int | None = None,
+        addr_cache_path: str | None = None,
     ) -> None:
         self._secret_key = secret_key
         self._id = endpoint_id_from_secret_key(secret_key)
@@ -140,6 +147,7 @@ class PeerManager:
         self._connect_timeout = connect_timeout
         self._online_timeout = online_timeout
         self._max_request_size = max_request_size
+        self._addr_cache_path = addr_cache_path
 
         self._endpoint: iroh.Endpoint | None = None
         self._handler: RequestHandler | None = None
@@ -210,6 +218,16 @@ class PeerManager:
         if self._endpoint is not None:
             return
         self._handler = handler
+        if self._addr_cache_path is not None:
+            cached = load_peer_addrs(self._addr_cache_path)
+            for peer_id, addr in cached.items():
+                self._addr_hints.setdefault(peer_id, addr)
+            logger.info(
+                '%s: loaded %d cached peer address(es) from %s',
+                self._log_prefix(),
+                len(cached),
+                self._addr_cache_path,
+            )
         # uniffi_set_event_loop() is intentionally not called. It sets a
         # process-wide event loop that the bindings then use for every call,
         # which breaks when a different event loop is used later. It is only
@@ -345,39 +363,93 @@ class PeerManager:
             if connection is not None and connection.close_reason() is None:
                 return connection, False
 
-            addr = self._addr_hints.get(peer_id)
-            if addr is None:
-                addr = iroh.EndpointAddr(
-                    iroh.EndpointId.from_string(peer_id),
-                    None,
-                    [],
-                )
             logger.info(
                 '%s: connecting to peer %s',
                 self._log_prefix(),
                 self._peer_name(peer_id),
             )
             try:
-                connection = await asyncio.wait_for(
-                    self.endpoint.connect(addr, ALPN),
-                    timeout=self._connect_timeout,
-                )
-            except TimeoutError:
-                raise PeerConnectionTimeoutError(
-                    f'Connecting to peer {peer_id} timed out after '
-                    f'{self._connect_timeout} seconds.',
-                ) from None
-            except iroh.IrohError as e:
+                iroh_id = iroh.EndpointId.from_string(peer_id)
+            except iroh.IrohError:
                 raise PeerConnectionError(
-                    f'Failed to connect to peer {peer_id}: {_message(e)}',
+                    f'Endpoint ID {peer_id} is not a valid public key.',
                 ) from None
+            id_only = iroh.EndpointAddr(iroh_id, None, [])
+            hint = self._addr_hints.get(peer_id)
+            try:
+                connection = await self._dial(
+                    peer_id,
+                    id_only if hint is None else hint,
+                )
+            except PeerConnectionTimeoutError:
+                raise
+            except PeerConnectionError as e:
+                if hint is None:
+                    raise
+                # The cached address may be stale so try again using only
+                # discovery.
+                logger.info(
+                    '%s: failed to connect to peer %s using its cached '
+                    'address, retrying with discovery: %s',
+                    self._log_prefix(),
+                    self._peer_name(peer_id),
+                    e,
+                )
+                self._addr_hints.pop(peer_id, None)
+                connection = await self._dial(peer_id, id_only)
             self._outgoing[peer_id] = connection
             logger.info(
                 '%s: connected to peer %s',
                 self._log_prefix(),
                 self._peer_name(peer_id),
             )
+            await self._remember_addr(peer_id)
             return connection, True
+
+    async def _dial(
+        self,
+        peer_id: EndpointId,
+        addr: iroh.EndpointAddr,
+    ) -> iroh.Connection:
+        try:
+            return await asyncio.wait_for(
+                self.endpoint.connect(addr, ALPN),
+                timeout=self._connect_timeout,
+            )
+        except TimeoutError:
+            raise PeerConnectionTimeoutError(
+                f'Connecting to peer {peer_id} timed out after '
+                f'{self._connect_timeout} seconds.',
+            ) from None
+        except iroh.IrohError as e:
+            raise PeerConnectionError(
+                f'Failed to connect to peer {peer_id}: {_message(e)}',
+            ) from None
+
+    async def _remember_addr(self, peer_id: EndpointId) -> None:
+        addr = await self.endpoint.remote_addr(
+            # The ID is a valid public key because the peer is connected.
+            iroh.EndpointId.from_string(peer_id),
+        )
+        if addr is None:  # pragma: no cover
+            return
+        self._addr_hints[peer_id] = addr
+        if self._addr_cache_path is not None:
+            # Only peers in the allowlist are saved so removed peers are
+            # pruned from the cache.
+            addrs = {
+                peer: addr
+                for peer, addr in self._addr_hints.items()
+                if self._allowlist.allowed(peer)
+            }
+            try:
+                save_peer_addrs(self._addr_cache_path, addrs)
+            except OSError as e:
+                logger.warning(
+                    '%s: failed to save peer address cache: %s',
+                    self._log_prefix(),
+                    e,
+                )
 
     def _drop_outgoing(
         self,
@@ -469,6 +541,7 @@ class PeerManager:
         )
         connections = self._incoming.setdefault(peer_id, set())
         connections.add(connection)
+        await self._remember_addr(peer_id)
         try:
             while True:
                 try:

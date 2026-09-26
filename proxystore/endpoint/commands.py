@@ -32,6 +32,7 @@ from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.identity import endpoint_id_from_secret_key
 from proxystore.endpoint.identity import generate_secret_key
 from proxystore.endpoint.identity import parse_endpoint_id
+from proxystore.endpoint.identity import validate_public_key
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
 
@@ -106,6 +107,7 @@ def configure_endpoint(
     host: str = 'ip',
     peering: bool = True,
     persist_data: bool = False,
+    relays: str = 'n0',
     port: int | None,
     proxystore_dir: str | None = None,
     tls: bool = False,
@@ -118,6 +120,8 @@ def configure_endpoint(
             or a static address to use.
         peering: Enable communication with peer endpoints.
         persist_data: Persist data stored in the endpoint.
+        relays: Relays used for peering. One of `"n0"`, `"none"`, or a
+            comma-separated list of relay URLs.
         port: Port for endpoint to listen on. If `None`, a random port is
             selected.
         proxystore_dir: Optionally specify the proxystore home directory.
@@ -155,7 +159,10 @@ def configure_endpoint(
             port=port,
             host_type=host_type,
             tls=tls,
-            p2p=EndpointP2PConfig(enabled=peering),
+            p2p=EndpointP2PConfig(
+                enabled=peering,
+                relays=_parse_relays(relays),
+            ),
             storage=EndpointStorageConfig(database_path=database_path),
         )
     except ValueError as e:
@@ -182,6 +189,13 @@ def configure_endpoint(
         )
 
     return 0
+
+
+def _parse_relays(relays: str) -> Literal['n0', 'none'] | list[str]:
+    relays = relays.strip()
+    if relays in ('n0', 'none'):
+        return relays  # type: ignore[return-value]
+    return [url.strip() for url in relays.split(',') if url.strip()]
 
 
 def list_endpoints(
@@ -568,6 +582,7 @@ def add_peer(
         return 1
     try:
         endpoint_id = parse_endpoint_id(peer_id)
+        validate_public_key(endpoint_id)
         peers = endpoint_dir.read_peers()
     except ValueError as e:
         logger.error(str(e))

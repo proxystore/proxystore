@@ -29,6 +29,7 @@ from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.auth import pem_certificate_fingerprint
 from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import endpoint_id_from_secret_key
@@ -40,6 +41,8 @@ from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 
 if TYPE_CHECKING:
+    import iroh
+
     from proxystore.p2p.manager import PeerManager
 
 logger = logging.getLogger(__name__)
@@ -79,11 +82,30 @@ def _create_peer_manager(
     allowlist = Allowlist(endpoint_dir.peers_path)
     peers = len(allowlist.peers.peers)
     logger.info('Loaded %d peer(s) from %s', peers, allowlist.path)
+    preset, relay_mode = _relay_options(config.p2p)
     return PeerManager(
         secret_key,
         allowlist,
+        preset=preset,
+        relay_mode=relay_mode,
         max_request_size=config.storage.object_size_limit,
+        addr_cache_path=endpoint_dir.peer_addrs_path,
     )
+
+
+def _relay_options(
+    config: EndpointP2PConfig,
+) -> tuple[iroh.Preset, iroh.RelayMode | None]:
+    import iroh
+
+    if config.relays == 'n0':
+        logger.info('Using n0 relays')
+        return iroh.preset_n0(), None
+    if config.relays == 'none':
+        logger.info('Relays are disabled')
+        return iroh.preset_n0(), iroh.RelayMode.disabled()
+    logger.info('Using relays: %s', ', '.join(config.relays))
+    return iroh.preset_n0(), iroh.RelayMode.custom_from_urls(config.relays)
 
 
 def _create_storage(config: EndpointConfig) -> Storage:

@@ -117,6 +117,15 @@ def version() -> None:
     help='Enable communication with peer endpoints.',
 )
 @click.option(
+    '--relays',
+    default='n0',
+    metavar='RELAYS',
+    help=(
+        'Relays used for peering: "n0" (public relays run by n0), "none", '
+        'or a comma-separated list of self-hosted relay URLs.'
+    ),
+)
+@click.option(
     '--persist/--no-persist',
     default=False,
     metavar='BOOL',
@@ -133,6 +142,7 @@ def configure(
     host: str,
     port: int | None,
     peering: bool,
+    relays: str,
     persist: bool,
     tls: bool,
 ) -> None:
@@ -143,6 +153,7 @@ def configure(
             host=host,
             peering=peering,
             persist_data=persist,
+            relays=relays,
             port=port,
             tls=tls,
         ),
