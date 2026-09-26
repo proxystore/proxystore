@@ -56,9 +56,8 @@ class _CLIFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
         if hasattr(record, 'simple') and record.simple:
             return record.getMessage()
-        else:
-            formatter = logging.Formatter(self.FORMATS[record.levelno])
-            return formatter.format(record)
+        formatter = logging.Formatter(self.FORMATS[record.levelno])
+        return formatter.format(record)
 
 
 @click.group()

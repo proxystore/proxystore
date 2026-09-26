@@ -107,7 +107,7 @@ async def test_remote_error_propogation(
     endpoint1, endpoint2 = endpoints
     key = str(uuid.uuid4())
     with pytest.raises(AssertionError):
-        await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore
+        await endpoint1.set(key, None, endpoint=endpoint2.uuid)  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

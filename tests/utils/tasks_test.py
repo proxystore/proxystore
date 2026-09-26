@@ -15,10 +15,10 @@ def test_background_task_exits_on_error() -> None:
         return
 
     async def safe_task() -> None:
-        raise SafeTaskExitError()
+        raise SafeTaskExitError
 
     async def bad_task() -> None:
-        raise RuntimeError()
+        raise RuntimeError
 
     async def run(task) -> None:
         await spawn_guarded_background_task(task)

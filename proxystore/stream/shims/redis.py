@@ -113,11 +113,10 @@ class RedisSubscriber:
                 kind in redis.client.PubSub.UNSUBSCRIBE_MESSAGE_TYPES
             ):  # pragma: no cover
                 raise StopIteration
-            elif kind in redis.client.PubSub.PUBLISH_MESSAGE_TYPES:
+            if kind in redis.client.PubSub.PUBLISH_MESSAGE_TYPES:
                 return data
-            else:  # pragma: no cover
-                # This case is pings and health check messages.
-                continue
+            # This case is pings and health check messages.
+            continue  # pragma: no cover
 
     def close(self) -> None:
         """Close this subscriber."""
@@ -218,12 +217,11 @@ class RedisQueueSubscriber:
                 raise TimeoutError(
                     f'Timeout waiting on Redis queue with key {self._topic}.',
                 )
-            elif output is None:  # pragma: no cover
+            if output is None:  # pragma: no cover
                 # Testing this case with a mocked RedisClient is tricky
                 # because we just end up in a while True loop.
                 continue
-            else:
-                return output[1]  # type: ignore[return-value]
+            return output[1]  # type: ignore[return-value]
 
     def close(self) -> None:
         """Close this subscriber."""

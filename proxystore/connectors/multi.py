@@ -257,17 +257,16 @@ class MultiConnector:
     def _connector_from_key(self, key: MultiKey) -> Connector[Any]:
         if key.connector_name in self.connectors:
             return self.connectors[key.connector_name].connector
-        elif (
+        if (
             self.dormant_connectors is not None
             and key.connector_name in self.dormant_connectors
         ):
             raise MultiConnectorError(
                 f'The connector associated with {key} is dormant.',
             )
-        else:
-            raise MultiConnectorError(
-                f'The connector which created {key} does not exist.',
-            )
+        raise MultiConnectorError(
+            f'The connector which created {key} does not exist.',
+        )
 
     def close(self) -> None:
         """Close the connector and clean up.

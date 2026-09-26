@@ -137,8 +137,7 @@ def test_union_type_bad_attribute_crash() -> None:
         # Note: this function should not actually be called! It will error!
         if isinstance(x, Proxy):
             return x.__factory__  # In Issue #559, mypy crashes on this line
-        else:
-            return x
+        return x
 
     x = Proxy(lambda: 42)
     try:

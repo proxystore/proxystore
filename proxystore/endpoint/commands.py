@@ -95,8 +95,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
 
     if is_own_process(pid):
         return EndpointStatus.RUNNING
-    else:
-        return EndpointStatus.HANGING
+    return EndpointStatus.HANGING
 
 
 def configure_endpoint(
@@ -303,7 +302,7 @@ def start_endpoint(  # noqa: C901
     if status == EndpointStatus.RUNNING:
         logger.error(f'Endpoint {name} is already running.')
         return 1
-    elif status == EndpointStatus.UNKNOWN:
+    if status == EndpointStatus.UNKNOWN:
         logger.error(f'A valid endpoint named {name} does not exist.')
         logger.error('Use `list` to see available endpoints.')
         return 1
@@ -343,7 +342,7 @@ def start_endpoint(  # noqa: C901
             f'{pid_file} and try again.',
         )
         return 1
-    elif status == EndpointStatus.HANGING:
+    if status == EndpointStatus.HANGING:
         logger.debug(f'Removing invalid PID file ({pid_file}).')
         os.remove(pid_file)
 
@@ -399,7 +398,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         logger.error(f'A valid endpoint named {name} does not exist.')
         logger.error('Use `list` to see available endpoints.')
         return 1
-    elif status == EndpointStatus.STOPPED:
+    if status == EndpointStatus.STOPPED:
         logger.info(f'Endpoint {name} is not running.')
         return 0
 
@@ -420,7 +419,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
             f'{pid_file} and try again.',
         )
         return 1
-    elif status == EndpointStatus.HANGING:
+    if status == EndpointStatus.HANGING:
         logger.debug(f'Removing invalid PID file ({pid_file}).')
         os.remove(pid_file)
         logger.info(f'Endpoint {name} is not running.')

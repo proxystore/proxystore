@@ -540,17 +540,16 @@ class ClientHandler:
             if result is None:
                 return Status.NOT_FOUND, None, None
             return Status.OK, None, result
-        elif op == Op.SET:
+        if op == Op.SET:
             await self.endpoint.set(key, data, endpoint=endpoint_uuid)
             return Status.OK, None, None
-        elif op == Op.EXISTS:
+        if op == Op.EXISTS:
             exists = await self.endpoint.exists(key, endpoint=endpoint_uuid)
             return Status.OK, {'exists': exists}, None
-        elif op == Op.EVICT:
+        if op == Op.EVICT:
             await self.endpoint.evict(key, endpoint=endpoint_uuid)
             return Status.OK, None, None
-        else:
-            return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
+        return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
 
 
 async def _read_handshake_message(
@@ -562,7 +561,7 @@ async def _read_handshake_message(
         raise EndpointProtocolError(
             f'Expected {expected.name} message but got op {header.code}.',
         )
-    elif header.data_len != 0:
+    if header.data_len != 0:
         raise EndpointProtocolError(
             f'Client sent data in a {expected.name} message.',
         )

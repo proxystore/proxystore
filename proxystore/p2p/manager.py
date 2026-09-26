@@ -261,7 +261,7 @@ class PeerManager:
             elif isinstance(message, RelayResponse):
                 # The peer manager should never send something to the
                 # relay server that warrants a ServerResponse
-                logger.exception(
+                logger.error(
                     f'{self._log_prefix}: got unexpected ServerResponse '
                     f'from relay server: {message}',
                 )

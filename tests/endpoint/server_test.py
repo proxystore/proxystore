@@ -86,8 +86,7 @@ async def _connect(server: _Server, token: bytes | None = None) -> Any:
 
 
 def _raw_socket(server: _Server) -> socket.socket:
-    sock = socket.create_connection((server.host, server.port), timeout=5)
-    return sock
+    return socket.create_connection((server.host, server.port), timeout=5)
 
 
 def _is_closed(sock: socket.socket) -> bool:

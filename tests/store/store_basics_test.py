@@ -122,7 +122,7 @@ def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
     key = store.put('value')
 
     def _deserialize(x: BytesLike) -> Any:
-        raise Exception()
+        raise Exception
 
     with pytest.raises(
         SerializationError,

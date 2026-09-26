@@ -184,7 +184,7 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
     key = store.put(None)
     p: Proxy[None] = store.proxy_from_key(key)
     assert isinstance(p, Proxy)
-    assert isinstance(p, type(None))
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_proxy_recreates_store() -> None:
@@ -329,7 +329,7 @@ def test_locked_proxy(store: Store[LocalConnector]) -> None:
 def test_locked_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     p = store.locked_proxy(None, skip_nonproxiable=True)
     assert not isinstance(p, Proxy)
-    assert p is None
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_locked_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
@@ -374,7 +374,7 @@ def test_owned_proxy_populate_target(store: Store[LocalConnector]) -> None:
 def test_owned_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
     p = store.owned_proxy(None, skip_nonproxiable=True)
     assert not isinstance(p, (Proxy, OwnedProxy))
-    assert p is None
+    assert isinstance(p, type(None))  # noqa: FURB168
 
 
 def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:

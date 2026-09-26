@@ -31,12 +31,11 @@ def get_key(proxy: Proxy[T]) -> ConnectorKeyT:
     factory = get_factory(proxy)
     if isinstance(factory, base.StoreFactory):
         return factory.key
-    else:
-        raise ProxyStoreFactoryError(
-            'The proxy must contain a factory with type '
-            f'{base.StoreFactory.__name__}. {type(factory).__name__} '
-            'is not supported.',
-        )
+    raise ProxyStoreFactoryError(
+        'The proxy must contain a factory with type '
+        f'{base.StoreFactory.__name__}. {type(factory).__name__} '
+        'is not supported.',
+    )
 
 
 def resolve_async(proxy: Proxy[T]) -> None:

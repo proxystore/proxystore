@@ -230,7 +230,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                     type(store),
                     store.name,
                 )
-            elif self.evict:
+            if self.evict:
                 store.evict(self.key)
 
         if store.metrics is not None:

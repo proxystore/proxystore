@@ -137,7 +137,7 @@ class RelayServer(Generic[UserT]):
                 websocket.request.headers,
             )
         except RelayServerError as e:
-            logging.warning(
+            logger.warning(
                 'Failed to authenticate connection request from '
                 f'{websocket.remote_address}. {e.__class__.__name__}: {e}',
             )

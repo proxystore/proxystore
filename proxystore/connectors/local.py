@@ -66,7 +66,6 @@ class LocalConnector:
 
     def close(self) -> None:
         """Close the connector and clean up."""
-        pass
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

@@ -98,8 +98,7 @@ class GlobusUser:
         """Check equality using only Globus Auth issued identity ID."""
         if isinstance(other, GlobusUser):
             return self.sub == other.sub
-        else:
-            return False
+        return False
 
     __hash__ = object.__hash__
 
@@ -195,10 +194,9 @@ def get_authenticator(config: RelayAuthConfig) -> Authenticator[Any]:
     """
     if config.method is None:
         return NullAuthenticator()
-    elif config.method == 'globus':
+    if config.method == 'globus':
         return GlobusAuthenticator(**config.kwargs)
-    else:
-        raise ValueError(f'Unknown authentication method "{config.method}."')
+    raise ValueError(f'Unknown authentication method "{config.method}."')
 
 
 def get_token_from_headers(headers: Mapping[str, str]) -> str:

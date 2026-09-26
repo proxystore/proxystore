@@ -7,9 +7,9 @@ import sys
 from typing import Any
 from unittest import mock
 
-import numpy
-import pandas
-import polars
+import numpy as np
+import pandas as pd
+import polars as pl
 import pytest
 
 from proxystore.serialize import _NumpySerializer
@@ -46,18 +46,18 @@ def test_register_duplicate_identifiers() -> None:
         b'binary-string',
         'normal-string',
         [1, 2, 3],
-        numpy.array([[1, 2, 3], [4, 5, 6]]),
-        pandas.DataFrame([[1, 2, 3], [4, 5, 6]]),
-        polars.DataFrame([[1, 2, 3], [4, 5, 6]]),
+        np.array([[1, 2, 3], [4, 5, 6]]),
+        pd.DataFrame([[1, 2, 3], [4, 5, 6]]),
+        pl.DataFrame([[1, 2, 3], [4, 5, 6]]),
     ),
 )
 def test_serialize_objects(obj: Any) -> None:
     serialized = serialize(obj)
     deserialized = deserialize(serialized)
 
-    if isinstance(obj, numpy.ndarray):
-        assert numpy.array_equal(deserialized, obj)
-    elif isinstance(obj, (pandas.DataFrame, polars.DataFrame)):
+    if isinstance(obj, np.ndarray):
+        assert np.array_equal(deserialized, obj)
+    elif isinstance(obj, (pd.DataFrame, pl.DataFrame)):
         assert deserialized.equals(obj)
     else:
         assert deserialized == obj
@@ -71,7 +71,7 @@ def test_serialize_lambda() -> None:
 
 def test_deserialize_bad_input_type():
     with pytest.raises(ValueError):
-        deserialize('non-bytes-input')  # type: ignore
+        deserialize('non-bytes-input')  # type: ignore[arg-type]
 
 
 def test_deserialize_bad_identifier():
@@ -113,29 +113,29 @@ def test_propagate_cloudpickle_loads_error() -> None:
 
 def test_numpy_supported() -> None:
     serializer = _NumpySerializer()
-    assert serializer.supported(numpy.array([1, 2, 3]))
+    assert serializer.supported(np.array([1, 2, 3]))
     assert not serializer.supported([1, 2, 3])
 
 
 def test_numpy_serializer() -> None:
     serializer = _NumpySerializer()
-    xn = numpy.array([1, 2, 3])
+    xn = np.array([1, 2, 3])
     with io.BytesIO() as buffer:
         serializer.serialize(xn, buffer)
         buffer.seek(0)
         deserialized = serializer.deserialize(buffer)
-        assert numpy.array_equal(xn, deserialized)
+        assert np.array_equal(xn, deserialized)
 
 
 def test_pandas_supported() -> None:
     serializer = _PandasSerializer()
-    assert serializer.supported(pandas.DataFrame({'a': [1, 2, 3]}))
+    assert serializer.supported(pd.DataFrame({'a': [1, 2, 3]}))
     assert not serializer.supported({'a': [1, 2, 3]})
 
 
 def test_pandas_serializer() -> None:
     serializer = _PandasSerializer()
-    xp = pandas.DataFrame({'a': [1, 2, 3]})
+    xp = pd.DataFrame({'a': [1, 2, 3]})
     with io.BytesIO() as buffer:
         serializer.serialize(xp, buffer)
         buffer.seek(0)
@@ -145,13 +145,13 @@ def test_pandas_serializer() -> None:
 
 def test_polars_supported() -> None:
     serializer = _PolarsSerializer()
-    assert serializer.supported(polars.DataFrame({'a': [1, 2, 3]}))
+    assert serializer.supported(pl.DataFrame({'a': [1, 2, 3]}))
     assert not serializer.supported({'a': [1, 2, 3]})
 
 
 def test_polars_serializer() -> None:
     serializer = _PolarsSerializer()
-    xpl = polars.DataFrame({'a': [1, 2, 3]})
+    xpl = pl.DataFrame({'a': [1, 2, 3]})
     with io.BytesIO() as buffer:
         serializer.serialize(xpl, buffer)
         buffer.seek(0)
@@ -162,9 +162,9 @@ def test_polars_serializer() -> None:
 @pytest.mark.parametrize(
     ('serializer', 'module', 'obj'),
     (
-        (_NumpySerializer(), 'numpy', numpy.array([1, 2, 3])),
-        (_PandasSerializer(), 'pandas', pandas.DataFrame({'a': [1, 2, 3]})),
-        (_PolarsSerializer(), 'polars', polars.DataFrame({'a': [1, 2, 3]})),
+        (_NumpySerializer(), 'numpy', np.array([1, 2, 3])),
+        (_PandasSerializer(), 'pandas', pd.DataFrame({'a': [1, 2, 3]})),
+        (_PolarsSerializer(), 'polars', pl.DataFrame({'a': [1, 2, 3]})),
     ),
 )
 def test_supported_module_not_imported(
@@ -177,7 +177,7 @@ def test_supported_module_not_imported(
 
 
 def test_deserialize_module_not_installed() -> None:
-    data = serialize(numpy.array([1, 2, 3]))
+    data = serialize(np.array([1, 2, 3]))
     with mock.patch.dict(sys.modules, {'numpy': None}):
         with pytest.raises(
             SerializationError,

@@ -54,7 +54,7 @@ def test_reprs() -> None:
 def test_globus_endpoint_objects() -> None:
     with pytest.raises(TypeError):
         GlobusEndpoint(
-            uuid=1,  # type: ignore
+            uuid=1,  # type: ignore[arg-type]
             endpoint_path='1',
             local_path='1',
             host_regex='1',
@@ -62,7 +62,7 @@ def test_globus_endpoint_objects() -> None:
     with pytest.raises(TypeError):
         GlobusEndpoint(
             uuid='1',
-            endpoint_path=1,  # type: ignore
+            endpoint_path=1,  # type: ignore[arg-type]
             local_path='1',
             host_regex='1',
         )
@@ -70,7 +70,7 @@ def test_globus_endpoint_objects() -> None:
         GlobusEndpoint(
             uuid='1',
             endpoint_path='1',
-            local_path=1,  # type: ignore
+            local_path=1,  # type: ignore[arg-type]
             host_regex='1',
         )
     with pytest.raises(TypeError):
@@ -78,7 +78,7 @@ def test_globus_endpoint_objects() -> None:
             uuid='1',
             endpoint_path='1',
             local_path='1',
-            host_regex=1,  # type: ignore
+            host_regex=1,  # type: ignore[arg-type]
         )
 
     # GlobusEndpoint equality done by UUID
@@ -156,7 +156,7 @@ def test_globus_endpoints_from_dict() -> None:
     assert endpoints.dict() == data
 
     # Ensure Patterns are converted to strings in .dict()
-    data['UUID1']['host_regex'] = re.compile('host1')  # type: ignore
+    data['UUID1']['host_regex'] = re.compile('host1')  # type: ignore[assignment]
     endpoints = GlobusEndpoints.from_dict(data)
     assert isinstance(endpoints.dict()['UUID1']['host_regex'], str)
 
@@ -193,18 +193,18 @@ def test_globus_connector_internals(globus_connector) -> None:
 
         return _error
 
-    connector._transfer_client.get_task = _http_error(400)  # type: ignore
+    connector._transfer_client.get_task = _http_error(400)  # type: ignore[method-assign]
     assert not connector._validate_task_id('uuid')
     assert not connector.exists(GlobusKey('fake', 'fake'))
 
-    connector._transfer_client.get_task = _http_error(401)  # type: ignore
+    connector._transfer_client.get_task = _http_error(401)  # type: ignore[method-assign]
     with pytest.raises(globus_sdk.TransferAPIError):
         connector._validate_task_id('uuid')
 
     def _fail_wait(*args, **kwargs) -> bool:
         return False
 
-    connector._transfer_client.task_wait = _fail_wait  # type: ignore
+    connector._transfer_client.task_wait = _fail_wait  # type: ignore[method-assign]
     with pytest.raises(RuntimeError):
         connector._wait_on_tasks('1234')
 

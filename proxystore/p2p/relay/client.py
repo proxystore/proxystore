@@ -109,7 +109,7 @@ class RelayClient:
         timeout: float = 10,
         verify_certificate: bool = True,
     ) -> None:
-        if not (address.startswith('ws://') or address.startswith('wss://')):
+        if not address.startswith(('ws://', 'wss://')):
             raise ValueError(
                 'Relay server address must start with ws:// or wss://.'
                 f'Got {address}.',
@@ -204,16 +204,14 @@ class RelayClient:
                     f'and name={self.name}',
                 )
                 return websocket
-            else:
-                raise RelayRegistrationError(
-                    'Failed to register as peer with the relay server. '
-                    f'Got exception: {message.message}',
-                )
-        else:
             raise RelayRegistrationError(
-                'Relay server replied with unknown message type: '
-                f'{type(message).__name__}.',
+                'Failed to register as peer with the relay server. '
+                f'Got exception: {message.message}',
             )
+        raise RelayRegistrationError(
+            'Relay server replied with unknown message type: '
+            f'{type(message).__name__}.',
+        )
 
     async def _reconnect_on_close(self) -> None:
         """Wait for websocket to close and immediately reconnect.
@@ -252,11 +250,10 @@ class RelayClient:
             and self._websocket.state is websockets.protocol.State.OPEN
         ):
             return self._websocket
-        else:
-            raise RelayNotConnectedError(
-                'Websocket connection to the relay server is not open. '
-                'Try calling connect() first.',
-            )
+        raise RelayNotConnectedError(
+            'Websocket connection to the relay server is not open. '
+            'Try calling connect() first.',
+        )
 
     async def connect(self, retry: bool = True) -> None:
         """Connect to the relay server.

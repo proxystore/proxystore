@@ -539,13 +539,13 @@ def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
             'The endpoint rejected the token of the client. The endpoint may '
             'have been restarted since the connection file was read.',
         )
-    elif header.code != Status.OK:
+    if header.code != Status.OK:
         error = meta.get('error', 'no error message provided')
         raise EndpointProtocolError(
             f'Endpoint returned status {header.code} during the handshake: '
             f'{error}',
         )
-    elif header.data_len != 0:
+    if header.data_len != 0:
         raise EndpointProtocolError(
             'Endpoint sent data in a handshake message.',
         )

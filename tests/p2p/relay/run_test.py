@@ -153,11 +153,10 @@ def test_logging_config(tmp_path: pathlib.Path) -> None:
                 with open(os.path.join(tmp_path, log)) as f:
                     assert 'DEBUG' not in f.read()
             break
-        elif waited_time >= max_wait_time:  # pragma: no cover
+        if waited_time >= max_wait_time:  # pragma: no cover
             raise TimeoutError('Timeout waiting for log file to be written.')
-        else:  # pragma: no cover
-            time.sleep(sleep_time)
-            waited_time += sleep_time
+        time.sleep(sleep_time)  # pragma: no cover
+        waited_time += sleep_time  # pragma: no cover
 
 
 def _serve(config: RelayServingConfig) -> None:

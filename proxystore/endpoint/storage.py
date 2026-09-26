@@ -243,8 +243,7 @@ class SQLiteStorage:
             result = await cursor.fetchone()
             if result is None:
                 return default
-            else:
-                return result[0]
+            return result[0]
 
     async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.

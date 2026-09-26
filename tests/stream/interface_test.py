@@ -201,7 +201,7 @@ def test_filtering_stream(
         filter_=filter_ if not toggle_side else None,
     )
 
-    for i in range(0, 10):
+    for i in range(10):
         producer.send(topic, i, metadata={'index': i}, evict=True)
 
     events = list(publisher._queues[topic].queue)  # type: ignore[union-attr]

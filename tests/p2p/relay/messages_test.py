@@ -143,11 +143,11 @@ def test_decode_errors() -> None:
 
 def test_encode_errors() -> None:
     with pytest.raises(RelayMessageEncodeError, match='not an instance'):
-        encode_relay_message('just a string')  # type: ignore
+        encode_relay_message('just a string')  # type: ignore[arg-type]
 
     message = RelayRegistrationRequest(name='name', uuid=uuid.uuid4())
     # UUID is not JSONable so will raise encode error
-    message.name = uuid.uuid4()  # type: ignore
+    message.name = uuid.uuid4()  # type: ignore[assignment]
     with pytest.raises(
         RelayMessageEncodeError,
         match='Error encoding message',

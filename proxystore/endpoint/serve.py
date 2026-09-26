@@ -55,7 +55,7 @@ def _get_auth_headers(
 ) -> dict[str, str]:
     if method is None:
         return {}
-    elif method == 'globus':
+    if method == 'globus':
         app = get_globus_app()
         scopes = get_relay_scopes_by_resource_server()
         assert len(scopes) == 1
@@ -73,8 +73,7 @@ def _get_auth_headers(
         bearer = authorizer.get_authorization_header()
         assert bearer is not None
         return {'Authorization': bearer}
-    else:
-        raise AssertionError('Unreachable.')
+    raise AssertionError('Unreachable.')
 
 
 def _create_storage(config: EndpointConfig) -> Storage:

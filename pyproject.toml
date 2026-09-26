@@ -192,6 +192,28 @@ select = [
     "T10",
     # flake8-simplify
     "SIM",
+    # flake8-executable
+    "EXE",
+    # flynt
+    "FLY",
+    # refurb
+    "FURB",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-logging
+    "LOG",
+    # Perflint
+    "PERF",
+    # pygrep-hooks
+    "PGH",
+    # flake8-pie
+    "PIE",
+    # flake8-return
+    "RET",
+    # flake8-raise
+    "RSE",
+    # flake8-tidy-imports
+    "TID",
     # PyLint
     "PLE", "PLW",
     # ruff-specific

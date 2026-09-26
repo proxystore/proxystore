@@ -178,11 +178,10 @@ class Endpoint:
         if self._mode is EndpointMode.SOLO:
             assert self._default_name is not None
             return self._default_name
-        elif self._mode is EndpointMode.PEERING:
+        if self._mode is EndpointMode.PEERING:
             assert self.peer_manager is not None
             return self.peer_manager.name
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
 
     @property
     def uuid(self) -> UUID:
@@ -190,11 +189,10 @@ class Endpoint:
         if self._mode is EndpointMode.SOLO:
             assert self._default_uuid is not None
             return self._default_uuid
-        elif self._mode is EndpointMode.PEERING:
+        if self._mode is EndpointMode.PEERING:
             assert self.peer_manager is not None
             return self.peer_manager.uuid
-        else:
-            raise AssertionError('Unreachable.')
+        raise AssertionError('Unreachable.')
 
     @property
     def peer_manager(self) -> PeerManager | None:
@@ -413,8 +411,7 @@ class Endpoint:
             response = await request_future
             assert isinstance(response.exists, bool)
             return response.exists
-        else:
-            return await self._storage.exists(key)
+        return await self._storage.exists(key)
 
     async def get(
         self,
@@ -449,8 +446,7 @@ class Endpoint:
             request_future = await self._request_from_peer(endpoint, request)
             response = await request_future
             return response.data
-        else:
-            return await self._storage.get(key, None)
+        return await self._storage.get(key, None)
 
     async def set(
         self,

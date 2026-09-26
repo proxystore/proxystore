@@ -284,14 +284,14 @@ class StreamProducer(Generic[T]):
                     ),
                 )
         elif len(objects) > 0 and store is None:
-            for item in objects:
-                events.append(
-                    NewObjectEvent(
-                        topic=topic,
-                        obj=item.obj,
-                        metadata=item.metadata,
-                    ),
+            events.extend(
+                NewObjectEvent(
+                    topic=topic,
+                    obj=item.obj,
+                    metadata=item.metadata,
                 )
+                for item in objects
+            )
 
         if closed:
             events.append(EndOfStreamEvent(topic))

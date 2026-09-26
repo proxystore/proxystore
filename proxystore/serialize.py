@@ -31,7 +31,6 @@ if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
     class BytesLike(Buffer, Sized, Protocol):
         """Protocol for bytes-like objects."""
 
-        pass
 else:  # pragma: <3.12 cover
     BytesLike: TypeAlias = bytes | bytearray | memoryview
     """Protocol for bytes-like objects."""
@@ -39,8 +38,6 @@ else:  # pragma: <3.12 cover
 
 class SerializationError(Exception):
     """Base Serialization Exception."""
-
-    pass
 
 
 class _Serializer(Protocol):
@@ -115,20 +112,20 @@ class _NumpySerializer:
     name = 'numpy'
 
     def supported(self, obj: Any) -> bool:
-        numpy = sys.modules.get('numpy')
-        return numpy is not None and isinstance(obj, numpy.ndarray)
+        np = sys.modules.get('numpy')
+        return np is not None and isinstance(obj, np.ndarray)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
-        import numpy
+        import numpy as np
 
         # Must allow_pickle=True for the case where the numpy array contains
         # non-numeric data.
-        numpy.save(buffer, obj, allow_pickle=True)
+        np.save(buffer, obj, allow_pickle=True)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
-        import numpy
+        import numpy as np
 
-        return numpy.load(buffer, allow_pickle=True)
+        return np.load(buffer, allow_pickle=True)
 
 
 class _PandasSerializer:
@@ -136,8 +133,8 @@ class _PandasSerializer:
     name = 'pandas'
 
     def supported(self, obj: Any) -> bool:
-        pandas = sys.modules.get('pandas')
-        return pandas is not None and isinstance(obj, pandas.DataFrame)
+        pd = sys.modules.get('pandas')
+        return pd is not None and isinstance(obj, pd.DataFrame)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         # Pandas with pickle protocol 5 is the suggested serialization
@@ -147,9 +144,9 @@ class _PandasSerializer:
         obj.to_pickle(buffer, protocol=_PICKLE_PROTOCOL)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
-        import pandas
+        import pandas as pd
 
-        return pandas.read_pickle(buffer)
+        return pd.read_pickle(buffer)
 
 
 class _PolarsSerializer:
@@ -157,16 +154,16 @@ class _PolarsSerializer:
     name = 'polars'
 
     def supported(self, obj: Any) -> bool:
-        polars = sys.modules.get('polars')
-        return polars is not None and isinstance(obj, polars.DataFrame)
+        pl = sys.modules.get('polars')
+        return pl is not None and isinstance(obj, pl.DataFrame)
 
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         obj.write_ipc(buffer)
 
     def deserialize(self, buffer: io.BytesIO) -> Any:
-        import polars
+        import polars as pl
 
-        return polars.read_ipc(buffer.read())
+        return pl.read_ipc(buffer.read())
 
 
 class _PickleSerializer:
@@ -231,8 +228,10 @@ def is_bytes_like(obj: Any) -> TypeGuard[BytesLike]:
     """Check if the object is bytes-like."""
     if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
         return isinstance(obj, BytesLike)
-    else:  # pragma: <3.12 cover
-        return isinstance(obj, (bytes, bytearray, memoryview))
+    return isinstance(  # pragma: <3.12 cover
+        obj,
+        (bytes, bytearray, memoryview),
+    )
 
 
 def serialize(obj: Any) -> bytes:

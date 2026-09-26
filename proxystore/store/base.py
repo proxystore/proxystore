@@ -669,10 +669,9 @@ class Store(Generic[ConnectorT]):
                 #     Incompatible return value type (got "Optional[bool]",
                 #     expected "Optional[Proxy[T]]")  [return-value]
                 return obj  # type: ignore[return-value]
-            else:
-                raise NonProxiableTypeError(
-                    f'Object of {type(obj)} is not proxiable.',
-                )
+            raise NonProxiableTypeError(
+                f'Object of {type(obj)} is not proxiable.',
+            )
 
         with Timer() as timer:
             key = self.put(obj, serializer=serializer, **kwargs)

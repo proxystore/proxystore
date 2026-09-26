@@ -59,14 +59,12 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
         factory = get_factory(val)
         if isinstance(factory, StoreFactory):
             return factory.get_store()
-        else:
-            raise ProxyStoreFactoryError(
-                'The proxy must contain a factory with type '
-                f'{StoreFactory.__name__}. {type(factory).__name__} '
-                'is not supported.',
-            )
-    else:
-        name = val
+        raise ProxyStoreFactoryError(
+            'The proxy must contain a factory with type '
+            f'{StoreFactory.__name__}. {type(factory).__name__} '
+            'is not supported.',
+        )
+    name = val
 
     with _stores_lock:
         if name in _stores:

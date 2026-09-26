@@ -127,7 +127,7 @@ async def test_p2p_connection_error_from_server(relay_server) -> None:
                 error='test error',
             ),
         )
-        manager1._relay_client.recv = mock_recv  # type: ignore
+        manager1._relay_client.recv = mock_recv  # type: ignore[method-assign]
 
         connection1 = await manager1.get_connection(manager2.uuid)
 
@@ -197,7 +197,7 @@ async def test_serialization_error(relay_server, caplog) -> None:
             relay_client._websocket.recv,
             'nonsense_string',
         )
-        relay_client._websocket.recv = mock_recv  # type: ignore
+        relay_client._websocket.recv = mock_recv  # type: ignore[method-assign]
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -218,7 +218,7 @@ async def test_unexpected_server_response(relay_server, caplog) -> None:
     async with PeerManager(RelayClient(relay_server.address)) as manager:
         message = RelayResponse(success=True, message='', error=False)
         mock_recv = async_mock_once(manager._relay_client.recv, message)
-        manager._relay_client.recv = mock_recv  # type: ignore
+        manager._relay_client.recv = mock_recv  # type: ignore[method-assign]
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 
@@ -238,7 +238,7 @@ async def test_unknown_message_type(relay_server, caplog) -> None:
     async with PeerManager(RelayClient(relay_server.address)) as manager:
         message = RelayRegistrationRequest('name', uuid.uuid4())
         mock_recv = async_mock_once(manager._relay_client.recv, message)
-        manager._relay_client.recv = mock_recv  # type: ignore
+        manager._relay_client.recv = mock_recv  # type: ignore[method-assign]
         while not mock_recv.await_count > 1:
             await asyncio.sleep(0.01)
 

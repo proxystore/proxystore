@@ -42,9 +42,7 @@ async def test_asyn_iterator() -> None:
     target = TestAsyncIterator(values)
     wrapped = Proxy(lambda: target)
 
-    found = []
-    async for value in wrapped:  # pragma: no cover
-        found.append(value)
+    found = [value async for value in wrapped]
 
     assert values == found
 
