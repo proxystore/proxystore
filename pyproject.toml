@@ -12,7 +12,7 @@ authors = [
 maintainers = [
     {name = "Greg Pauloski", email = "jgpauloski@uchicago.edu"},
 ]
-description = "Advanced data flow management for distributed Python applications"
+description = "Pass-by-reference for distributed Python applications via transparent object proxies"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

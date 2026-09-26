@@ -8,40 +8,23 @@
 [![tests](https://github.com/proxystore/proxystore/actions/workflows/tests.yml/badge.svg?label=tests)](https://github.com/proxystore/proxystore/actions?cache-control=no-cache)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/proxystore/proxystore/main.svg)](https://results.pre-commit.ci/latest/github/proxystore/proxystore/main?cache-control=no-cache)
 
-ProxyStore facilitates efficient data flow management in distributed Python applications, such as dynamic task-based workflows or serverless and edge applications.
+ProxyStore provides pass-by-reference semantics for distributed Python applications via [*transparent object proxies*](https://docs.proxystore.dev/latest/concepts/proxy/).
 
-The [*transparent object proxy*](https://docs.proxystore.dev/latest/concepts/proxy/), the core building block within ProxyStore, acts like a wide-area reference that can be cheaply communicated.
-Unlike traditional references that are only valid within the virtual address space of a single process, the proxy references an object in remote storage and can be implicitly dereferenced in arbitrary processes—even on remote machines.
-The proxy is transparent in that it implicitly dereferences its target object when used—referred to a *just-in-time resolution*—and afterwards forwards all operations on itself to the cached target object.
+A proxy is a lightweight reference to an object in remote storage that can be cheaply sent to any process, even on a remote machine.
+The proxy resolves its target object just-in-time when first used and then behaves like the target object, so code consuming a proxy needs no changes and no knowledge of how the data is stored or moved.
+This reduces transfer overheads through intermediaries, such as workflow schedulers or cloud services, and decouples application logic from communication code.
 
-This paradigm results in the best of both pass-by-reference and pass-by-value semantics, improves performance and portability by reducing transfer overheads through intermediaries, and abstracts low-level communication methods which reduces code complexity.
-A proxy contains within itself all the information and logic necessary to resolve the target object.
-This self-contained nature means a proxy consumer need not be aware of the low-level communication mechanisms used by the proxy; rather, this is unilaterally determined by the producer of the proxy.
+ProxyStore is used to build:
 
-ProxyStore supports a diverse set of programming patterns built on the proxy paradigm:
+* Task-based workflows (e.g., [Dask Distributed](https://docs.proxystore.dev/latest/guides/dask-distributed/))
+* Serverless applications (e.g., [Globus Compute](https://docs.proxystore.dev/latest/guides/globus-compute/))
+* [Distributed futures](https://docs.proxystore.dev/latest/guides/proxy-futures/)
+* [Bulk data streaming](https://docs.proxystore.dev/latest/guides/streaming/)
 
-* [Task-based Workflows](https://arxiv.org/abs/2303.08803)
-* [Function-as-a-Service/Serverless Applications](https://docs.proxystore.dev/latest/guides/globus-compute/)
-* [Distributed Futures](https://docs.proxystore.dev/latest/guides/proxy-futures/)
-* [Bulk Data Streaming](https://docs.proxystore.dev/latest/guides/streaming/)
-* and more!
+Objects can be stored in and transferred via shared file systems, Redis, Globus Transfer, or [ProxyStore Endpoints](https://docs.proxystore.dev/latest/guides/endpoints/) for peer-to-peer transfer.
+See the [Connectors](https://docs.proxystore.dev/latest/api/connectors/) reference for all options or to implement your own.
 
-ProxyStore can leverage many popular mediated data transfer and storage systems:
-[DAOS](https://docs.daos.io/v2.4/),
-[Globus Transfer](https://www.globus.org/data-transfer),
-[Kafka](https://kafka.apache.org/),
-[KeyDB](https://docs.keydb.dev/), and
-[Redis](https://redis.io/).
-Custom communication methods built on
-[Mochi](https://mochi.readthedocs.io/en/latest/margo.html),
-[UCX](https://openucx.org/),
-[WebRTC](https://webrtc.org/), and
-[ZeroMQ](https://zeromq.org/)
-are provided for high-performance and peer-to-peer applications.
-
-Read more about ProxyStore's concepts [here](https://docs.proxystore.dev/latest/concepts/).
-Complete documentation for ProxyStore is available at
-[docs.proxystore.dev](https://docs.proxystore.dev).
+Learn more in the [Concepts](https://docs.proxystore.dev/latest/concepts/) overview and the complete documentation at [docs.proxystore.dev](https://docs.proxystore.dev).
 
 ## Installation
 
@@ -63,31 +46,30 @@ to get started for local development.
 
 ## Example
 
-Creating proxies of objects only requires a few lines of code.
+Proxies are cheap to send to other processes and resolve themselves when used.
 
 ```python
-from proxystore.connectors.local import LocalConnector
-from proxystore.proxy import Proxy
+from concurrent.futures import ProcessPoolExecutor
+
+from proxystore.connectors.file import FileConnector
 from proxystore.store import Store
 
 
-def process(x: dict[str, str]) -> None:
-    # x is transparently resolved from the store when first
-    # used by the function. After which the proxy behaves as
-    # target object (the dict) for the rest of its existence.
-    assert isinstance(x, dict)
-    assert x['hello'] == 'world'
+def process(data: dict[str, str]) -> str:
+    # The proxy resolves itself to the dict when first used and
+    # then behaves exactly like the dict.
+    return data['hello']
 
 
-with Store('example', connector=LocalConnector(), register=True) as store:
-    # Store the object via a connector interface (here, a thread local
-    # store). The returned proxy acts like a reference to the object.
-    x = {'hello': 'world'}
-    proxy = store.proxy(x)
-    assert isinstance(proxy, Proxy)
+if __name__ == '__main__':
+    with Store('example', FileConnector('./proxystore-data')) as store:
+        # Put the object in the store and get back a proxy, a lightweight
+        # reference which is cheap to send to other processes.
+        proxy = store.proxy({'hello': 'world'})
 
-    # Invoking a function with proxy works without function changes.
-    process(proxy)
+        # Functions can be invoked with the proxy without any changes.
+        with ProcessPoolExecutor() as pool:
+            assert pool.submit(process, proxy).result() == 'world'
 ```
 
 Check out the [Get Started](https://docs.proxystore.dev/latest/get-started)

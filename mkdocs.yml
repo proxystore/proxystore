@@ -1,7 +1,7 @@
 site_name: ProxyStore
 site_url: https://docs.proxystore.dev
 site_author: Greg Pauloski and Globus Labs
-site_description: Documentation for ProxyStore.
+site_description: Pass-by-reference for distributed Python applications via transparent object proxies
 
 repo_name: proxystore/proxystore
 repo_url: https://github.com/proxystore/proxystore
