@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import pathlib
 from typing import Protocol
 from typing import runtime_checkable
@@ -171,15 +172,23 @@ class SQLiteStorage:
 
         self._max_object_size = max_object_size
         self._db: aiosqlite.Connection | None = None
+        self._db_lock = asyncio.Lock()
 
     async def db(self) -> aiosqlite.Connection:
         """Get the database connection object."""
-        if self._db is None:
-            self._db = await aiosqlite.connect(self.database_path)
-            await self._db.execute(
-                'CREATE TABLE IF NOT EXISTS blobs'
-                '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',
-            )
+        if self._db is not None:
+            return self._db
+        # Concurrent first requests (e.g., when clients reconnect after the
+        # endpoint restarts) must share one connection. Separate connections
+        # can deadlock each other's write transactions.
+        async with self._db_lock:
+            if self._db is None:
+                db = await aiosqlite.connect(self.database_path)
+                await db.execute(
+                    'CREATE TABLE IF NOT EXISTS blobs'
+                    '(key TEXT PRIMARY KEY, value BLOB NOT NULL)',
+                )
+                self._db = db
         return self._db
 
     async def evict(self, key: str) -> None:

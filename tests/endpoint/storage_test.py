@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import pathlib
 from collections.abc import AsyncGenerator
+from unittest import mock
 
+import aiosqlite
 import pytest
 import pytest_asyncio
 
@@ -62,6 +65,24 @@ async def test_sqlite_storage_persists(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.asyncio
+async def test_sqlite_storage_concurrent_first_requests(
+    tmp_path: pathlib.Path,
+) -> None:
+    storage = SQLiteStorage(tmp_path / 'blobs.db')
+    with mock.patch(
+        'aiosqlite.connect',
+        wraps=aiosqlite.connect,
+    ) as connect:
+        await asyncio.gather(
+            *(storage.set(f'key-{i}', b'value') for i in range(10)),
+        )
+    connect.assert_called_once()
+    assert all(
+        await asyncio.gather(*(storage.exists(f'key-{i}') for i in range(10))),
+    )
+    await storage.close()
+
+
 async def test_sqlite_storage_close() -> None:
     storage = SQLiteStorage(':memory:')
     await storage.close()
