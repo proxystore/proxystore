@@ -28,9 +28,6 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointRelayAuthConfig
 from proxystore.endpoint.config import EndpointRelayConfig
 from proxystore.endpoint.config import EndpointStorageConfig
-from proxystore.endpoint.config import get_configs
-from proxystore.endpoint.config import read_config
-from proxystore.endpoint.config import write_config
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.serve import serve
 from proxystore.utils.environment import home_dir
@@ -78,17 +75,17 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
     if proxystore_dir is None:
         proxystore_dir = home_dir()
 
-    endpoint_dir = os.path.join(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
     if not os.path.isdir(endpoint_dir):
         return EndpointStatus.UNKNOWN
 
     try:
-        read_config(endpoint_dir)
+        endpoint_dir.read_config()
     except (FileNotFoundError, ValueError) as e:
         logger.error(e)
         return EndpointStatus.UNKNOWN
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     if not os.path.isfile(pid_file):
         return EndpointStatus.STOPPED
 
@@ -137,11 +134,9 @@ def configure_endpoint(
     """
     if proxystore_dir is None:
         proxystore_dir = home_dir()
-    endpoint_dir = os.path.join(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
 
-    database_path = (
-        EndpointDir(endpoint_dir).database_path if persist_data else None
-    )
+    database_path = endpoint_dir.database_path if persist_data else None
 
     host_addr: str | None = None
     host_type: Literal['fqdn', 'ip', 'static']
@@ -181,7 +176,7 @@ def configure_endpoint(
         logger.info('To reconfigure the endpoint, remove and try again.')
         return 1
 
-    write_config(cfg, endpoint_dir)
+    endpoint_dir.write_config(cfg)
 
     logger.info(f'Configured endpoint: {cfg.name} <{cfg.uuid}>')
     logger.info(f'Config and log file directory: {endpoint_dir}')
@@ -208,7 +203,7 @@ def list_endpoints(
     if proxystore_dir is None:
         proxystore_dir = home_dir()
 
-    endpoints = get_configs(proxystore_dir)
+    endpoints = [c for _, c in EndpointDir.find_all(proxystore_dir)]
 
     max_status_chars = max(
         len('STATUS'),
@@ -261,7 +256,7 @@ def remove_endpoint(
     """
     if proxystore_dir is None:
         proxystore_dir = home_dir()
-    endpoint_dir = os.path.join(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
 
     if not os.path.exists(endpoint_dir):
         logger.error(f'An endpoint named {name} does not exist.')
@@ -312,15 +307,15 @@ def start_endpoint(  # noqa: C901
         logger.error('Use `list` to see available endpoints.')
         return 1
 
-    endpoint_dir = os.path.join(proxystore_dir, name)
-    cfg = read_config(endpoint_dir)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    cfg = endpoint_dir.read_config()
 
     if cfg.host_type == 'fqdn':
         hostname = socket.getfqdn()
     elif cfg.host_type == 'ip':
         hostname = socket.gethostbyname(utils.hostname())
     elif cfg.host_type == 'static' and cfg.host is None:
-        path = EndpointDir(endpoint_dir).config_path
+        path = endpoint_dir.config_path
         logger.error('Missing static host address in config.')
         logger.error(
             'Set the `host` field or change the `host_type` to '
@@ -333,7 +328,7 @@ def start_endpoint(  # noqa: C901
     else:
         raise AssertionError('Unreachable.')
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
 
     if (
         status == EndpointStatus.HANGING
@@ -353,16 +348,16 @@ def start_endpoint(  # noqa: C901
 
     # Write out new config with host so clients can see the current host
     cfg.host = hostname
-    write_config(cfg, endpoint_dir)
+    endpoint_dir.write_config(cfg)
 
-    log_file = EndpointDir(endpoint_dir).log_path
+    log_file = endpoint_dir.log_path
 
     if detach:
         logger.info('Starting endpoint process as daemon.')
         logger.info(f'Logs will be written to {log_file}')
 
         context = daemon.DaemonContext(
-            working_directory=endpoint_dir,
+            working_directory=endpoint_dir.path,
             umask=0o022,
             pidfile=daemon.pidfile.PIDLockFile(pid_file),
             detach_process=True,
@@ -375,8 +370,7 @@ def start_endpoint(  # noqa: C901
         # Note: serve will handle most interrupts which can be reasonably
         # handled and return gracefully.
         serve(
-            cfg,
-            endpoint_dir=endpoint_dir,
+            endpoint_dir,
             log_level=log_level,
             log_file=log_file,
         )
@@ -408,10 +402,10 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         logger.info(f'Endpoint {name} is not running.')
         return 0
 
-    endpoint_dir = os.path.join(proxystore_dir, name)
-    cfg = read_config(endpoint_dir)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    cfg = endpoint_dir.read_config()
     hostname = utils.hostname()
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
 
     if (
         status == EndpointStatus.HANGING

@@ -137,8 +137,7 @@ async def _close_server(
 
 @contextlib.asynccontextmanager
 async def running_endpoint(
-    config: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
 ) -> AsyncIterator[Endpoint]:
     """Run an endpoint that serves clients until the context exits.
 
@@ -149,22 +148,24 @@ async def running_endpoint(
 
     Example:
         ```python
-        async with running_endpoint(config, endpoint_dir):
-            client = EndpointClient.from_config(config, endpoint_dir)
+        async with running_endpoint(endpoint_dir):
+            client = EndpointClient.from_dir(endpoint_dir)
             ...
         ```
 
     Args:
-        config: Configuration of the endpoint.
-        endpoint_dir: Directory of the endpoint.
+        endpoint_dir: Directory of the endpoint with its configuration.
 
     Yields:
         The running endpoint.
 
     Raises:
-        ValueError: If the host is not set in the configuration.
+        FileNotFoundError: If the configuration does not exist.
+        ValueError: If the configuration is invalid or the host is not set
+            in the configuration.
         OSError: If the endpoint cannot listen on its host and port.
     """
+    config = endpoint_dir.read_config()
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
 
@@ -188,15 +189,14 @@ async def running_endpoint(
             ),
         )
 
-        directory = EndpointDir(endpoint_dir)
-        if directory.restrict_permissions():
+        if endpoint_dir.restrict_permissions():
             logger.warning(
                 'Removed group and other write permissions from '
                 f'{endpoint_dir} because clients trust the files in the '
                 'endpoint directory',
             )
-        stack.callback(directory.remove_credentials)
-        credentials = directory.create_credentials(
+        stack.callback(endpoint_dir.remove_credentials)
+        credentials = endpoint_dir.create_credentials(
             tls=config.tls,
             common_name=f'proxystore-endpoint-{config.uuid}',
         )
@@ -208,7 +208,7 @@ async def running_endpoint(
 
         ssl_context: ssl.SSLContext | None = None
         if config.tls:
-            ssl_context = directory.server_ssl_context()
+            ssl_context = endpoint_dir.server_ssl_context()
             logger.info('Encrypting client connections with TLS')
 
         server = await handler.start_server(
@@ -228,7 +228,7 @@ async def running_endpoint(
             logger.info('Shutting down endpoint server')
 
 
-async def _serve_async(config: EndpointConfig, endpoint_dir: str) -> None:
+async def _serve_async(endpoint_dir: EndpointDir) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     signals = (signal.SIGINT, signal.SIGTERM)
@@ -237,7 +237,7 @@ async def _serve_async(config: EndpointConfig, endpoint_dir: str) -> None:
     for sig in signals:
         loop.add_signal_handler(sig, stop.set)
     try:
-        async with running_endpoint(config, endpoint_dir):
+        async with running_endpoint(endpoint_dir):
             await stop.wait()
     finally:
         for sig in signals:
@@ -245,9 +245,8 @@ async def _serve_async(config: EndpointConfig, endpoint_dir: str) -> None:
 
 
 def serve(
-    config: EndpointConfig,
+    endpoint_dir: EndpointDir,
     *,
-    endpoint_dir: str,
     log_level: int | str = logging.INFO,
     log_file: str | None = None,
     use_uvloop: bool = True,
@@ -259,9 +258,9 @@ def serve(
         SIGTERM.
 
     Args:
-        config: Configuration object.
-        endpoint_dir: Directory of the endpoint. The client token file is
-            written to this directory while the endpoint is running.
+        endpoint_dir: Directory of the endpoint with its configuration. The
+            client credentials are written to this directory while the
+            endpoint is running.
         log_level: Logging level of endpoint.
         log_file: Optional file path to append log to.
         use_uvloop: Use uvloop as the event loop implementation.
@@ -287,9 +286,9 @@ def serve(
     try:
         if use_uvloop:  # pragma: no cover
             logger.info('Using uvloop as the event loop')
-            uvloop.run(_serve_async(config, endpoint_dir))
+            uvloop.run(_serve_async(endpoint_dir))
         else:
-            asyncio.run(_serve_async(config, endpoint_dir))
+            asyncio.run(_serve_async(endpoint_dir))
     except Exception as e:
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see
@@ -301,4 +300,4 @@ def serve(
         # but can still be raised before then.
         pass
     finally:
-        logger.info(f'Finished serving endpoint: {config.name}')
+        logger.info(f'Finished serving endpoint in {endpoint_dir}')

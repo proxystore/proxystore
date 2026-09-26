@@ -17,8 +17,6 @@ from proxystore.connectors.endpoint import EndpointConnectorError
 from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import read_config
-from proxystore.endpoint.config import write_config
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.serve import running_endpoint
@@ -49,7 +47,7 @@ def test_endpoint_not_started(tmp_path: pathlib.Path, caplog) -> None:
         host=None,
     )
     config_path = tmp_path / 'test'
-    write_config(config, str(config_path))
+    EndpointDir(str(config_path)).write_config(config)
 
     caplog.set_level(logging.INFO)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
@@ -67,12 +65,12 @@ def test_endpoint_not_started(tmp_path: pathlib.Path, caplog) -> None:
 
 def test_endpoint_missing_token(
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    os.remove(EndpointDir(copied_dir).token_path)
+    os.remove(copied_dir.token_path)
 
     caplog.set_level(logging.DEBUG)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
@@ -82,12 +80,12 @@ def test_endpoint_missing_token(
 
 def test_endpoint_wrong_token(
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    generate_token_file(EndpointDir(copied_dir).token_path)
+    generate_token_file(copied_dir.token_path)
 
     caplog.set_level(logging.WARNING)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
@@ -97,15 +95,15 @@ def test_endpoint_wrong_token(
 
 def test_endpoint_uuid_mismatch(
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     # Config has a different UUID than the endpoint running on the host/port
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
-    config = read_config(copied_dir)
+    config = copied_dir.read_config()
     config.uuid = str(uuid.uuid4())
-    write_config(config, copied_dir)
+    copied_dir.write_config(config)
 
     caplog.set_level(logging.DEBUG)
     with pytest.raises(EndpointConnectorError, match='Failed to find'):
@@ -265,10 +263,10 @@ async def test_connector_endpoint_restart(
         host='127.0.0.1',
         port=open_port(),
     )
-    endpoint_dir = str(tmp_path / config.name)
-    write_config(config, endpoint_dir)
+    endpoint_dir = EndpointDir(str(tmp_path / config.name))
+    endpoint_dir.write_config(config)
 
-    async with running_endpoint(config, endpoint_dir):
+    async with running_endpoint(endpoint_dir):
         connector = await asyncio.to_thread(
             EndpointConnector,
             [config.uuid],
@@ -278,7 +276,7 @@ async def test_connector_endpoint_restart(
 
     # The idle connection in the pool was closed by the endpoint and the
     # endpoint has a new token after restarting.
-    async with running_endpoint(config, endpoint_dir):
+    async with running_endpoint(endpoint_dir):
         assert not await asyncio.to_thread(connector.exists, key)
         assert any('Retrying' in r.message for r in caplog.records)
     connector.close()
@@ -292,8 +290,8 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
         port=open_port(),
         tls=True,
     )
-    endpoint_dir = str(tmp_path / config.name)
-    write_config(config, endpoint_dir)
+    endpoint_dir = EndpointDir(str(tmp_path / config.name))
+    endpoint_dir.write_config(config)
 
     def _run() -> None:
         with EndpointConnector(
@@ -303,5 +301,5 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
             key = connector.put(b'value')
             assert connector.get(key) == b'value'
 
-    async with running_endpoint(config, endpoint_dir):
+    async with running_endpoint(endpoint_dir):
         await asyncio.to_thread(_run)

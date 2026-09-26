@@ -18,6 +18,7 @@ from proxystore.connectors import redis
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.protocols import Connector
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.utils.environment import hostname
 from testing.mocked.globus import MockDeleteData
 from testing.mocked.globus import MockTransferClient
@@ -38,12 +39,12 @@ MOCK_REDIS_CACHE: dict[str, Any] = {}
 @pytest.fixture(scope='session')
 def endpoint_connector(
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
 ) -> Generator[Connector[Any], None, None]:
     """EndpointConnector fixture."""
     with EndpointConnector(
         endpoints=[endpoint.uuid],
-        proxystore_dir=os.path.dirname(endpoint_dir),
+        proxystore_dir=os.path.dirname(endpoint_dir.path),
     ) as connector:
         yield connector
 

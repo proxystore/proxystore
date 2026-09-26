@@ -15,14 +15,13 @@ from collections.abc import Generator
 import pytest
 
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
 
 
 def serve_endpoint_silent(
-    config: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
     *,
     use_uvloop: bool = False,
 ) -> None:
@@ -33,7 +32,7 @@ def serve_endpoint_silent(
     """
     with contextlib.redirect_stdout(None), contextlib.redirect_stderr(None):
         logging.disable(100000)
-        serve(config, endpoint_dir=endpoint_dir, use_uvloop=use_uvloop)
+        serve(endpoint_dir, use_uvloop=use_uvloop)
 
 
 def terminate_process(
@@ -66,37 +65,44 @@ def wait_for_endpoint(host: str, port: int, max_time_s: float = 5) -> None:
             waited_s += sleep_s
 
 
-def copy_endpoint_dir(endpoint_dir: str, proxystore_dir: str) -> str:
+def copy_endpoint_dir(
+    endpoint_dir: EndpointDir,
+    proxystore_dir: str,
+) -> EndpointDir:
     """Copy an endpoint directory into another ProxyStore home directory.
 
     This copies the config and token files so clients using `proxystore_dir`
     can connect to the endpoint.
 
     Returns:
-        Path to the copied endpoint directory.
+        The copied endpoint directory.
     """
-    dest = os.path.join(proxystore_dir, os.path.basename(endpoint_dir))
-    shutil.copytree(endpoint_dir, dest, dirs_exist_ok=True)
+    dest = EndpointDir.from_home(
+        proxystore_dir,
+        os.path.basename(endpoint_dir.path),
+    )
+    shutil.copytree(endpoint_dir.path, dest.path, dirs_exist_ok=True)
     return dest
 
 
 @pytest.fixture(scope='session')
-def endpoint_dir(tmp_path_factory: pytest.TempPathFactory) -> str:
+def endpoint_dir(tmp_path_factory: pytest.TempPathFactory) -> EndpointDir:
     """Directory of the endpoint fixture.
 
     The parent of this directory can be used as a ProxyStore home directory.
     """
-    return str(tmp_path_factory.mktemp('endpoint-home') / 'endpoint-fixture')
+    home = tmp_path_factory.mktemp('endpoint-home')
+    return EndpointDir.from_home(str(home), 'endpoint-fixture')
 
 
 @pytest.fixture(scope='session')
 def endpoint(
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
     use_uvloop: bool,
 ) -> Generator[EndpointConfig, None, None]:
     """Launch endpoint in subprocess."""
     config = EndpointConfig(
-        name=os.path.basename(endpoint_dir),
+        name=os.path.basename(endpoint_dir.path),
         uuid=str(uuid.uuid4()),
         host='localhost',
         port=open_port(),
@@ -104,11 +110,11 @@ def endpoint(
     # Disable ICE server candidate gathering in the spawned child where the
     # _disable_ice_servers conftest fixture does not apply (see #599).
     config.relay.ice_servers = []
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
     context = multiprocessing.get_context('spawn')
     server_handle = context.Process(
         target=serve_endpoint_silent,
-        args=[config, endpoint_dir],
+        args=[endpoint_dir],
         kwargs={'use_uvloop': use_uvloop},
     )
 

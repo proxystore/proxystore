@@ -19,7 +19,7 @@ from uuid import UUID
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import get_configs
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
@@ -91,8 +91,8 @@ class EndpointConnector:
         home = (
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
-        found: tuple[EndpointConfig, str, EndpointClient] | None = None
-        for endpoint in get_configs(home):
+        found: tuple[EndpointConfig, EndpointDir, EndpointClient] | None = None
+        for endpoint_dir, endpoint in EndpointDir.find_all(home):
             endpoint_uuid = UUID(endpoint.uuid)
             if endpoint_uuid not in self.endpoints:
                 continue
@@ -104,10 +104,9 @@ class EndpointConnector:
                 )
                 continue
 
-            endpoint_dir = os.path.join(home, endpoint.name)
             logger.debug(f'Attempting connection to {endpoint_uuid}')
             try:
-                client = EndpointClient.from_config(endpoint, endpoint_dir)
+                client = EndpointClient.from_dir(endpoint_dir)
             except (EndpointAuthError, EndpointProtocolError) as e:
                 logger.warning(
                     f'Connection to {endpoint_uuid} failed: {e}',
@@ -148,7 +147,7 @@ class EndpointConnector:
         self.address = f'{self.endpoint_host}:{self.endpoint_port}'
 
         self._pool = _ConnectionPool(
-            lambda: EndpointClient.from_config(found_config, found_dir),
+            lambda: EndpointClient.from_dir(found_dir),
         )
         self._pool.add(client)
 

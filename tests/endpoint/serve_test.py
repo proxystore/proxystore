@@ -30,7 +30,10 @@ from testing.mocked.globus import get_testing_app
 from testing.utils import open_port
 
 
-def _endpoint_config(**kwargs: Any) -> EndpointConfig:
+def _endpoint_dir(
+    path: pathlib.Path,
+    **kwargs: Any,
+) -> tuple[EndpointDir, EndpointConfig]:
     options: dict[str, Any] = {
         'name': 'my-endpoint',
         'uuid': str(uuid.uuid4()),
@@ -39,22 +42,20 @@ def _endpoint_config(**kwargs: Any) -> EndpointConfig:
         'storage': EndpointStorageConfig(database_path=':memory:'),
     }
     options.update(kwargs)
-    return EndpointConfig(**options)
+    config = EndpointConfig(**options)
+    endpoint_dir = EndpointDir(str(path))
+    endpoint_dir.write_config(config)
+    return endpoint_dir, config
 
 
 async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
-    config = _endpoint_config()
-    endpoint_dir = str(tmp_path)
-    token_file = EndpointDir(endpoint_dir).token_path
+    endpoint_dir, config = _endpoint_dir(tmp_path)
+    token_file = endpoint_dir.token_path
 
-    async with running_endpoint(config, endpoint_dir) as endpoint:
+    async with running_endpoint(endpoint_dir) as endpoint:
         assert endpoint.uuid == uuid.UUID(config.uuid)
         assert stat.S_IMODE(os.stat(token_file).st_mode) == 0o600
-        client = await asyncio.to_thread(
-            EndpointClient.from_config,
-            config,
-            endpoint_dir,
-        )
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert client.info.uuid == endpoint.uuid
 
     # Open connections are closed and the token is removed on shutdown
@@ -67,8 +68,9 @@ async def test_running_endpoint_restricts_endpoint_dir(
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
     os.chmod(tmp_path, 0o777)
-    async with running_endpoint(_endpoint_config(), str(tmp_path)):
+    async with running_endpoint(endpoint_dir):
         pass
     assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o755
     assert any('write permissions' in r.message for r in caplog.records)
@@ -78,42 +80,49 @@ async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         sock.listen()
-        config = _endpoint_config(port=sock.getsockname()[1])
+        endpoint_dir, _ = _endpoint_dir(tmp_path, port=sock.getsockname()[1])
         with pytest.raises(OSError):
-            async with running_endpoint(config, str(tmp_path)):
+            async with running_endpoint(endpoint_dir):
                 pass  # pragma: no cover
-    assert not os.path.exists(EndpointDir(str(tmp_path)).token_path)
+    assert not os.path.exists(endpoint_dir.token_path)
 
 
 async def test_running_endpoint_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
-    config = _endpoint_config()
-    # The token cannot be written to a directory that does not exist
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    # The token cannot be written if its path is a directory
+    os.mkdir(endpoint_dir.token_path)
     with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
-        with pytest.raises(FileNotFoundError):
-            async with running_endpoint(config, str(tmp_path / 'missing')):
+        with pytest.raises(IsADirectoryError):
+            async with running_endpoint(endpoint_dir):
                 pass  # pragma: no cover
     mock_close.assert_awaited_once()
 
 
+async def test_running_endpoint_not_started(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path, host=None)
+    with pytest.raises(ValueError, match='host'):
+        async with running_endpoint(endpoint_dir):
+            pass  # pragma: no cover
+
+
 @pytest.mark.timeout(10)
 def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
-    config = _endpoint_config()
-    endpoint_dir = str(tmp_path)
+    endpoint_dir, config = _endpoint_dir(tmp_path)
 
     context = multiprocessing.get_context('spawn')
     process = context.Process(
         target=serve,
-        args=(config,),
-        kwargs={'endpoint_dir': endpoint_dir, 'use_uvloop': use_uvloop},
+        args=(endpoint_dir,),
+        kwargs={'use_uvloop': use_uvloop},
     )
     process.start()
 
     try:
         assert config.host is not None
         wait_for_endpoint(config.host, config.port)
-        with EndpointClient.from_config(config, endpoint_dir) as client:
+        with EndpointClient.from_dir(endpoint_dir) as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'
 
@@ -121,18 +130,17 @@ def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
         process.terminate()
         process.join(timeout=5)
         assert process.exitcode == 0
-        assert not os.path.exists(EndpointDir(endpoint_dir).token_path)
+        assert not os.path.exists(endpoint_dir.token_path)
     finally:
         terminate_process(process)
 
 
-def test_serve_config_validation(
+def test_serve_missing_config(
     use_uvloop: bool,
     tmp_path: pathlib.Path,
 ) -> None:
-    config = _endpoint_config(host=None)
-    with pytest.raises(ValueError, match='host'):
-        serve(config, endpoint_dir=str(tmp_path), use_uvloop=use_uvloop)
+    with pytest.raises(FileNotFoundError):
+        serve(EndpointDir(str(tmp_path)), use_uvloop=use_uvloop)
 
 
 def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
@@ -145,8 +153,7 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
             AsyncMock(),
         ):
             serve(
-                _endpoint_config(),
-                endpoint_dir=str(tmp_path),
+                EndpointDir(str(tmp_path)),
                 log_level='INFO',
                 log_file=log_file,
                 use_uvloop=use_uvloop,
@@ -230,34 +237,31 @@ async def test_running_endpoint_cancels_nat_check(
             cancelled.set()
             raise
 
-    config = _endpoint_config()
+    endpoint_dir, config = _endpoint_dir(tmp_path)
     config.relay.address = relay_server.address
+    endpoint_dir.write_config(config)
 
     with mock.patch(
         'proxystore.endpoint.serve.check_nat_and_log',
         side_effect=never_finishes,
     ):
-        async with running_endpoint(config, str(tmp_path)):
+        async with running_endpoint(endpoint_dir):
             pass
 
     assert cancelled.is_set()
 
 
 async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
-    config = _endpoint_config(tls=True)
-    endpoint_dir = str(tmp_path)
-    files = EndpointDir(endpoint_dir)
+    endpoint_dir, config = _endpoint_dir(tmp_path, tls=True)
 
-    async with running_endpoint(config, endpoint_dir):
-        assert stat.S_IMODE(os.stat(files.tls_key_path).st_mode) == 0o600
-        client = await asyncio.to_thread(
-            EndpointClient.from_config,
-            config,
-            endpoint_dir,
+    async with running_endpoint(endpoint_dir):
+        assert (
+            stat.S_IMODE(os.stat(endpoint_dir.tls_key_path).st_mode) == 0o600
         )
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert isinstance(client._socket, ssl.SSLSocket)
         assert client.info.uuid == uuid.UUID(config.uuid)
         await asyncio.to_thread(client.close)
 
-    assert not os.path.exists(files.tls_cert_path)
-    assert not os.path.exists(files.tls_key_path)
+    assert not os.path.exists(endpoint_dir.tls_cert_path)
+    assert not os.path.exists(endpoint_dir.tls_key_path)

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import uuid
 from typing import Any
@@ -19,9 +18,6 @@ except ImportError:  # pragma: no cover
     from pydantic import validator as field_validator  # type: ignore[no-redef]
 
 from proxystore.endpoint.constants import MAX_OBJECT_SIZE_DEFAULT
-from proxystore.endpoint.directory import EndpointDir
-from proxystore.utils.config import dump
-from proxystore.utils.config import load
 
 
 class EndpointRelayAuthConfig(BaseModel):
@@ -185,81 +181,6 @@ class EndpointConfig(BaseModel):
         return v
 
 
-def get_configs(proxystore_dir: str) -> list[EndpointConfig]:
-    """Get all valid endpoint configurations in parent directory.
-
-    Args:
-        proxystore_dir: Parent directory containing possible endpoint
-            configurations.
-
-    Returns:
-        List of found configs.
-    """
-    endpoints: list[EndpointConfig] = []
-
-    if not os.path.isdir(proxystore_dir):
-        return endpoints
-
-    for dirpath, _, _ in os.walk(proxystore_dir):
-        if os.path.samefile(proxystore_dir, dirpath):
-            continue
-        try:
-            cfg = read_config(dirpath)
-        except FileNotFoundError:
-            continue
-        except ValueError:
-            continue
-        else:
-            endpoints.append(cfg)
-
-    return endpoints
-
-
-def read_config(endpoint_dir: str) -> EndpointConfig:
-    """Read endpoint config file.
-
-    Args:
-        endpoint_dir: Directory containing endpoint configuration file.
-
-    Returns:
-        Config found in `endpoint_dir`.
-
-    Raises:
-        FileNotFoundError: If a config files does not exist in the directory.
-        ValueError: If config contains an invalid value or cannot be parsed.
-    """
-    path = EndpointDir(endpoint_dir).config_path
-
-    if os.path.exists(path):
-        with open(path, 'rb') as f:
-            try:
-                return load(EndpointConfig, f)
-            except Exception as e:
-                raise ValueError(
-                    f'Unable to parse ({path}): {e!s}.',
-                ) from None
-    else:
-        raise FileNotFoundError(
-            f'Endpoint directory {endpoint_dir} does not contain a valid '
-            'configuration.',
-        )
-
-
 def validate_name(name: str) -> bool:
     """Validate name only contains alphanumeric or dash/underscore chars."""
     return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
-
-
-def write_config(cfg: EndpointConfig, endpoint_dir: str) -> None:
-    """Write config to endpoint directory.
-
-    Args:
-        cfg: Configuration to write.
-        endpoint_dir: Directory to write config to.
-    """
-    # Clients trust the files in the endpoint directory (e.g., the token and
-    # TLS certificate), so only the owner can create or replace files in it.
-    os.makedirs(endpoint_dir, mode=0o700, exist_ok=True)
-    path = EndpointDir(endpoint_dir).config_path
-    with open(path, 'wb') as f:
-        dump(cfg, f)

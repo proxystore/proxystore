@@ -16,8 +16,6 @@ import pytest
 import proxystore
 from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import read_config
-from proxystore.endpoint.config import write_config
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.serve import running_endpoint
@@ -107,9 +105,9 @@ def test_configure_command(home_dir) -> None:
     result = runner.invoke(cli, ['configure', *args])
     assert result.exit_code == 0
 
-    endpoint_dir = os.path.join(home_dir, name)
+    endpoint_dir = EndpointDir(os.path.join(home_dir, name))
     assert os.path.isdir(endpoint_dir)
-    cfg = read_config(endpoint_dir)
+    cfg = endpoint_dir.read_config()
     assert cfg.name == name
     assert cfg.port == port
     assert cfg.relay.address == relay_server
@@ -117,7 +115,9 @@ def test_configure_command(home_dir) -> None:
 
     result = runner.invoke(cli, ['configure', 'tls-endpoint', '--tls'])
     assert result.exit_code == 0
-    assert read_config(os.path.join(home_dir, 'tls-endpoint')).tls
+    assert (
+        EndpointDir(os.path.join(home_dir, 'tls-endpoint')).read_config().tls
+    )
 
 
 def test_list_command(home_dir, caplog) -> None:
@@ -187,7 +187,7 @@ def test_test_command(
     home_dir,
     caplog,
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
 ) -> None:
     caplog.set_level(logging.INFO)
 
@@ -237,7 +237,7 @@ def test_test_command_errors(
     home_dir,
     caplog,
     endpoint: EndpointConfig,
-    endpoint_dir: str,
+    endpoint_dir: EndpointDir,
 ) -> None:
     caplog.set_level(logging.ERROR)
     runner = click.testing.CliRunner()
@@ -272,15 +272,15 @@ def test_test_command_errors(
         assert 'not a valid endpoint UUID' in caplog.records[0].message
         caplog.clear()
 
-        os.remove(EndpointDir(copied_dir).token_path)
+        os.remove(copied_dir.token_path)
         result = runner.invoke(cli, args)
         assert result.exit_code == 1
         assert 'Is the endpoint running?' in caplog.records[0].message
         caplog.clear()
 
-        config = read_config(copied_dir)
+        config = copied_dir.read_config()
         config.host = None
-        write_config(config, copied_dir)
+        copied_dir.write_config(config)
         result = runner.invoke(cli, args)
         assert result.exit_code == 1
         assert 'has not been started' in caplog.records[0].message
@@ -295,12 +295,12 @@ async def test_test_command_tls(home_dir, caplog) -> None:
         port=open_port(),
         tls=True,
     )
-    endpoint_dir = os.path.join(home_dir, config.name)
-    write_config(config, endpoint_dir)
+    endpoint_dir = EndpointDir(os.path.join(home_dir, config.name))
+    endpoint_dir.write_config(config)
 
     runner = click.testing.CliRunner()
     with mock.patch('proxystore.endpoint.cli.home_dir', return_value=home_dir):
-        async with running_endpoint(config, endpoint_dir):
+        async with running_endpoint(endpoint_dir):
             result = await asyncio.to_thread(
                 runner.invoke,
                 cli,

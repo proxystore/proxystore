@@ -7,12 +7,16 @@ import dataclasses
 import os
 import ssl
 import stat
+from typing import Self
 
 from proxystore.endpoint.auth import Credentials
 from proxystore.endpoint.auth import generate_tls_certificate
 from proxystore.endpoint.auth import generate_token_file
 from proxystore.endpoint.auth import read_certificate_fingerprint
 from proxystore.endpoint.auth import read_token_file
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.utils.config import dump
+from proxystore.utils.config import load
 
 
 @dataclasses.dataclass(frozen=True)
@@ -25,8 +29,9 @@ class EndpointDir:
 
     Example:
         ```python
-        endpoint_dir = EndpointDir('/path/to/endpoint')
-        assert endpoint_dir.config_path == '/path/to/endpoint/config.toml'
+        endpoint_dir = EndpointDir.from_home('/path/to/proxystore', 'my-ep')
+        assert endpoint_dir.path == '/path/to/proxystore/my-ep'
+        config = endpoint_dir.read_config()
         ```
 
     Attributes:
@@ -40,6 +45,80 @@ class EndpointDir:
 
     def __str__(self) -> str:
         return self.path
+
+    @classmethod
+    def from_home(cls, proxystore_dir: str, name: str) -> Self:
+        """Get the directory of an endpoint in a ProxyStore home directory.
+
+        Args:
+            proxystore_dir: ProxyStore home directory (see
+                [`home_dir()`][proxystore.utils.environment.home_dir]).
+            name: Name of the endpoint.
+        """
+        return cls(os.path.join(proxystore_dir, name))
+
+    @classmethod
+    def find_all(
+        cls, proxystore_dir: str
+    ) -> list[tuple[Self, EndpointConfig]]:
+        """Find all endpoints with a valid configuration.
+
+        Args:
+            proxystore_dir: ProxyStore home directory to search in (see
+                [`home_dir()`][proxystore.utils.environment.home_dir]).
+
+        Returns:
+            List of each endpoint directory and its configuration.
+        """
+        endpoints: list[tuple[Self, EndpointConfig]] = []
+        if not os.path.isdir(proxystore_dir):
+            return endpoints
+
+        for dirpath, _, _ in os.walk(proxystore_dir):
+            if os.path.samefile(proxystore_dir, dirpath):
+                continue
+            endpoint_dir = cls(dirpath)
+            try:
+                config = endpoint_dir.read_config()
+            except (FileNotFoundError, ValueError):
+                continue
+            endpoints.append((endpoint_dir, config))
+
+        return endpoints
+
+    def read_config(self) -> EndpointConfig:
+        """Read the endpoint configuration.
+
+        Raises:
+            FileNotFoundError: If the configuration file does not exist.
+            ValueError: If the configuration contains an invalid value or
+                cannot be parsed.
+        """
+        try:
+            with open(self.config_path, 'rb') as f:
+                return load(EndpointConfig, f)
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f'Endpoint directory {self.path} does not contain a valid '
+                'configuration.',
+            ) from None
+        except Exception as e:
+            raise ValueError(
+                f'Unable to parse ({self.config_path}): {e!s}.',
+            ) from None
+
+    def write_config(self, config: EndpointConfig) -> None:
+        """Write the endpoint configuration, creating the directory if needed.
+
+        Args:
+            config: Configuration to write.
+        """
+        # Clients trust the files in the endpoint directory (e.g., the token
+        # and TLS certificate), so only the owner can create or replace files
+        # in it.
+        os.makedirs(self.path, mode=0o700, exist_ok=True)
+        with open(self.config_path, 'wb') as f:
+            dump(config, f)
 
     @property
     def config_path(self) -> str:

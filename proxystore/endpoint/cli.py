@@ -24,7 +24,7 @@ from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
-from proxystore.endpoint.config import read_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.p2p.nat import check_nat_and_log
 from proxystore.serialize import deserialize
@@ -242,9 +242,9 @@ def test(
     ctx.ensure_object(dict)
 
     proxystore_dir = home_dir()
-    endpoint_dir = os.path.join(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
     if os.path.isdir(endpoint_dir):
-        cfg = read_config(endpoint_dir)
+        cfg = endpoint_dir.read_config()
     else:
         logger.error(f'An endpoint named {name} does not exist.')
         raise SystemExit(1)
@@ -261,9 +261,7 @@ def _endpoint_client(
     """Connect to the endpoint of a test command and handle errors."""
     cfg = ctx.obj['ENDPOINT_CONFIG']
     try:
-        with EndpointClient.from_config(
-            cfg, ctx.obj['ENDPOINT_DIR']
-        ) as client:
+        with EndpointClient.from_dir(ctx.obj['ENDPOINT_DIR']) as client:
             yield client
     except FileNotFoundError:
         logger.error(

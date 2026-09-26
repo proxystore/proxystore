@@ -28,7 +28,6 @@ from typing import TYPE_CHECKING
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
-from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
@@ -54,7 +53,7 @@ from proxystore.serialize import BytesLike
 from proxystore.warnings import EndpointVersionWarning
 
 if TYPE_CHECKING:
-    from proxystore.endpoint.config import EndpointConfig
+    from proxystore.endpoint.directory import EndpointDir
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
@@ -73,11 +72,10 @@ class EndpointClient:
 
     Example:
         ```python
-        from proxystore.endpoint.config import read_config
+        from proxystore.endpoint.directory import EndpointDir
 
-        endpoint_dir = '/path/to/endpoint'
-        config = read_config(endpoint_dir)
-        with EndpointClient.from_config(config, endpoint_dir) as client:
+        endpoint_dir = EndpointDir('/path/to/endpoint')
+        with EndpointClient.from_dir(endpoint_dir) as client:
             client.set('key', b'value')
             assert client.get('key') == b'value'
         ```
@@ -170,39 +168,37 @@ class EndpointClient:
         return cls(sock, info)
 
     @classmethod
-    def from_config(
+    def from_dir(
         cls,
-        config: EndpointConfig,
-        endpoint_dir: str,
+        endpoint_dir: EndpointDir,
         *,
         timeout: float | None = 10,
     ) -> Self:
-        """Connect to a local endpoint using its configuration.
+        """Connect to a local endpoint using the files in its directory.
 
-        The credentials are read from the endpoint directory each time
-        because they change each time the endpoint is restarted.
+        The configuration and credentials are read each time because they
+        change each time the endpoint is restarted.
 
         Args:
-            config: Configuration of the endpoint.
             endpoint_dir: Directory of the endpoint.
             timeout: Timeout in seconds for connecting and completing the
                 handshake.
 
         Raises:
             ValueError: If the endpoint has not been started (i.e., the host
-                is not set in the configuration) or the token file is
-                malformed.
-            FileNotFoundError: If the token or certificate file does not
-                exist (e.g., because the endpoint is not running).
+                is not set in the configuration) or the configuration or
+                token file is malformed.
+            FileNotFoundError: If the configuration, token, or certificate
+                file does not exist (e.g., because the endpoint is not
+                running).
             OSError: If the connection cannot be established.
             EndpointError: If the handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
+        config = endpoint_dir.read_config()
         if config.host is None:
             raise ValueError(f'Endpoint {config.name} has not been started.')
-        credentials = EndpointDir(endpoint_dir).load_credentials(
-            tls=config.tls
-        )
+        credentials = endpoint_dir.load_credentials(tls=config.tls)
         return cls.connect(
             config.host,
             config.port,

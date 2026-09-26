@@ -18,6 +18,7 @@ from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -301,7 +302,9 @@ def test_python_patch_version_no_warning(fake_server) -> None:
     client.close()
 
 
-def test_from_config_not_started(tmp_path) -> None:
+def test_from_dir_not_started(tmp_path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
     config = EndpointConfig(name='test', uuid=str(uuid.uuid4()), port=1)
+    endpoint_dir.write_config(config)
     with pytest.raises(ValueError, match='has not been started'):
-        EndpointClient.from_config(config, str(tmp_path))
+        EndpointClient.from_dir(endpoint_dir)

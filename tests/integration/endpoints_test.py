@@ -14,7 +14,7 @@ import pytest
 
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import write_config
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.p2p.relay.client import RelayClient
 from proxystore.p2p.relay.config import RelayServingConfig
 from proxystore.p2p.relay.run import serve
@@ -86,14 +86,14 @@ def endpoints() -> Generator[tuple[list[uuid.UUID], list[str]], None, None]:
             # We want a unique proxystore_dir for each endpoint to simulate
             # different systems
             proxystore_dir = os.path.join(tmp_path, str(port))
-            endpoint_dir = os.path.join(proxystore_dir, cfg.name)
-            write_config(cfg, endpoint_dir)
+            endpoint_dir = EndpointDir.from_home(proxystore_dir, cfg.name)
+            endpoint_dir.write_config(cfg)
             uuids.append(uuid.UUID(cfg.uuid))
             dirs.append(proxystore_dir)
 
             handle = context.Process(
                 target=serve_endpoint_silent,
-                args=[cfg, endpoint_dir],
+                args=[endpoint_dir],
             )
             handle.start()
             handles.append(handle)

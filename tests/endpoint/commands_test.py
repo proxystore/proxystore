@@ -23,9 +23,6 @@ from proxystore.endpoint.commands import remove_endpoint
 from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import get_configs
-from proxystore.endpoint.config import read_config
-from proxystore.endpoint.config import write_config
 from proxystore.endpoint.directory import EndpointDir
 
 _NAME = 'default'
@@ -56,7 +53,7 @@ def _patch_hostname() -> Generator[None, None, None]:
 
 
 def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     assert not os.path.isdir(endpoint_dir)
 
     # Returns UNKNOWN if directory does not exist
@@ -72,14 +69,11 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
     # Returns UNKNOWN if config is not readable
     assert get_status(_NAME, str(tmp_path)) == EndpointStatus.UNKNOWN
 
-    with mock.patch(
-        'proxystore.endpoint.commands.read_config',
-        return_value=None,
-    ):
+    with mock.patch.object(EndpointDir, 'read_config', return_value=None):
         # Returns STOPPED if PID file does not exist
         assert get_status(_NAME, str(tmp_path)) == EndpointStatus.STOPPED
 
-        with open(EndpointDir(endpoint_dir).pid_path, 'w') as f:
+        with open(endpoint_dir.pid_path, 'w') as f:
             f.write('0')
 
         with mock.patch(
@@ -94,7 +88,7 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
 
         # Return HANGING if PID was reused by another user's process
-        with open(EndpointDir(endpoint_dir).pid_path, 'w') as f:
+        with open(endpoint_dir.pid_path, 'w') as f:
             f.write('1234')
         with mock.patch('os.kill', side_effect=PermissionError):
             assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
@@ -144,10 +138,10 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     )
     assert rv == 0
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     assert os.path.exists(endpoint_dir)
 
-    cfg = read_config(endpoint_dir)
+    cfg = endpoint_dir.read_config()
     assert cfg.name == _NAME
     assert cfg.host is None
     assert cfg.port == _PORT
@@ -173,7 +167,7 @@ def test_configure_endpoint_home_dir(tmp_path: pathlib.Path) -> None:
         )
     assert rv == 0
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     assert os.path.exists(endpoint_dir)
 
 
@@ -263,10 +257,10 @@ def test_remove_endpoint(tmp_path: pathlib.Path, caplog) -> None:
         relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
-    assert len(get_configs(str(tmp_path))) == 1
+    assert len([c for _, c in EndpointDir.find_all(str(tmp_path))]) == 1
 
     remove_endpoint(_NAME, proxystore_dir=str(tmp_path))
-    assert len(get_configs(str(tmp_path))) == 0
+    assert len([c for _, c in EndpointDir.find_all(str(tmp_path))]) == 0
 
     assert any(
         ['Removed endpoint' in record.message for record in caplog.records],
@@ -331,7 +325,7 @@ def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
         proxystore_dir=str(tmp_path),
     )
 
-    cfg = read_config(os.path.join(tmp_path, _NAME))
+    cfg = EndpointDir(os.path.join(tmp_path, _NAME)).read_config()
     if host == 'fqdn':
         assert cfg.host is None
         assert cfg.host_type == 'fqdn'
@@ -424,9 +418,9 @@ def test_start_endpoint_missing_config(tmp_path: pathlib.Path, caplog) -> None:
 def test_start_endpoint_bad_config(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.ERROR)
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     os.makedirs(endpoint_dir)
-    with open(EndpointDir(endpoint_dir).config_path, 'w') as f:
+    with open(endpoint_dir.config_path, 'w') as f:
         f.write('not valid toml')
 
     rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
@@ -444,7 +438,7 @@ def test_start_endpoint_hanging_different_host(
 ) -> None:
     caplog.set_level(logging.ERROR)
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
     config = EndpointConfig(
         name=_NAME,
@@ -452,9 +446,9 @@ def test_start_endpoint_hanging_different_host(
         host='abcd',
         port=1234,
     )
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -476,12 +470,12 @@ def test_start_endpoint_hanging_different_host(
 def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.DEBUG)
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
     config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -512,7 +506,7 @@ def test_start_endpoint_missing_static_host(
 ) -> None:
     caplog.set_level(logging.DEBUG)
 
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
     config = EndpointConfig(
         name=_NAME,
@@ -521,7 +515,7 @@ def test_start_endpoint_missing_static_host(
         host_type='static',
         port=1234,
     )
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
 
     rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
@@ -537,7 +531,7 @@ def test_start_endpoint_missing_static_host(
 
 @pytest.mark.timeout(2)
 def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     configure_endpoint(
         name=_NAME,
         port=_PORT,
@@ -550,7 +544,7 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
     p = context.Process(target=time.sleep, args=(1000,))
     p.start()
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write(str(p.pid))
 
@@ -597,7 +591,7 @@ def test_stop_endpoint_hanging_different_host(
     caplog,
 ) -> None:
     caplog.set_level(logging.ERROR)
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
     config = EndpointConfig(
         name=_NAME,
@@ -605,9 +599,9 @@ def test_stop_endpoint_hanging_different_host(
         host='abcd',
         port=1234,
     )
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
@@ -630,12 +624,12 @@ def test_stop_endpoint_dangling_pid_file(
     caplog,
 ) -> None:
     caplog.set_level(logging.DEBUG)
-    endpoint_dir = os.path.join(tmp_path, _NAME)
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
     config = EndpointConfig(name=_NAME, uuid=str(_UUID), host=None, port=1234)
-    write_config(config, endpoint_dir)
+    endpoint_dir.write_config(config)
 
-    pid_file = EndpointDir(endpoint_dir).pid_path
+    pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
