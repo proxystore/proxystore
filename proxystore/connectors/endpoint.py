@@ -6,6 +6,7 @@ import collections
 import logging
 import os
 import threading
+import time
 import uuid
 import weakref
 from collections.abc import Callable
@@ -19,9 +20,11 @@ from uuid import UUID
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
@@ -60,6 +63,9 @@ class EndpointConnector:
         proxystore_dir: Optionally specify the proxystore home
             directory. Defaults to
             [`home_dir()`][proxystore.utils.environment.home_dir].
+        reconnect_timeout: Seconds to keep trying to reconnect to the
+            endpoint if it is unavailable (e.g., because it is restarting)
+            before a request fails.
 
     Raises:
         ValueError: If endpoints is an empty list.
@@ -71,6 +77,7 @@ class EndpointConnector:
         self,
         endpoints: Sequence[str | UUID],
         proxystore_dir: str | None = None,
+        reconnect_timeout: float = 5,
     ) -> None:
         if len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
@@ -78,6 +85,7 @@ class EndpointConnector:
             e if isinstance(e, UUID) else UUID(e, version=4) for e in endpoints
         ]
         self.proxystore_dir = proxystore_dir
+        self.reconnect_timeout = reconnect_timeout
 
         # Find the first locally accessible endpoint to use as our
         # home endpoint
@@ -123,6 +131,7 @@ class EndpointConnector:
 
         self._pool = _ConnectionPool(
             lambda: _connect(endpoint_dir, endpoint_uuid),
+            reconnect_timeout=reconnect_timeout,
         )
         self._pool.add(client)
 
@@ -156,6 +165,7 @@ class EndpointConnector:
         return {
             'endpoints': [str(ep) for ep in self.endpoints],
             'proxystore_dir': self.proxystore_dir,
+            'reconnect_timeout': self.reconnect_timeout,
         }
 
     @classmethod
@@ -321,10 +331,27 @@ class _ConnectionPool:
 
     Args:
         connect: Callable that returns a new connection.
+        reconnect_timeout: Seconds to keep trying to create a new connection
+            while the endpoint is unavailable.
     """
 
-    def __init__(self, connect: Callable[[], EndpointClient]) -> None:
+    _RETRYABLE_ERRORS = (
+        # The endpoint is stopped or restarting.
+        EndpointNotRunningError,
+        EndpointConnectionError,
+        # The connection file was read just before the endpoint restarted.
+        EndpointAuthError,
+    )
+    _MAX_BACKOFF = 0.5
+
+    def __init__(
+        self,
+        connect: Callable[[], EndpointClient],
+        *,
+        reconnect_timeout: float = 5,
+    ) -> None:
         self._connect = connect
+        self._reconnect_timeout = reconnect_timeout
         self._idle: collections.deque[EndpointClient] = collections.deque()
         self._lock = threading.Lock()
         _POOLS.add(self)
@@ -332,10 +359,10 @@ class _ConnectionPool:
     def run(self, request: Callable[[EndpointClient], _T]) -> _T:
         """Run a request with a connection from the pool.
 
-        Idle connections can be closed by the endpoint (e.g., when the
-        endpoint is restarted), so a request that fails because an idle
-        connection was closed is retried once with a new connection. All
-        requests are safe to retry because objects are write-once.
+        Connections can be closed by the endpoint (e.g., when the endpoint
+        is restarted), so a request that fails because its connection was
+        closed is retried once with a new connection. All requests are safe
+        to retry because objects are write-once.
 
         Args:
             request: Callable that makes a request with a connection.
@@ -343,20 +370,18 @@ class _ConnectionPool:
         Returns:
             The result of the request.
         """
-        client, reused = self._acquire()
+        client = self._acquire()
         try:
             return request(client)
         except EndpointConnectionError:
-            if not reused:
-                raise
             logger.debug(
-                'Retrying request with a new connection because an idle '
+                'Retrying request with a new connection because the '
                 'connection to the endpoint was closed',
             )
         finally:
             self._release(client)
 
-        client = self._connect()
+        client = self._reconnect()
         try:
             return request(client)
         finally:
@@ -372,11 +397,25 @@ class _ConnectionPool:
         """Add an idle connection to the pool."""
         self._release(client)
 
-    def _acquire(self) -> tuple[EndpointClient, bool]:
+    def _acquire(self) -> EndpointClient:
         with self._lock:
             if self._idle:
-                return self._idle.pop(), True
-        return self._connect(), False
+                return self._idle.pop()
+        return self._reconnect()
+
+    def _reconnect(self) -> EndpointClient:
+        deadline = time.monotonic() + self._reconnect_timeout
+        backoff = 0.01
+        while True:
+            try:
+                return self._connect()
+            except self._RETRYABLE_ERRORS as e:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise
+                logger.debug(f'Retrying connection to the endpoint: {e!r}')
+                time.sleep(min(backoff, remaining))
+                backoff = min(backoff * 2, self._MAX_BACKOFF)
 
     def _release(self, client: EndpointClient) -> None:
         if client.closed:

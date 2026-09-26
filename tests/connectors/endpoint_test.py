@@ -6,6 +6,7 @@ import pathlib
 import threading
 import uuid
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -18,6 +19,8 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
+from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.serve import running_endpoint
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
@@ -202,7 +205,7 @@ def test_connection_pool_retries_closed_idle_connection() -> None:
     assert pool._idle[0] is not stale
 
 
-def test_connection_pool_does_not_retry_new_connection() -> None:
+def test_connection_pool_retries_request_once() -> None:
     connections: list[_FakeClient] = []
 
     def _connect() -> _FakeClient:
@@ -212,14 +215,44 @@ def test_connection_pool_does_not_retry_new_connection() -> None:
     pool = _ConnectionPool(_connect)  # type: ignore[arg-type]
     with pytest.raises(EndpointConnectionError):
         pool.run(_fake_request)
-    assert len(connections) == 1
-
-    # Only retried once if a new connection also fails
-    pool.add(_FakeClient(fail=True))  # type: ignore[arg-type]
-    with pytest.raises(EndpointConnectionError):
-        pool.run(_fake_request)
     assert len(connections) == 2
     assert len(pool._idle) == 0
+
+
+def test_connection_pool_reconnect_backoff() -> None:
+    attempts = 0
+
+    def _connect() -> _FakeClient:
+        nonlocal attempts
+        attempts += 1
+        if attempts < 3:
+            raise EndpointNotRunningError('not running')
+        return _FakeClient(fail=False)
+
+    pool = _ConnectionPool(_connect, reconnect_timeout=5)  # type: ignore[arg-type]
+    assert pool.run(_fake_request) == 'ok'
+    assert attempts == 3
+
+
+def test_connection_pool_reconnect_timeout() -> None:
+    attempts = 0
+
+    def _connect() -> _FakeClient:
+        nonlocal attempts
+        attempts += 1
+        raise EndpointNotRunningError('not running')
+
+    pool = _ConnectionPool(_connect, reconnect_timeout=0.05)  # type: ignore[arg-type]
+    with pytest.raises(EndpointNotRunningError):
+        pool.run(_fake_request)
+    assert attempts > 1
+
+    # Other errors are not retried
+    connect = mock.MagicMock(side_effect=EndpointProtocolError('bad'))
+    pool = _ConnectionPool(connect, reconnect_timeout=5)
+    with pytest.raises(EndpointProtocolError):
+        pool.run(_fake_request)
+    assert connect.call_count == 1
 
 
 def test_connection_pool_discards_interrupted_connection() -> None:
@@ -263,6 +296,14 @@ async def test_connector_endpoint_restart(
     async with running_endpoint(endpoint_dir):
         assert not await asyncio.to_thread(connector.exists, key)
         assert any('Retrying' in r.message for r in caplog.records)
+
+    # A request made while the endpoint is stopped succeeds once the
+    # endpoint restarts within the reconnect timeout
+    request = asyncio.create_task(asyncio.to_thread(connector.exists, key))
+    await asyncio.sleep(0.2)
+    assert not request.done()
+    async with running_endpoint(endpoint_dir):
+        assert not await request
     connector.close()
 
 
