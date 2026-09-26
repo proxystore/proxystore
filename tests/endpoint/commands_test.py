@@ -171,13 +171,17 @@ def test_configure_endpoint_home_dir(tmp_path: pathlib.Path) -> None:
     assert os.path.exists(endpoint_dir)
 
 
-def test_configure_endpoint_invalid_name(caplog) -> None:
+def test_configure_endpoint_invalid_name(
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
     caplog.set_level(logging.ERROR)
 
     rv = configure_endpoint(
         name='abc?',
         port=_PORT,
         relay_server=_SERVER,
+        proxystore_dir=str(tmp_path),
     )
     assert rv == 1
 
