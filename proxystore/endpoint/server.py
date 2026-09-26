@@ -19,11 +19,10 @@ from collections.abc import Callable
 from collections.abc import Coroutine
 from typing import Any
 from typing import cast
-from typing import Protocol
-from uuid import UUID
 
 from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
@@ -266,53 +265,6 @@ class _ClientConnection(asyncio.BufferedProtocol):
             self._read_waiter.set_result(None)
 
 
-class EndpointBackend(Protocol):
-    """Endpoint that client requests are forwarded to.
-
-    [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] implements this
-    protocol.
-    """
-
-    @property
-    def uuid(self) -> UUID:
-        """UUID of the endpoint."""
-        ...
-
-    @property
-    def name(self) -> str:
-        """Name of the endpoint."""
-        ...
-
-    async def evict(self, key: str, endpoint: UUID | None = None) -> None:
-        """Evict the object associated with the key."""
-        ...
-
-    async def exists(
-        self,
-        key: str,
-        endpoint: UUID | None = None,
-    ) -> bool:
-        """Check if an object associated with the key exists."""
-        ...
-
-    async def get(
-        self,
-        key: str,
-        endpoint: UUID | None = None,
-    ) -> bytes | bytearray | None:
-        """Get the object associated with the key."""
-        ...
-
-    async def set(
-        self,
-        key: str,
-        data: bytes | bytearray,
-        endpoint: UUID | None = None,
-    ) -> None:
-        """Set the object associated with the key."""
-        ...
-
-
 class ClientHandler:
     """Handles client connections to an endpoint.
 
@@ -343,7 +295,7 @@ class ClientHandler:
 
     def __init__(
         self,
-        endpoint: EndpointBackend,
+        endpoint: Endpoint,
         token: bytes,
         *,
         max_object_size: int | None = None,
