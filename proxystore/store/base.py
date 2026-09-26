@@ -501,7 +501,7 @@ class Store(Generic[ConnectorT]):
                 associated with the key does not exist.
 
         Returns:
-            Object or `None` if the object does not exist.
+            Object or `default` if the object does not exist.
 
         Raises:
             SerializationError: If an exception is caught when deserializing
@@ -645,10 +645,9 @@ class Store(Generic[ConnectorT]):
                 return a proxy that (1) is already resolved, (2) can be used
                 in [`isinstance`][isinstance] checks without resolving, and (3)
                 is hashable without resolving if `obj` is a hashable type.
-                This is `False` by default because the returned proxy will
-                hold a reference to `obj` which will prevent garbage
-                collecting `obj`. If `None`, defaults to the store-wide
-                setting.
+                Note that the returned proxy will hold a reference to `obj`
+                which will prevent garbage collecting `obj`. If `None`,
+                defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
@@ -1254,10 +1253,7 @@ class Store(Generic[ConnectorT]):
             serializer: Optionally override the default serializer for the
                 store instance.
             kwargs: Additional keyword arguments to pass to
-                [`Connector.set()`][proxystore.connectors.protocols.Connector.set].
-
-        Returns:
-            A key which can be used to retrieve the object.
+                [`DeferrableConnector.set()`][proxystore.connectors.protocols.DeferrableConnector.set].
 
         Raises:
             NotImplementedError: If the `connector` is not of type

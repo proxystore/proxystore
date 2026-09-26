@@ -349,9 +349,6 @@ class StreamProducer(Generic[T]):
         Raises:
             TopicClosedError: If the `topic` has already been closed via
                 [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
-            ValueError: If a store associated with `topic` is not found
-                in the mapping of topics to stores nor a default store is
-                provided.
         """
         if self._buffer[topic].closed:
             raise TopicClosedError(f'Topic "{topic}" has been closed.')

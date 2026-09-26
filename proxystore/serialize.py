@@ -19,8 +19,8 @@ else:  # pragma: <3.12 cover
 
 import cloudpickle
 
-# Pickle protocol 5 is available in Python 3.8 version so that is ProxyStore's
-# minimum version. If higher version come out in the future, prefer those.
+# Use at least pickle protocol 5 (added in Python 3.8), but prefer newer
+# protocols if they become available.
 _PICKLE_PROTOCOL = max(pickle.HIGHEST_PROTOCOL, 5)
 
 

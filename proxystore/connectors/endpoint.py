@@ -69,7 +69,7 @@ class EndpointConnector:
 
     Raises:
         ValueError: If endpoints is an empty list.
-        EndpointConnectorError: If unable to connect to one of the endpoints
+        EndpointConnectorError: If unable to connect to any of the endpoints
             provided.
     """
 

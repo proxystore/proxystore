@@ -16,10 +16,11 @@ class LRUCache(Generic[KeyT, ValueT]):
     """Simple thread-safe LRU Cache.
 
     Args:
-        maxsize: Maximum number of value to cache.
+        maxsize: Maximum number of values to cache. If 0, the cache is
+            disabled.
 
     Raises:
-        ValueError: If `maxsize <= 0`.
+        ValueError: If `maxsize < 0`.
     """
 
     def __init__(self, maxsize: int = 16) -> None:
