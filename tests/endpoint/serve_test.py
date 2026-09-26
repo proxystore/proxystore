@@ -15,7 +15,6 @@ from unittest.mock import AsyncMock
 import pytest
 from globus_sdk.token_storage import TokenValidationError
 
-from proxystore.endpoint.auth import read_token_file
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointFiles
@@ -23,7 +22,7 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.serve import _get_auth_headers
-from proxystore.endpoint.serve import _serve_async
+from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
@@ -43,67 +42,58 @@ def _endpoint_config(**kwargs: Any) -> EndpointConfig:
     return EndpointConfig(**options)
 
 
-async def test_serve_async_token_file(tmp_path: pathlib.Path) -> None:
+async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config()
-    token_file = EndpointFiles(str(tmp_path)).token
-    stop = asyncio.Event()
-    task = asyncio.create_task(_serve_async(config, str(tmp_path), stop))
+    endpoint_dir = str(tmp_path)
+    token_file = EndpointFiles(endpoint_dir).token
 
-    for _ in range(500):  # pragma: no branch
-        if os.path.exists(token_file):
-            break
-        await asyncio.sleep(0.01)
-    assert stat.S_IMODE(os.stat(token_file).st_mode) == 0o600
+    async with running_endpoint(config, endpoint_dir) as endpoint:
+        assert endpoint.uuid == uuid.UUID(config.uuid)
+        assert stat.S_IMODE(os.stat(token_file).st_mode) == 0o600
+        client = await asyncio.to_thread(
+            EndpointClient.from_config,
+            config,
+            endpoint_dir,
+        )
+        assert client.info.uuid == endpoint.uuid
 
-    assert config.host is not None
-    await asyncio.to_thread(wait_for_endpoint, config.host, config.port)
-    token = read_token_file(token_file)
-    client = await asyncio.to_thread(
-        EndpointClient.connect,
-        config.host,
-        config.port,
-        token,
-    )
-    assert client.info.uuid == uuid.UUID(config.uuid)
-
-    stop.set()
-    await task
     # Open connections are closed and the token is removed on shutdown
     with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert not os.path.exists(token_file)
 
 
-async def test_serve_async_restricts_endpoint_dir(
+async def test_running_endpoint_restricts_endpoint_dir(
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     os.chmod(tmp_path, 0o777)
-    stop = asyncio.Event()
-    stop.set()
-    await _serve_async(_endpoint_config(), str(tmp_path), stop)
+    async with running_endpoint(_endpoint_config(), str(tmp_path)):
+        pass
     assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o755
     assert any('write permissions' in r.message for r in caplog.records)
 
 
-async def test_serve_async_port_in_use(tmp_path: pathlib.Path) -> None:
+async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
     with socket.socket() as sock:
         sock.bind(('127.0.0.1', 0))
         sock.listen()
         config = _endpoint_config(port=sock.getsockname()[1])
         with pytest.raises(OSError):
-            await _serve_async(config, str(tmp_path))
+            async with running_endpoint(config, str(tmp_path)):
+                pass  # pragma: no cover
     assert not os.path.exists(EndpointFiles(str(tmp_path)).token)
 
 
-async def test_serve_async_start_up_failure_cleans_up(
+async def test_running_endpoint_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
     config = _endpoint_config()
     # The token cannot be written to a directory that does not exist
     with mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close:
         with pytest.raises(FileNotFoundError):
-            await _serve_async(config, str(tmp_path / 'missing'))
+            async with running_endpoint(config, str(tmp_path / 'missing')):
+                pass  # pragma: no cover
     mock_close.assert_awaited_once()
 
 
@@ -223,7 +213,7 @@ def test_get_auth_headers_globus_missing() -> None:
         assert _get_auth_headers('globus')
 
 
-async def test_serve_cancels_nat_check(
+async def test_running_endpoint_cancels_nat_check(
     relay_server,
     tmp_path: pathlib.Path,
 ) -> None:
@@ -243,39 +233,31 @@ async def test_serve_cancels_nat_check(
     config = _endpoint_config()
     config.relay.address = relay_server.address
 
-    stop = asyncio.Event()
-    stop.set()
     with mock.patch(
         'proxystore.endpoint.serve.check_nat_and_log',
         side_effect=never_finishes,
     ):
-        await _serve_async(config, str(tmp_path), stop)
+        async with running_endpoint(config, str(tmp_path)):
+            pass
 
     assert cancelled.is_set()
 
 
-async def test_serve_async_tls(tmp_path: pathlib.Path) -> None:
+async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
     config = _endpoint_config(tls=True)
     endpoint_dir = str(tmp_path)
-    cert_file = EndpointFiles(endpoint_dir).tls_cert
-    key_file = EndpointFiles(endpoint_dir).tls_key
-    stop = asyncio.Event()
-    task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
+    files = EndpointFiles(endpoint_dir)
 
-    assert config.host is not None
-    await asyncio.to_thread(wait_for_endpoint, config.host, config.port)
-    assert stat.S_IMODE(os.stat(key_file).st_mode) == 0o600
+    async with running_endpoint(config, endpoint_dir):
+        assert stat.S_IMODE(os.stat(files.tls_key).st_mode) == 0o600
+        client = await asyncio.to_thread(
+            EndpointClient.from_config,
+            config,
+            endpoint_dir,
+        )
+        assert isinstance(client._socket, ssl.SSLSocket)
+        assert client.info.uuid == uuid.UUID(config.uuid)
+        await asyncio.to_thread(client.close)
 
-    client = await asyncio.to_thread(
-        EndpointClient.from_config,
-        config,
-        endpoint_dir,
-    )
-    assert isinstance(client._socket, ssl.SSLSocket)
-    assert client.info.uuid == uuid.UUID(config.uuid)
-    await asyncio.to_thread(client.close)
-
-    stop.set()
-    await task
-    assert not os.path.exists(cert_file)
-    assert not os.path.exists(key_file)
+    assert not os.path.exists(files.tls_cert)
+    assert not os.path.exists(files.tls_key)

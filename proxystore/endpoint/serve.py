@@ -13,6 +13,7 @@ import os
 import signal
 import ssl
 import uuid
+from collections.abc import AsyncIterator
 from typing import Any
 from typing import Literal
 
@@ -136,16 +137,38 @@ async def _close_server(
     await server.wait_closed()
 
 
-async def _serve_async(
+@contextlib.asynccontextmanager
+async def running_endpoint(
     config: EndpointConfig,
     endpoint_dir: str,
-    stop: asyncio.Event | None = None,
-) -> None:
+) -> AsyncIterator[Endpoint]:
+    """Run an endpoint that serves clients until the context exits.
+
+    Once the context is entered, the endpoint is accepting client connections
+    and its credentials are in the endpoint directory. When the context
+    exits, client connections are closed, the credentials are removed, and
+    the endpoint is closed.
+
+    Example:
+        ```python
+        async with running_endpoint(config, endpoint_dir):
+            client = EndpointClient.from_config(config, endpoint_dir)
+            ...
+        ```
+
+    Args:
+        config: Configuration of the endpoint.
+        endpoint_dir: Directory of the endpoint.
+
+    Yields:
+        The running endpoint.
+
+    Raises:
+        ValueError: If the host is not set in the configuration.
+        OSError: If the endpoint cannot listen on its host and port.
+    """
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
-
-    stop = asyncio.Event() if stop is None else stop
-    loop = asyncio.get_running_loop()
 
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.
@@ -166,10 +189,6 @@ async def _serve_async(
                 storage=_create_storage(config),
             ),
         )
-
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, stop.set)
-            stack.callback(loop.remove_signal_handler, sig)
 
         if restrict_directory(endpoint_dir):
             logger.warning(
@@ -201,12 +220,30 @@ async def _serve_async(
         )
         stack.push_async_callback(_close_server, server, handler)
         logger.info(
-            f'Serving endpoint {uuid.UUID(config.uuid)} ({config.name}) on '
+            f'Serving endpoint {endpoint.uuid} ({endpoint.name}) on '
             f'{config.host}:{config.port}',
         )
         logger.info(f'Config: {config}')
-        await stop.wait()
-        logger.info('Shutting down endpoint server')
+        try:
+            yield endpoint
+        finally:
+            logger.info('Shutting down endpoint server')
+
+
+async def _serve_async(config: EndpointConfig, endpoint_dir: str) -> None:
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    signals = (signal.SIGINT, signal.SIGTERM)
+    # Signal handlers are installed before starting the endpoint so that a
+    # signal received during start up stops the endpoint once it starts.
+    for sig in signals:
+        loop.add_signal_handler(sig, stop.set)
+    try:
+        async with running_endpoint(config, endpoint_dir):
+            await stop.wait()
+    finally:
+        for sig in signals:
+            loop.remove_signal_handler(sig)
 
 
 def serve(
@@ -262,8 +299,8 @@ def serve(
         logger.exception(f'Caught unhandled exception: {e!r}')
         raise
     except KeyboardInterrupt:  # pragma: no cover
-        # SIGINT is handled by _serve_async once the server is running, but
-        # can still be raised if received during start up.
+        # SIGINT is handled by _serve_async once the event loop is running,
+        # but can still be raised before then.
         pass
     finally:
         logger.info(f'Finished serving endpoint: {config.name}')

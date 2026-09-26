@@ -21,10 +21,9 @@ from proxystore.endpoint.config import EndpointFiles
 from proxystore.endpoint.config import read_config
 from proxystore.endpoint.config import write_config
 from proxystore.endpoint.exceptions import EndpointConnectionError
-from proxystore.endpoint.serve import _serve_async
+from proxystore.endpoint.serve import running_endpoint
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
-from testing.endpoint import wait_for_endpoint
 from testing.utils import open_port
 
 
@@ -269,32 +268,20 @@ async def test_connector_endpoint_restart(
     endpoint_dir = str(tmp_path / config.name)
     write_config(config, endpoint_dir)
 
-    async def _start() -> tuple[asyncio.Event, asyncio.Task[None]]:
-        stop = asyncio.Event()
-        task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
-        await asyncio.to_thread(wait_for_endpoint, '127.0.0.1', config.port)
-        return stop, task
-
-    stop, task = await _start()
-    connector = await asyncio.to_thread(
-        EndpointConnector,
-        [config.uuid],
-        proxystore_dir=str(tmp_path),
-    )
-    try:
+    async with running_endpoint(config, endpoint_dir):
+        connector = await asyncio.to_thread(
+            EndpointConnector,
+            [config.uuid],
+            proxystore_dir=str(tmp_path),
+        )
         key = await asyncio.to_thread(connector.put, b'value')
-        stop.set()
-        await task
 
-        # The idle connection in the pool was closed by the endpoint and
-        # the endpoint has a new token after restarting.
-        stop, task = await _start()
+    # The idle connection in the pool was closed by the endpoint and the
+    # endpoint has a new token after restarting.
+    async with running_endpoint(config, endpoint_dir):
         assert not await asyncio.to_thread(connector.exists, key)
         assert any('Retrying' in r.message for r in caplog.records)
-    finally:
-        connector.close()
-        stop.set()
-        await task
+    connector.close()
 
 
 async def test_connector_tls(tmp_path: pathlib.Path) -> None:
@@ -308,10 +295,6 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
     endpoint_dir = str(tmp_path / config.name)
     write_config(config, endpoint_dir)
 
-    stop = asyncio.Event()
-    task = asyncio.create_task(_serve_async(config, endpoint_dir, stop))
-    await asyncio.to_thread(wait_for_endpoint, '127.0.0.1', config.port)
-
     def _run() -> None:
         with EndpointConnector(
             [config.uuid],
@@ -320,8 +303,5 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
             key = connector.put(b'value')
             assert connector.get(key) == b'value'
 
-    try:
+    async with running_endpoint(config, endpoint_dir):
         await asyncio.to_thread(_run)
-    finally:
-        stop.set()
-        await task
