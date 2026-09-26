@@ -323,7 +323,7 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __name__(self) -> str:
         return self.__proxy_wrapped__.__name__  # type: ignore[attr-defined]
 
-    @__name__.setter
+    @__name__.setter  # noqa: A003
     def __name__(self, value: str) -> None:
         self.__proxy_wrapped__.__name__ = value  # type: ignore[attr-defined]
 

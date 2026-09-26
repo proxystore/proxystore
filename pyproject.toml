@@ -230,8 +230,6 @@ ignore = [
     "D105",
     # Do not require docstrings for __init__ methods
     "D107",
-    # Allow builtin attribute and module shadowing
-    "A003", "A005",
     # Ruff will change all([generator]) to all(generator) because the all/any
     # generator expressions directly and the list comprehension is not needed.
     # However, coverage marks unfinished generators as not covered and
@@ -257,7 +255,6 @@ required-imports = ["from __future__ import annotations"]
 [tool.ruff.lint.per-file-ignores]
 "*/__init__.py" = ["F401"]
 "tests/**.py" = ["D10"]
-"proxystore/**.py" = ["PT"]
 "proxystore/store/*.py" = ["D102"]
 "tests/conftest.py" = ["F401"]
 "testing/**.py" = ["D10"]
