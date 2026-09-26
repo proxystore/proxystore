@@ -26,6 +26,13 @@ def test_context_lifetime_protocol(store: Store[LocalConnector]) -> None:
     lifetime.close()
 
 
+def test_context_lifetime_repr(store: Store[LocalConnector]) -> None:
+    with ContextLifetime(store, name='test-lifetime') as lifetime:
+        assert repr(lifetime) == (
+            f'Lifetime(name=test-lifetime, store={store!r})'
+        )
+
+
 def test_context_lifetime_cleanup(store: Store[LocalConnector]) -> None:
     key1 = store.put('value1')
     key2 = store.put('value2')
