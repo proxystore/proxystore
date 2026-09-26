@@ -25,7 +25,7 @@ $ git clone https://github.com/proxystore/proxystore
 $ cd proxystore
 $ python -m venv venv
 $ . venv/bin/activate
-$ pip install -e .[dev,docs,endpoints,...]
+$ pip install -e .[all] --group dev --group docs
 ```
 
 ## Continuous Integration
@@ -78,7 +78,7 @@ MKDocs.
 
 ```bash
 # Manually
-$ pip install -e .[docs]
+$ pip install -e .[endpoints] --group docs
 $ mkdocs build --strict  # Build only to site/index.html
 $ mkdocs serve           # Serve locally
 

@@ -1,7 +1,7 @@
 site_name: ProxyStore
 site_url: https://docs.proxystore.dev
-site_author: Globus Labs
-site_description: Documentation for ProxyStore.
+site_author: Greg Pauloski and Globus Labs
+site_description: Pass-by-reference for distributed Python applications via transparent object proxies
 
 repo_name: proxystore/proxystore
 repo_url: https://github.com/proxystore/proxystore
@@ -50,10 +50,14 @@ theme:
   logo: static/icon-white.svg
 
 watch:
-  - mkdocs.yml
   - README.md
-  - docs/
   - proxystore/
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
 
 extra:
   version:
@@ -71,8 +75,6 @@ markdown_extensions:
   - mkdocs-click
   - toc:
       permalink: true
-  - pymdownx.arithmatex:
-      generic: true
   - pymdownx.betterem:
       smart_enable: all
   - pymdownx.details
@@ -146,16 +148,11 @@ plugins:
       enable_inventory: true
       handlers:
         python:
-          setup_commands:
-            - import pytkdocs_tweaks
-            - pytkdocs_tweaks.main()
           inventories:
             - https://docs.python.org/3/objects.inv
-            - https://quart.palletsprojects.com/en/latest/objects.inv
             - https://aiortc.readthedocs.io/en/latest/objects.inv
             - https://globus-sdk-python.readthedocs.io/en/stable/objects.inv
             - https://websockets.readthedocs.io/en/stable/objects.inv
-            - https://requests.readthedocs.io/en/latest/objects.inv
             - https://redis.readthedocs.io/en/stable/objects.inv
             - https://docs.confluent.io/platform/current/clients/confluent-kafka-python/html/objects.inv
             - https://distributed.dask.org/en/latest/objects.inv
