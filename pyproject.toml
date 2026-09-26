@@ -62,7 +62,7 @@ dev = [
     "pytest",
     "pytest-asyncio>=0.23.2",
     "pytest-timeout",
-    "ruff>=0.2.0",
+    "ruff>=0.16",
     "tox",
 ]
 docs = [
@@ -109,7 +109,7 @@ omit = [
 parallel = true
 
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.11"
 plugins = [
     "mypy.plugins.proper_plugin",
     "proxystore/mypy_plugin.py",
@@ -157,7 +157,7 @@ indent-style = "space"
 quote-style = "single"
 
 [tool.ruff.lint]
-# See all rules here: https://beta.ruff.rs/docs/rules
+# See all rules here: https://docs.astral.sh/ruff/rules/
 select = [
     # pyflakes
     "F",
@@ -212,15 +212,12 @@ extend-ignore = [
     # However, coverage marks unfinished generators as not covered and
     # all/any can early exit before exhausting the generator.
     "C419",
-    # Conflicts with ruff format but leaving as enabled for now. This
-    # may require ruff's linter to be run a second time after the formatter.
-    # https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules
-    # "COM812",
-    # "ISC001",
     # Allow pytest.raises() without match
     "PT011",
-    #
-    "SIM105", "SIM117",
+    # Allow try-except-pass instead of contextlib.suppress
+    "SIM105",
+    # Allow nested with statements
+    "SIM117",
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
@@ -231,7 +228,7 @@ inline-quotes = "single"
 
 [tool.ruff.lint.isort]
 force-single-line = true
-known-first-party = ["proxystore", "test", "testing"]
+known-first-party = ["proxystore", "tests", "testing"]
 order-by-type = false
 required-imports = ["from __future__ import annotations"]
 
