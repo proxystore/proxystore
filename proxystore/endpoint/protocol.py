@@ -372,16 +372,16 @@ class Request:
         key: Key of the object, or `None` for operations that do not operate
             on an object (e.g.,
             [`PING`][proxystore.endpoint.protocol.Op.PING]).
-        endpoint: ID of the endpoint to forward the request to or `None`
-            for the local endpoint.
+        target: ID of the endpoint to forward the request to or `None`
+            for the endpoint receiving the request.
     """
 
     key: str | None = None
-    endpoint: EndpointId | None = None
+    target: EndpointId | None = None
 
     def to_meta(self) -> dict[str, Any]:
         """Encode as message metadata."""
-        return {'key': self.key, 'endpoint': self.endpoint}
+        return {'key': self.key, 'target': self.target}
 
     @classmethod
     def from_meta(cls, meta: dict[str, Any]) -> Self:
@@ -393,12 +393,12 @@ class Request:
         key = _get(meta, 'key', (str, type(None)), cls)
         if key is not None and len(key) == 0:
             raise _malformed(cls, 'key')
-        endpoint = _get(meta, 'endpoint', (str, type(None)), cls)
+        target = _get(meta, 'target', (str, type(None)), cls)
         return cls(
             key=key,
-            endpoint=None
-            if endpoint is None
-            else _parse_id(endpoint, 'endpoint', cls),
+            target=None
+            if target is None
+            else _parse_id(target, 'target', cls),
         )
 
 

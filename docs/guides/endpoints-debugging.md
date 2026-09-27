@@ -46,10 +46,10 @@ $ proxystore-endpoint --log-level DEBUG start myendpoint --no-detach
 ```
 
 ### Use the Test CLI
-The `proxystore-endpoint` CLI provides a `test` subcommand for testing endpoint commands.
-See the [CLI Reference](../api/cli.md#proxystore-endpoint-test){target=_blank}.
+The `proxystore-endpoint` CLI provides a `client` subcommand for running operations on an endpoint.
+See the [CLI Reference](../api/cli.md#proxystore-endpoint-client){target=_blank}.
 ```bash
-$ proxystore-endpoint test myendpoint exists abcdef
+$ proxystore-endpoint client myendpoint exists abcdef
 INFO: Object exists: False
 ```
 As expected, an object with key `abcdef` does not exist in the store, but
@@ -138,10 +138,10 @@ INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to p
 ```
 
 ### Ping a Peer
-The `proxystore-endpoint test ... ping` command measures the latency between
+The `proxystore-endpoint client ... ping` command measures the latency between
 two endpoints and reports whether their connection is direct or relayed.
 ```bash
-$ proxystore-endpoint test --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
+$ proxystore-endpoint client --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
@@ -156,12 +156,12 @@ UDP traffic. Without `--remote`, the command measures the latency between
 the client and the local endpoint.
 
 ### Use the Test CLI
-The `proxystore-endpoint test` CLI can be used to establish a peer connection
+The `proxystore-endpoint client` CLI can be used to establish a peer connection
 between two endpoints and invoke remote operations.
 Here, we will request the endpoint on system A to invoke an `exists`
 operation on the endpoint on system B.
 ```bash
-$ proxystore-endpoint test --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
+$ proxystore-endpoint client --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
 INFO: Object exists: False
 ```
 

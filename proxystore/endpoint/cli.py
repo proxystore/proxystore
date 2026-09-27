@@ -374,20 +374,24 @@ def stop(name: str) -> None:
         logger.info('Endpoint %s is not running.', name)
 
 
-@cli.group()
+@cli.group(name='client')
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
     '--remote',
     metavar='ID',
-    help='Optional ID of remote endpoint to use.',
+    help='Optional ID of a peer endpoint to forward operations to.',
 )
 @click.pass_context
-def test(
+def client_group(
     ctx: click.Context,
     name: str,
     remote: str | None,
 ) -> None:
-    """Execute test commands on an endpoint."""
+    """Run client operations on endpoint NAME.
+
+    Operations are performed on the endpoint or, with --remote, forwarded
+    to a peer endpoint. These are useful for testing and debugging endpoints.
+    """
     ctx.ensure_object(dict)
 
     ctx.obj['ENDPOINT_NAME'] = name
@@ -398,7 +402,7 @@ def test(
 def _endpoint_client(
     ctx: click.Context,
 ) -> Generator[EndpointClient, None, None]:
-    """Connect to the endpoint of a test command and handle errors."""
+    """Connect to the endpoint of a client command and handle errors."""
     try:
         with EndpointClient.from_name(ctx.obj['ENDPOINT_NAME']) as client:
             yield client
@@ -407,7 +411,7 @@ def _endpoint_client(
         raise SystemExit(1) from None
 
 
-@test.command()
+@client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
 def evict(ctx: click.Context, key: str) -> None:
@@ -417,7 +421,7 @@ def evict(ctx: click.Context, key: str) -> None:
     logger.info('Evicted object from endpoint.')
 
 
-@test.command()
+@client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
 def exists(ctx: click.Context, key: str) -> None:
@@ -427,7 +431,7 @@ def exists(ctx: click.Context, key: str) -> None:
     logger.info('Object exists: %s', res)
 
 
-@test.command()
+@client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
 def get(ctx: click.Context, key: str) -> None:
@@ -442,7 +446,7 @@ def get(ctx: click.Context, key: str) -> None:
         logger.info('Result: %s', obj)
 
 
-@test.command()
+@client_group.command()
 @click.option(
     '--count',
     default=4,
@@ -514,7 +518,7 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
     )
 
 
-@test.command()
+@client_group.command()
 @click.argument('data', required=True)
 @click.pass_context
 def put(ctx: click.Context, data: str) -> None:

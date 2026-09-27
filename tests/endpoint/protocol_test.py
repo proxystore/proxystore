@@ -49,7 +49,7 @@ def test_preamble_bad_magic() -> None:
 
 
 def test_message_round_trip() -> None:
-    meta = {'key': 'abc', 'endpoint': None}
+    meta = {'key': 'abc', 'target': None}
     message = pack_message(Op.SET, meta, data_len=100)
 
     header = Header.unpack(message[: Header.SIZE])
@@ -168,11 +168,11 @@ def test_message_meta_round_trip(
             },
             'max_object_size',
         ),
-        (Request, {'endpoint': None}, 'key'),
-        (Request, {'key': '', 'endpoint': None}, 'key'),
-        (Request, {'key': 'key'}, 'endpoint'),
-        (Request, {'key': 'key', 'endpoint': 42}, 'endpoint'),
-        (Request, {'key': 'key', 'endpoint': 'not-an-id'}, 'endpoint'),
+        (Request, {'target': None}, 'key'),
+        (Request, {'key': '', 'target': None}, 'key'),
+        (Request, {'key': 'key'}, 'target'),
+        (Request, {'key': 'key', 'target': 42}, 'target'),
+        (Request, {'key': 'key', 'target': 'not-an-id'}, 'target'),
     ),
 )
 def test_message_meta_malformed(
@@ -220,7 +220,7 @@ def test_ping_meta_malformed(
 
 @pytest.mark.parametrize(
     'request_',
-    (Request(), Request(endpoint=EndpointId.random()), Request('key')),
+    (Request(), Request(target=EndpointId.random()), Request('key')),
 )
 def test_request_optional_key_round_trip(request_: Request) -> None:
     meta = decode_meta(encode_meta(request_.to_meta()))

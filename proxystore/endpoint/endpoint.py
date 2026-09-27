@@ -38,7 +38,7 @@ class Endpoint:
     By default, an endpoint operates in isolation. If initialized with a
     [`PeerManager`][proxystore.p2p.manager.PeerManager], the endpoint can
     forward operations to peer endpoints by passing the ID of the peer as
-    the `endpoint` argument of an operation. See the
+    the `target` argument of an operation. See the
     [`proxystore.p2p`][proxystore.p2p] module to learn more about peering.
 
     Warning:
@@ -146,19 +146,19 @@ class Endpoint:
     def __await__(self) -> Generator[Any, None, Endpoint]:
         return self.__aenter__().__await__()
 
-    def _is_peer_request(self, endpoint: EndpointId | None) -> bool:
-        if endpoint is None or endpoint == self.id:
+    def _is_peer_request(self, target: EndpointId | None) -> bool:
+        if target is None or target == self.id:
             return False
         if self._peer_manager is None:
             raise PeeringNotAvailableError(
-                f'Cannot forward request to endpoint {endpoint} because '
+                f'Cannot forward request to endpoint {target} because '
                 'peering is not enabled.',
             )
         return True
 
     async def _request_peer(
         self,
-        endpoint: EndpointId,
+        target: EndpointId,
         op: Op,
         request: Request,
         data: bytes | bytearray | None = None,
@@ -169,16 +169,16 @@ class Endpoint:
             self._log_prefix,
             op.name,
             request.key,
-            endpoint,
+            target,
         )
         response = await self._peer_manager.request(
-            endpoint,
+            target,
             Message(op, request.to_meta(), b'' if data is None else data),
         )
         check_response(
             response,
             op,
-            source=f'Peer {endpoint}',
+            source=f'Peer {target}',
             error=PeerRequestError,
         )
         return response
@@ -200,62 +200,62 @@ class Endpoint:
     async def evict(
         self,
         key: str,
-        endpoint: EndpointId | None = None,
+        target: EndpointId | None = None,
     ) -> None:
         """Evict key from endpoint.
 
         Args:
             key: Key to evict.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
+            target: ID of the endpoint to perform the operation on. If
+                unspecified, the operation is performed on this endpoint.
 
         Raises:
-            PeeringNotAvailableError: If `endpoint` is a different endpoint
+            PeeringNotAvailableError: If `target` is a different endpoint
                 and peering is not enabled.
             PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
-            '%s: EVICT key=%s on endpoint=%s',
+            '%s: EVICT key=%s on target=%s',
             self._log_prefix,
             key,
-            endpoint,
+            target,
         )
-        if self._is_peer_request(endpoint):
-            assert endpoint is not None
-            await self._request_peer(endpoint, Op.EVICT, Request(key))
+        if self._is_peer_request(target):
+            assert target is not None
+            await self._request_peer(target, Op.EVICT, Request(key))
         else:
             await self._storage.evict(key)
 
     async def exists(
         self,
         key: str,
-        endpoint: EndpointId | None = None,
+        target: EndpointId | None = None,
     ) -> bool:
         """Check if key exists on endpoint.
 
         Args:
             key: Key to check.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
+            target: ID of the endpoint to perform the operation on. If
+                unspecified, the operation is performed on this endpoint.
 
         Returns:
             If the key exists.
 
         Raises:
-            PeeringNotAvailableError: If `endpoint` is a different endpoint
+            PeeringNotAvailableError: If `target` is a different endpoint
                 and peering is not enabled.
             PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
-            '%s: EXISTS key=%s on endpoint=%s',
+            '%s: EXISTS key=%s on target=%s',
             self._log_prefix,
             key,
-            endpoint,
+            target,
         )
-        if self._is_peer_request(endpoint):
-            assert endpoint is not None
+        if self._is_peer_request(target):
+            assert target is not None
             response = await self._request_peer(
-                endpoint,
+                target,
                 Op.EXISTS,
                 Request(key),
             )
@@ -263,38 +263,38 @@ class Endpoint:
                 return exists_from_meta(response.meta)
             except EndpointProtocolError as e:
                 # The peer, not the caller, sent the malformed message.
-                raise PeerRequestError(f'Peer {endpoint}: {e}') from e
+                raise PeerRequestError(f'Peer {target}: {e}') from e
         return await self._storage.exists(key)
 
     async def get(
         self,
         key: str,
-        endpoint: EndpointId | None = None,
+        target: EndpointId | None = None,
     ) -> bytes | bytearray | None:
         """Get value associated with key on endpoint.
 
         Args:
             key: Key to get value for.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
+            target: ID of the endpoint to perform the operation on. If
+                unspecified, the operation is performed on this endpoint.
 
         Returns:
             Value associated with key.
 
         Raises:
-            PeeringNotAvailableError: If `endpoint` is a different endpoint
+            PeeringNotAvailableError: If `target` is a different endpoint
                 and peering is not enabled.
             PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
-            '%s: GET key=%s on endpoint=%s',
+            '%s: GET key=%s on target=%s',
             self._log_prefix,
             key,
-            endpoint,
+            target,
         )
-        if self._is_peer_request(endpoint):
-            assert endpoint is not None
-            response = await self._request_peer(endpoint, Op.GET, Request(key))
+        if self._is_peer_request(target):
+            assert target is not None
+            response = await self._request_peer(target, Op.GET, Request(key))
             if response.code == Status.NOT_FOUND:
                 return None
             return response.data
@@ -304,59 +304,59 @@ class Endpoint:
         self,
         key: str,
         data: bytes | bytearray,
-        endpoint: EndpointId | None = None,
+        target: EndpointId | None = None,
     ) -> None:
         """Set key with data on endpoint.
 
         Args:
             key: Key to associate with value.
             data: Value to associate with key.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
+            target: ID of the endpoint to perform the operation on. If
+                unspecified, the operation is performed on this endpoint.
 
         Raises:
             ObjectSizeExceededError: If the max object size is configured and
                 the data exceeds that size.
-            PeeringNotAvailableError: If `endpoint` is a different endpoint
+            PeeringNotAvailableError: If `target` is a different endpoint
                 and peering is not enabled.
             PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
-            '%s: SET key=%s on endpoint=%s',
+            '%s: SET key=%s on target=%s',
             self._log_prefix,
             key,
-            endpoint,
+            target,
         )
-        if self._is_peer_request(endpoint):
-            assert endpoint is not None
-            await self._request_peer(endpoint, Op.SET, Request(key), data)
+        if self._is_peer_request(target):
+            assert target is not None
+            await self._request_peer(target, Op.SET, Request(key), data)
         else:
             await self._storage.set(key, data)
 
-    async def ping(self, endpoint: EndpointId | None = None) -> PingResult:
+    async def ping(self, target: EndpointId | None = None) -> PingResult:
         """Measure the latency of and path to a peer endpoint.
 
         Args:
-            endpoint: Peer endpoint to ping. If unspecified, the local endpoint
-                is pinged which returns immediately.
+            target: ID of the peer endpoint to ping. If unspecified, this
+                endpoint is pinged which returns immediately.
 
         Returns:
             The round-trip time to the peer and the path of the connection.
 
         Raises:
-            PeeringNotAvailableError: If `endpoint` is a different endpoint
+            PeeringNotAvailableError: If `target` is a different endpoint
                 and peering is not enabled.
             PeerError: If the request to the peer endpoint fails.
         """
-        if not self._is_peer_request(endpoint):
+        if not self._is_peer_request(target):
             return PingResult()
-        assert endpoint is not None
+        assert target is not None
         assert self._peer_manager is not None
 
         start = time.perf_counter()
-        await self._request_peer(endpoint, Op.PING, Request())
+        await self._request_peer(target, Op.PING, Request())
         rtt_ms = (time.perf_counter() - start) * 1000
-        path = self._peer_manager.path(endpoint)
+        path = self._peer_manager.path(target)
         if path is None:  # pragma: no cover
             # The connection closed after the response was received.
             return PingResult(peer_rtt_ms=rtt_ms)

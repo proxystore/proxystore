@@ -44,7 +44,7 @@ async def test_get() -> None:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
-        assert (await endpoint.get('key', endpoint=_ID)) == data
+        assert (await endpoint.get('key', target=_ID)) == data
 
 
 @pytest.mark.parametrize('op', ('evict', 'exists', 'get', 'set'))
@@ -53,7 +53,7 @@ async def test_remote_endpoint_not_available(op: str) -> None:
     async with Endpoint(name=_NAME, endpoint_id=_ID) as endpoint:
         args = ('key', b'data') if op == 'set' else ('key',)
         with pytest.raises(PeeringNotAvailableError):
-            await getattr(endpoint, op)(*args, endpoint=EndpointId.random())
+            await getattr(endpoint, op)(*args, target=EndpointId.random())
 
 
 @pytest.mark.asyncio

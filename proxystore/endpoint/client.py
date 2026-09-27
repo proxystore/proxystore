@@ -273,60 +273,60 @@ class EndpointClient:
             self.closed = True
             self._socket.close()
 
-    def evict(self, key: str, endpoint: str | None = None) -> None:
+    def evict(self, key: str, target: str | None = None) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
-            endpoint: Optional ID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Raises:
-            ValueError: If `endpoint` is not a valid endpoint ID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        self._request(Op.EVICT, Request(key, _parse_endpoint(endpoint)))
+        self._request(Op.EVICT, Request(key, _parse_target(target)))
 
-    def exists(self, key: str, endpoint: str | None = None) -> bool:
+    def exists(self, key: str, target: str | None = None) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
             key: Key potentially associated with stored object.
-            endpoint: Optional ID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Returns:
             If an object associated with the key exists.
 
         Raises:
-            ValueError: If `endpoint` is not a valid endpoint ID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         response = self._request(
             Op.EXISTS,
-            Request(key, _parse_endpoint(endpoint)),
+            Request(key, _parse_target(target)),
         )
         return exists_from_meta(response.meta)
 
     def get(
         self,
         key: str,
-        endpoint: str | None = None,
+        target: str | None = None,
     ) -> bytearray | None:
         """Get the serialized object associated with the key.
 
         Args:
             key: Key associated with object to retrieve.
-            endpoint: Optional ID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Returns:
             Serialized object or `None` if the object does not exist.
 
         Raises:
-            ValueError: If `endpoint` is not a valid endpoint ID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         response = self._request(
             Op.GET,
-            Request(key, _parse_endpoint(endpoint)),
+            Request(key, _parse_target(target)),
         )
         if response.code == Status.NOT_FOUND:
             return None
@@ -337,19 +337,19 @@ class EndpointClient:
         self,
         key: str,
         data: BytesLike,
-        endpoint: str | None = None,
+        target: str | None = None,
     ) -> None:
         """Set the serialized object associated with the key.
 
         Args:
             key: Key to associate with the object.
             data: Serialized object.
-            endpoint: Optional ID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Raises:
             ObjectSizeExceededError: If the size of `data` exceeds the
                 maximum object size of the endpoint.
-            ValueError: If `endpoint` is not a valid endpoint ID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         size = memoryview(data).nbytes
@@ -359,9 +359,9 @@ class EndpointClient:
                 f'Data size ({size} bytes) exceeds the maximum object size '
                 f'of the endpoint ({max_size} bytes).',
             )
-        self._request(Op.SET, Request(key, _parse_endpoint(endpoint)), data)
+        self._request(Op.SET, Request(key, _parse_target(target)), data)
 
-    def ping(self, endpoint: str | None = None) -> PingResult:
+    def ping(self, target: str | None = None) -> PingResult:
         """Measure the latency of and path to a peer endpoint.
 
         The local endpoint sends a request to the peer and reports the time
@@ -370,16 +370,16 @@ class EndpointClient:
         the connection.
 
         Args:
-            endpoint: Optional ID of the peer endpoint to ping. If `None`,
+            target: Optional ID of the peer endpoint to ping. If `None`,
                 the local endpoint is pinged.
 
         Raises:
-            ValueError: If `endpoint` is not a valid endpoint ID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         response = self._request(
             Op.PING,
-            Request(endpoint=_parse_endpoint(endpoint)),
+            Request(target=_parse_target(target)),
         )
         return PingResult.from_meta(response.meta)
 
@@ -458,8 +458,8 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
     )
 
 
-def _parse_endpoint(endpoint: str | None) -> EndpointId | None:
-    return None if endpoint is None else EndpointId.from_str(endpoint)
+def _parse_target(target: str | None) -> EndpointId | None:
+    return None if target is None else EndpointId.from_str(target)
 
 
 def _as_bytes_view(data: BytesLike) -> memoryview:

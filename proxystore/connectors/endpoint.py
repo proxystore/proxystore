@@ -43,7 +43,7 @@ class EndpointKey(NamedTuple):
     """
 
     object_id: str
-    endpoint_id: str | None
+    endpoint_id: str
 
 
 class EndpointConnector:

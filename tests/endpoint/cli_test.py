@@ -222,10 +222,10 @@ def test_stop_command(home_dir, caplog) -> None:
         assert message in caplog.records[0].message
 
 
-def test_test_command_missing_endpoint(home_dir, caplog) -> None:
+def test_client_command_missing_endpoint(home_dir, caplog) -> None:
     caplog.set_level(logging.ERROR)
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['test', 'fake-name', 'exists', 'key'])
+    result = runner.invoke(cli, ['client', 'fake-name', 'exists', 'key'])
     assert result.exit_code == 1
     assert (
         'An endpoint named fake-name does not exist'
@@ -233,7 +233,7 @@ def test_test_command_missing_endpoint(home_dir, caplog) -> None:
     )
 
 
-def test_test_command(
+def test_client_command(
     home_dir,
     caplog,
     endpoint: EndpointConfig,
@@ -247,38 +247,38 @@ def test_test_command(
     key = str(key_uuid)
 
     with mock.patch('uuid.uuid4', return_value=key_uuid):
-        result = runner.invoke(cli, ['test', endpoint.name, 'put', value])
+        result = runner.invoke(cli, ['client', endpoint.name, 'put', value])
     assert result.exit_code == 0
     assert key in caplog.records[0].message
     caplog.clear()
 
-    result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
+    result = runner.invoke(cli, ['client', endpoint.name, 'exists', key])
     assert result.exit_code == 0
     assert 'True' in caplog.records[0].message
     caplog.clear()
 
-    result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
+    result = runner.invoke(cli, ['client', endpoint.name, 'get', key])
     assert result.exit_code == 0
     assert value in caplog.records[0].message
     caplog.clear()
 
-    result = runner.invoke(cli, ['test', endpoint.name, 'evict', key])
+    result = runner.invoke(cli, ['client', endpoint.name, 'evict', key])
     assert result.exit_code == 0
     caplog.clear()
 
-    result = runner.invoke(cli, ['test', endpoint.name, 'exists', key])
+    result = runner.invoke(cli, ['client', endpoint.name, 'exists', key])
     assert result.exit_code == 0
     assert 'False' in caplog.records[0].message
     caplog.clear()
 
-    result = runner.invoke(cli, ['test', endpoint.name, 'get', key])
+    result = runner.invoke(cli, ['client', endpoint.name, 'get', key])
     assert result.exit_code == 0
     assert 'does not exist' in caplog.records[0].message
     caplog.clear()
 
 
 @pytest.mark.parametrize('command', ('evict', 'exists', 'get', 'put'))
-def test_test_command_errors(
+def test_client_command_errors(
     command: str,
     home_dir,
     caplog,
@@ -287,7 +287,7 @@ def test_test_command_errors(
 ) -> None:
     caplog.set_level(logging.ERROR)
     runner = click.testing.CliRunner()
-    args = ['test', endpoint.name, command, 'fake-key']
+    args = ['client', endpoint.name, command, 'fake-key']
     copied_dir = copy_endpoint_dir(endpoint_dir, home_dir)
 
     with mock.patch(
@@ -310,7 +310,7 @@ def test_test_command_errors(
 
     result = runner.invoke(
         cli,
-        ['test', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
+        ['client', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
     )
     assert result.exit_code == 1
     assert 'not a valid endpoint ID' in caplog.records[0].message
@@ -322,7 +322,7 @@ def test_test_command_errors(
     assert 'Is the endpoint running?' in caplog.records[0].message
 
 
-async def test_test_command_tls(home_dir, caplog) -> None:
+async def test_client_command_tls(home_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
     endpoint_dir, config = write_endpoint(
         home_dir,
@@ -336,7 +336,7 @@ async def test_test_command_tls(home_dir, caplog) -> None:
         result = await asyncio.to_thread(
             runner.invoke,
             cli,
-            ['test', config.name, 'exists', 'key'],
+            ['client', config.name, 'exists', 'key'],
         )
     assert result.exit_code == 0
     assert any('Object exists: False' in r.message for r in caplog.records)
@@ -375,7 +375,7 @@ def test_ping_command_local(
     caplog.set_level(logging.INFO)
     copy_endpoint_dir(endpoint_dir, home_dir)
     runner = click.testing.CliRunner()
-    args = ['test', endpoint.name, 'ping', '--count', '2', '--interval', '0']
+    args = ['client', endpoint.name, 'ping', '--count', '2', '--interval', '0']
     result = runner.invoke(cli, args)
     assert result.exit_code == 0
     messages = [r.message for r in caplog.records]
@@ -401,7 +401,7 @@ def test_ping_command_remote(home_dir, caplog) -> None:
         result = runner.invoke(
             cli,
             [
-                'test',
+                'client',
                 '--remote',
                 remote,
                 'ep',
@@ -435,7 +435,7 @@ def test_ping_command_error(home_dir, caplog) -> None:
         'proxystore.endpoint.cli.EndpointClient.from_name',
         return_value=client,
     ):
-        result = runner.invoke(cli, ['test', 'ep', 'ping'])
+        result = runner.invoke(cli, ['client', 'ep', 'ping'])
     assert result.exit_code == 1
     assert 'peer failed' in caplog.records[-1].message
 

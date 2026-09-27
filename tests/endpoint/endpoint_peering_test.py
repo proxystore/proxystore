@@ -61,27 +61,27 @@ async def test_remote_operations(endpoints) -> None:
     ep1, ep2 = endpoints
     data = randbytes(50)
 
-    await ep1.set('key', data, endpoint=ep2.id)
+    await ep1.set('key', data, target=ep2.id)
     assert await ep2.get('key') == data
     assert not await ep1.exists('key')
 
-    assert await ep1.exists('key', endpoint=ep2.id)
-    assert await ep1.get('key', endpoint=ep2.id) == data
+    assert await ep1.exists('key', target=ep2.id)
+    assert await ep1.get('key', target=ep2.id) == data
 
-    await ep1.evict('key', endpoint=ep2.id)
+    await ep1.evict('key', target=ep2.id)
     assert not await ep2.exists('key')
-    assert not await ep1.exists('key', endpoint=ep2.id)
-    assert await ep1.get('key', endpoint=ep2.id) is None
+    assert not await ep1.exists('key', target=ep2.id)
+    assert await ep1.get('key', target=ep2.id) is None
 
     # Requests for the local endpoint are not forwarded
-    await ep1.set('key', data, endpoint=ep1.id)
+    await ep1.set('key', data, target=ep1.id)
     assert await ep1.get('key') == data
 
 
 async def test_remote_object_too_large(endpoints) -> None:
     ep1, ep2 = endpoints
     with pytest.raises(ObjectSizeExceededError, match=f'Peer {ep2.id}'):
-        await ep1.set('key', randbytes(101), endpoint=ep2.id)
+        await ep1.set('key', randbytes(101), target=ep2.id)
 
 
 async def test_remote_not_allowed(endpoints) -> None:
@@ -89,7 +89,7 @@ async def test_remote_not_allowed(endpoints) -> None:
     assert ep1.peer_manager is not None
     os.remove(ep1.peer_manager._allowlist.path)
     with pytest.raises(PeerNotAllowedError, match='not in the allowlist'):
-        await ep1.get('key', endpoint=ep2.id)
+        await ep1.get('key', target=ep2.id)
 
 
 async def test_remote_error(endpoints) -> None:
@@ -102,7 +102,7 @@ async def test_remote_error(endpoints) -> None:
         ),
         pytest.raises(PeerRequestError, match='storage failed'),
     ):
-        await ep1.get('key', endpoint=ep2.id)
+        await ep1.get('key', target=ep2.id)
 
 
 async def test_remote_malformed_exists(endpoints) -> None:
@@ -116,7 +116,7 @@ async def test_remote_malformed_exists(endpoints) -> None:
         ),
         pytest.raises(PeerRequestError, match='Malformed EXISTS'),
     ):
-        await ep1.exists('key', endpoint=ep2.id)
+        await ep1.exists('key', target=ep2.id)
 
 
 async def test_handle_peer_request_errors(endpoints) -> None:

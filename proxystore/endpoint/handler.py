@@ -52,14 +52,14 @@ def _key(request: Request) -> str:
 
 
 async def _get(endpoint: Endpoint, request: Request, _: _Data) -> Message:
-    result = await endpoint.get(_key(request), endpoint=request.endpoint)
+    result = await endpoint.get(_key(request), target=request.target)
     if result is None:
         return Message(Status.NOT_FOUND)
     return Message(Status.OK, data=result)
 
 
 async def _set(endpoint: Endpoint, request: Request, data: _Data) -> Message:
-    await endpoint.set(_key(request), data, endpoint=request.endpoint)
+    await endpoint.set(_key(request), data, target=request.target)
     return Message(Status.OK)
 
 
@@ -68,7 +68,7 @@ async def _exists(
     request: Request,
     _: _Data,
 ) -> Message:
-    exists = await endpoint.exists(_key(request), endpoint=request.endpoint)
+    exists = await endpoint.exists(_key(request), target=request.target)
     return Message(Status.OK, {'exists': exists})
 
 
@@ -77,12 +77,12 @@ async def _evict(
     request: Request,
     _: _Data,
 ) -> Message:
-    await endpoint.evict(_key(request), endpoint=request.endpoint)
+    await endpoint.evict(_key(request), target=request.target)
     return Message(Status.OK)
 
 
 async def _ping(endpoint: Endpoint, request: Request, _: _Data) -> Message:
-    result = await endpoint.ping(request.endpoint)
+    result = await endpoint.ping(request.target)
     return Message(Status.OK, result.to_meta())
 
 
@@ -125,8 +125,8 @@ async def handle_request(
         meta = Request.from_meta(request.meta)
         if (
             not forward
-            and meta.endpoint is not None
-            and meta.endpoint != endpoint.id
+            and meta.target is not None
+            and meta.target != endpoint.id
         ):
             raise EndpointProtocolError(
                 'requests from peers cannot be forwarded',

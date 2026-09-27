@@ -194,7 +194,7 @@ peers when a direct connection is not possible (e.g., because a firewall
 blocks UDP traffic). Relays only see encrypted traffic. Relayed transfers are
 slower than direct transfers. Check if the connection to a peer is direct or
 relayed with the
-[`proxystore-endpoint test ... ping`](endpoints-debugging.md#ping-a-peer)
+[`proxystore-endpoint client ... ping`](endpoints-debugging.md#ping-a-peer)
 command. The relays are configured with the `relays`
 option in the `[p2p]` section of the configuration or the `--relays` flag
 when configuring an endpoint.
