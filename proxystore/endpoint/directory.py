@@ -15,6 +15,9 @@ from typing import Self
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.exceptions import EndpointConfigError
+from proxystore.endpoint.exceptions import EndpointExistsError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import SecretKey
@@ -130,7 +133,7 @@ class EndpointDir:
             The new endpoint directory.
 
         Raises:
-            FileExistsError: If an endpoint with the name already exists.
+            EndpointExistsError: If an endpoint with the name already exists.
             ValueError: If the configuration is invalid.
         """
         secret_key = SecretKey.generate() if secret_key is None else secret_key
@@ -146,7 +149,7 @@ class EndpointDir:
         try:
             os.mkdir(endpoint_dir.path, mode=0o700)
         except FileExistsError:
-            raise FileExistsError(
+            raise EndpointExistsError(
                 f'An endpoint named {name} already exists in '
                 f'{os.path.dirname(endpoint_dir.path)}.',
             ) from None
@@ -194,22 +197,22 @@ class EndpointDir:
         """Read the endpoint configuration.
 
         Raises:
-            FileNotFoundError: If the configuration file does not exist.
-            ValueError: If the configuration contains an invalid value,
-                cannot be parsed, or the name of the endpoint does not match
-                the name of the directory.
+            EndpointNotFoundError: If the configuration file does not exist.
+            EndpointConfigError: If the configuration contains an invalid
+                value, cannot be parsed, or the name of the endpoint does
+                not match the name of the directory.
         """
         try:
             with open(self.config_path, 'rb') as f:
                 config = load(EndpointConfig, f)
         except FileNotFoundError:
-            raise FileNotFoundError(
+            raise EndpointNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
             ) from None
         except ValueError as e:
             # Includes TOML decoding and pydantic validation errors.
-            raise ValueError(
+            raise EndpointConfigError(
                 f'Unable to parse ({self.config_path}): {e!s}.',
             ) from None
 
@@ -217,7 +220,7 @@ class EndpointDir:
         # name in the configuration must match it.
         dir_name = os.path.basename(os.path.normpath(self.path))
         if config.name != dir_name:
-            raise ValueError(
+            raise EndpointConfigError(
                 f'The endpoint name in {self.config_path} ({config.name}) '
                 f'does not match the name of the directory ({dir_name}). '
                 'Rename the directory or change the name in the '
@@ -280,15 +283,14 @@ class EndpointDir:
         endpoint, if the configuration exists.
 
         Raises:
-            FileNotFoundError: If the secret key file does not exist.
-            ValueError: If the secret key file is malformed or does not
-                match the ID in the configuration.
+            EndpointConfigError: If the secret key file does not exist, is
+                malformed, or does not match the ID in the configuration.
         """
         try:
             with open(self.secret_key_path, 'rb') as f:
                 data = f.read()
         except FileNotFoundError:
-            raise FileNotFoundError(
+            raise EndpointConfigError(
                 f'Endpoint directory {self.path} does not contain a secret '
                 'key. Remove the endpoint and configure it again with '
                 '"proxystore-endpoint configure".',
@@ -296,14 +298,14 @@ class EndpointDir:
         try:
             secret_key = SecretKey(data)
         except ValueError:
-            raise ValueError(
+            raise EndpointConfigError(
                 f'Secret key file at {self.secret_key_path} is malformed.',
             ) from None
 
         if os.path.exists(self.config_path):
             config = self.read_config()
             if secret_key.endpoint_id != config.id:
-                raise ValueError(
+                raise EndpointConfigError(
                     f'The endpoint ID in the configuration ({config.id}) '
                     'does not match the secret key '
                     f'({secret_key.endpoint_id}) in {self.path}.',
@@ -358,8 +360,8 @@ class EndpointDir:
         Raises:
             FileNotFoundError: If the connection file does not exist (e.g.,
                 because the endpoint is not running).
-            ValueError: If the connection file is malformed or has an
-                unsupported format version.
+            EndpointConfigError: If the connection file is malformed or has
+                an unsupported format version.
         """
         with open(self.connection_path, 'rb') as f:
             contents = f.read()
@@ -369,11 +371,14 @@ class EndpointDir:
             data = None
         info: ConnectionInfo | None = None
         if isinstance(data, dict):
-            check_format_version(
-                data.get('version'),
-                CONNECTION_VERSION,
-                f'connection file at {self.connection_path}',
-            )
+            try:
+                check_format_version(
+                    data.get('version'),
+                    CONNECTION_VERSION,
+                    f'connection file at {self.connection_path}',
+                )
+            except ValueError as e:
+                raise EndpointConfigError(str(e)) from None
             with contextlib.suppress(TypeError, KeyError, ValueError):
                 info = ConnectionInfo(
                     host=data['host'],
@@ -391,7 +396,7 @@ class EndpointDir:
             or not isinstance(info.hostname, str)
             or not isinstance(info.pid, int)
         ):
-            raise ValueError(
+            raise EndpointConfigError(
                 f'Connection file at {self.connection_path} is malformed.',
             )
         return info

@@ -30,7 +30,7 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
-from proxystore.endpoint.peers import PeerExistsError
+from proxystore.endpoint.exceptions import PeerExistsError
 from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)

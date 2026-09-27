@@ -25,6 +25,9 @@ except ImportError as e:  # pragma: no cover
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import PeerConnectionError
+from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
@@ -33,9 +36,6 @@ from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
 from proxystore.p2p.addrs import PeerAddrCache
-from proxystore.p2p.exceptions import PeerConnectionError
-from proxystore.p2p.exceptions import PeerConnectionTimeoutError
-from proxystore.p2p.exceptions import PeerNotAllowedError
 from proxystore.serialize import BytesLike
 from proxystore.utils.tasks import spawn_guarded_background_task
 
@@ -152,7 +152,7 @@ class PeerManager:
     The manager only communicates with peers in the allowlist. Connections
     from other endpoints are refused, and requests to other endpoints fail
     with
-    [`PeerNotAllowedError`][proxystore.p2p.exceptions.PeerNotAllowedError].
+    [`PeerNotAllowedError`][proxystore.endpoint.exceptions.PeerNotAllowedError].
     The allowlist is checked for changes on each connection and request, and
     connections to peers removed from the allowlist are closed.
 

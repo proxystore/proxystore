@@ -11,13 +11,13 @@ from unittest import mock
 import iroh
 import pytest
 
+from proxystore.endpoint.exceptions import PeerConnectionError
+from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
 from proxystore.p2p.addrs import PeerAddrCache
-from proxystore.p2p.exceptions import PeerConnectionError
-from proxystore.p2p.exceptions import PeerConnectionTimeoutError
-from proxystore.p2p.exceptions import PeerNotAllowedError
 from proxystore.p2p.manager import _closed_with
 from proxystore.p2p.manager import CloseCode
 from proxystore.p2p.manager import PathInfo

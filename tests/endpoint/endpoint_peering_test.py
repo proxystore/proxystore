@@ -9,6 +9,7 @@ import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Op
@@ -86,7 +87,7 @@ async def test_remote_not_allowed(endpoints) -> None:
     ep1, ep2 = endpoints
     assert ep1.peer_manager is not None
     os.remove(ep1.peer_manager._allowlist.path)
-    with pytest.raises(PeerRequestError, match='not in the allowlist'):
+    with pytest.raises(PeerNotAllowedError, match='not in the allowlist'):
         await ep1.get('key', endpoint=ep2.id)
 
 
@@ -159,5 +160,5 @@ async def test_ping_not_allowed(endpoints) -> None:
     ep1, ep2 = endpoints
     assert ep2.peer_manager is not None
     os.remove(ep2.peer_manager._allowlist.path)
-    with pytest.raises(PeerRequestError, match='refused the connection'):
+    with pytest.raises(PeerNotAllowedError, match='refused the connection'):
         await ep1.ping(ep2.id)

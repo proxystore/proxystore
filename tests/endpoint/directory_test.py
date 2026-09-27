@@ -16,6 +16,10 @@ from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
+from proxystore.endpoint.exceptions import EndpointConfigError
+from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointExistsError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.identity import SecretKey
 
 
@@ -63,7 +67,7 @@ def test_restrict_permissions_secret_key(tmp_path: pathlib.Path) -> None:
 
 def test_secret_key_read_write(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(EndpointConfigError):
         endpoint_dir.read_secret_key()
 
     secret_key = SecretKey.generate()
@@ -277,7 +281,7 @@ def test_read_secret_key_mismatch(tmp_path: pathlib.Path) -> None:
 def test_read_secret_key_missing(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
     os.remove(endpoint_dir.secret_key_path)
-    with pytest.raises(FileNotFoundError, match='configure it again'):
+    with pytest.raises(EndpointConfigError, match='configure it again'):
         endpoint_dir.read_secret_key()
 
 
@@ -290,3 +294,25 @@ def test_resolve_path(tmp_path: pathlib.Path) -> None:
     assert endpoint_dir.resolve_path('~/blobs.db') == os.path.expanduser(
         '~/blobs.db',
     )
+
+
+def test_errors_are_endpoint_errors(tmp_path: pathlib.Path) -> None:
+    # Errors are EndpointErrors and the equivalent built-in exception
+    with pytest.raises(EndpointNotFoundError) as not_found:
+        EndpointDir.from_name('missing', str(tmp_path)).read_config()
+    assert isinstance(not_found.value, EndpointError)
+    assert isinstance(not_found.value, FileNotFoundError)
+
+    EndpointDir.create('ep', str(tmp_path), port=1234)
+    with pytest.raises(EndpointExistsError) as exists:
+        EndpointDir.create('ep', str(tmp_path), port=1234)
+    assert isinstance(exists.value, EndpointError)
+    assert isinstance(exists.value, FileExistsError)
+
+    endpoint_dir = EndpointDir.from_name('ep', str(tmp_path))
+    with open(endpoint_dir.config_path, 'w') as f:
+        f.write('not toml')
+    with pytest.raises(EndpointConfigError) as invalid:
+        endpoint_dir.read_config()
+    assert isinstance(invalid.value, EndpointError)
+    assert isinstance(invalid.value, ValueError)

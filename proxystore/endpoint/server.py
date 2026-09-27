@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.exceptions import PeerError
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -535,7 +535,7 @@ class ClientHandler:
                 result = await self.endpoint.ping(ping.endpoint)
                 return Status.OK, result.to_meta(), None
             return await self._dispatch(op, request, data)
-        except PeerRequestError as e:
+        except PeerError as e:
             return Status.ERROR, {'error': str(e)}, None
         except ObjectSizeExceededError as e:
             return Status.TOO_LARGE, {'error': str(e)}, None

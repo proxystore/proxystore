@@ -160,8 +160,6 @@ class Endpoint:
         meta: dict[str, Any],
         data: bytes | bytearray | None = None,
     ) -> tuple[Status, dict[str, Any], bytes | bytearray]:
-        from proxystore.p2p.exceptions import PeerConnectionError
-
         assert self._peer_manager is not None
         logger.debug(
             '%s: sending %s request with meta=%s to %s',
@@ -170,17 +168,12 @@ class Endpoint:
             meta,
             endpoint,
         )
-        try:
-            code, meta, response_data = await self._peer_manager.request(
-                endpoint,
-                op,
-                meta,
-                data,
-            )
-        except PeerConnectionError as e:
-            raise PeerRequestError(
-                f'Request to peer {endpoint} failed: {e}',
-            ) from e
+        code, meta, response_data = await self._peer_manager.request(
+            endpoint,
+            op,
+            meta,
+            data,
+        )
 
         if code in (Status.OK, Status.NOT_FOUND):
             return Status(code), meta, response_data
@@ -253,7 +246,7 @@ class Endpoint:
         Raises:
             PeeringNotAvailableError: If `endpoint` is a different endpoint
                 and peering is not enabled.
-            PeerRequestError: If the request to a peer endpoint fails.
+            PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
             '%s: EVICT key=%s on endpoint=%s',
@@ -287,7 +280,7 @@ class Endpoint:
         Raises:
             PeeringNotAvailableError: If `endpoint` is a different endpoint
                 and peering is not enabled.
-            PeerRequestError: If the request to a peer endpoint fails.
+            PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
             '%s: EXISTS key=%s on endpoint=%s',
@@ -328,7 +321,7 @@ class Endpoint:
         Raises:
             PeeringNotAvailableError: If `endpoint` is a different endpoint
                 and peering is not enabled.
-            PeerRequestError: If the request to a peer endpoint fails.
+            PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
             '%s: GET key=%s on endpoint=%s',
@@ -365,7 +358,7 @@ class Endpoint:
                 the data exceeds that size.
             PeeringNotAvailableError: If `endpoint` is a different endpoint
                 and peering is not enabled.
-            PeerRequestError: If the request to a peer endpoint fails.
+            PeerError: If the request to a peer endpoint fails.
         """
         logger.debug(
             '%s: SET key=%s on endpoint=%s',
@@ -397,7 +390,7 @@ class Endpoint:
         Raises:
             PeeringNotAvailableError: If `endpoint` is a different endpoint
                 and peering is not enabled.
-            PeerRequestError: If the request to the peer endpoint fails.
+            PeerError: If the request to the peer endpoint fails.
         """
         if not self._is_peer_request(endpoint):
             return PingResult()

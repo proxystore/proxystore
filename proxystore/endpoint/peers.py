@@ -29,6 +29,7 @@ from pydantic import Field
 from pydantic import field_validator
 
 from proxystore.endpoint.config import validate_name
+from proxystore.endpoint.exceptions import PeerExistsError
 from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
@@ -98,10 +99,6 @@ class PeersConfig(BaseModel):
         return None
 
 
-class PeerExistsError(ValueError):
-    """A peer with the name already exists."""
-
-
 class Peers:
     """Peers of an endpoint stored in its `peers.toml` file.
 
@@ -130,7 +127,7 @@ class Peers:
             The peers or no peers if the file does not exist.
 
         Raises:
-            ValueError: If the file cannot be parsed or is invalid.
+            EndpointConfigError: If the file cannot be parsed or is invalid.
         """
         try:
             with open(self.path, 'rb') as f:

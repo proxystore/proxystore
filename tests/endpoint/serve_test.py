@@ -20,6 +20,7 @@ from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import running_endpoint
@@ -104,7 +105,7 @@ async def test_running_endpoint_missing_secret_key(
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     os.remove(endpoint_dir.secret_key_path)
-    with pytest.raises(FileNotFoundError, match='does not contain a secret'):
+    with pytest.raises(EndpointConfigError, match='does not contain a secret'):
         async with running_endpoint(endpoint_dir):
             pass  # pragma: no cover
 
