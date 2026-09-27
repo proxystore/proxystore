@@ -36,7 +36,7 @@ def _request(
 async def _handle(
     dispatcher: Dispatcher, *args: Any, **kwargs: Any
 ) -> Message:
-    return await dispatcher.handle(_request(*args, **kwargs), forward=True)
+    return await dispatcher.handle(_request(*args, **kwargs))
 
 
 @pytest.fixture
@@ -99,7 +99,7 @@ async def test_peering_disabled(dispatcher: Dispatcher, op: Op) -> None:
 
 
 async def test_bad_requests(dispatcher: Dispatcher) -> None:
-    response = await dispatcher.handle(Message(Op.GET, {}), forward=True)
+    response = await dispatcher.handle(Message(Op.GET, {}))
     assert response.code == Status.BAD_REQUEST
     assert "invalid 'key'" in response.meta['error']
 

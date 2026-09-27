@@ -16,8 +16,8 @@ response of the peer is returned unchanged except that the peer is named in
 an error message.
 
 To add an operation, add an [`Op`][proxystore.endpoint.protocol.Op], add
-it to `Dispatcher._LOCAL_OPS` and its case to `Dispatcher._handle_local()` in
-this module, and add a method to the
+its case to `Dispatcher._handle_local()` in this module, and add a method to
+the
 [`EndpointClient`][proxystore.endpoint.client.EndpointClient]. Requests
 for the operation are forwarded to peers without changes to this module.
 """
@@ -27,7 +27,6 @@ from __future__ import annotations
 import logging
 import time
 from typing import assert_never
-from typing import ClassVar
 
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -52,7 +51,7 @@ class Dispatcher:
         ```python
         dispatcher = Dispatcher(endpoint_id, MemoryStorage())
         request = Message(Op.SET, Request('key').to_meta(), b'value')
-        response = await dispatcher.handle(request, forward=True)
+        response = await dispatcher.handle(request)
         assert response.code == Status.OK
         ```
 
@@ -65,12 +64,6 @@ class Dispatcher:
             [`handle_peer_request()`][proxystore.endpoint.dispatch.Dispatcher.handle_peer_request]
             as its handler and for closing it.
     """
-
-    # Operations performed by an endpoint. The handshake ops are only valid
-    # before requests so they are unknown ops to the dispatcher.
-    _LOCAL_OPS: ClassVar[frozenset[Op]] = frozenset(
-        (Op.GET, Op.SET, Op.EXISTS, Op.EVICT, Op.PING),
-    )
 
     def __init__(
         self,
@@ -102,21 +95,21 @@ class Dispatcher:
         """Peer manager used to forward requests to peers."""
         return self._peer_manager
 
-    async def handle(self, request: Message, *, forward: bool) -> Message:
-        """Handle a request.
+    async def handle(self, request: Message) -> Message:
+        """Handle a request from a client.
+
+        A request whose target is another endpoint is forwarded to that
+        peer.
 
         Args:
             request: Request message.
-            forward: Allow the request to be forwarded to a peer endpoint.
-                Requests from clients can be forwarded but requests from
-                peers are never forwarded again.
 
         Returns:
             The response message. Errors are returned as responses rather \
             than raised (see
             [`Message.from_error()`][proxystore.endpoint.protocol.Message.from_error]).
         """
-        return await self._handle(request, source='client', forward=forward)
+        return await self._handle(request, source='client', forward=True)
 
     async def handle_peer_request(
         self,
@@ -144,7 +137,13 @@ class Dispatcher:
         source: str,
         forward: bool,
     ) -> Message:
-        if request.code not in self._LOCAL_OPS:
+        try:
+            op = Op(request.code)
+        except ValueError:
+            op = None
+        # The handshake ops are only valid before requests so they are
+        # unknown ops to the dispatcher.
+        if op is None or op in (Op.HELLO, Op.AUTH):
             logger.debug(
                 'Rejected request with unknown op %s from %s',
                 request.code,
@@ -154,7 +153,6 @@ class Dispatcher:
                 Status.BAD_REQUEST,
                 f'unknown op {request.code}',
             )
-        op = Op(request.code)
 
         try:
             meta = Request.from_meta(request.meta)

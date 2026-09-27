@@ -519,7 +519,7 @@ class ClientHandler:
                 return
 
             request = reader.message
-            response = await self.dispatcher.handle(request, forward=True)
+            response = await self.dispatcher.handle(request)
             await _send(
                 conn,
                 dataclasses.replace(response, request_id=request.request_id),
