@@ -75,7 +75,7 @@ def test_readable_to_bytes(value: str, expected: int) -> None:
 
 
 def test_readable_to_bytes_too_many_parts() -> None:
-    with pytest.raises(ValueError, match='value and a unit'):
+    with pytest.raises(ValueError, match='"1 B GB" must contain only'):
         readable_to_bytes('1 B GB')
 
     with pytest.raises(ValueError, match='value and a unit'):
