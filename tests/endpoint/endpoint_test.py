@@ -13,13 +13,17 @@ from unittest.mock import AsyncMock
 import iroh
 import pytest
 
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import PeerOptions
@@ -106,18 +110,65 @@ async def test_endpoint_secret_key_mismatch(
     assert not os.path.exists(endpoint_dir.connection_path)
 
 
-async def test_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
+async def test_endpoint_already_running(tmp_path: pathlib.Path) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     async with Endpoint(endpoint_dir):
         running = endpoint_dir.read_connection()
+        assert endpoint_dir.status() == EndpointStatus.RUNNING
         # A second instance fails to start without replacing or removing
         # the connection file of the running instance
-        with pytest.raises(OSError, match='address already in use'):
+        with pytest.raises(EndpointRunningError, match='already running'):
             async with Endpoint(endpoint_dir):
                 pass  # pragma: no cover
         assert endpoint_dir.read_connection() == running
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         await asyncio.to_thread(client.close)
+    assert endpoint_dir.status() == EndpointStatus.STOPPED
+
+
+async def test_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, config = _endpoint_dir(tmp_path)
+    other_dir, _ = write_endpoint(
+        str(tmp_path),
+        'other',
+        host='127.0.0.1',
+        port=config.port,
+    )
+    async with Endpoint(endpoint_dir):
+        with pytest.raises(OSError, match='address already in use'):
+            async with Endpoint(other_dir):
+                pass  # pragma: no cover
+    # The lock is released when start up fails
+    assert other_dir.status() == EndpointStatus.STOPPED
+    assert not os.path.exists(other_dir.connection_path)
+
+
+async def test_endpoint_running_elsewhere(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    info = ConnectionInfo(
+        host='10.0.0.1',
+        port=1234,
+        token=EndpointToken.generate(),
+        tls_fingerprint=None,
+        hostname='other',
+        pid=42,
+    )
+    endpoint_dir.write_connection(info)
+    with pytest.raises(EndpointRunningError, match='running on other'):
+        async with Endpoint(endpoint_dir):
+            pass  # pragma: no cover
+    assert endpoint_dir.read_connection() == info
+
+
+async def test_endpoint_replaces_stale_connection_file(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    with open(endpoint_dir.connection_path, 'w') as f:
+        f.write('left by a crashed endpoint')
+    assert endpoint_dir.status() == EndpointStatus.STALE
+    async with Endpoint(endpoint_dir) as endpoint:
+        assert endpoint_dir.read_connection() == endpoint.connection
 
 
 async def test_endpoint_start_up_failure_cleans_up(

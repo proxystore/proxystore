@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import logging
 import multiprocessing
 import os
 import pathlib
-import time
+import subprocess
+import sys
+import threading
 from collections.abc import Generator
 from unittest import mock
 
@@ -16,6 +19,7 @@ from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
+from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
@@ -67,7 +71,11 @@ def endpoint_dir(tmp_path: pathlib.Path) -> EndpointDir:
     return EndpointDir.create(_NAME, str(tmp_path), port=1234)
 
 
-def _write_connection(endpoint_dir: EndpointDir, hostname: str) -> None:
+def _write_connection(
+    endpoint_dir: EndpointDir,
+    hostname: str,
+    pid: int = 42,
+) -> None:
     endpoint_dir.write_connection(
         ConnectionInfo(
             host='10.0.0.1',
@@ -75,14 +83,34 @@ def _write_connection(endpoint_dir: EndpointDir, hostname: str) -> None:
             token=EndpointToken.generate(),
             tls_fingerprint=None,
             hostname=hostname,
-            pid=42,
+            pid=pid,
         ),
     )
 
 
-def _write_pid(endpoint_dir: EndpointDir, pid: int) -> None:
-    with open(endpoint_dir.pid_path, 'w') as f:
-        f.write(str(pid))
+@contextlib.contextmanager
+def _lock_holder(
+    endpoint_dir: EndpointDir,
+) -> Generator[subprocess.Popen[bytes], None, None]:
+    """Run a process which holds the lock of the endpoint like an endpoint."""
+    code = (
+        'import sys, time; '
+        'from proxystore.endpoint.directory import EndpointDir; '
+        f'EndpointDir({endpoint_dir.path!r}).lock().acquire(); '
+        'sys.stdout.write("locked\\n"); sys.stdout.flush(); '
+        'time.sleep(1000)'
+    )
+    process = subprocess.Popen(
+        [sys.executable, '-c', code],
+        stdout=subprocess.PIPE,
+    )
+    try:
+        assert process.stdout is not None
+        assert process.stdout.readline() == b'locked\n'
+        yield process
+    finally:
+        process.kill()
+        process.wait()
 
 
 @pytest.mark.usefixtures('_patch_hostname')
@@ -96,21 +124,13 @@ def test_start_endpoint(
     with open(endpoint_dir.config_path, 'rb') as f:
         before = f.read()
 
-    def _serve(*args, **kwargs) -> None:
-        # The PID file exists while the endpoint is served
-        assert endpoint_dir.running_pid() == os.getpid()
-
-    with mock.patch(
-        'proxystore.endpoint.process.serve',
-        side_effect=_serve,
-    ) as serve:
+    with mock.patch('proxystore.endpoint.process.serve') as serve:
         start_endpoint(endpoint_dir, log_level='DEBUG')
-    serve.assert_called_once()
+    serve.assert_called_once_with(endpoint_dir)
     configure_logging_mock.assert_called_once_with(
         'DEBUG',
         endpoint_dir.log_path,
     )
-    assert not os.path.exists(endpoint_dir.pid_path)
     # Starting the endpoint never modifies the configuration
     with open(endpoint_dir.config_path, 'rb') as f:
         assert f.read() == before
@@ -168,19 +188,17 @@ def test_start_endpoint_unresolvable_host(endpoint_dir: EndpointDir) -> None:
 
 
 @pytest.mark.usefixtures('_patch_hostname')
-def test_start_endpoint_old_pid_file(endpoint_dir: EndpointDir) -> None:
-    # A crashed endpoint leaves its PID and connection files behind
-    _write_pid(endpoint_dir, 1)
+def test_start_endpoint_stale_connection_file(
+    endpoint_dir: EndpointDir,
+) -> None:
+    # A crashed endpoint leaves its connection file behind
     _write_connection(endpoint_dir, utils.hostname())
-    with (
-        mock.patch(
-            'proxystore.endpoint.directory.is_own_process',
-            return_value=False,
-        ),
-        mock.patch('proxystore.endpoint.process.serve', autospec=True),
-    ):
+
+    def _serve(*args, **kwargs) -> None:
+        assert not os.path.exists(endpoint_dir.connection_path)
+
+    with mock.patch('proxystore.endpoint.process.serve', side_effect=_serve):
         start_endpoint(endpoint_dir)
-    assert not os.path.exists(endpoint_dir.pid_path)
 
 
 @pytest.mark.usefixtures('_patch_hostname')
@@ -189,51 +207,48 @@ def test_endpoint_running_elsewhere(
     action: str,
     endpoint_dir: EndpointDir,
 ) -> None:
-    _write_pid(endpoint_dir, 1)
     _write_connection(endpoint_dir, 'other-machine')
     func = start_endpoint if action == 'start' else stop_endpoint
-    with (
-        mock.patch(
-            'proxystore.endpoint.directory.is_own_process',
-            return_value=False,
-        ),
-        pytest.raises(
-            EndpointRunningError,
-            match=r'running on other-machine \(PID 42\)',
-        ),
+    with pytest.raises(
+        EndpointRunningError,
+        match=r'running on other-machine \(PID 42\)',
     ):
         func(endpoint_dir)
-    # The PID file is not removed
-    assert os.path.exists(endpoint_dir.pid_path)
+    # The connection file is not removed
+    assert os.path.exists(endpoint_dir.connection_path)
 
 
-@pytest.mark.timeout(5)
+@pytest.mark.timeout(10)
 def test_stop_endpoint(endpoint_dir: EndpointDir) -> None:
-    # Create a fake process to kill
-    context = multiprocessing.get_context('spawn')
-    process = context.Process(target=time.sleep, args=(1000,))
-    process.start()
-    assert process.pid is not None
-    _write_pid(endpoint_dir, process.pid)
-
-    assert stop_endpoint(endpoint_dir)
-    assert not os.path.exists(endpoint_dir.pid_path)
-    # Process was terminated so this should happen immediately
-    process.join()
+    with _lock_holder(endpoint_dir) as process:
+        _write_connection(endpoint_dir, utils.hostname(), pid=process.pid)
+        assert stop_endpoint(endpoint_dir)
+        # The process was terminated and reaped by stop_endpoint()
+        assert not is_own_process(process.pid)
+    assert not os.path.exists(endpoint_dir.connection_path)
+    assert endpoint_dir.status() == EndpointStatus.STOPPED
 
 
 def test_stop_endpoint_not_running(endpoint_dir: EndpointDir) -> None:
     assert not stop_endpoint(endpoint_dir)
 
 
-def test_stop_endpoint_dangling_pid_file(endpoint_dir: EndpointDir) -> None:
-    _write_pid(endpoint_dir, 1)
-    with mock.patch(
-        'proxystore.endpoint.directory.is_own_process',
-        return_value=False,
-    ):
-        assert not stop_endpoint(endpoint_dir)
-    assert not os.path.exists(endpoint_dir.pid_path)
+def test_stop_endpoint_stale_connection_file(
+    endpoint_dir: EndpointDir,
+) -> None:
+    _write_connection(endpoint_dir, utils.hostname())
+    assert not stop_endpoint(endpoint_dir)
+    assert not os.path.exists(endpoint_dir.connection_path)
+
+
+def test_stop_endpoint_starting(endpoint_dir: EndpointDir) -> None:
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    try:
+        with pytest.raises(EndpointRunningError, match='still starting'):
+            stop_endpoint(endpoint_dir)
+    finally:
+        lock.release()
 
 
 def test_stop_endpoint_does_not_exist(tmp_path: pathlib.Path) -> None:
@@ -343,3 +358,41 @@ def test_configure_logging(tmp_path: pathlib.Path) -> None:
     log_file = os.path.join(tmp_path, 'log-dir', 'log2.txt')
     configure_logging('INFO', log_file)
     assert os.path.exists(log_file)
+
+
+@pytest.mark.timeout(15)
+def test_serve_then_stop_endpoint(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = write_endpoint(
+        str(tmp_path),
+        'my-endpoint',
+        host='127.0.0.1',
+    )
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(
+        target=serve,
+        args=(endpoint_dir,),
+        kwargs={'use_uvloop': False},
+    )
+    process.start()
+    try:
+        wait_for_endpoint(endpoint_dir)
+        assert endpoint_dir.status() == EndpointStatus.RUNNING
+        with pytest.raises(EndpointRunningError, match='already running'):
+            start_endpoint(endpoint_dir)
+        # Stop the endpoint from another process, like the CLI, because
+        # stop_endpoint() reaps the endpoint if it is a child process.
+        code = (
+            'from proxystore.endpoint.directory import EndpointDir; '
+            'from proxystore.endpoint.process import stop_endpoint; '
+            f'assert stop_endpoint(EndpointDir({endpoint_dir.path!r}))'
+        )
+        # The endpoint is reaped as soon as it exits or it would be a zombie
+        # which stop_endpoint() waits on until its timeout.
+        reaper = threading.Thread(target=process.join)
+        reaper.start()
+        subprocess.run([sys.executable, '-c', code], check=True, timeout=10)
+        reaper.join(timeout=5)
+        assert process.exitcode == 0
+        assert endpoint_dir.status() == EndpointStatus.STOPPED
+    finally:
+        terminate_process(process)

@@ -451,17 +451,13 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
         'Unable to find the connection file of the endpoint in '
         f'{endpoint_dir}.'
     )
-    pid = endpoint_dir.running_pid()
-    if pid is None:
-        return f'{message} Is the endpoint running?'
-    # Endpoints started with older versions of ProxyStore (which used an
-    # HTTP API) never write a connection file.
-    return (
-        f'{message} The endpoint process (PID {pid}) is running, so the '
-        'endpoint is either still starting or was started with an older '
-        'version of ProxyStore. Restart the endpoint with the same version '
-        f'of ProxyStore as the client. See {VERSION_DOCS_URL} for details.'
-    )
+    if endpoint_dir.lock().is_locked():
+        # The endpoint holds its lock before it writes its connection file.
+        return (
+            f'{message} The endpoint is running but has not written its '
+            'connection file so it is likely still starting.'
+        )
+    return f'{message} Is the endpoint running?'
 
 
 def _parse_target(target: str | None) -> EndpointId | None:

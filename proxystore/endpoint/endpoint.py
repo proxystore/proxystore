@@ -58,11 +58,13 @@ class Endpoint:
     which reads the endpoint directory, and it reads the configuration and
     secret key once each time it starts.
 
-    Once started, the endpoint is accepting client connections and its
-    connection file is in the endpoint directory. When stopped, the
-    connection file is removed, client connections are closed, the peer
-    manager is closed, and the storage is closed. An endpoint can be started
-    again after it is stopped.
+    Once started, the endpoint holds the lock of its directory (see
+    [`EndpointDir.lock()`][proxystore.endpoint.directory.EndpointDir.lock]),
+    is accepting client connections, and its connection file is in the
+    endpoint directory. When stopped, the connection file is removed, client
+    connections are closed, the peer manager is closed, the storage is
+    closed, and the lock is released. An endpoint can be started again after
+    it is stopped.
 
     Example:
         ```python
@@ -168,6 +170,8 @@ class Endpoint:
 
         Raises:
             RuntimeError: If the endpoint is already running.
+            EndpointRunningError: If another instance of the endpoint is
+                running on this host or may be running on another host.
             EndpointNotFoundError: If the configuration does not exist.
             EndpointConfigError: If the configuration is invalid or the ID in
                 the configuration does not match the secret key.
@@ -199,6 +203,15 @@ class Endpoint:
     async def _start(self, stack: contextlib.AsyncExitStack) -> None:
         endpoint_dir = self.endpoint_dir
         config = endpoint_dir.read_config()
+        # The lock is held for as long as the endpoint runs so the status of
+        # the endpoint can be checked by other processes.
+        lock = endpoint_dir.lock()
+        lock.acquire()
+        stack.callback(lock.release)
+        # A connection file from this host was left by an endpoint which
+        # stopped unexpectedly and will be replaced.
+        endpoint_dir.check_not_running_elsewhere()
+
         # The resolved host is only written to the connection file; the
         # configuration is never modified by a running endpoint.
         host = resolve_host(config.host)

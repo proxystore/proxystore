@@ -38,6 +38,24 @@ If you see an error similar to:
 ```
 Try changing `host = "fqdn"` to `host = "ip"` in the `config.toml` file in the endpoint directory.
 
+### Check the Endpoint Status
+The `proxystore-endpoint list` command shows the status of each endpoint.
+
+* `RUNNING`: The endpoint is running. A running endpoint holds a lock on the
+  `endpoint.lock` file in its directory which the operating system releases
+  when the endpoint exits, even if it crashes.
+* `STOPPED`: The endpoint is not running.
+* `STALE`: The endpoint stopped unexpectedly (e.g., it was killed) and left
+  its `connection.json` file behind. Starting or stopping the endpoint
+  removes the file. Check the endpoint log for errors.
+* `OTHER_HOST`: The endpoint was started on another machine which shares
+  the ProxyStore home directory and may still be running there.
+* `UNKNOWN`: The endpoint directory or configuration is missing or invalid.
+
+If the file system of the ProxyStore home directory does not support file
+locks, the endpoint logs a warning and its status is determined from the
+process ID in its `connection.json` file instead.
+
 ### Monitor the Endpoint
 Debug level logging can be enabled when starting the endpoint, and
 the endpoint can be run directly in the terminal instead of as a daemon process
@@ -82,9 +100,8 @@ with EndpointClient.from_name('myendpoint') as client:
 * **Unable to find the connection file of the endpoint**: The endpoint is
   not running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
-  If the error says the endpoint process is running, the endpoint was likely
-  started with an older version of ProxyStore. Restart it with
-  `proxystore-endpoint stop NAME` and `proxystore-endpoint start NAME`.
+  If the error says the endpoint is still starting, try again once it has
+  started and check the endpoint log if the error persists.
 * **The endpoint failed to prove that it knows the endpoint token**: The
   endpoint was restarted while the client was connecting, or a different
   process is listening on the endpoint's address (e.g., after the endpoint
@@ -109,7 +126,7 @@ with EndpointClient.from_name('myendpoint') as client:
 * **Endpoint ... appears to be running on ...**: The endpoint was started on
   a different machine that shares the ProxyStore home directory. Stop the
   endpoint on that machine. If it is no longer running, delete the
-  `daemon.pid` file in the endpoint directory.
+  `connection.json` file in the endpoint directory.
 
 ## Test a Remote Endpoint
 

@@ -4,10 +4,12 @@
 [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] in the current process
 until it receives a signal.
 [`start_endpoint()`][proxystore.endpoint.process.start_endpoint] runs an
-endpoint in its own process, optionally as a daemon, and records its PID in
-the `daemon.pid` file of its directory. These functions manage that process
-and raise [`EndpointError`][proxystore.endpoint.exceptions.EndpointError]
-subclasses on failure.
+endpoint in this process or as a daemon, and
+[`stop_endpoint()`][proxystore.endpoint.process.stop_endpoint] stops the
+process of a running endpoint using the PID in its connection file. These
+functions raise
+[`EndpointError`][proxystore.endpoint.exceptions.EndpointError] subclasses
+on failure.
 
 Note:
     This module requires the `endpoints` extra.
@@ -21,12 +23,10 @@ import logging
 import os
 import signal
 import time
-from collections.abc import Generator
 
-import daemon.pidfile
+import daemon
 import uvloop
 
-from proxystore import utils
 from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
@@ -63,14 +63,17 @@ def start_endpoint(
         EndpointRunningError: If the endpoint is already running on this or
             another host.
     """
+    # These checks are repeated by the endpoint when it starts but are
+    # checked first so errors are raised to the caller rather than only
+    # written to the log of a daemon.
     status = _status(endpoint_dir)
     if status == EndpointStatus.RUNNING:
         raise EndpointRunningError(
             f'Endpoint {_name(endpoint_dir)} is already running.',
         )
+    if status == EndpointStatus.OTHER_HOST:
+        endpoint_dir.check_not_running_elsewhere()
 
-    # Resolve the host before daemonizing so errors are raised to the
-    # caller rather than only written to the log.
     host = endpoint_dir.read_config().host
     try:
         resolve_host(host)
@@ -79,10 +82,12 @@ def start_endpoint(
             f'Unable to resolve the host address ({host}): {e}',
         ) from e
 
-    if status == EndpointStatus.HANGING:
-        _check_not_running_elsewhere(endpoint_dir)
-        logger.debug('Removing invalid PID file (%s)', endpoint_dir.pid_path)
-        os.remove(endpoint_dir.pid_path)
+    if status == EndpointStatus.STALE:
+        logger.debug(
+            'Removing stale connection file (%s)',
+            endpoint_dir.connection_path,
+        )
+        endpoint_dir.remove_connection()
 
     context: contextlib.AbstractContextManager[object]
     if detach:
@@ -91,12 +96,11 @@ def start_endpoint(
         context = daemon.DaemonContext(
             working_directory=endpoint_dir.path,
             umask=0o077,
-            pidfile=daemon.pidfile.PIDLockFile(endpoint_dir.pid_path),
             detach_process=True,
             # Note: stdin, stdout, stderr left as None which binds to /dev/null
         )
     else:
-        context = _attached_pid_manager(endpoint_dir.pid_path)
+        context = contextlib.nullcontext()
 
     with context:
         # Logging is configured after daemonizing because the daemon closes
@@ -186,11 +190,15 @@ async def _serve_async(endpoint_dir: EndpointDir) -> None:
             loop.remove_signal_handler(sig)
 
 
-def stop_endpoint(endpoint_dir: EndpointDir) -> bool:
+def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
     """Stop an endpoint running on this host.
+
+    The endpoint is sent SIGTERM and killed if it does not exit within
+    `timeout` seconds.
 
     Args:
         endpoint_dir: Directory of the endpoint to stop.
+        timeout: Seconds to wait for the endpoint to exit.
 
     Returns:
         `True` if the endpoint was running and was stopped, or `False` if \
@@ -198,29 +206,50 @@ def stop_endpoint(endpoint_dir: EndpointDir) -> bool:
 
     Raises:
         EndpointNotFoundError: If the endpoint does not exist.
-        EndpointRunningError: If the endpoint is running on another host.
+        EndpointRunningError: If the endpoint may be running on another host
+            or is still starting.
     """
     status = _status(endpoint_dir)
     if status == EndpointStatus.STOPPED:
         return False
-    if status == EndpointStatus.HANGING:
-        _check_not_running_elsewhere(endpoint_dir)
-        logger.debug('Removing invalid PID file (%s)', endpoint_dir.pid_path)
-        os.remove(endpoint_dir.pid_path)
+    if status == EndpointStatus.OTHER_HOST:
+        endpoint_dir.check_not_running_elsewhere()
+    if status == EndpointStatus.STALE:
+        logger.debug(
+            'Removing stale connection file (%s)',
+            endpoint_dir.connection_path,
+        )
+        endpoint_dir.remove_connection()
         return False
 
-    pid = endpoint_dir.running_pid()
-    assert pid is not None
-    logger.debug('Terminating endpoint process (PID: %s)', pid)
+    try:
+        info = endpoint_dir.read_connection()
+    except FileNotFoundError:
+        raise EndpointRunningError(
+            f'Endpoint {_name(endpoint_dir)} is running but has not written '
+            'its connection file so it is likely still starting. Try again '
+            'once it has started.',
+        ) from None
+    # The lock may be visible to other hosts on some file systems.
+    endpoint_dir.check_not_running_elsewhere()
+
+    logger.debug('Terminating endpoint process (PID: %s)', info.pid)
     with contextlib.suppress(ProcessLookupError):
-        os.kill(pid, signal.SIGTERM)
+        os.kill(info.pid, signal.SIGTERM)
 
-    if not _wait_for_exit(pid, timeout=1):  # pragma: no cover
+    if not _wait_for_exit(info.pid, timeout=timeout):  # pragma: no cover
+        logger.warning(
+            'Killing endpoint process (PID: %s) which did not exit within '
+            '%s seconds',
+            info.pid,
+            timeout,
+        )
         with contextlib.suppress(ProcessLookupError):
-            os.kill(pid, signal.SIGKILL)
+            os.kill(info.pid, signal.SIGKILL)
 
-    with contextlib.suppress(FileNotFoundError):
-        os.remove(endpoint_dir.pid_path)
+    # The endpoint removes its connection file when it stops unless it was
+    # killed.
+    endpoint_dir.remove_connection(info)
     return True
 
 
@@ -239,40 +268,6 @@ def _status(endpoint_dir: EndpointDir) -> EndpointStatus:
             )
         endpoint_dir.read_config()
     return status
-
-
-def _check_not_running_elsewhere(endpoint_dir: EndpointDir) -> None:
-    """Check that the endpoint is not running on a different machine.
-
-    The PID file only identifies a process on the machine that wrote it, so
-    the connection file of the running endpoint is used to find the machine.
-
-    Raises:
-        EndpointRunningError: If the endpoint is running on another host.
-    """
-    try:
-        info = endpoint_dir.read_connection()
-    except (FileNotFoundError, ValueError):
-        return
-    if info.hostname == utils.hostname():
-        return
-    raise EndpointRunningError(
-        f'Endpoint {_name(endpoint_dir)} appears to be running on '
-        f'{info.hostname} (PID {info.pid}). Stop the endpoint on '
-        f'{info.hostname}. If it is not running, delete the PID file at '
-        f'{endpoint_dir.pid_path} and try again.',
-    )
-
-
-@contextlib.contextmanager
-def _attached_pid_manager(pid_file: str) -> Generator[None, None, None]:
-    """Context manager that writes and cleans up a PID file."""
-    with open(pid_file, 'w') as f:
-        f.write(str(os.getpid()))
-    try:
-        yield
-    finally:
-        os.remove(pid_file)
 
 
 def _wait_for_exit(pid: int, timeout: float) -> bool:

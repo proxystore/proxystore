@@ -393,12 +393,15 @@ def test_from_dir_not_running(tmp_path: pathlib.Path) -> None:
 def test_from_dir_running_without_connection_file(
     tmp_path: pathlib.Path,
 ) -> None:
-    # E.g., the endpoint was started with an older version of ProxyStore
+    # The endpoint holds its lock while it is starting
     endpoint_dir = _write_config(tmp_path)
-    with open(endpoint_dir.pid_path, 'w') as f:
-        f.write(str(os.getpid()))
-    with pytest.raises(EndpointNotRunningError, match='older version'):
-        EndpointClient.from_dir(endpoint_dir)
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    try:
+        with pytest.raises(EndpointNotRunningError, match='still starting'):
+            EndpointClient.from_dir(endpoint_dir)
+    finally:
+        lock.release()
 
 
 def test_from_dir_unreadable_connection_file(tmp_path: pathlib.Path) -> None:

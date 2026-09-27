@@ -5,11 +5,13 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import enum
+import errno
 import logging
 import os
 import random
 import shutil
 import stat
+import sys
 from typing import Any
 from typing import Self
 
@@ -33,8 +35,16 @@ from proxystore.endpoint.peers import Peers
 from proxystore.utils.config import dump
 from proxystore.utils.config import load
 from proxystore.utils.environment import home_dir
+from proxystore.utils.environment import hostname
+
+if sys.platform != 'win32':  # pragma: no branch
+    import fcntl
 
 logger = logging.getLogger(__name__)
+
+_LOCK_UNSUPPORTED_ERRNOS = frozenset(
+    (errno.ENOLCK, errno.ENOSYS, errno.EOPNOTSUPP, errno.EINVAL),
+)
 
 CONNECTION_VERSION = 1
 """Format version of the connection file."""
@@ -75,20 +85,138 @@ class ConnectionInfo(BaseModel):
 
 
 class EndpointStatus(enum.Enum):
-    """Endpoint status."""
+    """Status of an endpoint.
+
+    See
+    [`EndpointDir.status()`][proxystore.endpoint.directory.EndpointDir.status].
+    """
 
     RUNNING = enum.auto()
-    """Endpoint is running on this host."""
+    """Endpoint is running."""
     STOPPED = enum.auto()
-    """Endpoint is stopped."""
+    """Endpoint is not running."""
+    STALE = enum.auto()
+    """Endpoint on this host stopped without removing its connection file.
+
+    This happens if the endpoint process was killed or crashed. Starting or
+    stopping the endpoint removes the stale connection file.
+    """
+    OTHER_HOST = enum.auto()
+    """Endpoint was started on another host and may still be running there.
+
+    The connection file was written by an endpoint on another host which
+    shares the endpoint directory. Whether the endpoint is still running on
+    that host cannot be checked from this host.
+    """
     UNKNOWN = enum.auto()
     """Endpoint cannot be found (missing/corrupted directory)."""
-    HANGING = enum.auto()
-    """Endpoint PID file exists but process is not active.
 
-    This is either because the process died unexpectedly or the endpoint
-    is running on another host.
+
+class EndpointLock:
+    """Advisory lock held by a running endpoint.
+
+    A running endpoint holds an exclusive lock (see
+    [`fcntl.flock()`][fcntl.flock]) on the lock file in its directory for as
+    long as it runs. The operating system releases the lock when the process
+    exits, even if the process crashes, so the lock reliably shows if the
+    endpoint is running on this host. Whether the lock is also visible to
+    other hosts depends on the file system of the endpoint directory.
+
+    Some file systems (e.g., some network or parallel file systems) do not
+    support locks. Then, acquiring the lock always succeeds,
+    [`supported`][proxystore.endpoint.directory.EndpointLock.supported] is
+    `False`, and the status of the endpoint is determined from the PID in
+    its connection file instead.
+
+    Args:
+        path: Path of the lock file.
     """
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+        self.supported = sys.platform != 'win32'
+        self._fd: int | None = None
+
+    @property
+    def held(self) -> bool:
+        """This lock object holds the lock."""
+        return self._fd is not None
+
+    def acquire(self) -> None:
+        """Acquire the lock without waiting.
+
+        Raises:
+            RuntimeError: If this lock object already holds the lock.
+            EndpointRunningError: If another process (or another lock object
+                in this process) holds the lock.
+        """
+        if self._fd is not None:
+            raise RuntimeError('The lock is already held.')
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            if self._flock(fd) is False:
+                raise EndpointRunningError(
+                    'Endpoint '
+                    f'{os.path.basename(os.path.dirname(self.path))} is '
+                    f'already running (its lock {self.path} is held by '
+                    'another process).',
+                )
+        except BaseException:
+            os.close(fd)
+            raise
+        self._fd = fd
+
+    def release(self) -> None:
+        """Release the lock if it is held."""
+        if self._fd is None:
+            return
+        fd, self._fd = self._fd, None
+        if self.supported:  # pragma: no branch
+            with contextlib.suppress(OSError):
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+    def is_locked(self) -> bool | None:
+        """Check if the lock is held.
+
+        Returns:
+            `True` if the lock is held by any lock object, `False` if the \
+            lock is not held, or `None` if locks are not supported.
+        """
+        try:
+            fd = os.open(self.path, os.O_RDWR)
+        except FileNotFoundError:
+            return False if self.supported else None
+        try:
+            acquired = self._flock(fd)
+            if acquired is None:
+                return None
+            if acquired:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            return not acquired
+        finally:
+            os.close(fd)
+
+    def _flock(self, fd: int) -> bool | None:
+        # Returns if the lock was acquired or None if locks are unsupported.
+        if not self.supported:  # pragma: no cover
+            return None
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        except OSError as e:
+            if e.errno not in _LOCK_UNSUPPORTED_ERRNOS:
+                raise
+            logger.warning(
+                'The file system of %s does not support locks so the status '
+                'of the endpoint is determined from its PID: %s',
+                self.path,
+                e,
+            )
+            self.supported = False
+            return None
+        return True
 
 
 @dataclasses.dataclass(frozen=True)
@@ -312,9 +440,16 @@ class EndpointDir:
         return self._join('log.txt')
 
     @property
-    def pid_path(self) -> str:
-        """Path to the PID file of the endpoint daemon."""
-        return self._join('daemon.pid')
+    def lock_path(self) -> str:
+        """Path to the lock file held by the running endpoint."""
+        return self._join('endpoint.lock')
+
+    def lock(self) -> EndpointLock:
+        """Get the lock held by the running endpoint.
+
+        See [`EndpointLock`][proxystore.endpoint.directory.EndpointLock].
+        """
+        return EndpointLock(self.lock_path)
 
     @property
     def secret_key_path(self) -> str:
@@ -434,64 +569,82 @@ class EndpointDir:
         with contextlib.suppress(FileNotFoundError):
             os.remove(self.connection_path)
 
-    def running_pid(self) -> int | None:
-        """Get the PID of the endpoint daemon if it is running.
+    def check_not_running_elsewhere(self) -> None:
+        """Check that the endpoint is not running on a different host.
 
-        Returns:
-            The PID in the PID file if that process is running as the \
-            current user on this host, otherwise `None` (e.g., the PID file \
-            is missing or malformed, the endpoint stopped unexpectedly, or \
-            the endpoint is running on a different host).
+        The connection file records the host the endpoint was started on.
+
+        Raises:
+            EndpointRunningError: If the connection file was written by an
+                endpoint on another host.
         """
         try:
-            with open(self.pid_path) as f:
-                pid = int(f.read().strip())
-        except (OSError, ValueError):
-            return None
-        return pid if is_own_process(pid) else None
+            info = self.read_connection()
+        except (OSError, EndpointConfigError):
+            # The file does not exist or cannot be read so it is never used.
+            return
+        if info.hostname == hostname():
+            return
+        name = os.path.basename(self.path)
+        raise EndpointRunningError(
+            f'Endpoint {name} appears to be running on {info.hostname} '
+            f'(PID {info.pid}). Stop the endpoint on {info.hostname}. If it '
+            'is not running, delete the connection file at '
+            f'{self.connection_path} and try again.',
+        )
 
     def status(self) -> EndpointStatus:
         """Get the status of the endpoint.
 
+        The endpoint is running if it holds its lock (see
+        [`lock()`][proxystore.endpoint.directory.EndpointDir.lock]). If the
+        file system does not support locks, the endpoint is running if the
+        process in its connection file is running on this host.
+
         Returns:
-            `EndpointStatus.RUNNING` if the endpoint has a valid \
-            configuration and the PID file points to a running process. \
-            `EndpointStatus.STOPPED` if the endpoint has a valid \
-            configuration and no PID file. \
-            `EndpointStatus.UNKNOWN` if the directory or configuration is \
-            missing or invalid. \
-            `EndpointStatus.HANGING` if the endpoint has a valid \
-            configuration but the PID file does not point to a running \
-            process. This can be due to the endpoint process dying \
-            unexpectedly or the endpoint process is on a different host.
+            The status of the endpoint.
         """
         if not os.path.isdir(self.path):
             return EndpointStatus.UNKNOWN
         try:
             self.read_config()
         except (FileNotFoundError, ValueError) as e:
-            logger.error(e)
+            logger.debug('Unable to read endpoint configuration: %s', e)
             return EndpointStatus.UNKNOWN
-        if not os.path.isfile(self.pid_path):
-            return EndpointStatus.STOPPED
-        if self.running_pid() is not None:
+
+        locked = self.lock().is_locked()
+        if locked:
             return EndpointStatus.RUNNING
-        return EndpointStatus.HANGING
+        try:
+            info = self.read_connection()
+        except FileNotFoundError:
+            return EndpointStatus.STOPPED
+        except (OSError, EndpointConfigError):
+            # A connection file which cannot be read is never used.
+            return EndpointStatus.STALE
+        if info.hostname != hostname():
+            return EndpointStatus.OTHER_HOST
+        if locked is None and is_own_process(info.pid):
+            return EndpointStatus.RUNNING
+        return EndpointStatus.STALE
 
     def remove(self) -> None:
         """Remove the endpoint directory and all of its files.
 
         Raises:
             EndpointNotFoundError: If the endpoint directory does not exist.
-            EndpointRunningError: If the endpoint is running or its PID file
-                exists (e.g., because it is running on another host).
+            EndpointRunningError: If the endpoint is running or may be
+                running on another host.
         """
         if not os.path.isdir(self.path):
             raise EndpointNotFoundError(
                 f'An endpoint named {os.path.basename(self.path)} does not '
                 f'exist in {os.path.dirname(self.path)}.',
             )
-        if self.status() in (EndpointStatus.RUNNING, EndpointStatus.HANGING):
+        status = self.status()
+        if status == EndpointStatus.OTHER_HOST:
+            self.check_not_running_elsewhere()
+        if status == EndpointStatus.RUNNING:
             raise EndpointRunningError(
                 f'Endpoint {os.path.basename(self.path)} must be stopped '
                 'before it is removed.',

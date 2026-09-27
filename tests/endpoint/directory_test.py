@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import json
 import os
 import pathlib
@@ -14,6 +15,7 @@ import pytest
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointLock
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
@@ -23,6 +25,7 @@ from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.identity import SecretKey
+from proxystore.utils.environment import hostname
 
 
 def test_endpoint_dir_paths() -> None:
@@ -32,7 +35,9 @@ def test_endpoint_dir_paths() -> None:
     paths = [
         endpoint_dir.config_path,
         endpoint_dir.log_path,
-        endpoint_dir.pid_path,
+        endpoint_dir.lock_path,
+        endpoint_dir.peers_path,
+        endpoint_dir.peer_addrs_path,
         endpoint_dir.connection_path,
         endpoint_dir.secret_key_path,
     ]
@@ -201,23 +206,82 @@ def test_is_own_process() -> None:
         assert not is_own_process(os.getpid())
 
 
-def test_running_pid(tmp_path: pathlib.Path) -> None:
+def test_lock(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    assert endpoint_dir.running_pid() is None
+    lock = endpoint_dir.lock()
+    assert lock.path == endpoint_dir.lock_path
+    assert not lock.held
+    # The lock file does not exist yet
+    assert lock.is_locked() is False
 
-    with open(endpoint_dir.pid_path, 'w') as f:
-        f.write('not-a-pid')
-    assert endpoint_dir.running_pid() is None
+    lock.acquire()
+    assert lock.held
+    assert stat.S_IMODE(os.stat(lock.path).st_mode) == 0o600
+    # The lock conflicts with other lock objects, even in this process
+    other = endpoint_dir.lock()
+    assert other.is_locked()
+    with pytest.raises(EndpointRunningError, match='already running'):
+        other.acquire()
+    assert not other.held
+    with pytest.raises(RuntimeError, match='already held'):
+        lock.acquire()
 
-    with open(endpoint_dir.pid_path, 'w') as f:
-        f.write(f'{os.getpid()}\n')
-    assert endpoint_dir.running_pid() == os.getpid()
+    lock.release()
+    assert not lock.held
+    assert other.is_locked() is False
+    other.acquire()
+    other.release()
+    # Releasing a lock which is not held is a no-op
+    other.release()
 
-    with mock.patch(
-        'proxystore.endpoint.directory.is_own_process',
-        return_value=False,
+
+def test_lock_released_when_process_exits(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    code = (
+        'import sys; '
+        'from proxystore.endpoint.directory import EndpointDir; '
+        f'EndpointDir({str(tmp_path)!r}).lock().acquire(); '
+        'sys.stdout.write("locked\\n"); sys.stdout.flush(); '
+        'sys.stdin.read()'
+    )
+    process = subprocess.Popen(
+        [sys.executable, '-c', code],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
+    assert process.stdout is not None
+    assert process.stdout.readline() == b'locked\n'
+    assert endpoint_dir.lock().is_locked()
+    process.kill()
+    process.wait()
+    assert endpoint_dir.lock().is_locked() is False
+
+
+@pytest.mark.parametrize('errno_', (errno.ENOLCK, errno.EOPNOTSUPP))
+def test_lock_unsupported(
+    errno_: int,
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    lock = endpoint_dir.lock()
+    with mock.patch('fcntl.flock', side_effect=OSError(errno_, 'no locks')):
+        lock.acquire()
+        assert lock.held
+        assert not lock.supported
+        assert endpoint_dir.lock().is_locked() is None
+    lock.release()
+    assert any('does not support locks' in r.message for r in caplog.records)
+
+
+def test_lock_error(tmp_path: pathlib.Path) -> None:
+    lock = EndpointDir(str(tmp_path)).lock()
+    with (
+        mock.patch('fcntl.flock', side_effect=OSError(errno.EIO, 'io')),
+        pytest.raises(OSError, match='io'),
     ):
-        assert endpoint_dir.running_pid() is None
+        lock.acquire()
+    assert not lock.held
 
 
 def test_create(tmp_path: pathlib.Path) -> None:
@@ -318,46 +382,64 @@ def test_errors_are_endpoint_errors(tmp_path: pathlib.Path) -> None:
     assert isinstance(invalid.value, ValueError)
 
 
-def test_status(tmp_path: pathlib.Path, caplog) -> None:
+def test_status_unknown(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(os.path.join(tmp_path, 'ep'))
-    assert not os.path.isdir(endpoint_dir)
-
     # Returns UNKNOWN if directory does not exist
     assert endpoint_dir.status() == EndpointStatus.UNKNOWN
-
-    os.makedirs(endpoint_dir, exist_ok=True)
-
     # Returns UNKNOWN if config is not readable
+    os.makedirs(endpoint_dir)
     assert endpoint_dir.status() == EndpointStatus.UNKNOWN
 
-    with mock.patch.object(EndpointDir, 'read_config', return_value=None):
-        # Returns STOPPED if PID file does not exist
+
+def test_status(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    assert endpoint_dir.status() == EndpointStatus.STOPPED
+
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    # The endpoint holds its lock before writing its connection file
+    assert endpoint_dir.status() == EndpointStatus.RUNNING
+    endpoint_dir.write_connection(_connection_info(hostname=hostname()))
+    assert endpoint_dir.status() == EndpointStatus.RUNNING
+    lock.release()
+
+    # The endpoint stopped without removing its connection file
+    assert endpoint_dir.status() == EndpointStatus.STALE
+    with open(endpoint_dir.connection_path, 'w') as f:
+        f.write('not json')
+    assert endpoint_dir.status() == EndpointStatus.STALE
+
+    endpoint_dir.write_connection(_connection_info(hostname='other'))
+    assert endpoint_dir.status() == EndpointStatus.OTHER_HOST
+
+
+def test_status_locks_unsupported(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    with mock.patch.object(EndpointLock, 'is_locked', return_value=None):
         assert endpoint_dir.status() == EndpointStatus.STOPPED
 
-        with open(endpoint_dir.pid_path, 'w') as f:
-            f.write('0')
-
+        info = _connection_info(hostname=hostname(), pid=os.getpid())
+        endpoint_dir.write_connection(info)
+        # The PID of the connection file is used instead of the lock
+        assert endpoint_dir.status() == EndpointStatus.RUNNING
         with mock.patch(
-            'proxystore.endpoint.directory.is_own_process'
-        ) as mock_exists:
-            # Return RUNNING if PID exists
-            mock_exists.return_value = True
-            assert endpoint_dir.status() == EndpointStatus.RUNNING
+            'proxystore.endpoint.directory.is_own_process',
+            return_value=False,
+        ):
+            assert endpoint_dir.status() == EndpointStatus.STALE
 
-            # Return HANGING if PID does not exists
-            mock_exists.return_value = False
-            assert endpoint_dir.status() == EndpointStatus.HANGING
 
-        # Return HANGING if PID was reused by another user's process
-        with open(endpoint_dir.pid_path, 'w') as f:
-            f.write('1234')
-        with mock.patch('os.kill', side_effect=PermissionError):
-            assert endpoint_dir.status() == EndpointStatus.HANGING
-
-        # Return HANGING rather than raising if the PID file is malformed
-        with open(endpoint_dir.pid_path, 'w') as f:
-            f.write('not a pid')
-        assert endpoint_dir.status() == EndpointStatus.HANGING
+def test_check_not_running_elsewhere(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    endpoint_dir.check_not_running_elsewhere()
+    endpoint_dir.write_connection(_connection_info(hostname=hostname()))
+    endpoint_dir.check_not_running_elsewhere()
+    endpoint_dir.write_connection(_connection_info(hostname='other', pid=7))
+    with pytest.raises(
+        EndpointRunningError,
+        match=r'running on other \(PID 7\)',
+    ):
+        endpoint_dir.check_not_running_elsewhere()
 
 
 def test_remove(tmp_path: pathlib.Path) -> None:
@@ -368,20 +450,31 @@ def test_remove(tmp_path: pathlib.Path) -> None:
         endpoint_dir.remove()
 
 
-@pytest.mark.parametrize(
-    'status',
-    (EndpointStatus.RUNNING, EndpointStatus.HANGING),
-)
-def test_remove_running(
-    status: EndpointStatus, tmp_path: pathlib.Path
-) -> None:
+def test_remove_running(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
-    with (
-        mock.patch.object(EndpointDir, 'status', return_value=status),
-        pytest.raises(EndpointRunningError, match='must be stopped'),
-    ):
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    try:
+        with pytest.raises(EndpointRunningError, match='must be stopped'):
+            endpoint_dir.remove()
+    finally:
+        lock.release()
+    assert os.path.exists(endpoint_dir.path)
+
+
+def test_remove_running_elsewhere(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    endpoint_dir.write_connection(_connection_info(hostname='other'))
+    with pytest.raises(EndpointRunningError, match='running on other'):
         endpoint_dir.remove()
     assert os.path.exists(endpoint_dir.path)
+
+
+def test_remove_stale(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    endpoint_dir.write_connection(_connection_info(hostname=hostname()))
+    endpoint_dir.remove()
+    assert not os.path.exists(endpoint_dir.path)
 
 
 def test_create_random_port(tmp_path: pathlib.Path) -> None:
