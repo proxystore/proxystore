@@ -89,12 +89,12 @@ enabled = true  # (6)!
 relays = "n0"  # (7)!
 
 [storage]
-database_path = "~/.local/share/proxystore/my-endpoint/blobs.db"  # (8)!
+database_path = "blobs.db"  # (8)!
 max_object_size = 10000000  # (9)!
 ```
 
-1. Human-readable name of this endpoint. Only used for logging and CLI
-   operations.
+1. Human-readable name of this endpoint. Must match the name of the
+   endpoint directory.
 2. Unique identifier of this endpoint. This is the public key of the
    endpoint's secret key and must match the key in `secret.key`.
 3. Change the default port if running multiple endpoints on the same system.
@@ -107,7 +107,9 @@ max_object_size = 10000000  # (9)!
 6. Enable communication with peer endpoints. If `false`, the endpoint
    operates in isolation. Configure with `--no-peering` to disable peering.
 7. Relays used to connect to peers. See [Relays](#relays).
-8. Optional path to a SQLite database for persisting endpoint objects. See
+8. Optional path to a SQLite database for persisting endpoint objects. A
+   relative path is relative to the endpoint directory. Use an absolute path
+   to store a large database elsewhere, such as a parallel file system. See
    the tip below for more details.
 9. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to `0`
    to disable object size limits.

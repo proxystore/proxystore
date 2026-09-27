@@ -23,6 +23,7 @@ from typing import Literal
 import daemon.pidfile
 
 from proxystore import utils
+from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
@@ -125,8 +126,7 @@ def configure_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-    database_path = endpoint_dir.database_path if persist_data else None
+    database_path = DEFAULT_DATABASE_PATH if persist_data else None
 
     host_addr: str | None = None
     host_type: Literal['fqdn', 'ip', 'static']

@@ -711,3 +711,16 @@ def test_peer_commands_default_home(tmp_path: pathlib.Path) -> None:
         return_value=str(tmp_path),
     ):
         assert get_endpoint_id('missing') == 1
+
+
+def test_configure_endpoint_persist(tmp_path: pathlib.Path) -> None:
+    rv = configure_endpoint(
+        _NAME,
+        port=_PORT,
+        persist_data=True,
+        proxystore_dir=str(tmp_path),
+    )
+    assert rv == 0
+    config = EndpointDir.from_name(_NAME, str(tmp_path)).read_config()
+    # Relative to the endpoint directory so the directory can be moved
+    assert config.storage.database_path == 'blobs.db'

@@ -271,3 +271,23 @@ async def test_running_endpoint_peering_addr_cache(
         assert endpoint.peer_manager._addr_cache is not None
         path = endpoint.peer_manager._addr_cache.path
         assert path == endpoint_dir.peer_addrs_path
+
+
+@pytest.mark.parametrize('relative', (True, False))
+async def test_running_endpoint_database_path(
+    relative: bool,
+    tmp_path: pathlib.Path,
+) -> None:
+    other = tmp_path / 'lustre'
+    other.mkdir()
+    path = 'blobs.db' if relative else str(other / 'blobs.db')
+    storage = EndpointStorageConfig(database_path=path)
+    endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
+    async with running_endpoint(endpoint_dir) as endpoint:
+        await endpoint.set('key', b'value')
+    expected = (
+        os.path.join(endpoint_dir.path, 'blobs.db')
+        if relative
+        else str(other / 'blobs.db')
+    )
+    assert os.path.isfile(expected)

@@ -61,9 +61,14 @@ def _create_peer_manager(
     return PeerManager.from_endpoint_dir(endpoint_dir)
 
 
-def _create_storage(config: EndpointConfig) -> Storage:
+def _create_storage(
+    endpoint_dir: EndpointDir,
+    config: EndpointConfig,
+) -> Storage:
     database_path = config.storage.database_path
     if database_path is not None:
+        if database_path != ':memory:':
+            database_path = endpoint_dir.resolve_path(database_path)
         logger.info(
             'Using SQLite database for storage (path: %s)',
             database_path,
@@ -131,7 +136,7 @@ async def running_endpoint(
                 name=config.name,
                 endpoint_id=config.id,
                 peer_manager=_create_peer_manager(endpoint_dir, config),
-                storage=_create_storage(config),
+                storage=_create_storage(endpoint_dir, config),
             ),
         )
 

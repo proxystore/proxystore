@@ -23,7 +23,6 @@ def test_endpoint_dir_paths() -> None:
 
     paths = [
         endpoint_dir.config_path,
-        endpoint_dir.database_path,
         endpoint_dir.log_path,
         endpoint_dir.pid_path,
         endpoint_dir.connection_path,
@@ -237,3 +236,14 @@ def test_read_secret_key_missing(tmp_path: pathlib.Path) -> None:
     os.remove(endpoint_dir.secret_key_path)
     with pytest.raises(FileNotFoundError, match='configure it again'):
         endpoint_dir.read_secret_key()
+
+
+def test_resolve_path(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path / 'my-ep'))
+    assert endpoint_dir.resolve_path('blobs.db') == str(
+        tmp_path / 'my-ep' / 'blobs.db',
+    )
+    assert endpoint_dir.resolve_path('/lustre/blobs.db') == '/lustre/blobs.db'
+    assert endpoint_dir.resolve_path('~/blobs.db') == os.path.expanduser(
+        '~/blobs.db',
+    )

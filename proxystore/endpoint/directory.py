@@ -170,12 +170,13 @@ class EndpointDir:
 
         Raises:
             FileNotFoundError: If the configuration file does not exist.
-            ValueError: If the configuration contains an invalid value or
-                cannot be parsed.
+            ValueError: If the configuration contains an invalid value,
+                cannot be parsed, or the name of the endpoint does not match
+                the name of the directory.
         """
         try:
             with open(self.config_path, 'rb') as f:
-                return load(EndpointConfig, f)
+                config = load(EndpointConfig, f)
         except FileNotFoundError:
             raise FileNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
@@ -186,6 +187,18 @@ class EndpointDir:
             raise ValueError(
                 f'Unable to parse ({self.config_path}): {e!s}.',
             ) from None
+
+        # The directory name is used to find an endpoint by name, so the
+        # name in the configuration must match it.
+        dir_name = os.path.basename(os.path.normpath(self.path))
+        if config.name != dir_name:
+            raise ValueError(
+                f'The endpoint name in {self.config_path} ({config.name}) '
+                f'does not match the name of the directory ({dir_name}). '
+                'Rename the directory or change the name in the '
+                'configuration so they match.',
+            )
+        return config
 
     def write_config(self, config: EndpointConfig) -> None:
         """Write the endpoint configuration, creating the directory if needed.
@@ -204,10 +217,14 @@ class EndpointDir:
         """Path to the endpoint configuration."""
         return self._join('config.toml')
 
-    @property
-    def database_path(self) -> str:
-        """Path to the default SQLite database for persisting objects."""
-        return self._join('blobs.db')
+    def resolve_path(self, path: str) -> str:
+        """Resolve a path in the configuration of the endpoint.
+
+        `~` is expanded to the user's home directory, and a relative path
+        is relative to the endpoint directory.
+        """
+        path = os.path.expanduser(path)
+        return path if os.path.isabs(path) else self._join(path)
 
     @property
     def log_path(self) -> str:

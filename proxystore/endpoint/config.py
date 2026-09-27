@@ -16,6 +16,8 @@ from proxystore.endpoint.identity import EndpointId
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
+DEFAULT_DATABASE_PATH = 'blobs.db'
+"""Default path of the database, relative to the endpoint directory."""
 
 
 class EndpointStorageConfig(BaseModel):
@@ -24,7 +26,10 @@ class EndpointStorageConfig(BaseModel):
     Attributes:
         database_path: Optional path to SQLite database file that will be used
             for storing endpoint data. If `None`, data will only be stored
-            in-memory.
+            in-memory. A relative path is relative to the endpoint directory
+            and an absolute path can be used to store the database elsewhere
+            (e.g., on a larger file system). `~` is expanded to the user's
+            home directory.
         max_object_size: Maximum object size in bytes. If `0`, there is no
             limit on object sizes.
     """

@@ -17,11 +17,11 @@ from proxystore.endpoint.identity import EndpointId
 
 
 def test_write_read_config(tmp_path: pathlib.Path) -> None:
-    tmp_dir = os.path.join(tmp_path, 'config-dir')
+    tmp_dir = os.path.join(tmp_path, 'my-ep')
     assert not os.path.exists(tmp_dir)
 
     cfg = EndpointConfig(
-        name='name',
+        name='my-ep',
         id=EndpointId.random(),
         host='host',
         port=1234,
@@ -199,6 +199,16 @@ def test_p2p_config_round_trip(tmp_path: pathlib.Path) -> None:
         port=1234,
         p2p=EndpointP2PConfig(relays=['https://relay.example.com']),
     )
-    endpoint_dir = EndpointDir(str(tmp_path))
+    endpoint_dir = EndpointDir(str(tmp_path / 'name'))
     endpoint_dir.write_config(config)
     assert endpoint_dir.read_config() == config
+
+
+def test_read_config_name_mismatch(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
+    config = endpoint_dir.read_config()
+    endpoint_dir.write_config(config.model_copy(update={'name': 'other'}))
+    with pytest.raises(ValueError, match='does not match the name of the'):
+        endpoint_dir.read_config()
+    # Endpoints with an invalid configuration are not found
+    assert EndpointDir.find_all(str(tmp_path)) == []
