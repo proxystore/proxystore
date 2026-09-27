@@ -394,6 +394,8 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
             port=port,
             token=TOKEN,
             tls_fingerprint=None,
+            hostname='machine',
+            pid=42,
         ),
     )
     with EndpointClient.from_name('test', proxystore_dir=str(tmp_path)) as c:

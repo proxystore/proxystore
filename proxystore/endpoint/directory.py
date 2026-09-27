@@ -15,6 +15,7 @@ from typing import Self
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Peers
@@ -23,6 +24,9 @@ from proxystore.utils.config import load
 from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
+
+CONNECTION_VERSION = 1
+"""Format version of the connection file."""
 
 
 class EndpointStatus(enum.Enum):
@@ -338,10 +342,13 @@ class EndpointDir:
         endpoint's token.
         """
         data = {
+            'version': CONNECTION_VERSION,
             'host': info.host,
             'port': info.port,
             'token': info.token.hex(),
             'tls_fingerprint': info.tls_fingerprint,
+            'hostname': info.hostname,
+            'pid': info.pid,
         }
         write_private_file(self.connection_path, json.dumps(data).encode())
 
@@ -351,25 +358,38 @@ class EndpointDir:
         Raises:
             FileNotFoundError: If the connection file does not exist (e.g.,
                 because the endpoint is not running).
-            ValueError: If the connection file is malformed.
+            ValueError: If the connection file is malformed or has an
+                unsupported format version.
         """
         with open(self.connection_path, 'rb') as f:
             contents = f.read()
         try:
             data = json.loads(contents)
-            info = ConnectionInfo(
-                host=data['host'],
-                port=data['port'],
-                token=EndpointToken.from_hex(data['token']),
-                tls_fingerprint=data['tls_fingerprint'],
+        except ValueError:
+            data = None
+        info: ConnectionInfo | None = None
+        if isinstance(data, dict):
+            check_format_version(
+                data.get('version'),
+                CONNECTION_VERSION,
+                f'connection file at {self.connection_path}',
             )
-        except (TypeError, KeyError, ValueError):
-            info = None
+            with contextlib.suppress(TypeError, KeyError, ValueError):
+                info = ConnectionInfo(
+                    host=data['host'],
+                    port=data['port'],
+                    token=EndpointToken.from_hex(data['token']),
+                    tls_fingerprint=data['tls_fingerprint'],
+                    hostname=data['hostname'],
+                    pid=data['pid'],
+                )
         if (
             info is None
             or not isinstance(info.host, str)
             or not isinstance(info.port, int)
             or not isinstance(info.tls_fingerprint, (str, type(None)))
+            or not isinstance(info.hostname, str)
+            or not isinstance(info.pid, int)
         ):
             raise ValueError(
                 f'Connection file at {self.connection_path} is malformed.',

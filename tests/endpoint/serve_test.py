@@ -25,6 +25,7 @@ from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
 from proxystore.p2p.manager import relay_options
+from proxystore.utils.environment import hostname
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
 from testing.endpoint import write_endpoint
@@ -148,11 +149,30 @@ async def test_running_endpoint_start_up_failure_cleans_up(
     mock_close.assert_awaited_once()
 
 
-async def test_running_endpoint_not_started(tmp_path: pathlib.Path) -> None:
-    endpoint_dir, _ = _endpoint_dir(tmp_path, host=None)
-    with pytest.raises(ValueError, match='host'):
+@pytest.mark.parametrize(
+    ('host', 'expected'),
+    (('127.0.0.1', '127.0.0.1'), ('ip', '127.0.0.1'), ('fqdn', 'localhost')),
+)
+async def test_running_endpoint_resolves_host(
+    host: str,
+    expected: str,
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path, host=host)
+    with open(endpoint_dir.config_path, 'rb') as f:
+        before = f.read()
+    with (
+        mock.patch('socket.gethostbyname', return_value='127.0.0.1'),
+        mock.patch('socket.getfqdn', return_value='localhost'),
+    ):
         async with running_endpoint(endpoint_dir):
-            pass  # pragma: no cover
+            info = endpoint_dir.read_connection()
+            assert info.host == expected
+            assert info.hostname == hostname()
+            assert info.pid == os.getpid()
+    # The configuration is never modified by the endpoint
+    with open(endpoint_dir.config_path, 'rb') as f:
+        assert f.read() == before
 
 
 @pytest.mark.timeout(10)

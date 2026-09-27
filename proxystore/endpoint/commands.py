@@ -14,7 +14,6 @@ import os
 import random
 import shutil
 import signal
-import socket
 import time
 from collections.abc import Generator
 from typing import Literal
@@ -26,6 +25,7 @@ from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
@@ -69,15 +69,8 @@ def configure_endpoint(
     """
     database_path = DEFAULT_DATABASE_PATH if persist_data else None
 
-    host_addr: str | None = None
-    host_type: Literal['fqdn', 'ip', 'static']
-    if host.lower().strip() == 'fqdn':
-        host_type = 'fqdn'
-    elif host.lower().strip() == 'ip':
-        host_type = 'ip'
-    else:
-        host_addr = host
-        host_type = 'static'
+    if host.lower().strip() in ('ip', 'fqdn'):
+        host = host.lower().strip()
 
     port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
@@ -85,9 +78,8 @@ def configure_endpoint(
         endpoint_dir = EndpointDir.create(
             name,
             proxystore_dir,
-            host=host_addr,
+            host=host,
             port=port,
-            host_type=host_type,
             tls=tls,
             p2p=EndpointP2PConfig(
                 enabled=peering,
@@ -251,50 +243,22 @@ def start_endpoint(
         return 1
 
     endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-    cfg = endpoint_dir.read_config()
-
-    if cfg.host_type == 'fqdn':
-        hostname = socket.getfqdn()
-    elif cfg.host_type == 'ip':
-        hostname = socket.gethostbyname(utils.hostname())
-    elif cfg.host_type == 'static' and cfg.host is None:
-        path = endpoint_dir.config_path
-        logger.error('Missing static host address in config.')
-        logger.error(
-            'Set the `host` field or change the `host_type` to '
-            '"ip" or "fqdn" in the config.',
-        )
-        logger.error('  Config: %s', path)
-        return 1
-    elif cfg.host_type == 'static' and cfg.host is not None:
-        hostname = cfg.host
-    else:
-        raise AssertionError('Unreachable.')
-
     pid_file = endpoint_dir.pid_path
 
-    if (
-        status == EndpointStatus.HANGING
-        and cfg.host is not None
-        and hostname != cfg.host
-    ):
-        logger.error(
-            'A PID file exists for the endpoint, but the config indicates the '
-            'endpoint is running on a host named %s. Try stopping '
-            'the endpoint on %s. Otherwise, delete the PID file at '
-            '%s and try again.',
-            cfg.host,
-            cfg.host,
-            pid_file,
-        )
+    # Resolve the host before daemonizing so errors are shown to the user
+    # rather than only written to the log.
+    host = endpoint_dir.read_config().host
+    try:
+        resolve_host(host)
+    except OSError as e:
+        logger.error('Unable to resolve the host address (%s): %s', host, e)
         return 1
+
     if status == EndpointStatus.HANGING:
+        if _running_elsewhere(endpoint_dir):
+            return 1
         logger.debug('Removing invalid PID file (%s).', pid_file)
         os.remove(pid_file)
-
-    # Write out new config with host so clients can see the current host
-    cfg.host = hostname
-    endpoint_dir.write_config(cfg)
 
     log_file = endpoint_dir.log_path
 
@@ -346,24 +310,9 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         return 0
 
     endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-    cfg = endpoint_dir.read_config()
-    hostname = utils.hostname()
     pid_file = endpoint_dir.pid_path
 
-    if (
-        status == EndpointStatus.HANGING
-        and cfg.host is not None
-        and hostname != cfg.host
-    ):
-        logger.error(
-            'A PID file exists for the endpoint, but the config indicates the '
-            'endpoint is running on a host named %s. Try stopping '
-            'the endpoint on %s. Otherwise, delete the PID file at '
-            '%s and try again.',
-            cfg.host,
-            cfg.host,
-            pid_file,
-        )
+    if status == EndpointStatus.HANGING and _running_elsewhere(endpoint_dir):
         return 1
     if status == EndpointStatus.HANGING:
         logger.debug('Removing invalid PID file (%s).', pid_file)
@@ -389,6 +338,32 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
 
     logger.info('Endpoint %s has been stopped.', name)
     return 0
+
+
+def _running_elsewhere(endpoint_dir: EndpointDir) -> bool:
+    """Check if the endpoint appears to be running on a different machine.
+
+    The PID file only identifies a process on the machine that wrote it, so
+    the connection file of the running endpoint is used to find the machine.
+    An error is logged if the endpoint is running elsewhere.
+    """
+    try:
+        info = endpoint_dir.read_connection()
+    except (FileNotFoundError, ValueError):
+        return False
+    if info.hostname == utils.hostname():
+        return False
+    logger.error(
+        'Endpoint %s appears to be running on %s (PID %s). Stop the '
+        'endpoint on %s. If it is not running, delete the PID file at %s '
+        'and try again.',
+        os.path.basename(endpoint_dir.path),
+        info.hostname,
+        info.pid,
+        info.hostname,
+        endpoint_dir.pid_path,
+    )
+    return True
 
 
 @contextlib.contextmanager

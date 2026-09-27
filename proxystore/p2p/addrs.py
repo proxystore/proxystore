@@ -20,6 +20,9 @@ from proxystore.endpoint.identity import EndpointId
 
 logger = logging.getLogger(__name__)
 
+ADDR_CACHE_VERSION = 1
+"""Format version of the peer address cache file."""
+
 
 class PeerAddrCache:
     """Cache of peer addresses stored in a JSON file.
@@ -60,10 +63,22 @@ class PeerAddrCache:
             return {}
 
         addrs: dict[EndpointId, iroh.EndpointAddr] = {}
-        if not isinstance(data, dict):
+        if not isinstance(data, dict) or not isinstance(
+            data.get('peers'),
+            dict,
+        ):
             logger.warning('Ignoring malformed peer address cache %s', path)
             return addrs
-        for key, value in data.items():
+        if data.get('version') != ADDR_CACHE_VERSION:
+            # The cache is only an optimization so it is safe to ignore.
+            logger.warning(
+                'Ignoring peer address cache %s with unsupported format '
+                'version %r',
+                path,
+                data.get('version'),
+            )
+            return addrs
+        for key, value in data['peers'].items():
             try:
                 addrs[EndpointId.from_str(key)] = _decode_addr(key, value)
             except (TypeError, ValueError, iroh.IrohError):
@@ -80,13 +95,14 @@ class PeerAddrCache:
         Args:
             addrs: Mapping of peer IDs to addresses.
         """
-        data = {
+        peers = {
             peer_id: {
                 'relay_url': addr.relay_url(),
                 'addresses': addr.direct_addresses(),
             }
             for peer_id, addr in sorted(addrs.items())
         }
+        data = {'version': ADDR_CACHE_VERSION, 'peers': peers}
         write_private_file(self.path, json.dumps(data, indent=2).encode())
 
 

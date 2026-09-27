@@ -27,12 +27,14 @@ from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
+from proxystore.utils.environment import hostname
 
 if TYPE_CHECKING:
     from proxystore.p2p.manager import PeerManager
@@ -114,14 +116,14 @@ async def running_endpoint(
 
     Raises:
         FileNotFoundError: If the configuration or secret key does not exist.
-        ValueError: If the configuration is invalid, the host is not set
-            in the configuration, or the ID in the configuration does not
-            match the secret key.
+        ValueError: If the configuration is invalid or the ID in the
+            configuration does not match the secret key.
         OSError: If the endpoint cannot listen on its host and port.
     """
     config = endpoint_dir.read_config()
-    if config.host is None:
-        raise ValueError('EndpointConfig has NoneType as host.')
+    # The resolved host is only written to the connection file; the
+    # configuration is never modified by a running endpoint.
+    host = resolve_host(config.host)
     # Fail before starting if the secret key is missing or does not match
     # the configuration.
     endpoint_dir.read_secret_key()
@@ -163,7 +165,7 @@ async def running_endpoint(
             max_object_size=config.storage.object_size_limit,
         )
         server = await handler.start_server(
-            config.host,
+            host,
             config.port,
             ssl_context=ssl_context,
         )
@@ -174,10 +176,12 @@ async def running_endpoint(
         # endpoint is using the port) does not replace or remove the
         # connection file of the running instance.
         connection = ConnectionInfo(
-            host=config.host,
+            host=host,
             port=config.port,
             token=token,
             tls_fingerprint=tls_fingerprint,
+            hostname=hostname(),
+            pid=os.getpid(),
         )
         endpoint_dir.write_connection(connection)
         stack.callback(endpoint_dir.remove_connection, connection)
@@ -185,7 +189,7 @@ async def running_endpoint(
             'Serving endpoint %s (%s) on %s:%s',
             endpoint.id,
             endpoint.name,
-            config.host,
+            host,
             config.port,
         )
         logger.info('Config: %s', config)

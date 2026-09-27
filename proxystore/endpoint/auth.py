@@ -53,12 +53,16 @@ class ConnectionInfo(NamedTuple):
         token: Token that the client and endpoint prove they know.
         tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
             certificate or `None` if the endpoint does not use TLS.
+        hostname: Name of the machine the endpoint is running on.
+        pid: Process ID of the endpoint on that machine.
     """
 
     host: str
     port: int
     token: EndpointToken
     tls_fingerprint: str | None
+    hostname: str
+    pid: int
 
 
 class EndpointToken:

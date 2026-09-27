@@ -5,12 +5,15 @@ import pathlib
 import stat
 import uuid
 from typing import Any
+from unittest import mock
 
 import pytest
 
+from proxystore.endpoint.config import CONFIG_VERSION
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.identity import EndpointId
@@ -212,3 +215,39 @@ def test_read_config_name_mismatch(tmp_path: pathlib.Path) -> None:
         endpoint_dir.read_config()
     # Endpoints with an invalid configuration are not found
     assert EndpointDir.find_all(str(tmp_path)) == []
+
+
+def _options(**kwargs: Any) -> dict[str, Any]:
+    return {'name': 'name', 'id': EndpointId.random(), 'port': 1234, **kwargs}
+
+
+def test_config_version() -> None:
+    assert EndpointConfig(**_options()).version == CONFIG_VERSION
+    with pytest.raises(ValueError, match='only supports version 1'):
+        EndpointConfig(**_options(version=2))
+
+
+@pytest.mark.parametrize(
+    'extra',
+    ({'host_type': 'ip'}, {'storage': {'database': 'x'}}),
+)
+def test_config_unknown_fields(extra: dict[str, Any]) -> None:
+    with pytest.raises(ValueError, match='Extra inputs are not permitted'):
+        EndpointConfig(**_options(**extra))
+
+
+def test_config_host() -> None:
+    assert EndpointConfig(**_options()).host == 'ip'
+    assert EndpointConfig(**_options(host=' 10.0.0.1 ')).host == '10.0.0.1'
+    with pytest.raises(ValueError, match='Host must be'):
+        EndpointConfig(**_options(host=' '))
+
+
+def test_resolve_host() -> None:
+    with (
+        mock.patch('socket.gethostbyname', return_value='10.0.0.1'),
+        mock.patch('socket.getfqdn', return_value='node.example.com'),
+    ):
+        assert resolve_host('ip') == '10.0.0.1'
+        assert resolve_host('fqdn') == 'node.example.com'
+        assert resolve_host('10.0.0.2') == '10.0.0.2'

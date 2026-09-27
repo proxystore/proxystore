@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import socket
 from typing import Any
 from typing import Literal
 
@@ -12,12 +13,16 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 
+from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.identity import EndpointId
+from proxystore.utils.environment import hostname
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
 DEFAULT_DATABASE_PATH = 'blobs.db'
 """Default path of the database, relative to the endpoint directory."""
+CONFIG_VERSION = 1
+"""Format version of the endpoint configuration file."""
 
 
 class EndpointStorageConfig(BaseModel):
@@ -33,6 +38,8 @@ class EndpointStorageConfig(BaseModel):
         max_object_size: Maximum object size in bytes. If `0`, there is no
             limit on object sizes.
     """
+
+    model_config = ConfigDict(extra='forbid')
 
     database_path: str | None = None
     max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
@@ -96,13 +103,14 @@ class EndpointConfig(BaseModel):
     """Endpoint configuration.
 
     Attributes:
-        name: Endpoint name.
+        version: Format version of the configuration.
+        name: Endpoint name. Must match the name of the endpoint directory.
         id: Endpoint ID. This is the public key of the endpoint's secret key
             which is stored separately in the endpoint directory.
-        host: Host endpoint is running on.
-        host_type: Type of host address to use. If `"ip"` or `"fqdn"`, the
-            host is determined when the endpoint starts. If `"static"`, the
-            `host` field is used.
+        host: Address clients use to connect to the endpoint. `"ip"` or
+            `"fqdn"` use the IP address or fully-qualified domain name of the
+            host, determined each time the endpoint starts. Any other value
+            is used as a static address (e.g., `"127.0.0.1"`).
         port: Port endpoint is running on.
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
@@ -112,15 +120,18 @@ class EndpointConfig(BaseModel):
 
     Raises:
         ValueError: If the name does not contain only alphanumeric, dash, or
-            underscore characters, if the ID cannot be parsed, or if the
-            port is not in the range [1, 65535].
+            underscore characters, if the ID cannot be parsed, if the
+            port is not in the range [1, 65535], if the host is empty, if
+            the version is not supported, or if there are unknown fields.
     """
 
+    model_config = ConfigDict(extra='forbid')
+
+    version: int = CONFIG_VERSION
     name: str
     id: EndpointId
     port: int
-    host: str | None = None
-    host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
+    host: str = 'ip'
     tls: bool = False
     p2p: EndpointP2PConfig = Field(default_factory=EndpointP2PConfig)
     storage: EndpointStorageConfig = Field(
@@ -149,12 +160,45 @@ class EndpointConfig(BaseModel):
             )
         return data
 
+    @field_validator('version')
+    @classmethod
+    def _version_validator(cls, v: int) -> int:
+        return check_format_version(v, CONFIG_VERSION, 'configuration')
+
+    @field_validator('host')
+    @classmethod
+    def _host_validator(cls, v: str) -> str:
+        if len(v.strip()) == 0:
+            raise ValueError(
+                'Host must be "ip", "fqdn", or an address. Got an empty '
+                'string.',
+            )
+        return v.strip()
+
     @field_validator('port')
     @classmethod
     def _port_validator(cls, v: int) -> int:
         if v < 1 or v > 65535:
             raise ValueError('Port must be in range [1, 65535].')
         return v
+
+
+def resolve_host(host: str) -> str:
+    """Resolve the address clients use to connect to the endpoint.
+
+    Args:
+        host: `"ip"`, `"fqdn"`, or a static address (see
+            [`EndpointConfig.host`][proxystore.endpoint.config.EndpointConfig]).
+
+    Returns:
+        The IP address or fully-qualified domain name of this host, or the \
+        static address.
+    """
+    if host == 'fqdn':
+        return socket.getfqdn()
+    if host == 'ip':
+        return socket.gethostbyname(hostname())
+    return host
 
 
 def validate_name(name: str) -> bool:

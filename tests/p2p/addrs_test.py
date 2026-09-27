@@ -6,6 +6,7 @@ import pathlib
 import stat
 
 import iroh
+import pytest
 
 from proxystore.endpoint.identity import EndpointId
 from proxystore.p2p.addrs import PeerAddrCache
@@ -45,7 +46,22 @@ def test_load_malformed_file(tmp_path: pathlib.Path, caplog) -> None:
 
     path.write_text('[]')
     assert PeerAddrCache(str(path)).load() == {}
-    assert len(caplog.records) == 2
+
+    path.write_text(json.dumps({'version': 1, 'peers': []}))
+    assert PeerAddrCache(str(path)).load() == {}
+    assert len(caplog.records) == 3
+
+
+@pytest.mark.parametrize('version', (None, 2))
+def test_load_unsupported_version(
+    version: int | None,
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    path = tmp_path / 'peer-addrs.json'
+    path.write_text(json.dumps({'version': version, 'peers': {}}))
+    assert PeerAddrCache(str(path)).load() == {}
+    assert any('unsupported format' in r.message for r in caplog.records)
 
 
 def test_load_malformed_entries(tmp_path: pathlib.Path, caplog) -> None:
@@ -59,7 +75,7 @@ def test_load_malformed_entries(tmp_path: pathlib.Path, caplog) -> None:
         EndpointId.random(): {'addresses': [42]},
     }
     path = tmp_path / 'peer-addrs.json'
-    path.write_text(json.dumps(data))
+    path.write_text(json.dumps({'version': 1, 'peers': data}))
 
     addrs = PeerAddrCache(str(path)).load()
     assert list(addrs) == [good]

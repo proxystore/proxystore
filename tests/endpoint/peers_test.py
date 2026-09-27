@@ -148,3 +148,9 @@ def test_allowlist_malformed_denies_all(
     assert allowlist.reload() == {_ID1}
     assert not allowlist.allowed(_ID1)
     assert any('All peers will be denied' in r.message for r in caplog.records)
+
+
+def test_peers_version() -> None:
+    assert PeersConfig().version == 1
+    with pytest.raises(ValueError, match='only supports version 1'):
+        PeersConfig(version=2)

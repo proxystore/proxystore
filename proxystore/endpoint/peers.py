@@ -29,6 +29,7 @@ from pydantic import Field
 from pydantic import field_validator
 
 from proxystore.endpoint.config import validate_name
+from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
 from proxystore.utils.config import dumps
@@ -37,22 +38,34 @@ from proxystore.utils.config import load
 logger = logging.getLogger(__name__)
 
 
+PEERS_VERSION = 1
+"""Format version of the peers file."""
+
+
 class PeersConfig(BaseModel):
     """Allowlist of peer endpoints.
 
     Attributes:
+        version: Format version of the peers file.
         peers: Mapping of peer names to endpoint IDs. Names are only used to
             help users manage the allowlist.
 
     Raises:
         ValueError: If a name does not contain only alphanumeric, dash, or
-            underscore characters, if an endpoint ID is invalid, or if an
-            endpoint ID is listed more than once.
+            underscore characters, if an endpoint ID is invalid, if an
+            endpoint ID is listed more than once, or if the version is not
+            supported.
     """
 
     model_config = ConfigDict(extra='forbid')
 
+    version: int = PEERS_VERSION
     peers: dict[str, EndpointId] = Field(default_factory=dict)
+
+    @field_validator('version')
+    @classmethod
+    def _version_validator(cls, v: int) -> int:
+        return check_format_version(v, PEERS_VERSION, 'peers file')
 
     @field_validator('peers', mode='before')
     @classmethod

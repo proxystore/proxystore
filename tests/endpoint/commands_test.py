@@ -11,6 +11,9 @@ from unittest import mock
 
 import pytest
 
+from proxystore import utils
+from proxystore.endpoint.auth import ConnectionInfo
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.commands import _wait_for_exit
 from proxystore.endpoint.commands import add_peer
 from proxystore.endpoint.commands import configure_endpoint
@@ -127,7 +130,7 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
 
     cfg = endpoint_dir.read_config()
     assert cfg.name == _NAME
-    assert cfg.host is None
+    assert cfg.host == 'ip'
     assert cfg.port == _PORT
 
     assert any(
@@ -300,20 +303,18 @@ def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
         proxystore_dir=str(tmp_path),
     )
 
-    cfg = EndpointDir(os.path.join(tmp_path, _NAME)).read_config()
-    if host == 'fqdn':
-        assert cfg.host is None
-        assert cfg.host_type == 'fqdn'
-    elif host == 'ip':
-        assert cfg.host is None
-        assert cfg.host_type == 'ip'
-    else:
-        assert cfg.host == host
-        assert cfg.host_type == 'static'
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
+    cfg = endpoint_dir.read_config()
+    assert cfg.host == host
 
+    with open(endpoint_dir.config_path, 'rb') as f:
+        before = f.read()
     with mock.patch('proxystore.endpoint.commands.serve', autospec=True):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0
+    # Starting the endpoint never modifies the configuration
+    with open(endpoint_dir.config_path, 'rb') as f:
+        assert f.read() == before
 
 
 @pytest.mark.usefixtures('_patch_hostname')
@@ -411,26 +412,32 @@ def test_start_endpoint_hanging_different_host(
 
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(
-        name=_NAME,
-        id=_ID,
-        host='abcd',
-        port=1234,
-    )
+    config = EndpointConfig(name=_NAME, id=_ID, port=1234)
     endpoint_dir.write_config(config)
+    endpoint_dir.write_connection(
+        ConnectionInfo(
+            host='10.0.0.1',
+            port=1234,
+            token=EndpointToken.generate(),
+            tls_fingerprint=None,
+            hostname='other-machine',
+            pid=42,
+        ),
+    )
 
     pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands.is_own_process', return_value=False
+        'proxystore.endpoint.directory.is_own_process', return_value=False
     ):
         rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
     assert any(
-        'on a host named abcd' in record.message for record in caplog.records
+        'appears to be running on other-machine (PID 42)' in record.message
+        for record in caplog.records
     )
 
 
@@ -440,7 +447,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
 
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(name=_NAME, id=_ID, host=None, port=1234)
+    config = EndpointConfig(name=_NAME, id=_ID, port=1234)
     endpoint_dir.write_config(config)
 
     pid_file = endpoint_dir.pid_path
@@ -449,7 +456,7 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
 
     with (
         mock.patch(
-            'proxystore.endpoint.commands.is_own_process', return_value=False
+            'proxystore.endpoint.directory.is_own_process', return_value=False
         ),
         mock.patch(
             'proxystore.endpoint.commands.serve',
@@ -466,30 +473,24 @@ def test_start_endpoint_old_pid_file(tmp_path: pathlib.Path, caplog) -> None:
     )
 
 
-def test_start_endpoint_missing_static_host(
+def test_start_endpoint_unresolvable_host(
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
-    caplog.set_level(logging.DEBUG)
+    caplog.set_level(logging.ERROR)
+    EndpointDir.create(_NAME, str(tmp_path), port=1234)
 
-    endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
-
-    config = EndpointConfig(
-        name=_NAME,
-        id=_ID,
-        host=None,
-        host_type='static',
-        port=1234,
-    )
-    endpoint_dir.write_config(config)
-
-    rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
+    with mock.patch(
+        'proxystore.endpoint.commands.resolve_host',
+        side_effect=OSError('unknown host'),
+    ):
+        rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
     assert any(
-        'Missing static host address in config.' in record.message
+        'Unable to resolve the host address (ip): unknown host'
+        in record.message
         for record in caplog.records
-        if record.levelno == logging.ERROR
     )
 
 
@@ -556,26 +557,32 @@ def test_stop_endpoint_hanging_different_host(
     caplog.set_level(logging.ERROR)
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(
-        name=_NAME,
-        id=_ID,
-        host='abcd',
-        port=1234,
-    )
+    config = EndpointConfig(name=_NAME, id=_ID, port=1234)
     endpoint_dir.write_config(config)
+    endpoint_dir.write_connection(
+        ConnectionInfo(
+            host='10.0.0.1',
+            port=1234,
+            token=EndpointToken.generate(),
+            tls_fingerprint=None,
+            hostname='other-machine',
+            pid=42,
+        ),
+    )
 
     pid_file = endpoint_dir.pid_path
     with open(pid_file, 'w') as f:
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands.is_own_process', return_value=False
+        'proxystore.endpoint.directory.is_own_process', return_value=False
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 1
 
     assert any(
-        'on a host named abcd' in record.message for record in caplog.records
+        'appears to be running on other-machine (PID 42)' in record.message
+        for record in caplog.records
     )
 
 
@@ -586,7 +593,7 @@ def test_stop_endpoint_dangling_pid_file(
     caplog.set_level(logging.DEBUG)
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
 
-    config = EndpointConfig(name=_NAME, id=_ID, host=None, port=1234)
+    config = EndpointConfig(name=_NAME, id=_ID, port=1234)
     endpoint_dir.write_config(config)
 
     pid_file = endpoint_dir.pid_path
@@ -594,7 +601,7 @@ def test_stop_endpoint_dangling_pid_file(
         f.write('1')
 
     with mock.patch(
-        'proxystore.endpoint.commands.is_own_process', return_value=False
+        'proxystore.endpoint.directory.is_own_process', return_value=False
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
     assert rv == 0
@@ -727,3 +734,31 @@ def test_configure_endpoint_persist(tmp_path: pathlib.Path) -> None:
     config = EndpointDir.from_name(_NAME, str(tmp_path)).read_config()
     # Relative to the endpoint directory so the directory can be moved
     assert config.storage.database_path == 'blobs.db'
+
+
+@pytest.mark.usefixtures('_patch_hostname')
+def test_start_endpoint_crashed_on_this_host(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create(_NAME, str(tmp_path), port=1234)
+    # A crashed endpoint leaves its PID and connection files behind
+    with open(endpoint_dir.pid_path, 'w') as f:
+        f.write('1')
+    endpoint_dir.write_connection(
+        ConnectionInfo(
+            host='127.0.0.1',
+            port=1234,
+            token=EndpointToken.generate(),
+            tls_fingerprint=None,
+            hostname=utils.hostname(),
+            pid=1,
+        ),
+    )
+
+    with (
+        mock.patch(
+            'proxystore.endpoint.directory.is_own_process',
+            return_value=False,
+        ),
+        mock.patch('proxystore.endpoint.commands.serve', autospec=True),
+    ):
+        rv = start_endpoint(_NAME, proxystore_dir=str(tmp_path))
+    assert rv == 0

@@ -78,41 +78,44 @@ is stored separately in the `secret.key` file which only the owner can read.
 A typical configuration looks like the following.
 
 ```toml title="config.toml" linenums="1"
-name = "my-endpoint"  # (1)!
-id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (2)!
-port = 8765  # (3)!
-host_type = "ip"  # (4)!
-tls = false  # (5)!
+version = 1  # (1)!
+name = "my-endpoint"  # (2)!
+id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (3)!
+port = 8765  # (4)!
+host = "ip"  # (5)!
+tls = false  # (6)!
 
 [p2p]
-enabled = true  # (6)!
-relays = "n0"  # (7)!
+enabled = true  # (7)!
+relays = "n0"  # (8)!
 
 [storage]
-database_path = "blobs.db"  # (8)!
-max_object_size = 10000000  # (9)!
+database_path = "blobs.db"  # (9)!
+max_object_size = 10000000  # (10)!
 ```
 
-1. Human-readable name of this endpoint. Must match the name of the
+1. Format version of the configuration file. ProxyStore uses this to detect
+   configurations written by an incompatible version.
+2. Human-readable name of this endpoint. Must match the name of the
    endpoint directory.
-2. Unique identifier of this endpoint. This is the public key of the
+3. Unique identifier of this endpoint. This is the public key of the
    endpoint's secret key and must match the key in `secret.key`.
-3. Change the default port if running multiple endpoints on the same system.
-4. When the `host_type` is "ip" or "fqdn", the host of the endpoint will be
-   determined at runtime and set as the IP address or fully-qualified domain
-   name, respectively. If `host_type` is "static", a static address can
-   be specified in a `host` field (e.g., `host = "localhost"`).
-5. Encrypt connections between clients and the endpoint with TLS. See
+4. Change the default port if running multiple endpoints on the same system.
+5. Address clients use to connect to the endpoint. "ip" and "fqdn" use the
+   IP address or fully-qualified domain name of the node, determined each
+   time the endpoint starts. Any other value is used as a static address
+   (e.g., `host = "127.0.0.1"`).
+6. Encrypt connections between clients and the endpoint with TLS. See
    [Security](#security) for details.
-6. Enable communication with peer endpoints. If `false`, the endpoint
+7. Enable communication with peer endpoints. If `false`, the endpoint
    operates in isolation. Configure with `--no-peering` to disable peering.
-7. Relays used to connect to peers. See [Relays](#relays).
-8. Optional path to a SQLite database for persisting endpoint objects. A
+8. Relays used to connect to peers. See [Relays](#relays).
+9. Optional path to a SQLite database for persisting endpoint objects. A
    relative path is relative to the endpoint directory. Use an absolute path
    to store a large database elsewhere, such as a parallel file system. See
    the tip below for more details.
-9. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to `0`
-   to disable object size limits.
+10. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to
+    `0` to disable object size limits.
 
 !!! tip
 
@@ -135,16 +138,14 @@ $ proxystore-endpoint start my-endpoint
 
 !!! note
 
-    By default, the `host` address that an endpoint is served on is set to
-    the IP address of the node where the endpoint is started (so that an
-    endpoint can be configured and started on different nodes).
-    If clients cannot reach the endpoint at that IP address,
-    changing the `host_type` in the configuration from "ip" to "fqdn" will
-    use the fully-qualified domain name instead. Alternatively,
-    `host_type = "static"` will use a static host address specified in the
-    `host` field (i.e. `host = "12.34.56.78"`). The `--host` flag can also
-    be used during configuration to specify "ip" (default), "fqdn", or a
-    static host.
+    By default (`host = "ip"`), the endpoint is served on the IP address of
+    the node where the endpoint is started, so an endpoint can be configured
+    and started on different nodes. If clients cannot reach the endpoint at
+    that IP address, `host = "fqdn"` uses the fully-qualified domain name
+    instead, or set a static address (e.g., `host = "12.34.56.78"`). The
+    `--host` flag can also be used during configuration. The endpoint never
+    modifies its configuration; the resolved address is written to the
+    `connection.json` file which clients read.
 
 ## Peering
 
@@ -272,8 +273,8 @@ permissions from its directory when it starts.
 !!! tip
 
     If all clients run on the same node as the endpoint, set
-    `host_type = "static"` and `host = "127.0.0.1"` in the endpoint
-    configuration so the endpoint is not reachable from other nodes.
+    `host = "127.0.0.1"` in the endpoint configuration so the endpoint is
+    not reachable from other nodes.
 
 By default, objects are sent between clients and the endpoint unencrypted.
 The token only authenticates each side when a connection is established;

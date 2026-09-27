@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import stat
 import subprocess
 import sys
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -85,9 +87,7 @@ def test_connection_lifecycle(
     with pytest.raises(FileNotFoundError):
         endpoint_dir.read_connection()
 
-    info = ConnectionInfo(
-        'localhost', 1234, EndpointToken.generate(), fingerprint
-    )
+    info = _connection_info(tls_fingerprint=fingerprint)
     endpoint_dir.write_connection(info)
     mode = stat.S_IMODE(os.stat(endpoint_dir.connection_path).st_mode)
     assert mode == 0o600
@@ -101,8 +101,8 @@ def test_connection_lifecycle(
 
 def test_remove_connection_only_if_matches(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    ours = ConnectionInfo('localhost', 1234, EndpointToken.generate(), None)
-    theirs = ConnectionInfo('localhost', 1234, EndpointToken.generate(), None)
+    ours = _connection_info()
+    theirs = _connection_info()
 
     # No file to remove
     endpoint_dir.remove_connection(ours)
@@ -115,17 +115,45 @@ def test_remove_connection_only_if_matches(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(endpoint_dir.connection_path)
 
 
+def _connection_info(**kwargs: Any) -> ConnectionInfo:
+    options: dict[str, Any] = {
+        'host': 'localhost',
+        'port': 1234,
+        'token': EndpointToken.generate(),
+        'tls_fingerprint': None,
+        'hostname': 'machine',
+        'pid': 42,
+        **kwargs,
+    }
+    return ConnectionInfo(**options)
+
+
+def _connection_data(**kwargs: Any) -> dict[str, Any]:
+    return {
+        'version': 1,
+        'host': 'h',
+        'port': 1,
+        'token': EndpointToken.generate().hex(),
+        'tls_fingerprint': None,
+        'hostname': 'machine',
+        'pid': 42,
+        **kwargs,
+    }
+
+
 @pytest.mark.parametrize(
     'contents',
     (
         'not json',
         '[]',
-        '{}',
-        '{"host": "h", "port": 1, "token": "zz", "tls_fingerprint": null}',
-        '{"host": "h", "port": 1, "token": "abcd", "tls_fingerprint": null}',
-        '{"host": 1, "port": 1, "token": "%s", "tls_fingerprint": null}',
-        '{"host": "h", "port": "1", "token": "%s", "tls_fingerprint": null}',
-        '{"host": "h", "port": 1, "token": "%s", "tls_fingerprint": 1}',
+        json.dumps({'version': 1}),
+        json.dumps(_connection_data(token='zz')),
+        json.dumps(_connection_data(token='abcd')),
+        json.dumps(_connection_data(host=1)),
+        json.dumps(_connection_data(port='1')),
+        json.dumps(_connection_data(tls_fingerprint=1)),
+        json.dumps(_connection_data(hostname=None)),
+        json.dumps(_connection_data(pid='42')),
     ),
 )
 def test_read_connection_malformed(
@@ -133,11 +161,24 @@ def test_read_connection_malformed(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    if '%s' in contents:
-        contents = contents % EndpointToken.generate().hex()
     with open(endpoint_dir.connection_path, 'w') as f:
         f.write(contents)
     with pytest.raises(ValueError, match='malformed'):
+        endpoint_dir.read_connection()
+
+
+@pytest.mark.parametrize('version', (None, 0, 2))
+def test_read_connection_unsupported_version(
+    version: Any,
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    data = _connection_data(version=version)
+    if version is None:
+        data.pop('version')
+    with open(endpoint_dir.connection_path, 'w') as f:
+        json.dump(data, f)
+    with pytest.raises(ValueError, match='only supports version 1'):
         endpoint_dir.read_connection()
 
 

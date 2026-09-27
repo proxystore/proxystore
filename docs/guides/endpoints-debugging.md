@@ -34,7 +34,7 @@ If you see an error similar to:
 ```
 [Errno 8] nodename nor servname provided, or not known
 ```
-Try changing the `host_type` parameters from `fqdn` to `ip` in the `config.toml` file in the endpoint directory.
+Try changing `host = "fqdn"` to `host = "ip"` in the `config.toml` file in the endpoint directory.
 
 ### Monitor the Endpoint
 Debug level logging can be enabled when starting the endpoint, and
