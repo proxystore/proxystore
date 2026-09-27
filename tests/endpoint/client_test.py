@@ -28,6 +28,7 @@ from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
@@ -39,6 +40,11 @@ TOKEN = EndpointToken.generate()
 ENDPOINT_ID = EndpointId.random()
 
 Script = Callable[[socket.socket], None]
+
+
+def _recv_meta(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
+    header, message = _recv_message(sock)
+    return header, message.meta
 
 
 def _info(**overrides: Any) -> dict[str, Any]:
@@ -61,7 +67,7 @@ def _server_hello(
 ) -> bytes:
     """Read the client's HELLO and reply. Returns the client nonce."""
     _recv_exactly(conn, Preamble.SIZE)
-    _, hello = _recv_message(conn)
+    _, hello = _recv_meta(conn)
     client_nonce = bytes.fromhex(hello['nonce'])
     if meta is None:
         server_nonce = os.urandom(32)
@@ -73,7 +79,7 @@ def _server_hello(
 
 def _complete_handshake(conn: socket.socket) -> None:
     _server_hello(conn)
-    _recv_message(conn)
+    _recv_meta(conn)
     conn.sendall(pack_message(Status.OK, _info()))
 
 
@@ -183,7 +189,7 @@ def test_handshake_short_nonce(fake_server) -> None:
 def test_handshake_message_with_data(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
         _recv_exactly(conn, Preamble.SIZE)
-        _recv_message(conn)
+        _recv_meta(conn)
         conn.sendall(
             Preamble().pack() + pack_message(Status.OK, {}, data_len=1) + b'x',
         )
@@ -196,7 +202,7 @@ def test_handshake_message_with_data(fake_server) -> None:
 def test_handshake_rejected(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
-        _recv_message(conn)
+        _recv_meta(conn)
         conn.sendall(pack_message(Status.UNAUTHORIZED, {'error': 'no'}))
 
     port = fake_server(_script)
@@ -220,7 +226,7 @@ def test_handshake_bad_info(
 ) -> None:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
-        _recv_message(conn)
+        _recv_meta(conn)
         conn.sendall(pack_message(status, meta))
 
     port = fake_server(_script)
@@ -228,13 +234,51 @@ def test_handshake_bad_info(
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 
-def _respond_with(status: int, meta: dict[str, Any] | None = None) -> Script:
+def _respond_with(
+    status: int,
+    meta: dict[str, Any] | None = None,
+    *,
+    request_id: int | None = None,
+) -> Script:
     def _script(conn: socket.socket) -> None:
         _complete_handshake(conn)
-        _recv_message(conn)
-        conn.sendall(pack_message(status, meta))
+        header, _ = _recv_meta(conn)
+        request_id_ = header.request_id if request_id is None else request_id
+        conn.sendall(pack_message(status, meta, request_id=request_id_))
 
     return _script
+
+
+def test_request_ids(fake_server) -> None:
+    ids: list[int] = []
+
+    def _script(conn: socket.socket) -> None:
+        _complete_handshake(conn)
+        for _ in range(3):
+            header, _ = _recv_meta(conn)
+            ids.append(header.request_id)
+            response = pack_message(
+                Status.OK,
+                {'exists': True},
+                request_id=header.request_id,
+            )
+            conn.sendall(response)
+
+    port = fake_server(_script)
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        client._next_request_id = 2**32 - 2
+        for _ in range(3):
+            assert client.exists('key')
+    # IDs wrap around to 1 because 0 is reserved for handshake messages
+    assert ids == [2**32 - 2, 2**32 - 1, 1]
+
+
+def test_request_id_mismatch(fake_server) -> None:
+    port = fake_server(_respond_with(Status.OK, request_id=42))
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        with pytest.raises(EndpointProtocolError, match='request 42'):
+            client.exists('key')
+        assert client.closed
 
 
 def test_request_error_no_message(fake_server) -> None:
@@ -256,7 +300,7 @@ def test_request_unknown_status(fake_server) -> None:
 def test_request_connection_closed(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
         _complete_handshake(conn)
-        _recv_message(conn)
+        _recv_meta(conn)
 
     port = fake_server(_script)
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
@@ -300,7 +344,7 @@ def test_old_http_endpoint(fake_server) -> None:
 def _handshake_with_info(**info: Any) -> Script:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
-        _recv_message(conn)
+        _recv_meta(conn)
         conn.sendall(pack_message(Status.OK, _info(**info)))
 
     return _script

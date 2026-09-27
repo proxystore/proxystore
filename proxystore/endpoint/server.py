@@ -28,13 +28,14 @@ from typing import cast
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
@@ -479,57 +480,65 @@ class ClientHandler:
 
     async def _serve_requests(self, conn: _ClientConnection) -> None:
         while True:
+            reader = MessageReader(max_data_size=self.max_object_size)
             try:
                 header_bytes = await conn.readexactly(Header.SIZE)
             except asyncio.IncompleteReadError:
                 # Client closed the connection between requests.
                 return
-            header = Header.unpack(header_bytes)
-            meta = decode_meta(await conn.readexactly(header.meta_len))
-
-            if (
-                self.max_object_size is not None
-                and header.data_len > self.max_object_size
-            ):
+            try:
+                reader.feed(header_bytes)
+                await _read_message(conn, reader)
+            except ObjectSizeExceededError as e:
                 # The connection is closed after responding because the
                 # client is still sending data we do not want to read.
-                error = (
-                    f'Data size ({header.data_len} bytes) exceeds the maximum '
-                    f'object size of the endpoint ({self.max_object_size} '
-                    'bytes).'
-                )
                 await _reply_and_close(
                     conn,
-                    pack_message(Status.TOO_LARGE, {'error': error}),
+                    pack_message(
+                        Status.TOO_LARGE,
+                        {'error': str(e)},
+                        request_id=reader.header.request_id,
+                    ),
                 )
                 return
 
-            data = (
-                await conn.readexactly(header.data_len)
-                if header.data_len > 0
-                else b''
-            )
             response = await self.dispatcher.handle(
-                Message(header.code, meta, data),
+                reader.message,
                 forward=True,
             )
-            await _send(conn, response.code, response.meta, response.data)
+            await _send(
+                conn,
+                response.code,
+                response.meta,
+                response.data,
+                request_id=reader.header.request_id,
+            )
+
+
+async def _read_message(
+    conn: _ClientConnection,
+    reader: MessageReader,
+) -> Message:
+    while not reader.done:
+        reader.feed(await conn.readexactly(reader.size))
+    return reader.message
 
 
 async def _read_handshake_message(
     conn: _ClientConnection,
     expected: Op,
 ) -> dict[str, Any]:
-    header = Header.unpack(await conn.readexactly(Header.SIZE))
-    if header.code != expected:
-        raise EndpointProtocolError(
-            f'Expected {expected.name} message but got op {header.code}.',
-        )
-    if header.data_len != 0:
+    try:
+        message = await _read_message(conn, MessageReader(max_data_size=0))
+    except ObjectSizeExceededError:
         raise EndpointProtocolError(
             f'Client sent data in a {expected.name} message.',
+        ) from None
+    if message.code != expected:
+        raise EndpointProtocolError(
+            f'Expected {expected.name} message but got op {message.code}.',
         )
-    return decode_meta(await conn.readexactly(header.meta_len))
+    return message.meta
 
 
 async def _send(
@@ -537,9 +546,11 @@ async def _send(
     status: int,
     meta: dict[str, Any] | None = None,
     data: bytes | bytearray | None = None,
+    *,
+    request_id: int = 0,
 ) -> None:
     data_len = 0 if data is None else len(data)
-    conn.write(pack_message(status, meta, data_len))
+    conn.write(pack_message(status, meta, data_len, request_id=request_id))
     if data is not None:
         conn.write(data)
     await conn.drain()

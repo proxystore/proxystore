@@ -10,9 +10,11 @@ import proxystore
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import ALPN
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -24,6 +26,7 @@ from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
@@ -58,7 +61,7 @@ def test_message_round_trip() -> None:
     message = pack_message(Op.SET, meta, data_len=100)
 
     header = Header.unpack(message[: Header.SIZE])
-    assert header == Header(Op.SET, 0, len(encode_meta(meta)), 100)
+    assert header == Header(Op.SET, 0, 0, len(encode_meta(meta)), 100)
     assert decode_meta(message[Header.SIZE :]) == meta
 
 
@@ -71,7 +74,7 @@ def test_message_no_meta() -> None:
 
 
 def test_header_meta_too_large() -> None:
-    header = Header(Op.GET, 0, MAX_META_SIZE + 1, 0).pack()
+    header = Header(Op.GET, 0, 0, MAX_META_SIZE + 1, 0).pack()
     with pytest.raises(EndpointProtocolError, match='exceeds the maximum'):
         Header.unpack(header)
 
@@ -287,3 +290,53 @@ def test_exists_from_meta() -> None:
     for meta in ({}, {'exists': 'yes'}):
         with pytest.raises(EndpointProtocolError, match='Malformed EXISTS'):
             exists_from_meta(meta)
+
+
+@pytest.mark.parametrize(
+    ('meta', 'data'),
+    (({}, b''), ({'key': 'k'}, b''), ({}, b'data'), ({'key': 'k'}, b'data')),
+)
+def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
+    buffer = pack_message(Op.SET, meta, len(data), request_id=7) + data
+    reader = MessageReader()
+    sizes = []
+    while not reader.done:
+        size = reader.size
+        sizes.append(size)
+        reader.feed(buffer[:size])
+        buffer = buffer[size:]
+    assert buffer == b''
+    assert reader.size == 0
+    assert reader.header.request_id == 7
+    assert reader.message == Message(Op.SET, meta, data)
+    # Empty parts of the message are skipped
+    assert 0 not in sizes
+
+
+def test_message_reader_max_data_size() -> None:
+    reader = MessageReader(max_data_size=3)
+    buffer = pack_message(Op.SET, {'key': 'k'}, 4, request_id=3)
+    reader.feed(buffer[: Header.SIZE])
+    with pytest.raises(ObjectSizeExceededError, match='4 bytes'):
+        reader.feed(buffer[Header.SIZE :])
+    # The header is available to respond to the request
+    assert reader.header.request_id == 3
+    assert not reader.done
+
+
+def test_message_reader_errors() -> None:
+    reader = MessageReader()
+    with pytest.raises(RuntimeError, match='header'):
+        _ = reader.header
+    with pytest.raises(RuntimeError, match='message'):
+        _ = reader.message
+    with pytest.raises(ValueError, match='Expected'):
+        reader.feed(b'x')
+    reader.feed(pack_message(Status.OK))
+    assert reader.done
+    with pytest.raises(RuntimeError, match='already been read'):
+        reader.feed(b'')
+
+
+def test_alpn_matches_protocol_version() -> None:
+    assert f'proxystore/{PROTOCOL_VERSION}'.encode() == ALPN

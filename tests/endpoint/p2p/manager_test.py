@@ -19,6 +19,7 @@ from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
@@ -175,7 +176,7 @@ async def test_bad_request(managers) -> None:
     connection, _ = await manager1._get_connection(manager2.id)
     stream = await connection.open_bi()
     # Header with invalid metadata
-    await stream.send().write_all(bytes([Op.GET, 0, 0, 0, 0, 1] + [0] * 8))
+    await stream.send().write_all(Header(Op.GET, 0, 0, 1, 0).pack())
     await stream.send().write_all(b'x')
     await stream.send().finish()
     response = await stream.recv().read_to_end(1000)

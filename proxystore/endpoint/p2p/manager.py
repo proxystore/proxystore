@@ -25,6 +25,7 @@ import iroh
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerUnavailableError
@@ -32,21 +33,14 @@ from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.peers import Allowlist
-from proxystore.endpoint.protocol import decode_meta
-from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import ALPN
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
-
-ALPN = b'proxystore/1'
-"""Application protocol negotiated on connections between endpoints.
-
-Increment the version on any incompatible change to the messages exchanged
-between endpoints.
-"""
 
 _CHUNK_SIZE = 64 * 1024 * 1024
 # The iroh bindings limit the size of a single read to a u32, and each write
@@ -128,10 +122,6 @@ class CloseCode(enum.IntEnum):
     """Endpoint is shutting down."""
     NOT_ALLOWED = 1
     """Peer is not in the allowlist of the endpoint."""
-
-
-class _DataTooLargeError(Exception):
-    pass
 
 
 class PeerManager:
@@ -450,7 +440,7 @@ class PeerManager:
         else:
             write_error = None
         try:
-            return await _read_message(stream.recv(), max_data_size=None)
+            return await _read_message(stream.recv(), MessageReader())
         except iroh.IrohError:
             if write_error is not None:
                 raise write_error from None
@@ -735,14 +725,11 @@ class PeerManager:
             try:
                 request = await _read_message(
                     stream.recv(),
-                    max_data_size=self._max_request_size,
+                    MessageReader(max_data_size=self._max_request_size),
                 )
-            except _DataTooLargeError as e:
+            except (EndpointProtocolError, ObjectSizeExceededError) as e:
                 await stream.recv().stop(_STOP_REJECTED)
-                response = Message.error(Status.TOO_LARGE, str(e))
-            except EndpointProtocolError as e:
-                await stream.recv().stop(_STOP_REJECTED)
-                response = Message.error(Status.BAD_REQUEST, str(e))
+                response = Message.from_error(e)
             else:
                 try:
                     response = await self._handler(peer_id, request)
@@ -783,31 +770,22 @@ async def _write_message(stream: iroh.SendStream, message: Message) -> None:
 
 async def _read_message(
     stream: iroh.RecvStream,
-    *,
-    max_data_size: int | None,
+    reader: MessageReader,
 ) -> Message:
-    header = Header.unpack(await stream.read_exact(Header.SIZE))
-    meta = (
-        decode_meta(await stream.read_exact(header.meta_len))
-        if header.meta_len > 0
-        else {}
-    )
-    if max_data_size is not None and header.data_len > max_data_size:
-        raise _DataTooLargeError(
-            f'Data size ({header.data_len} bytes) exceeds the maximum object '
-            f'size of the endpoint ({max_data_size} bytes).',
-        )
-    if header.data_len == 0:
-        return Message(header.code, meta)
-    if header.data_len <= _CHUNK_SIZE:
-        chunk = await stream.read_exact(header.data_len)
-        return Message(header.code, meta, chunk)
-    data = bytearray(header.data_len)
+    while not reader.done:
+        reader.feed(await _read_exact(stream, reader.size))
+    return reader.message
+
+
+async def _read_exact(stream: iroh.RecvStream, size: int) -> bytes | bytearray:
+    if size <= _CHUNK_SIZE:
+        return await stream.read_exact(size)
+    data = bytearray(size)
     buffer = memoryview(data)
-    for start in range(0, header.data_len, _CHUNK_SIZE):
-        size = min(_CHUNK_SIZE, header.data_len - start)
-        buffer[start : start + size] = await stream.read_exact(size)
-    return Message(header.code, meta, data)
+    for start in range(0, size, _CHUNK_SIZE):
+        chunk = min(_CHUNK_SIZE, size - start)
+        buffer[start : start + chunk] = await stream.read_exact(chunk)
+    return data
 
 
 def _closed_with(reason: str, code: CloseCode) -> bool:

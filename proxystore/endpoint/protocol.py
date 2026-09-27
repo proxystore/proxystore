@@ -1,4 +1,4 @@
-"""Client-endpoint wire protocol.
+"""Wire protocol of endpoints.
 
 Warning:
     This module is an internal implementation detail. Its interface may
@@ -6,8 +6,12 @@ Warning:
     [`proxystore.endpoint`][proxystore.endpoint]).
 
 Clients communicate with their local endpoint over a TCP connection using
-length-prefixed binary messages. This module only contains the encoding and
-decoding logic.
+length-prefixed binary messages, and endpoints send the same messages to
+their peers over iroh streams. This module only contains the encoding and
+decoding logic. The
+[`MessageReader`][proxystore.endpoint.protocol.MessageReader]
+parses messages without performing I/O so the same parser is used by the
+blocking client, the asyncio server, and the iroh streams of peers.
 
 A connection starts with a handshake:
 
@@ -27,8 +31,16 @@ different protocol versions can detect the mismatch. If the protocol versions
 differ, the endpoint replies with only its preamble and closes the connection.
 
 After the handshake, each request and response is a message consisting of a
-fixed-size header, JSON-encoded metadata (e.g., the key), and a raw data
-payload.
+fixed-size [`Header`][proxystore.endpoint.protocol.Header], JSON-encoded
+metadata (e.g., the key), and a raw data payload. The endpoint echoes the
+request ID of each request in its response.
+
+Peers do not use the handshake because iroh authenticates each endpoint.
+Each request to a peer is sent on its own stream so the request ID is
+unused. The version of the peer protocol is part of the
+[`ALPN`][proxystore.endpoint.protocol.ALPN] and always matches
+[`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] because
+peers exchange the same messages.
 """
 
 from __future__ import annotations
@@ -62,6 +74,8 @@ PROTOCOL_VERSION = 1
 
 Increment on any incompatible change to the handshake or message formats.
 """
+ALPN = f'proxystore/{PROTOCOL_VERSION}'.encode()
+"""Application protocol negotiated on connections between endpoints."""
 NONCE_SIZE = 32
 """Size in bytes of the random nonces exchanged in the handshake."""
 MAX_META_SIZE = 64 * 1024
@@ -178,17 +192,22 @@ class Header:
         code: [`Op`][proxystore.endpoint.protocol.Op] of a request or
             [`Status`][proxystore.endpoint.protocol.Status] of a response.
         flags: Reserved for future use.
+        request_id: ID chosen by the client for a request and echoed in the
+            response. IDs allow requests to be pipelined in the future.
+            Handshake messages and messages between peers use `0`.
         meta_len: Length in bytes of the metadata.
         data_len: Length in bytes of the data.
     """
 
-    FORMAT: ClassVar[struct.Struct] = struct.Struct('!BBIQ')
-    """Format of the code, flags, metadata length, and data length."""
+    FORMAT: ClassVar[struct.Struct] = struct.Struct('!BBIIQ')
+    """Format of the code, flags, request ID, metadata length, and data
+    length."""
     SIZE: ClassVar[int] = FORMAT.size
     """Size in bytes of the header."""
 
     code: int
     flags: int
+    request_id: int
     meta_len: int
     data_len: int
 
@@ -197,6 +216,7 @@ class Header:
         return self.FORMAT.pack(
             self.code,
             self.flags,
+            self.request_id,
             self.meta_len,
             self.data_len,
         )
@@ -625,6 +645,8 @@ def pack_message(
     code: int,
     meta: dict[str, Any] | None = None,
     data_len: int = 0,
+    *,
+    request_id: int = 0,
 ) -> bytes:
     """Pack the header and metadata of a message.
 
@@ -635,9 +657,12 @@ def pack_message(
         code: Op or status code.
         meta: Metadata to include in the message.
         data_len: Length in bytes of the data that will follow.
+        request_id: ID of the request (see
+            [`Header`][proxystore.endpoint.protocol.Header]).
     """
     meta_bytes = b'' if meta is None else encode_meta(meta)
-    return Header(code, 0, len(meta_bytes), data_len).pack() + meta_bytes
+    header = Header(code, 0, request_id, len(meta_bytes), data_len)
+    return header.pack() + meta_bytes
 
 
 def encode_meta(meta: dict[str, Any]) -> bytes:
@@ -665,3 +690,121 @@ def decode_meta(buffer: bytes | bytearray) -> dict[str, Any]:
             f'{type(meta).__name__}.',
         )
     return meta
+
+
+class MessageReader:
+    """Parser of a message which does not perform I/O.
+
+    The caller reads exactly
+    [`size`][proxystore.endpoint.protocol.MessageReader.size]
+    bytes from the connection and passes them to
+    [`feed()`][proxystore.endpoint.protocol.MessageReader.feed] until the
+    message is [`done`][proxystore.endpoint.protocol.MessageReader.done].
+
+    Example:
+        ```python
+        reader = MessageReader(max_data_size=1000)
+        while not reader.done:
+            reader.feed(await connection.readexactly(reader.size))
+        message = reader.message
+        ```
+
+    Args:
+        max_data_size: Maximum size in bytes of the data of the message or
+            `None` for no limit. The size is checked once the header and
+            metadata are read, before the data is read.
+    """
+
+    def __init__(self, *, max_data_size: int | None = None) -> None:
+        self._max_data_size = max_data_size
+        self._header: Header | None = None
+        self._meta: dict[str, Any] | None = None
+        self._message: Message | None = None
+        self._size = Header.SIZE
+
+    @property
+    def done(self) -> bool:
+        """The message has been read."""
+        return self._message is not None
+
+    @property
+    def size(self) -> int:
+        """Size in bytes of the next part of the message to feed.
+
+        This is always greater than zero until the message is done.
+        """
+        return self._size
+
+    @property
+    def header(self) -> Header:
+        """Header of the message.
+
+        Raises:
+            RuntimeError: If the header has not been read.
+        """
+        if self._header is None:
+            raise RuntimeError('The header has not been read.')
+        return self._header
+
+    @property
+    def message(self) -> Message:
+        """The message.
+
+        Raises:
+            RuntimeError: If the message is not done.
+        """
+        if self._message is None:
+            raise RuntimeError('The message has not been read.')
+        return self._message
+
+    def feed(self, buffer: bytes | bytearray) -> None:
+        """Feed the next part of the message.
+
+        Args:
+            buffer: Exactly
+                [`size`][proxystore.endpoint.protocol.MessageReader.size]
+                bytes read from the connection.
+
+        Raises:
+            RuntimeError: If the message is already done.
+            ValueError: If `buffer` is not the expected size.
+            EndpointProtocolError: If the header or metadata is malformed.
+            ObjectSizeExceededError: If the size of the data exceeds the
+                maximum. The
+                [`header`][proxystore.endpoint.protocol.MessageReader.header]
+                can be used to respond to the message.
+        """
+        if self.done:
+            raise RuntimeError('The message has already been read.')
+        if len(buffer) != self._size:
+            raise ValueError(
+                f'Expected {self._size} bytes but got {len(buffer)} bytes.',
+            )
+
+        if self._header is None:
+            self._header = Header.unpack(buffer)
+            if self._header.meta_len > 0:
+                self._size = self._header.meta_len
+                return
+            buffer = b''
+        if self._meta is None:
+            self._meta = decode_meta(buffer)
+            self._read_meta()
+            return
+        self._message = Message(self._header.code, self._meta, buffer)
+        self._size = 0
+
+    def _read_meta(self) -> None:
+        assert self._header is not None
+        assert self._meta is not None
+        data_len = self._header.data_len
+        if self._max_data_size is not None and data_len > self._max_data_size:
+            raise ObjectSizeExceededError(
+                f'Data size ({data_len} bytes) exceeds the maximum object '
+                f'size of the endpoint ({self._max_data_size} bytes).',
+            )
+        if data_len > 0:
+            self._size = data_len
+        else:
+            self._message = Message(self._header.code, self._meta)
+            self._size = 0

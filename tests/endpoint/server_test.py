@@ -46,6 +46,11 @@ from testing.compat import randbytes
 MAX_OBJECT_SIZE = 10_000_000
 
 
+def _recv_meta(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
+    header, message = _recv_message(sock)
+    return header, message.meta
+
+
 class _Server(NamedTuple):
     handler: ClientHandler
     dispatcher: Dispatcher
@@ -152,7 +157,7 @@ def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     assert (
         Preamble.unpack(bytes(_recv_exactly(sock, Preamble.SIZE))).version == 1
     )
-    header, meta = _recv_message(sock)
+    header, meta = _recv_meta(sock)
     assert header.code == Status.OK
     return client_nonce, meta
 
@@ -167,7 +172,7 @@ async def test_server_rejects_bad_proof(server: _Server) -> None:
                 bytes.fromhex(meta['nonce']),
             )
             sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-            header, meta = _recv_message(sock)
+            header, meta = _recv_meta(sock)
             assert header.code == Status.UNAUTHORIZED
             assert _is_closed(sock)
 
@@ -180,7 +185,7 @@ async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
         with _raw_socket(server) as sock:
             _, meta = _raw_hello(sock)
             sock.sendall(pack_message(Op.AUTH, {'proof': meta['proof']}))
-            header, _ = _recv_message(sock)
+            header, _ = _recv_meta(sock)
             assert header.code == Status.UNAUTHORIZED
 
     await asyncio.to_thread(_run)
@@ -209,7 +214,7 @@ async def test_protocol_version_mismatch(server: _Server) -> None:
         # HELLO is missing the nonce
         Preamble().pack() + pack_message(Op.HELLO, {}),
         # HELLO has malformed metadata
-        Preamble().pack() + Header(Op.HELLO, 0, 2, 0).pack() + b'[]',
+        Preamble().pack() + Header(Op.HELLO, 0, 0, 2, 0).pack() + b'[]',
         # HELLO nonce is too short
         Preamble().pack()
         + pack_message(
@@ -266,7 +271,7 @@ async def _raw_request(
 ) -> tuple[int, dict[str, Any]]:
     def _run() -> tuple[int, dict[str, Any]]:
         client._socket.sendall(message)
-        header, meta = _recv_message(client._socket)
+        header, meta = _recv_meta(client._socket)
         return header.code, meta
 
     return await asyncio.to_thread(_run)
@@ -304,7 +309,7 @@ async def test_request_meta_too_large(server: _Server) -> None:
     client = await _connect(server)
 
     def _run() -> None:
-        header = Header(Op.GET, 0, MAX_META_SIZE + 1, 0).pack()
+        header = Header(Op.GET, 0, 0, MAX_META_SIZE + 1, 0).pack()
         client._socket.sendall(header)
         assert _is_closed(client._socket)
 
@@ -346,7 +351,7 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
             data_len=MAX_OBJECT_SIZE + 1,
         )
         client._socket.sendall(message + randbytes(1_000_000))
-        header, meta = _recv_message(client._socket)
+        header, meta = _recv_meta(client._socket)
         return header.code, meta
 
     for _ in range(10):
@@ -613,14 +618,14 @@ def _raw_handshake(server: _Server, versions: Versions) -> None:
         hello = Hello(client_nonce, versions).to_meta()
         sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
         _recv_exactly(sock, Preamble.SIZE)
-        _, meta = _recv_message(sock)
+        _, meta = _recv_meta(sock)
         proof = server.token.proof(
             'client',
             client_nonce,
             bytes.fromhex(meta['nonce']),
         )
         sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-        header, _ = _recv_message(sock)
+        header, _ = _recv_meta(sock)
         assert header.code == Status.OK
 
 
@@ -736,7 +741,7 @@ async def test_ping_malformed(server: _Server) -> None:
         client._socket.sendall,
         pack_message(Op.PING, {'key': None, 'target': 42}),
     )
-    header, meta = await asyncio.to_thread(_recv_message, client._socket)
+    header, meta = await asyncio.to_thread(_recv_meta, client._socket)
     assert header.code == Status.BAD_REQUEST
     assert "invalid 'target'" in meta['error']
     await asyncio.to_thread(client.close)

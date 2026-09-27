@@ -33,12 +33,12 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import exists_from_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
@@ -56,6 +56,7 @@ from proxystore.serialize import BytesLike
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
 _COALESCE_THRESHOLD = 64 * 1024
+_MAX_REQUEST_ID = 2**32 - 1
 
 
 class EndpointClient:
@@ -86,6 +87,7 @@ class EndpointClient:
         self._socket = sock
         self.info = info
         self.closed = False
+        self._next_request_id = 1
 
     def __enter__(self) -> Self:
         return self
@@ -326,8 +328,9 @@ class EndpointClient:
         )
         if response.code == Status.NOT_FOUND:
             return None
-        assert isinstance(response.data, bytearray)
-        return response.data
+        data = response.data
+        # Data is always read into a bytearray unless it is empty.
+        return data if isinstance(data, bytearray) else bytearray(data)
 
     def set(
         self,
@@ -392,7 +395,16 @@ class EndpointClient:
 
         payload = _as_bytes_view(data) if data is not None else None
         data_len = 0 if payload is None else len(payload)
-        message = pack_message(op, request.to_meta(), data_len)
+        request_id = self._next_request_id
+        # Request IDs are in the range [1, 2^32 - 1] because 0 is reserved
+        # for handshake messages.
+        self._next_request_id = request_id % _MAX_REQUEST_ID + 1
+        message = pack_message(
+            op,
+            request.to_meta(),
+            data_len,
+            request_id=request_id,
+        )
 
         try:
             if payload is None:
@@ -403,8 +415,12 @@ class EndpointClient:
                 self._socket.sendall(message)
                 self._socket.sendall(payload)
 
-            header, response_meta = _recv_message(self._socket)
-            response_data = _recv_exactly(self._socket, header.data_len)
+            header, response = _recv_message(self._socket)
+            if header.request_id != request_id:
+                raise EndpointProtocolError(
+                    f'Expected a response to request {request_id} but got '
+                    f'a response to request {header.request_id}.',
+                )
         except EndpointError:
             self.close()
             raise
@@ -419,7 +435,6 @@ class EndpointClient:
             self.close()
             raise
 
-        response = Message(header.code, response_meta, response_data)
         try:
             raise_for_status(response, op)
         except (EndpointProtocolError, ObjectSizeExceededError):
@@ -533,7 +548,13 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
 
 
 def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
-    header, meta = _recv_message(sock)
+    try:
+        header, message = _recv_message(sock, max_data_size=0)
+    except ObjectSizeExceededError:
+        raise EndpointProtocolError(
+            'Endpoint sent data in a handshake message.',
+        ) from None
+    meta = message.meta
     if header.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
@@ -545,17 +566,18 @@ def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
             f'Endpoint returned status {header.code} during the handshake: '
             f'{error}',
         )
-    if header.data_len != 0:
-        raise EndpointProtocolError(
-            'Endpoint sent data in a handshake message.',
-        )
     return meta
 
 
-def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
-    header = Header.unpack(_recv_exactly(sock, Header.SIZE))
-    meta = decode_meta(_recv_exactly(sock, header.meta_len))
-    return header, meta
+def _recv_message(
+    sock: socket.socket,
+    *,
+    max_data_size: int | None = None,
+) -> tuple[Header, Message]:
+    reader = MessageReader(max_data_size=max_data_size)
+    while not reader.done:
+        reader.feed(_recv_exactly(sock, reader.size))
+    return reader.header, reader.message
 
 
 def _recv_exactly(sock: socket.socket, size: int) -> bytearray:

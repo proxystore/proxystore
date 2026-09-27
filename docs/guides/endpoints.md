@@ -395,7 +395,7 @@ change.
 | Interface | Version | Incompatible versions |
 | --- | --- | --- |
 | Client-endpoint protocol | [`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] | The endpoint refuses the connection. |
-| Peer protocol | The `proxystore/1` protocol negotiated on peer connections | The connection fails. |
+| Peer protocol | The [`ALPN`][proxystore.endpoint.protocol.ALPN] negotiated on peer connections, which includes `PROTOCOL_VERSION` | The connection fails. |
 | `config.toml` | `version` field | The configuration cannot be read. |
 | `peers.toml` | `version` field | No peers are allowed until the file is fixed. |
 | `connection.json` | `version` field | Clients cannot connect. Restart the endpoint. |
