@@ -24,9 +24,9 @@ from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointRunningError
-from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import PeerOptions
+from proxystore.endpoint.p2p.manager import PeerPolicy
 from proxystore.endpoint.storage import MemoryStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.utils.environment import hostname
@@ -343,23 +343,12 @@ async def test_endpoint_storage_override(tmp_path: pathlib.Path) -> None:
     mock_close.assert_awaited_once()
 
 
-class _AllowAll:
-    def allowed(self, peer_id: EndpointId) -> bool:
-        return True
-
-    def name_of(self, peer_id: EndpointId) -> str | None:
-        return 'peer'
-
-    def revoked(self) -> set[EndpointId]:
-        return set()
-
-
 async def test_endpoint_peer_overrides(tmp_path: pathlib.Path) -> None:
     endpoint_dir, _ = _endpoint_dir(
         tmp_path,
         p2p=EndpointP2PConfig(enabled=True, relays='none'),
     )
-    policy = _AllowAll()
+    policy = mock.create_autospec(PeerPolicy, instance=True)
     async with Endpoint(
         endpoint_dir,
         peer_policy=policy,
