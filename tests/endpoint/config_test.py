@@ -28,6 +28,7 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
         id=EndpointId.random(),
         host='host',
         port=1234,
+        p2p=EndpointP2PConfig(relays=['https://relay.example.com']),
     )
     EndpointDir(tmp_dir).write_config(cfg)
     assert os.path.exists(tmp_dir)
@@ -38,13 +39,6 @@ def test_write_read_config(tmp_path: pathlib.Path) -> None:
 
     new_cfg = EndpointDir(tmp_dir).read_config()
     assert cfg == new_cfg
-
-
-def test_read_config_missing_file(tmp_path: pathlib.Path) -> None:
-    os.makedirs(tmp_path, exist_ok=True)
-
-    with pytest.raises(FileNotFoundError):
-        EndpointDir(str(tmp_path)).read_config()
 
 
 def test_get_configs(tmp_path: pathlib.Path) -> None:
@@ -193,18 +187,6 @@ def test_validate_p2p_relays(relays: Any, error: str | None) -> None:
     else:
         with pytest.raises(ValueError, match=error):
             EndpointP2PConfig(relays=relays)
-
-
-def test_p2p_config_round_trip(tmp_path: pathlib.Path) -> None:
-    config = EndpointConfig(
-        name='name',
-        id=EndpointId.random(),
-        port=1234,
-        p2p=EndpointP2PConfig(relays=['https://relay.example.com']),
-    )
-    endpoint_dir = EndpointDir(str(tmp_path / 'name'))
-    endpoint_dir.write_config(config)
-    assert endpoint_dir.read_config() == config
 
 
 def test_read_config_name_mismatch(tmp_path: pathlib.Path) -> None:

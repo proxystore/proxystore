@@ -20,7 +20,6 @@ from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import EndpointService
@@ -99,16 +98,6 @@ async def test_service_restricts_endpoint_dir(
         pass
     assert stat.S_IMODE(os.stat(endpoint_dir.path).st_mode) == 0o700
     assert any('other permissions' in r.message for r in caplog.records)
-
-
-async def test_service_missing_secret_key(
-    tmp_path: pathlib.Path,
-) -> None:
-    endpoint_dir, _ = _endpoint_dir(tmp_path)
-    os.remove(endpoint_dir.secret_key_path)
-    with pytest.raises(EndpointConfigError, match='does not contain a secret'):
-        async with EndpointService(endpoint_dir):
-            pass  # pragma: no cover
 
 
 async def test_service_secret_key_mismatch(

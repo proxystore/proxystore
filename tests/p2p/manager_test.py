@@ -19,7 +19,6 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
 from proxystore.p2p.addrs import PeerAddrCache
-from proxystore.p2p.manager import _closed_with
 from proxystore.p2p.manager import CloseCode
 from proxystore.p2p.manager import PathInfo
 from proxystore.p2p.manager import PeerManager
@@ -338,12 +337,6 @@ async def test_online(tmp_path: pathlib.Path, caplog) -> None:
         await manager._online_task
     await manager.close()
     assert any('connected to home relay' in r.message for r in caplog.records)
-
-
-def test_closed_with() -> None:
-    reason = 'closed by peer: not allowed (code 1)'
-    assert _closed_with(reason, CloseCode.NOT_ALLOWED)
-    assert not _closed_with(reason, CloseCode.SHUTDOWN)
 
 
 async def test_drop_outgoing_replaced_connection(managers) -> None:

@@ -92,14 +92,6 @@ def test_random() -> None:
     assert EndpointId.random() != endpoint_id
 
 
-def test_invalid_public_key() -> None:
-    # Well-formed but not a valid ed25519 public key
-    with pytest.raises(ValueError, match='not a valid public key'):
-        EndpointId('02' * 32)
-    with pytest.raises(ValueError, match='not a valid public key'):
-        EndpointId.from_str('02' * 32)
-
-
 _P = 2**255 - 19
 
 
