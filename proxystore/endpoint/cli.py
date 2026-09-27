@@ -12,11 +12,9 @@ from __future__ import annotations
 
 import functools
 import logging
-import sys
 import time
 import uuid
 from collections.abc import Callable
-from typing import ClassVar
 from typing import Literal
 from typing import ParamSpec
 
@@ -42,33 +40,6 @@ from proxystore.serialize import serialize
 P = ParamSpec('P')
 
 
-class _CLIFormatter(logging.Formatter):
-    """Custom format for CLI logs.
-
-    Source: https://stackoverflow.com/questions/1343227
-    """
-
-    grey = '\x1b[0;30m'
-    red = '\x1b[0;31m'
-    green = '\x1b[0;32m'
-    yellow = '\x1b[0;33m'
-    cyan = '\x1b[0;36m'
-    bold_red = '\x1b[1;31m'
-    reset = '\x1b[0m'
-
-    FORMATS: ClassVar[dict[int, str]] = {
-        logging.DEBUG: f'{cyan}DEBUG:{reset} %(message)s',
-        logging.INFO: f'{green}INFO:{reset} %(message)s',
-        logging.WARNING: f'{yellow}WARNING:{reset} %(message)s',
-        logging.ERROR: f'{red}ERROR:{reset} %(message)s',
-        logging.CRITICAL: f'{bold_red}CRITICAL:{reset} %(message)s',
-    }
-
-    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
-        formatter = logging.Formatter(self.FORMATS[record.levelno])
-        return formatter.format(record)
-
-
 def _error(message: object) -> None:
     """Print an error message to stderr."""
     click.echo(f'{click.style("Error:", fg="red")} {message}', err=True)
@@ -87,9 +58,7 @@ def _error(message: object) -> None:
 @click.pass_context
 def cli(ctx: click.Context, log_level: str) -> None:
     """Manage and start ProxyStore Endpoints."""
-    handler = logging.StreamHandler(sys.stderr)
-    handler.setFormatter(_CLIFormatter())
-    logging.basicConfig(level=log_level, handlers=[handler])
+    logging.basicConfig(level=log_level, format='%(levelname)s: %(message)s')
     ctx.ensure_object(dict)
     ctx.obj['LOG_LEVEL'] = log_level
 

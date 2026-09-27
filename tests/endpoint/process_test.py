@@ -346,9 +346,16 @@ def _restore_root_logger() -> Generator[None, None, None]:
 
 @pytest.mark.usefixtures('_restore_root_logger')
 def test_configure_logging(tmp_path: pathlib.Path) -> None:
+    # Existing handlers (e.g., of the CLI) keep their format
+    existing = logging.StreamHandler()
+    formatter = logging.Formatter('%(message)s')
+    existing.setFormatter(formatter)
+    logging.getLogger().addHandler(existing)
+
     # The parent directory of the log file is created if necessary
     log_file = os.path.join(tmp_path, 'log-dir', 'log.txt')
     configure_logging('DEBUG', log_file)
+    assert existing.formatter is formatter
     assert logging.getLogger().level == logging.DEBUG
     logging.getLogger('test').debug('message')
     with open(log_file) as f:

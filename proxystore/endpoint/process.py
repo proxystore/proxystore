@@ -110,33 +110,31 @@ def start_endpoint(
         serve(endpoint_dir)
 
 
-def configure_logging(
-    log_level: int | str = logging.INFO,
-    log_file: str | None = None,
-) -> None:
+def configure_logging(log_level: int | str, log_file: str) -> None:
     """Configure logging of an endpoint process.
 
-    This sets the level and format of the root logger and optionally
-    appends the log to a file. This is only called by
+    This sets the level of the root logger and appends the log to a file.
+    Existing handlers of the root logger (e.g., of the CLI) are unchanged.
+    This is only called by
     [`start_endpoint()`][proxystore.endpoint.process.start_endpoint] because
     it changes the logging of the entire process.
 
     Args:
         log_level: Logging level.
-        log_file: Optional file path to append the log to. The parent
-            directory is created if it does not exist.
+        log_file: File path to append the log to. The parent directory is
+            created if it does not exist.
     """
-    root = logging.getLogger()
-    if log_file is not None:
-        os.makedirs(os.path.dirname(log_file) or '.', exist_ok=True)
-        root.addHandler(logging.FileHandler(log_file))
-
-    formatter = logging.Formatter(
-        '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
+    os.makedirs(os.path.dirname(log_file) or '.', exist_ok=True)
+    handler = logging.FileHandler(log_file)
+    handler.setFormatter(
+        logging.Formatter(
+            '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: '
+            '%(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S',
+        ),
     )
-    for handler in root.handlers:
-        handler.setFormatter(formatter)
+    root = logging.getLogger()
+    root.addHandler(handler)
     root.setLevel(log_level)
 
 
