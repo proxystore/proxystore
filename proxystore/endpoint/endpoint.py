@@ -1,5 +1,10 @@
 """ProxyStore endpoints.
 
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 An [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] runs an endpoint
 from its directory in the current event loop. Use
 [`serve()`][proxystore.endpoint.process.serve] to run an endpoint in the

@@ -1,7 +1,7 @@
 """Dispatch requests to the storage of an endpoint or to its peers.
 
 Warning:
-    This module is an implementation detail of endpoints. Its interface may
+    This module is an internal implementation detail. Its interface may
     change between releases without notice (see
     [`proxystore.endpoint`][proxystore.endpoint]).
 

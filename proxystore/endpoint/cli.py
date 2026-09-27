@@ -1,5 +1,10 @@
 """`proxystore-endpoint` command-line interface.
 
+Warning:
+    The commands of the CLI are public but this module is an internal
+    implementation detail. Its interface may change between releases
+    without notice (see [`proxystore.endpoint`][proxystore.endpoint]).
+
 See the CLI Reference for the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) usage instructions.
 

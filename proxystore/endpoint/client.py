@@ -1,5 +1,16 @@
 """Client for communicating with a local endpoint.
 
+This module is part of the public interface of endpoints (see
+[`proxystore.endpoint`][proxystore.endpoint]). The objects returned by the
+[`EndpointClient`][proxystore.endpoint.client.EndpointClient] (e.g., its
+`info` and the result of `ping()`) are public too, but their types are
+defined in internal modules so import them at your own risk.
+[`from_name()`][proxystore.endpoint.client.EndpointClient.from_name] is
+the intended way to connect. The arguments of
+[`connect()`][proxystore.endpoint.client.EndpointClient.connect] and
+[`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir] are
+internal types.
+
 Note:
     Clients communicate with endpoints on the local network over TCP using
     the protocol defined in

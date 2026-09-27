@@ -394,7 +394,7 @@ To turn the warning into an error, use a
 
 ```python
 import warnings
-from proxystore.endpoint import EndpointVersionWarning
+from proxystore.endpoint.warnings import EndpointVersionWarning
 
 warnings.simplefilter('error', EndpointVersionWarning)
 ```
@@ -415,11 +415,13 @@ change.
 | `connection.json` | `version` field | Clients cannot connect. Restart the endpoint. |
 | `peer-addrs.json` | `version` field | The cache is ignored. |
 
-The names exported by the [`proxystore.endpoint`][proxystore.endpoint]
-package (e.g., `from proxystore.endpoint import EndpointClient`) are the
-public Python interface. Every module is documented, but other names,
-including the protocol and peer-to-peer implementations, may change between
-releases.
+The public Python interface of endpoints is the
+[`client`][proxystore.endpoint.client],
+[`exceptions`][proxystore.endpoint.exceptions], and
+[`warnings`][proxystore.endpoint.warnings] modules (see
+[`proxystore.endpoint`][proxystore.endpoint]). Every module is documented,
+but the other modules, including the protocol and peer-to-peer
+implementations, may change between releases.
 
 ## Proxy Lifecycle
 

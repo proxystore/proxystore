@@ -1,4 +1,10 @@
-"""Endpoint directory layout and files."""
+"""Endpoint directory layout and files.
+
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+"""
 
 from __future__ import annotations
 
