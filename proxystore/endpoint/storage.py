@@ -15,6 +15,8 @@ from typing import runtime_checkable
 
 import aiosqlite
 
+from proxystore.endpoint.protocol import MessageData
+
 
 @runtime_checkable
 class Storage(Protocol):
@@ -41,7 +43,7 @@ class Storage(Protocol):
         """
         ...
 
-    async def get(self, key: str) -> bytes | bytearray | None:
+    async def get(self, key: str) -> MessageData | None:
         """Get a blob from storage.
 
         Args:
@@ -52,7 +54,7 @@ class Storage(Protocol):
         """
         ...
 
-    async def set(self, key: str, blob: bytes | bytearray) -> None:
+    async def set(self, key: str, blob: MessageData) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -73,7 +75,7 @@ class MemoryStorage:
     """
 
     def __init__(self) -> None:
-        self._data: dict[str, bytes | bytearray] = {}
+        self._data: dict[str, MessageData] = {}
 
     async def evict(self, key: str) -> None:
         """Evict a blob from storage.
@@ -94,7 +96,7 @@ class MemoryStorage:
         """
         return key in self._data
 
-    async def get(self, key: str) -> bytes | bytearray | None:
+    async def get(self, key: str) -> MessageData | None:
         """Get a blob from storage.
 
         Args:
@@ -105,7 +107,7 @@ class MemoryStorage:
         """
         return self._data.get(key)
 
-    async def set(self, key: str, blob: bytes | bytearray) -> None:
+    async def set(self, key: str, blob: MessageData) -> None:
         """Store the blob associated with a key.
 
         Args:
@@ -188,7 +190,7 @@ class SQLiteStorage:
             (count,) = result
             return bool(count)
 
-    async def get(self, key: str) -> bytes | bytearray | None:
+    async def get(self, key: str) -> MessageData | None:
         """Get a blob from storage.
 
         Args:
@@ -207,7 +209,7 @@ class SQLiteStorage:
                 return None
             return result[0]
 
-    async def set(self, key: str, blob: bytes | bytearray) -> None:
+    async def set(self, key: str, blob: MessageData) -> None:
         """Store the blob associated with a key.
 
         Args:

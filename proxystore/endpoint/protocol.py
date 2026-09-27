@@ -54,6 +54,7 @@ from typing import Any
 from typing import ClassVar
 from typing import NamedTuple
 from typing import Self
+from typing import TypeAlias
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointAuthError
@@ -82,6 +83,13 @@ MAX_META_SIZE = 64 * 1024
 """Maximum size in bytes of the metadata in a message."""
 VERSION_DOCS_URL = 'https://docs.proxystore.dev/latest/guides/endpoints/#version-compatibility'
 """Documentation on version compatibility between clients and endpoints."""
+
+MessageData: TypeAlias = bytes | bytearray
+"""Data of a message.
+
+Unlike [`BytesLike`][proxystore.serialize.BytesLike], views are excluded
+because endpoints store the data after handling the message.
+"""
 
 
 class Op(enum.IntEnum):
@@ -467,7 +475,7 @@ class Message:
 
     code: int
     meta: dict[str, Any] = dataclasses.field(default_factory=dict)
-    data: bytes | bytearray = b''
+    data: MessageData = b''
     request_id: int = 0
 
     @classmethod
