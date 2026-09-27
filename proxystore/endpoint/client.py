@@ -12,6 +12,7 @@ Note:
 from __future__ import annotations
 
 import hmac
+import logging
 import os
 import socket
 import ssl
@@ -50,6 +51,8 @@ from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
 from proxystore.serialize import BytesLike
+
+logger = logging.getLogger(__name__)
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
@@ -181,6 +184,13 @@ class EndpointClient:
                 EndpointVersionWarning,
                 stacklevel=2,
             )
+        logger.debug(
+            'Connected to endpoint %s at %s:%s (tls=%s)',
+            info.id.log_name(info.name),
+            host,
+            port,
+            tls_fingerprint is not None,
+        )
         return cls(sock, info)
 
     @classmethod
@@ -260,6 +270,10 @@ class EndpointClient:
         if not self.closed:
             self.closed = True
             self._socket.close()
+            logger.debug(
+                'Closed connection to endpoint %s',
+                self.info.id.log_name(self.info.name),
+            )
 
     def evict(self, key: str, target: str | None = None) -> None:
         """Evict the object associated with the key.
