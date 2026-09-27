@@ -691,6 +691,8 @@ class PeerManager:
             )
 
     async def _wait_online(self, timeout: float) -> None:
+        # Errors are logged rather than raised because this task only
+        # reports the status of the relay and close() awaits it.
         try:
             await asyncio.wait_for(self.endpoint.online(), timeout=timeout)
         except TimeoutError:
@@ -699,6 +701,8 @@ class PeerManager:
                 'Peers may only be able to connect directly',
                 timeout,
             )
+        except Exception:
+            logger.exception('Failed to wait for a home relay connection')
         else:
             logger.info('Connected to home relay')
 
