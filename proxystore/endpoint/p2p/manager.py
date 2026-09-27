@@ -25,9 +25,9 @@ import iroh
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import PeerConnectionError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
@@ -396,7 +396,7 @@ class PeerManager:
             PeerNotAllowedError: If the peer is not in the allowlist or the
                 peer refused the connection.
             PeerConnectionTimeoutError: If connecting to the peer times out.
-            PeerConnectionError: If the request fails.
+            PeerUnavailableError: If the request fails.
         """
         if not self._is_allowed(peer_id):
             raise PeerNotAllowedError(
@@ -424,7 +424,7 @@ class PeerManager:
                 # A cached connection may have been closed (e.g., because
                 # the peer restarted) so retry once with a new connection.
                 if fresh or attempt > 0:
-                    raise PeerConnectionError(
+                    raise PeerUnavailableError(
                         f'Request to peer {peer_id} failed: {_message(e)}',
                     ) from None
                 logger.debug(
@@ -483,7 +483,7 @@ class PeerManager:
                 )
             except PeerConnectionTimeoutError:
                 raise
-            except PeerConnectionError as e:
+            except PeerUnavailableError as e:
                 if hint is None:
                     raise
                 # The cached address may be stale so try again using only
@@ -523,7 +523,7 @@ class PeerManager:
                 f'{self._connect_timeout} seconds.',
             ) from None
         except iroh.IrohError as e:
-            raise PeerConnectionError(
+            raise PeerUnavailableError(
                 f'Failed to connect to peer {peer_id}: {_message(e)}',
             ) from None
 

@@ -29,12 +29,10 @@ from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import check_response
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import exists_from_meta
@@ -47,6 +45,7 @@ from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
@@ -422,12 +421,7 @@ class EndpointClient:
 
         response = Message(header.code, response_meta, response_data)
         try:
-            check_response(
-                response,
-                op,
-                source='Endpoint',
-                error=EndpointRequestError,
-            )
+            raise_for_status(response, op)
         except (EndpointProtocolError, ObjectSizeExceededError):
             # The connection is in an unknown state after an unknown status,
             # and the endpoint may close the connection after rejecting data

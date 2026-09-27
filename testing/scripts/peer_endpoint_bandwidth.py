@@ -47,13 +47,17 @@ from typing import Literal
 import iroh
 
 from proxystore.endpoint.config import EndpointP2PConfig
-from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.peers import Allowlist
-from proxystore.endpoint.serve import peer_request_handler
+from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import raise_for_status
+from proxystore.endpoint.protocol import Request
+from proxystore.endpoint.storage import DictStorage
 
 
 class _AllowAll(Allowlist):
@@ -91,21 +95,36 @@ def _relay_options(relays: Literal['n0', 'none']) -> dict[str, Any]:
     }
 
 
-async def _endpoint(relays: Literal['n0', 'none'], tmp_dir: str) -> Endpoint:
+async def _endpoint(
+    relays: Literal['n0', 'none'],
+    tmp_dir: str,
+) -> Dispatcher:
     manager = PeerManager(
         SecretKey.generate(),
         _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
         **_relay_options(relays),
     )
-    endpoint = Endpoint('benchmark', manager.id, peer_manager=manager)
-    await manager.start(peer_request_handler(endpoint))
-    return endpoint
+    dispatcher = Dispatcher(manager.id, DictStorage(), manager)
+    await manager.start(dispatcher.handle_peer_request)
+    return dispatcher
 
 
-async def _close(endpoint: Endpoint) -> None:
+async def _close(endpoint: Dispatcher) -> None:
     assert endpoint.peer_manager is not None
     await endpoint.peer_manager.close()
-    await endpoint.close()
+    await endpoint.storage.close()
+
+
+async def _request(
+    endpoint: Dispatcher,
+    op: Op,
+    target: EndpointId,
+    data: bytes = b'',
+) -> Message:
+    request = Message(op, Request('key', target).to_meta(), data)
+    response = await endpoint.handle(request, forward=True)
+    raise_for_status(response, op)
+    return response
 
 
 async def _time(coro: Any) -> float:
@@ -133,11 +152,12 @@ async def run_local(
         )
 
     try:
-        connect = await _time(endpoint.exists('key', remote))
+        connect = await _time(_request(endpoint, Op.EXISTS, remote))
         print(f'Connection established in {connect * 1000:.1f} ms')
 
         rtts = [
-            await _time(endpoint.exists('key', remote)) for _ in range(100)
+            await _time(_request(endpoint, Op.EXISTS, remote))
+            for _ in range(100)
         ]
         print(f'Round trip (EXISTS): {statistics.median(rtts) * 1000:.3f} ms')
 
@@ -145,13 +165,14 @@ async def run_local(
         for size in sizes:
             data = os.urandom(size)
             set_times = [
-                await _time(endpoint.set('key', data, remote))
+                await _time(_request(endpoint, Op.SET, remote, data))
                 for _ in range(repeat)
             ]
             get_times = [
-                await _time(endpoint.get('key', remote)) for _ in range(repeat)
+                await _time(_request(endpoint, Op.GET, remote))
+                for _ in range(repeat)
             ]
-            await endpoint.evict('key', remote)
+            await _request(endpoint, Op.EVICT, remote)
             set_mbps = size * 8 / 1e6 / min(set_times)
             get_mbps = size * 8 / 1e6 / min(get_times)
             print(f'{size:>12} {set_mbps:>12.1f} {get_mbps:>12.1f}')

@@ -29,7 +29,9 @@ from pydantic import Field
 from pydantic import field_validator
 
 from proxystore.endpoint.config import validate_name
+from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import PeerExistsError
+from proxystore.endpoint.exceptions import PeerNotFoundError
 from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
@@ -135,8 +137,8 @@ class Peers:
         except FileNotFoundError:
             return PeersConfig()
         except ValueError as e:
-            raise ValueError(
-                f'Unable to parse ({self.path}): {e!s}.'
+            raise EndpointConfigError(
+                f'Unable to parse ({self.path}): {e!s}.',
             ) from None
 
     def write(self, peers: PeersConfig) -> None:
@@ -155,24 +157,29 @@ class Peers:
 
         Raises:
             PeerExistsError: If a peer with the name already exists.
-            ValueError: If the name or ID is invalid, the ID is the ID of the
-                owner, the endpoint is already a peer with a different name,
-                or the file cannot be parsed.
+            EndpointConfigError: If the name or ID is invalid, the ID is the
+                ID of the owner, the endpoint is already a peer with a
+                different name, or the file cannot be parsed.
         """
         if not validate_name(name):
-            raise ValueError(
+            raise EndpointConfigError(
                 'Peer names must only contain alphanumeric characters, '
                 f'dashes, and underscores. Got {name}.',
             )
-        peer_id = EndpointId.from_str(endpoint_id)
+        try:
+            peer_id = EndpointId.from_str(endpoint_id)
+        except ValueError as e:
+            raise EndpointConfigError(str(e)) from None
         if peer_id == self.owner_id:
-            raise ValueError('An endpoint cannot be a peer of itself.')
+            raise EndpointConfigError(
+                'An endpoint cannot be a peer of itself.',
+            )
         peers = self.read()
         if name in peers.peers:
             raise PeerExistsError(f'A peer named {name} already exists.')
         existing = peers.name_of(peer_id)
         if existing is not None:
-            raise ValueError(
+            raise EndpointConfigError(
                 f'Endpoint {peer_id} is already a peer named {existing}.',
             )
         peers.peers[name] = peer_id
@@ -191,13 +198,13 @@ class Peers:
             The ID of the removed peer.
 
         Raises:
-            ValueError: If there is no peer with the name or the file cannot
-                be parsed.
+            PeerNotFoundError: If there is no peer with the name.
+            EndpointConfigError: If the file cannot be parsed.
         """
         peers = self.read()
         peer_id = peers.peers.pop(name, None)
         if peer_id is None:
-            raise ValueError(f'No peer named {name}.')
+            raise PeerNotFoundError(f'No peer named {name}.')
         self.write(peers)
         return peer_id
 

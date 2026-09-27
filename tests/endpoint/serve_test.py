@@ -19,12 +19,12 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.serve import EndpointService
 from proxystore.endpoint.serve import serve
+from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.utils.environment import hostname
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
@@ -48,11 +48,10 @@ async def test_service(tmp_path: pathlib.Path) -> None:
     connection_file = endpoint_dir.connection_path
 
     async with EndpointService(endpoint_dir) as service:
-        endpoint = service.endpoint
-        assert endpoint.id == config.id
+        assert service.dispatcher.id == config.id
         assert stat.S_IMODE(os.stat(connection_file).st_mode) == 0o600
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
-        assert client.info.id == endpoint.id
+        assert client.info.id == config.id
 
     # Open connections are closed and the connection file is removed on
     # shutdown
@@ -132,7 +131,7 @@ async def test_service_start_up_failure_cleans_up(
     # The connection file cannot be written if its path is a directory
     os.mkdir(endpoint_dir.connection_path)
     with (
-        mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close,
+        mock.patch.object(SQLiteStorage, 'close', AsyncMock()) as mock_close,
         pytest.raises(IsADirectoryError),
     ):
         async with EndpointService(endpoint_dir):
@@ -250,9 +249,9 @@ async def test_service_peering(tmp_path: pathlib.Path, caplog) -> None:
         p2p=EndpointP2PConfig(enabled=True),
     )
     async with EndpointService(endpoint_dir) as service:
-        endpoint = service.endpoint
-        assert endpoint.peer_manager is not None
-        assert endpoint.peer_manager.id == endpoint.id
+        peer_manager = service.dispatcher.peer_manager
+        assert peer_manager is not None
+        assert peer_manager.id == service.dispatcher.id
     assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
 
 
@@ -277,10 +276,10 @@ async def test_service_peering_addr_cache(
         p2p=EndpointP2PConfig(enabled=True, relays='none'),
     )
     async with EndpointService(endpoint_dir) as service:
-        endpoint = service.endpoint
-        assert endpoint.peer_manager is not None
-        assert endpoint.peer_manager._addr_cache is not None
-        path = endpoint.peer_manager._addr_cache.path
+        peer_manager = service.dispatcher.peer_manager
+        assert peer_manager is not None
+        assert peer_manager._addr_cache is not None
+        path = peer_manager._addr_cache.path
         assert path == endpoint_dir.peer_addrs_path
 
 
@@ -295,8 +294,7 @@ async def test_service_database_path(
     storage = EndpointStorageConfig(database_path=path)
     endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
     async with EndpointService(endpoint_dir) as service:
-        endpoint = service.endpoint
-        await endpoint.set('key', b'value')
+        await service.dispatcher.storage.set('key', b'value')
     expected = (
         os.path.join(endpoint_dir.path, 'blobs.db')
         if relative
@@ -309,7 +307,7 @@ async def test_service_lifecycle(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path)
     service = EndpointService(endpoint_dir)
     assert not service.running
-    for attr in ('config', 'endpoint', 'connection'):
+    for attr in ('config', 'dispatcher', 'connection'):
         with pytest.raises(RuntimeError, match='not running'):
             getattr(service, attr)
     # Stopping a service that is not running is a no-op
@@ -319,7 +317,7 @@ async def test_service_lifecycle(tmp_path: pathlib.Path) -> None:
     try:
         assert service.running
         assert service.config == config
-        assert service.endpoint.id == config.id
+        assert service.dispatcher.id == config.id
         assert service.connection == endpoint_dir.read_connection()
         with pytest.raises(RuntimeError, match='already running'):
             await service.start()

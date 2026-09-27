@@ -24,12 +24,8 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.handler import handle_request
-from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.p2p.manager import PeerManager
-from proxystore.endpoint.p2p.manager import RequestHandler
-from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
@@ -54,24 +50,6 @@ def _create_peer_manager(
         relays if isinstance(relays, str) else ', '.join(relays),
     )
     return PeerManager.from_endpoint_dir(endpoint_dir)
-
-
-def peer_request_handler(endpoint: Endpoint) -> RequestHandler:
-    """Create a handler of requests from peers to an endpoint.
-
-    Requests from peers are handled like requests from clients except they
-    are never forwarded to another peer.
-    """
-
-    async def _handle(peer: EndpointId, request: Message) -> Message:
-        logger.debug(
-            'Received op %s request from peer %s',
-            request.code,
-            peer.short(),
-        )
-        return await handle_request(endpoint, request, forward=False)
-
-    return _handle
 
 
 def _create_storage(
@@ -107,12 +85,12 @@ class EndpointService:
     """Service which serves an endpoint to clients.
 
     The service owns everything needed to run an endpoint from its
-    directory: the endpoint and its storage and peer manager, the server that
-    accepts client connections, and the connection file that clients use to
-    connect. Once started, the endpoint is accepting client connections and
-    its connection file is in the endpoint directory. When stopped, the
-    connection file is removed, client connections are closed, and the
-    endpoint is closed.
+    directory: the storage and peer manager of the endpoint, the dispatcher
+    which handles requests, the server that accepts client connections, and
+    the connection file that clients use to connect. Once started, the
+    endpoint is accepting client connections and its connection file is in
+    the endpoint directory. When stopped, the connection file is removed,
+    client connections are closed, and the storage is closed.
 
     Example:
         ```python
@@ -129,7 +107,7 @@ class EndpointService:
         self.endpoint_dir = endpoint_dir
         self._stack: contextlib.AsyncExitStack | None = None
         self._config: EndpointConfig | None = None
-        self._endpoint: Endpoint | None = None
+        self._dispatcher: Dispatcher | None = None
         self._connection: ConnectionInfo | None = None
 
     @property
@@ -145,11 +123,11 @@ class EndpointService:
         return self._config
 
     @property
-    def endpoint(self) -> Endpoint:
-        """The running endpoint."""
+    def dispatcher(self) -> Dispatcher:
+        """Dispatcher which handles requests to the running endpoint."""
         self._check_running()
-        assert self._endpoint is not None
-        return self._endpoint
+        assert self._dispatcher is not None
+        return self._dispatcher
 
     @property
     def connection(self) -> ConnectionInfo:
@@ -217,19 +195,14 @@ class EndpointService:
         # match the configuration.
         endpoint_dir.read_secret_key()
 
+        storage = _create_storage(endpoint_dir, config)
+        stack.push_async_callback(storage.close)
         peer_manager = _create_peer_manager(endpoint_dir, config)
-        endpoint = await stack.enter_async_context(
-            Endpoint(
-                name=config.name,
-                endpoint_id=config.id,
-                peer_manager=peer_manager,
-                storage=_create_storage(endpoint_dir, config),
-            ),
-        )
+        dispatcher = Dispatcher(config.id, storage, peer_manager)
         if peer_manager is not None:
-            # The peer manager is closed before the endpoint so no requests
-            # from peers are handled after the endpoint is closed.
-            await peer_manager.start(peer_request_handler(endpoint))
+            # The peer manager is closed before the storage so no requests
+            # from peers are handled after the storage is closed.
+            await peer_manager.start(dispatcher.handle_peer_request)
             stack.push_async_callback(peer_manager.close)
 
         if endpoint_dir.restrict_permissions():
@@ -252,8 +225,9 @@ class EndpointService:
             logger.info('Encrypting client connections with TLS')
 
         handler = ClientHandler(
-            endpoint,
+            dispatcher,
             token,
+            name=config.name,
             max_object_size=config.storage.object_size_limit,
         )
         server = await handler.start_server(
@@ -279,12 +253,12 @@ class EndpointService:
         stack.callback(endpoint_dir.remove_connection, connection)
 
         self._config = config
-        self._endpoint = endpoint
+        self._dispatcher = dispatcher
         self._connection = connection
         logger.info(
             'Serving endpoint %s (%s) on %s:%s',
-            endpoint.id,
-            endpoint.name,
+            config.id,
+            config.name,
             host,
             config.port,
         )

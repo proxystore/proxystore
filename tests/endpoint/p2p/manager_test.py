@@ -11,9 +11,9 @@ from unittest import mock
 import iroh
 import pytest
 
-from proxystore.endpoint.exceptions import PeerConnectionError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.p2p.manager import CloseCode
@@ -259,7 +259,7 @@ async def test_request_fails_on_fresh_connection(managers) -> None:
 
     with (
         mock.patch.object(manager1, '_exchange', side_effect=_fail),
-        pytest.raises(PeerConnectionError, match='boom'),
+        pytest.raises(PeerUnavailableError, match='boom'),
     ):
         await _request(manager1, manager2.id, Op.GET)
 
@@ -271,7 +271,7 @@ async def test_connect_error(tmp_path: pathlib.Path) -> None:
     try:
         allow_peer(manager1, manager2, 'peer')
         # No address or discovery for the peer
-        with pytest.raises(PeerConnectionError, match='Failed to connect'):
+        with pytest.raises(PeerUnavailableError, match='Failed to connect'):
             await _request(manager1, manager2.id, Op.GET)
     finally:
         await manager1.close()
@@ -473,7 +473,7 @@ async def test_stale_addr_falls_back_to_discovery(managers) -> None:
     async def _dial(peer_id: EndpointId, addr: iroh.EndpointAddr) -> Any:
         calls.append(addr)
         if len(calls) == 1:
-            raise PeerConnectionError('stale')
+            raise PeerUnavailableError('stale')
         # Discovery is not available in tests so use the good address.
         return await real_dial(peer_id, good)
 

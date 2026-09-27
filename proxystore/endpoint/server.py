@@ -8,8 +8,8 @@ Warning:
 Clients connect to their local endpoint over TCP using the protocol defined
 in [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol]. The
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler] authenticates
-clients and forwards their requests to an
-[`Endpoint`][proxystore.endpoint.endpoint.Endpoint].
+clients and passes their requests to a
+[`Dispatcher`][proxystore.endpoint.dispatch.Dispatcher].
 """
 
 from __future__ import annotations
@@ -26,9 +26,8 @@ from typing import Any
 from typing import cast
 
 from proxystore.endpoint.auth import EndpointToken
-from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.handler import handle_request
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
@@ -280,11 +279,11 @@ class ClientHandler:
 
     The handler authenticates each client with the handshake defined in
     [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol] then
-    forwards the client's requests to the endpoint.
+    passes the client's requests to the dispatcher of the endpoint.
 
     Example:
         ```python
-        handler = ClientHandler(endpoint, token)
+        handler = ClientHandler(dispatcher, token, name='my-endpoint')
         server = await handler.start_server('localhost', 8765)
         ...
         server.close()
@@ -293,8 +292,9 @@ class ClientHandler:
         ```
 
     Args:
-        endpoint: Endpoint to forward client requests to.
+        dispatcher: Dispatcher which handles client requests.
         token: Token that clients must prove they know.
+        name: Name of the endpoint sent to clients.
         max_object_size: Optional maximum size in bytes of objects that
             clients can set. Requests exceeding this size are rejected
             before the data is read. This should match the maximum object
@@ -305,14 +305,16 @@ class ClientHandler:
 
     def __init__(
         self,
-        endpoint: Endpoint,
+        dispatcher: Dispatcher,
         token: EndpointToken,
         *,
+        name: str,
         max_object_size: int | None = None,
         handshake_timeout: float = HANDSHAKE_TIMEOUT,
     ) -> None:
-        self.endpoint = endpoint
+        self.dispatcher = dispatcher
         self.token = token
+        self.name = name
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
         self._connections: set[_ClientConnection] = set()
@@ -452,8 +454,8 @@ class ClientHandler:
 
         self._check_client_versions(peer, hello.versions)
         info = EndpointInfo(
-            id=self.endpoint.id,
-            name=self.endpoint.name,
+            id=self.dispatcher.id,
+            name=self.name,
             versions=Versions.current(),
             max_object_size=self.max_object_size,
         )
@@ -507,8 +509,7 @@ class ClientHandler:
                 if header.data_len > 0
                 else b''
             )
-            response = await handle_request(
-                self.endpoint,
+            response = await self.dispatcher.handle(
                 Message(header.code, meta, data),
                 forward=True,
             )

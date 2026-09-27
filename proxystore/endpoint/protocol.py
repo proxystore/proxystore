@@ -44,8 +44,14 @@ from typing import NamedTuple
 from typing import Self
 
 import proxystore
+from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.exceptions import PeeringDisabledError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
 
@@ -84,20 +90,45 @@ class Op(enum.IntEnum):
 
 
 class Status(enum.IntEnum):
-    """Status codes of messages sent by an endpoint."""
+    """Status codes of messages sent by an endpoint.
+
+    The metadata of a response with an error status contains the error
+    message. Each error status corresponds to one exception type (see
+    [`raise_for_status()`][proxystore.endpoint.protocol.raise_for_status]).
+    """
 
     OK = 0
     """Request succeeded."""
     NOT_FOUND = 1
     """No object is associated with the key."""
     ERROR = 2
-    """Request failed. The metadata contains the error message."""
+    """Request failed for an unexpected reason."""
     UNAUTHORIZED = 3
     """Client failed authentication."""
     BAD_REQUEST = 4
     """Request was malformed."""
     TOO_LARGE = 5
     """Request data exceeds the maximum object size of the endpoint."""
+    PEERING_DISABLED = 6
+    """Request targets a peer but peering is disabled on the endpoint."""
+    PEER_NOT_ALLOWED = 7
+    """Request targets a peer which is not allowed to communicate."""
+    PEER_UNAVAILABLE = 8
+    """Request targets a peer which cannot be reached."""
+
+
+STATUS_ERRORS: dict[Status, type[EndpointError]] = {
+    Status.ERROR: EndpointRequestError,
+    Status.UNAUTHORIZED: EndpointAuthError,
+    Status.BAD_REQUEST: EndpointProtocolError,
+    Status.TOO_LARGE: ObjectSizeExceededError,
+    Status.PEERING_DISABLED: PeeringDisabledError,
+    Status.PEER_NOT_ALLOWED: PeerNotAllowedError,
+    Status.PEER_UNAVAILABLE: PeerUnavailableError,
+}
+"""Exception type corresponding to each error status."""
+
+_ERROR_STATUSES = {error: status for status, error in STATUS_ERRORS.items()}
 
 
 @dataclasses.dataclass(frozen=True, slots=True)
@@ -421,22 +452,47 @@ class Message:
         """Create a response with an error message."""
         return cls(status, {'error': message})
 
+    @classmethod
+    def from_error(cls, error: BaseException) -> Message:
+        """Create a response for a request which failed with an error.
 
-def check_response(
+        The status is determined by
+        [`error_status()`][proxystore.endpoint.protocol.error_status].
+        """
+        return cls.error(error_status(error), str(error))
+
+
+def error_status(error: BaseException) -> Status:
+    """Get the status of a response to a request which failed with an error.
+
+    Args:
+        error: Error raised while handling the request.
+
+    Returns:
+        The status of the most specific type of `error` in \
+        [`STATUS_ERRORS`][proxystore.endpoint.protocol.STATUS_ERRORS] or \
+        [`Status.ERROR`][proxystore.endpoint.protocol.Status.ERROR] if there \
+        is none.
+    """
+    for kind in type(error).__mro__:
+        if kind in _ERROR_STATUSES:
+            return _ERROR_STATUSES[kind]
+    return Status.ERROR
+
+
+def raise_for_status(
     response: Message,
     op: Op,
     *,
-    source: str,
-    error: type[Exception],
+    source: str = 'Endpoint',
 ) -> Status:
-    """Check the status of a response to a request.
+    """Raise the exception corresponding to the status of a response.
 
     Args:
         response: Response message.
         op: Operation of the request.
         source: Description of the sender of the response for error
-            messages (e.g., `"Endpoint"`).
-        error: Type of exception to raise if the request failed.
+            messages.
 
     Returns:
         [`Status.OK`][proxystore.endpoint.protocol.Status.OK] or \
@@ -444,9 +500,9 @@ def check_response(
 
     Raises:
         EndpointProtocolError: If the status is unknown.
-        ObjectSizeExceededError: If the status is
-            [`TOO_LARGE`][proxystore.endpoint.protocol.Status.TOO_LARGE].
-        Exception: The `error` type for any other status.
+        EndpointError: The type in
+            [`STATUS_ERRORS`][proxystore.endpoint.protocol.STATUS_ERRORS]
+            for any other status.
     """
     try:
         status = Status(response.code)
@@ -457,12 +513,9 @@ def check_response(
     if status in (Status.OK, Status.NOT_FOUND):
         return status
     reason = response.meta.get('error', 'no error message provided')
-    message = (
-        f'{source} returned {status.name} for {op.name} request: {reason}'
+    raise STATUS_ERRORS[status](
+        f'{source} returned {status.name} for {op.name} request: {reason}',
     )
-    if status == Status.TOO_LARGE:
-        raise ObjectSizeExceededError(message)
-    raise error(message)
 
 
 def exists_from_meta(meta: dict[str, Any]) -> bool:

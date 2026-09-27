@@ -7,15 +7,18 @@ from typing import Any
 import pytest
 
 import proxystore
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
+from proxystore.endpoint.exceptions import PeerError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import check_response
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import encode_meta
 from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import error_status
 from proxystore.endpoint.protocol import exists_from_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
@@ -27,8 +30,10 @@ from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import STATUS_ERRORS
 from proxystore.endpoint.protocol import Versions
 
 
@@ -228,26 +233,52 @@ def test_request_optional_key_round_trip(request_: Request) -> None:
 
 
 @pytest.mark.parametrize('status', (Status.OK, Status.NOT_FOUND))
-def test_check_response_ok(status: Status) -> None:
-    response = Message(status)
-    assert (
-        check_response(response, Op.GET, source='Endpoint', error=KeyError)
-        == status
-    )
+def test_raise_for_status_ok(status: Status) -> None:
+    assert raise_for_status(Message(status), Op.GET) == status
 
 
-def test_check_response_errors() -> None:
-    def _check(response: Message) -> None:
-        check_response(response, Op.SET, source='Peer x', error=KeyError)
+@pytest.mark.parametrize(('status', 'error'), tuple(STATUS_ERRORS.items()))
+def test_raise_for_status_errors(
+    status: Status,
+    error: type[EndpointError],
+) -> None:
+    response = Message.error(status, 'failed')
+    with pytest.raises(error, match=f'Peer x returned {status.name}') as e:
+        raise_for_status(response, Op.SET, source='Peer x')
+    # The most specific type is raised
+    assert type(e.value) is error
+    assert 'for SET request: failed' in str(e.value)
 
-    with pytest.raises(ObjectSizeExceededError, match='Peer x returned TOO'):
-        _check(Message.error(Status.TOO_LARGE, 'too big'))
-    with pytest.raises(KeyError, match='ERROR for SET request: failed'):
-        _check(Message.error(Status.ERROR, 'failed'))
-    with pytest.raises(KeyError, match='no error message provided'):
-        _check(Message(Status.BAD_REQUEST))
+
+def test_raise_for_status_unknown() -> None:
+    with pytest.raises(EndpointRequestError, match='no error message'):
+        raise_for_status(Message(Status.ERROR), Op.GET)
     with pytest.raises(EndpointProtocolError, match='unknown status code 99'):
-        _check(Message(99))
+        raise_for_status(Message(99), Op.GET)
+
+
+def test_every_error_status_has_an_exception() -> None:
+    ok = {Status.OK, Status.NOT_FOUND}
+    assert set(STATUS_ERRORS) == set(Status) - ok
+
+
+@pytest.mark.parametrize(('status', 'error'), tuple(STATUS_ERRORS.items()))
+def test_error_status_round_trip(
+    status: Status,
+    error: type[EndpointError],
+) -> None:
+    response = Message.from_error(error('failed'))
+    assert response == Message.error(status, 'failed')
+    with pytest.raises(error):
+        raise_for_status(response, Op.GET)
+
+
+def test_error_status_subclass_and_unknown() -> None:
+    assert error_status(PeerConnectionTimeoutError()) == (
+        Status.PEER_UNAVAILABLE
+    )
+    assert error_status(PeerError()) == Status.ERROR
+    assert error_status(RuntimeError()) == Status.ERROR
 
 
 def test_exists_from_meta() -> None:

@@ -40,12 +40,12 @@ async def _peered_endpoints(
     dirs[1].peers.add('peer', configs[0].id)
 
     async with EndpointService(dirs[1]) as service:
-        endpoint2 = service.endpoint
+        peer_manager = service.dispatcher.peer_manager
         # Relays and discovery are disabled so endpoint 1 is given the
         # address of endpoint 2 using the peer address cache. Endpoint 2
         # learns the address of endpoint 1 when endpoint 1 connects to it.
-        assert endpoint2.peer_manager is not None
-        addr = endpoint2.peer_manager.addr()
+        assert peer_manager is not None
+        addr = peer_manager.addr()
         PeerAddrCache(dirs[0].peer_addrs_path).save({configs[1].id: addr})
         async with EndpointService(dirs[0]):
             yield configs, homes

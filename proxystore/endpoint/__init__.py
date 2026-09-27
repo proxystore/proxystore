@@ -4,9 +4,9 @@ Note:
    Please refer to the [Endpoints Guide](../../guides/endpoints.md) for an
    introduction to endpoints in ProxyStore.
 
-[`Endpoints`][proxystore.endpoint.endpoint.Endpoint] are in-memory object
-stores with peering capabilities. Endpoints enable peer-to-peer data transfer
-between clients behind different NATs. See the
+Endpoints are in-memory object stores with peering capabilities.
+Endpoints enable peer-to-peer data transfer between clients behind
+different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
 to start your own endpoints.
 
@@ -18,7 +18,6 @@ The public interface of endpoints is provided by these modules:
 * [`config`][proxystore.endpoint.config]: Endpoint configuration.
 * [`identity`][proxystore.endpoint.identity]: Endpoint IDs and secret keys.
 * [`peers`][proxystore.endpoint.peers]: Peers an endpoint communicates with.
-* [`endpoint`][proxystore.endpoint.endpoint]: The endpoint object store.
 * [`storage`][proxystore.endpoint.storage]: Storage used by an endpoint,
   which can be implemented to store data elsewhere.
 * [`serve`][proxystore.endpoint.serve]: Run an endpoint in the current
@@ -28,8 +27,8 @@ The public interface of endpoints is provided by these modules:
 * [`exceptions`][proxystore.endpoint.exceptions]: Endpoint errors.
 
 The remaining modules ([`auth`][proxystore.endpoint.auth],
+[`dispatch`][proxystore.endpoint.dispatch],
 [`files`][proxystore.endpoint.files],
-[`handler`][proxystore.endpoint.handler],
 [`protocol`][proxystore.endpoint.protocol], and
 [`server`][proxystore.endpoint.server]) and the
 [`proxystore.endpoint.p2p`][proxystore.endpoint.p2p] package are internal

@@ -19,13 +19,13 @@ from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.exceptions import PeeringDisabledError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
@@ -48,7 +48,7 @@ MAX_OBJECT_SIZE = 10_000_000
 
 class _Server(NamedTuple):
     handler: ClientHandler
-    endpoint: Endpoint
+    dispatcher: Dispatcher
     token: EndpointToken
     host: str
     port: int
@@ -56,22 +56,22 @@ class _Server(NamedTuple):
 
 @pytest_asyncio.fixture()
 async def server() -> AsyncGenerator[_Server, None]:
-    async with Endpoint(
-        name='my-endpoint', endpoint_id=EndpointId.random()
-    ) as endpoint:
-        token = EndpointToken.generate()
-        handler = ClientHandler(
-            endpoint,
-            token,
-            max_object_size=MAX_OBJECT_SIZE,
-            handshake_timeout=1,
-        )
-        tcp_server = await handler.start_server('127.0.0.1', 0)
-        port = tcp_server.sockets[0].getsockname()[1]
-        yield _Server(handler, endpoint, token, '127.0.0.1', port)
-        tcp_server.close()
-        await handler.close_connections()
-        await tcp_server.wait_closed()
+    dispatcher = Dispatcher(EndpointId.random(), DictStorage())
+    token = EndpointToken.generate()
+    handler = ClientHandler(
+        dispatcher,
+        token,
+        name='my-endpoint',
+        max_object_size=MAX_OBJECT_SIZE,
+        handshake_timeout=1,
+    )
+    tcp_server = await handler.start_server('127.0.0.1', 0)
+    port = tcp_server.sockets[0].getsockname()[1]
+    yield _Server(handler, dispatcher, token, '127.0.0.1', port)
+    tcp_server.close()
+    await handler.close_connections()
+    await tcp_server.wait_closed()
+    await dispatcher.storage.close()
 
 
 async def _connect(
@@ -100,8 +100,8 @@ def _is_closed(sock: socket.socket) -> bool:
 
 async def test_operations(server: _Server) -> None:
     client = await _connect(server)
-    assert client.info.id == server.endpoint.id
-    assert client.info.name == server.endpoint.name
+    assert client.info.id == server.dispatcher.id
+    assert client.info.name == 'my-endpoint'
     assert client.info.versions == Versions.current()
 
     small, large = b'value', randbytes(5_000_000)
@@ -359,24 +359,25 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
 
 
 async def test_storage_object_size_exceeded(server: _Server) -> None:
-    server.endpoint._storage = DictStorage(max_object_size=10)
     client = await _connect(server)
-    with pytest.raises(ObjectSizeExceededError, match='TOO_LARGE'):
+    with (
+        mock.patch.object(
+            server.dispatcher.storage,
+            'set',
+            AsyncMock(side_effect=ObjectSizeExceededError('too big')),
+        ),
+        pytest.raises(ObjectSizeExceededError, match='TOO_LARGE'),
+    ):
         await asyncio.to_thread(client.set, 'key', randbytes(100))
     await asyncio.to_thread(client.close)
 
 
-async def test_peer_request_error(server: _Server) -> None:
+async def test_peering_disabled(server: _Server) -> None:
     client = await _connect(server)
-    with (
-        mock.patch.object(
-            server.endpoint,
-            'get',
-            AsyncMock(side_effect=PeerRequestError('peer failed')),
-        ),
-        pytest.raises(EndpointRequestError, match='peer failed'),
-    ):
+    with pytest.raises(PeeringDisabledError, match='peering is disabled'):
         await asyncio.to_thread(client.get, 'key', EndpointId.random())
+    # The connection can be reused after an error response
+    assert not await asyncio.to_thread(client.exists, 'key')
     await asyncio.to_thread(client.close)
 
 
@@ -384,7 +385,7 @@ async def test_unexpected_error(server: _Server) -> None:
     client = await _connect(server)
     with (
         mock.patch.object(
-            server.endpoint,
+            server.dispatcher.storage,
             'exists',
             AsyncMock(side_effect=RuntimeError('oops')),
         ),
@@ -415,7 +416,11 @@ async def test_close_connections_cancels_requests(server: _Server) -> None:
             raise
 
     client = await _connect(server)
-    with mock.patch.object(server.endpoint, 'exists', _never_finishes):
+    with mock.patch.object(
+        server.dispatcher.storage,
+        'exists',
+        _never_finishes,
+    ):
         request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
         await started.wait()
         await server.handler.close_connections(timeout=0.1)
@@ -653,22 +658,26 @@ async def tls_server(
     certificate = TLSCertificate.generate('test')
     context = certificate.ssl_context()
 
-    async with Endpoint(
-        name='my-endpoint', endpoint_id=EndpointId.random()
-    ) as endpoint:
-        token = EndpointToken.generate()
-        handler = ClientHandler(endpoint, token, handshake_timeout=1)
-        tcp_server = await handler.start_server(
-            '127.0.0.1',
-            0,
-            ssl_context=context,
-        )
-        port = tcp_server.sockets[0].getsockname()[1]
-        server = _Server(handler, endpoint, token, '127.0.0.1', port)
-        yield _TLSServer(server, certificate.fingerprint)
-        tcp_server.close()
-        await handler.close_connections()
-        await tcp_server.wait_closed()
+    dispatcher = Dispatcher(EndpointId.random(), DictStorage())
+    token = EndpointToken.generate()
+    handler = ClientHandler(
+        dispatcher,
+        token,
+        name='my-endpoint',
+        handshake_timeout=1,
+    )
+    tcp_server = await handler.start_server(
+        '127.0.0.1',
+        0,
+        ssl_context=context,
+    )
+    port = tcp_server.sockets[0].getsockname()[1]
+    server = _Server(handler, dispatcher, token, '127.0.0.1', port)
+    yield _TLSServer(server, certificate.fingerprint)
+    tcp_server.close()
+    await handler.close_connections()
+    await tcp_server.wait_closed()
+    await dispatcher.storage.close()
 
 
 def _connect_tls(server: _Server, fingerprint: str) -> EndpointClient:
@@ -713,7 +722,7 @@ async def test_tls_client_with_plain_server(server: _Server) -> None:
 async def test_ping(server: _Server) -> None:
     client = await _connect(server)
     assert await asyncio.to_thread(client.ping) == PingResult()
-    with pytest.raises(EndpointRequestError, match='peering is not enabled'):
+    with pytest.raises(PeeringDisabledError, match='peering is disabled'):
         await asyncio.to_thread(client.ping, EndpointId.random())
     with pytest.raises(ValueError, match='not a valid endpoint ID'):
         await asyncio.to_thread(client.ping, 'not-an-id')
