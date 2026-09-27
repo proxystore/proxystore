@@ -12,8 +12,15 @@ import contextlib
 import os
 import tempfile
 from typing import Any
+from typing import TypeVar
 
+from pydantic import BaseModel
+from pydantic import ValidationError
+
+from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.serialize import BytesLike
+
+ModelT = TypeVar('ModelT', bound=BaseModel)
 
 
 def write_private_file(path: str, data: BytesLike) -> None:
@@ -61,3 +68,36 @@ def check_format_version(version: Any, supported: int, name: str) -> int:
             'likely written by a different version of ProxyStore.',
         )
     return version
+
+
+def read_json_model(model: type[ModelT], path: str, name: str) -> ModelT:
+    """Read a JSON file written by an endpoint.
+
+    Args:
+        model: Model of the file. The model should have a `version` field
+            which is checked with
+            [`check_format_version()`][proxystore.endpoint.files.check_format_version].
+        path: Path of the file.
+        name: Description of the file for error messages.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        EndpointConfigError: If the file is malformed or has an unsupported
+            format version.
+    """
+    with open(path, 'rb') as f:
+        contents = f.read()
+    try:
+        return model.model_validate_json(contents, strict=True)
+    except ValidationError as e:
+        raise EndpointConfigError(
+            f'The {name} at {path} is malformed: {e}',
+        ) from None
+
+
+def write_json_model(path: str, instance: BaseModel) -> None:
+    """Atomically write a model to a JSON file only the owner can access.
+
+    See [`write_private_file()`][proxystore.endpoint.files.write_private_file].
+    """
+    write_private_file(path, instance.model_dump_json(indent=2).encode())

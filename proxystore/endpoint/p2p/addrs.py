@@ -13,20 +13,78 @@ changed.
 
 from __future__ import annotations
 
-import json
 import logging
 from collections.abc import Mapping
-from typing import Any
 
 import iroh
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import field_validator
 
-from proxystore.endpoint.files import write_private_file
+from proxystore.endpoint.exceptions import EndpointConfigError
+from proxystore.endpoint.files import check_format_version
+from proxystore.endpoint.files import read_json_model
+from proxystore.endpoint.files import write_json_model
 from proxystore.endpoint.identity import EndpointId
 
 logger = logging.getLogger(__name__)
 
 ADDR_CACHE_VERSION = 1
 """Format version of the peer address cache file."""
+
+
+class PeerAddr(BaseModel):
+    """Cached address of a peer.
+
+    Attributes:
+        relay_url: URL of the home relay of the peer.
+        addresses: Direct addresses of the peer.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    relay_url: str | None = None
+    addresses: list[str] = Field(default_factory=list)
+
+    @classmethod
+    def from_iroh(cls, addr: iroh.EndpointAddr) -> PeerAddr:
+        """Create from an iroh address."""
+        return cls(
+            relay_url=addr.relay_url(),
+            addresses=addr.direct_addresses(),
+        )
+
+    def to_iroh(self, peer_id: EndpointId) -> iroh.EndpointAddr:
+        """Convert to an iroh address of the peer."""
+        return iroh.EndpointAddr(
+            iroh.EndpointId.from_string(peer_id),
+            self.relay_url,
+            self.addresses,
+        )
+
+
+class PeerAddrCacheFile(BaseModel):
+    """Contents of the peer address cache file.
+
+    Attributes:
+        version: Format version of the file.
+        peers: Mapping of peer IDs to addresses.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    version: int = ADDR_CACHE_VERSION
+    peers: dict[EndpointId, PeerAddr] = Field(default_factory=dict)
+
+    @field_validator('version')
+    @classmethod
+    def _version_validator(cls, v: int) -> int:
+        return check_format_version(
+            v,
+            ADDR_CACHE_VERSION,
+            'peer address cache',
+        )
 
 
 class PeerAddrCache:
@@ -49,50 +107,30 @@ class PeerAddrCache:
     def load(self) -> dict[EndpointId, iroh.EndpointAddr]:
         """Load cached peer addresses.
 
+        The cache is only an optimization so errors are logged rather than
+        raised.
+
         Returns:
             Mapping of peer IDs to addresses. The mapping is empty if the \
-            file does not exist or is malformed.
+            file does not exist, is malformed, or has an unsupported format \
+            version.
         """
-        path = self.path
         try:
-            with open(path) as f:
-                data = json.load(f)
+            cache = read_json_model(
+                PeerAddrCacheFile,
+                self.path,
+                'peer address cache',
+            )
         except FileNotFoundError:
             return {}
-        except (OSError, ValueError) as e:
-            logger.warning(
-                'Ignoring malformed peer address cache %s: %s',
-                path,
-                e,
-            )
+        except (OSError, EndpointConfigError) as e:
+            logger.warning('Ignoring peer address cache: %s', e)
             return {}
 
-        addrs: dict[EndpointId, iroh.EndpointAddr] = {}
-        if not isinstance(data, dict) or not isinstance(
-            data.get('peers'),
-            dict,
-        ):
-            logger.warning('Ignoring malformed peer address cache %s', path)
-            return addrs
-        if data.get('version') != ADDR_CACHE_VERSION:
-            # The cache is only an optimization so it is safe to ignore.
-            logger.warning(
-                'Ignoring peer address cache %s with unsupported format '
-                'version %r',
-                path,
-                data.get('version'),
-            )
-            return addrs
-        for key, value in data['peers'].items():
-            try:
-                addrs[EndpointId.from_str(key)] = _decode_addr(key, value)
-            except (TypeError, ValueError, iroh.IrohError):
-                logger.warning(
-                    'Ignoring malformed entry for %s in peer address cache %s',
-                    key,
-                    path,
-                )
-        return addrs
+        return {
+            peer_id: addr.to_iroh(peer_id)
+            for peer_id, addr in cache.peers.items()
+        }
 
     def save(self, addrs: Mapping[EndpointId, iroh.EndpointAddr]) -> None:
         """Atomically save peer addresses, replacing the cached addresses.
@@ -101,29 +139,7 @@ class PeerAddrCache:
             addrs: Mapping of peer IDs to addresses.
         """
         peers = {
-            peer_id: {
-                'relay_url': addr.relay_url(),
-                'addresses': addr.direct_addresses(),
-            }
+            peer_id: PeerAddr.from_iroh(addr)
             for peer_id, addr in sorted(addrs.items())
         }
-        data = {'version': ADDR_CACHE_VERSION, 'peers': peers}
-        write_private_file(self.path, json.dumps(data, indent=2).encode())
-
-
-def _decode_addr(key: str, value: Any) -> iroh.EndpointAddr:
-    if not isinstance(value, dict):
-        raise TypeError('Expected an object.')
-    relay_url = value.get('relay_url')
-    addresses = value.get('addresses', [])
-    if relay_url is not None and not isinstance(relay_url, str):
-        raise TypeError('Expected relay_url to be a string or null.')
-    if not isinstance(addresses, list) or not all(
-        isinstance(a, str) for a in addresses
-    ):
-        raise TypeError('Expected addresses to be a list of strings.')
-    return iroh.EndpointAddr(
-        iroh.EndpointId.from_string(key),
-        relay_url,
-        addresses,
-    )
+        write_json_model(self.path, PeerAddrCacheFile(peers=peers))

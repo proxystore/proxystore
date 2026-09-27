@@ -34,6 +34,7 @@ import os
 import secrets
 import ssl
 import tempfile
+from typing import Any
 from typing import Literal
 from typing import Self
 
@@ -42,6 +43,9 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.x509.oid import NameOID
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
+from pydantic_core import CoreSchema
 
 from proxystore.endpoint.files import write_private_file
 from proxystore.serialize import BytesLike
@@ -54,7 +58,8 @@ class EndpointToken:
     """Token that a client and endpoint prove they know.
 
     The token is never included in its `repr()` so it is not accidentally
-    logged, and tokens are compared in constant time.
+    logged, and tokens are compared in constant time. In pydantic models,
+    the token is validated from and serialized to its hex encoding.
 
     Args:
         token: Token as [`TOKEN_SIZE`][proxystore.endpoint.auth.TOKEN_SIZE]
@@ -99,6 +104,28 @@ class EndpointToken:
     def hex(self) -> str:
         """Encode the token as hex."""
         return self._token.hex()
+
+    @classmethod
+    def _validate(cls, value: Any) -> Self:
+        if isinstance(value, cls):
+            return value
+        if not isinstance(value, str):
+            raise ValueError('Endpoint token must be a hex-encoded string.')
+        return cls.from_hex(value)
+
+    @classmethod
+    def __get_pydantic_core_schema__(
+        cls,
+        source: Any,
+        handler: GetCoreSchemaHandler,
+    ) -> CoreSchema:
+        return core_schema.no_info_plain_validator_function(
+            cls._validate,
+            serialization=core_schema.plain_serializer_function_ser_schema(
+                lambda token: token.hex(),
+                when_used='always',
+            ),
+        )
 
     def proof(
         self,

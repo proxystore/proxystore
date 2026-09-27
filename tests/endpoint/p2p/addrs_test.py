@@ -4,6 +4,7 @@ import json
 import os
 import pathlib
 import stat
+from typing import Any
 
 import iroh
 import pytest
@@ -52,31 +53,45 @@ def test_load_malformed_file(tmp_path: pathlib.Path, caplog) -> None:
     assert len(caplog.records) == 3
 
 
-@pytest.mark.parametrize('version', (None, 2))
+@pytest.mark.parametrize(
+    ('version', 'match'),
+    ((None, 'malformed'), (2, 'only supports version 1')),
+)
 def test_load_unsupported_version(
     version: int | None,
+    match: str,
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     path = tmp_path / 'peer-addrs.json'
     path.write_text(json.dumps({'version': version, 'peers': {}}))
     assert PeerAddrCache(str(path)).load() == {}
-    assert any('unsupported format' in r.message for r in caplog.records)
+    assert any(match in r.message for r in caplog.records)
 
 
-def test_load_malformed_entries(tmp_path: pathlib.Path, caplog) -> None:
-    good = EndpointId.random()
-    data = {
-        good: {'relay_url': None, 'addresses': ['127.0.0.1:1']},
-        'not-an-id': {'relay_url': None, 'addresses': []},
-        EndpointId.random(): 'not a dict',
-        EndpointId.random(): {'relay_url': 42},
-        EndpointId.random(): {'addresses': 'not a list'},
-        EndpointId.random(): {'addresses': [42]},
+@pytest.mark.parametrize(
+    'entry',
+    (
+        {'not-an-id': {'relay_url': None, 'addresses': []}},
+        {EndpointId.random(): 'not a dict'},
+        {EndpointId.random(): {'relay_url': 42}},
+        {EndpointId.random(): {'addresses': 'not a list'}},
+        {EndpointId.random(): {'addresses': [42]}},
+        {EndpointId.random(): {'unknown': 42}},
+    ),
+)
+def test_load_malformed_entries(
+    entry: dict[str, Any],
+    tmp_path: pathlib.Path,
+    caplog,
+) -> None:
+    good: dict[str, Any] = {
+        EndpointId.random(): {'addresses': ['127.0.0.1:1']}
     }
     path = tmp_path / 'peer-addrs.json'
-    path.write_text(json.dumps({'version': 1, 'peers': data}))
-
-    addrs = PeerAddrCache(str(path)).load()
-    assert list(addrs) == [good]
-    assert len(caplog.records) == len(data) - 1
+    data = {'version': 1, 'peers': {**good, **entry}}
+    path.write_text(json.dumps(data))
+    # The cache is ignored if any entry is malformed
+    assert PeerAddrCache(str(path)).load() == {}
+    assert len(caplog.records) == 1
+    assert 'malformed' in caplog.records[0].message

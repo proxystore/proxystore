@@ -5,15 +5,17 @@ from __future__ import annotations
 import contextlib
 import dataclasses
 import enum
-import json
 import logging
 import os
 import random
 import shutil
 import stat
 from typing import Any
-from typing import NamedTuple
 from typing import Self
+
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import field_validator
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
@@ -22,6 +24,8 @@ from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.files import check_format_version
+from proxystore.endpoint.files import read_json_model
+from proxystore.endpoint.files import write_json_model
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Peers
@@ -35,7 +39,7 @@ CONNECTION_VERSION = 1
 """Format version of the connection file."""
 
 
-class ConnectionInfo(NamedTuple):
+class ConnectionInfo(BaseModel):
     """Information that clients use to connect to a running endpoint.
 
     The endpoint writes this to the connection file in its directory each
@@ -43,6 +47,7 @@ class ConnectionInfo(NamedTuple):
     [`EndpointDir.write_connection()`][proxystore.endpoint.directory.EndpointDir.write_connection]).
 
     Attributes:
+        version: Format version of the connection file.
         host: Host address the endpoint is listening on.
         port: Port the endpoint is listening on.
         token: Token that the client and endpoint prove they know.
@@ -52,12 +57,20 @@ class ConnectionInfo(NamedTuple):
         pid: Process ID of the endpoint on that machine.
     """
 
+    model_config = ConfigDict(extra='forbid', frozen=True)
+
+    version: int = CONNECTION_VERSION
     host: str
     port: int
     token: EndpointToken
     tls_fingerprint: str | None
     hostname: str
     pid: int
+
+    @field_validator('version')
+    @classmethod
+    def _version_validator(cls, v: int) -> int:
+        return check_format_version(v, CONNECTION_VERSION, 'connection file')
 
 
 class EndpointStatus(enum.Enum):
@@ -381,16 +394,7 @@ class EndpointDir:
         The file is only readable by the owner because it contains the
         endpoint's token.
         """
-        data = {
-            'version': CONNECTION_VERSION,
-            'host': info.host,
-            'port': info.port,
-            'token': info.token.hex(),
-            'tls_fingerprint': info.tls_fingerprint,
-            'hostname': info.hostname,
-            'pid': info.pid,
-        }
-        write_private_file(self.connection_path, json.dumps(data).encode())
+        write_json_model(self.connection_path, info)
 
     def read_connection(self) -> ConnectionInfo:
         """Read the connection file of the running endpoint.
@@ -401,43 +405,11 @@ class EndpointDir:
             EndpointConfigError: If the connection file is malformed or has
                 an unsupported format version.
         """
-        with open(self.connection_path, 'rb') as f:
-            contents = f.read()
-        try:
-            data = json.loads(contents)
-        except ValueError:
-            data = None
-        info: ConnectionInfo | None = None
-        if isinstance(data, dict):
-            try:
-                check_format_version(
-                    data.get('version'),
-                    CONNECTION_VERSION,
-                    f'connection file at {self.connection_path}',
-                )
-            except ValueError as e:
-                raise EndpointConfigError(str(e)) from None
-            with contextlib.suppress(TypeError, KeyError, ValueError):
-                info = ConnectionInfo(
-                    host=data['host'],
-                    port=data['port'],
-                    token=EndpointToken.from_hex(data['token']),
-                    tls_fingerprint=data['tls_fingerprint'],
-                    hostname=data['hostname'],
-                    pid=data['pid'],
-                )
-        if (
-            info is None
-            or not isinstance(info.host, str)
-            or not isinstance(info.port, int)
-            or not isinstance(info.tls_fingerprint, (str, type(None)))
-            or not isinstance(info.hostname, str)
-            or not isinstance(info.pid, int)
-        ):
-            raise EndpointConfigError(
-                f'Connection file at {self.connection_path} is malformed.',
-            )
-        return info
+        return read_json_model(
+            ConnectionInfo,
+            self.connection_path,
+            'connection file',
+        )
 
     def remove_connection(self, info: ConnectionInfo | None = None) -> None:
         """Remove the connection file if it exists.

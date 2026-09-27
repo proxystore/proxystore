@@ -173,15 +173,13 @@ def test_read_connection_malformed(
         endpoint_dir.read_connection()
 
 
-@pytest.mark.parametrize('version', (None, 0, 2))
+@pytest.mark.parametrize('version', (0, 2))
 def test_read_connection_unsupported_version(
     version: Any,
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
     data = _connection_data(version=version)
-    if version is None:
-        data.pop('version')
     with open(endpoint_dir.connection_path, 'w') as f:
         json.dump(data, f)
     with pytest.raises(ValueError, match='only supports version 1'):

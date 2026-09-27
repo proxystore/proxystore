@@ -63,7 +63,9 @@ def test_endpoint_wrong_token(
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
     info = copied_dir.read_connection()
-    copied_dir.write_connection(info._replace(token=EndpointToken.generate()))
+    copied_dir.write_connection(
+        info.model_copy(update={'token': EndpointToken.generate()}),
+    )
 
     with pytest.raises(EndpointConnectorError, match='failed to prove'):
         EndpointConnector([endpoint.id], proxystore_dir=str(tmp_path))
