@@ -45,6 +45,7 @@ from proxystore.endpoint.server import _format_address
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
+from testing.utils import wait_until
 
 MAX_OBJECT_SIZE = 10_000_000
 
@@ -759,8 +760,9 @@ async def test_client_connection_is_logged(server: _Server, caplog) -> None:
     client = await _connect(server)
     await asyncio.to_thread(client.close)
     # Wait for the server to handle the client closing the connection
-    while not any('closed' in r.message for r in caplog.records):
-        await asyncio.sleep(0.01)
+    await wait_until(
+        lambda: any('closed' in r.message for r in caplog.records),
+    )
     messages = [r.message for r in caplog.records]
     assert any(
         'Accepted connection from client 127.0.0.1:' in m for m in messages

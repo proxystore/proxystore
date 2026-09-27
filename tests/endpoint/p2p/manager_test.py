@@ -29,6 +29,7 @@ from testing.p2p import allowlist
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
 from testing.p2p import LOCAL_PEER_OPTIONS
+from testing.utils import wait_until
 
 _MANAGER = 'proxystore.endpoint.p2p.manager'
 
@@ -245,8 +246,7 @@ async def test_stale_connection_retry(managers, tmp_path) -> None:
     await stale.closed()
     # The manager stops using a closed connection once it notices, but a
     # request can race with the closure so the connection is used again.
-    while manager2.id in manager1._preferred:
-        await asyncio.sleep(0.01)
+    await wait_until(lambda: manager2.id not in manager1._preferred)
     manager1._preferred[manager2.id] = stale
 
     # Mark the stale connection as open so the manager tries to use it.
@@ -720,8 +720,7 @@ async def test_closed_connection_is_forgotten(managers) -> None:
     assert stable_id in manager1._directions
 
     connection.close(CloseCode.SHUTDOWN, b'close')
-    while manager2.id in manager1._connections:
-        await asyncio.sleep(0.01)
+    await wait_until(lambda: manager2.id not in manager1._connections)
     assert manager2.id not in manager1._preferred
     assert stable_id not in manager1._paths
     assert stable_id not in manager1._directions
