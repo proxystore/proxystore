@@ -1,10 +1,4 @@
-"""Manager of peer connections to other endpoints.
-
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-"""
+"""Manager of peer connections to other endpoints."""
 
 from __future__ import annotations
 

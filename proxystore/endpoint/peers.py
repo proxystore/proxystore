@@ -1,10 +1,5 @@
 """Peer endpoint allowlist.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 An endpoint only communicates with the peer endpoints in its allowlist,
 the `peers.toml` file in the endpoint directory. Allowlisting is
 symmetric: two endpoints can only communicate if each endpoint lists the

@@ -1,10 +1,5 @@
 """Storage of the objects in an endpoint.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 The [`Storage`][proxystore.endpoint.storage.Storage] protocol is a simple
 blob store. Storage implementations do not enforce limits on the size of
 objects because the endpoint rejects objects which exceed its maximum object

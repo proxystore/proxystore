@@ -1,5 +1,16 @@
 """Endpoints for direct, cross-site communication.
 
+Warning:
+    The Python interface of this package is an internal implementation
+    detail which may change between releases without notice, except for the
+    [`exceptions`][proxystore.endpoint.exceptions] and
+    [`warnings`][proxystore.endpoint.warnings] modules. The modules are
+    documented for development. Use endpoints through the
+    [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI and the
+    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
+    The formats of the files and protocols of endpoints are versioned (see
+    the [Endpoints Guide](../../guides/endpoints.md#version-compatibility)).
+
 Note:
    Please refer to the [Endpoints Guide](../../guides/endpoints.md) for an
    introduction to endpoints in ProxyStore.
@@ -10,21 +21,7 @@ between clients behind different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
 to start your own endpoints.
 
-The public Python interface of endpoints is the following modules:
-
-* [`client`][proxystore.endpoint.client]: connect to a running endpoint.
-* [`exceptions`][proxystore.endpoint.exceptions]: errors raised by
-  endpoints and their clients.
-* [`warnings`][proxystore.endpoint.warnings]: warnings raised by clients.
-
-Endpoints are otherwise used through the
-[`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI and the
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector],
-and the formats of their files and protocols are versioned (see the
-[Endpoints Guide](../../guides/endpoints.md#version-compatibility)).
-
-The remaining modules are internal implementation details which may change
-between releases without notice. They are documented for development:
+The package is organized as follows:
 
 * Files shared by endpoints and clients:
   [`directory`][proxystore.endpoint.directory] (creating, finding, and
@@ -39,12 +36,16 @@ between releases without notice. They are documented for development:
   endpoint processes), [`storage`][proxystore.endpoint.storage] (storage of
   objects), and [`cli`][proxystore.endpoint.cli] (the implementation of the
   CLI).
-* Communication: [`protocol`][proxystore.endpoint.protocol] (the wire
+* Communication: [`client`][proxystore.endpoint.client] (connect to a
+  running endpoint), [`protocol`][proxystore.endpoint.protocol] (the wire
   protocol), [`auth`][proxystore.endpoint.auth] (client authentication),
   [`server`][proxystore.endpoint.server] (the server which accepts client
   connections), [`dispatch`][proxystore.endpoint.dispatch] (handling
   requests), and the [`p2p`][proxystore.endpoint.p2p] package
   (communication with peers).
+* Errors: [`exceptions`][proxystore.endpoint.exceptions] (errors raised by
+  endpoints and their clients) and
+  [`warnings`][proxystore.endpoint.warnings] (warnings raised by clients).
 
 Note:
     Endpoints and their clients (e.g., the

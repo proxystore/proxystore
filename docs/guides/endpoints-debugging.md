@@ -83,7 +83,9 @@ to connect to an endpoint directly. Clients find the endpoint's address,
 token, and TLS certificate fingerprint (if enabled) in the `connection.json`
 file that the endpoint writes to its directory when it starts, and
 [`EndpointClient.from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
-reads this file for you.
+reads this file for you. The client is a debugging aid whose interface may
+change between releases; the `proxystore-endpoint client` CLI is the stable
+way to do the same.
 ```python
 from proxystore.endpoint.client import EndpointClient
 

@@ -1,10 +1,5 @@
 """Peer-to-peer communication between endpoints.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 Endpoints communicate with peer endpoints over
 [iroh](https://www.iroh.computer/){target=_blank}, a QUIC-based peer-to-peer
 library. Endpoints are addressed by their

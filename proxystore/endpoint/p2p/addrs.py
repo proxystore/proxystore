@@ -1,10 +1,5 @@
 """Cache of peer addresses.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 The address of a peer (its home relay URL and direct addresses) is saved
 after each successful connection so the peer can be reached later even if
 discovery is unavailable, as long as the addresses of the peer have not

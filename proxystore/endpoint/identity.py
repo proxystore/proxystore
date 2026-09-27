@@ -1,10 +1,5 @@
 """Endpoint identities.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 Each endpoint has an ed25519 secret key which is stored in its directory.
 The public key of the endpoint, its
 [`EndpointId`][proxystore.endpoint.identity.EndpointId], identifies the

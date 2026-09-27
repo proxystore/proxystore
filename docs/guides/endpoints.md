@@ -417,13 +417,13 @@ change.
 | `connection.json` | `version` field | Clients cannot connect. Restart the endpoint. |
 | `peer-addrs.json` | `version` field | The cache is ignored. |
 
-The public Python interface of endpoints is the
-[`client`][proxystore.endpoint.client],
-[`exceptions`][proxystore.endpoint.exceptions], and
-[`warnings`][proxystore.endpoint.warnings] modules (see
-[`proxystore.endpoint`][proxystore.endpoint]). Every module is documented,
-but the other modules, including the protocol and peer-to-peer
-implementations, may change between releases.
+Endpoints are used through the `proxystore-endpoint` CLI and the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
+The Python interface of [`proxystore.endpoint`][proxystore.endpoint] is
+documented but, except for its
+[`exceptions`][proxystore.endpoint.exceptions] and
+[`warnings`][proxystore.endpoint.warnings] modules, is an internal
+implementation detail which may change between releases.
 
 ## Proxy Lifecycle
 

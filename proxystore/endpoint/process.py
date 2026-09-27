@@ -1,10 +1,5 @@
 """Run, start, and stop endpoint processes.
 
-Warning:
-    This module is an internal implementation detail. Its interface may
-    change between releases without notice (see
-    [`proxystore.endpoint`][proxystore.endpoint]).
-
 [`serve()`][proxystore.endpoint.process.serve] runs an
 [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] in the current process
 until it receives a signal.
