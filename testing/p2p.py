@@ -7,45 +7,46 @@ from typing import Any
 
 import iroh
 
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.peers import Allowlist
-from proxystore.endpoint.peers import PeersConfig
 from proxystore.p2p.manager import PeerManager
+from testing.utils import open_port
 
 
-def local_peer_manager(path: str, **kwargs: Any) -> PeerManager:
-    """Create a peer manager which only communicates on localhost.
+def local_peer_manager(
+    proxystore_dir: str,
+    name: str = 'peer',
+    **kwargs: Any,
+) -> PeerManager:
+    """Create an endpoint and a peer manager which only uses localhost.
 
     The manager does not use relays or discovery so peers must be added with
     [`connect_peers()`][testing.p2p.connect_peers].
 
     Args:
-        path: Directory for the allowlist of the manager.
-        kwargs: Extra arguments for the manager.
+        proxystore_dir: ProxyStore home directory to create the endpoint in.
+        name: Name of the endpoint.
+        kwargs: Options which override the defaults of the manager.
     """
-    os.makedirs(path, exist_ok=True)
+    endpoint_dir = EndpointDir.create(
+        name,
+        proxystore_dir,
+        port=open_port(),
+        p2p=EndpointP2PConfig(relays='none'),
+    )
     options: dict[str, Any] = {
         'preset': iroh.preset_minimal(),
-        'relay_mode': iroh.RelayMode.disabled(),
         'bind_addr': '127.0.0.1:0',
-        'online_timeout': None,
+        'addr_cache': None,
         **kwargs,
     }
-    return PeerManager(
-        SecretKey.generate(),
-        Allowlist(EndpointDir(path).peers_path),
-        **options,
-    )
+    return PeerManager.from_endpoint_dir(endpoint_dir, **options)
 
 
 def allow_peer(manager: PeerManager, peer: PeerManager, name: str) -> None:
-    """Add a peer to the allowlist of a started manager."""
+    """Add a peer to the allowlist of a manager."""
     endpoint_dir = EndpointDir(os.path.dirname(manager._allowlist.path))
-    peers = endpoint_dir.read_peers()
-    endpoint_dir.write_peers(
-        PeersConfig(peers={**peers.peers, name: peer.id}),
-    )
+    endpoint_dir.peers.add(name, peer.id)
 
 
 def connect_peers(*managers: PeerManager) -> None:
@@ -53,5 +54,5 @@ def connect_peers(*managers: PeerManager) -> None:
     for i, manager in enumerate(managers):
         for j, peer in enumerate(managers):
             if i != j:
-                allow_peer(manager, peer, f'peer-{j}')
+                allow_peer(manager, peer, f'peer-{peer.id.short()}')
                 manager.add_peer_addr(peer.addr())

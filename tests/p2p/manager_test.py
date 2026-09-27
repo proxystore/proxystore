@@ -14,7 +14,7 @@ import pytest
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
-from proxystore.p2p.addrs import load_peer_addrs
+from proxystore.p2p.addrs import PeerAddrCache
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.exceptions import PeerNotAllowedError
@@ -386,8 +386,14 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
 async def test_addr_cache(tmp_path: pathlib.Path) -> None:
     cache1 = str(tmp_path / 'm1' / 'peer-addrs.json')
     cache2 = str(tmp_path / 'm2' / 'peer-addrs.json')
-    manager1 = local_peer_manager(str(tmp_path / 'm1'), addr_cache_path=cache1)
-    manager2 = local_peer_manager(str(tmp_path / 'm2'), addr_cache_path=cache2)
+    manager1 = local_peer_manager(
+        str(tmp_path / 'm1'),
+        addr_cache=PeerAddrCache(cache1),
+    )
+    manager2 = local_peer_manager(
+        str(tmp_path / 'm2'),
+        addr_cache=PeerAddrCache(cache2),
+    )
     await manager1.start(_echo_handler([]))
     await manager2.start(_echo_handler([]))
     try:
@@ -397,8 +403,8 @@ async def test_addr_cache(tmp_path: pathlib.Path) -> None:
 
         await manager1.request(manager2.id, Op.GET)
         # Both the dialing and accepting peer save the address of the other
-        assert list(load_peer_addrs(cache1)) == [manager2.id]
-        assert list(load_peer_addrs(cache2)) == [manager1.id]
+        assert list(PeerAddrCache(cache1).load()) == [manager2.id]
+        assert list(PeerAddrCache(cache2).load()) == [manager1.id]
 
         # Manager 2 can now reach manager 1 without being given its address
         status, _, _ = await manager2.request(manager1.id, Op.GET)
@@ -415,7 +421,7 @@ async def test_addr_cache(tmp_path: pathlib.Path) -> None:
         relay_mode=iroh.RelayMode.disabled(),
         bind_addr='127.0.0.1:0',
         online_timeout=0,
-        addr_cache_path=cache1,
+        addr_cache=PeerAddrCache(cache1),
     )
     await manager3.start(_echo_handler([]))
     try:
@@ -427,20 +433,20 @@ async def test_addr_cache(tmp_path: pathlib.Path) -> None:
 async def test_addr_cache_prunes_removed_peers(managers, tmp_path) -> None:
     manager1, manager2, _ = managers
     cache = str(tmp_path / 'peer-addrs.json')
-    manager1._addr_cache_path = cache
+    manager1._addr_cache = PeerAddrCache(cache)
     removed = local_peer_manager(str(tmp_path / 'removed'))
     await removed.start(_echo_handler([]))
     try:
         manager1.add_peer_addr(removed.addr())
         await manager1.request(manager2.id, Op.GET)
-        assert list(load_peer_addrs(cache)) == [manager2.id]
+        assert list(PeerAddrCache(cache).load()) == [manager2.id]
     finally:
         await removed.close()
 
 
 async def test_addr_cache_save_error(managers, caplog) -> None:
     manager1, manager2, _ = managers
-    manager1._addr_cache_path = '/does/not/exist/peer-addrs.json'
+    manager1._addr_cache = PeerAddrCache('/does/not/exist/peer-addrs.json')
     status, _, _ = await manager1.request(manager2.id, Op.GET)
     assert status == Status.OK
     assert any('failed to save' in r.message for r in caplog.records)

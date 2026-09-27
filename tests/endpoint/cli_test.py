@@ -291,7 +291,7 @@ def test_id_and_peers_commands(home_dir, caplog) -> None:
     peer_id = EndpointId.random()
     result = runner.invoke(cli, ['peers', 'add', 'ep', 'peer', peer_id])
     assert result.exit_code == 0
-    assert endpoint_dir.read_peers().peers == {'peer': peer_id}
+    assert endpoint_dir.peers.read().peers == {'peer': peer_id}
 
     caplog.clear()
     assert runner.invoke(cli, ['peers', 'list', 'ep']).exit_code == 0
@@ -299,7 +299,7 @@ def test_id_and_peers_commands(home_dir, caplog) -> None:
 
     result = runner.invoke(cli, ['peers', 'remove', 'ep', 'peer'])
     assert result.exit_code == 0
-    assert endpoint_dir.read_peers().peers == {}
+    assert endpoint_dir.peers.read().peers == {}
 
 
 def test_ping_command_local(

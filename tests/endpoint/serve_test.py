@@ -22,9 +22,9 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.serve import _relay_options
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
+from proxystore.p2p.manager import relay_options
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
 from testing.endpoint import write_endpoint
@@ -251,7 +251,7 @@ async def test_running_endpoint_peering(
     ('n0', 'none', ['https://relay.example.com']),
 )
 def test_relay_options(relays: Any) -> None:
-    preset, relay_mode = _relay_options(EndpointP2PConfig(relays=relays))
+    preset, relay_mode = relay_options(EndpointP2PConfig(relays=relays))
     assert isinstance(preset, iroh.Preset)
     if relays == 'n0':
         assert relay_mode is None
@@ -268,5 +268,6 @@ async def test_running_endpoint_peering_addr_cache(
     )
     async with running_endpoint(endpoint_dir) as endpoint:
         assert endpoint.peer_manager is not None
-        path = endpoint.peer_manager._addr_cache_path
+        assert endpoint.peer_manager._addr_cache is not None
+        path = endpoint.peer_manager._addr_cache.path
         assert path == endpoint_dir.peer_addrs_path

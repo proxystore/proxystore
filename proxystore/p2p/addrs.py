@@ -21,59 +21,73 @@ from proxystore.endpoint.identity import EndpointId
 logger = logging.getLogger(__name__)
 
 
-def load_peer_addrs(path: str) -> dict[EndpointId, iroh.EndpointAddr]:
-    """Load cached peer addresses.
+class PeerAddrCache:
+    """Cache of peer addresses stored in a JSON file.
+
+    Example:
+        ```python
+        cache = PeerAddrCache(endpoint_dir.peer_addrs_path)
+        cache.save({peer_id: addr})
+        assert peer_id in cache.load()
+        ```
 
     Args:
         path: Path to the cache file.
-
-    Returns:
-        Mapping of peer IDs to addresses. The mapping is empty if the file \
-        does not exist or is malformed.
     """
-    try:
-        with open(path) as f:
-            data = json.load(f)
-    except FileNotFoundError:
-        return {}
-    except (OSError, ValueError) as e:
-        logger.warning('Ignoring malformed peer address cache %s: %s', path, e)
-        return {}
 
-    addrs: dict[EndpointId, iroh.EndpointAddr] = {}
-    if not isinstance(data, dict):
-        logger.warning('Ignoring malformed peer address cache %s', path)
-        return addrs
-    for key, value in data.items():
+    def __init__(self, path: str) -> None:
+        self.path = path
+
+    def load(self) -> dict[EndpointId, iroh.EndpointAddr]:
+        """Load cached peer addresses.
+
+        Returns:
+            Mapping of peer IDs to addresses. The mapping is empty if the \
+            file does not exist or is malformed.
+        """
+        path = self.path
         try:
-            addrs[EndpointId.from_str(key)] = _decode_addr(key, value)
-        except (TypeError, ValueError, iroh.IrohError):
+            with open(path) as f:
+                data = json.load(f)
+        except FileNotFoundError:
+            return {}
+        except (OSError, ValueError) as e:
             logger.warning(
-                'Ignoring malformed entry for %s in peer address cache %s',
-                key,
+                'Ignoring malformed peer address cache %s: %s',
                 path,
+                e,
             )
-    return addrs
+            return {}
 
+        addrs: dict[EndpointId, iroh.EndpointAddr] = {}
+        if not isinstance(data, dict):
+            logger.warning('Ignoring malformed peer address cache %s', path)
+            return addrs
+        for key, value in data.items():
+            try:
+                addrs[EndpointId.from_str(key)] = _decode_addr(key, value)
+            except (TypeError, ValueError, iroh.IrohError):
+                logger.warning(
+                    'Ignoring malformed entry for %s in peer address cache %s',
+                    key,
+                    path,
+                )
+        return addrs
 
-def save_peer_addrs(
-    path: str,
-    addrs: Mapping[EndpointId, iroh.EndpointAddr],
-) -> None:
-    """Atomically save peer addresses.
+    def save(self, addrs: Mapping[EndpointId, iroh.EndpointAddr]) -> None:
+        """Atomically save peer addresses, replacing the cached addresses.
 
-    Args:
-        path: Path to the cache file.
-        addrs: Mapping of peer IDs to addresses.
-    """
-    data = {
-        peer_id: {
-            'relay_url': addr.relay_url(),
-            'addresses': addr.direct_addresses(),
+        Args:
+            addrs: Mapping of peer IDs to addresses.
+        """
+        data = {
+            peer_id: {
+                'relay_url': addr.relay_url(),
+                'addresses': addr.direct_addresses(),
+            }
+            for peer_id, addr in sorted(addrs.items())
         }
-        for peer_id, addr in sorted(addrs.items())
-    }
-    write_private_file(path, json.dumps(data, indent=2).encode())
+        write_private_file(self.path, json.dumps(data, indent=2).encode())
 
 
 def _decode_addr(key: str, value: Any) -> iroh.EndpointAddr:

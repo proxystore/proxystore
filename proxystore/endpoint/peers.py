@@ -29,7 +29,9 @@ from pydantic import Field
 from pydantic import field_validator
 
 from proxystore.endpoint.config import validate_name
+from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
+from proxystore.utils.config import dumps
 from proxystore.utils.config import load
 
 logger = logging.getLogger(__name__)
@@ -83,6 +85,117 @@ class PeersConfig(BaseModel):
         return None
 
 
+class PeerExistsError(ValueError):
+    """A peer with the name already exists."""
+
+
+class Peers:
+    """Peers of an endpoint stored in its `peers.toml` file.
+
+    Example:
+        ```python
+        peers = EndpointDir.from_name('my-ep').peers
+        peers.add('laptop', 'ed92...')
+        assert peers.read().peers == {'laptop': 'ed92...'}
+        peers.remove('laptop')
+        ```
+
+    Args:
+        path: Path to the `peers.toml` file.
+        owner_id: ID of the endpoint which owns the peers. Used to prevent
+            an endpoint from adding itself as a peer.
+    """
+
+    def __init__(self, path: str, *, owner_id: EndpointId | None = None):
+        self.path = path
+        self.owner_id = owner_id
+
+    def read(self) -> PeersConfig:
+        """Read the peers.
+
+        Returns:
+            The peers or no peers if the file does not exist.
+
+        Raises:
+            ValueError: If the file cannot be parsed or is invalid.
+        """
+        try:
+            with open(self.path, 'rb') as f:
+                return load(PeersConfig, f)
+        except FileNotFoundError:
+            return PeersConfig()
+        except ValueError as e:
+            raise ValueError(
+                f'Unable to parse ({self.path}): {e!s}.'
+            ) from None
+
+    def write(self, peers: PeersConfig) -> None:
+        """Atomically write the peers."""
+        write_private_file(self.path, dumps(peers).encode())
+
+    def add(self, name: str, endpoint_id: str) -> EndpointId:
+        """Add a peer.
+
+        Args:
+            name: Name of the peer.
+            endpoint_id: ID of the peer endpoint.
+
+        Returns:
+            The ID of the peer.
+
+        Raises:
+            PeerExistsError: If a peer with the name already exists.
+            ValueError: If the name or ID is invalid, the ID is the ID of the
+                owner, the endpoint is already a peer with a different name,
+                or the file cannot be parsed.
+        """
+        if not validate_name(name):
+            raise ValueError(
+                'Peer names must only contain alphanumeric characters, '
+                f'dashes, and underscores. Got {name}.',
+            )
+        peer_id = EndpointId.from_str(endpoint_id)
+        if peer_id == self.owner_id:
+            raise ValueError('An endpoint cannot be a peer of itself.')
+        peers = self.read()
+        if name in peers.peers:
+            raise PeerExistsError(f'A peer named {name} already exists.')
+        existing = peers.name_of(peer_id)
+        if existing is not None:
+            raise ValueError(
+                f'Endpoint {peer_id} is already a peer named {existing}.',
+            )
+        peers.peers[name] = peer_id
+        self.write(peers)
+        return peer_id
+
+    def remove(self, name: str) -> EndpointId:
+        """Remove a peer.
+
+        If the endpoint is running, the peer is denied access immediately.
+
+        Args:
+            name: Name of the peer.
+
+        Returns:
+            The ID of the removed peer.
+
+        Raises:
+            ValueError: If there is no peer with the name or the file cannot
+                be parsed.
+        """
+        peers = self.read()
+        peer_id = peers.peers.pop(name, None)
+        if peer_id is None:
+            raise ValueError(f'No peer named {name}.')
+        self.write(peers)
+        return peer_id
+
+    def allowlist(self) -> Allowlist:
+        """Get an allowlist which reloads the peers when the file changes."""
+        return Allowlist(self.path)
+
+
 @dataclasses.dataclass(frozen=True)
 class _FileState:
     mtime_ns: int
@@ -128,7 +241,7 @@ class Allowlist:
             self._peers = PeersConfig()
         else:
             try:
-                self._peers = read_peers(self.path)
+                self._peers = Peers(self.path).read()
             except ValueError:
                 logger.exception(
                     'Failed to load peer allowlist from %s. All peers will '
@@ -151,24 +264,3 @@ class Allowlist:
     def name_of(self, endpoint_id: EndpointId) -> str | None:
         """Get the name of the peer or `None` if it is not allowed."""
         return self.peers.name_of(endpoint_id)
-
-
-def read_peers(path: str) -> PeersConfig:
-    """Read a peer allowlist file.
-
-    Args:
-        path: Path to the `peers.toml` file.
-
-    Returns:
-        The allowlist or an empty allowlist if the file does not exist.
-
-    Raises:
-        ValueError: If the file cannot be parsed or is invalid.
-    """
-    try:
-        with open(path, 'rb') as f:
-            return load(PeersConfig, f)
-    except FileNotFoundError:
-        return PeersConfig()
-    except ValueError as e:
-        raise ValueError(f'Unable to parse ({path}): {e!s}.') from None

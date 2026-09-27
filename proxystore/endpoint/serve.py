@@ -29,19 +29,14 @@ from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.auth import pem_certificate_fingerprint
 from proxystore.endpoint.auth import server_ssl_context
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 
 if TYPE_CHECKING:
-    import iroh
-
     from proxystore.p2p.manager import PeerManager
 
 logger = logging.getLogger(__name__)
@@ -50,42 +45,20 @@ logger = logging.getLogger(__name__)
 def _create_peer_manager(
     endpoint_dir: EndpointDir,
     config: EndpointConfig,
-    secret_key: SecretKey,
 ) -> PeerManager | None:
     if not config.p2p.enabled:
         return None
 
     from proxystore.p2p.manager import PeerManager
 
-    allowlist = Allowlist(endpoint_dir.peers_path)
-    peers = len(allowlist.peers.peers)
-    logger.info('Loaded %d peer(s) from %s', peers, allowlist.path)
-    preset, relay_mode = _relay_options(config.p2p)
-    return PeerManager(
-        secret_key,
-        allowlist,
-        preset=preset,
-        relay_mode=relay_mode,
-        # Without relays, there is no home relay to wait on.
-        online_timeout=None if config.p2p.relays == 'none' else 10,
-        max_request_size=config.storage.object_size_limit,
-        addr_cache_path=endpoint_dir.peer_addrs_path,
+    relays = config.p2p.relays
+    logger.info(
+        'Loaded %d peer(s) from %s, using relays: %s',
+        len(endpoint_dir.peers.read().peers),
+        endpoint_dir.peers_path,
+        relays if isinstance(relays, str) else ', '.join(relays),
     )
-
-
-def _relay_options(
-    config: EndpointP2PConfig,
-) -> tuple[iroh.Preset, iroh.RelayMode | None]:
-    import iroh
-
-    if config.relays == 'n0':
-        logger.info('Using n0 relays')
-        return iroh.preset_n0(), None
-    if config.relays == 'none':
-        logger.info('Relays are disabled')
-        return iroh.preset_n0(), iroh.RelayMode.disabled()
-    logger.info('Using relays: %s', ', '.join(config.relays))
-    return iroh.preset_n0(), iroh.RelayMode.custom_from_urls(config.relays)
+    return PeerManager.from_endpoint_dir(endpoint_dir)
 
 
 def _create_storage(config: EndpointConfig) -> Storage:
@@ -146,7 +119,9 @@ async def running_endpoint(
     config = endpoint_dir.read_config()
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
-    secret_key = endpoint_dir.read_secret_key()
+    # Fail before starting if the secret key is missing or does not match
+    # the configuration.
+    endpoint_dir.read_secret_key()
 
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.
@@ -155,11 +130,7 @@ async def running_endpoint(
             Endpoint(
                 name=config.name,
                 endpoint_id=config.id,
-                peer_manager=_create_peer_manager(
-                    endpoint_dir,
-                    config,
-                    secret_key,
-                ),
+                peer_manager=_create_peer_manager(endpoint_dir, config),
                 storage=_create_storage(config),
             ),
         )

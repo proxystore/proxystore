@@ -42,14 +42,17 @@ import tempfile
 import time
 from collections.abc import Sequence
 from typing import Any
+from typing import Literal
 
 import iroh
 
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.p2p.manager import PeerManager
+from proxystore.p2p.manager import relay_options
 
 
 class _AllowAll(Allowlist):
@@ -78,17 +81,16 @@ def apply_memmove_patch() -> None:
     iroh_ffi._UniffiRustBufferBuilder.write = _fast_write  # type: ignore[method-assign]
 
 
-def _relay_options(relays: str) -> dict[str, Any]:
-    if relays == 'n0':
-        return {'preset': iroh.preset_n0()}
+def _relay_options(relays: Literal['n0', 'none']) -> dict[str, Any]:
+    preset, relay_mode = relay_options(EndpointP2PConfig(relays=relays))
     return {
-        'preset': iroh.preset_n0(),
-        'relay_mode': iroh.RelayMode.disabled(),
-        'online_timeout': None,
+        'preset': preset,
+        'relay_mode': relay_mode,
+        'online_timeout': None if relays == 'none' else 10,
     }
 
 
-async def _endpoint(relays: str, tmp_dir: str) -> Endpoint:
+async def _endpoint(relays: Literal['n0', 'none'], tmp_dir: str) -> Endpoint:
     manager = PeerManager(
         SecretKey.generate(),
         _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
@@ -108,7 +110,7 @@ async def run_local(
     addrs: list[str],
     sizes: list[int],
     repeat: int,
-    relays: str,
+    relays: Literal['n0', 'none'],
     tmp_dir: str,
 ) -> None:
     """Measure transfer speeds to the remote endpoint."""
@@ -148,7 +150,7 @@ async def run_local(
         await endpoint.close()
 
 
-async def run_remote(relays: str, tmp_dir: str) -> None:
+async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
     """Serve an endpoint until interrupted."""
     endpoint = await _endpoint(relays, tmp_dir)
     assert endpoint.peer_manager is not None

@@ -647,16 +647,16 @@ def test_add_list_remove_peer(tmp_path: pathlib.Path, caplog) -> None:
 
     assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 0
     endpoint_dir = EndpointDir.from_name(_NAME, home)
-    assert endpoint_dir.read_peers().peers == {'peer': peer_id}
+    assert endpoint_dir.peers.read().peers == {'peer': peer_id}
 
     caplog.clear()
     assert list_peers(_NAME, proxystore_dir=home) == 0
     assert caplog.records[-1].message.split() == ['peer', peer_id]
 
     assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 0
-    assert endpoint_dir.read_peers().peers == {}
+    assert endpoint_dir.peers.read().peers == {}
     assert remove_peer(_NAME, 'peer', proxystore_dir=home) == 1
-    assert 'no peer named peer' in caplog.records[-1].message
+    assert 'No peer named peer' in caplog.records[-1].message
 
 
 def test_add_peer_errors(tmp_path: pathlib.Path, caplog) -> None:

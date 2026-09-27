@@ -26,11 +26,10 @@ from proxystore import utils
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
-from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
-from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.peers import PeerExistsError
 from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)
@@ -549,43 +548,18 @@ def add_peer(
         return 1
     endpoint_dir, config = endpoint
 
-    if not validate_name(peer_name):
-        logger.error(
-            'Peer names must only contain alphanumeric characters, dashes, '
-            'and underscores. Got %s.',
-            peer_name,
-        )
-        return 1
     try:
-        endpoint_id = EndpointId.from_str(peer_id)
-        peers = endpoint_dir.read_peers()
-    except ValueError as e:
-        logger.error(str(e))
-        return 1
-
-    if endpoint_id == config.id:
-        logger.error('An endpoint cannot be a peer of itself.')
-        return 1
-    if peer_name in peers.peers:
-        logger.error(
-            'A peer named %s already exists. Remove it first with:',
-            peer_name,
-        )
+        endpoint_id = endpoint_dir.peers.add(peer_name, peer_id)
+    except PeerExistsError as e:
+        logger.error('%s Remove it first with:', e)
         logger.error(
             '  $ proxystore-endpoint peers remove %s %s', name, peer_name
         )
         return 1
-    existing = peers.name_of(endpoint_id)
-    if existing is not None:
-        logger.error(
-            'Endpoint %s is already a peer named %s.',
-            endpoint_id,
-            existing,
-        )
+    except ValueError as e:
+        logger.error(str(e))
         return 1
 
-    peers.peers[peer_name] = endpoint_id
-    endpoint_dir.write_peers(peers)
     logger.info(
         'Added peer %s <%s> to endpoint %s.', peer_name, endpoint_id, name
     )
@@ -622,17 +596,11 @@ def remove_peer(
     endpoint_dir, _ = endpoint
 
     try:
-        peers = endpoint_dir.read_peers()
+        endpoint_id = endpoint_dir.peers.remove(peer_name)
     except ValueError as e:
-        logger.error(str(e))
+        logger.error('Endpoint %s: %s', name, e)
         return 1
 
-    endpoint_id = peers.peers.pop(peer_name, None)
-    if endpoint_id is None:
-        logger.error('Endpoint %s has no peer named %s.', name, peer_name)
-        return 1
-
-    endpoint_dir.write_peers(peers)
     logger.info(
         'Removed peer %s <%s> from endpoint %s.',
         peer_name,
@@ -664,7 +632,7 @@ def list_peers(
     endpoint_dir, _ = endpoint
 
     try:
-        peers = endpoint_dir.read_peers()
+        peers = endpoint_dir.peers.read()
     except ValueError as e:
         logger.error(str(e))
         return 1

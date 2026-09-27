@@ -12,6 +12,7 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from collections.abc import Coroutine
 from typing import Any
+from typing import Self
 
 try:
     import iroh
@@ -21,6 +22,8 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     ) from e
 
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
@@ -29,8 +32,7 @@ from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
-from proxystore.p2p.addrs import load_peer_addrs
-from proxystore.p2p.addrs import save_peer_addrs
+from proxystore.p2p.addrs import PeerAddrCache
 from proxystore.p2p.exceptions import PeerConnectionError
 from proxystore.p2p.exceptions import PeerConnectionTimeoutError
 from proxystore.p2p.exceptions import PeerNotAllowedError
@@ -93,6 +95,21 @@ class PathInfo:
         """Describe the path for logging."""
         kind = 'relayed via' if self.relayed else 'direct to'
         return f'{kind} {self.remote_addr} (rtt {self.rtt_ms} ms)'
+
+
+def relay_options(
+    config: EndpointP2PConfig,
+) -> tuple[iroh.Preset, iroh.RelayMode | None]:
+    """Get the iroh preset and relay mode for a peer-to-peer configuration.
+
+    Returns:
+        The preset and relay mode (`None` uses the relays of the preset).
+    """
+    if config.relays == 'n0':
+        return iroh.preset_n0(), None
+    if config.relays == 'none':
+        return iroh.preset_n0(), iroh.RelayMode.disabled()
+    return iroh.preset_n0(), iroh.RelayMode.custom_from_urls(config.relays)
 
 
 def selected_path(connection: iroh.Connection) -> PathInfo | None:
@@ -158,8 +175,8 @@ class PeerManager:
             the endpoint does not wait (e.g., because relays are disabled).
         max_request_size: Maximum size in bytes of the data in a request from
             a peer or `None` for no limit.
-        addr_cache_path: Optional path to a file where the addresses of peers
-            are cached (see [`proxystore.p2p.addrs`][proxystore.p2p.addrs]).
+        addr_cache: Optional cache where the addresses of peers are saved
+            (see [`PeerAddrCache`][proxystore.p2p.addrs.PeerAddrCache]).
             Cached addresses are used when connecting to peers so peers can
             be reached even if discovery is unavailable.
     """
@@ -175,7 +192,7 @@ class PeerManager:
         connect_timeout: float = 30,
         online_timeout: float | None = 10,
         max_request_size: int | None = None,
-        addr_cache_path: str | None = None,
+        addr_cache: PeerAddrCache | None = None,
     ) -> None:
         self._secret_key = secret_key
         self._id = secret_key.endpoint_id
@@ -186,7 +203,7 @@ class PeerManager:
         self._connect_timeout = connect_timeout
         self._online_timeout = online_timeout
         self._max_request_size = max_request_size
-        self._addr_cache_path = addr_cache_path
+        self._addr_cache = addr_cache
 
         self._endpoint: iroh.Endpoint | None = None
         self._handler: RequestHandler | None = None
@@ -204,6 +221,45 @@ class PeerManager:
         # Last reported path of each connection by stable ID.
         self._paths: dict[int, tuple[bool, str] | None] = {}
         self._closed = False
+
+    @classmethod
+    def from_endpoint_dir(
+        cls,
+        endpoint_dir: EndpointDir,
+        **options: Any,
+    ) -> Self:
+        """Create a peer manager for an endpoint.
+
+        The secret key, peers, relays, maximum object size, and address
+        cache are taken from the endpoint directory and configuration.
+
+        Args:
+            endpoint_dir: Directory of the endpoint.
+            options: Options which override the defaults from the
+                configuration (see
+                [`PeerManager`][proxystore.p2p.manager.PeerManager]).
+
+        Raises:
+            FileNotFoundError: If the configuration or secret key does not
+                exist.
+            ValueError: If the configuration is invalid or does not match
+                the secret key.
+        """
+        config = endpoint_dir.read_config()
+        preset, relay_mode = relay_options(config.p2p)
+        defaults: dict[str, Any] = {
+            'preset': preset,
+            'relay_mode': relay_mode,
+            # Without relays, there is no home relay to wait on.
+            'online_timeout': None if config.p2p.relays == 'none' else 10,
+            'max_request_size': config.storage.object_size_limit,
+            'addr_cache': PeerAddrCache(endpoint_dir.peer_addrs_path),
+        }
+        return cls(
+            endpoint_dir.read_secret_key(),
+            endpoint_dir.peers.allowlist(),
+            **{**defaults, **options},
+        )
 
     @property
     def id(self) -> EndpointId:
@@ -271,15 +327,15 @@ class PeerManager:
         if self._endpoint is not None:
             return
         self._handler = handler
-        if self._addr_cache_path is not None:
-            cached = load_peer_addrs(self._addr_cache_path)
+        if self._addr_cache is not None:
+            cached = self._addr_cache.load()
             for peer_id, addr in cached.items():
                 self._addr_hints.setdefault(peer_id, addr)
             logger.info(
                 '%s: loaded %d cached peer address(es) from %s',
                 self._log_prefix(),
                 len(cached),
-                self._addr_cache_path,
+                self._addr_cache.path,
             )
         # uniffi_set_event_loop() is intentionally not called. It sets a
         # process-wide event loop that the bindings then use for every call,
@@ -491,7 +547,7 @@ class PeerManager:
         if addr is None:  # pragma: no cover
             return
         self._addr_hints[peer_id] = addr
-        if self._addr_cache_path is not None:
+        if self._addr_cache is not None:
             # Only peers in the allowlist are saved so removed peers are
             # pruned from the cache.
             addrs = {
@@ -500,7 +556,7 @@ class PeerManager:
                 if self._allowlist.allowed(peer)
             }
             try:
-                save_peer_addrs(self._addr_cache_path, addrs)
+                self._addr_cache.save(addrs)
             except OSError as e:
                 logger.warning(
                     '%s: failed to save peer address cache: %s',

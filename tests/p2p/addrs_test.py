@@ -8,12 +8,11 @@ import stat
 import iroh
 
 from proxystore.endpoint.identity import EndpointId
-from proxystore.p2p.addrs import load_peer_addrs
-from proxystore.p2p.addrs import save_peer_addrs
+from proxystore.p2p.addrs import PeerAddrCache
 
 
 def test_load_missing(tmp_path: pathlib.Path) -> None:
-    assert load_peer_addrs(str(tmp_path / 'peer-addrs.json')) == {}
+    assert PeerAddrCache(str(tmp_path / 'peer-addrs.json')).load() == {}
 
 
 def test_save_load_round_trip(tmp_path: pathlib.Path) -> None:
@@ -27,10 +26,10 @@ def test_save_load_round_trip(tmp_path: pathlib.Path) -> None:
         ),
         id2: iroh.EndpointAddr(iroh.EndpointId.from_string(id2), None, []),
     }
-    save_peer_addrs(path, addrs)
+    PeerAddrCache(path).save(addrs)
     assert stat.S_IMODE(os.stat(path).st_mode) == 0o600
 
-    loaded = load_peer_addrs(path)
+    loaded = PeerAddrCache(path).load()
     assert set(loaded) == {id1, id2}
     assert loaded[id1].relay_url() == 'https://relay.example.com'
     assert loaded[id1].direct_addresses() == ['127.0.0.1:1234']
@@ -42,10 +41,10 @@ def test_save_load_round_trip(tmp_path: pathlib.Path) -> None:
 def test_load_malformed_file(tmp_path: pathlib.Path, caplog) -> None:
     path = tmp_path / 'peer-addrs.json'
     path.write_text('not json')
-    assert load_peer_addrs(str(path)) == {}
+    assert PeerAddrCache(str(path)).load() == {}
 
     path.write_text('[]')
-    assert load_peer_addrs(str(path)) == {}
+    assert PeerAddrCache(str(path)).load() == {}
     assert len(caplog.records) == 2
 
 
@@ -62,6 +61,6 @@ def test_load_malformed_entries(tmp_path: pathlib.Path, caplog) -> None:
     path = tmp_path / 'peer-addrs.json'
     path.write_text(json.dumps(data))
 
-    addrs = load_peer_addrs(str(path))
+    addrs = PeerAddrCache(str(path)).load()
     assert list(addrs) == [good]
     assert len(caplog.records) == len(data) - 1

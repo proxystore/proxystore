@@ -8,12 +8,13 @@ import pytest
 
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.peers import Allowlist
+from proxystore.endpoint.peers import PeerExistsError
+from proxystore.endpoint.peers import Peers
 from proxystore.endpoint.peers import PeersConfig
-from proxystore.endpoint.peers import read_peers
 
 _ID1 = EndpointId.random()
 _ID2 = EndpointId.random()
+_OWNER = EndpointId.random()
 
 
 def test_peers_config() -> None:
@@ -39,37 +40,82 @@ def test_peers_config_invalid(peers: Any, error: str) -> None:
 
 
 def test_read_write_peers(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir(str(tmp_path))
-    assert endpoint_dir.read_peers() == PeersConfig()
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    assert peers.read() == PeersConfig()
 
-    peers = PeersConfig(peers={'a': _ID1, 'b': _ID2})
-    endpoint_dir.write_peers(peers)
-    assert endpoint_dir.read_peers() == peers
-    assert oct(os.stat(endpoint_dir.peers_path).st_mode & 0o777) == '0o600'
+    config = PeersConfig(peers={'a': _ID1, 'b': _ID2})
+    peers.write(config)
+    assert peers.read() == config
+    assert oct(os.stat(peers.path).st_mode & 0o777) == '0o600'
 
 
 def test_read_peers_malformed(tmp_path: pathlib.Path) -> None:
-    path = str(tmp_path / 'peers.toml')
-    with open(path, 'w') as f:
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    with open(peers.path, 'w') as f:
         f.write('[peers]\na = "not-an-id"\n')
     with pytest.raises(ValueError, match='Unable to parse'):
-        read_peers(path)
+        peers.read()
 
-    with open(path, 'w') as f:
+    with open(peers.path, 'w') as f:
         f.write('not toml')
     with pytest.raises(ValueError, match='Unable to parse'):
-        read_peers(path)
+        peers.read()
+
+
+def test_add_remove_peers(tmp_path: pathlib.Path) -> None:
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    assert peers.add('a', _ID1.upper()) == _ID1
+    assert peers.add('b', _ID2) == _ID2
+    assert peers.read().peers == {'a': _ID1, 'b': _ID2}
+
+    assert peers.remove('a') == _ID1
+    assert peers.read().peers == {'b': _ID2}
+    with pytest.raises(ValueError, match='No peer named a'):
+        peers.remove('a')
+
+
+@pytest.mark.parametrize(
+    ('name', 'endpoint_id', 'error', 'match'),
+    (
+        ('bad name', str(_ID2), ValueError, 'alphanumeric'),
+        ('c', 'xyz', ValueError, 'not a valid endpoint ID'),
+        ('c', '02' * 32, ValueError, 'not a valid public key'),
+        ('c', str(_OWNER), ValueError, 'peer of itself'),
+        ('a', str(_ID2), PeerExistsError, 'peer named a already exists'),
+        ('c', str(_ID1), ValueError, 'already a peer named a'),
+    ),
+)
+def test_add_peer_errors(
+    name: str,
+    endpoint_id: str,
+    error: type[Exception],
+    match: str,
+    tmp_path: pathlib.Path,
+) -> None:
+    peers = Peers(str(tmp_path / 'peers.toml'), owner_id=_OWNER)
+    peers.add('a', _ID1)
+    with pytest.raises(error, match=match):
+        peers.add(name, endpoint_id)
+    assert peers.read().peers == {'a': _ID1}
+
+
+def test_endpoint_dir_peers(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    peers = endpoint_dir.peers
+    assert peers.path == endpoint_dir.peers_path
+    assert peers.owner_id == endpoint_dir.read_config().id
+    assert peers.allowlist().path == endpoint_dir.peers_path
 
 
 def test_allowlist_reload(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir(str(tmp_path))
-    allowlist = Allowlist(endpoint_dir.peers_path)
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    allowlist = peers.allowlist()
 
     # Missing file is an empty allowlist
     assert allowlist.reload() == set()
     assert not allowlist.allowed(_ID1)
 
-    endpoint_dir.write_peers(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
+    peers.write(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
     assert allowlist.reload() == set()
     assert allowlist.allowed(_ID1)
     assert allowlist.allowed(_ID2)
@@ -77,13 +123,13 @@ def test_allowlist_reload(tmp_path: pathlib.Path) -> None:
     # File is unchanged so reloading is a no-op
     assert allowlist.reload() == set()
 
-    endpoint_dir.write_peers(PeersConfig(peers={'a': _ID1}))
+    peers.write(PeersConfig(peers={'a': _ID1}))
     assert allowlist.reload() == {_ID2}
     assert allowlist.allowed(_ID1)
     assert not allowlist.allowed(_ID2)
     assert allowlist.name_of(_ID2) is None
 
-    os.remove(endpoint_dir.peers_path)
+    os.remove(peers.path)
     assert allowlist.reload() == {_ID1}
     assert allowlist.peers == PeersConfig()
 
@@ -92,12 +138,12 @@ def test_allowlist_malformed_denies_all(
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
-    endpoint_dir = EndpointDir(str(tmp_path))
-    endpoint_dir.write_peers(PeersConfig(peers={'a': _ID1}))
-    allowlist = Allowlist(endpoint_dir.peers_path)
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    peers.write(PeersConfig(peers={'a': _ID1}))
+    allowlist = peers.allowlist()
     assert allowlist.allowed(_ID1)
 
-    with open(endpoint_dir.peers_path, 'w') as f:
+    with open(peers.path, 'w') as f:
         f.write('[peers]\na = "not-an-id"\nb = "also-not-an-id"\n')
     assert allowlist.reload() == {_ID1}
     assert not allowlist.allowed(_ID1)
