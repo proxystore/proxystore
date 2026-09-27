@@ -1,5 +1,10 @@
 """Dispatch requests to the storage of an endpoint or to its peers.
 
+Warning:
+    This module is an implementation detail of endpoints. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 Requests from clients (see
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler]) and from peer
 endpoints (see

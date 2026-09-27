@@ -123,10 +123,14 @@ class EndpointLock:
     other hosts depends on the file system of the endpoint directory.
 
     Some file systems (e.g., some network or parallel file systems) do not
-    support locks. Then, acquiring the lock always succeeds,
-    [`supported`][proxystore.endpoint.directory.EndpointLock.supported] is
+    support locks. Then, acquiring the lock always succeeds, `supported` is
     `False`, and the status of the endpoint is determined from the PID in
     its connection file instead.
+
+    Attributes:
+        path: Path of the lock file.
+        supported: If the file system supports locks. This is `True` until
+            locking fails because locks are not supported.
 
     Args:
         path: Path of the lock file.

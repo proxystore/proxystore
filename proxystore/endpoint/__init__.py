@@ -5,35 +5,40 @@ Note:
    introduction to endpoints in ProxyStore.
 
 [`Endpoints`][proxystore.endpoint.endpoint.Endpoint] are in-memory object
-stores with peering capabilities.
-Endpoints enable peer-to-peer data transfer between clients behind
-different NATs. See the
+stores with peering capabilities. Endpoints enable peer-to-peer data transfer
+between clients behind different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
 to start your own endpoints.
 
-The public interface of endpoints is provided by these modules:
+The public interface of endpoints is exported by this package (see
+`proxystore.endpoint.__all__`) and is organized by role:
 
-* [`client`][proxystore.endpoint.client]: Connect to a running endpoint.
-* [`directory`][proxystore.endpoint.directory]: Create, find, and manage
-  endpoints and the files in their directories.
-* [`config`][proxystore.endpoint.config]: Endpoint configuration.
-* [`identity`][proxystore.endpoint.identity]: Endpoint IDs and secret keys.
-* [`peers`][proxystore.endpoint.peers]: Peers an endpoint communicates with.
-* [`endpoint`][proxystore.endpoint.endpoint]: Run an endpoint.
-* [`storage`][proxystore.endpoint.storage]: Storage used by an endpoint,
-  which can be implemented to store data elsewhere.
-* [`process`][proxystore.endpoint.process]: Run, start, and stop endpoint
-  processes.
-* [`exceptions`][proxystore.endpoint.exceptions]: Endpoint errors.
+* Files shared by endpoints and clients:
+  [`directory`][proxystore.endpoint.directory] (creating, finding, and
+  managing endpoints and the files in their directories),
+  [`config`][proxystore.endpoint.config] (configuration),
+  [`identity`][proxystore.endpoint.identity] (endpoint IDs and secret keys),
+  and [`peers`][proxystore.endpoint.peers] (the peers an endpoint
+  communicates with).
+* Clients: [`client`][proxystore.endpoint.client] (connect to a running
+  endpoint).
+* Running endpoints: [`endpoint`][proxystore.endpoint.endpoint] (run an
+  endpoint), [`storage`][proxystore.endpoint.storage] (storage of objects
+  which can be implemented to store objects elsewhere), and
+  [`process`][proxystore.endpoint.process] (run, start, and stop endpoint
+  processes).
+* Errors: [`exceptions`][proxystore.endpoint.exceptions] and
+  [`warnings`][proxystore.endpoint.warnings].
 
-The remaining modules ([`auth`][proxystore.endpoint.auth],
-[`dispatch`][proxystore.endpoint.dispatch],
-[`files`][proxystore.endpoint.files],
-[`protocol`][proxystore.endpoint.protocol], and
-[`server`][proxystore.endpoint.server]) and the
-[`proxystore.endpoint.p2p`][proxystore.endpoint.p2p] package are internal
-implementation details. They are documented for development, but their
-interfaces may change between releases without notice.
+The remaining modules implement the endpoint and are documented for
+development: [`auth`][proxystore.endpoint.auth] (client authentication),
+[`dispatch`][proxystore.endpoint.dispatch] (handling requests),
+[`files`][proxystore.endpoint.files] (reading and writing files),
+[`protocol`][proxystore.endpoint.protocol] (the wire protocol),
+[`server`][proxystore.endpoint.server] (the server which accepts client
+connections), and the [`p2p`][proxystore.endpoint.p2p] package
+(communication with peers). Names which are not exported by this package may
+change between releases without notice.
 
 Note:
     Endpoints and their clients (e.g., the
@@ -42,6 +47,7 @@ Note:
     home directory so they are expected to share a Python environment too.
 """
 
+# ruff: noqa: E402
 from __future__ import annotations
 
 import importlib.util
@@ -54,3 +60,93 @@ if _missing:  # pragma: no cover
         f'{", ".join(_missing)}. Install them with '
         '"pip install proxystore[endpoints]".',
     )
+
+# The imports are after the check for the dependencies of endpoints, so
+# E402 (module level import not at top of file) is ignored in this file.
+from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.directory import ConnectionInfo
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
+from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import EndpointAuthError
+from proxystore.endpoint.exceptions import EndpointConfigError
+from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointConnectorError
+from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointExistsError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
+from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import EndpointRunningError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
+from proxystore.endpoint.exceptions import PeerError
+from proxystore.endpoint.exceptions import PeerExistsError
+from proxystore.endpoint.exceptions import PeeringDisabledError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerNotFoundError
+from proxystore.endpoint.exceptions import PeerUnavailableError
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.p2p.manager import PeerOptions
+from proxystore.endpoint.p2p.manager import PeerPolicy
+from proxystore.endpoint.peers import Peers
+from proxystore.endpoint.peers import PeersConfig
+from proxystore.endpoint.process import serve
+from proxystore.endpoint.process import start_endpoint
+from proxystore.endpoint.process import stop_endpoint
+from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import PingResult
+from proxystore.endpoint.storage import MemoryStorage
+from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.endpoint.storage import Storage
+from proxystore.endpoint.warnings import EndpointVersionWarning
+
+__all__ = [
+    'ConnectionInfo',
+    'Endpoint',
+    'EndpointAuthError',
+    'EndpointClient',
+    'EndpointConfig',
+    'EndpointConfigError',
+    'EndpointConnectionError',
+    'EndpointConnectorError',
+    'EndpointDir',
+    'EndpointError',
+    'EndpointExistsError',
+    'EndpointId',
+    'EndpointInfo',
+    'EndpointNotFoundError',
+    'EndpointNotRunningError',
+    'EndpointP2PConfig',
+    'EndpointProtocolError',
+    'EndpointRequestError',
+    'EndpointRunningError',
+    'EndpointStatus',
+    'EndpointStorageConfig',
+    'EndpointVersionWarning',
+    'MemoryStorage',
+    'ObjectSizeExceededError',
+    'PeerConnectionTimeoutError',
+    'PeerError',
+    'PeerExistsError',
+    'PeerNotAllowedError',
+    'PeerNotFoundError',
+    'PeerOptions',
+    'PeerPolicy',
+    'PeerUnavailableError',
+    'PeeringDisabledError',
+    'Peers',
+    'PeersConfig',
+    'PingResult',
+    'SQLiteStorage',
+    'SecretKey',
+    'Storage',
+    'serve',
+    'start_endpoint',
+    'stop_endpoint',
+]

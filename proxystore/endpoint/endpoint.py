@@ -132,14 +132,22 @@ class Endpoint:
 
     @property
     def dispatcher(self) -> Dispatcher:
-        """Dispatcher which handles requests to the running endpoint."""
+        """Dispatcher which handles requests to the running endpoint.
+
+        The dispatcher is an implementation detail which is exposed for
+        testing and benchmarking.
+        """
         self._check_running()
         assert self._dispatcher is not None
         return self._dispatcher
 
     @property
     def peer_manager(self) -> PeerManager | None:
-        """Peer manager of the running endpoint or `None` if peering is off."""
+        """Peer manager of the running endpoint or `None` if peering is off.
+
+        The peer manager is an implementation detail which is exposed for
+        testing and benchmarking.
+        """
         return self.dispatcher.peer_manager
 
     @property

@@ -84,7 +84,7 @@ file that the endpoint writes to its directory when it starts, and
 [`EndpointClient.from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
 reads this file for you.
 ```python
-from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint import EndpointClient
 
 with EndpointClient.from_name('myendpoint') as client:
     print(client.info)
