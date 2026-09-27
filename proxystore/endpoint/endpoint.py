@@ -10,10 +10,13 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.handler import handle_request
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import check_response
+from proxystore.endpoint.protocol import exists_from_meta
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
@@ -157,79 +160,42 @@ class Endpoint:
         self,
         endpoint: EndpointId,
         op: Op,
-        meta: dict[str, Any],
+        request: Request,
         data: bytes | bytearray | None = None,
-    ) -> tuple[Status, dict[str, Any], bytes | bytearray]:
+    ) -> Message:
         assert self._peer_manager is not None
         logger.debug(
-            '%s: sending %s request with meta=%s to %s',
+            '%s: sending %s request with key=%s to %s',
             self._log_prefix,
             op.name,
-            meta,
+            request.key,
             endpoint,
         )
-        code, meta, response_data = await self._peer_manager.request(
+        response = await self._peer_manager.request(
             endpoint,
+            Message(op, request.to_meta(), b'' if data is None else data),
+        )
+        check_response(
+            response,
             op,
-            meta,
-            data,
+            source=f'Peer {endpoint}',
+            error=PeerRequestError,
         )
-
-        if code in (Status.OK, Status.NOT_FOUND):
-            return Status(code), meta, response_data
-        error = meta.get('error', 'no error message')
-        if code == Status.TOO_LARGE:
-            raise ObjectSizeExceededError(f'Peer {endpoint}: {error}')
-        raise PeerRequestError(f'Request to peer {endpoint} failed: {error}')
+        return response
 
     async def _handle_peer_request(
         self,
         peer: EndpointId,
-        op: int,
-        meta: dict[str, Any],
-        data: bytes | bytearray,
-    ) -> tuple[int, dict[str, Any] | None, bytes | bytearray | None]:
-        """Handle a request from a peer endpoint on the local storage."""
-        if op == Op.PING:
-            return Status.OK, None, None
-        try:
-            request = Request.from_meta(meta)
-        except EndpointProtocolError as e:
-            return Status.BAD_REQUEST, {'error': str(e)}, None
-        if request.endpoint is not None:
-            # Requests from peers are never forwarded to another peer.
-            return (
-                Status.BAD_REQUEST,
-                {'error': 'requests from peers cannot be forwarded'},
-                None,
-            )
-
+        request: Message,
+    ) -> Message:
+        """Handle a request from a peer endpoint."""
         logger.debug(
-            '%s: received op %s request with key=%s from %s',
+            '%s: received op %s request from %s',
             self._log_prefix,
-            op,
-            request.key,
+            request.code,
             peer,
         )
-        key = request.key
-        try:
-            if op == Op.GET:
-                result = await self._storage.get(key, None)
-                if result is None:
-                    return Status.NOT_FOUND, None, None
-                return Status.OK, None, result
-            if op == Op.SET:
-                await self._storage.set(key, data)
-                return Status.OK, None, None
-            if op == Op.EXISTS:
-                exists = await self._storage.exists(key)
-                return Status.OK, {'exists': exists}, None
-            if op == Op.EVICT:
-                await self._storage.evict(key)
-                return Status.OK, None, None
-        except ObjectSizeExceededError as e:
-            return Status.TOO_LARGE, {'error': str(e)}, None
-        return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
+        return await handle_request(self, request, forward=False)
 
     async def evict(
         self,
@@ -256,9 +222,7 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            await self._request_peer(
-                endpoint, Op.EVICT, Request(key).to_meta()
-            )
+            await self._request_peer(endpoint, Op.EVICT, Request(key))
         else:
             await self._storage.evict(key)
 
@@ -290,17 +254,16 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            _, meta, _ = await self._request_peer(
+            response = await self._request_peer(
                 endpoint,
                 Op.EXISTS,
-                Request(key).to_meta(),
+                Request(key),
             )
-            exists = meta.get('exists')
-            if not isinstance(exists, bool):
-                raise PeerRequestError(
-                    f'Peer {endpoint} returned a malformed EXISTS response.',
-                )
-            return exists
+            try:
+                return exists_from_meta(response.meta)
+            except EndpointProtocolError as e:
+                # The peer, not the caller, sent the malformed message.
+                raise PeerRequestError(f'Peer {endpoint}: {e}') from e
         return await self._storage.exists(key)
 
     async def get(
@@ -331,12 +294,10 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            status, _, data = await self._request_peer(
-                endpoint,
-                Op.GET,
-                Request(key).to_meta(),
-            )
-            return None if status == Status.NOT_FOUND else data
+            response = await self._request_peer(endpoint, Op.GET, Request(key))
+            if response.code == Status.NOT_FOUND:
+                return None
+            return response.data
         return await self._storage.get(key, None)
 
     async def set(
@@ -368,12 +329,7 @@ class Endpoint:
         )
         if self._is_peer_request(endpoint):
             assert endpoint is not None
-            await self._request_peer(
-                endpoint,
-                Op.SET,
-                Request(key).to_meta(),
-                data,
-            )
+            await self._request_peer(endpoint, Op.SET, Request(key), data)
         else:
             await self._storage.set(key, data)
 
@@ -398,7 +354,7 @@ class Endpoint:
         assert self._peer_manager is not None
 
         start = time.perf_counter()
-        await self._request_peer(endpoint, Op.PING, {})
+        await self._request_peer(endpoint, Op.PING, Request())
         rtt_ms = (time.perf_counter() - start) * 1000
         path = self._peer_manager.path(endpoint)
         if path is None:  # pragma: no cover

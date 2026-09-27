@@ -15,6 +15,7 @@ from proxystore.endpoint.exceptions import PeerConnectionError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
 from proxystore.p2p.addrs import PeerAddrCache
@@ -40,18 +41,27 @@ Handled = list[tuple[EndpointId, int, dict[str, Any], bytes | bytearray]]
 
 
 def _echo_handler(handled: Handled) -> Any:
-    async def _handler(
-        peer: EndpointId,
-        code: int,
-        meta: dict[str, Any],
-        data: bytes | bytearray,
-    ) -> tuple[int, dict[str, Any] | None, bytes | bytearray | None]:
-        handled.append((peer, code, meta, data))
-        if meta.get('raise'):
+    async def _handler(peer: EndpointId, request: Message) -> Message:
+        handled.append((peer, request.code, request.meta, request.data))
+        if request.meta.get('raise'):
             raise RuntimeError('handler failed')
-        return Status.OK, {'echo': meta}, data
+        return Message(Status.OK, {'echo': request.meta}, request.data)
 
     return _handler
+
+
+async def _request(
+    manager: PeerManager,
+    peer_id: EndpointId,
+    code: int,
+    meta: dict[str, Any] | None = None,
+    data: Any = b'',
+) -> tuple[int, dict[str, Any], bytes | bytearray]:
+    response = await manager.request(
+        peer_id,
+        Message(code, {} if meta is None else meta, data),
+    )
+    return response.code, response.meta, response.data
 
 
 @pytest.fixture
@@ -75,7 +85,8 @@ async def managers(
 async def test_request(managers) -> None:
     manager1, manager2, handled = managers
 
-    status, meta, data = await manager1.request(
+    status, meta, data = await _request(
+        manager1,
         manager2.id,
         Op.GET,
         {'key': 'abc'},
@@ -87,7 +98,7 @@ async def test_request(managers) -> None:
     assert handled == [(manager1.id, Op.GET, {'key': 'abc'}, b'data')]
 
     # No metadata or data
-    status, meta, data = await manager2.request(manager1.id, Op.EXISTS)
+    status, meta, data = await _request(manager2, manager1.id, Op.EXISTS)
     assert status == Status.OK
     assert meta == {'echo': {}}
     assert data == b''
@@ -97,7 +108,7 @@ async def test_concurrent_requests(managers) -> None:
     manager1, manager2, _ = managers
     results = await asyncio.gather(
         *(
-            manager1.request(manager2.id, Op.GET, {'i': i}, bytes([i]))
+            _request(manager1, manager2.id, Op.GET, {'i': i}, bytes([i]))
             for i in range(20)
         ),
     )
@@ -115,7 +126,8 @@ async def test_large_request(managers, tmp_path: pathlib.Path) -> None:
         data = os.urandom(1000)
         # Use a small chunk size to test data spanning multiple chunks
         with mock.patch('proxystore.p2p.manager._CHUNK_SIZE', 300):
-            _, _, response = await manager1.request(
+            _, _, response = await _request(
+                manager1,
                 manager3.id,
                 Op.SET,
                 {},
@@ -129,7 +141,8 @@ async def test_large_request(managers, tmp_path: pathlib.Path) -> None:
 
 async def test_request_too_large(managers) -> None:
     manager1, manager2, handled = managers
-    status, meta, _ = await manager1.request(
+    status, meta, _ = await _request(
+        manager1,
         manager2.id,
         Op.SET,
         {},
@@ -140,13 +153,14 @@ async def test_request_too_large(managers) -> None:
     assert len(handled) == 0
 
     # Connection is still usable
-    status, _, _ = await manager1.request(manager2.id, Op.SET, {}, b'x')
+    status, _, _ = await _request(manager1, manager2.id, Op.SET, {}, b'x')
     assert status == Status.OK
 
 
 async def test_handler_error(managers) -> None:
     manager1, manager2, _ = managers
-    status, meta, _ = await manager1.request(
+    status, meta, _ = await _request(
+        manager1,
         manager2.id,
         Op.GET,
         {'raise': True},
@@ -171,53 +185,53 @@ async def test_request_not_in_allowlist(managers) -> None:
     manager1, manager2, _ = managers
     os.remove(manager1._allowlist.path)
     with pytest.raises(PeerNotAllowedError, match='not in the allowlist'):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
 
 
 async def test_peer_refuses_connection(managers) -> None:
     manager1, manager2, handled = managers
     os.remove(manager2._allowlist.path)
     with pytest.raises(PeerNotAllowedError, match='refused the connection'):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
     assert len(handled) == 0
 
 
 async def test_revoke_peer(managers) -> None:
     manager1, manager2, handled = managers
-    await manager1.request(manager2.id, Op.GET)
+    await _request(manager1, manager2.id, Op.GET)
     assert manager1.id in manager2._incoming
 
     # Removing the peer closes its connections and denies new requests.
     os.remove(manager2._allowlist.path)
     with pytest.raises(PeerNotAllowedError):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
     assert manager1.id not in manager2._incoming
     assert len(handled) == 1
 
     # Adding the peer back allows it to reconnect.
     allow_peer(manager2, manager1, 'peer')
-    status, _, _ = await manager1.request(manager2.id, Op.GET)
+    status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
 
 
 async def test_revoke_detected_on_request(managers) -> None:
     manager1, manager2, _ = managers
-    await manager1.request(manager2.id, Op.GET)
-    await manager2.request(manager1.id, Op.GET)
+    await _request(manager1, manager2.id, Op.GET)
+    await _request(manager2, manager1.id, Op.GET)
     assert manager2.id in manager1._outgoing
 
     # Manager 1 closes its connections to the removed peer the next time it
     # checks the allowlist.
     os.remove(manager1._allowlist.path)
     with pytest.raises(PeerNotAllowedError):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
     assert manager2.id not in manager1._outgoing
     assert manager2.id not in manager1._incoming
 
 
 async def test_stale_connection_retry(managers, tmp_path) -> None:
     manager1, manager2, _ = managers
-    await manager1.request(manager2.id, Op.GET)
+    await _request(manager1, manager2.id, Op.GET)
     stale = manager1._outgoing[manager2.id]
 
     # Simulate the peer restarting by closing the connection from the peer.
@@ -231,7 +245,7 @@ async def test_stale_connection_retry(managers, tmp_path) -> None:
         'close_reason',
         side_effect=[None, 'closed by peer: restart (code 0)'],
     ):
-        status, _, _ = await manager1.request(manager2.id, Op.GET)
+        status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
     assert manager1._outgoing[manager2.id] is not stale
 
@@ -246,7 +260,7 @@ async def test_request_fails_on_fresh_connection(managers) -> None:
         mock.patch.object(manager1, '_exchange', side_effect=_fail),
         pytest.raises(PeerConnectionError, match='boom'),
     ):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
 
 
 async def test_connect_error(tmp_path: pathlib.Path) -> None:
@@ -257,7 +271,7 @@ async def test_connect_error(tmp_path: pathlib.Path) -> None:
         allow_peer(manager1, manager2, 'peer')
         # No address or discovery for the peer
         with pytest.raises(PeerConnectionError, match='Failed to connect'):
-            await manager1.request(manager2.id, Op.GET)
+            await _request(manager1, manager2.id, Op.GET)
     finally:
         await manager1.close()
 
@@ -276,7 +290,7 @@ async def test_connect_timeout(tmp_path: pathlib.Path) -> None:
             mock.patch.object(iroh.Endpoint, 'connect', _hang),
             pytest.raises(PeerConnectionTimeoutError),
         ):
-            await manager1.request(manager2.id, Op.GET)
+            await _request(manager1, manager2.id, Op.GET)
     finally:
         await manager1.close()
 
@@ -334,7 +348,7 @@ def test_closed_with() -> None:
 
 async def test_drop_outgoing_replaced_connection(managers) -> None:
     manager1, manager2, _ = managers
-    await manager1.request(manager2.id, Op.GET)
+    await _request(manager1, manager2.id, Op.GET)
     current = manager1._outgoing[manager2.id]
     # Dropping a connection that was already replaced keeps the current one.
     manager1._drop_outgoing(manager2.id, mock.MagicMock())
@@ -345,7 +359,7 @@ async def test_exchange_write_error_reads_response(managers) -> None:
     manager1, _, _ = managers
     connection = mock.AsyncMock()
     connection.open_bi.return_value = mock.MagicMock()
-    header = mock.MagicMock(code=Status.TOO_LARGE)
+    expected = Message(Status.TOO_LARGE, {'error': 'too large'})
     with (
         mock.patch(
             'proxystore.p2p.manager._write_message',
@@ -353,11 +367,12 @@ async def test_exchange_write_error_reads_response(managers) -> None:
         ),
         mock.patch(
             'proxystore.p2p.manager._read_message',
-            return_value=(header, {'error': 'too large'}, b''),
+            return_value=expected,
         ),
     ):
-        response = await manager1._exchange(connection, Op.SET, None, b'x')
-    assert response == (Status.TOO_LARGE, {'error': 'too large'}, b'')
+        request = Message(Op.SET, {}, b'x')
+        response = await manager1._exchange(connection, request)
+    assert response == expected
 
 
 @pytest.mark.parametrize('write_fails', (True, False))
@@ -378,7 +393,7 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
         ),
         pytest.raises(_IrohError) as exc_info,
     ):
-        await manager1._exchange(connection, Op.SET, None, b'x')
+        await manager1._exchange(connection, Message(Op.SET, {}, b'x'))
     assert exc_info.value is (write_error if write_fails else read_error)
 
 
@@ -400,13 +415,13 @@ async def test_addr_cache(tmp_path: pathlib.Path) -> None:
         allow_peer(manager2, manager1, 'peer')
         manager1.add_peer_addr(manager2.addr())
 
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
         # Both the dialing and accepting peer save the address of the other
         assert list(PeerAddrCache(cache1).load()) == [manager2.id]
         assert list(PeerAddrCache(cache2).load()) == [manager1.id]
 
         # Manager 2 can now reach manager 1 without being given its address
-        status, _, _ = await manager2.request(manager1.id, Op.GET)
+        status, _, _ = await _request(manager2, manager1.id, Op.GET)
         assert status == Status.OK
     finally:
         await manager1.close()
@@ -437,7 +452,7 @@ async def test_addr_cache_prunes_removed_peers(managers, tmp_path) -> None:
     await removed.start(_echo_handler([]))
     try:
         manager1.add_peer_addr(removed.addr())
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
         assert list(PeerAddrCache(cache).load()) == [manager2.id]
     finally:
         await removed.close()
@@ -446,7 +461,7 @@ async def test_addr_cache_prunes_removed_peers(managers, tmp_path) -> None:
 async def test_addr_cache_save_error(managers, caplog) -> None:
     manager1, manager2, _ = managers
     manager1._addr_cache = PeerAddrCache('/does/not/exist/peer-addrs.json')
-    status, _, _ = await manager1.request(manager2.id, Op.GET)
+    status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
     assert any('failed to save' in r.message for r in caplog.records)
 
@@ -468,7 +483,7 @@ async def test_stale_addr_falls_back_to_discovery(managers) -> None:
         return await real_dial(peer_id, good)
 
     with mock.patch.object(manager1, '_dial', _dial):
-        status, _, _ = await manager1.request(manager2.id, Op.GET)
+        status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
     assert calls[0] is stale
     assert calls[1].direct_addresses() == []
@@ -484,7 +499,7 @@ async def test_stale_addr_timeout_not_retried(managers) -> None:
         ) as dial,
         pytest.raises(PeerConnectionTimeoutError),
     ):
-        await manager1.request(manager2.id, Op.GET)
+        await _request(manager1, manager2.id, Op.GET)
     assert dial.call_count == 1
 
 
@@ -533,7 +548,7 @@ async def test_path(managers, caplog) -> None:
     manager1, manager2, _ = managers
     assert manager1.path(manager2.id) is None
 
-    await manager1.request(manager2.id, Op.GET)
+    await _request(manager1, manager2.id, Op.GET)
     path = manager1.path(manager2.id)
     assert path is not None
     assert not path.relayed

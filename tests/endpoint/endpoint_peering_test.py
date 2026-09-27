@@ -12,6 +12,7 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
@@ -111,9 +112,9 @@ async def test_remote_malformed_exists(endpoints) -> None:
         mock.patch.object(
             ep1.peer_manager,
             'request',
-            mock.AsyncMock(return_value=(Status.OK, {}, b'')),
+            mock.AsyncMock(return_value=Message(Status.OK)),
         ),
-        pytest.raises(PeerRequestError, match='malformed EXISTS'),
+        pytest.raises(PeerRequestError, match='Malformed EXISTS'),
     ):
         await ep1.exists('key', endpoint=ep2.id)
 
@@ -122,24 +123,30 @@ async def test_handle_peer_request_errors(endpoints) -> None:
     ep1, ep2 = endpoints
     handle = ep2._handle_peer_request
 
-    status, meta, _ = await handle(ep1.id, Op.GET, {}, b'')
-    assert status == Status.BAD_REQUEST
-    assert meta is not None
+    response = await handle(ep1.id, Message(Op.GET, {}))
+    assert response.code == Status.BAD_REQUEST
+    assert "invalid 'key'" in response.meta['error']
+
+    response = await handle(ep1.id, Message(Op.GET, Request().to_meta()))
+    assert response == Message.error(
+        Status.BAD_REQUEST,
+        'Request requires a key.',
+    )
 
     forward = Request('key', EndpointId.random()).to_meta()
-    status, meta, _ = await handle(ep1.id, Op.GET, forward, b'')
-    assert status == Status.BAD_REQUEST
-    assert meta == {'error': 'requests from peers cannot be forwarded'}
+    response = await handle(ep1.id, Message(Op.GET, forward))
+    assert response == Message.error(
+        Status.BAD_REQUEST,
+        'requests from peers cannot be forwarded',
+    )
 
-    status, meta, _ = await handle(ep1.id, 42, Request('key').to_meta(), b'')
-    assert status == Status.BAD_REQUEST
-    assert meta == {'error': 'unknown op 42'}
+    response = await handle(ep1.id, Message(42, Request('key').to_meta()))
+    assert response == Message.error(Status.BAD_REQUEST, 'unknown op 42')
 
     too_large = randbytes(101)
-    status, _, _ = await handle(
-        ep1.id, Op.SET, Request('k').to_meta(), too_large
-    )
-    assert status == Status.TOO_LARGE
+    request = Message(Op.SET, Request('k').to_meta(), too_large)
+    response = await handle(ep1.id, request)
+    assert response.code == Status.TOO_LARGE
 
 
 async def test_ping(endpoints) -> None:

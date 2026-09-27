@@ -725,7 +725,7 @@ async def test_ping_malformed(server: _Server) -> None:
     # Reuse the authenticated connection of the client to send a raw message
     await asyncio.to_thread(
         client._socket.sendall,
-        pack_message(Op.PING, {'endpoint': 42}),
+        pack_message(Op.PING, {'key': None, 'endpoint': 42}),
     )
     header, meta = await asyncio.to_thread(_recv_message, client._socket)
     assert header.code == Status.BAD_REQUEST

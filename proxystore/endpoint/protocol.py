@@ -41,6 +41,7 @@ from typing import Self
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
 
@@ -357,15 +358,20 @@ class EndpointInfo:
 
 @dataclasses.dataclass(frozen=True)
 class Request:
-    """Metadata of a request sent by a client after the handshake.
+    """Metadata of a request.
+
+    Requests are sent by clients to their local endpoint and by endpoints to
+    their peers.
 
     Attributes:
-        key: Key of the object.
+        key: Key of the object, or `None` for operations that do not operate
+            on an object (e.g.,
+            [`PING`][proxystore.endpoint.protocol.Op.PING]).
         endpoint: ID of the endpoint to forward the request to or `None`
             for the local endpoint.
     """
 
-    key: str
+    key: str | None = None
     endpoint: EndpointId | None = None
 
     def to_meta(self) -> dict[str, Any]:
@@ -379,8 +385,8 @@ class Request:
         Raises:
             EndpointProtocolError: If the metadata is malformed.
         """
-        key = _get(meta, 'key', str, cls)
-        if len(key) == 0:
+        key = _get(meta, 'key', (str, type(None)), cls)
+        if key is not None and len(key) == 0:
             raise _malformed(cls, 'key')
         endpoint = _get(meta, 'endpoint', (str, type(None)), cls)
         return cls(
@@ -392,33 +398,81 @@ class Request:
 
 
 @dataclasses.dataclass(frozen=True)
-class PingRequest:
-    """Metadata of a [`PING`][proxystore.endpoint.protocol.Op.PING] request.
+class Message:
+    """A request or response message.
 
     Attributes:
-        endpoint: ID of the peer endpoint to ping or `None` for the local
-            endpoint.
+        code: [`Op`][proxystore.endpoint.protocol.Op] of a request or
+            [`Status`][proxystore.endpoint.protocol.Status] of a response.
+        meta: Metadata of the message.
+        data: Data of the message.
     """
 
-    endpoint: EndpointId | None = None
-
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {'endpoint': self.endpoint}
+    code: int
+    meta: dict[str, Any] = dataclasses.field(default_factory=dict)
+    data: bytes | bytearray = b''
 
     @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
+    def error(cls, status: Status, message: str) -> Message:
+        """Create a response with an error message."""
+        return cls(status, {'error': message})
 
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        endpoint = _get(meta, 'endpoint', (str, type(None)), cls)
-        return cls(
-            endpoint=None
-            if endpoint is None
-            else _parse_id(endpoint, 'endpoint', cls),
+
+def check_response(
+    response: Message,
+    op: Op,
+    *,
+    source: str,
+    error: type[Exception],
+) -> Status:
+    """Check the status of a response to a request.
+
+    Args:
+        response: Response message.
+        op: Operation of the request.
+        source: Description of the sender of the response for error
+            messages (e.g., `"Endpoint"`).
+        error: Type of exception to raise if the request failed.
+
+    Returns:
+        [`Status.OK`][proxystore.endpoint.protocol.Status.OK] or \
+        [`Status.NOT_FOUND`][proxystore.endpoint.protocol.Status.NOT_FOUND].
+
+    Raises:
+        EndpointProtocolError: If the status is unknown.
+        ObjectSizeExceededError: If the status is
+            [`TOO_LARGE`][proxystore.endpoint.protocol.Status.TOO_LARGE].
+        Exception: The `error` type for any other status.
+    """
+    try:
+        status = Status(response.code)
+    except ValueError:
+        raise EndpointProtocolError(
+            f'{source} returned unknown status code {response.code}.',
+        ) from None
+    if status in (Status.OK, Status.NOT_FOUND):
+        return status
+    reason = response.meta.get('error', 'no error message provided')
+    message = (
+        f'{source} returned {status.name} for {op.name} request: {reason}'
+    )
+    if status == Status.TOO_LARGE:
+        raise ObjectSizeExceededError(message)
+    raise error(message)
+
+
+def exists_from_meta(meta: dict[str, Any]) -> bool:
+    """Get the result of an EXISTS response from its metadata.
+
+    Raises:
+        EndpointProtocolError: If the metadata is malformed.
+    """
+    exists = meta.get('exists')
+    if not isinstance(exists, bool):
+        raise EndpointProtocolError(
+            "Malformed EXISTS response: missing or invalid 'exists' field.",
         )
+    return exists
 
 
 @dataclasses.dataclass(frozen=True)

@@ -37,14 +37,16 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
+from proxystore.endpoint.protocol import check_response
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import exists_from_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import PingRequest
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
@@ -298,17 +300,11 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        _, meta, _ = self._request(
+        response = self._request(
             Op.EXISTS,
             Request(key, _parse_endpoint(endpoint)),
         )
-        exists = meta.get('exists')
-        if not isinstance(exists, bool):
-            raise EndpointProtocolError(
-                'Malformed EXISTS response: missing or invalid '
-                "'exists' field.",
-            )
-        return exists
+        return exists_from_meta(response.meta)
 
     def get(
         self,
@@ -328,11 +324,14 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        status, _, data = self._request(
+        response = self._request(
             Op.GET,
             Request(key, _parse_endpoint(endpoint)),
         )
-        return None if status == Status.NOT_FOUND else data
+        if response.code == Status.NOT_FOUND:
+            return None
+        assert isinstance(response.data, bytearray)
+        return response.data
 
     def set(
         self,
@@ -378,18 +377,18 @@ class EndpointClient:
             ValueError: If `endpoint` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        _, meta, _ = self._request(
+        response = self._request(
             Op.PING,
-            PingRequest(_parse_endpoint(endpoint)),
+            Request(endpoint=_parse_endpoint(endpoint)),
         )
-        return PingResult.from_meta(meta)
+        return PingResult.from_meta(response.meta)
 
     def _request(
         self,
         op: Op,
-        request: Request | PingRequest,
+        request: Request,
         data: BytesLike | None = None,
-    ) -> tuple[Status, dict[str, Any], bytearray]:
+    ) -> Message:
         if self.closed:
             raise EndpointConnectionError(
                 'Connection to the endpoint is closed.',
@@ -424,26 +423,21 @@ class EndpointClient:
             self.close()
             raise
 
+        response = Message(header.code, response_meta, response_data)
         try:
-            status = Status(header.code)
-        except ValueError:
+            check_response(
+                response,
+                op,
+                source='Endpoint',
+                error=EndpointRequestError,
+            )
+        except (EndpointProtocolError, ObjectSizeExceededError):
+            # The connection is in an unknown state after an unknown status,
+            # and the endpoint may close the connection after rejecting data
+            # that is too large because it did not read the data.
             self.close()
-            raise EndpointProtocolError(
-                f'Endpoint returned unknown status code {header.code}.',
-            ) from None
-        if status in (Status.OK, Status.NOT_FOUND):
-            return status, response_meta, response_data
-
-        error = response_meta.get('error', 'no error message provided')
-        description = (
-            f'Endpoint returned {status.name} for {op.name} request: {error}'
-        )
-        if status == Status.TOO_LARGE:
-            # The endpoint may close the connection because it did not read
-            # the data of the request.
-            self.close()
-            raise ObjectSizeExceededError(description)
-        raise EndpointRequestError(description)
+            raise
+        return response
 
 
 def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:

@@ -23,21 +23,19 @@ from typing import TYPE_CHECKING
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeerError
+from proxystore.endpoint.handler import handle_request
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import pack_message
-from proxystore.endpoint.protocol import PingRequest
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
-from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
@@ -52,8 +50,6 @@ _HTTP_METHODS = (b'GET ', b'POST', b'HEAD', b'PUT ')
 
 HANDSHAKE_TIMEOUT = 10
 """Seconds a client has to complete the handshake after connecting."""
-
-_Response = tuple[Status, dict[str, Any] | None, bytes | bytearray | None]
 
 
 class _ClientConnection(asyncio.BufferedProtocol):
@@ -509,62 +505,12 @@ class ClientHandler:
                 if header.data_len > 0
                 else b''
             )
-            status, response_meta, response_data = await self._handle_request(
-                header.code,
-                meta,
-                data,
+            response = await handle_request(
+                self.endpoint,
+                Message(header.code, meta, data),
+                forward=True,
             )
-            await _send(conn, status, response_meta, response_data)
-
-    async def _handle_request(
-        self,
-        op: int,
-        meta: dict[str, Any],
-        data: bytes | bytearray,
-    ) -> _Response:
-        try:
-            if op == Op.PING:
-                ping = PingRequest.from_meta(meta)
-            else:
-                request = Request.from_meta(meta)
-        except EndpointProtocolError as e:
-            return Status.BAD_REQUEST, {'error': str(e)}, None
-
-        try:
-            if op == Op.PING:
-                result = await self.endpoint.ping(ping.endpoint)
-                return Status.OK, result.to_meta(), None
-            return await self._dispatch(op, request, data)
-        except PeerError as e:
-            return Status.ERROR, {'error': str(e)}, None
-        except ObjectSizeExceededError as e:
-            return Status.TOO_LARGE, {'error': str(e)}, None
-        except Exception as e:
-            logger.exception('Unexpected error handling op %s request', op)
-            return Status.ERROR, {'error': f'unexpected error: {e!r}'}, None
-
-    async def _dispatch(
-        self,
-        op: int,
-        request: Request,
-        data: bytes | bytearray,
-    ) -> _Response:
-        key, endpoint_id = request.key, request.endpoint
-        if op == Op.GET:
-            result = await self.endpoint.get(key, endpoint=endpoint_id)
-            if result is None:
-                return Status.NOT_FOUND, None, None
-            return Status.OK, None, result
-        if op == Op.SET:
-            await self.endpoint.set(key, data, endpoint=endpoint_id)
-            return Status.OK, None, None
-        if op == Op.EXISTS:
-            exists = await self.endpoint.exists(key, endpoint=endpoint_id)
-            return Status.OK, {'exists': exists}, None
-        if op == Op.EVICT:
-            await self.endpoint.evict(key, endpoint=endpoint_id)
-            return Status.OK, None, None
-        return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
+            await _send(conn, response.code, response.meta, response.data)
 
 
 async def _read_handshake_message(
@@ -585,7 +531,7 @@ async def _read_handshake_message(
 
 async def _send(
     conn: _ClientConnection,
-    status: Status,
+    status: int,
     meta: dict[str, Any] | None = None,
     data: bytes | bytearray | None = None,
 ) -> None:

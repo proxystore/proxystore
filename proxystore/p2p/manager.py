@@ -33,10 +33,10 @@ from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
 from proxystore.p2p.addrs import PeerAddrCache
-from proxystore.serialize import BytesLike
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -55,18 +55,11 @@ _CHUNK_SIZE = 64 * 1024 * 1024
 _STOP_REJECTED = 1
 # Error code used to stop reading a request which is rejected.
 
-PeerMessage = tuple[int, dict[str, Any], bytes | bytearray]
-"""Code, metadata, and data of a message exchanged between peers."""
-
-RequestHandler = Callable[
-    [EndpointId, int, dict[str, Any], bytes | bytearray],
-    Awaitable[tuple[int, dict[str, Any] | None, BytesLike | None]],
-]
+RequestHandler = Callable[[EndpointId, Message], Awaitable[Message]]
 """Handler of requests from peers.
 
-The handler is called with the ID of the peer and the op code, metadata, and
-data of the request and returns the status code, metadata, and data of the
-response.
+The handler is called with the ID of the peer and the request and returns
+the response.
 """
 
 
@@ -387,20 +380,16 @@ class PeerManager:
     async def request(
         self,
         peer_id: EndpointId,
-        code: int,
-        meta: dict[str, Any] | None = None,
-        data: BytesLike | None = None,
-    ) -> PeerMessage:
+        request: Message,
+    ) -> Message:
         """Send a request to a peer and wait for the response.
 
         Args:
             peer_id: ID of the peer.
-            code: Op code of the request.
-            meta: Metadata of the request.
-            data: Data of the request.
+            request: Request message.
 
         Returns:
-            Status code, metadata, and data of the response.
+            The response message.
 
         Raises:
             PeerNotAllowedError: If the peer is not in the allowlist or the
@@ -417,7 +406,7 @@ class PeerManager:
         for attempt in range(2):
             connection, fresh = await self._get_connection(peer_id)
             try:
-                response = await self._exchange(connection, code, meta, data)
+                response = await self._exchange(connection, request)
                 self._report_path(peer_id, connection, outgoing=True)
                 return response
             except iroh.IrohError as e:
@@ -448,13 +437,11 @@ class PeerManager:
     async def _exchange(
         self,
         connection: iroh.Connection,
-        code: int,
-        meta: dict[str, Any] | None,
-        data: BytesLike | None,
-    ) -> PeerMessage:
+        request: Message,
+    ) -> Message:
         stream = await connection.open_bi()
         try:
-            await _write_message(stream.send(), code, meta, data)
+            await _write_message(stream.send(), request)
         except iroh.IrohError as e:
             # The peer stops reading a request it rejects (e.g., because the
             # data is too large) but still sends a response with the reason.
@@ -462,15 +449,11 @@ class PeerManager:
         else:
             write_error = None
         try:
-            header, response_meta, response_data = await _read_message(
-                stream.recv(),
-                max_data_size=None,
-            )
+            return await _read_message(stream.recv(), max_data_size=None)
         except iroh.IrohError:
             if write_error is not None:
                 raise write_error from None
             raise
-        return header.code, response_meta, response_data
 
     async def _get_connection(
         self,
@@ -746,36 +729,33 @@ class PeerManager:
         stream: iroh.BiStream,
     ) -> None:
         assert self._handler is not None
-        response: tuple[int, dict[str, Any] | None, BytesLike | None]
+        response: Message
         try:
             try:
-                header, meta, data = await _read_message(
+                request = await _read_message(
                     stream.recv(),
                     max_data_size=self._max_request_size,
                 )
             except _DataTooLargeError as e:
                 await stream.recv().stop(_STOP_REJECTED)
-                response = (Status.TOO_LARGE, {'error': str(e)}, None)
+                response = Message.error(Status.TOO_LARGE, str(e))
             except EndpointProtocolError as e:
                 await stream.recv().stop(_STOP_REJECTED)
-                response = (Status.BAD_REQUEST, {'error': str(e)}, None)
+                response = Message.error(Status.BAD_REQUEST, str(e))
             else:
                 try:
-                    response = await self._handler(
-                        peer_id,
-                        header.code,
-                        meta,
-                        data,
-                    )
+                    response = await self._handler(peer_id, request)
                 except Exception as e:
                     logger.exception(
                         '%s: unexpected error handling request from %s',
                         self._log_prefix(),
                         self._peer_name(peer_id),
                     )
-                    error = {'error': f'unexpected error: {e!r}'}
-                    response = (Status.ERROR, error, None)
-            await _write_message(stream.send(), *response)
+                    response = Message.error(
+                        Status.ERROR,
+                        f'unexpected error: {e!r}',
+                    )
+            await _write_message(stream.send(), response)
         except iroh.IrohError as e:
             logger.debug(
                 '%s: stream from %s failed: %s',
@@ -785,14 +765,10 @@ class PeerManager:
             )
 
 
-async def _write_message(
-    stream: iroh.SendStream,
-    code: int,
-    meta: dict[str, Any] | None,
-    data: BytesLike | None,
-) -> None:
-    view = memoryview(b'' if data is None else data).cast('B')
-    await stream.write_all(pack_message(code, meta, len(view)))
+async def _write_message(stream: iroh.SendStream, message: Message) -> None:
+    data = message.data
+    view = memoryview(data).cast('B')
+    await stream.write_all(pack_message(message.code, message.meta, len(view)))
     for start in range(0, len(view), _CHUNK_SIZE):
         chunk = view[start : start + _CHUNK_SIZE]
         await stream.write_all(
@@ -808,7 +784,7 @@ async def _read_message(
     stream: iroh.RecvStream,
     *,
     max_data_size: int | None,
-) -> tuple[Header, dict[str, Any], bytes | bytearray]:
+) -> Message:
     header = Header.unpack(await stream.read_exact(Header.SIZE))
     meta = (
         decode_meta(await stream.read_exact(header.meta_len))
@@ -821,15 +797,16 @@ async def _read_message(
             f'size of the endpoint ({max_data_size} bytes).',
         )
     if header.data_len == 0:
-        return header, meta, b''
+        return Message(header.code, meta)
     if header.data_len <= _CHUNK_SIZE:
-        return header, meta, await stream.read_exact(header.data_len)
+        chunk = await stream.read_exact(header.data_len)
+        return Message(header.code, meta, chunk)
     data = bytearray(header.data_len)
-    view = memoryview(data)
+    buffer = memoryview(data)
     for start in range(0, header.data_len, _CHUNK_SIZE):
         size = min(_CHUNK_SIZE, header.data_len - start)
-        view[start : start + size] = await stream.read_exact(size)
-    return header, meta, data
+        buffer[start : start + size] = await stream.read_exact(size)
+    return Message(header.code, meta, data)
 
 
 def _closed_with(reason: str, code: CloseCode) -> bool:
