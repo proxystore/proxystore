@@ -170,7 +170,7 @@ def test_start_endpoint_does_not_exist(tmp_path: pathlib.Path) -> None:
 def test_start_endpoint_bad_config(endpoint_dir: EndpointDir) -> None:
     with open(endpoint_dir.config_path, 'w') as f:
         f.write('not toml')
-    with pytest.raises(EndpointConfigError, match='Unable to parse'):
+    with pytest.raises(EndpointConfigError, match='malformed'):
         start_endpoint(endpoint_dir)
 
 

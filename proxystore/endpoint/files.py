@@ -11,16 +11,19 @@ from __future__ import annotations
 import contextlib
 import os
 import tempfile
-from typing import Any
+import tomllib
+from typing import ClassVar
 from typing import TypeVar
 
 from pydantic import BaseModel
-from pydantic import ValidationError
+from pydantic import ConfigDict
+from pydantic import field_validator
 
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.serialize import BytesLike
+from proxystore.utils.config import dumps
 
-ModelT = TypeVar('ModelT', bound=BaseModel)
+FileT = TypeVar('FileT', bound='VersionedFile')
 
 
 def write_private_file(path: str, data: BytesLike) -> None:
@@ -44,41 +47,53 @@ def write_private_file(path: str, data: BytesLike) -> None:
         raise
 
 
-def check_format_version(version: Any, supported: int, name: str) -> int:
-    """Check the format version of a file in an endpoint directory.
+class VersionedFile(BaseModel):
+    """Base model of a file in an endpoint directory.
 
     Each file written by ProxyStore has a format version which is incremented
-    on incompatible changes to the file format.
+    on incompatible changes to the file format. Subclasses set the default of
+    `version` to the version supported by this version of ProxyStore, and a
+    file with any other version is rejected.
 
-    Args:
-        version: Version in the file.
-        supported: Version supported by this version of ProxyStore.
-        name: Description of the file for the error message.
+    Example:
+        ```python
+        class MyFile(VersionedFile):
+            DESCRIPTION: ClassVar[str] = 'my file'
 
-    Returns:
-        The version.
+            version: int = 1
+            value: str
+        ```
 
-    Raises:
-        ValueError: If the version is not the supported version.
+    Attributes:
+        DESCRIPTION: Description of the file for error messages.
+        version: Format version of the file.
     """
-    if version != supported:
-        raise ValueError(
-            f'The {name} has format version {version!r}, but this version '
-            f'of ProxyStore only supports version {supported}. The file was '
-            'likely written by a different version of ProxyStore.',
-        )
-    return version
+
+    model_config = ConfigDict(extra='forbid')
+
+    DESCRIPTION: ClassVar[str]
+
+    version: int
+
+    @field_validator('version')
+    @classmethod
+    def _version_validator(cls, v: int) -> int:
+        supported = cls.model_fields['version'].default
+        if v != supported:
+            raise ValueError(
+                f'The {cls.DESCRIPTION} has format version {v!r}, but this '
+                f'version of ProxyStore only supports version {supported}. '
+                'The file was likely written by a different version of '
+                'ProxyStore.',
+            )
+        return v
 
 
-def read_json_model(model: type[ModelT], path: str, name: str) -> ModelT:
-    """Read a JSON file written by an endpoint.
+def read_model(model: type[FileT], path: str) -> FileT:
+    """Read a file written by an endpoint.
 
-    Args:
-        model: Model of the file. The model should have a `version` field
-            which is checked with
-            [`check_format_version()`][proxystore.endpoint.files.check_format_version].
-        path: Path of the file.
-        name: Description of the file for error messages.
+    The file is parsed as TOML if `path` ends with `.toml` and as JSON
+    otherwise.
 
     Raises:
         FileNotFoundError: If the file does not exist.
@@ -88,16 +103,28 @@ def read_json_model(model: type[ModelT], path: str, name: str) -> ModelT:
     with open(path, 'rb') as f:
         contents = f.read()
     try:
+        if path.endswith('.toml'):
+            return model.model_validate(
+                tomllib.loads(contents.decode()),
+                strict=True,
+            )
         return model.model_validate_json(contents, strict=True)
-    except ValidationError as e:
+    except ValueError as e:
+        # Includes decoding and pydantic validation errors.
         raise EndpointConfigError(
-            f'The {name} at {path} is malformed: {e}',
+            f'The {model.DESCRIPTION} at {path} is malformed: {e}',
         ) from None
 
 
-def write_json_model(path: str, instance: BaseModel) -> None:
-    """Atomically write a model to a JSON file only the owner can access.
+def write_model(path: str, instance: VersionedFile) -> None:
+    """Atomically write a file only the owner can access.
 
-    See [`write_private_file()`][proxystore.endpoint.files.write_private_file].
+    The file is written as TOML if `path` ends with `.toml` and as JSON
+    otherwise. See
+    [`write_private_file()`][proxystore.endpoint.files.write_private_file].
     """
-    write_private_file(path, instance.model_dump_json(indent=2).encode())
+    if path.endswith('.toml'):
+        data = dumps(instance)
+    else:
+        data = instance.model_dump_json(indent=2)
+    write_private_file(path, data.encode())

@@ -290,6 +290,8 @@ def test_create(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('my-ep', home, port=1234)
     assert endpoint_dir == EndpointDir.from_name('my-ep', home)
     assert stat.S_IMODE(os.stat(endpoint_dir.path).st_mode) == 0o700
+    config_mode = os.stat(endpoint_dir.config_path).st_mode
+    assert stat.S_IMODE(config_mode) == 0o600
 
     config = endpoint_dir.read_config()
     assert config.name == 'my-ep'

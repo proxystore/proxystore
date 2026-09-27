@@ -19,11 +19,10 @@ import shutil
 import stat
 import sys
 from typing import Any
+from typing import ClassVar
 from typing import Self
 
-from pydantic import BaseModel
 from pydantic import ConfigDict
-from pydantic import field_validator
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
@@ -31,15 +30,13 @@ from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
-from proxystore.endpoint.files import check_format_version
-from proxystore.endpoint.files import read_json_model
-from proxystore.endpoint.files import write_json_model
+from proxystore.endpoint.files import read_model
+from proxystore.endpoint.files import VersionedFile
+from proxystore.endpoint.files import write_model
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Peers
-from proxystore.utils.config import dump
-from proxystore.utils.config import load
 from proxystore.utils.environment import home_dir
 from proxystore.utils.environment import hostname
 
@@ -56,7 +53,7 @@ CONNECTION_VERSION = 1
 """Format version of the connection file."""
 
 
-class ConnectionInfo(BaseModel):
+class ConnectionInfo(VersionedFile):
     """Information that clients use to connect to a running endpoint.
 
     The endpoint writes this to the connection file in its directory each
@@ -74,7 +71,8 @@ class ConnectionInfo(BaseModel):
         pid: Process ID of the endpoint on that machine.
     """
 
-    model_config = ConfigDict(extra='forbid', frozen=True)
+    model_config = ConfigDict(frozen=True)
+    DESCRIPTION: ClassVar[str] = 'connection file'
 
     version: int = CONNECTION_VERSION
     host: str
@@ -83,11 +81,6 @@ class ConnectionInfo(BaseModel):
     tls_fingerprint: str | None
     hostname: str
     pid: int
-
-    @field_validator('version')
-    @classmethod
-    def _version_validator(cls, v: int) -> int:
-        return check_format_version(v, CONNECTION_VERSION, 'connection file')
 
 
 class EndpointStatus(enum.Enum):
@@ -396,18 +389,12 @@ class EndpointDir:
                 not match the name of the directory.
         """
         try:
-            with open(self.config_path, 'rb') as f:
-                config = load(EndpointConfig, f)
+            config = read_model(EndpointConfig, self.config_path)
         except FileNotFoundError:
             self.check_exists()
             raise EndpointNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
-            ) from None
-        except ValueError as e:
-            # Includes TOML decoding and pydantic validation errors.
-            raise EndpointConfigError(
-                f'Unable to parse ({self.config_path}): {e!s}.',
             ) from None
 
         # The directory name is used to find an endpoint by name, so the
@@ -422,16 +409,15 @@ class EndpointDir:
         return config
 
     def write_config(self, config: EndpointConfig) -> None:
-        """Write the endpoint configuration, creating the directory if needed.
+        """Atomically write the endpoint configuration.
+
+        The directory is created, only accessible by the owner, if needed.
 
         Args:
             config: Configuration to write.
         """
-        # Clients trust the connection file in the endpoint directory, so
-        # only the owner can create or replace files in it.
         os.makedirs(self.path, mode=0o700, exist_ok=True)
-        with open(self.config_path, 'wb') as f:
-            dump(config, f)
+        write_model(self.config_path, config)
 
     @property
     def config_path(self) -> str:
@@ -548,7 +534,7 @@ class EndpointDir:
         The file is only readable by the owner because it contains the
         endpoint's token.
         """
-        write_json_model(self.connection_path, info)
+        write_model(self.connection_path, info)
 
     def read_connection(self) -> ConnectionInfo:
         """Read the connection file of the running endpoint.
@@ -559,11 +545,7 @@ class EndpointDir:
             EndpointConfigError: If the connection file is malformed or has
                 an unsupported format version.
         """
-        return read_json_model(
-            ConnectionInfo,
-            self.connection_path,
-            'connection file',
-        )
+        return read_model(ConnectionInfo, self.connection_path)
 
     def remove_connection(self, info: ConnectionInfo | None = None) -> None:
         """Remove the connection file if it exists.

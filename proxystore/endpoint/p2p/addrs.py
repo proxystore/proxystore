@@ -15,17 +15,17 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
+from typing import ClassVar
 
 import iroh
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
-from pydantic import field_validator
 
 from proxystore.endpoint.exceptions import EndpointConfigError
-from proxystore.endpoint.files import check_format_version
-from proxystore.endpoint.files import read_json_model
-from proxystore.endpoint.files import write_json_model
+from proxystore.endpoint.files import read_model
+from proxystore.endpoint.files import VersionedFile
+from proxystore.endpoint.files import write_model
 from proxystore.endpoint.identity import EndpointId
 
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ class PeerAddr(BaseModel):
         )
 
 
-class PeerAddrCacheFile(BaseModel):
+class PeerAddrCacheFile(VersionedFile):
     """Contents of the peer address cache file.
 
     Attributes:
@@ -72,19 +72,10 @@ class PeerAddrCacheFile(BaseModel):
         peers: Mapping of peer IDs to addresses.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    DESCRIPTION: ClassVar[str] = 'peer address cache'
 
     version: int = ADDR_CACHE_VERSION
     peers: dict[EndpointId, PeerAddr] = Field(default_factory=dict)
-
-    @field_validator('version')
-    @classmethod
-    def _version_validator(cls, v: int) -> int:
-        return check_format_version(
-            v,
-            ADDR_CACHE_VERSION,
-            'peer address cache',
-        )
 
 
 class PeerAddrCache:
@@ -116,11 +107,7 @@ class PeerAddrCache:
             version.
         """
         try:
-            cache = read_json_model(
-                PeerAddrCacheFile,
-                self.path,
-                'peer address cache',
-            )
+            cache = read_model(PeerAddrCacheFile, self.path)
         except FileNotFoundError:
             return {}
         except (OSError, EndpointConfigError) as e:
@@ -142,4 +129,4 @@ class PeerAddrCache:
             peer_id: PeerAddr.from_iroh(addr)
             for peer_id, addr in sorted(addrs.items())
         }
-        write_json_model(self.path, PeerAddrCacheFile(peers=peers))
+        write_model(self.path, PeerAddrCacheFile(peers=peers))

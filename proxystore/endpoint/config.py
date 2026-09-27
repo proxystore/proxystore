@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 import socket
 from typing import Any
+from typing import ClassVar
 from typing import Literal
 from typing import Self
 
@@ -20,7 +21,7 @@ from pydantic import Field
 from pydantic import field_validator
 from pydantic import model_validator
 
-from proxystore.endpoint.files import check_format_version
+from proxystore.endpoint.files import VersionedFile
 from proxystore.endpoint.identity import EndpointId
 from proxystore.utils.data import readable_to_bytes
 from proxystore.utils.environment import hostname
@@ -116,7 +117,7 @@ class EndpointP2PConfig(BaseModel):
         return v
 
 
-class EndpointConfig(BaseModel):
+class EndpointConfig(VersionedFile):
     """Endpoint configuration.
 
     Attributes:
@@ -149,7 +150,7 @@ class EndpointConfig(BaseModel):
             negative, or if there are unknown fields.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    DESCRIPTION: ClassVar[str] = 'configuration'
 
     version: int = CONFIG_VERSION
     name: str
@@ -179,11 +180,6 @@ class EndpointConfig(BaseModel):
                 '"proxystore-endpoint configure".',
             )
         return data
-
-    @field_validator('version')
-    @classmethod
-    def _version_validator(cls, v: int) -> int:
-        return check_format_version(v, CONFIG_VERSION, 'configuration')
 
     @field_validator('host')
     @classmethod

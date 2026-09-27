@@ -55,12 +55,12 @@ def test_read_peers_malformed(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     with open(peers.path, 'w') as f:
         f.write('[peers]\na = "not-an-id"\n')
-    with pytest.raises(ValueError, match='Unable to parse'):
+    with pytest.raises(ValueError, match='malformed'):
         peers.read()
 
     with open(peers.path, 'w') as f:
         f.write('not toml')
-    with pytest.raises(ValueError, match='Unable to parse'):
+    with pytest.raises(ValueError, match='malformed'):
         peers.read()
 
 

@@ -29,9 +29,8 @@ import logging
 import os
 import time
 from typing import Any
+from typing import ClassVar
 
-from pydantic import BaseModel
-from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 
@@ -39,11 +38,10 @@ from proxystore.endpoint.config import check_name
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import PeerExistsError
 from proxystore.endpoint.exceptions import PeerNotFoundError
-from proxystore.endpoint.files import check_format_version
-from proxystore.endpoint.files import write_private_file
+from proxystore.endpoint.files import read_model
+from proxystore.endpoint.files import VersionedFile
+from proxystore.endpoint.files import write_model
 from proxystore.endpoint.identity import EndpointId
-from proxystore.utils.config import dumps
-from proxystore.utils.config import load
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +52,7 @@ RELOAD_INTERVAL = 1.0
 """Default minimum seconds between checks for changes to the peers file."""
 
 
-class PeersConfig(BaseModel):
+class PeersConfig(VersionedFile):
     """Allowlist of peer endpoints.
 
     Attributes:
@@ -69,15 +67,10 @@ class PeersConfig(BaseModel):
             supported.
     """
 
-    model_config = ConfigDict(extra='forbid')
+    DESCRIPTION: ClassVar[str] = 'peers file'
 
     version: int = PEERS_VERSION
     peers: dict[str, EndpointId] = Field(default_factory=dict)
-
-    @field_validator('version')
-    @classmethod
-    def _version_validator(cls, v: int) -> int:
-        return check_format_version(v, PEERS_VERSION, 'peers file')
 
     @field_validator('peers', mode='before')
     @classmethod
@@ -137,18 +130,13 @@ class Peers:
             EndpointConfigError: If the file cannot be parsed or is invalid.
         """
         try:
-            with open(self.path, 'rb') as f:
-                return load(PeersConfig, f)
+            return read_model(PeersConfig, self.path)
         except FileNotFoundError:
             return PeersConfig()
-        except ValueError as e:
-            raise EndpointConfigError(
-                f'Unable to parse ({self.path}): {e!s}.',
-            ) from None
 
     def write(self, peers: PeersConfig) -> None:
         """Atomically write the peers."""
-        write_private_file(self.path, dumps(peers).encode())
+        write_model(self.path, peers)
 
     def add(self, name: str, endpoint_id: str) -> EndpointId:
         """Add a peer.
