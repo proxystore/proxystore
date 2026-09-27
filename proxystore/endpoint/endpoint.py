@@ -16,6 +16,7 @@ endpoint as a daemon.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import logging
 import os
 import ssl
@@ -44,6 +45,16 @@ from proxystore.endpoint.storage import Storage
 from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
+
+
+@dataclasses.dataclass(frozen=True)
+class _Running:
+    # State of a running endpoint. The stack closes the resources of the
+    # endpoint when it stops.
+    stack: contextlib.AsyncExitStack
+    config: EndpointConfig
+    dispatcher: Dispatcher
+    connection: ConnectionInfo
 
 
 class Endpoint:
@@ -104,10 +115,7 @@ class Endpoint:
         self._peer_policy = peer_policy
         self._peer_options = peer_options
 
-        self._stack: contextlib.AsyncExitStack | None = None
-        self._config: EndpointConfig | None = None
-        self._dispatcher: Dispatcher | None = None
-        self._connection: ConnectionInfo | None = None
+        self._running: _Running | None = None
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}({self.endpoint_dir.path!r})'
@@ -115,14 +123,12 @@ class Endpoint:
     @property
     def running(self) -> bool:
         """The endpoint has been started and not stopped."""
-        return self._stack is not None
+        return self._running is not None
 
     @property
     def config(self) -> EndpointConfig:
         """Configuration of the running endpoint."""
-        self._check_running()
-        assert self._config is not None
-        return self._config
+        return self._state().config
 
     @property
     def id(self) -> EndpointId:
@@ -141,9 +147,7 @@ class Endpoint:
         The dispatcher is an implementation detail which is exposed for
         testing and benchmarking.
         """
-        self._check_running()
-        assert self._dispatcher is not None
-        return self._dispatcher
+        return self._state().dispatcher
 
     @property
     def peer_manager(self) -> PeerManager | None:
@@ -157,13 +161,12 @@ class Endpoint:
     @property
     def connection(self) -> ConnectionInfo:
         """Information clients use to connect to the running endpoint."""
-        self._check_running()
-        assert self._connection is not None
-        return self._connection
+        return self._state().connection
 
-    def _check_running(self) -> None:
-        if not self.running:
+    def _state(self) -> _Running:
+        if self._running is None:
             raise RuntimeError('The endpoint is not running.')
+        return self._running
 
     async def __aenter__(self) -> Self:
         await self.start()
@@ -195,24 +198,23 @@ class Endpoint:
         # including when start up fails partway through.
         stack = contextlib.AsyncExitStack()
         try:
-            await self._start(stack)
+            self._running = await self._start(stack)
         except BaseException:
             await stack.aclose()
             raise
-        self._stack = stack
 
     async def stop(self) -> None:
         """Stop the endpoint.
 
         This is idempotent so it is safe to call multiple times.
         """
-        if self._stack is None:
+        if self._running is None:
             return
         logger.info('Shutting down endpoint')
-        stack, self._stack = self._stack, None
-        await stack.aclose()
+        running, self._running = self._running, None
+        await running.stack.aclose()
 
-    async def _start(self, stack: contextlib.AsyncExitStack) -> None:
+    async def _start(self, stack: contextlib.AsyncExitStack) -> _Running:
         endpoint_dir = self.endpoint_dir
         config = endpoint_dir.read_config()
         endpoint_dir.check_stopped()
@@ -283,9 +285,6 @@ class Endpoint:
         endpoint_dir.write_connection(connection)
         stack.callback(endpoint_dir.remove_connection, connection)
 
-        self._config = config
-        self._dispatcher = dispatcher
-        self._connection = connection
         logger.info(
             'Serving endpoint %s (%s) on %s:%s',
             config.id,
@@ -294,6 +293,7 @@ class Endpoint:
             config.port,
         )
         logger.info('Config: %s', config.model_dump_json())
+        return _Running(stack, config, dispatcher, connection)
 
     def _create_storage(self, config: EndpointConfig) -> Storage:
         if self._storage is not None:
