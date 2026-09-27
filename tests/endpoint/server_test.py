@@ -22,6 +22,7 @@ from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
@@ -70,12 +71,9 @@ async def server() -> AsyncGenerator[_Server, None]:
         max_object_size=MAX_OBJECT_SIZE,
         handshake_timeout=1,
     )
-    tcp_server = await handler.start_server('127.0.0.1', 0)
-    port = tcp_server.sockets[0].getsockname()[1]
+    port = await handler.start('127.0.0.1', 0)
     yield _Server(handler, dispatcher, token, '127.0.0.1', port)
-    tcp_server.close()
-    await handler.close_connections()
-    await tcp_server.wait_closed()
+    await handler.close()
     await dispatcher.storage.close()
 
 
@@ -400,15 +398,24 @@ async def test_unexpected_error(server: _Server) -> None:
     await asyncio.to_thread(client.close)
 
 
-async def test_close_connections(server: _Server) -> None:
+async def test_close(server: _Server) -> None:
     client = await _connect(server)
-    await server.handler.close_connections()
+    await server.handler.close()
     with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert client.closed
+    # New connections are refused and closing again is a no-op
+    with pytest.raises(EndpointNotRunningError):
+        await _connect(server)
+    await server.handler.close()
 
 
-async def test_close_connections_cancels_requests(server: _Server) -> None:
+async def test_start_twice(server: _Server) -> None:
+    with pytest.raises(RuntimeError, match='already been started'):
+        await server.handler.start('127.0.0.1', 0)
+
+
+async def test_close_cancels_requests(server: _Server) -> None:
     started = asyncio.Event()
     cancelled = asyncio.Event()
 
@@ -428,7 +435,7 @@ async def test_close_connections_cancels_requests(server: _Server) -> None:
     ):
         request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
         await started.wait()
-        await server.handler.close_connections(timeout=0.1)
+        await server.handler.close(timeout=0.1)
         assert cancelled.is_set()
         assert len(server.handler._tasks) == 0
         with pytest.raises(EndpointConnectionError):
@@ -671,17 +678,10 @@ async def tls_server(
         name='my-endpoint',
         handshake_timeout=1,
     )
-    tcp_server = await handler.start_server(
-        '127.0.0.1',
-        0,
-        ssl_context=context,
-    )
-    port = tcp_server.sockets[0].getsockname()[1]
+    port = await handler.start('127.0.0.1', 0, ssl_context=context)
     server = _Server(handler, dispatcher, token, '127.0.0.1', port)
     yield _TLSServer(server, certificate.fingerprint)
-    tcp_server.close()
-    await handler.close_connections()
-    await tcp_server.wait_closed()
+    await handler.close()
     await dispatcher.storage.close()
 
 

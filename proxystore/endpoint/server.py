@@ -285,11 +285,9 @@ class ClientHandler:
     Example:
         ```python
         handler = ClientHandler(dispatcher, token, name='my-endpoint')
-        server = await handler.start_server('localhost', 8765)
+        await handler.start('localhost', 8765)
         ...
-        server.close()
-        await handler.close_connections()
-        await server.wait_closed()
+        await handler.close()
         ```
 
     Args:
@@ -298,9 +296,7 @@ class ClientHandler:
         name: Name of the endpoint sent to clients.
         max_object_size: Optional maximum size in bytes of objects that
             clients can set. Requests exceeding this size are rejected
-            before the data is read. This should match the maximum object
-            size of the endpoint's storage, which rejects objects only after
-            the data is read.
+            before the data is read.
         handshake_timeout: Seconds a client has to complete the handshake.
     """
 
@@ -318,44 +314,63 @@ class ClientHandler:
         self.name = name
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
+        self._server: asyncio.Server | None = None
         self._connections: set[_ClientConnection] = set()
         self._tasks: set[asyncio.Task[None]] = set()
         self._warned_versions: set[Versions] = set()
 
-    async def start_server(
+    async def start(
         self,
         host: str,
         port: int,
         *,
         ssl_context: ssl.SSLContext | None = None,
-    ) -> asyncio.Server:
-        """Start a server that handles connections on the host and port.
+    ) -> int:
+        """Start accepting client connections on the host and port.
 
         Args:
             host: Address to listen on.
-            port: Port to listen on.
+            port: Port to listen on or `0` for a random port.
             ssl_context: Optional SSL context to encrypt connections with TLS.
+
+        Returns:
+            The port the server is listening on.
+
+        Raises:
+            RuntimeError: If the handler has already been started.
+            OSError: If the server cannot listen on the host and port.
         """
+        if self._server is not None:
+            raise RuntimeError('The client handler has already been started.')
         loop = asyncio.get_running_loop()
-        return await loop.create_server(
+        self._server = await loop.create_server(
             lambda: _ClientConnection(self._handle_connection, self._tasks),
             host=host,
             port=port,
             ssl=ssl_context,
         )
+        return self._server.sockets[0].getsockname()[1]
 
-    async def close_connections(self, timeout: float = 1) -> None:
-        """Close all open client connections.
+    async def close(self, timeout: float = 1) -> None:
+        """Stop accepting connections and close all client connections.
 
         Connection handlers waiting on the client finish once their
         connection is closed. Handlers that do not finish within `timeout`
         seconds (e.g., because a request is waiting on a peer endpoint) are
-        cancelled.
+        cancelled. This is idempotent so it is safe to call multiple times.
 
         Args:
             timeout: Seconds to wait for connection handlers to finish
                 before cancelling them.
         """
+        if self._server is None:
+            return
+        server, self._server = self._server, None
+        server.close()
+        await self._close_connections(timeout)
+        await server.wait_closed()
+
+    async def _close_connections(self, timeout: float) -> None:
         for conn in list(self._connections):
             conn.close()
         tasks = list(self._tasks)

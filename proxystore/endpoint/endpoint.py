@@ -10,7 +10,6 @@ endpoint as a daemon.
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import logging
 import os
@@ -262,12 +261,8 @@ class Endpoint:
             name=config.name,
             max_object_size=config.object_size_limit,
         )
-        server = await handler.start_server(
-            host,
-            config.port,
-            ssl_context=ssl_context,
-        )
-        stack.push_async_callback(_close_server, server, handler)
+        await handler.start(host, config.port, ssl_context=ssl_context)
+        stack.push_async_callback(handler.close)
 
         # The connection file is only written once the server is listening
         # so that a failed start (e.g., because another instance of the
@@ -346,12 +341,3 @@ class Endpoint:
             max_request_size=config.object_size_limit,
             addr_cache=PeerAddrCache(self.endpoint_dir.peer_addrs_path),
         )
-
-
-async def _close_server(
-    server: asyncio.Server,
-    handler: ClientHandler,
-) -> None:
-    server.close()
-    await handler.close_connections()
-    await server.wait_closed()
