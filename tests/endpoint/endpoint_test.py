@@ -324,16 +324,38 @@ async def test_endpoint_lifecycle(tmp_path: pathlib.Path) -> None:
         assert endpoint.dispatcher.id == config.id
         assert endpoint.peer_manager is None
         assert endpoint.connection == endpoint_dir.read_connection()
-        with pytest.raises(RuntimeError, match='already running'):
+        with pytest.raises(RuntimeError, match='already been started'):
             await endpoint.start()
     finally:
         await endpoint.stop()
     assert not endpoint.running
     assert not os.path.exists(endpoint_dir.connection_path)
 
-    # The endpoint can be started again after it is stopped
-    async with endpoint:
+    # The endpoint cannot be started again after it is stopped
+    with pytest.raises(RuntimeError, match='already been started'):
+        await endpoint.start()
+    # A new endpoint can be started from the same directory
+    async with Endpoint(endpoint_dir) as endpoint:
         assert endpoint.running
+
+
+async def test_endpoint_cannot_restart_after_failure(
+    tmp_path: pathlib.Path,
+) -> None:
+    endpoint_dir, _ = _endpoint_dir(tmp_path)
+    endpoint = Endpoint(endpoint_dir)
+    with (
+        mock.patch.object(
+            EndpointDir,
+            'write_connection',
+            side_effect=OSError('disk full'),
+        ),
+        pytest.raises(OSError, match='disk full'),
+    ):
+        await endpoint.start()
+    assert not endpoint.running
+    with pytest.raises(RuntimeError, match='already been started'):
+        await endpoint.start()
 
 
 async def test_endpoint_storage_override(tmp_path: pathlib.Path) -> None:

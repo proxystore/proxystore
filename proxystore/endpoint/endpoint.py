@@ -71,15 +71,15 @@ class Endpoint:
     requests, the server that accepts client connections, and the connection
     file that clients use to connect. The endpoint is the only component
     which reads the endpoint directory, and it reads the configuration and
-    secret key once each time it starts.
+    secret key once when it starts.
 
     Once started, the endpoint holds the lock of its directory (see
     [`EndpointDir.lock()`][proxystore.endpoint.directory.EndpointDir.lock]),
     is accepting client connections, and its connection file is in the
     endpoint directory. When stopped, the connection file is removed, client
     connections are closed, the peer manager is closed, the storage is
-    closed, and the lock is released. An endpoint can be started again after
-    it is stopped.
+    closed, and the lock is released. An endpoint can only be started once,
+    so create a new endpoint to run it again.
 
     Example:
         ```python
@@ -115,6 +115,7 @@ class Endpoint:
         self._peer_policy = peer_policy
         self._peer_options = peer_options
 
+        self._started = False
         self._running: _Running | None = None
 
     def __repr__(self) -> str:
@@ -184,7 +185,8 @@ class Endpoint:
         """Start the endpoint.
 
         Raises:
-            RuntimeError: If the endpoint is already running.
+            RuntimeError: If the endpoint has already been started, even if
+                it failed to start or was stopped.
             EndpointRunningError: If another instance of the endpoint is
                 running on this host or may be running on another host.
             EndpointNotFoundError: If the configuration does not exist.
@@ -192,8 +194,9 @@ class Endpoint:
                 the configuration does not match the secret key.
             OSError: If the endpoint cannot listen on its host and port.
         """
-        if self.running:
-            raise RuntimeError('The endpoint is already running.')
+        if self._started:
+            raise RuntimeError('The endpoint has already been started.')
+        self._started = True
         # Resources are cleaned up in the reverse order they are created,
         # including when start up fails partway through.
         stack = contextlib.AsyncExitStack()
