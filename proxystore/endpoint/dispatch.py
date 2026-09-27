@@ -116,28 +116,7 @@ class Dispatcher:
             than raised (see
             [`Message.from_error()`][proxystore.endpoint.protocol.Message.from_error]).
         """
-        if request.code not in self._LOCAL_OPS:
-            return Message.error(
-                Status.BAD_REQUEST,
-                f'unknown op {request.code}',
-            )
-        op = Op(request.code)
-
-        try:
-            meta = Request.from_meta(request.meta)
-            target = meta.target
-            if target is None or target == self.id:
-                return await self._handle_local(op, meta, request.data)
-            if not forward:
-                raise EndpointProtocolError(
-                    'requests from peers cannot be forwarded',
-                )
-            return await self._forward(op, target, meta, request.data)
-        except EndpointError as e:
-            return Message.from_error(e)
-        except Exception as e:
-            logger.exception('Unexpected error handling %s request', op.name)
-            return Message.error(Status.ERROR, f'unexpected error: {e!r}')
+        return await self._handle(request, source='client', forward=forward)
 
     async def handle_peer_request(
         self,
@@ -155,12 +134,59 @@ class Dispatcher:
             peer_id: ID of the peer which sent the request.
             request: Request message.
         """
-        logger.debug(
-            'Received op %s request from peer %s',
-            request.code,
-            peer_id.short(),
-        )
-        return await self.handle(request, forward=False)
+        source = f'peer {self._peer_name(peer_id)}'
+        return await self._handle(request, source=source, forward=False)
+
+    async def _handle(
+        self,
+        request: Message,
+        *,
+        source: str,
+        forward: bool,
+    ) -> Message:
+        if request.code not in self._LOCAL_OPS:
+            logger.debug(
+                'Rejected request with unknown op %s from %s',
+                request.code,
+                source,
+            )
+            return Message.error(
+                Status.BAD_REQUEST,
+                f'unknown op {request.code}',
+            )
+        op = Op(request.code)
+
+        try:
+            meta = Request.from_meta(request.meta)
+            target = meta.target
+            if target is None or target == self.id:
+                logger.debug(
+                    'Handling %s request from %s (key=%s)',
+                    op.name,
+                    source,
+                    meta.key,
+                )
+                return await self._handle_local(op, meta, request.data)
+            if not forward:
+                raise EndpointProtocolError(
+                    'requests from peers cannot be forwarded',
+                )
+            return await self._forward(op, target, meta, request.data)
+        except EndpointError as e:
+            logger.debug(
+                '%s request from %s failed: %s',
+                op.name,
+                source,
+                e,
+            )
+            return Message.from_error(e)
+        except Exception as e:
+            logger.exception(
+                'Unexpected error handling %s request from %s',
+                op.name,
+                source,
+            )
+            return Message.error(Status.ERROR, f'unexpected error: {e!r}')
 
     async def _handle_local(
         self,
@@ -203,10 +229,10 @@ class Dispatcher:
                 'peering is disabled.',
             )
         logger.debug(
-            'Forwarding %s request with key=%s to %s',
+            'Forwarding %s request from client (key=%s) to peer %s',
             op.name,
             request.key,
-            target.short(),
+            self._peer_name(target),
         )
         # The target is removed so the peer handles the request itself.
         peer_request = Message(op, Request(request.key).to_meta(), data)
@@ -216,11 +242,23 @@ class Dispatcher:
 
         if response.code not in (Status.OK, Status.NOT_FOUND):
             error = response.meta.get('error', 'no error message provided')
+            logger.debug(
+                '%s request forwarded to peer %s failed with status %s: %s',
+                op.name,
+                self._peer_name(target),
+                response.code,
+                error,
+            )
             meta = {**response.meta, 'error': f'Peer {target}: {error}'}
             return Message(response.code, meta, response.data)
         if op == Op.PING:
             return Message(Status.OK, self._ping_result(target, rtt_ms))
         return response
+
+    def _peer_name(self, peer_id: EndpointId) -> str:
+        if self._peer_manager is None:
+            return peer_id.log_name('unknown')
+        return self._peer_manager.peer_name(peer_id)
 
     def _ping_result(
         self, target: EndpointId, rtt_ms: float
