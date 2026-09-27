@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import io
 import pickle
 import sys
@@ -40,6 +41,39 @@ class SerializationError(Exception):
     """Base Serialization Exception."""
 
 
+@dataclasses.dataclass(frozen=True)
+class _Data:
+    """Serialized data of an object following the identifier line.
+
+    Deserializing reads the data in place because copying the data of a
+    large object is expensive.
+
+    Attributes:
+        buffer: Buffer passed to
+            [`deserialize()`][proxystore.serialize.deserialize].
+        start: Index of the first byte of data in `buffer`.
+    """
+
+    buffer: BytesLike
+    start: int = 0
+
+    def view(self) -> memoryview:
+        """Get a view of the data without copying it."""
+        return memoryview(self.buffer).cast('B')[self.start :]
+
+    def file(self) -> io.BytesIO:
+        """Get a file-like object of the data.
+
+        [`io.BytesIO`][io.BytesIO] shares the memory of a [`bytes`][bytes]
+        object, but copies any other type of buffer.
+        """
+        if isinstance(self.buffer, bytes):
+            file = io.BytesIO(self.buffer)
+            file.seek(self.start)
+            return file
+        return io.BytesIO(self.view())
+
+
 class _Serializer(Protocol):
     """Serializer protocol.
 
@@ -66,8 +100,8 @@ class _Serializer(Protocol):
         """Serialize the object and write to a buffer."""
         ...
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
-        """Deserialize bytes from a buffer to an object."""
+    def deserialize(self, data: _Data) -> Any:
+        """Deserialize data to an object."""
         ...
 
 
@@ -81,8 +115,8 @@ class _BytesSerializer:
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         buffer.write(obj)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
-        return buffer.read()
+    def deserialize(self, data: _Data) -> Any:
+        return bytes(data.view())
 
 
 class _StrSerializer:
@@ -95,8 +129,8 @@ class _StrSerializer:
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         buffer.write(obj.encode())
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
-        return buffer.read().decode()
+    def deserialize(self, data: _Data) -> Any:
+        return str(data.view(), 'utf-8')
 
 
 # The numpy, pandas, and polars serializers import their library lazily.
@@ -122,10 +156,10 @@ class _NumpySerializer:
         # non-numeric data.
         np.save(buffer, obj, allow_pickle=True)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
+    def deserialize(self, data: _Data) -> Any:
         import numpy as np
 
-        return np.load(buffer, allow_pickle=True)
+        return np.load(data.file(), allow_pickle=True)
 
 
 class _PandasSerializer:
@@ -143,10 +177,10 @@ class _PandasSerializer:
         # https://github.com/dask/distributed/issues/614#issuecomment-631033227
         obj.to_pickle(buffer, protocol=_PICKLE_PROTOCOL)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
+    def deserialize(self, data: _Data) -> Any:
         import pandas as pd
 
-        return pd.read_pickle(buffer)
+        return pd.read_pickle(data.file())
 
 
 class _PolarsSerializer:
@@ -160,10 +194,10 @@ class _PolarsSerializer:
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         obj.write_ipc(buffer)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
+    def deserialize(self, data: _Data) -> Any:
         import polars as pl
 
-        return pl.read_ipc(buffer.read())
+        return pl.read_ipc(bytes(data.view()))
 
 
 class _PickleSerializer:
@@ -179,8 +213,8 @@ class _PickleSerializer:
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         pickle.dump(obj, buffer, protocol=_PICKLE_PROTOCOL)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
-        return pickle.load(buffer)
+    def deserialize(self, data: _Data) -> Any:
+        return pickle.loads(data.view())
 
 
 class _CloudPickleSerializer:
@@ -196,11 +230,14 @@ class _CloudPickleSerializer:
     def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
         cloudpickle.dump(obj, buffer, protocol=_PICKLE_PROTOCOL)
 
-    def deserialize(self, buffer: io.BytesIO) -> Any:
-        return cloudpickle.load(buffer)
+    def deserialize(self, data: _Data) -> Any:
+        return cloudpickle.loads(data.view())
 
 
 _SERIALIZERS: dict[bytes, _Serializer] = OrderedDict()
+_MAX_IDENTIFIER_LINE = 16
+# Maximum length of the identifier line (including the newline) read by
+# deserialize(). Identifiers are two bytes by convention.
 
 
 def _register_serializer(serializer: type[_Serializer]) -> None:
@@ -314,18 +351,21 @@ def deserialize(buffer: BytesLike) -> Any:
             f'Expected data to be a bytes-like type, not {type(buffer)}.',
         )
 
-    with io.BytesIO(buffer) as buffer_io:
-        identifier = buffer_io.readline().strip()
-        if identifier not in _SERIALIZERS:
-            raise SerializationError(
-                f'Unknown identifier {identifier!r} for deserialization.',
-            )
+    # Only the identifier line is copied because copying the data of a
+    # large object is expensive.
+    head = bytes(memoryview(buffer).cast('B')[:_MAX_IDENTIFIER_LINE])
+    end = head.find(b'\n')
+    identifier = (head if end < 0 else head[:end]).strip()
+    if end < 0 or identifier not in _SERIALIZERS:
+        raise SerializationError(
+            f'Unknown identifier {identifier!r} for deserialization.',
+        )
 
-        serializer = _SERIALIZERS[identifier]
-        try:
-            return serializer.deserialize(buffer_io)
-        except Exception as e:
-            raise SerializationError(
-                'Failed to deserialize object using the '
-                f'{serializer.name} serializer.',
-            ) from e
+    serializer = _SERIALIZERS[identifier]
+    try:
+        return serializer.deserialize(_Data(buffer, end + 1))
+    except Exception as e:
+        raise SerializationError(
+            'Failed to deserialize object using the '
+            f'{serializer.name} serializer.',
+        ) from e

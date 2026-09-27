@@ -12,6 +12,7 @@ import pandas as pd
 import polars as pl
 import pytest
 
+from proxystore.serialize import _Data
 from proxystore.serialize import _NumpySerializer
 from proxystore.serialize import _PandasSerializer
 from proxystore.serialize import _PolarsSerializer
@@ -32,7 +33,7 @@ def test_register_duplicate_identifiers() -> None:
         def serialize(self, obj: Any, buffer: io.BytesIO) -> None:
             raise NotImplementedError
 
-        def deserialize(self, buffer: io.BytesIO) -> Any:
+        def deserialize(self, data: _Data) -> Any:
             raise NotImplementedError
 
     error = "Serializer named 'numpy' with identifier b'NP' already exists."
@@ -63,6 +64,36 @@ def test_serialize_objects(obj: Any) -> None:
         assert deserialized == obj
 
 
+@pytest.mark.parametrize('kind', (bytearray, memoryview))
+@pytest.mark.parametrize(
+    'obj',
+    (
+        b'binary-string',
+        'normal-string',
+        [1, 2, 3],
+        np.array([[1, 2, 3], [4, 5, 6]]),
+        pd.DataFrame([[1, 2, 3], [4, 5, 6]]),
+        pl.DataFrame([[1, 2, 3], [4, 5, 6]]),
+    ),
+)
+def test_deserialize_bytes_like(obj: Any, kind: type[Any]) -> None:
+    deserialized = deserialize(kind(serialize(obj)))
+
+    if isinstance(obj, np.ndarray):
+        assert np.array_equal(deserialized, obj)
+    elif isinstance(obj, (pd.DataFrame, pl.DataFrame)):
+        assert deserialized.equals(obj)
+    else:
+        assert deserialized == obj
+        assert type(deserialized) is type(obj)
+
+
+def test_data_file() -> None:
+    buffer = b'ID\nvalue'
+    assert _Data(buffer, 3).file().read() == b'value'
+    assert _Data(bytearray(buffer), 3).file().read() == b'value'
+
+
 def test_serialize_lambda() -> None:
     b = serialize(lambda: [1, 2, 3])
     f = deserialize(b)
@@ -83,6 +114,10 @@ def test_deserialize_bad_identifier():
         # Fake identifier
         deserialize(b'99\nxxx')
 
+    with pytest.raises(SerializationError):
+        # Valid identifier without a newline
+        deserialize(b'BS')
+
 
 def test_propagate_cloudpickle_dumps_error() -> None:
     with (
@@ -99,7 +134,7 @@ def test_propagate_cloudpickle_dumps_error() -> None:
 
 def test_propagate_pickle_loads_error() -> None:
     v = serialize([1, 2, 3])
-    with mock.patch('pickle.load', side_effect=Exception()):
+    with mock.patch('pickle.loads', side_effect=Exception()):
         msg = 'Failed to deserialize object using the pickle serializer.'
         with pytest.raises(SerializationError, match=msg):
             deserialize(v)
@@ -107,7 +142,7 @@ def test_propagate_pickle_loads_error() -> None:
 
 def test_propagate_cloudpickle_loads_error() -> None:
     v = serialize(lambda x: x + x)  # pragma: no cover
-    with mock.patch('cloudpickle.load', side_effect=Exception()):
+    with mock.patch('cloudpickle.loads', side_effect=Exception()):
         msg = 'Failed to deserialize object using the cloudpickle serializer.'
         with pytest.raises(SerializationError, match=msg):
             deserialize(v)
@@ -124,8 +159,7 @@ def test_numpy_serializer() -> None:
     xn = np.array([1, 2, 3])
     with io.BytesIO() as buffer:
         serializer.serialize(xn, buffer)
-        buffer.seek(0)
-        deserialized = serializer.deserialize(buffer)
+        deserialized = serializer.deserialize(_Data(buffer.getvalue()))
         assert np.array_equal(xn, deserialized)
 
 
@@ -140,8 +174,7 @@ def test_pandas_serializer() -> None:
     xp = pd.DataFrame({'a': [1, 2, 3]})
     with io.BytesIO() as buffer:
         serializer.serialize(xp, buffer)
-        buffer.seek(0)
-        deserialized = serializer.deserialize(buffer)
+        deserialized = serializer.deserialize(_Data(buffer.getvalue()))
         assert xp.equals(deserialized)
 
 
@@ -156,8 +189,7 @@ def test_polars_serializer() -> None:
     xpl = pl.DataFrame({'a': [1, 2, 3]})
     with io.BytesIO() as buffer:
         serializer.serialize(xpl, buffer)
-        buffer.seek(0)
-        deserialized = serializer.deserialize(buffer)
+        deserialized = serializer.deserialize(_Data(buffer.getvalue()))
         assert xpl.equals(deserialized)
 
 
