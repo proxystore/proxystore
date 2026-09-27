@@ -15,8 +15,9 @@ target is another endpoint is forwarded to that peer unchanged, and the
 response of the peer is returned unchanged except that the peer is named in
 an error message.
 
-To add an operation, add an [`Op`][proxystore.endpoint.protocol.Op], a
-handler of the operation in this module, and a method to the
+To add an operation, add an [`Op`][proxystore.endpoint.protocol.Op], add
+it to the local operations and its case to `Dispatcher._handle_local()` in
+this module, and add a method to the
 [`EndpointClient`][proxystore.endpoint.client.EndpointClient]. Requests
 for the operation are forwarded to peers without changes to this module.
 """
@@ -25,8 +26,7 @@ from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Awaitable
-from collections.abc import Callable
+from typing import assert_never
 
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -43,7 +43,9 @@ from proxystore.endpoint.storage import Storage
 logger = logging.getLogger(__name__)
 
 _Data = bytes | bytearray
-_LocalHandler = Callable[['Dispatcher', Request, _Data], Awaitable[Message]]
+_LOCAL_OPS = frozenset((Op.GET, Op.SET, Op.EXISTS, Op.EVICT, Op.PING))
+# Operations performed by an endpoint. The handshake ops are only valid
+# before requests so they are unknown ops to the dispatcher.
 
 
 class Dispatcher:
@@ -111,8 +113,7 @@ class Dispatcher:
             than raised (see
             [`Message.from_error()`][proxystore.endpoint.protocol.Message.from_error]).
         """
-        handler = _LOCAL_HANDLERS.get(request.code)
-        if handler is None:
+        if request.code not in _LOCAL_OPS:
             return Message.error(
                 Status.BAD_REQUEST,
                 f'unknown op {request.code}',
@@ -123,7 +124,7 @@ class Dispatcher:
             meta = Request.from_meta(request.meta)
             target = meta.target
             if target is None or target == self.id:
-                return await handler(self, meta, request.data)
+                return await self._handle_local(op, meta, request.data)
             if not forward:
                 raise EndpointProtocolError(
                     'requests from peers cannot be forwarded',
@@ -157,6 +158,34 @@ class Dispatcher:
             peer_id.short(),
         )
         return await self.handle(request, forward=False)
+
+    async def _handle_local(
+        self,
+        op: Op,
+        request: Request,
+        data: _Data,
+    ) -> Message:
+        match op:
+            case Op.GET:
+                result = await self._storage.get(_key(request))
+                if result is None:
+                    return Message(Status.NOT_FOUND)
+                return Message(Status.OK, data=result)
+            case Op.SET:
+                await self._storage.set(_key(request), data)
+                return Message(Status.OK)
+            case Op.EXISTS:
+                exists = await self._storage.exists(_key(request))
+                return Message(Status.OK, {'exists': exists})
+            case Op.EVICT:
+                await self._storage.evict(_key(request))
+                return Message(Status.OK)
+            case Op.PING:
+                return Message(Status.OK, PingResult().to_meta())
+            case Op.HELLO | Op.AUTH:  # pragma: no cover
+                raise AssertionError(f'{op.name} is not a local operation.')
+            case _:  # pragma: no cover
+                assert_never(op)
 
     async def _forward(
         self,
@@ -210,50 +239,3 @@ def _key(request: Request) -> str:
     if request.key is None:
         raise EndpointProtocolError('Request requires a key.')
     return request.key
-
-
-async def _get(dispatcher: Dispatcher, request: Request, _: _Data) -> Message:
-    result = await dispatcher.storage.get(_key(request))
-    if result is None:
-        return Message(Status.NOT_FOUND)
-    return Message(Status.OK, data=result)
-
-
-async def _set(
-    dispatcher: Dispatcher,
-    request: Request,
-    data: _Data,
-) -> Message:
-    await dispatcher.storage.set(_key(request), data)
-    return Message(Status.OK)
-
-
-async def _exists(
-    dispatcher: Dispatcher,
-    request: Request,
-    _: _Data,
-) -> Message:
-    exists = await dispatcher.storage.exists(_key(request))
-    return Message(Status.OK, {'exists': exists})
-
-
-async def _evict(
-    dispatcher: Dispatcher,
-    request: Request,
-    _: _Data,
-) -> Message:
-    await dispatcher.storage.evict(_key(request))
-    return Message(Status.OK)
-
-
-async def _ping(dispatcher: Dispatcher, request: Request, _: _Data) -> Message:
-    return Message(Status.OK, PingResult().to_meta())
-
-
-_LOCAL_HANDLERS: dict[int, _LocalHandler] = {
-    Op.GET: _get,
-    Op.SET: _set,
-    Op.EXISTS: _exists,
-    Op.EVICT: _evict,
-    Op.PING: _ping,
-}
