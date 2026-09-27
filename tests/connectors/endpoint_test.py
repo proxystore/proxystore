@@ -12,13 +12,14 @@ import pytest
 from proxystore.connectors.endpoint import _ConnectionPool
 from proxystore.connectors.endpoint import _reset_pools_after_fork
 from proxystore.connectors.endpoint import EndpointConnector
+from proxystore.connectors.endpoint import EndpointConnectorError
 from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
-from proxystore.endpoint.exceptions import EndpointConnectorError
+from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
@@ -90,8 +91,11 @@ def test_request_error(endpoint_connector) -> None:
     connector = EndpointConnector.from_config(endpoint_connector.config())
     key = EndpointKey(object_id='key', endpoint_id='not-an-id')
 
-    with pytest.raises(EndpointConnectorError, match='Evict failed'):
+    with pytest.raises(EndpointConnectorError, match='Evict failed') as e:
         connector.evict(key)
+    # The connector owns its error type and keeps the internal cause
+    assert not isinstance(e.value, EndpointError)
+    assert e.value.__cause__ is not None
     with pytest.raises(EndpointConnectorError, match='Exists failed'):
         connector.exists(key)
     with pytest.raises(EndpointConnectorError, match='Get failed'):

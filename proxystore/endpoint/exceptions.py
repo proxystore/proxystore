@@ -15,7 +15,6 @@ EndpointError
 ├── EndpointConnectionError
 ├── EndpointAuthError
 ├── EndpointProtocolError
-├── EndpointConnectorError
 └── EndpointRequestError
     ├── ObjectSizeExceededError
     └── PeerError
@@ -108,15 +107,6 @@ class EndpointAuthError(EndpointError):
 
 class EndpointProtocolError(EndpointError):
     """Exception raised for malformed or incompatible protocol messages."""
-
-
-class EndpointConnectorError(EndpointError):
-    """Exception raised when a request by an endpoint connector fails.
-
-    Raised by the
-    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
-    with the error that caused the request to fail as the cause.
-    """
 
 
 class EndpointRequestError(EndpointError):

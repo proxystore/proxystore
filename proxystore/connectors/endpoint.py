@@ -21,7 +21,6 @@ from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
-from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
@@ -32,6 +31,18 @@ from proxystore.utils.environment import home_dir
 logger = logging.getLogger(__name__)
 
 _T = TypeVar('_T')
+
+
+class EndpointConnectorError(Exception):
+    """Exception raised when the endpoint connector fails.
+
+    This is raised when the connector cannot connect to any of its endpoints
+    or when a request fails. The error that caused the failure (e.g., an
+    endpoint was not running or a peer endpoint was not allowed) is the
+    `__cause__` of the exception. The types of the causes are internal to
+    [`proxystore.endpoint`][proxystore.endpoint] so only the message should
+    be relied on.
+    """
 
 
 class EndpointKey(NamedTuple):
