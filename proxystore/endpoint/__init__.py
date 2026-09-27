@@ -37,9 +37,21 @@ implementation details. They are documented for development, but their
 interfaces may change between releases without notice.
 
 Note:
-    The [`serve`][proxystore.endpoint.serve] and
-    [`process`][proxystore.endpoint.process] modules and peering require the
-    `endpoints` extra. Clients only require the base package.
+    Endpoints and their clients (e.g., the
+    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector])
+    require the `endpoints` extra. Clients and endpoints share the ProxyStore
+    home directory so they are expected to share a Python environment too.
 """
 
 from __future__ import annotations
+
+import importlib.util
+
+_EXTRA_MODULES = ('aiosqlite', 'cryptography', 'daemon', 'iroh', 'uvloop')
+_missing = [m for m in _EXTRA_MODULES if importlib.util.find_spec(m) is None]
+if _missing:  # pragma: no cover
+    raise ImportError(
+        'Missing dependencies of ProxyStore Endpoints: '
+        f'{", ".join(_missing)}. Install them with '
+        '"pip install proxystore[endpoints]".',
+    )

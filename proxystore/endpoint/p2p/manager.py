@@ -20,13 +20,7 @@ from collections.abc import Coroutine
 from typing import Any
 from typing import Self
 
-try:
-    import iroh
-except ImportError as e:  # pragma: no cover
-    raise ImportError(
-        f'{e}. To enable endpoint peering, install proxystore with '
-        '"pip install proxystore[endpoints]".',
-    ) from e
+import iroh
 
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir

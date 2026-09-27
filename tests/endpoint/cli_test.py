@@ -188,7 +188,7 @@ def test_start_command(home_dir, caplog) -> None:
 
     endpoint_dir = EndpointDir.create('myendpoint', home_dir)
     with mock.patch(
-        'proxystore.endpoint.process.start_endpoint',
+        'proxystore.endpoint.cli.start_endpoint',
     ) as start_endpoint:
         result = runner.invoke(cli, ['start', 'myendpoint', '--no-detach'])
     assert result.exit_code == 0
@@ -214,7 +214,7 @@ def test_stop_command(home_dir, caplog) -> None:
     ):
         caplog.clear()
         with mock.patch(
-            'proxystore.endpoint.process.stop_endpoint',
+            'proxystore.endpoint.cli.stop_endpoint',
             return_value=stopped,
         ):
             result = runner.invoke(cli, ['stop', 'myendpoint'])

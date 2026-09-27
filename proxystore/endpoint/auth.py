@@ -37,6 +37,12 @@ import tempfile
 from typing import Literal
 from typing import Self
 
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.x509.oid import NameOID
+
 from proxystore.endpoint.files import write_private_file
 from proxystore.serialize import BytesLike
 
@@ -153,19 +159,9 @@ class TLSCertificate:
     def generate(cls, common_name: str) -> Self:
         """Generate a self-signed TLS certificate and private key.
 
-        Note:
-            This requires the `cryptography` package which is included in
-            the `endpoints` extra.
-
         Args:
             common_name: Common name of the certificate subject.
         """
-        from cryptography import x509
-        from cryptography.hazmat.primitives import hashes
-        from cryptography.hazmat.primitives import serialization
-        from cryptography.hazmat.primitives.asymmetric import ec
-        from cryptography.x509.oid import NameOID
-
         key = ec.generate_private_key(ec.SECP256R1())
         name = x509.Name(
             [x509.NameAttribute(NameOID.COMMON_NAME, common_name)],

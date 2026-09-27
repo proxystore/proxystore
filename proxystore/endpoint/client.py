@@ -7,9 +7,6 @@ Note:
     It is not intended that clients from outside the local network interact
     with an endpoint this way. (Rather, they should connect to their own
     local endpoint, which peers with remote endpoints.)
-
-This module does not depend on the `endpoints` extra dependencies so clients
-do not need to install them.
 """
 
 from __future__ import annotations

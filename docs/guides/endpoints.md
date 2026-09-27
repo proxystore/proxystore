@@ -224,12 +224,14 @@ on an as-available basis. If they are unavailable:
 
 ### Platform Support
 
-Peering requires the [`iroh`](https://pypi.org/project/iroh/){target=_blank}
-package which is installed with the `endpoints` extra. `iroh` only provides
-wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS (arm64),
-and Windows (x86_64). Clients (e.g., the
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]) do
-not require `iroh`.
+Endpoints and their clients (e.g., the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector])
+require the `endpoints` extra (`pip install proxystore[endpoints]`). Clients
+and endpoints share the ProxyStore home directory, so use the same Python
+environment for both. Peering uses the
+[`iroh`](https://pypi.org/project/iroh/){target=_blank} package which only
+provides wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS
+(arm64), and Windows (x86_64).
 
 ### Upgrading from ProxyStore v1
 

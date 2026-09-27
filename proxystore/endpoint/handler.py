@@ -26,8 +26,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Awaitable
 from collections.abc import Callable
-from typing import TYPE_CHECKING
 
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerError
@@ -36,14 +36,11 @@ from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 
-if TYPE_CHECKING:
-    from proxystore.endpoint.endpoint import Endpoint
-
 logger = logging.getLogger(__name__)
 
 _Data = bytes | bytearray
 
-_Handler = Callable[['Endpoint', Request, _Data], Awaitable[Message]]
+_Handler = Callable[[Endpoint, Request, _Data], Awaitable[Message]]
 
 
 def _key(request: Request) -> str:

@@ -7,10 +7,6 @@ endpoint to clients and peer endpoints. Peers verify each other's
 identity when establishing a connection because only the endpoint which has
 the secret key can prove ownership of the public key.
 
-Parsing endpoint IDs only depends on the standard library so clients do not
-require any of the `endpoints` extra dependencies. Operations on secret keys
-(see [`SecretKey`][proxystore.endpoint.identity.SecretKey]) require the
-`iroh` package which is included in the `endpoints` extra.
 """
 
 from __future__ import annotations
@@ -20,42 +16,25 @@ import hmac
 import re
 from typing import Any
 from typing import Self
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from pydantic import GetCoreSchemaHandler
-    from pydantic_core import CoreSchema
+import iroh
+from pydantic import GetCoreSchemaHandler
+from pydantic_core import core_schema
+from pydantic_core import CoreSchema
 
 SECRET_KEY_SIZE = 32
 """Size in bytes of an endpoint secret key."""
 
 _ENDPOINT_ID_PATTERN = re.compile(r'[0-9a-f]{64}')
 
-# Parameters of the edwards25519 curve (RFC 8032).
-_P = 2**255 - 19
-_D = (-121665 * pow(121666, -1, _P)) % _P
-
 
 @functools.lru_cache(maxsize=1024)
 def _is_public_key(value: str) -> bool:
-    """Check if a hex-encoded value is a valid ed25519 public key.
-
-    Implements point decoding from RFC 8032 (Section 5.1.3) so that IDs can
-    be validated without `iroh`. To match the ed25519 implementation used by
-    iroh, non-canonical encodings of the y-coordinate and a set sign bit
-    when x is zero are accepted, which RFC 8032 rejects.
-    """
-    y = int.from_bytes(bytes.fromhex(value), 'little')
-    # The sign bit of x does not affect whether the point exists.
-    y = (y & ((1 << 255) - 1)) % _P
-    u = (y * y - 1) % _P
-    v = (_D * y * y + 1) % _P
-    # Candidate square root of u / v.
-    x = (u * pow(v, 3, _P) * pow(u * pow(v, 7, _P), (_P - 5) // 8, _P)) % _P
-    vx2 = (v * x * x) % _P
-    # If neither x nor x * sqrt(-1) is a root, u / v is not a square so
-    # there is no point with this y.
-    return vx2 in (u, (-u) % _P)
+    try:
+        iroh.EndpointId.from_string(value)
+    except iroh.IrohError:
+        return False
+    return True
 
 
 class EndpointId(str):
@@ -64,8 +43,7 @@ class EndpointId(str):
     The ID is the endpoint's ed25519 public key encoded as 64 lowercase
     hexadecimal characters. An `EndpointId` is a `str` so it can be used
     anywhere a string is expected (e.g., serialized in configuration files).
-    Every instance is a valid public key (not every 32-byte value is), and
-    validation only depends on the standard library.
+    Every instance is a valid public key (not every 32-byte value is).
     The constructor only accepts the exact format. Use
     [`from_str()`][proxystore.endpoint.identity.EndpointId.from_str] to also
     accept surrounding whitespace and uppercase characters.
@@ -142,8 +120,6 @@ class EndpointId(str):
         source: Any,
         handler: GetCoreSchemaHandler,
     ) -> CoreSchema:
-        from pydantic_core import core_schema
-
         return core_schema.no_info_plain_validator_function(
             cls.from_str,
             serialization=core_schema.to_string_ser_schema(when_used='always'),
@@ -163,10 +139,6 @@ class SecretKey:
         endpoint_id = secret_key.endpoint_id
         same_key = SecretKey(secret_key.to_bytes())
         ```
-
-    Note:
-        Operations on secret keys require the `iroh` package which is included
-        in the `endpoints` extra.
 
     Args:
         key: Secret key as
@@ -202,16 +174,12 @@ class SecretKey:
     @classmethod
     def generate(cls) -> Self:
         """Generate a new random secret key."""
-        import iroh
-
         return cls(iroh.SecretKey.generate().to_bytes())
 
     @property
     def endpoint_id(self) -> EndpointId:
         """ID of the endpoint with this secret key (i.e., the public key)."""
         if self._endpoint_id is None:
-            import iroh
-
             public = iroh.SecretKey.from_bytes(self._key).public()
             self._endpoint_id = EndpointId(str(public))
         return self._endpoint_id

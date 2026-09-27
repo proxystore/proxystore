@@ -7,8 +7,7 @@ Warning:
 
 Clients communicate with their local endpoint over a TCP connection using
 length-prefixed binary messages. This module only contains the encoding and
-decoding logic, and it only depends on the standard library so the client
-does not require any of the `endpoints` extra dependencies.
+decoding logic.
 
 A connection starts with a handshake:
 

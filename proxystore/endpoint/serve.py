@@ -15,15 +15,8 @@ import signal
 import ssl
 from types import TracebackType
 from typing import Self
-from typing import TYPE_CHECKING
 
-try:
-    import uvloop
-except ImportError as e:  # pragma: no cover
-    raise ImportError(
-        f'{e}. To enable endpoint serving, install proxystore with '
-        '"pip install proxystore[endpoints]".',
-    ) from e
+import uvloop
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.auth import TLSCertificate
@@ -34,16 +27,14 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.handler import handle_request
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import RequestHandler
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 from proxystore.utils.environment import hostname
-
-if TYPE_CHECKING:
-    from proxystore.endpoint.p2p.manager import PeerManager
-    from proxystore.endpoint.p2p.manager import RequestHandler
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +45,6 @@ def _create_peer_manager(
 ) -> PeerManager | None:
     if not config.p2p.enabled:
         return None
-
-    from proxystore.endpoint.p2p.manager import PeerManager
 
     relays = config.p2p.relays
     logger.info(

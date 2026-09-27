@@ -7,12 +7,12 @@ import time
 from collections.abc import Generator
 from types import TracebackType
 from typing import Any
-from typing import TYPE_CHECKING
 
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.protocol import check_response
 from proxystore.endpoint.protocol import exists_from_meta
 from proxystore.endpoint.protocol import Message
@@ -22,9 +22,6 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
-
-if TYPE_CHECKING:
-    from proxystore.endpoint.p2p.manager import PeerManager
 
 logger = logging.getLogger(__name__)
 

@@ -1,11 +1,9 @@
 from __future__ import annotations
 
 import json
-import os
 import pickle
 from typing import Any
 
-import iroh
 import pydantic
 import pytest
 
@@ -92,49 +90,10 @@ def test_random() -> None:
     assert EndpointId.random() != endpoint_id
 
 
-_P = 2**255 - 19
-
-
-@pytest.mark.parametrize(
-    'key',
-    (
-        bytes(32),
-        b'\x01' + bytes(31),
-        # x = 0 with the sign bit set
-        b'\x01' + bytes(30) + b'\x80',
-        bytes(31) + b'\x80',
-        # Non-canonical encodings of y (y >= p)
-        (_P).to_bytes(32, 'little'),
-        (_P + 1).to_bytes(32, 'little'),
-        b'\xff' * 32,
-        b'\x02' * 32,
-    ),
-)
-def test_public_key_edge_cases_match_iroh(key: bytes) -> None:
-    _assert_matches_iroh(key)
-
-
-def test_public_keys_match_iroh() -> None:
-    for _ in range(2000):
-        _assert_matches_iroh(os.urandom(32))
-
-
-def _assert_matches_iroh(key: bytes) -> None:
-    try:
-        iroh.EndpointId.from_string(key.hex())
-    except iroh.IrohError:
-        iroh_valid = False
-    else:
-        iroh_valid = True
-
-    try:
-        EndpointId(key.hex())
-    except ValueError:
-        valid = False
-    else:
-        valid = True
-
-    assert valid == iroh_valid, key.hex()
+def test_invalid_public_key() -> None:
+    # Well-formed but not a valid ed25519 public key
+    with pytest.raises(ValueError, match='not a valid public key'):
+        EndpointId('02' * 32)
 
 
 def test_pickle() -> None:

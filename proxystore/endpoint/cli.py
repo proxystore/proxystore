@@ -33,6 +33,8 @@ from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.exceptions import PeerExistsError
+from proxystore.endpoint.process import start_endpoint
+from proxystore.endpoint.process import stop_endpoint
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
@@ -352,8 +354,6 @@ def remove(name: str) -> None:
 @_exit_on_error
 def start(ctx: click.Context, name: str, detach: bool) -> None:
     """Start an endpoint."""
-    from proxystore.endpoint.process import start_endpoint
-
     start_endpoint(
         EndpointDir.from_name(name),
         detach=detach,
@@ -366,8 +366,6 @@ def start(ctx: click.Context, name: str, detach: bool) -> None:
 @_exit_on_error
 def stop(name: str) -> None:
     """Stop a detached endpoint."""
-    from proxystore.endpoint.process import stop_endpoint
-
     if stop_endpoint(EndpointDir.from_name(name)):
         logger.info('Endpoint %s has been stopped.', name)
     else:
