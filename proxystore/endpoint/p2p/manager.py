@@ -35,9 +35,11 @@ from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
 
-_CHUNK_SIZE = 64 * 1024 * 1024
+_CHUNK_SIZE = 1024 * 1024
 # The iroh bindings limit the size of a single read to a u32, and each write
-# copies the data, so data is read and written in chunks.
+# copies the data, so data is read and written in chunks. The copy of each
+# chunk blocks the event loop, so chunks are small to avoid delaying other
+# requests during large transfers.
 
 _STOP_REJECTED = 1
 # Error code used to stop reading a request which is rejected.
