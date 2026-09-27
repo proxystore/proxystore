@@ -10,12 +10,14 @@ are encountering issues using ProxyStore Endpoints.
 Consider you configured and started an endpoint as follows:
 ```bash
 $ proxystore-endpoint configure myendpoint
-INFO: Configured endpoint: myendpoint <f4dc841d-377e-4785-8d66-8eade34f63cd>
+INFO: Configured endpoint: myendpoint <4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275>
 INFO: Config and log file directory: ~/.local/share/proxystore/myendpoint
 INFO: Start the endpoint with:
 INFO:   $ proxystore-endpoint start myendpoint
+INFO: Allow a peer endpoint to communicate with this one with:
+INFO:   $ proxystore-endpoint peers add myendpoint PEER_NAME PEER_ID
 $ proxystore-endpoint start myendpoint
-INFO: Starting endpoint process as daemon.
+INFO: Starting endpoint process as daemon
 INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/log.txt
 ```
 
@@ -26,7 +28,7 @@ in this case is `~/.local/share/proxystore/myendpoint`
 specification).
 ```bash
 $ grep "Serving endpoint" ~/.local/share/proxystore/myendpoint/log.txt
-INFO  (proxystore.endpoint.serve) :: Serving endpoint f4dc841d-377e-4785-8d66-8eade34f63cd (myendpoint) on 127.0.1.1:8766
+INFO  (proxystore.endpoint.serve) :: Serving endpoint 4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275 (myendpoint) on 127.0.1.1:8766
 ```
 The logs are the first place to check for any potential issues.
 
@@ -45,7 +47,7 @@ the endpoint.
 $ proxystore-endpoint --log-level DEBUG start myendpoint --no-detach
 ```
 
-### Use the Test CLI
+### Use the Client CLI
 The `proxystore-endpoint` CLI provides a `client` subcommand for running operations on an endpoint.
 See the [CLI Reference](../api/cli.md#proxystore-endpoint-client){target=_blank}.
 ```bash
@@ -95,6 +97,19 @@ with EndpointClient.from_name('myendpoint') as client:
 * **`EndpointVersionWarning`**: The client and endpoint use different
   ProxyStore versions or Python minor versions. See
   [Version Compatibility](endpoints.md#version-compatibility).
+* **... has format version ..., but this version of ProxyStore only supports
+  version ...**: A file in the endpoint directory was written by an
+  incompatible version of ProxyStore. Restart the endpoint if the file is
+  `connection.json`, or remove and configure the endpoint again if it is
+  `config.toml`. See
+  [Protocols and File Formats](endpoints.md#protocols-and-file-formats).
+* **The endpoint name in ... does not match the name of the directory**:
+  The endpoint directory was renamed. Rename it back or change the `name` in
+  its `config.toml` so they match.
+* **Endpoint ... appears to be running on ...**: The endpoint was started on
+  a different machine that shares the ProxyStore home directory. Stop the
+  endpoint on that machine. If it is no longer running, delete the
+  `daemon.pid` file in the endpoint directory.
 
 ## Test a Remote Endpoint
 
@@ -155,7 +170,7 @@ endpoints are behind NATs which prevent hole-punching or a firewall blocks
 UDP traffic. Without `--target`, the command measures the latency between
 the client and the local endpoint.
 
-### Use the Test CLI
+### Use the Client CLI
 The `proxystore-endpoint client` CLI can be used to establish a peer connection
 between two endpoints and invoke remote operations.
 Here, we will request the endpoint on system A to invoke an `exists`
@@ -179,5 +194,5 @@ endpoints for further error messages. Common errors are:
   other. If relays are disabled (`relays = "none"`), the endpoints can only
   connect directly. If discovery is unavailable, an endpoint can only reach
   peers whose addresses are cached in its `peer-addrs.json` file.
-* **Peer ...: Data size ... exceeds the maximum object size**: The object is
-  larger than the `max_object_size` of the remote endpoint.
+* **Peer ... returned TOO_LARGE**: The object is larger than the
+  `max_object_size` of the remote endpoint.

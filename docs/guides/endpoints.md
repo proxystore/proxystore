@@ -58,6 +58,8 @@ INFO: Configured endpoint: my-endpoint <ed924cda74a1f625ea4e34bc7f3d4759f298b1a9
 INFO: Config and log file directory: ~/.local/share/proxystore/my-endpoint
 INFO: Start the endpoint with:
 INFO:   $ proxystore-endpoint start my-endpoint
+INFO: Allow a peer endpoint to communicate with this one with:
+INFO:   $ proxystore-endpoint peers add my-endpoint PEER_NAME PEER_ID
 ```
 
 Endpoint configurations are stored in `$PROXYSTORE_HOME/{endpoint-name}`
@@ -125,7 +127,7 @@ max_object_size = 10000000  # (10)!
     set, blobs stored by the endpoint will be written to a SQLite database
     file. Note this will result in slower performance.
 
-An up-to-date configuration description can found in the
+An up-to-date configuration description can be found in the
 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] docstring.
 
 Starting the endpoint will load the configuration from the ProxyStore home
@@ -266,9 +268,10 @@ ProxyStore home directory, so the home directory must be on a shared file
 system that is private to your user.
 
 Clients also trust every file in the endpoint directory, and the directory
-contains the endpoint's database and log, so new endpoint directories are only
-accessible by the owner, and the endpoint removes all group and other
-permissions from its directory when it starts.
+contains the endpoint's secret key, database, and log, so new endpoint
+directories are only accessible by the owner, and the endpoint removes all
+group and other permissions from its directory and secret key when it
+starts.
 
 !!! tip
 
@@ -428,5 +431,5 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
    requests the data.
 5. Endpoint 1 sends the data to Endpoint 2.
 6. Endpoint 2 replies to Host B's request for the data with the data received
-   from Endpoint 2. Host B deserializes the target object and the proxy
+   from Endpoint 1. Host B deserializes the target object and the proxy
    is resolved.
