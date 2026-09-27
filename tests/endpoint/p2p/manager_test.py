@@ -19,6 +19,7 @@ from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
+from proxystore.endpoint.p2p.manager import PeerConnection
 from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Message
@@ -177,7 +178,7 @@ async def test_handler_error(managers) -> None:
 async def test_bad_request(managers) -> None:
     manager1, manager2, _ = managers
     connection, _ = await manager1._get_connection(manager2.id)
-    stream = await connection.open_bi()
+    stream = await connection.connection.open_bi()
     # Header with invalid metadata
     await stream.send().write_all(Header(Op.GET, 0, 0, 1, 0).pack())
     await stream.send().write_all(b'x')
@@ -241,8 +242,8 @@ async def test_stale_connection_retry(managers) -> None:
 
     # Simulate the peer restarting by closing the connection from the peer.
     for connection in manager2._connections[manager1.id]:
-        connection.close(CloseCode.SHUTDOWN, b'restart')
-    await stale.closed()
+        connection.connection.close(CloseCode.SHUTDOWN, b'restart')
+    await stale.connection.closed()
     # The manager stops using a closed connection once it notices, but a
     # request can race with the closure so the connection is used again.
     await wait_until(lambda: manager2.id not in manager1._preferred)
@@ -250,7 +251,7 @@ async def test_stale_connection_retry(managers) -> None:
 
     # Mark the stale connection as open so the manager tries to use it.
     with mock.patch.object(
-        type(stale),
+        type(stale.connection),
         'close_reason',
         side_effect=[None, 'closed by peer: restart (code 0)'],
     ):
@@ -379,7 +380,9 @@ async def test_drop_replaced_preferred_connection(managers) -> None:
     await _request(manager1, manager2.id, Op.GET)
     current = manager1._preferred[manager2.id]
     # Dropping a connection that was already replaced keeps the current one.
-    manager1._drop_preferred(manager2.id, mock.MagicMock())
+    manager1._drop_preferred(
+        PeerConnection(manager2.id, mock.MagicMock(), True)
+    )
     assert manager1._preferred[manager2.id] is current
 
 
@@ -612,20 +615,22 @@ async def test_path(managers, caplog) -> None:
         for m in messages
     )
 
-    manager1._preferred[manager2.id].close(CloseCode.SHUTDOWN, b'close')
+    manager1._preferred[manager2.id].connection.close(
+        CloseCode.SHUTDOWN,
+        b'close',
+    )
     assert manager1.path(manager2.id) is None
 
 
-async def test_report_path_changes(managers, caplog) -> None:
+def test_report_path_changes(caplog) -> None:
     caplog.set_level(logging.INFO)
-    manager1, manager2, _ = managers
-    connection = mock.MagicMock()
-    connection.stable_id.return_value = 42
+    iroh_connection = mock.MagicMock()
+    connection = PeerConnection(EndpointId.random(), iroh_connection, True)
 
     def _report(*paths: Any) -> list[str]:
         caplog.clear()
-        connection.paths.return_value = list(paths)
-        manager1._report_path(manager2.id, connection)
+        iroh_connection.paths.return_value = list(paths)
+        connection.report_path('peer')
         return [r.message for r in caplog.records]
 
     relay = _path(selected=True, relay=True, addr='https://relay')
@@ -638,29 +643,36 @@ async def test_report_path_changes(managers, caplog) -> None:
     )
     assert 'direct to 1.2.3.4:5' in _report(direct)[0]
     assert 'has no path' in _report()[0]
+    assert 'Connection to peer peer' in _report(direct)[0]
+
+    iroh_connection.paths.return_value = [direct]
+    accepted = PeerConnection(EndpointId.random(), iroh_connection, False)
+    caplog.clear()
+    accepted.report_path('peer')
+    assert 'Connection from peer peer' in caplog.records[0].message
 
 
-async def test_watch_path_changes(managers) -> None:
-    manager1, manager2, _ = managers
-    connection = mock.MagicMock()
-    connection.close_reason.side_effect = [None, 'closed']
+async def test_watch_path() -> None:
+    iroh_connection = mock.MagicMock()
+    iroh_connection.close_reason.side_effect = [None, 'closed']
+    connection = PeerConnection(EndpointId.random(), iroh_connection, True)
     with (
         mock.patch(_MANAGER + '._PATH_WATCH_INTERVAL', 0),
-        mock.patch.object(manager1, '_report_path') as report,
+        mock.patch.object(connection, 'report_path') as report,
     ):
-        await manager1._watch_path_changes(manager2.id, connection)
+        await connection.watch_path('peer')
     # Reported once then stopped when the connection closed
     assert report.call_count == 1
 
-    connection.close_reason.side_effect = None
-    connection.close_reason.return_value = None
+    iroh_connection.close_reason.side_effect = None
+    iroh_connection.close_reason.return_value = None
     with (
         mock.patch(_MANAGER + '._PATH_WATCH_INTERVAL', 0),
         mock.patch(_MANAGER + '._PATH_WATCH_DURATION', 0.01),
-        mock.patch.object(manager1, '_report_path'),
+        mock.patch.object(connection, 'report_path'),
     ):
         # Stops after the watch duration
-        await manager1._watch_path_changes(manager2.id, connection)
+        await connection.watch_path('peer')
 
 
 async def test_connection_used_in_both_directions(managers) -> None:
@@ -698,7 +710,7 @@ async def test_simultaneous_connections(managers) -> None:
 async def test_close_notifies_peers(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
-    connection = manager1._preferred[manager2.id]
+    connection = manager1._preferred[manager2.id].connection
 
     await manager2.close()
     await connection.closed()
@@ -709,11 +721,8 @@ async def test_closed_connection_is_forgotten(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
     connection = manager1._preferred[manager2.id]
-    stable_id = connection.stable_id()
-    assert stable_id in manager1._directions
+    assert connection in manager1._connections[manager2.id]
 
-    connection.close(CloseCode.SHUTDOWN, b'close')
+    connection.connection.close(CloseCode.SHUTDOWN, b'close')
     await wait_until(lambda: manager2.id not in manager1._connections)
     assert manager2.id not in manager1._preferred
-    assert stable_id not in manager1._paths
-    assert stable_id not in manager1._directions

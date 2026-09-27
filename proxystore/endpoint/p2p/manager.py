@@ -57,9 +57,7 @@ the response.
 
 _PATH_WATCH_INTERVAL = 1.0
 _PATH_WATCH_DURATION = 15.0
-# A new connection often starts relayed and switches to a direct path once
-# hole-punching succeeds, so the path is watched for a short time after
-# connecting to log the change even if the connection is idle.
+# See PeerConnection.watch_path().
 
 
 @dataclasses.dataclass(frozen=True)
@@ -96,6 +94,85 @@ class PathInfo:
         """Describe the path for logging."""
         kind = 'relayed via' if self.relayed else 'direct to'
         return f'{kind} {self.remote_addr} (rtt {self.rtt_ms} ms)'
+
+
+@dataclasses.dataclass(eq=False)
+class PeerConnection:
+    """Connection to a peer.
+
+    Attributes:
+        peer_id: ID of the peer.
+        connection: Underlying iroh connection.
+        dialed: If this endpoint opened the connection (rather than the
+            peer).
+    """
+
+    peer_id: EndpointId
+    connection: iroh.Connection
+    dialed: bool
+    # The last path reported for logging or None if the connection had no
+    # path. Unset until the path is first reported.
+    _reported_path: tuple[bool, str] | None = dataclasses.field(
+        default=None,
+        init=False,
+    )
+    _reported: bool = dataclasses.field(default=False, init=False)
+
+    @property
+    def closed(self) -> bool:
+        """The connection is closed."""
+        return self.connection.close_reason() is not None
+
+    def path(self) -> PathInfo | None:
+        """Get the path selected for sending on the connection."""
+        return PathInfo.from_connection(self.connection)
+
+    def report_path(self, peer_name: str) -> None:
+        """Log the path of the connection if it changed since last reported.
+
+        Changes in only the RTT of the path are not reported.
+
+        Args:
+            peer_name: Name of the peer for the log.
+        """
+        path = self.path()
+        key = None if path is None else (path.relayed, path.remote_addr)
+        if self._reported and key == self._reported_path:
+            return
+        self._reported = True
+        self._reported_path = key
+        direction = 'to' if self.dialed else 'from'
+        if path is None:
+            logger.info(
+                'Connection %s peer %s has no path',
+                direction,
+                peer_name,
+            )
+        else:
+            logger.info(
+                'Connection %s peer %s is %s',
+                direction,
+                peer_name,
+                path.describe(),
+            )
+
+    async def watch_path(self, peer_name: str) -> None:
+        """Report changes to the path of the connection after connecting.
+
+        A new connection often starts relayed and switches to a direct path
+        once hole-punching succeeds, so the path is checked periodically for
+        a short time to report the change even if the connection is idle.
+
+        Args:
+            peer_name: Name of the peer for the log.
+        """
+        loop = asyncio.get_running_loop()
+        end = loop.time() + _PATH_WATCH_DURATION
+        while loop.time() < end:
+            await asyncio.sleep(_PATH_WATCH_INTERVAL)
+            if self.closed:
+                return
+            self.report_path(peer_name)
 
 
 class PeerPolicy(Protocol):
@@ -251,13 +328,9 @@ class PeerManager:
         ] = collections.defaultdict(asyncio.Lock)
         # Open connections to each peer. Requests from the peer are
         # accepted on all of them.
-        self._connections: dict[EndpointId, set[iroh.Connection]] = {}
+        self._connections: dict[EndpointId, set[PeerConnection]] = {}
         # Connection used to send requests to each peer.
-        self._preferred: dict[EndpointId, iroh.Connection] = {}
-        # Last reported path of each connection by stable ID.
-        self._paths: dict[int, tuple[bool, str] | None] = {}
-        # If each connection was dialed by this endpoint by stable ID.
-        self._directions: dict[int, bool] = {}
+        self._preferred: dict[EndpointId, PeerConnection] = {}
         self._closed = False
 
     @property
@@ -294,9 +367,9 @@ class PeerManager:
             `None` if there is no open connection.
         """
         connection = self._preferred.get(peer_id)
-        if connection is None or connection.close_reason() is not None:
+        if connection is None or connection.closed:
             return None
-        return PathInfo.from_connection(connection)
+        return connection.path()
 
     def addr(self) -> iroh.EndpointAddr:
         """Get the current address of this endpoint.
@@ -428,12 +501,12 @@ class PeerManager:
         for attempt in range(2):
             connection, fresh = await self._get_connection(peer_id)
             try:
-                response = await self._exchange(connection, request)
-                self._report_path(peer_id, connection)
+                response = await self._exchange(connection.connection, request)
+                connection.report_path(self.peer_name(peer_id))
                 return response
             except iroh.IrohError as e:
-                reason = connection.close_reason()
-                self._drop_preferred(peer_id, connection)
+                reason = connection.connection.close_reason()
+                self._drop_preferred(connection)
                 if reason is not None and _closed_with(
                     reason,
                     CloseCode.NOT_ALLOWED,
@@ -479,11 +552,11 @@ class PeerManager:
     async def _get_connection(
         self,
         peer_id: EndpointId,
-    ) -> tuple[iroh.Connection, bool]:
+    ) -> tuple[PeerConnection, bool]:
         async with self._dial_locks[peer_id]:
-            connection = self._preferred.get(peer_id)
-            if connection is not None and connection.close_reason() is None:
-                return connection, False
+            preferred = self._preferred.get(peer_id)
+            if preferred is not None and not preferred.closed:
+                return preferred, False
 
             logger.info(
                 'Connecting to peer %s',
@@ -519,8 +592,12 @@ class PeerManager:
                 'Connected to peer %s',
                 self.peer_name(peer_id),
             )
-            await self._add_connection(peer_id, connection, dialed=True)
-            return connection, True
+            peer_connection = await self._add_connection(
+                peer_id,
+                connection,
+                dialed=True,
+            )
+            return peer_connection, True
 
     async def _add_connection(
         self,
@@ -528,18 +605,20 @@ class PeerManager:
         connection: iroh.Connection,
         *,
         dialed: bool,
-    ) -> None:
+    ) -> PeerConnection:
         # The newest connection is used to send requests because an older
         # connection is likely to be closed (e.g., because the peer
         # restarted). If both peers connected to each other at the same
         # time, each peer may prefer a different connection which is fine
         # because requests are accepted on all connections.
-        self._connections.setdefault(peer_id, set()).add(connection)
-        self._preferred[peer_id] = connection
-        self._directions[connection.stable_id()] = dialed
+        peer_connection = PeerConnection(peer_id, connection, dialed)
+        self._connections.setdefault(peer_id, set()).add(peer_connection)
+        self._preferred[peer_id] = peer_connection
         await self._remember_addr(peer_id)
-        self._watch_path(peer_id, connection)
-        self._spawn(self._serve_connection(peer_id, connection))
+        peer_connection.report_path(self.peer_name(peer_id))
+        self._spawn(peer_connection.watch_path(self.peer_name(peer_id)))
+        self._spawn(self._serve_connection(peer_connection))
+        return peer_connection
 
     async def _dial(
         self,
@@ -585,62 +664,9 @@ class PeerManager:
                     e,
                 )
 
-    def _drop_preferred(
-        self,
-        peer_id: EndpointId,
-        connection: iroh.Connection,
-    ) -> None:
-        if self._preferred.get(peer_id) is connection:
-            del self._preferred[peer_id]
-
-    def _report_path(
-        self,
-        peer_id: EndpointId,
-        connection: iroh.Connection,
-    ) -> None:
-        """Log the path of a connection if it changed."""
-        dialed = self._directions.get(connection.stable_id(), True)
-        direction = 'to' if dialed else 'from'
-        path = PathInfo.from_connection(connection)
-        key = None if path is None else (path.relayed, path.remote_addr)
-        stable_id = connection.stable_id()
-        if stable_id in self._paths and self._paths[stable_id] == key:
-            return
-        self._paths[stable_id] = key
-        if path is None:
-            logger.info(
-                'Connection %s peer %s has no path',
-                direction,
-                self.peer_name(peer_id),
-            )
-        else:
-            logger.info(
-                'Connection %s peer %s is %s',
-                direction,
-                self.peer_name(peer_id),
-                path.describe(),
-            )
-
-    def _watch_path(
-        self,
-        peer_id: EndpointId,
-        connection: iroh.Connection,
-    ) -> None:
-        self._report_path(peer_id, connection)
-        self._spawn(self._watch_path_changes(peer_id, connection))
-
-    async def _watch_path_changes(
-        self,
-        peer_id: EndpointId,
-        connection: iroh.Connection,
-    ) -> None:
-        loop = asyncio.get_running_loop()
-        end = loop.time() + _PATH_WATCH_DURATION
-        while loop.time() < end:
-            await asyncio.sleep(_PATH_WATCH_INTERVAL)
-            if connection.close_reason() is not None:
-                return
-            self._report_path(peer_id, connection)
+    def _drop_preferred(self, connection: PeerConnection) -> None:
+        if self._preferred.get(connection.peer_id) is connection:
+            del self._preferred[connection.peer_id]
 
     def _enforce_policy(self, peer_id: EndpointId) -> bool:
         """Close connections to peers which are no longer allowed.
@@ -666,7 +692,7 @@ class PeerManager:
     ) -> None:
         self._preferred.pop(peer_id, None)
         for connection in self._connections.pop(peer_id, set()):
-            connection.close(code, reason)
+            connection.connection.close(code, reason)
 
     def _spawn(self, coro: Coroutine[Any, Any, None]) -> None:
         # Tasks are named after their coroutine (e.g.,
@@ -740,21 +766,21 @@ class PeerManager:
         )
         await self._add_connection(peer_id, connection, dialed=False)
 
-    async def _serve_connection(
-        self,
-        peer_id: EndpointId,
-        connection: iroh.Connection,
-    ) -> None:
+    async def _serve_connection(self, connection: PeerConnection) -> None:
         """Accept requests from the peer on a connection until it closes."""
+        peer_id = connection.peer_id
         try:
             while True:
                 try:
-                    stream = await connection.accept_bi()
+                    stream = await connection.connection.accept_bi()
                 except iroh.IrohError:
                     # Connection was closed.
                     break
                 if not self._enforce_policy(peer_id):
-                    connection.close(CloseCode.NOT_ALLOWED, b'not allowed')
+                    connection.connection.close(
+                        CloseCode.NOT_ALLOWED,
+                        b'not allowed',
+                    )
                     break
                 self._spawn(self._handle_stream(peer_id, stream))
         finally:
@@ -762,9 +788,7 @@ class PeerManager:
             connections.discard(connection)
             if len(connections) == 0:
                 self._connections.pop(peer_id, None)
-            self._drop_preferred(peer_id, connection)
-            self._paths.pop(connection.stable_id(), None)
-            self._directions.pop(connection.stable_id(), None)
+            self._drop_preferred(connection)
             logger.info(
                 'Connection with peer %s closed',
                 self.peer_name(peer_id),
