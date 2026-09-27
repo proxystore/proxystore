@@ -10,14 +10,12 @@ of an endpoint started with `--no-detach`).
 
 from __future__ import annotations
 
-import contextlib
 import functools
 import logging
 import sys
 import time
 import uuid
 from collections.abc import Callable
-from collections.abc import Generator
 from typing import ClassVar
 from typing import Literal
 from typing import ParamSpec
@@ -384,22 +382,15 @@ def client_group(
     ctx.obj['TARGET_ENDPOINT_ID'] = target
 
 
-@contextlib.contextmanager
-def _endpoint_client(
-    ctx: click.Context,
-) -> Generator[EndpointClient, None, None]:
-    """Connect to the endpoint of a client command and handle errors."""
-    try:
-        with EndpointClient.from_name(ctx.obj['ENDPOINT_NAME']) as client:
-            yield client
-    except (EndpointError, ValueError) as e:
-        _error(e)
-        raise SystemExit(1) from None
+def _endpoint_client(ctx: click.Context) -> EndpointClient:
+    """Connect to the endpoint of a client command."""
+    return EndpointClient.from_name(ctx.obj['ENDPOINT_NAME'])
 
 
 @client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
+@_exit_on_error
 def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
     with _endpoint_client(ctx) as client:
@@ -410,6 +401,7 @@ def evict(ctx: click.Context, key: str) -> None:
 @client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
+@_exit_on_error
 def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
     with _endpoint_client(ctx) as client:
@@ -420,6 +412,7 @@ def exists(ctx: click.Context, key: str) -> None:
 @client_group.command()
 @click.argument('key', metavar='KEY', required=True)
 @click.pass_context
+@_exit_on_error
 def get(ctx: click.Context, key: str) -> None:
     """Get an object from an endpoint."""
     with _endpoint_client(ctx) as client:
@@ -448,6 +441,7 @@ def get(ctx: click.Context, key: str) -> None:
     help='Seconds to wait between pings.',
 )
 @click.pass_context
+@_exit_on_error
 def ping(ctx: click.Context, count: int, interval: float) -> None:
     """Measure the latency of and path to a peer endpoint.
 
@@ -464,11 +458,7 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
             if i > 0:
                 time.sleep(interval)
             start = time.perf_counter()
-            try:
-                result = client.ping(target)
-            except (EndpointError, ValueError) as e:
-                _error(e)
-                raise SystemExit(1) from None
+            result = client.ping(target)
             client_ms = (time.perf_counter() - start) * 1000
 
             if result.peer_rtt_ms is None:
@@ -501,6 +491,7 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
 @client_group.command()
 @click.argument('data', required=True)
 @click.pass_context
+@_exit_on_error
 def put(ctx: click.Context, data: str) -> None:
     """Put an object in an endpoint."""
     key = str(uuid.uuid4())
