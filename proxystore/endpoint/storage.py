@@ -16,14 +16,12 @@ from __future__ import annotations
 import asyncio
 import pathlib
 from typing import Protocol
-from typing import runtime_checkable
 
 import aiosqlite
 
 from proxystore.endpoint.protocol import MessageData
 
 
-@runtime_checkable
 class Storage(Protocol):
     """Storage of the objects in an endpoint."""
 

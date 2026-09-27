@@ -10,6 +10,7 @@ import pytest
 
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.peers import PeerExistsError
 from proxystore.endpoint.peers import Peers
 from proxystore.endpoint.peers import PeersConfig
@@ -106,12 +107,11 @@ def test_endpoint_dir_peers(tmp_path: pathlib.Path) -> None:
     peers = endpoint_dir.peers()
     assert peers.path == endpoint_dir.peers_path
     assert peers.owner_id == endpoint_dir.read_config().id
-    assert peers.allowlist().path == endpoint_dir.peers_path
 
 
 def test_allowlist_reload(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
-    allowlist = peers.allowlist(reload_interval=0)
+    allowlist = Allowlist(peers.path, reload_interval=0)
 
     # Missing file is an empty allowlist
     assert not allowlist.allowed(_ID1)
@@ -140,7 +140,7 @@ def test_allowlist_malformed_denies_all(
 ) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     peers.write(PeersConfig(peers={'a': _ID1}))
-    allowlist = peers.allowlist(reload_interval=0)
+    allowlist = Allowlist(peers.path, reload_interval=0)
     assert allowlist.allowed(_ID1)
 
     with open(peers.path, 'w') as f:
@@ -158,7 +158,7 @@ def test_peers_version() -> None:
 def test_allowlist_reload_interval(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     peers.write(PeersConfig(peers={'a': _ID1}))
-    allowlist = peers.allowlist(reload_interval=60)
+    allowlist = Allowlist(peers.path, reload_interval=60)
     assert allowlist.reload_interval == 60
     assert allowlist.allowed(_ID1)
 

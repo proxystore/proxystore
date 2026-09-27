@@ -197,19 +197,6 @@ class Peers:
         self.write(peers)
         return peer_id
 
-    def allowlist(
-        self,
-        reload_interval: float = RELOAD_INTERVAL,
-    ) -> Allowlist:
-        """Get an allowlist which reloads the peers when the file changes.
-
-        Args:
-            reload_interval: Minimum seconds between checks for changes to
-                the file (see
-                [`Allowlist`][proxystore.endpoint.peers.Allowlist]).
-        """
-        return Allowlist(self.path, reload_interval=reload_interval)
-
 
 @dataclasses.dataclass(frozen=True)
 class _FileState:
