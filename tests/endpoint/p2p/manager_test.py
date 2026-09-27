@@ -353,7 +353,7 @@ async def test_online(tmp_path: pathlib.Path, caplog) -> None:
         assert manager._online_task is not None
         await manager._online_task
     await manager.close()
-    assert any('connected to home relay' in r.message for r in caplog.records)
+    assert any('Connected to home relay' in r.message for r in caplog.records)
 
 
 async def test_drop_replaced_preferred_connection(managers) -> None:
@@ -470,7 +470,7 @@ async def test_addr_cache_save_error(managers, caplog) -> None:
     manager1._addr_cache = PeerAddrCache('/does/not/exist/peer-addrs.json')
     status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
-    assert any('failed to save' in r.message for r in caplog.records)
+    assert any('Failed to save' in r.message for r in caplog.records)
 
 
 async def test_stale_addr_falls_back_to_discovery(managers) -> None:
@@ -520,7 +520,7 @@ async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
     assert manager._online_task is not None
     await manager._online_task
     await manager.close()
-    assert any('not connected to a home' in r.message for r in caplog.records)
+    assert any('Not connected to a home' in r.message for r in caplog.records)
 
 
 def _path(*, selected: bool, relay: bool, addr: str, rtt: int = 5) -> Any:
@@ -565,13 +565,13 @@ async def test_path(managers, caplog) -> None:
     assert path.remote_addr.startswith('127.0.0.1:')
     messages = [r.message for r in caplog.records]
     assert any(
-        f'[self({manager1.id[:10]})]: connection to peer' in m
+        f'Connection to peer {manager1.peer_name(manager2.id)}' in m
         and 'is direct to 127.0.0.1' in m
         for m in messages
     )
     # The accepting peer also reports the path
     assert any(
-        f'[self({manager2.id[:10]})]: connection from peer' in m
+        f'Connection from peer {manager2.peer_name(manager1.id)}' in m
         and 'is direct to 127.0.0.1' in m
         for m in messages
     )

@@ -326,10 +326,13 @@ class PeerManager:
         peer_id = EndpointId.from_str(str(addr.id()))
         self._addr_hints[peer_id] = addr
 
-    def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{self.id.log_name("self")}]'
+    def peer_name(self, peer_id: EndpointId) -> str:
+        """Format the ID of a peer with its name for logging.
 
-    def _peer_name(self, peer_id: EndpointId) -> str:
+        The name is from the peer policy or `unknown` if the peer has no
+        name (see
+        [`EndpointId.log_name()`][proxystore.endpoint.identity.EndpointId.log_name]).
+        """
         name = self._policy.name_of(peer_id)
         return peer_id.log_name('unknown' if name is None else name)
 
@@ -351,8 +354,7 @@ class PeerManager:
             for peer_id, addr in cached.items():
                 self._addr_hints.setdefault(peer_id, addr)
             logger.info(
-                '%s: loaded %d cached peer address(es) from %s',
-                self._log_prefix(),
+                'Loaded %d cached peer address(es) from %s',
                 len(cached),
                 self._addr_cache.path,
             )
@@ -381,8 +383,7 @@ class PeerManager:
                 self._wait_online(options.online_timeout),
             )
         logger.info(
-            '%s: listening for peer connections on %s',
-            self._log_prefix(),
+            'Listening for peer connections on %s',
             ', '.join(self.endpoint.bound_sockets()),
         )
 
@@ -403,7 +404,7 @@ class PeerManager:
             self._close_peer(peer_id, CloseCode.SHUTDOWN, b'shutdown')
         if self._endpoint is not None:
             await self._endpoint.close()
-        logger.info('%s: peer manager closed', self._log_prefix())
+        logger.info('Peer manager closed')
 
     async def request(
         self,
@@ -455,9 +456,8 @@ class PeerManager:
                         f'Request to peer {peer_id} failed: {_message(e)}',
                     ) from None
                 logger.debug(
-                    '%s: retrying request to %s with a new connection: %s',
-                    self._log_prefix(),
-                    self._peer_name(peer_id),
+                    'Retrying request to %s with a new connection: %s',
+                    self.peer_name(peer_id),
                     _message(e),
                 )
         raise AssertionError('Unreachable.')
@@ -493,9 +493,8 @@ class PeerManager:
                 return connection, False
 
             logger.info(
-                '%s: connecting to peer %s',
-                self._log_prefix(),
-                self._peer_name(peer_id),
+                'Connecting to peer %s',
+                self.peer_name(peer_id),
             )
             id_only = iroh.EndpointAddr(
                 iroh.EndpointId.from_string(peer_id),
@@ -516,18 +515,16 @@ class PeerManager:
                 # The cached address may be stale so try again using only
                 # discovery.
                 logger.info(
-                    '%s: failed to connect to peer %s using its cached '
+                    'Failed to connect to peer %s using its cached '
                     'address, retrying with discovery: %s',
-                    self._log_prefix(),
-                    self._peer_name(peer_id),
+                    self.peer_name(peer_id),
                     e,
                 )
                 self._addr_hints.pop(peer_id, None)
                 connection = await self._dial(peer_id, id_only)
             logger.info(
-                '%s: connected to peer %s',
-                self._log_prefix(),
-                self._peer_name(peer_id),
+                'Connected to peer %s',
+                self.peer_name(peer_id),
             )
             await self._add_connection(peer_id, connection, dialed=True)
             return connection, True
@@ -591,8 +588,7 @@ class PeerManager:
                 self._addr_cache.save(addrs)
             except OSError as e:
                 logger.warning(
-                    '%s: failed to save peer address cache: %s',
-                    self._log_prefix(),
+                    'Failed to save peer address cache: %s',
                     e,
                 )
 
@@ -611,7 +607,7 @@ class PeerManager:
     ) -> None:
         """Log the path of a connection if it changed."""
         dialed = self._directions.get(connection.stable_id(), True)
-        direction = 'connection to' if dialed else 'connection from'
+        direction = 'to' if dialed else 'from'
         path = PathInfo.from_connection(connection)
         key = None if path is None else (path.relayed, path.remote_addr)
         stable_id = connection.stable_id()
@@ -620,17 +616,15 @@ class PeerManager:
         self._paths[stable_id] = key
         if path is None:
             logger.info(
-                '%s: %s peer %s has no path',
-                self._log_prefix(),
+                'Connection %s peer %s has no path',
                 direction,
-                self._peer_name(peer_id),
+                self.peer_name(peer_id),
             )
         else:
             logger.info(
-                '%s: %s peer %s is %s',
-                self._log_prefix(),
+                'Connection %s peer %s is %s',
                 direction,
-                self._peer_name(peer_id),
+                self.peer_name(peer_id),
                 path.describe(),
             )
 
@@ -658,9 +652,8 @@ class PeerManager:
     def _is_allowed(self, peer_id: EndpointId) -> bool:
         for removed in self._policy.revoked():
             logger.warning(
-                '%s: closing connections to peer %s which was removed from '
+                'Closing connections to peer %s which was removed from '
                 'the allowlist',
-                self._log_prefix(),
                 removed.log_name('removed'),
             )
             self._close_peer(removed, CloseCode.NOT_ALLOWED, b'not allowed')
@@ -686,13 +679,12 @@ class PeerManager:
             await asyncio.wait_for(self.endpoint.online(), timeout=timeout)
         except TimeoutError:
             logger.warning(
-                '%s: not connected to a home relay after %s seconds. '
+                'Not connected to a home relay after %s seconds. '
                 'Peers may only be able to connect directly',
-                self._log_prefix(),
                 timeout,
             )
         else:
-            logger.info('%s: connected to home relay', self._log_prefix())
+            logger.info('Connected to home relay')
 
     async def _accept_loop(self) -> None:
         while True:
@@ -708,8 +700,7 @@ class PeerManager:
             connection = await accepting.connect()
         except iroh.IrohError as e:
             logger.debug(
-                '%s: failed to accept connection: %s',
-                self._log_prefix(),
+                'Failed to accept connection: %s',
                 _message(e),
             )
             return
@@ -717,18 +708,16 @@ class PeerManager:
         peer_id = EndpointId.from_str(str(connection.remote_id()))
         if not self._is_allowed(peer_id):
             logger.warning(
-                '%s: refused connection from endpoint %s which is not in the '
+                'Refused connection from endpoint %s which is not in the '
                 'allowlist',
-                self._log_prefix(),
                 peer_id,
             )
             connection.close(CloseCode.NOT_ALLOWED, b'not allowed')
             return
 
         logger.info(
-            '%s: accepted connection from peer %s',
-            self._log_prefix(),
-            self._peer_name(peer_id),
+            'Accepted connection from peer %s',
+            self.peer_name(peer_id),
         )
         await self._add_connection(peer_id, connection, dialed=False)
 
@@ -758,9 +747,8 @@ class PeerManager:
             self._paths.pop(connection.stable_id(), None)
             self._directions.pop(connection.stable_id(), None)
             logger.info(
-                '%s: connection with peer %s closed',
-                self._log_prefix(),
-                self._peer_name(peer_id),
+                'Connection with peer %s closed',
+                self.peer_name(peer_id),
             )
 
     async def _handle_stream(
@@ -784,9 +772,8 @@ class PeerManager:
                     response = await self._handler(peer_id, request)
                 except Exception as e:
                     logger.exception(
-                        '%s: unexpected error handling request from %s',
-                        self._log_prefix(),
-                        self._peer_name(peer_id),
+                        'Unexpected error handling request from %s',
+                        self.peer_name(peer_id),
                     )
                     response = Message.error(
                         Status.ERROR,
@@ -795,9 +782,8 @@ class PeerManager:
             await _write_message(stream.send(), response)
         except iroh.IrohError as e:
             logger.debug(
-                '%s: stream from %s failed: %s',
-                self._log_prefix(),
-                self._peer_name(peer_id),
+                'Stream from %s failed: %s',
+                self.peer_name(peer_id),
                 _message(e),
             )
 
