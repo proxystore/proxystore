@@ -41,6 +41,11 @@ _CHUNK_SIZE = 1024 * 1024
 # chunk blocks the event loop, so chunks are small to avoid delaying other
 # requests during large transfers.
 
+_SMALL_SIZE = 64 * 1024
+# Each call to the iroh bindings is slow (tens of microseconds) so messages
+# are written with one call if the data is at most this size, and parts of
+# messages which are at most this size are read with one call.
+
 _STOP_REJECTED = 1
 # Error code used to stop reading a request which is rejected.
 
@@ -836,7 +841,9 @@ class PeerManager:
                     MessageReader(max_data_size=self._max_request_size),
                 )
             except (EndpointProtocolError, ObjectSizeExceededError) as e:
-                await stream.recv().stop(_STOP_REJECTED)
+                # Stopping fails if the whole request was already read.
+                with contextlib.suppress(iroh.IrohError):
+                    await stream.recv().stop(_STOP_REJECTED)
                 response = Message.from_error(e)
             else:
                 try:
@@ -862,15 +869,19 @@ class PeerManager:
 async def _write_message(stream: iroh.SendStream, message: Message) -> None:
     data = message.data
     view = memoryview(data).cast('B')
-    await stream.write_all(message.pack_head())
-    for start in range(0, len(view), _CHUNK_SIZE):
-        chunk = view[start : start + _CHUNK_SIZE]
-        await stream.write_all(
-            data
-            if len(chunk) == len(view) and isinstance(data, bytes)
-            # The bindings only accept bytes.
-            else chunk.tobytes(),
-        )
+    head = message.pack_head()
+    if len(view) <= _SMALL_SIZE:
+        await stream.write_all(head + view)
+    else:
+        await stream.write_all(head)
+        for start in range(0, len(view), _CHUNK_SIZE):
+            chunk = view[start : start + _CHUNK_SIZE]
+            await stream.write_all(
+                data
+                if len(chunk) == len(view) and isinstance(data, bytes)
+                # The bindings only accept bytes.
+                else chunk.tobytes(),
+            )
     await stream.finish()
 
 
@@ -878,17 +889,37 @@ async def _read_message(
     stream: iroh.RecvStream,
     reader: MessageReader,
 ) -> Message:
+    # Reading whatever data is available, rather than each part of the
+    # message separately, usually reads a small message with one call.
+    buffered = b''
     while not reader.done:
-        reader.feed(await _read_exact(stream, reader.size))
+        size = reader.size
+        if len(buffered) < size <= _SMALL_SIZE:
+            data = await stream.read(_SMALL_SIZE)
+            if len(data) == 0:
+                # Raise the error of the bindings for a stream which ended
+                # before the message was read.
+                data = await stream.read_exact(size - len(buffered))
+            buffered += data
+        elif len(buffered) >= size:
+            reader.feed(buffered[:size])
+            buffered = buffered[size:]
+        else:
+            reader.feed(await _read_exact(stream, size, buffered))
+            buffered = b''
     return reader.message
 
 
-async def _read_exact(stream: iroh.RecvStream, size: int) -> bytes | bytearray:
-    if size <= _CHUNK_SIZE:
-        return await stream.read_exact(size)
+async def _read_exact(
+    stream: iroh.RecvStream,
+    size: int,
+    prefix: bytes = b'',
+) -> bytearray:
+    """Read `size` bytes, starting with the already read `prefix`."""
     data = bytearray(size)
     buffer = memoryview(data)
-    for start in range(0, size, _CHUNK_SIZE):
+    buffer[: len(prefix)] = prefix
+    for start in range(len(prefix), size, _CHUNK_SIZE):
         chunk = min(_CHUNK_SIZE, size - start)
         buffer[start : start + chunk] = await stream.read_exact(chunk)
     return data

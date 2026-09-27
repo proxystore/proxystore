@@ -140,8 +140,11 @@ async def test_large_request(managers) -> None:
     try:
         connect_peers(manager1, manager3)
         data = os.urandom(1000)
-        # Use a small chunk size to test data spanning multiple chunks
-        with mock.patch('proxystore.endpoint.p2p.manager._CHUNK_SIZE', 300):
+        # Use small sizes to test data spanning multiple chunks
+        with (
+            mock.patch(f'{_MANAGER}._CHUNK_SIZE', 300),
+            mock.patch(f'{_MANAGER}._SMALL_SIZE', 100),
+        ):
             _, _, response = await _request(
                 manager1,
                 manager3.id,
@@ -358,10 +361,30 @@ async def test_stream_error_is_logged(managers, caplog) -> None:
     caplog.set_level(logging.DEBUG, logger=_MANAGER)
     manager1, manager2, _ = managers
     stream = mock.MagicMock()
+    stream.recv.return_value.read = mock.AsyncMock(side_effect=_IrohError())
+    await manager1._handle_stream(manager2.id, stream)
+    assert any(
+        'Stream from' in r.message and 'failed: boom' in r.message
+        for r in caplog.records
+    )
+
+
+async def test_stream_ends_early(managers, caplog) -> None:
+    caplog.set_level(logging.DEBUG, logger=_MANAGER)
+    manager1, manager2, _ = managers
+    stream = mock.MagicMock()
+    head = Message(Op.EXISTS, encode_meta({})).pack_head()
+    # The stream ends after part of the header, so the rest cannot be read.
+    stream.recv.return_value.read = mock.AsyncMock(
+        side_effect=[head[:4], b''],
+    )
     stream.recv.return_value.read_exact = mock.AsyncMock(
         side_effect=_IrohError(),
     )
     await manager1._handle_stream(manager2.id, stream)
+    stream.recv.return_value.read_exact.assert_awaited_once_with(
+        Header.SIZE - 4,
+    )
     assert any(
         'Stream from' in r.message and 'failed: boom' in r.message
         for r in caplog.records
