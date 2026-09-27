@@ -40,9 +40,39 @@ from proxystore.utils.environment import home_dir
 P = ParamSpec('P')
 
 
+_STATUS_COLORS = {
+    EndpointStatus.RUNNING: 'green',
+    EndpointStatus.STOPPED: 'yellow',
+    EndpointStatus.STALE: 'red',
+    EndpointStatus.OTHER_HOST: 'blue',
+}
+
+
 def _error(message: object) -> None:
     """Print an error message to stderr."""
-    click.echo(f'{click.style("Error:", fg="red")} {message}', err=True)
+    error = click.style('Error:', fg='red', bold=True)
+    click.echo(f'{error} {message}', err=True)
+
+
+def _success(message: str) -> None:
+    """Print the message of a successful operation."""
+    click.secho(message, fg='green')
+
+
+def _note(message: str) -> None:
+    """Print a message about an operation that had no effect."""
+    click.secho(message, fg='yellow')
+
+
+def _command(command: str, *, err: bool = False) -> None:
+    """Print an example command for the user to run."""
+    click.secho(f'  $ {command}', fg='cyan', err=err)
+
+
+def _header(header: str, width: int) -> None:
+    """Print the header row of a table."""
+    click.secho(header, bold=True)
+    click.secho('=' * width, dim=True)
 
 
 @click.group()
@@ -85,7 +115,8 @@ def _exit_on_error(func: Callable[P, None]) -> Callable[P, None]:
             func(*args, **kwargs)
         except EndpointNotFoundError as e:
             _error(e)
-            _error('Use `proxystore-endpoint list` to see endpoints.')
+            _error('See endpoints with:')
+            _command('proxystore-endpoint list', err=True)
             raise SystemExit(1) from None
         except (EndpointError, ValueError) as e:
             _error(e)
@@ -185,15 +216,13 @@ def configure(
         raise SystemExit(1) from None
 
     config = endpoint_dir.read_config()
-    click.echo(f'Configured endpoint: {name} <{config.id}>')
+    _success(f'Configured endpoint: {name} <{config.id}>')
     click.echo(f'Config and log file directory: {endpoint_dir}')
     click.echo('Start the endpoint with:')
-    click.echo(f'  $ proxystore-endpoint start {name}')
+    _command(f'proxystore-endpoint start {name}')
     if peering:
         click.echo('Allow a peer endpoint to communicate with this one with:')
-        click.echo(
-            f'  $ proxystore-endpoint peers add {name} PEER_NAME PEER_ID'
-        )
+        _command(f'proxystore-endpoint peers add {name} PEER_NAME PEER_ID')
 
 
 @cli.command(name='list')
@@ -201,25 +230,27 @@ def list_all() -> None:
     """List all user endpoints."""
     endpoints = EndpointDir.find_all()
     if len(endpoints) == 0:
-        click.echo(f'No valid endpoint configurations in {home_dir()}.')
+        _note(f'No valid endpoint configurations in {home_dir()}.')
         return
 
     name_width = max(18, *(len(c.name) for _, c in endpoints))
     status_width = max(len(s.name) for s in EndpointStatus)
-    click.echo(f'{"NAME":<{name_width}} {"STATUS":<{status_width}} ID')
-    click.echo(
-        '=' * (name_width + status_width + 2 + len(endpoints[0][1].id)),
+    _header(
+        f'{"NAME":<{name_width}} {"STATUS":<{status_width}} ID',
+        name_width + status_width + 2 + len(endpoints[0][1].id),
     )
     for endpoint_dir, config in sorted(endpoints, key=lambda e: e[1].name):
         try:
-            status = endpoint_dir.status().name
+            status = endpoint_dir.status()
         except EndpointNotFoundError:
             # The endpoint was removed since it was found.
             continue
-        click.echo(
-            f'{config.name:<{name_width}} {status:<{status_width}} '
-            f'{config.id}',
+        # Pad before styling so the ANSI codes do not affect alignment.
+        status_str = click.style(
+            f'{status.name:<{status_width}}',
+            fg=_STATUS_COLORS[status],
         )
+        click.echo(f'{config.name:<{name_width}} {status_str} {config.id}')
 
 
 @cli.command(name='id')
@@ -252,9 +283,12 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
         added = peers.add(peer_name, peer_id)
     except PeerExistsError as e:
         _error(f'{e} Remove it first with:')
-        _error(f'  $ proxystore-endpoint peers remove {name} {peer_name}')
+        _command(
+            f'proxystore-endpoint peers remove {name} {peer_name}',
+            err=True,
+        )
         raise SystemExit(1) from None
-    click.echo(f'Added peer {peer_name} <{added}> to endpoint {name}.')
+    _success(f'Added peer {peer_name} <{added}> to endpoint {name}.')
     click.echo(
         'The peer must also add this endpoint '
         f'<{peers.owner_id}> to its peers.',
@@ -268,7 +302,7 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
 def peers_remove(name: str, peer_name: str) -> None:
     """Stop endpoint NAME from communicating with peer PEER_NAME."""
     removed = EndpointDir.from_name(name).peers().remove(peer_name)
-    click.echo(f'Removed peer {peer_name} <{removed}> from endpoint {name}.')
+    _success(f'Removed peer {peer_name} <{removed}> from endpoint {name}.')
 
 
 @peers.command(name='list')
@@ -278,14 +312,13 @@ def peers_list(name: str) -> None:
     """List the peers of endpoint NAME."""
     peers = EndpointDir.from_name(name).peers().read().peers
     if len(peers) == 0:
-        click.echo(f'Endpoint {name} has no peers.')
+        _note(f'Endpoint {name} has no peers.')
         click.echo('Add a peer with:')
-        click.echo(f'  $ proxystore-endpoint peers add {name} NAME ID')
+        _command(f'proxystore-endpoint peers add {name} NAME ID')
         return
 
     name_width = max(len('NAME'), *(len(n) for n in peers))
-    click.echo(f'{"NAME":<{name_width}} ID')
-    click.echo('=' * (name_width + 65))
+    _header(f'{"NAME":<{name_width}} ID', name_width + 65)
     for peer_name, peer_id in sorted(peers.items()):
         click.echo(f'{peer_name:<{name_width}} {peer_id}')
 
@@ -299,9 +332,9 @@ def remove(name: str) -> None:
         EndpointDir.from_name(name).remove()
     except EndpointRunningError as e:
         _error(e)
-        _error(f'  $ proxystore-endpoint stop {name}')
+        _command(f'proxystore-endpoint stop {name}', err=True)
         raise SystemExit(1) from None
-    click.echo(f'Removed endpoint named {name}.')
+    _success(f'Removed endpoint named {name}.')
 
 
 @cli.command()
@@ -324,9 +357,9 @@ def start(ctx: click.Context, name: str, detach: bool) -> None:
 def stop(name: str) -> None:
     """Stop an endpoint running on this host."""
     if stop_endpoint(EndpointDir.from_name(name)):
-        click.echo(f'Endpoint {name} has been stopped.')
+        _success(f'Endpoint {name} has been stopped.')
     else:
-        click.echo(f'Endpoint {name} is not running.')
+        _note(f'Endpoint {name} is not running.')
 
 
 @cli.group(name='client')
@@ -366,7 +399,7 @@ def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
     with _endpoint_client(ctx) as client:
         client.evict(key, ctx.obj['TARGET_ENDPOINT_ID'])
-    click.echo('Evicted object from endpoint.')
+    _success('Evicted object from endpoint.')
 
 
 @client_group.command()
@@ -390,7 +423,7 @@ def get(ctx: click.Context, key: str) -> None:
         res = client.get(key, ctx.obj['TARGET_ENDPOINT_ID'])
 
     if res is None:
-        click.echo('Object does not exist.')
+        _note('Object does not exist.')
     else:
         obj = deserialize(res)
         click.echo(f'Result: {obj}')
@@ -443,7 +476,10 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
             if result.relayed is None:  # pragma: no cover
                 path = 'unknown'
             else:
-                kind = 'relayed via' if result.relayed else 'direct to'
+                kind = click.style(
+                    'relayed via' if result.relayed else 'direct to',
+                    fg='yellow' if result.relayed else 'green',
+                )
                 path = (
                     f'{kind} {result.remote_addr} '
                     f'(rtt {result.path_rtt_ms} ms)'
@@ -453,9 +489,10 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
                 f'path={path}',
             )
 
-    click.echo(
+    click.secho(
         f'{len(times)} ping(s): min/avg/max = {min(times):.2f}/'
         f'{sum(times) / len(times):.2f}/{max(times):.2f} ms',
+        bold=True,
     )
 
 
@@ -468,4 +505,4 @@ def put(ctx: click.Context, data: str) -> None:
     key = str(uuid.uuid4())
     with _endpoint_client(ctx) as client:
         client.set(key, serialize(data), ctx.obj['TARGET_ENDPOINT_ID'])
-    click.echo(f'Put object in endpoint with key {key}')
+    _success(f'Put object in endpoint with key {key}')
