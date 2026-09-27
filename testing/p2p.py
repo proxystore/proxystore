@@ -46,7 +46,7 @@ def local_peer_manager(
     )
     options: dict[str, Any] = {'options': LOCAL_PEER_OPTIONS, **kwargs}
     return PeerManager(
-        endpoint_dir.read_secret_key(),
+        endpoint_dir.read_secret_key(endpoint_dir.read_config().id),
         # The allowlist is reloaded on every check so tests can change it.
         Allowlist(endpoint_dir.peers_path, reload_interval=0),
         **options,
@@ -62,7 +62,7 @@ def allowlist(manager: PeerManager) -> Allowlist:
 def allow_peer(manager: PeerManager, peer: PeerManager, name: str) -> None:
     """Add a peer to the allowlist of a manager."""
     endpoint_dir = EndpointDir(os.path.dirname(allowlist(manager).path))
-    endpoint_dir.peers.add(name, peer.id)
+    endpoint_dir.peers().add(name, peer.id)
 
 
 def connect_peers(*managers: PeerManager) -> None:

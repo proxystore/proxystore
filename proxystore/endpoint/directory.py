@@ -18,14 +18,17 @@ import random
 import shutil
 import stat
 import sys
-from typing import Any
 from typing import ClassVar
 from typing import Self
+from typing import TypedDict
+from typing import Unpack
 
 from pydantic import ConfigDict
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
@@ -81,6 +84,20 @@ class ConnectionInfo(VersionedFile):
     tls_fingerprint: str | None
     hostname: str
     pid: int
+
+
+class EndpointOptions(TypedDict, total=False):
+    """Options of a new endpoint.
+
+    See [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] for
+    the meaning and default of each option.
+    """
+
+    host: str
+    tls: bool
+    max_object_size: int | str
+    p2p: EndpointP2PConfig
+    storage: EndpointStorageConfig
 
 
 class EndpointStatus(enum.Enum):
@@ -284,7 +301,7 @@ class EndpointDir:
         *,
         secret_key: SecretKey | None = None,
         port: int | None = None,
-        **options: Any,
+        **options: Unpack[EndpointOptions],
     ) -> Self:
         """Create a new endpoint.
 
@@ -308,9 +325,8 @@ class EndpointDir:
                 if `None`.
             port: Port of the endpoint. A random port in the range
                 [10240, 20480] is chosen if `None`.
-            options: Other fields of the
-                [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig]
-                (e.g., `port`). The `name` and `id` are set automatically.
+            options: Other options of the endpoint (see
+                [`EndpointOptions`][proxystore.endpoint.directory.EndpointOptions]).
 
         Returns:
             The new endpoint directory.
@@ -462,16 +478,12 @@ class EndpointDir:
         """
         write_private_file(self.secret_key_path, secret_key.to_bytes())
 
-    def read_secret_key(
-        self,
-        endpoint_id: EndpointId | None = None,
-    ) -> SecretKey:
+    def read_secret_key(self, endpoint_id: EndpointId) -> SecretKey:
         """Read the secret key of the endpoint.
 
         Args:
-            endpoint_id: ID the secret key must match. If `None`, the key is
-                checked against the ID in the configuration of the endpoint,
-                if the configuration exists.
+            endpoint_id: ID the secret key must match (i.e., the ID in the
+                configuration of the endpoint).
 
         Raises:
             EndpointConfigError: If the secret key file does not exist, is
@@ -493,9 +505,7 @@ class EndpointDir:
                 f'Secret key file at {self.secret_key_path} is malformed.',
             ) from None
 
-        if endpoint_id is None and os.path.exists(self.config_path):
-            endpoint_id = self.read_config().id
-        if endpoint_id is not None and secret_key.endpoint_id != endpoint_id:
+        if secret_key.endpoint_id != endpoint_id:
             raise EndpointConfigError(
                 f'The endpoint ID in the configuration ({endpoint_id}) '
                 'does not match the secret key '
@@ -508,13 +518,14 @@ class EndpointDir:
         """Path to the allowlist of peer endpoints."""
         return self._join('peers.toml')
 
-    @property
     def peers(self) -> Peers:
-        """Peers of the endpoint.
+        """Get the peers of the endpoint.
+
+        This reads the configuration to get the ID of the endpoint.
 
         Raises:
-            FileNotFoundError: If the configuration does not exist.
-            ValueError: If the configuration is invalid.
+            EndpointNotFoundError: If the configuration does not exist.
+            EndpointConfigError: If the configuration is invalid.
         """
         return Peers(self.peers_path, owner_id=self.read_config().id)
 

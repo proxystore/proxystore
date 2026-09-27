@@ -75,19 +75,19 @@ def test_restrict_permissions_secret_key(tmp_path: pathlib.Path) -> None:
 
 def test_secret_key_read_write(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    with pytest.raises(EndpointConfigError):
-        endpoint_dir.read_secret_key()
-
     secret_key = SecretKey.generate()
+    with pytest.raises(EndpointConfigError):
+        endpoint_dir.read_secret_key(secret_key.endpoint_id)
+
     endpoint_dir.write_secret_key(secret_key)
-    assert endpoint_dir.read_secret_key() == secret_key
+    assert endpoint_dir.read_secret_key(secret_key.endpoint_id) == secret_key
     mode = stat.S_IMODE(os.stat(endpoint_dir.secret_key_path).st_mode)
     assert mode == 0o600
 
     with open(endpoint_dir.secret_key_path, 'wb') as f:
         f.write(b'abc')
     with pytest.raises(ValueError, match='malformed'):
-        endpoint_dir.read_secret_key()
+        endpoint_dir.read_secret_key(secret_key.endpoint_id)
 
 
 @pytest.mark.parametrize('fingerprint', ('abcd', None))
@@ -296,7 +296,7 @@ def test_create(tmp_path: pathlib.Path) -> None:
     config = endpoint_dir.read_config()
     assert config.name == 'my-ep'
     assert config.port == 1234
-    assert endpoint_dir.read_secret_key().endpoint_id == config.id
+    assert endpoint_dir.read_secret_key(config.id).endpoint_id == config.id
     assert [d for d, _ in EndpointDir.find_all(home)] == [endpoint_dir]
 
 
@@ -309,7 +309,7 @@ def test_create_with_secret_key(tmp_path: pathlib.Path) -> None:
         port=1234,
     )
     assert endpoint_dir.read_config().id == secret_key.endpoint_id
-    assert endpoint_dir.read_secret_key() == secret_key
+    assert endpoint_dir.read_secret_key(secret_key.endpoint_id) == secret_key
 
 
 def test_create_existing(tmp_path: pathlib.Path) -> None:
@@ -340,14 +340,14 @@ def test_read_secret_key_mismatch(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
     endpoint_dir.write_secret_key(SecretKey.generate())
     with pytest.raises(ValueError, match='does not match the secret key'):
-        endpoint_dir.read_secret_key()
+        endpoint_dir.read_secret_key(endpoint_dir.read_config().id)
 
 
 def test_read_secret_key_missing(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
     os.remove(endpoint_dir.secret_key_path)
     with pytest.raises(EndpointConfigError, match='configure it again'):
-        endpoint_dir.read_secret_key()
+        endpoint_dir.read_secret_key(endpoint_dir.read_config().id)
 
 
 def test_resolve_path(tmp_path: pathlib.Path) -> None:

@@ -103,7 +103,7 @@ def test_add_peer_errors(
 
 def test_endpoint_dir_peers(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
-    peers = endpoint_dir.peers
+    peers = endpoint_dir.peers()
     assert peers.path == endpoint_dir.peers_path
     assert peers.owner_id == endpoint_dir.read_config().id
     assert peers.allowlist().path == endpoint_dir.peers_path

@@ -104,7 +104,7 @@ class Peers:
 
     Example:
         ```python
-        peers = EndpointDir.from_name('my-ep').peers
+        peers = EndpointDir.from_name('my-ep').peers()
         peers.add('laptop', 'ed92...')
         assert peers.read().peers == {'laptop': 'ed92...'}
         peers.remove('laptop')

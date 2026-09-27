@@ -248,9 +248,9 @@ def peers() -> None:
 @_exit_on_error
 def peers_add(name: str, peer_name: str, peer_id: str) -> None:
     """Allow endpoint NAME to communicate with peer PEER_ID."""
-    endpoint_dir = EndpointDir.from_name(name)
+    peers = EndpointDir.from_name(name).peers()
     try:
-        added = endpoint_dir.peers.add(peer_name, peer_id)
+        added = peers.add(peer_name, peer_id)
     except PeerExistsError as e:
         _error(f'{e} Remove it first with:')
         _error(f'  $ proxystore-endpoint peers remove {name} {peer_name}')
@@ -258,7 +258,7 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
     click.echo(f'Added peer {peer_name} <{added}> to endpoint {name}.')
     click.echo(
         'The peer must also add this endpoint '
-        f'<{endpoint_dir.read_config().id}> to its peers.',
+        f'<{peers.owner_id}> to its peers.',
     )
 
 
@@ -268,7 +268,7 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
 @_exit_on_error
 def peers_remove(name: str, peer_name: str) -> None:
     """Stop endpoint NAME from communicating with peer PEER_NAME."""
-    removed = EndpointDir.from_name(name).peers.remove(peer_name)
+    removed = EndpointDir.from_name(name).peers().remove(peer_name)
     click.echo(f'Removed peer {peer_name} <{removed}> from endpoint {name}.')
 
 
@@ -277,7 +277,7 @@ def peers_remove(name: str, peer_name: str) -> None:
 @_exit_on_error
 def peers_list(name: str) -> None:
     """List the peers of endpoint NAME."""
-    peers = EndpointDir.from_name(name).peers.read().peers
+    peers = EndpointDir.from_name(name).peers().read().peers
     if len(peers) == 0:
         click.echo(f'Endpoint {name} has no peers.')
         click.echo('Add a peer with:')

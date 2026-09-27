@@ -327,7 +327,7 @@ def test_id_and_peers_commands(home_dir) -> None:
     result = runner.invoke(cli, ['peers', 'add', 'ep', 'peer', peer_id])
     assert result.exit_code == 0
     assert f'Added peer peer <{peer_id}>' in result.output
-    assert endpoint_dir.peers.read().peers == {'peer': peer_id}
+    assert endpoint_dir.peers().read().peers == {'peer': peer_id}
 
     result = runner.invoke(cli, ['peers', 'list', 'ep'])
     assert result.exit_code == 0
@@ -336,7 +336,7 @@ def test_id_and_peers_commands(home_dir) -> None:
     result = runner.invoke(cli, ['peers', 'remove', 'ep', 'peer'])
     assert result.exit_code == 0
     assert 'Removed peer peer' in result.output
-    assert endpoint_dir.peers.read().peers == {}
+    assert endpoint_dir.peers().read().peers == {}
 
 
 def test_ping_command_local(

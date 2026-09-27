@@ -36,8 +36,8 @@ async def _peered_endpoints(
     ]
     dirs = [endpoint_dir for endpoint_dir, _ in created]
     configs = [config for _, config in created]
-    dirs[0].peers.add('peer', configs[1].id)
-    dirs[1].peers.add('peer', configs[0].id)
+    dirs[0].peers().add('peer', configs[1].id)
+    dirs[1].peers().add('peer', configs[0].id)
 
     async with Endpoint(dirs[1]) as endpoint2:
         peer_manager = endpoint2.peer_manager
