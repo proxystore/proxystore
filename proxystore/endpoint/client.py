@@ -26,7 +26,6 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
@@ -211,10 +210,7 @@ class EndpointClient:
             EndpointError: If the connection or handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
-        if not os.path.isdir(endpoint_dir):
-            raise EndpointNotFoundError(
-                f'The endpoint directory {endpoint_dir} does not exist.',
-            )
+        endpoint_dir.check_exists()
         try:
             info = endpoint_dir.read_connection()
         except FileNotFoundError as e:
@@ -258,11 +254,6 @@ class EndpointClient:
                 [`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]).
         """
         endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-        if not os.path.isdir(endpoint_dir):
-            raise EndpointNotFoundError(
-                f'An endpoint named {name} does not exist in '
-                f'{os.path.dirname(endpoint_dir.path)}.',
-            )
         return cls.from_dir(endpoint_dir, timeout=timeout)
 
     def close(self) -> None:

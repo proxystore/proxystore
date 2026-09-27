@@ -33,7 +33,6 @@ from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConfigError
-from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
 
 logger = logging.getLogger(__name__)
@@ -69,7 +68,7 @@ def start_endpoint(
     status = _status(endpoint_dir)
     if status == EndpointStatus.RUNNING:
         raise EndpointRunningError(
-            f'Endpoint {_name(endpoint_dir)} is already running.',
+            f'Endpoint {endpoint_dir.name} is already running.',
         )
     if status == EndpointStatus.OTHER_HOST:
         endpoint_dir.check_not_running_elsewhere()
@@ -226,7 +225,7 @@ def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
         info = endpoint_dir.read_connection()
     except FileNotFoundError:
         raise EndpointRunningError(
-            f'Endpoint {_name(endpoint_dir)} is running but has not written '
+            f'Endpoint {endpoint_dir.name} is running but has not written '
             'its connection file so it is likely still starting. Try again '
             'once it has started.',
         ) from None
@@ -253,19 +252,11 @@ def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
     return True
 
 
-def _name(endpoint_dir: EndpointDir) -> str:
-    return os.path.basename(endpoint_dir.path)
-
-
 def _status(endpoint_dir: EndpointDir) -> EndpointStatus:
     status = endpoint_dir.status()
     if status == EndpointStatus.UNKNOWN:
         # Raise the specific reason (i.e., missing or invalid config).
-        if not os.path.isdir(endpoint_dir.path):
-            raise EndpointNotFoundError(
-                f'An endpoint named {_name(endpoint_dir)} does not exist in '
-                f'{os.path.dirname(endpoint_dir.path)}.',
-            )
+        endpoint_dir.check_exists()
         endpoint_dir.read_config()
     return status
 

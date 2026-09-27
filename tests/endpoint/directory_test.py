@@ -31,6 +31,8 @@ from proxystore.utils.environment import hostname
 def test_endpoint_dir_paths() -> None:
     endpoint_dir = EndpointDir('/path/to/endpoint')
     assert os.fspath(endpoint_dir) == str(endpoint_dir) == '/path/to/endpoint'
+    assert endpoint_dir.name == EndpointDir('/path/to/endpoint/').name
+    assert endpoint_dir.name == 'endpoint'
 
     paths = [
         endpoint_dir.config_path,
@@ -446,7 +448,10 @@ def test_remove(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
     endpoint_dir.remove()
     assert not os.path.exists(endpoint_dir.path)
-    with pytest.raises(EndpointNotFoundError, match='does not exist'):
+    with pytest.raises(
+        EndpointNotFoundError,
+        match=f'An endpoint named ep does not exist in {tmp_path}',
+    ):
         endpoint_dir.remove()
 
 

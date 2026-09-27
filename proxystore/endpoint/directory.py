@@ -252,6 +252,11 @@ class EndpointDir:
     def __str__(self) -> str:
         return self.path
 
+    @property
+    def name(self) -> str:
+        """Name of the endpoint (i.e., the name of the directory)."""
+        return os.path.basename(os.path.normpath(self.path))
+
     @classmethod
     def from_name(
         cls,
@@ -385,11 +390,7 @@ class EndpointDir:
             with open(self.config_path, 'rb') as f:
                 config = load(EndpointConfig, f)
         except FileNotFoundError:
-            if not os.path.isdir(self.path):
-                raise EndpointNotFoundError(
-                    f'An endpoint named {os.path.basename(self.path)} does '
-                    f'not exist in {os.path.dirname(self.path)}.',
-                ) from None
+            self.check_exists()
             raise EndpointNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
@@ -402,11 +403,10 @@ class EndpointDir:
 
         # The directory name is used to find an endpoint by name, so the
         # name in the configuration must match it.
-        dir_name = os.path.basename(os.path.normpath(self.path))
-        if config.name != dir_name:
+        if config.name != self.name:
             raise EndpointConfigError(
                 f'The endpoint name in {self.config_path} ({config.name}) '
-                f'does not match the name of the directory ({dir_name}). '
+                f'does not match the name of the directory ({self.name}). '
                 'Rename the directory or change the name in the '
                 'configuration so they match.',
             )
@@ -589,9 +589,8 @@ class EndpointDir:
             return
         if info.hostname == hostname():
             return
-        name = os.path.basename(self.path)
         raise EndpointRunningError(
-            f'Endpoint {name} appears to be running on {info.hostname} '
+            f'Endpoint {self.name} appears to be running on {info.hostname} '
             f'(PID {info.pid}). Stop the endpoint on {info.hostname}. If it '
             'is not running, delete the connection file at '
             f'{self.connection_path} and try again.',
@@ -640,20 +639,27 @@ class EndpointDir:
             EndpointRunningError: If the endpoint is running or may be
                 running on another host.
         """
-        if not os.path.isdir(self.path):
-            raise EndpointNotFoundError(
-                f'An endpoint named {os.path.basename(self.path)} does not '
-                f'exist in {os.path.dirname(self.path)}.',
-            )
+        self.check_exists()
         status = self.status()
         if status == EndpointStatus.OTHER_HOST:
             self.check_not_running_elsewhere()
         if status == EndpointStatus.RUNNING:
             raise EndpointRunningError(
-                f'Endpoint {os.path.basename(self.path)} must be stopped '
-                'before it is removed.',
+                f'Endpoint {self.name} must be stopped before it is removed.',
             )
         shutil.rmtree(self.path)
+
+    def check_exists(self) -> None:
+        """Check that the endpoint directory exists.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+        """
+        if not os.path.isdir(self.path):
+            raise EndpointNotFoundError(
+                f'An endpoint named {self.name} does not exist in '
+                f'{os.path.dirname(os.path.normpath(self.path))}.',
+            )
 
     def restrict_permissions(self) -> bool:
         """Remove all group and other permissions from the directory.
