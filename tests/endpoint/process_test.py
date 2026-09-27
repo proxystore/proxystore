@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import io
 import logging
 import multiprocessing
 import os
@@ -347,7 +348,7 @@ def _restore_root_logger() -> Generator[None, None, None]:
 @pytest.mark.usefixtures('_restore_root_logger')
 def test_configure_logging(tmp_path: pathlib.Path) -> None:
     # Existing handlers (e.g., of the CLI) keep their format
-    existing = logging.StreamHandler()
+    existing = logging.StreamHandler(io.StringIO())
     formatter = logging.Formatter('%(message)s')
     existing.setFormatter(formatter)
     logging.getLogger().addHandler(existing)
