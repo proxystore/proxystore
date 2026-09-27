@@ -18,12 +18,12 @@ from collections.abc import Awaitable
 from collections.abc import Callable
 from collections.abc import Coroutine
 from typing import Any
+from typing import Protocol
 from typing import Self
 
 import iroh
 
 from proxystore.endpoint.config import EndpointP2PConfig
-from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
@@ -32,7 +32,6 @@ from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
-from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import ALPN
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
@@ -100,19 +99,75 @@ class PathInfo:
         return f'{kind} {self.remote_addr} (rtt {self.rtt_ms} ms)'
 
 
-def relay_options(
-    config: EndpointP2PConfig,
-) -> tuple[iroh.Preset, iroh.RelayMode | None]:
-    """Get the iroh preset and relay mode for a peer-to-peer configuration.
+class PeerPolicy(Protocol):
+    """Policy of which peer endpoints an endpoint communicates with.
 
-    Returns:
-        The preset and relay mode (`None` uses the relays of the preset).
+    The [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager] checks
+    the policy on each connection and request. The
+    [`Allowlist`][proxystore.endpoint.peers.Allowlist] is the policy of
+    endpoints started from an endpoint directory.
     """
-    if config.relays == 'n0':
-        return iroh.preset_n0(), None
-    if config.relays == 'none':
-        return iroh.preset_n0(), iroh.RelayMode.disabled()
-    return iroh.preset_n0(), iroh.RelayMode.custom_from_urls(config.relays)
+
+    def allowed(self, peer_id: EndpointId) -> bool:
+        """Check if the endpoint is allowed to communicate with this one."""
+        ...
+
+    def name_of(self, peer_id: EndpointId) -> str | None:
+        """Get the name of the peer used in logs or `None` if unknown."""
+        ...
+
+    def revoked(self) -> set[EndpointId]:
+        """Get the peers which are no longer allowed.
+
+        The peer manager closes the connections to these peers.
+
+        Returns:
+            The peers which were allowed when this method was last called \
+            but are no longer allowed.
+        """
+        ...
+
+
+@dataclasses.dataclass(frozen=True)
+class PeerOptions:
+    """Options of the connections of a peer manager to peers.
+
+    Attributes:
+        preset: iroh preset used to configure discovery and relays. `None`
+            uses `iroh.preset_n0()` which uses n0's public relays and DNS
+            discovery.
+        relay_mode: Relay mode which overrides the relays of the preset or
+            `None` to use the relays of the preset.
+        bind_addr: Address to bind to (e.g., `"127.0.0.1:0"`) or `None` to
+            bind to all interfaces on a random port.
+        connect_timeout: Timeout in seconds when connecting to a peer.
+        online_timeout: Timeout in seconds to wait for the endpoint to
+            connect to its home relay before logging a warning. If `None`,
+            the endpoint does not wait (e.g., because relays are disabled).
+    """
+
+    preset: iroh.Preset | None = None
+    relay_mode: iroh.RelayMode | None = None
+    bind_addr: str | None = None
+    connect_timeout: float = 30
+    online_timeout: float | None = 10
+
+    @classmethod
+    def from_config(cls, config: EndpointP2PConfig) -> Self:
+        """Get the options for a peer-to-peer configuration."""
+        if config.relays == 'n0':
+            return cls(preset=iroh.preset_n0())
+        if config.relays == 'none':
+            # Without relays, there is no home relay to wait on.
+            return cls(
+                preset=iroh.preset_n0(),
+                relay_mode=iroh.RelayMode.disabled(),
+                online_timeout=None,
+            )
+        return cls(
+            preset=iroh.preset_n0(),
+            relay_mode=iroh.RelayMode.custom_from_urls(config.relays),
+        )
 
 
 class CloseCode(enum.IntEnum):
@@ -132,34 +187,27 @@ class PeerManager:
     Each request is sent on its own bidirectional stream over a single
     connection to each peer.
 
-    The manager only communicates with peers in the allowlist. Connections
+    The manager only communicates with peers allowed by its
+    [`PeerPolicy`][proxystore.endpoint.p2p.manager.PeerPolicy]. Connections
     from other endpoints are refused, and requests to other endpoints fail
     with
     [`PeerNotAllowedError`][proxystore.endpoint.exceptions.PeerNotAllowedError].
-    The allowlist is checked for changes on each connection and request, and
-    connections to peers removed from the allowlist are closed.
+    The policy is checked on each connection and request, and connections to
+    peers which are no longer allowed are closed.
 
     Example:
         ```python
         manager = PeerManager(secret_key, Allowlist(endpoint_dir.peers_path))
         await manager.start(handler)
-        status, meta, data = await manager.request(peer_id, Op.GET, meta)
+        response = await manager.request(peer_id, Message(Op.GET, meta))
         await manager.close()
         ```
 
     Args:
         secret_key: Secret key of the endpoint.
-        allowlist: Allowlist of peer endpoints.
-        preset: iroh preset used to configure discovery and relays. Defaults
-            to `iroh.preset_n0()` which uses n0's public
-            relays and DNS discovery.
-        relay_mode: Optional relay mode which overrides the relays of the
-            preset.
-        bind_addr: Optional address to bind to (e.g., `"127.0.0.1:0"`).
-        connect_timeout: Timeout in seconds when connecting to a peer.
-        online_timeout: Timeout in seconds to wait for the endpoint to
-            connect to its home relay before logging a warning. If `None`,
-            the endpoint does not wait (e.g., because relays are disabled).
+        policy: Policy of which peers are allowed.
+        options: Options of connections to peers. Defaults to
+            [`PeerOptions()`][proxystore.endpoint.p2p.manager.PeerOptions].
         max_request_size: Maximum size in bytes of the data in a request from
             a peer or `None` for no limit.
         addr_cache: Optional cache where the addresses of peers are saved
@@ -172,24 +220,16 @@ class PeerManager:
     def __init__(
         self,
         secret_key: SecretKey,
-        allowlist: Allowlist,
+        policy: PeerPolicy,
         *,
-        preset: iroh.Preset | None = None,
-        relay_mode: iroh.RelayMode | None = None,
-        bind_addr: str | None = None,
-        connect_timeout: float = 30,
-        online_timeout: float | None = 10,
+        options: PeerOptions | None = None,
         max_request_size: int | None = None,
         addr_cache: PeerAddrCache | None = None,
     ) -> None:
         self._secret_key = secret_key
         self._id = secret_key.endpoint_id
-        self._allowlist = allowlist
-        self._preset = preset
-        self._relay_mode = relay_mode
-        self._bind_addr = bind_addr
-        self._connect_timeout = connect_timeout
-        self._online_timeout = online_timeout
+        self._policy = policy
+        self._options = PeerOptions() if options is None else options
         self._max_request_size = max_request_size
         self._addr_cache = addr_cache
 
@@ -210,49 +250,20 @@ class PeerManager:
         self._paths: dict[int, tuple[bool, str] | None] = {}
         self._closed = False
 
-    @classmethod
-    def from_endpoint_dir(
-        cls,
-        endpoint_dir: EndpointDir,
-        **options: Any,
-    ) -> Self:
-        """Create a peer manager for an endpoint.
-
-        The secret key, peers, relays, maximum object size, and address
-        cache are taken from the endpoint directory and configuration.
-
-        Args:
-            endpoint_dir: Directory of the endpoint.
-            options: Options which override the defaults from the
-                configuration (see
-                [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager]).
-
-        Raises:
-            FileNotFoundError: If the configuration or secret key does not
-                exist.
-            ValueError: If the configuration is invalid or does not match
-                the secret key.
-        """
-        config = endpoint_dir.read_config()
-        preset, relay_mode = relay_options(config.p2p)
-        defaults: dict[str, Any] = {
-            'preset': preset,
-            'relay_mode': relay_mode,
-            # Without relays, there is no home relay to wait on.
-            'online_timeout': None if config.p2p.relays == 'none' else 10,
-            'max_request_size': config.object_size_limit,
-            'addr_cache': PeerAddrCache(endpoint_dir.peer_addrs_path),
-        }
-        return cls(
-            endpoint_dir.read_secret_key(),
-            endpoint_dir.peers.allowlist(),
-            **{**defaults, **options},
-        )
-
     @property
     def id(self) -> EndpointId:
         """ID of this endpoint."""
         return self._id
+
+    @property
+    def policy(self) -> PeerPolicy:
+        """Policy of which peers are allowed."""
+        return self._policy
+
+    @property
+    def options(self) -> PeerOptions:
+        """Options of connections to peers."""
+        return self._options
 
     @property
     def endpoint(self) -> iroh.Endpoint:
@@ -299,7 +310,7 @@ class PeerManager:
         return f'{type(self).__name__}[{self.id.log_name("self")}]'
 
     def _peer_name(self, peer_id: EndpointId) -> str:
-        name = self._allowlist.name_of(peer_id)
+        name = self._policy.name_of(peer_id)
         return peer_id.log_name('unknown' if name is None else name)
 
     async def start(self, handler: RequestHandler) -> None:
@@ -329,19 +340,25 @@ class PeerManager:
         # process-wide event loop that the bindings then use for every call,
         # which breaks when a different event loop is used later. It is only
         # needed for callbacks from Rust into Python which are not used.
-        options = iroh.EndpointOptions(
-            preset=iroh.preset_n0() if self._preset is None else self._preset,
-            secret_key=self._secret_key.to_bytes(),
-            alpns=[ALPN],
-            relay_mode=self._relay_mode,
-            bind_addr=self._bind_addr,
+        options = self._options
+        self._endpoint = await iroh.Endpoint.bind(
+            iroh.EndpointOptions(
+                preset=(
+                    iroh.preset_n0()
+                    if options.preset is None
+                    else options.preset
+                ),
+                secret_key=self._secret_key.to_bytes(),
+                alpns=[ALPN],
+                relay_mode=options.relay_mode,
+                bind_addr=options.bind_addr,
+            ),
         )
-        self._endpoint = await iroh.Endpoint.bind(options)
         self._accept_task = spawn_guarded_background_task(self._accept_loop)
         self._accept_task.set_name(f'peer-manager-{self.id}-accept')
-        if self._online_timeout is not None:
+        if options.online_timeout is not None:
             self._online_task = asyncio.create_task(
-                self._wait_online(self._online_timeout),
+                self._wait_online(options.online_timeout),
             )
         logger.info(
             '%s: listening for peer connections on %s',
@@ -505,12 +522,12 @@ class PeerManager:
         try:
             return await asyncio.wait_for(
                 self.endpoint.connect(addr, ALPN),
-                timeout=self._connect_timeout,
+                timeout=self._options.connect_timeout,
             )
         except TimeoutError:
             raise PeerConnectionTimeoutError(
                 f'Connecting to peer {peer_id} timed out after '
-                f'{self._connect_timeout} seconds.',
+                f'{self._options.connect_timeout} seconds.',
             ) from None
         except iroh.IrohError as e:
             raise PeerUnavailableError(
@@ -531,7 +548,7 @@ class PeerManager:
             addrs = {
                 peer: addr
                 for peer, addr in self._addr_hints.items()
-                if self._allowlist.allowed(peer)
+                if self._policy.allowed(peer)
             }
             try:
                 self._addr_cache.save(addrs)
@@ -610,7 +627,7 @@ class PeerManager:
             self._report_path(peer_id, connection, outgoing=outgoing)
 
     def _is_allowed(self, peer_id: EndpointId) -> bool:
-        for removed in self._allowlist.reload():
+        for removed in self._policy.revoked():
             logger.warning(
                 '%s: closing connections to peer %s which was removed from '
                 'the allowlist',
@@ -618,7 +635,7 @@ class PeerManager:
                 removed.log_name('removed'),
             )
             self._close_peer(removed, CloseCode.NOT_ALLOWED, b'not allowed')
-        return self._allowlist.allowed(peer_id)
+        return self._policy.allowed(peer_id)
 
     def _close_peer(
         self,

@@ -18,12 +18,12 @@ from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import PingResult
-from proxystore.endpoint.serve import EndpointService
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import write_endpoint
 
@@ -337,7 +337,7 @@ async def test_client_command_tls(home_dir, caplog) -> None:
     )
 
     runner = click.testing.CliRunner()
-    async with EndpointService(endpoint_dir):
+    async with Endpoint(endpoint_dir):
         result = await asyncio.to_thread(
             runner.invoke,
             cli,

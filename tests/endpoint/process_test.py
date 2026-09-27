@@ -12,6 +12,7 @@ import pytest
 
 from proxystore import utils
 from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
@@ -19,8 +20,13 @@ from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.process import _wait_for_exit
+from proxystore.endpoint.process import configure_logging
+from proxystore.endpoint.process import serve
 from proxystore.endpoint.process import start_endpoint
 from proxystore.endpoint.process import stop_endpoint
+from testing.endpoint import terminate_process
+from testing.endpoint import wait_for_endpoint
+from testing.endpoint import write_endpoint
 
 _NAME = 'default'
 
@@ -44,6 +50,16 @@ def _patch_hostname() -> Generator[None, None, None]:
         mock.patch('socket.getfqdn', return_value='localhost'),
     ):
         yield
+
+
+@pytest.fixture(autouse=True)
+def configure_logging_mock() -> Generator[mock.MagicMock, None, None]:
+    # start_endpoint() configures the logging of the process so it is
+    # mocked to not change the logging of the tests.
+    with mock.patch(
+        'proxystore.endpoint.process.configure_logging',
+    ) as configure:
+        yield configure
 
 
 @pytest.fixture
@@ -71,7 +87,11 @@ def _write_pid(endpoint_dir: EndpointDir, pid: int) -> None:
 
 @pytest.mark.usefixtures('_patch_hostname')
 @pytest.mark.parametrize('host', ('fqdn', 'ip', 'localhost'))
-def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
+def test_start_endpoint(
+    host: str,
+    tmp_path: pathlib.Path,
+    configure_logging_mock: mock.MagicMock,
+) -> None:
     endpoint_dir = EndpointDir.create(_NAME, str(tmp_path), host=host)
     with open(endpoint_dir.config_path, 'rb') as f:
         before = f.read()
@@ -84,8 +104,12 @@ def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
         'proxystore.endpoint.process.serve',
         side_effect=_serve,
     ) as serve:
-        start_endpoint(endpoint_dir)
+        start_endpoint(endpoint_dir, log_level='DEBUG')
     serve.assert_called_once()
+    configure_logging_mock.assert_called_once_with(
+        'DEBUG',
+        endpoint_dir.log_path,
+    )
     assert not os.path.exists(endpoint_dir.pid_path)
     # Starting the endpoint never modifies the configuration
     with open(endpoint_dir.config_path, 'rb') as f:
@@ -234,3 +258,88 @@ def test_wait_for_exit() -> None:
         return_value=True,
     ):
         assert not _wait_for_exit(os.getpid(), timeout=0)
+
+
+@pytest.mark.timeout(10)
+def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
+    endpoint_dir, _ = write_endpoint(
+        str(tmp_path),
+        'my-endpoint',
+        host='127.0.0.1',
+    )
+
+    context = multiprocessing.get_context('spawn')
+    process = context.Process(
+        target=serve,
+        args=(endpoint_dir,),
+        kwargs={'use_uvloop': use_uvloop},
+    )
+    process.start()
+
+    try:
+        wait_for_endpoint(endpoint_dir)
+        with EndpointClient.from_dir(endpoint_dir) as client:
+            client.set('key', b'value')
+            assert client.get('key') == b'value'
+
+        # SIGTERM should cleanly shutdown the endpoint
+        process.terminate()
+        process.join(timeout=5)
+        assert process.exitcode == 0
+        assert not os.path.exists(endpoint_dir.connection_path)
+    finally:
+        terminate_process(process)
+
+
+def test_serve_missing_config(
+    use_uvloop: bool,
+    tmp_path: pathlib.Path,
+) -> None:
+    with pytest.raises(FileNotFoundError):
+        serve(EndpointDir(str(tmp_path)), use_uvloop=use_uvloop)
+
+
+def test_serve_does_not_configure_logging(
+    use_uvloop: bool,
+    tmp_path: pathlib.Path,
+) -> None:
+    root = logging.getLogger()
+    handlers, level = list(root.handlers), root.level
+    with mock.patch(
+        'proxystore.endpoint.process._serve_async',
+        mock.AsyncMock(),
+    ):
+        serve(EndpointDir(str(tmp_path)), use_uvloop=use_uvloop)
+    assert root.handlers == handlers
+    assert root.level == level
+
+
+@pytest.fixture
+def _restore_root_logger() -> Generator[None, None, None]:
+    root = logging.getLogger()
+    handlers, level = list(root.handlers), root.level
+    formatters = [handler.formatter for handler in handlers]
+    yield
+    for handler in root.handlers:
+        if handler not in handlers:
+            handler.close()
+    root.handlers = handlers
+    for handler, formatter in zip(handlers, formatters, strict=True):
+        handler.setFormatter(formatter)
+    root.setLevel(level)
+
+
+@pytest.mark.usefixtures('_restore_root_logger')
+def test_configure_logging(tmp_path: pathlib.Path) -> None:
+    # The parent directory of the log file is created if necessary
+    log_file = os.path.join(tmp_path, 'log-dir', 'log.txt')
+    configure_logging('DEBUG', log_file)
+    assert logging.getLogger().level == logging.DEBUG
+    logging.getLogger('test').debug('message')
+    with open(log_file) as f:
+        assert '(test) :: message' in f.read()
+
+    # A log file in an existing directory
+    log_file = os.path.join(tmp_path, 'log-dir', 'log2.txt')
+    configure_logging('INFO', log_file)
+    assert os.path.exists(log_file)

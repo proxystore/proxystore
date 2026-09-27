@@ -10,7 +10,16 @@ import iroh
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import PeerOptions
+from proxystore.endpoint.peers import Allowlist
 from testing.utils import open_port
+
+LOCAL_PEER_OPTIONS = PeerOptions(
+    preset=iroh.preset_minimal(),
+    bind_addr='127.0.0.1:0',
+    online_timeout=None,
+)
+"""Peer options which only use localhost (no relays or discovery)."""
 
 
 def local_peer_manager(
@@ -26,7 +35,8 @@ def local_peer_manager(
     Args:
         proxystore_dir: ProxyStore home directory to create the endpoint in.
         name: Name of the endpoint.
-        kwargs: Options which override the defaults of the manager.
+        kwargs: Keyword arguments which override the defaults of the
+            manager.
     """
     endpoint_dir = EndpointDir.create(
         name,
@@ -34,18 +44,23 @@ def local_peer_manager(
         port=open_port(),
         p2p=EndpointP2PConfig(relays='none'),
     )
-    options: dict[str, Any] = {
-        'preset': iroh.preset_minimal(),
-        'bind_addr': '127.0.0.1:0',
-        'addr_cache': None,
-        **kwargs,
-    }
-    return PeerManager.from_endpoint_dir(endpoint_dir, **options)
+    options: dict[str, Any] = {'options': LOCAL_PEER_OPTIONS, **kwargs}
+    return PeerManager(
+        endpoint_dir.read_secret_key(),
+        Allowlist(endpoint_dir.peers_path),
+        **options,
+    )
+
+
+def allowlist(manager: PeerManager) -> Allowlist:
+    """Get the allowlist of a manager."""
+    assert isinstance(manager.policy, Allowlist)
+    return manager.policy
 
 
 def allow_peer(manager: PeerManager, peer: PeerManager, name: str) -> None:
     """Add a peer to the allowlist of a manager."""
-    endpoint_dir = EndpointDir(os.path.dirname(manager._allowlist.path))
+    endpoint_dir = EndpointDir(os.path.dirname(allowlist(manager).path))
     endpoint_dir.peers.add(name, peer.id)
 
 

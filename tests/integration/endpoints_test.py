@@ -12,8 +12,8 @@ import pytest
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
-from proxystore.endpoint.serve import EndpointService
 from proxystore.store.base import Store
 from testing.endpoint import write_endpoint
 
@@ -39,15 +39,15 @@ async def _peered_endpoints(
     dirs[0].peers.add('peer', configs[1].id)
     dirs[1].peers.add('peer', configs[0].id)
 
-    async with EndpointService(dirs[1]) as service:
-        peer_manager = service.dispatcher.peer_manager
+    async with Endpoint(dirs[1]) as endpoint2:
+        peer_manager = endpoint2.peer_manager
         # Relays and discovery are disabled so endpoint 1 is given the
         # address of endpoint 2 using the peer address cache. Endpoint 2
         # learns the address of endpoint 1 when endpoint 1 connects to it.
         assert peer_manager is not None
         addr = peer_manager.addr()
         PeerAddrCache(dirs[0].peer_addrs_path).save({configs[1].id: addr})
-        async with EndpointService(dirs[0]):
+        async with Endpoint(dirs[0]):
             yield configs, homes
 
 

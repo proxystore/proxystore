@@ -154,3 +154,23 @@ def test_peers_version() -> None:
     assert PeersConfig().version == 1
     with pytest.raises(ValueError, match='only supports version 1'):
         PeersConfig(version=2)
+
+
+def test_allowlist_revoked(tmp_path: pathlib.Path) -> None:
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    peers.write(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
+    allowlist = peers.allowlist()
+    assert allowlist.revoked() == set()
+
+    # A removal detected by another method is still revoked
+    peers.write(PeersConfig(peers={'a': _ID1}))
+    assert allowlist.name_of(_ID2) is None
+    assert allowlist.revoked() == {_ID2}
+    assert allowlist.revoked() == set()
+
+    # A peer removed then added back before collecting is not revoked
+    os.remove(peers.path)
+    assert not allowlist.allowed(_ID1)
+    peers.write(PeersConfig(peers={'a': _ID1}))
+    assert allowlist.revoked() == set()
+    assert allowlist.allowed(_ID1)

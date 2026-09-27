@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 import logging
 import os
 import pathlib
@@ -24,8 +25,10 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
 from testing.p2p import allow_peer
+from testing.p2p import allowlist
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
+from testing.p2p import LOCAL_PEER_OPTIONS
 
 _MANAGER = 'proxystore.endpoint.p2p.manager'
 
@@ -185,14 +188,14 @@ async def test_bad_request(managers) -> None:
 
 async def test_request_not_in_allowlist(managers) -> None:
     manager1, manager2, _ = managers
-    os.remove(manager1._allowlist.path)
+    os.remove(allowlist(manager1).path)
     with pytest.raises(PeerNotAllowedError, match='not in the allowlist'):
         await _request(manager1, manager2.id, Op.GET)
 
 
 async def test_peer_refuses_connection(managers) -> None:
     manager1, manager2, handled = managers
-    os.remove(manager2._allowlist.path)
+    os.remove(allowlist(manager2).path)
     with pytest.raises(PeerNotAllowedError, match='refused the connection'):
         await _request(manager1, manager2.id, Op.GET)
     assert len(handled) == 0
@@ -204,7 +207,7 @@ async def test_revoke_peer(managers) -> None:
     assert manager1.id in manager2._incoming
 
     # Removing the peer closes its connections and denies new requests.
-    os.remove(manager2._allowlist.path)
+    os.remove(allowlist(manager2).path)
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
     assert manager1.id not in manager2._incoming
@@ -224,7 +227,7 @@ async def test_revoke_detected_on_request(managers) -> None:
 
     # Manager 1 closes its connections to the removed peer the next time it
     # checks the allowlist.
-    os.remove(manager1._allowlist.path)
+    os.remove(allowlist(manager1).path)
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
     assert manager2.id not in manager1._outgoing
@@ -279,7 +282,10 @@ async def test_connect_error(tmp_path: pathlib.Path) -> None:
 
 
 async def test_connect_timeout(tmp_path: pathlib.Path) -> None:
-    manager1 = local_peer_manager(str(tmp_path / 'm1'), connect_timeout=0.1)
+    manager1 = local_peer_manager(
+        str(tmp_path / 'm1'),
+        options=dataclasses.replace(LOCAL_PEER_OPTIONS, connect_timeout=0.1),
+    )
     manager2 = local_peer_manager(str(tmp_path / 'm2'))
     await manager1.start(_echo_handler([]))
     try:
@@ -333,7 +339,10 @@ async def test_start_and_close_idempotent(tmp_path: pathlib.Path) -> None:
 
 async def test_online(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
-    manager = local_peer_manager(str(tmp_path), online_timeout=1)
+    manager = local_peer_manager(
+        str(tmp_path),
+        options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=1),
+    )
     with mock.patch.object(iroh.Endpoint, 'online', mock.AsyncMock()):
         await manager.start(_echo_handler([]))
         assert manager._online_task is not None
@@ -426,11 +435,8 @@ async def test_addr_cache(tmp_path: pathlib.Path) -> None:
     # A new manager with the same key loads the cached addresses
     manager3 = PeerManager(
         manager1._secret_key,
-        manager1._allowlist,
-        preset=iroh.preset_minimal(),
-        relay_mode=iroh.RelayMode.disabled(),
-        bind_addr='127.0.0.1:0',
-        online_timeout=0,
+        manager1.policy,
+        options=LOCAL_PEER_OPTIONS,
         addr_cache=PeerAddrCache(cache1),
     )
     await manager3.start(_echo_handler([]))
@@ -501,7 +507,10 @@ async def test_stale_addr_timeout_not_retried(managers) -> None:
 
 async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
     # Relays are disabled so the endpoint never connects to a home relay.
-    manager = local_peer_manager(str(tmp_path), online_timeout=0.01)
+    manager = local_peer_manager(
+        str(tmp_path),
+        options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=0.01),
+    )
     await manager.start(_echo_handler([]))
     assert manager._online_task is not None
     await manager._online_task

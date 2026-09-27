@@ -28,7 +28,7 @@ in this case is `~/.local/share/proxystore/myendpoint`
 specification).
 ```bash
 $ grep "Serving endpoint" ~/.local/share/proxystore/myendpoint/log.txt
-INFO  (proxystore.endpoint.serve) :: Serving endpoint 4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275 (myendpoint) on 127.0.1.1:8766
+INFO  (proxystore.endpoint.endpoint) :: Serving endpoint 4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275 (myendpoint) on 127.0.1.1:8766
 ```
 The logs are the first place to check for any potential issues.
 

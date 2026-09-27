@@ -4,7 +4,8 @@ Note:
    Please refer to the [Endpoints Guide](../../guides/endpoints.md) for an
    introduction to endpoints in ProxyStore.
 
-Endpoints are in-memory object stores with peering capabilities.
+[`Endpoints`][proxystore.endpoint.endpoint.Endpoint] are in-memory object
+stores with peering capabilities.
 Endpoints enable peer-to-peer data transfer between clients behind
 different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
@@ -18,11 +19,10 @@ The public interface of endpoints is provided by these modules:
 * [`config`][proxystore.endpoint.config]: Endpoint configuration.
 * [`identity`][proxystore.endpoint.identity]: Endpoint IDs and secret keys.
 * [`peers`][proxystore.endpoint.peers]: Peers an endpoint communicates with.
+* [`endpoint`][proxystore.endpoint.endpoint]: Run an endpoint.
 * [`storage`][proxystore.endpoint.storage]: Storage used by an endpoint,
   which can be implemented to store data elsewhere.
-* [`serve`][proxystore.endpoint.serve]: Run an endpoint in the current
-  process.
-* [`process`][proxystore.endpoint.process]: Start and stop endpoint
+* [`process`][proxystore.endpoint.process]: Run, start, and stop endpoint
   processes.
 * [`exceptions`][proxystore.endpoint.exceptions]: Endpoint errors.
 

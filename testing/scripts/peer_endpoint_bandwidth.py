@@ -47,30 +47,27 @@ from typing import Literal
 import iroh
 
 from proxystore.endpoint.config import EndpointP2PConfig
-from proxystore.endpoint.dispatch import Dispatcher
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.p2p.manager import PeerManager
-from proxystore.endpoint.p2p.manager import relay_options
-from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
-from proxystore.endpoint.storage import MemoryStorage
+from testing.utils import open_port
 
 
-class _AllowAll(Allowlist):
-    """Allowlist which allows all peers for benchmarking."""
+class _AllowAll:
+    """Peer policy which allows all peers for benchmarking."""
 
-    def reload(self) -> set[EndpointId]:
-        return set()
-
-    def allowed(self, endpoint_id: EndpointId) -> bool:
+    def allowed(self, peer_id: EndpointId) -> bool:
         return True
 
-    def name_of(self, endpoint_id: EndpointId) -> str | None:
+    def name_of(self, peer_id: EndpointId) -> str | None:
         return 'peer'
+
+    def revoked(self) -> set[EndpointId]:
+        return set()
 
 
 def apply_memmove_patch() -> None:
@@ -86,43 +83,30 @@ def apply_memmove_patch() -> None:
     iroh_ffi._UniffiRustBufferBuilder.write = _fast_write  # type: ignore[method-assign]
 
 
-def _relay_options(relays: Literal['n0', 'none']) -> dict[str, Any]:
-    preset, relay_mode = relay_options(EndpointP2PConfig(relays=relays))
-    return {
-        'preset': preset,
-        'relay_mode': relay_mode,
-        'online_timeout': None if relays == 'none' else 10,
-    }
-
-
 async def _endpoint(
     relays: Literal['n0', 'none'],
     tmp_dir: str,
-) -> Dispatcher:
-    manager = PeerManager(
-        SecretKey.generate(),
-        _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
-        **_relay_options(relays),
+) -> Endpoint:
+    endpoint_dir = EndpointDir.create(
+        'benchmark',
+        tmp_dir,
+        host='127.0.0.1',
+        port=open_port(),
+        p2p=EndpointP2PConfig(relays=relays),
     )
-    dispatcher = Dispatcher(manager.id, MemoryStorage(), manager)
-    await manager.start(dispatcher.handle_peer_request)
-    return dispatcher
-
-
-async def _close(endpoint: Dispatcher) -> None:
-    assert endpoint.peer_manager is not None
-    await endpoint.peer_manager.close()
-    await endpoint.storage.close()
+    endpoint = Endpoint(endpoint_dir, peer_policy=_AllowAll())
+    await endpoint.start()
+    return endpoint
 
 
 async def _request(
-    endpoint: Dispatcher,
+    endpoint: Endpoint,
     op: Op,
     target: EndpointId,
     data: bytes = b'',
 ) -> Message:
     request = Message(op, Request('key', target).to_meta(), data)
-    response = await endpoint.handle(request, forward=True)
+    response = await endpoint.dispatcher.handle(request, forward=True)
     raise_for_status(response, op)
     return response
 
@@ -177,7 +161,7 @@ async def run_local(
             get_mbps = size * 8 / 1e6 / min(get_times)
             print(f'{size:>12} {set_mbps:>12.1f} {get_mbps:>12.1f}')
     finally:
-        await _close(endpoint)
+        await endpoint.stop()
 
 
 async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
@@ -192,7 +176,7 @@ async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
         with contextlib.suppress(asyncio.CancelledError):
             await asyncio.Event().wait()
     finally:
-        await _close(endpoint)
+        await endpoint.stop()
 
 
 def main(argv: Sequence[str] | None = None) -> int:

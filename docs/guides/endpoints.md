@@ -19,8 +19,8 @@ between multiple sites using NAT traversal.
 
 ## Overview
 
-At its core, an endpoint is an in-memory data store built on asyncio (see
-[`EndpointService`][proxystore.endpoint.serve.EndpointService]). Endpoints serve clients on the local
+At its core, the [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] is
+an in-memory data store built on asyncio. Endpoints serve clients on the local
 network over an authenticated TCP protocol (see [Security](#security)), and
 ProxyStore provides the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as

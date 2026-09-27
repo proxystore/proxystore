@@ -27,6 +27,7 @@ from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import read_json_model
 from proxystore.endpoint.files import write_json_model
 from proxystore.endpoint.files import write_private_file
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Peers
 from proxystore.utils.config import dump
@@ -327,15 +328,20 @@ class EndpointDir:
         """
         write_private_file(self.secret_key_path, secret_key.to_bytes())
 
-    def read_secret_key(self) -> SecretKey:
+    def read_secret_key(
+        self,
+        endpoint_id: EndpointId | None = None,
+    ) -> SecretKey:
         """Read the secret key of the endpoint.
 
-        The key is checked against the ID in the configuration of the
-        endpoint, if the configuration exists.
+        Args:
+            endpoint_id: ID the secret key must match. If `None`, the key is
+                checked against the ID in the configuration of the endpoint,
+                if the configuration exists.
 
         Raises:
             EndpointConfigError: If the secret key file does not exist, is
-                malformed, or does not match the ID in the configuration.
+                malformed, or does not match the ID.
         """
         try:
             with open(self.secret_key_path, 'rb') as f:
@@ -353,14 +359,14 @@ class EndpointDir:
                 f'Secret key file at {self.secret_key_path} is malformed.',
             ) from None
 
-        if os.path.exists(self.config_path):
-            config = self.read_config()
-            if secret_key.endpoint_id != config.id:
-                raise EndpointConfigError(
-                    f'The endpoint ID in the configuration ({config.id}) '
-                    'does not match the secret key '
-                    f'({secret_key.endpoint_id}) in {self.path}.',
-                )
+        if endpoint_id is None and os.path.exists(self.config_path):
+            endpoint_id = self.read_config().id
+        if endpoint_id is not None and secret_key.endpoint_id != endpoint_id:
+            raise EndpointConfigError(
+                f'The endpoint ID in the configuration ({endpoint_id}) '
+                'does not match the secret key '
+                f'({secret_key.endpoint_id}) in {self.path}.',
+            )
         return secret_key
 
     @property

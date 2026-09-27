@@ -223,6 +223,8 @@ class _FileState:
 class Allowlist:
     """Allowlist of peer endpoints backed by a `peers.toml` file.
 
+    This is the
+    [`PeerPolicy`][proxystore.endpoint.p2p.manager.PeerPolicy] of endpoints.
     The file is reloaded when it changes. A missing file is an empty
     allowlist. If the file is malformed, all peers are denied until it is
     fixed.
@@ -235,6 +237,7 @@ class Allowlist:
         self.path = path
         self._state: _FileState | None = None
         self._peers = PeersConfig()
+        self._revoked: set[EndpointId] = set()
 
     def reload(self) -> set[EndpointId]:
         """Reload the allowlist if the file changed.
@@ -266,7 +269,23 @@ class Allowlist:
                     self.path,
                 )
                 self._peers = PeersConfig()
-        return old - set(self._peers.peers.values())
+        current = set(self._peers.peers.values())
+        removed = old - current
+        # A peer which was removed then added back is no longer revoked.
+        self._revoked = (self._revoked | removed) - current
+        return removed
+
+    def revoked(self) -> set[EndpointId]:
+        """Get the peers removed from the allowlist since the last call.
+
+        This reloads the allowlist if the file changed (see
+        [`reload()`][proxystore.endpoint.peers.Allowlist.reload]). Peers
+        removed by any reload since the last call are included, even if
+        the reload was caused by another method.
+        """
+        self.reload()
+        revoked, self._revoked = self._revoked, set()
+        return revoked
 
     @property
     def peers(self) -> PeersConfig:

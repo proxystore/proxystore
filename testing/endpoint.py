@@ -18,7 +18,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.serve import serve
+from proxystore.endpoint.process import serve
 from testing.utils import open_port
 
 

@@ -16,12 +16,12 @@ from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.serve import EndpointService
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import write_endpoint
@@ -282,7 +282,7 @@ async def test_connector_endpoint_restart(
         host='127.0.0.1',
     )
 
-    async with EndpointService(endpoint_dir):
+    async with Endpoint(endpoint_dir):
         connector = await asyncio.to_thread(
             EndpointConnector,
             [config.id],
@@ -292,7 +292,7 @@ async def test_connector_endpoint_restart(
 
     # The idle connection in the pool was closed by the endpoint and the
     # endpoint has a new token after restarting.
-    async with EndpointService(endpoint_dir):
+    async with Endpoint(endpoint_dir):
         assert not await asyncio.to_thread(connector.exists, key)
         assert any('Retrying' in r.message for r in caplog.records)
 
@@ -301,7 +301,7 @@ async def test_connector_endpoint_restart(
     request = asyncio.create_task(asyncio.to_thread(connector.exists, key))
     await asyncio.sleep(0.2)
     assert not request.done()
-    async with EndpointService(endpoint_dir):
+    async with Endpoint(endpoint_dir):
         assert not await request
     connector.close()
 
@@ -322,5 +322,5 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
             key = connector.put(b'value')
             assert connector.get(key) == b'value'
 
-    async with EndpointService(endpoint_dir):
+    async with Endpoint(endpoint_dir):
         await asyncio.to_thread(_run)

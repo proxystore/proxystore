@@ -1,10 +1,13 @@
-"""Start and stop endpoint processes.
+"""Run, start, and stop endpoint processes.
 
-An endpoint runs in its own process, optionally as a daemon, and records its
-PID in the `daemon.pid` file of its directory. These functions manage that
-process and raise
-[`EndpointError`][proxystore.endpoint.exceptions.EndpointError] subclasses on
-failure.
+[`serve()`][proxystore.endpoint.process.serve] runs an
+[`Endpoint`][proxystore.endpoint.endpoint.Endpoint] in the current process
+until it receives a signal.
+[`start_endpoint()`][proxystore.endpoint.process.start_endpoint] runs an
+endpoint in its own process, optionally as a daemon, and records its PID in
+the `daemon.pid` file of its directory. These functions manage that process
+and raise [`EndpointError`][proxystore.endpoint.exceptions.EndpointError]
+subclasses on failure.
 
 Note:
     This module requires the `endpoints` extra.
@@ -12,6 +15,7 @@ Note:
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import os
@@ -20,16 +24,17 @@ import time
 from collections.abc import Generator
 
 import daemon.pidfile
+import uvloop
 
 from proxystore import utils
 from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
+from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointRunningError
-from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +99,91 @@ def start_endpoint(
         context = _attached_pid_manager(endpoint_dir.pid_path)
 
     with context:
+        # Logging is configured after daemonizing because the daemon closes
+        # all open files (e.g., the log file).
+        configure_logging(log_level, endpoint_dir.log_path)
         # Note: serve will handle most interrupts which can be reasonably
         # handled and return gracefully.
-        serve(
-            endpoint_dir,
-            log_level=log_level,
-            log_file=endpoint_dir.log_path,
-        )
+        serve(endpoint_dir)
+
+
+def configure_logging(
+    log_level: int | str = logging.INFO,
+    log_file: str | None = None,
+) -> None:
+    """Configure logging of an endpoint process.
+
+    This sets the level and format of the root logger and optionally
+    appends the log to a file. This is only called by
+    [`start_endpoint()`][proxystore.endpoint.process.start_endpoint] because
+    it changes the logging of the entire process.
+
+    Args:
+        log_level: Logging level.
+        log_file: Optional file path to append the log to. The parent
+            directory is created if it does not exist.
+    """
+    root = logging.getLogger()
+    if log_file is not None:
+        os.makedirs(os.path.dirname(log_file) or '.', exist_ok=True)
+        root.addHandler(logging.FileHandler(log_file))
+
+    formatter = logging.Formatter(
+        '[%(asctime)s.%(msecs)03d] %(levelname)-5s (%(name)s) :: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+    )
+    for handler in root.handlers:
+        handler.setFormatter(formatter)
+    root.setLevel(log_level)
+
+
+def serve(endpoint_dir: EndpointDir, *, use_uvloop: bool = True) -> None:
+    """Run an endpoint in the current process.
+
+    Warning:
+        This function does not return until the process receives SIGINT or
+        SIGTERM.
+
+    Args:
+        endpoint_dir: Directory of the endpoint with its configuration. The
+            connection file is written to this directory while the
+            endpoint is running.
+        use_uvloop: Use uvloop as the event loop implementation.
+    """
+    try:
+        if use_uvloop:  # pragma: no cover
+            logger.info('Using uvloop as the event loop')
+            uvloop.run(_serve_async(endpoint_dir))
+        else:
+            asyncio.run(_serve_async(endpoint_dir))
+    except Exception as e:
+        # Intercept exception so we can log it in the case that the endpoint
+        # is running as a daemon process. Otherwise the user will never see
+        # the exception.
+        logger.exception('Caught unhandled exception: %r', e)
+        raise
+    except KeyboardInterrupt:  # pragma: no cover
+        # SIGINT is handled by _serve_async once the event loop is running,
+        # but can still be raised before then.
+        pass
+    finally:
+        logger.info('Finished serving endpoint in %s', endpoint_dir)
+
+
+async def _serve_async(endpoint_dir: EndpointDir) -> None:
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    signals = (signal.SIGINT, signal.SIGTERM)
+    # Signal handlers are installed before starting the endpoint so that a
+    # signal received during start up stops the endpoint once it starts.
+    for sig in signals:
+        loop.add_signal_handler(sig, stop.set)
+    try:
+        async with Endpoint(endpoint_dir):
+            await stop.wait()
+    finally:
+        for sig in signals:
+            loop.remove_signal_handler(sig)
 
 
 def stop_endpoint(endpoint_dir: EndpointDir) -> bool:

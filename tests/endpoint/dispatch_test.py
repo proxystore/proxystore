@@ -19,6 +19,7 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
+from testing.p2p import allowlist
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
 
@@ -191,7 +192,7 @@ async def test_forward_peer_error_status(peers) -> None:
 async def test_forward_not_allowed(peers) -> None:
     dispatcher1, dispatcher2 = peers
     assert dispatcher1.peer_manager is not None
-    os.remove(dispatcher1.peer_manager._allowlist.path)
+    os.remove(allowlist(dispatcher1.peer_manager).path)
     response = await _handle(dispatcher1, Op.GET, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
     assert 'not in the allowlist' in response.meta['error']
@@ -200,7 +201,7 @@ async def test_forward_not_allowed(peers) -> None:
 async def test_forward_peer_refused(peers) -> None:
     dispatcher1, dispatcher2 = peers
     assert dispatcher2.peer_manager is not None
-    os.remove(dispatcher2.peer_manager._allowlist.path)
+    os.remove(allowlist(dispatcher2.peer_manager).path)
     response = await _handle(dispatcher1, Op.PING, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
     assert 'refused the connection' in response.meta['error']
