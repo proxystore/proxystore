@@ -2,6 +2,10 @@
 
 See the CLI Reference for the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) usage instructions.
+
+The results of commands are printed to stdout and errors are printed to
+stderr. The `--log-level` option only controls the logs of ProxyStore (e.g.,
+of an endpoint started with `--no-detach`).
 """
 
 from __future__ import annotations
@@ -37,13 +41,11 @@ from proxystore.endpoint.process import stop_endpoint
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
-logger = logging.getLogger(__name__)
-
 P = ParamSpec('P')
 
 
 class _CLIFormatter(logging.Formatter):
-    """Custom format for CLI printing.
+    """Custom format for CLI logs.
 
     Source: https://stackoverflow.com/questions/1343227
     """
@@ -65,10 +67,13 @@ class _CLIFormatter(logging.Formatter):
     }
 
     def format(self, record: logging.LogRecord) -> str:  # pragma: no cover
-        if hasattr(record, 'simple') and record.simple:
-            return record.getMessage()
         formatter = logging.Formatter(self.FORMATS[record.levelno])
         return formatter.format(record)
+
+
+def _error(message: object) -> None:
+    """Print an error message to stderr."""
+    click.echo(f'{click.style("Error:", fg="red")} {message}', err=True)
 
 
 @click.group()
@@ -79,12 +84,12 @@ class _CLIFormatter(logging.Formatter):
         ['ERROR', 'WARNING', 'INFO', 'DEBUG'],
         case_sensitive=False,
     ),
-    help='Minimum logging level.',
+    help='Minimum level of ProxyStore logs.',
 )
 @click.pass_context
 def cli(ctx: click.Context, log_level: str) -> None:
     """Manage and start ProxyStore Endpoints."""
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(sys.stderr)
     handler.setFormatter(_CLIFormatter())
     logging.basicConfig(level=log_level, handlers=[handler])
     ctx.ensure_object(dict)
@@ -105,18 +110,18 @@ def version() -> None:
 
 
 def _exit_on_error(func: Callable[P, None]) -> Callable[P, None]:
-    """Log endpoint errors and exit with status 1."""
+    """Print endpoint errors and exit with status 1."""
 
     @functools.wraps(func)
     def _wrapped(*args: P.args, **kwargs: P.kwargs) -> None:
         try:
             func(*args, **kwargs)
         except EndpointNotFoundError as e:
-            logger.error(e)
-            logger.error('Use `proxystore-endpoint list` to see endpoints.')
+            _error(e)
+            _error('Use `proxystore-endpoint list` to see endpoints.')
             raise SystemExit(1) from None
         except (EndpointError, ValueError) as e:
-            logger.error(e)
+            _error(e)
             raise SystemExit(1) from None
 
     return _wrapped
@@ -187,7 +192,7 @@ def configure(
     port: int | None,
     peering: bool,
     relays: str,
-    discovery: str,
+    discovery: Literal['n0', 'none'],
     persist: bool,
     tls: bool,
 ) -> None:
@@ -210,19 +215,19 @@ def configure(
             ),
         )
     except EndpointExistsError as e:
-        logger.error(e)
-        logger.info('To reconfigure the endpoint, remove and try again.')
+        _error(e)
+        _error('To reconfigure the endpoint, remove and try again.')
         raise SystemExit(1) from None
 
     config = endpoint_dir.read_config()
-    logger.info('Configured endpoint: %s <%s>', name, config.id)
-    logger.info('Config and log file directory: %s', endpoint_dir)
-    logger.info('Start the endpoint with:')
-    logger.info('  $ proxystore-endpoint start %s', name)
+    click.echo(f'Configured endpoint: {name} <{config.id}>')
+    click.echo(f'Config and log file directory: {endpoint_dir}')
+    click.echo('Start the endpoint with:')
+    click.echo(f'  $ proxystore-endpoint start {name}')
     if peering:
-        logger.info('Allow a peer endpoint to communicate with this one with:')
-        logger.info(
-            '  $ proxystore-endpoint peers add %s PEER_NAME PEER_ID', name
+        click.echo('Allow a peer endpoint to communicate with this one with:')
+        click.echo(
+            f'  $ proxystore-endpoint peers add {name} PEER_NAME PEER_ID'
         )
 
 
@@ -231,32 +236,20 @@ def list_all() -> None:
     """List all user endpoints."""
     endpoints = EndpointDir.find_all()
     if len(endpoints) == 0:
-        logger.info('No valid endpoint configurations in %s.', resolve_home())
+        click.echo(f'No valid endpoint configurations in {resolve_home()}.')
         return
 
     name_width = max(18, *(len(c.name) for _, c in endpoints))
     status_width = max(len(s.name) for s in EndpointStatus)
-    logger.info(
-        '%-*s %-*s ID',
-        name_width,
-        'NAME',
-        status_width,
-        'STATUS',
-        extra={'simple': True},
-    )
-    logger.info(
+    click.echo(f'{"NAME":<{name_width}} {"STATUS":<{status_width}} ID')
+    click.echo(
         '=' * (name_width + status_width + 2 + len(endpoints[0][1].id)),
-        extra={'simple': True},
     )
     for endpoint_dir, config in sorted(endpoints, key=lambda e: e[1].name):
-        logger.info(
-            '%-*s %-*s %s',
-            name_width,
-            config.name,
-            status_width,
-            endpoint_dir.status().name,
-            config.id,
-            extra={'simple': True},
+        status = endpoint_dir.status().name
+        click.echo(
+            f'{config.name:<{name_width}} {status:<{status_width}} '
+            f'{config.id}',
         )
 
 
@@ -266,7 +259,7 @@ def list_all() -> None:
 def endpoint_id(name: str) -> None:
     """Print the ID of an endpoint."""
     config = EndpointDir.from_name(name).read_config()
-    logger.info(config.id, extra={'simple': True})
+    click.echo(config.id)
 
 
 @cli.group()
@@ -289,17 +282,13 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
     try:
         added = endpoint_dir.peers.add(peer_name, peer_id)
     except PeerExistsError as e:
-        logger.error('%s Remove it first with:', e)
-        logger.error(
-            '  $ proxystore-endpoint peers remove %s %s',
-            name,
-            peer_name,
-        )
+        _error(f'{e} Remove it first with:')
+        _error(f'  $ proxystore-endpoint peers remove {name} {peer_name}')
         raise SystemExit(1) from None
-    logger.info('Added peer %s <%s> to endpoint %s.', peer_name, added, name)
-    logger.info(
-        'The peer must also add this endpoint <%s> to its peers.',
-        endpoint_dir.read_config().id,
+    click.echo(f'Added peer {peer_name} <{added}> to endpoint {name}.')
+    click.echo(
+        'The peer must also add this endpoint '
+        f'<{endpoint_dir.read_config().id}> to its peers.',
     )
 
 
@@ -310,12 +299,7 @@ def peers_add(name: str, peer_name: str, peer_id: str) -> None:
 def peers_remove(name: str, peer_name: str) -> None:
     """Stop endpoint NAME from communicating with peer PEER_NAME."""
     removed = EndpointDir.from_name(name).peers.remove(peer_name)
-    logger.info(
-        'Removed peer %s <%s> from endpoint %s.',
-        peer_name,
-        removed,
-        name,
-    )
+    click.echo(f'Removed peer {peer_name} <{removed}> from endpoint {name}.')
 
 
 @peers.command(name='list')
@@ -325,22 +309,16 @@ def peers_list(name: str) -> None:
     """List the peers of endpoint NAME."""
     peers = EndpointDir.from_name(name).peers.read().peers
     if len(peers) == 0:
-        logger.info('Endpoint %s has no peers.', name)
-        logger.info('Add a peer with:')
-        logger.info('  $ proxystore-endpoint peers add %s NAME ID', name)
+        click.echo(f'Endpoint {name} has no peers.')
+        click.echo('Add a peer with:')
+        click.echo(f'  $ proxystore-endpoint peers add {name} NAME ID')
         return
 
     name_width = max(len('NAME'), *(len(n) for n in peers))
-    logger.info('%-*s ID', name_width, 'NAME', extra={'simple': True})
-    logger.info('=' * (name_width + 65), extra={'simple': True})
+    click.echo(f'{"NAME":<{name_width}} ID')
+    click.echo('=' * (name_width + 65))
     for peer_name, peer_id in sorted(peers.items()):
-        logger.info(
-            '%-*s %s',
-            name_width,
-            peer_name,
-            peer_id,
-            extra={'simple': True},
-        )
+        click.echo(f'{peer_name:<{name_width}} {peer_id}')
 
 
 @cli.command()
@@ -351,10 +329,10 @@ def remove(name: str) -> None:
     try:
         EndpointDir.from_name(name).remove()
     except EndpointRunningError as e:
-        logger.error(e)
-        logger.error('  $ proxystore-endpoint stop %s', name)
+        _error(e)
+        _error(f'  $ proxystore-endpoint stop {name}')
         raise SystemExit(1) from None
-    logger.info('Removed endpoint named %s.', name)
+    click.echo(f'Removed endpoint named {name}.')
 
 
 @cli.command()
@@ -377,9 +355,9 @@ def start(ctx: click.Context, name: str, detach: bool) -> None:
 def stop(name: str) -> None:
     """Stop a detached endpoint."""
     if stop_endpoint(EndpointDir.from_name(name)):
-        logger.info('Endpoint %s has been stopped.', name)
+        click.echo(f'Endpoint {name} has been stopped.')
     else:
-        logger.info('Endpoint %s is not running.', name)
+        click.echo(f'Endpoint {name} is not running.')
 
 
 @cli.group(name='client')
@@ -415,7 +393,7 @@ def _endpoint_client(
         with EndpointClient.from_name(ctx.obj['ENDPOINT_NAME']) as client:
             yield client
     except (EndpointError, ValueError) as e:
-        logger.error(e)
+        _error(e)
         raise SystemExit(1) from None
 
 
@@ -426,7 +404,7 @@ def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
     with _endpoint_client(ctx) as client:
         client.evict(key, ctx.obj['TARGET_ENDPOINT_ID'])
-    logger.info('Evicted object from endpoint.')
+    click.echo('Evicted object from endpoint.')
 
 
 @client_group.command()
@@ -436,7 +414,7 @@ def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
     with _endpoint_client(ctx) as client:
         res = client.exists(key, ctx.obj['TARGET_ENDPOINT_ID'])
-    logger.info('Object exists: %s', res)
+    click.echo(f'Object exists: {res}')
 
 
 @client_group.command()
@@ -448,10 +426,10 @@ def get(ctx: click.Context, key: str) -> None:
         res = client.get(key, ctx.obj['TARGET_ENDPOINT_ID'])
 
     if res is None:
-        logger.info('Object does not exist.')
+        click.echo('Object does not exist.')
     else:
         obj = deserialize(res)
-        logger.info('Result: %s', obj)
+        click.echo(f'Result: {obj}')
 
 
 @client_group.command()
@@ -489,15 +467,14 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
             try:
                 result = client.ping(target)
             except (EndpointError, ValueError) as e:
-                logger.error(e)
+                _error(e)
                 raise SystemExit(1) from None
             client_ms = (time.perf_counter() - start) * 1000
 
             if result.peer_rtt_ms is None:
                 times.append(client_ms)
-                logger.info(
-                    'Reply from local endpoint: time=%.2f ms',
-                    client_ms,
+                click.echo(
+                    f'Reply from local endpoint: time={client_ms:.2f} ms'
                 )
                 continue
 
@@ -510,19 +487,14 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
                     f'{kind} {result.remote_addr} '
                     f'(rtt {result.path_rtt_ms} ms)'
                 )
-            logger.info(
-                'Reply from %s: time=%.2f ms path=%s',
-                target,
-                result.peer_rtt_ms,
-                path,
+            click.echo(
+                f'Reply from {target}: time={result.peer_rtt_ms:.2f} ms '
+                f'path={path}',
             )
 
-    logger.info(
-        '%d ping(s): min/avg/max = %.2f/%.2f/%.2f ms',
-        len(times),
-        min(times),
-        sum(times) / len(times),
-        max(times),
+    click.echo(
+        f'{len(times)} ping(s): min/avg/max = {min(times):.2f}/'
+        f'{sum(times) / len(times):.2f}/{max(times):.2f} ms',
     )
 
 
@@ -534,4 +506,4 @@ def put(ctx: click.Context, data: str) -> None:
     key = str(uuid.uuid4())
     with _endpoint_client(ctx) as client:
         client.set(key, serialize(data), ctx.obj['TARGET_ENDPOINT_ID'])
-    logger.info('Put object in endpoint with key %s', key)
+    click.echo(f'Put object in endpoint with key {key}')

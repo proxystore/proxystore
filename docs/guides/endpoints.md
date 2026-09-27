@@ -54,12 +54,12 @@ command.
 
 ```bash
 $ proxystore-endpoint configure my-endpoint
-INFO: Configured endpoint: my-endpoint <ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173>
-INFO: Config and log file directory: ~/.local/share/proxystore/my-endpoint
-INFO: Start the endpoint with:
-INFO:   $ proxystore-endpoint start my-endpoint
-INFO: Allow a peer endpoint to communicate with this one with:
-INFO:   $ proxystore-endpoint peers add my-endpoint PEER_NAME PEER_ID
+Configured endpoint: my-endpoint <ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173>
+Config and log file directory: ~/.local/share/proxystore/my-endpoint
+Start the endpoint with:
+  $ proxystore-endpoint start my-endpoint
+Allow a peer endpoint to communicate with this one with:
+  $ proxystore-endpoint peers add my-endpoint PEER_NAME PEER_ID
 ```
 
 Endpoint configurations are stored in `$PROXYSTORE_HOME/{endpoint-name}`

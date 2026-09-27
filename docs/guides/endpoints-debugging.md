@@ -10,12 +10,12 @@ are encountering issues using ProxyStore Endpoints.
 Consider you configured and started an endpoint as follows:
 ```bash
 $ proxystore-endpoint configure myendpoint
-INFO: Configured endpoint: myendpoint <4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275>
-INFO: Config and log file directory: ~/.local/share/proxystore/myendpoint
-INFO: Start the endpoint with:
-INFO:   $ proxystore-endpoint start myendpoint
-INFO: Allow a peer endpoint to communicate with this one with:
-INFO:   $ proxystore-endpoint peers add myendpoint PEER_NAME PEER_ID
+Configured endpoint: myendpoint <4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275>
+Config and log file directory: ~/.local/share/proxystore/myendpoint
+Start the endpoint with:
+  $ proxystore-endpoint start myendpoint
+Allow a peer endpoint to communicate with this one with:
+  $ proxystore-endpoint peers add myendpoint PEER_NAME PEER_ID
 $ proxystore-endpoint start myendpoint
 INFO: Starting endpoint process as daemon
 INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/log.txt
@@ -70,7 +70,7 @@ The `proxystore-endpoint` CLI provides a `client` subcommand for running operati
 See the [CLI Reference](../api/cli.md#proxystore-endpoint-client){target=_blank}.
 ```bash
 $ proxystore-endpoint client myendpoint exists abcdef
-INFO: Object exists: False
+Object exists: False
 ```
 As expected, an object with key `abcdef` does not exist in the store, but
 we got a valid response so we know the endpoint is running correctly.
@@ -174,11 +174,11 @@ The `proxystore-endpoint client ... ping` command measures the latency between
 two endpoints and reports whether their connection is direct or relayed.
 ```bash
 $ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
-INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
-INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
-INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
-INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.25 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
-INFO: 4 ping(s): min/avg/max = 13.09/64.44/218.10 ms
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.25 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+4 ping(s): min/avg/max = 13.09/64.44/218.10 ms
 ```
 The time is measured by the local endpoint, and the first ping includes the
 time to connect to the peer. If the connection stays relayed, transfers
@@ -194,7 +194,7 @@ Here, we will request the endpoint on system A to invoke an `exists`
 operation on the endpoint on system B.
 ```bash
 $ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
-INFO: Object exists: False
+Object exists: False
 ```
 
 You will get an error if the peer request fails. Check the logs of both
