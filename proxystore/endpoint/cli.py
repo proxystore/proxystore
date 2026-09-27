@@ -322,7 +322,7 @@ def start(ctx: click.Context, name: str, detach: bool) -> None:
 @click.argument('name', metavar='NAME', required=True)
 @_exit_on_error
 def stop(name: str) -> None:
-    """Stop a detached endpoint."""
+    """Stop an endpoint running on this host."""
     if stop_endpoint(EndpointDir.from_name(name)):
         click.echo(f'Endpoint {name} has been stopped.')
     else:

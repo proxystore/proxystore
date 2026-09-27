@@ -32,12 +32,6 @@ INFO  (proxystore.endpoint.endpoint) :: Serving endpoint 4d9608737803500da670a46
 ```
 The logs are the first place to check for any potential issues.
 
-If you see an error similar to:
-```
-[Errno 8] nodename nor servname provided, or not known
-```
-Try changing `host = "fqdn"` to `host = "ip"` in the `config.toml` file in the endpoint directory.
-
 ### Check the Endpoint Status
 The `proxystore-endpoint list` command shows the status of each endpoint.
 
@@ -96,6 +90,11 @@ with EndpointClient.from_name('myendpoint') as client:
 
 ### Common Errors
 
+* **Unable to resolve the host address (ip)**: The IP address of the node
+  cannot be determined from its hostname (e.g., `[Errno 8] nodename nor
+  servname provided, or not known` on macOS). Set `host = "fqdn"` or a
+  static address (e.g., `host = "127.0.0.1"`) in the `config.toml` file in
+  the endpoint directory.
 * **An endpoint named ... does not exist**: No endpoint with that name is
   configured in the ProxyStore home directory. Check the name with
   `proxystore-endpoint list` and that the client uses the same ProxyStore home
@@ -133,7 +132,7 @@ with EndpointClient.from_name('myendpoint') as client:
 
 ## Test a Remote Endpoint
 
-Consider I have an endpoint named "myendpoint" running on system A with ID
+Consider you have an endpoint named "myendpoint" running on system A with ID
 `aaaa7ce803e5348b74920943c61322d9b38fcddf2decd628c9abc3c224610929` and another named "otherendpoint" on system B with ID
 `bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e`.
 

@@ -64,9 +64,12 @@ class Endpoint:
     communicates with peers, the
     [`Dispatcher`][proxystore.endpoint.dispatch.Dispatcher] which handles
     requests, the server that accepts client connections, and the connection
-    file that clients use to connect. The endpoint is the only component
-    which reads the endpoint directory, and it reads the configuration and
-    secret key once when it starts.
+    file that clients use to connect. The endpoint reads the configuration
+    and secret key once when it starts. While running, the endpoint only
+    reads the peers file (see
+    [`Allowlist`][proxystore.endpoint.peers.Allowlist]) and the cache of
+    peer addresses (see
+    [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache]).
 
     Once started, the endpoint holds the lock of its directory (see
     [`EndpointDir.lock()`][proxystore.endpoint.directory.EndpointDir.lock]),

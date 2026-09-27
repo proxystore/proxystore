@@ -6,11 +6,6 @@ ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.
 
-!!! warning
-    Endpoints are experimental and the interfaces and underlying
-    implementations may change. Refer to the API docs for the most
-    up-to-date information.
-
 !!! warning "Use the same ProxyStore and Python versions everywhere"
     Clients and endpoints should use the same versions of ProxyStore and
     Python. Mismatched versions can cause errors when objects are serialized
@@ -26,11 +21,6 @@ ProxyStore provides the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] as
 the primary interface for clients to interact with endpoints.
 
-![ProxyStore Endpoints](../static/endpoint-peering.svg){ width="100%" }
-> <b>Figure 1:</b> ProxyStore Endpoints overview. Clients can make requests to
-> any endpoint and those request will be forwarded to the correct endpoint.
-> Endpoints establish peer-to-peer connections using UDP hole-punching.
-
 Unlike popular in-memory data stores (Redis, Memcached, etc.), ProxyStore
 endpoints can operate as peers even from behind different NATs without the
 need to open ports or SSH tunnels. Endpoints connect to peers with
@@ -45,6 +35,17 @@ Clients interacting with an endpoint via typical object store operations (*get*,
 Endpoints that receive a request with a different endpoint ID will attempt
 a peer connection to the endpoint if one does not exist already and forward
 the request along and facilitate returning the response back to the client.
+
+## Platform Support
+
+Endpoints and their clients (e.g., the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector])
+require the `endpoints` extra (`pip install proxystore[endpoints]`). Clients
+and endpoints share the ProxyStore home directory, so use the same Python
+environment for both. Peering uses the
+[`iroh`](https://pypi.org/project/iroh/){target=_blank} package which only
+provides wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS
+(arm64), and Windows (x86_64).
 
 ## Endpoint CLI
 
@@ -82,7 +83,7 @@ A typical configuration looks like the following.
 ```toml title="config.toml" linenums="1"
 version = 1  # (1)!
 name = "my-endpoint"  # (2)!
-id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (3)!
+id = "ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173"  # (3)!
 port = 8765  # (4)!
 host = "ip"  # (5)!
 tls = false  # (6)!
@@ -104,7 +105,8 @@ database_path = "blobs.db"  # (12)!
    endpoint directory.
 3. Unique identifier of this endpoint. This is the public key of the
    endpoint's secret key and must match the key in `secret.key`.
-4. Change the default port if running multiple endpoints on the same system.
+4. Port clients use to connect to the endpoint. A random port is chosen when
+   the endpoint is configured unless `--port` is given.
 5. Address clients use to connect to the endpoint. "ip" and "fqdn" use the
    IP address or fully-qualified domain name of the node, determined each
    time the endpoint starts. Any other value is used as a static address
@@ -193,8 +195,8 @@ and by the CLI. List peers with
 and remove a peer with
 [`proxystore-endpoint peers remove`](../api/cli.md#proxystore-endpoint-peers-remove).
 Changes to the peers take effect within about a second, even while the
-endpoint is running. Removing a peer closes its connections and denies its
-requests.
+endpoint is running. Requests to and from a removed peer are denied, and
+connections to the peer are closed the next time they are used.
 
 Endpoints owned by other users are added in the same way, so share your
 endpoint's ID with a collaborator and add theirs to share data with them.
@@ -229,43 +231,14 @@ addresses or peers that connected to it first.
 ProxyStore does not operate any services, and n0's relays and discovery
 service are provided on an as-available basis. If they are unavailable:
 
-* Peers that can be reached directly (e.g., on the same network or with
-  public IP addresses) and existing connections still work.
-* Peers can be reached using their last known addresses. After each
-  connection, an endpoint caches the addresses of the peer in the
-  `peer-addrs.json` file in the endpoint directory, so peers can still be
-  reached as long as their addresses have not changed.
+* Existing connections to peers still work.
+* New connections can only be made directly to the last known addresses of
+  a peer. After each connection, an endpoint caches the addresses of the
+  peer in the `peer-addrs.json` file in the endpoint directory, so a peer
+  that is directly reachable (e.g., on the same network or with a public IP
+  address) can still be reached as long as its addresses have not changed.
 * New connections between two peers that are both behind NATs fail unless
   the endpoints are configured with self-hosted relays.
-
-### Platform Support
-
-Endpoints and their clients (e.g., the
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector])
-require the `endpoints` extra (`pip install proxystore[endpoints]`). Clients
-and endpoints share the ProxyStore home directory, so use the same Python
-environment for both. Peering uses the
-[`iroh`](https://pypi.org/project/iroh/){target=_blank} package which only
-provides wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS
-(arm64), and Windows (x86_64).
-
-### Upgrading from ProxyStore v1
-
-ProxyStore v1 endpoints used WebRTC and a relay server hosted by the
-ProxyStore team to connect peers. The relay server has been removed, and
-endpoints are now identified by an endpoint ID rather than a UUID, so
-endpoints configured with ProxyStore v1 must be configured again.
-
-```bash
-$ proxystore-endpoint stop my-endpoint
-$ proxystore-endpoint remove my-endpoint
-$ proxystore-endpoint configure my-endpoint
-```
-
-Then, add the peers of the endpoint (see [Adding Peers](#adding-peers)) and
-update the endpoint UUIDs passed to the
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] to
-the new endpoint IDs.
 
 ## Security
 
@@ -386,10 +359,13 @@ Clients and endpoints exchange their versions each time a client connects.
 | Python major or minor versions | Same as above. |
 | Python patch versions (e.g., 3.12.1 vs. 3.12.4) | None. Patch releases are compatible. |
 
-Versions are only checked between a client and its local endpoint. Versions
-are **not** checked between peer endpoints or between the client that
-created an object and the client that resolves it on another system, so keep
-the environments on all systems consistent (e.g., with a lock file).
+ProxyStore and Python versions are only checked between a client and its
+local endpoint. They are **not** checked between peer endpoints (only the
+protocol version is negotiated, see
+[Protocols and File Formats](#protocols-and-file-formats)) or between the
+client that created an object and the client that resolves it on another
+system, so keep the environments on all systems consistent (e.g., with a
+lock file).
 
 To turn the warning into an error, use a
 [warnings filter](https://docs.python.org/3/library/warnings.html#the-warnings-filter).
@@ -426,12 +402,12 @@ releases.
 ## Proxy Lifecycle
 
 ![Dataflow with Proxies and Endpoints](../static/endpoint-overview.svg){ width="75%" style="display: block; margin: 0 auto" }
-> <b>Figure 2:</b> Flow of data when transferring objects via proxies and endpoints.
+> <b>Figure 1:</b> Flow of data when transferring objects via proxies and endpoints.
 
 In distributed systems, proxies created from an
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] can be used
 to facilitate simple and fast data communication.
-The flow of data and their associated proxies are shown in **Fig. 2**.
+The flow of data and their associated proxies are shown in **Fig. 1**.
 
 1. Host A creates a proxy of the *target* object. The serialized *target*
    is placed in Host A's home/local endpoint (Endpoint 1).
@@ -452,3 +428,38 @@ The flow of data and their associated proxies are shown in **Fig. 2**.
 6. Endpoint 2 replies to Host B's request for the data with the data received
    from Endpoint 1. Host B deserializes the target object and the proxy
    is resolved.
+
+## Upgrading from ProxyStore v1
+
+ProxyStore v1 endpoints used WebRTC and a relay server hosted by the
+ProxyStore team to connect peers. The relay server has been removed, and
+endpoints are now identified by an endpoint ID rather than a UUID, so
+endpoints configured with ProxyStore v1 must be configured again.
+
+Stop your endpoints **before** upgrading ProxyStore. ProxyStore v1 tracks
+running endpoints with a `daemon.pid` file that newer versions do not read,
+so `proxystore-endpoint stop` from a newer version reports that a v1
+endpoint is not running and leaves it running.
+
+```bash
+$ proxystore-endpoint stop my-endpoint  # With ProxyStore v1
+```
+
+If you already upgraded, stop the endpoint by terminating the process whose
+ID is in the `daemon.pid` file in the endpoint directory.
+
+```bash
+$ kill $(cat ~/.local/share/proxystore/my-endpoint/daemon.pid)
+```
+
+Then, remove and configure the endpoint again with the new version.
+
+```bash
+$ proxystore-endpoint remove my-endpoint
+$ proxystore-endpoint configure my-endpoint
+```
+
+Finally, add the peers of the endpoint (see [Adding Peers](#adding-peers))
+and update the endpoint UUIDs passed to the
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] to
+the new endpoint IDs.

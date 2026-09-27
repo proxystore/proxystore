@@ -173,7 +173,8 @@ class Peers:
     def remove(self, name: str) -> EndpointId:
         """Remove a peer.
 
-        If the endpoint is running, the peer is denied access immediately.
+        If the endpoint is running, the peer is denied access within about
+        a second (see [`Allowlist`][proxystore.endpoint.peers.Allowlist]).
 
         Args:
             name: Name of the peer.

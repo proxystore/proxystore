@@ -154,7 +154,7 @@ def supported_alpns() -> list[bytes]:
 
 
 class Op(enum.IntEnum):
-    """Operation codes of messages sent by a client."""
+    """Operation codes of requests sent by a client or a peer endpoint."""
 
     HELLO = 1
     """First message of the handshake."""

@@ -4,8 +4,8 @@ Each time an endpoint starts, it generates a random token and writes it,
 along with its address, to a connection file in the endpoint's directory
 that only the owner can read (see
 [`ConnectionInfo`][proxystore.endpoint.directory.ConnectionInfo]). Clients read
-the connection file, so any process that can read the user's ProxyStore
-home directory is trusted.
+the connection file, so any process that can read the endpoint directory
+is trusted.
 
 The token is never sent over the network. Instead, the client and endpoint
 each prove they know the token by computing an HMAC over random nonces

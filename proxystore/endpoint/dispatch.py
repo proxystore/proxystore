@@ -6,9 +6,11 @@ endpoints (see
 [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager]) are both
 handled by a [`Dispatcher`][proxystore.endpoint.dispatch.Dispatcher]. A
 request for this endpoint is performed on its storage. A request whose
-target is another endpoint is forwarded to that peer unchanged, and the
-response of the peer is returned unchanged except that the peer is named in
-an error message.
+target is another endpoint is forwarded to that peer without the target so
+the peer performs the request itself. The response of the peer is returned
+to the client, except that the peer is named in an error message and the
+response to a [`PING`][proxystore.endpoint.protocol.Op.PING] is replaced
+with the latency of and path to the peer measured by this endpoint.
 
 To add an operation, add an [`Op`][proxystore.endpoint.protocol.Op], add
 its case to `Dispatcher._handle_local()` in this module, and add a method to
