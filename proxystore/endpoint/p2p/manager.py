@@ -240,7 +240,7 @@ class PeerManager:
             'relay_mode': relay_mode,
             # Without relays, there is no home relay to wait on.
             'online_timeout': None if config.p2p.relays == 'none' else 10,
-            'max_request_size': config.storage.object_size_limit,
+            'max_request_size': config.object_size_limit,
             'addr_cache': PeerAddrCache(endpoint_dir.peer_addrs_path),
         }
         return cls(

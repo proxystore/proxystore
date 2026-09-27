@@ -22,7 +22,6 @@ import click
 
 import proxystore
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
@@ -196,7 +195,7 @@ def configure(
                 relays=_parse_relays(relays),
             ),
             storage=EndpointStorageConfig(
-                database_path=DEFAULT_DATABASE_PATH if persist else None,
+                backend='sqlite' if persist else 'memory',
             ),
         )
     except EndpointExistsError as e:

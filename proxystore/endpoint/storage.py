@@ -1,4 +1,10 @@
-"""Blob storage interface for endpoints."""
+"""Storage of the objects in an endpoint.
+
+The [`Storage`][proxystore.endpoint.storage.Storage] protocol is a simple
+blob store. Storage implementations do not enforce limits on the size of
+objects because the endpoint rejects objects which exceed its maximum object
+size before they are read from the network.
+"""
 
 from __future__ import annotations
 
@@ -9,16 +15,15 @@ from typing import runtime_checkable
 
 import aiosqlite
 
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.utils.data import bytes_to_readable
-
 
 @runtime_checkable
 class Storage(Protocol):
-    """Endpoint storage protocol for blobs."""
+    """Storage of the objects in an endpoint."""
 
     async def evict(self, key: str) -> None:
         """Evict a blob from storage.
+
+        Evicting a key which does not exist is not an error.
 
         Args:
             key: Key associated with blob to evict.
@@ -36,19 +41,14 @@ class Storage(Protocol):
         """
         ...
 
-    async def get(
-        self,
-        key: str,
-        default: bytes | None = None,
-    ) -> bytes | bytearray | None:
+    async def get(self, key: str) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
             key: Key associated with the blob to get.
-            default: Default return value if the blob does not exist.
 
         Returns:
-            The blob associated with the key or the value of `default`.
+            The blob associated with the key or `None` if it does not exist.
         """
         ...
 
@@ -58,10 +58,6 @@ class Storage(Protocol):
         Args:
             key: Key that will be used to retrieve the blob.
             blob: Blob to store.
-
-        Raises:
-            ObjectSizeExceededError: If the max object size is configured and
-                the data exceeds that size.
         """
         ...
 
@@ -70,22 +66,14 @@ class Storage(Protocol):
         ...
 
 
-class DictStorage:
-    """Simple dictionary-based storage for blobs.
+class MemoryStorage:
+    """Storage of blobs in memory.
 
-    Args:
-        max_object_size: Optional max size in bytes for any single
-            object stored by the endpoint or `None` for no limit. If
-            exceeded, an error is raised.
+    Blobs are lost when the storage is closed.
     """
 
-    def __init__(
-        self,
-        *,
-        max_object_size: int | None = None,
-    ) -> None:
+    def __init__(self) -> None:
         self._data: dict[str, bytes | bytearray] = {}
-        self._max_object_size = max_object_size
 
     async def evict(self, key: str) -> None:
         """Evict a blob from storage.
@@ -106,21 +94,16 @@ class DictStorage:
         """
         return key in self._data
 
-    async def get(
-        self,
-        key: str,
-        default: bytes | None = None,
-    ) -> bytes | bytearray | None:
+    async def get(self, key: str) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
             key: Key associated with the blob to get.
-            default: Default return value if the blob does not exist.
 
         Returns:
-            The blob associated with the key or the value of `default`.
+            The blob associated with the key or `None` if it does not exist.
         """
-        return self._data.get(key, default)
+        return self._data.get(key)
 
     async def set(self, key: str, blob: bytes | bytearray) -> None:
         """Store the blob associated with a key.
@@ -128,20 +111,7 @@ class DictStorage:
         Args:
             key: Key that will be used to retrieve the blob.
             blob: Blob to store.
-
-        Raises:
-            ObjectSizeExceededError: If the max object size is configured and
-                the data exceeds that size.
         """
-        if (
-            self._max_object_size is not None
-            and len(blob) > self._max_object_size
-        ):
-            raise ObjectSizeExceededError(
-                f'Bytes value has size {bytes_to_readable(len(blob))} which '
-                f'exceeds the {bytes_to_readable(self._max_object_size)} '
-                'object limit.',
-            )
         self._data[key] = blob
 
     async def close(self) -> None:
@@ -150,20 +120,17 @@ class DictStorage:
 
 
 class SQLiteStorage:
-    """SQLite storage protocol for blobs.
+    """Storage of blobs in a SQLite database.
 
     Args:
-        database_path: Path to database file.
-        max_object_size: Optional max size in bytes for any single
-            object stored by the endpoint or `None` for no limit. If
-            exceeded, an error is raised.
+        database_path: Path to database file. `~` is expanded to the user's
+            home directory. Use `":memory:"` for a database which is only
+            stored in memory.
     """
 
     def __init__(
         self,
         database_path: str | pathlib.Path = ':memory:',
-        *,
-        max_object_size: int | None = None,
     ) -> None:
         if database_path == ':memory:':
             self.database_path = database_path
@@ -171,7 +138,6 @@ class SQLiteStorage:
             path = pathlib.Path(database_path).expanduser().resolve()
             self.database_path = str(path)
 
-        self._max_object_size = max_object_size
         self._db: aiosqlite.Connection | None = None
         self._db_lock = asyncio.Lock()
 
@@ -222,19 +188,14 @@ class SQLiteStorage:
             (count,) = result
             return bool(count)
 
-    async def get(
-        self,
-        key: str,
-        default: bytes | None = None,
-    ) -> bytes | bytearray | None:
+    async def get(self, key: str) -> bytes | bytearray | None:
         """Get a blob from storage.
 
         Args:
             key: Key associated with the blob to get.
-            default: Default return value if the blob does not exist.
 
         Returns:
-            The blob associated with the key or the value of `default`.
+            The blob associated with the key or `None` if it does not exist.
         """
         db = await self.db()
         async with db.execute(
@@ -243,7 +204,7 @@ class SQLiteStorage:
         ) as cursor:
             result = await cursor.fetchone()
             if result is None:
-                return default
+                return None
             return result[0]
 
     async def set(self, key: str, blob: bytes | bytearray) -> None:
@@ -252,20 +213,7 @@ class SQLiteStorage:
         Args:
             key: Key that will be used to retrieve the blob.
             blob: Blob to store.
-
-        Raises:
-            ObjectSizeExceededError: If the max object size is configured and
-                the data exceeds that size.
         """
-        if (
-            self._max_object_size is not None
-            and len(blob) > self._max_object_size
-        ):
-            raise ObjectSizeExceededError(
-                f'Bytes value has size {bytes_to_readable(len(blob))} which '
-                f'exceeds the {bytes_to_readable(self._max_object_size)} '
-                'object limit.',
-            )
         db = await self.db()
         await db.execute(
             'INSERT OR REPLACE INTO blobs (key, value) VALUES (?, ?)',
@@ -277,3 +225,4 @@ class SQLiteStorage:
         """Close the storage."""
         if self._db is not None:
             await self._db.close()
+            self._db = None

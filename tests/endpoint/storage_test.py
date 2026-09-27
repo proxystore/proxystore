@@ -9,8 +9,7 @@ import aiosqlite
 import pytest
 import pytest_asyncio
 
-from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 
@@ -19,7 +18,7 @@ from proxystore.endpoint.storage import Storage
 async def storage(request) -> AsyncGenerator[Storage, None]:
     s: Storage
     if request.param == 'dict':
-        s = DictStorage()
+        s = MemoryStorage()
     elif request.param == 'sql':
         s = SQLiteStorage(':memory:')
     else:
@@ -46,7 +45,6 @@ async def test_storage_basics(storage: Storage) -> None:
     await storage.evict(key)
     assert not await storage.exists(key)
     assert await storage.get(key) is None
-    assert await storage.get(key, b'123') == b'123'
 
 
 @pytest.mark.asyncio
@@ -86,14 +84,7 @@ async def test_sqlite_storage_concurrent_first_requests(
 async def test_sqlite_storage_close() -> None:
     storage = SQLiteStorage(':memory:')
     await storage.close()
-
-
-@pytest.mark.asyncio
-async def test_max_object_size_exceeded() -> None:
-    dict_storage = DictStorage(max_object_size=100)
-    with pytest.raises(ObjectSizeExceededError):
-        await dict_storage.set('key', b'x' * 1000)
-
-    sqlite_storage = SQLiteStorage(':memory:', max_object_size=100)
-    with pytest.raises(ObjectSizeExceededError):
-        await sqlite_storage.set('key', b'x' * 1000)
+    await storage.set('key', b'value')
+    await storage.close()
+    # Closing twice is a no-op
+    await storage.close()

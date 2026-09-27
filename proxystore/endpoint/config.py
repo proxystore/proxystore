@@ -6,6 +6,7 @@ import re
 import socket
 from typing import Any
 from typing import Literal
+from typing import Self
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
@@ -20,7 +21,8 @@ from proxystore.utils.environment import hostname
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
 DEFAULT_DATABASE_PATH = 'blobs.db'
-"""Default path of the database, relative to the endpoint directory."""
+"""Default path of the SQLite database, relative to the endpoint
+directory."""
 CONFIG_VERSION = 1
 """Format version of the endpoint configuration file."""
 
@@ -29,34 +31,33 @@ class EndpointStorageConfig(BaseModel):
     """Endpoint data storage configuration.
 
     Attributes:
-        database_path: Optional path to SQLite database file that will be used
-            for storing endpoint data. If `None`, data will only be stored
-            in-memory. A relative path is relative to the endpoint directory
-            and an absolute path can be used to store the database elsewhere
+        backend: Storage backend of the endpoint. `"memory"` stores objects
+            in memory so objects are lost when the endpoint stops.
+            `"sqlite"` stores objects in a SQLite database.
+        database_path: Path of the SQLite database. Only valid with the
+            `"sqlite"` backend, and defaults to
+            [`DEFAULT_DATABASE_PATH`][proxystore.endpoint.config.DEFAULT_DATABASE_PATH].
+            A relative path is relative to the endpoint directory and an
+            absolute path can be used to store the database elsewhere
             (e.g., on a larger file system). `~` is expanded to the user's
             home directory.
-        max_object_size: Maximum object size in bytes. If `0`, there is no
-            limit on object sizes.
+
+    Raises:
+        ValueError: If `database_path` is set with the `"memory"` backend.
     """
 
     model_config = ConfigDict(extra='forbid')
 
+    backend: Literal['memory', 'sqlite'] = 'memory'
     database_path: str | None = None
-    max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
 
-    @field_validator('max_object_size')
-    @classmethod
-    def _max_object_size_validator(cls, v: int) -> int:
-        if v < 0:
+    @model_validator(mode='after')
+    def _database_path_validator(self) -> Self:
+        if self.backend != 'sqlite' and self.database_path is not None:
             raise ValueError(
-                'Max object size must be zero (no limit) or greater.',
+                'The database_path is only used by the "sqlite" backend.',
             )
-        return v
-
-    @property
-    def object_size_limit(self) -> int | None:
-        """Maximum object size in bytes or `None` if there is no limit."""
-        return self.max_object_size if self.max_object_size > 0 else None
+        return self
 
 
 class EndpointP2PConfig(BaseModel):
@@ -115,6 +116,8 @@ class EndpointConfig(BaseModel):
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
             starts, and clients only trust that certificate.
+        max_object_size: Maximum size in bytes of an object that clients
+            or peers can set on the endpoint. If `0`, there is no limit.
         p2p: Peer-to-peer configuration.
         storage: Storage configuration.
 
@@ -122,7 +125,8 @@ class EndpointConfig(BaseModel):
         ValueError: If the name does not contain only alphanumeric, dash, or
             underscore characters, if the ID cannot be parsed, if the
             port is not in the range [1, 65535], if the host is empty, if
-            the version is not supported, or if there are unknown fields.
+            the version is not supported, if the maximum object size is
+            negative, or if there are unknown fields.
     """
 
     model_config = ConfigDict(extra='forbid')
@@ -133,6 +137,7 @@ class EndpointConfig(BaseModel):
     port: int
     host: str = 'ip'
     tls: bool = False
+    max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
     p2p: EndpointP2PConfig = Field(default_factory=EndpointP2PConfig)
     storage: EndpointStorageConfig = Field(
         default_factory=EndpointStorageConfig,
@@ -181,6 +186,20 @@ class EndpointConfig(BaseModel):
         if v < 1 or v > 65535:
             raise ValueError('Port must be in range [1, 65535].')
         return v
+
+    @field_validator('max_object_size')
+    @classmethod
+    def _max_object_size_validator(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(
+                'Max object size must be zero (no limit) or greater.',
+            )
+        return v
+
+    @property
+    def object_size_limit(self) -> int | None:
+        """Maximum object size in bytes or `None` if there is no limit."""
+        return self.max_object_size if self.max_object_size > 0 else None
 
 
 def resolve_host(host: str) -> str:

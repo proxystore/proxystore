@@ -194,5 +194,12 @@ endpoints for further error messages. Common errors are:
   other. If relays are disabled (`relays = "none"`), the endpoints can only
   connect directly. If discovery is unavailable, an endpoint can only reach
   peers whose addresses are cached in its `peer-addrs.json` file.
-* **Peer ... returned TOO_LARGE**: The object is larger than the
-  `max_object_size` of the remote endpoint.
+* **Endpoint returned TOO_LARGE for SET request: Peer ...**: The object is
+  larger than the `max_object_size` of the remote endpoint.
+
+Errors forwarded from the remote endpoint name the peer (e.g., `Peer bbbb...:
+...`). The client raises the same exception type as the endpoint, such as a
+[`PeerNotAllowedError`][proxystore.endpoint.exceptions.PeerNotAllowedError]
+or a
+[`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError]
+(see [`proxystore.endpoint.exceptions`][proxystore.endpoint.exceptions]).

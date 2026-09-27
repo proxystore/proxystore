@@ -57,7 +57,7 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 
 
 class _AllowAll(Allowlist):
@@ -104,7 +104,7 @@ async def _endpoint(
         _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
         **_relay_options(relays),
     )
-    dispatcher = Dispatcher(manager.id, DictStorage(), manager)
+    dispatcher = Dispatcher(manager.id, MemoryStorage(), manager)
     await manager.start(dispatcher.handle_peer_request)
     return dispatcher
 

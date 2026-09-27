@@ -24,7 +24,7 @@ from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.serve import EndpointService
 from proxystore.endpoint.serve import serve
-from proxystore.endpoint.storage import SQLiteStorage
+from proxystore.endpoint.storage import MemoryStorage
 from proxystore.utils.environment import hostname
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
@@ -35,10 +35,7 @@ def _endpoint_dir(
     path: pathlib.Path,
     **kwargs: Any,
 ) -> tuple[EndpointDir, EndpointConfig]:
-    options: dict[str, Any] = {
-        'host': '127.0.0.1',
-        'storage': EndpointStorageConfig(database_path=':memory:'),
-    }
+    options: dict[str, Any] = {'host': '127.0.0.1'}
     options.update(kwargs)
     return write_endpoint(str(path), 'my-endpoint', **options)
 
@@ -61,20 +58,20 @@ async def test_service(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ('database_path', 'max_object_size', 'expected'),
-    ((None, 0, None), (':memory:', 0, None), (None, 100, 100)),
+    ('backend', 'max_object_size', 'expected'),
+    (('memory', 0, None), ('sqlite', 0, None), ('memory', 100, 100)),
 )
 async def test_service_object_size_limit(
-    database_path: str | None,
+    backend: Any,
     max_object_size: int,
     expected: int | None,
     tmp_path: pathlib.Path,
 ) -> None:
-    storage = EndpointStorageConfig(
-        database_path=database_path,
+    endpoint_dir, _ = _endpoint_dir(
+        tmp_path,
+        storage=EndpointStorageConfig(backend=backend),
         max_object_size=max_object_size,
     )
-    endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
 
     async with EndpointService(endpoint_dir):
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
@@ -131,7 +128,7 @@ async def test_service_start_up_failure_cleans_up(
     # The connection file cannot be written if its path is a directory
     os.mkdir(endpoint_dir.connection_path)
     with (
-        mock.patch.object(SQLiteStorage, 'close', AsyncMock()) as mock_close,
+        mock.patch.object(MemoryStorage, 'close', AsyncMock()) as mock_close,
         pytest.raises(IsADirectoryError),
     ):
         async with EndpointService(endpoint_dir):
@@ -283,22 +280,25 @@ async def test_service_peering_addr_cache(
         assert path == endpoint_dir.peer_addrs_path
 
 
-@pytest.mark.parametrize('relative', (True, False))
+@pytest.mark.parametrize('relative', (True, False, None))
 async def test_service_database_path(
-    relative: bool,
+    relative: bool | None,
     tmp_path: pathlib.Path,
 ) -> None:
     other = tmp_path / 'lustre'
     other.mkdir()
-    path = 'blobs.db' if relative else str(other / 'blobs.db')
-    storage = EndpointStorageConfig(database_path=path)
+    path = {True: 'blobs.db', False: str(other / 'blobs.db'), None: None}
+    storage = EndpointStorageConfig(
+        backend='sqlite',
+        database_path=path[relative],
+    )
     endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
     async with EndpointService(endpoint_dir) as service:
         await service.dispatcher.storage.set('key', b'value')
     expected = (
-        os.path.join(endpoint_dir.path, 'blobs.db')
-        if relative
-        else str(other / 'blobs.db')
+        str(other / 'blobs.db')
+        if relative is False
+        else os.path.join(endpoint_dir.path, 'blobs.db')
     )
     assert os.path.isfile(expected)
 

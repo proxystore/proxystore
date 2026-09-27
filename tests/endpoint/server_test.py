@@ -40,7 +40,7 @@ from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.server import _ClientConnection
 from proxystore.endpoint.server import ClientHandler
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
 
 MAX_OBJECT_SIZE = 10_000_000
@@ -61,7 +61,7 @@ class _Server(NamedTuple):
 
 @pytest_asyncio.fixture()
 async def server() -> AsyncGenerator[_Server, None]:
-    dispatcher = Dispatcher(EndpointId.random(), DictStorage())
+    dispatcher = Dispatcher(EndpointId.random(), MemoryStorage())
     token = EndpointToken.generate()
     handler = ClientHandler(
         dispatcher,
@@ -663,7 +663,7 @@ async def tls_server(
     certificate = TLSCertificate.generate('test')
     context = certificate.ssl_context()
 
-    dispatcher = Dispatcher(EndpointId.random(), DictStorage())
+    dispatcher = Dispatcher(EndpointId.random(), MemoryStorage())
     token = EndpointToken.generate()
     handler = ClientHandler(
         dispatcher,

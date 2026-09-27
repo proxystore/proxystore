@@ -17,7 +17,7 @@ from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
@@ -40,7 +40,7 @@ async def _handle(
 
 @pytest.fixture
 async def dispatcher() -> AsyncGenerator[Dispatcher, None]:
-    storage = DictStorage()
+    storage = MemoryStorage()
     yield Dispatcher(EndpointId.random(), storage)
     await storage.close()
 
@@ -50,13 +50,9 @@ async def peers(
     tmp_path: pathlib.Path,
 ) -> AsyncGenerator[tuple[Dispatcher, Dispatcher], None]:
     manager1 = local_peer_manager(str(tmp_path / 'ep1'))
-    manager2 = local_peer_manager(str(tmp_path / 'ep2'))
-    dispatcher1 = Dispatcher(manager1.id, DictStorage(), manager1)
-    dispatcher2 = Dispatcher(
-        manager2.id,
-        DictStorage(max_object_size=100),
-        manager2,
-    )
+    manager2 = local_peer_manager(str(tmp_path / 'ep2'), max_request_size=100)
+    dispatcher1 = Dispatcher(manager1.id, MemoryStorage(), manager1)
+    dispatcher2 = Dispatcher(manager2.id, MemoryStorage(), manager2)
     await manager1.start(dispatcher1.handle_peer_request)
     await manager2.start(dispatcher2.handle_peer_request)
     connect_peers(manager1, manager2)
@@ -148,7 +144,7 @@ async def test_unexpected_error(dispatcher: Dispatcher) -> None:
 async def test_mismatched_peer_manager_id(tmp_path: pathlib.Path) -> None:
     manager = local_peer_manager(str(tmp_path))
     with pytest.raises(ValueError, match='does not match'):
-        Dispatcher(EndpointId.random(), DictStorage(), manager)
+        Dispatcher(EndpointId.random(), MemoryStorage(), manager)
 
 
 async def test_forward_operations(peers) -> None:

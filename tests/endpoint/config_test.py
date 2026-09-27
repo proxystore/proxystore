@@ -134,27 +134,37 @@ def test_validate_config(bad_cfg: Any, error: str | None) -> None:
 
 
 @pytest.mark.parametrize(
-    ('bad_cfg', 'error'),
+    ('options', 'error'),
     (
-        ({'max_object_size': 0}, None),
-        ({'max_object_size': 1}, None),
-        ({'max_object_size': -1}, 'zero \\(no limit\\) or greater'),
+        ({}, None),
+        ({'backend': 'sqlite'}, None),
+        ({'backend': 'sqlite', 'database_path': '/tmp/db'}, None),
+        ({'database_path': 'blobs.db'}, 'only used by the "sqlite" backend'),
+        ({'backend': 'redis'}, 'memory'),
     ),
 )
-def test_validate_storage_config(bad_cfg: Any, error: str | None) -> None:
+def test_validate_storage_config(options: Any, error: str | None) -> None:
     if error is None:
-        EndpointStorageConfig(**bad_cfg)
+        EndpointStorageConfig(**options)
     else:
         with pytest.raises(ValueError, match=error):
-            EndpointStorageConfig(**bad_cfg)
+            EndpointStorageConfig(**options)
 
 
-def test_storage_config_object_size_limit() -> None:
-    assert EndpointStorageConfig().object_size_limit == (
-        EndpointStorageConfig().max_object_size
-    )
-    assert EndpointStorageConfig(max_object_size=10).object_size_limit == 10
-    assert EndpointStorageConfig(max_object_size=0).object_size_limit is None
+def test_object_size_limit() -> None:
+    def _config(**kwargs: Any) -> EndpointConfig:
+        return EndpointConfig(
+            name='name',
+            id=EndpointId.random(),
+            port=1234,
+            **kwargs,
+        )
+
+    assert _config().object_size_limit == _config().max_object_size
+    assert _config(max_object_size=10).object_size_limit == 10
+    assert _config(max_object_size=0).object_size_limit is None
+    with pytest.raises(ValueError, match=r'zero \(no limit\) or greater'):
+        _config(max_object_size=-1)
 
 
 def test_legacy_uuid_config(tmp_path: pathlib.Path) -> None:

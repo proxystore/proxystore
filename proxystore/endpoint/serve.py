@@ -20,6 +20,7 @@ import uvloop
 
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.auth import TLSCertificate
+from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import ConnectionInfo
@@ -27,7 +28,7 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.server import ClientHandler
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
 from proxystore.utils.environment import hostname
@@ -56,20 +57,17 @@ def _create_storage(
     endpoint_dir: EndpointDir,
     config: EndpointConfig,
 ) -> Storage:
-    database_path = config.storage.database_path
-    if database_path is not None:
-        if database_path != ':memory:':
-            database_path = endpoint_dir.resolve_path(database_path)
+    if config.storage.backend == 'sqlite':
+        database_path = endpoint_dir.resolve_path(
+            config.storage.database_path or DEFAULT_DATABASE_PATH,
+        )
         logger.info(
             'Using SQLite database for storage (path: %s)',
             database_path,
         )
-        return SQLiteStorage(
-            database_path,
-            max_object_size=config.storage.object_size_limit,
-        )
-    logger.warning('Database path not provided. Data will not be persisted')
-    return DictStorage(max_object_size=config.storage.object_size_limit)
+        return SQLiteStorage(database_path)
+    logger.info('Storing objects in memory. Objects are lost on shutdown')
+    return MemoryStorage()
 
 
 async def _close_server(
@@ -228,7 +226,7 @@ class EndpointService:
             dispatcher,
             token,
             name=config.name,
-            max_object_size=config.storage.object_size_limit,
+            max_object_size=config.object_size_limit,
         )
         server = await handler.start_server(
             host,

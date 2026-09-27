@@ -86,14 +86,15 @@ id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (3)!
 port = 8765  # (4)!
 host = "ip"  # (5)!
 tls = false  # (6)!
+max_object_size = 100000000  # (7)!
 
 [p2p]
-enabled = true  # (7)!
-relays = "n0"  # (8)!
+enabled = true  # (8)!
+relays = "n0"  # (9)!
 
 [storage]
-database_path = "blobs.db"  # (9)!
-max_object_size = 10000000  # (10)!
+backend = "sqlite"  # (10)!
+database_path = "blobs.db"  # (11)!
 ```
 
 1. Format version of the configuration file. ProxyStore uses this to detect
@@ -109,22 +110,25 @@ max_object_size = 10000000  # (10)!
    (e.g., `host = "127.0.0.1"`).
 6. Encrypt connections between clients and the endpoint with TLS. See
    [Security](#security) for details.
-7. Enable communication with peer endpoints. If `false`, the endpoint
+7. Maximum size in bytes of an object that clients or peers can set.
+   Defaults to 100 MB if omitted. Set to `0` to disable object size limits.
+8. Enable communication with peer endpoints. If `false`, the endpoint
    operates in isolation. Configure with `--no-peering` to disable peering.
-8. Relays used to connect to peers. See [Relays](#relays).
-9. Optional path to a SQLite database for persisting endpoint objects. A
-   relative path is relative to the endpoint directory. Use an absolute path
-   to store a large database elsewhere, such as a parallel file system. See
-   the tip below for more details.
-10. Maximum object size in bytes. Defaults to 100 MB if omitted. Set to
-    `0` to disable object size limits.
+9. Relays used to connect to peers. See [Relays](#relays).
+10. Storage backend. `"memory"` (the default) stores objects in memory, and
+    `"sqlite"` persists objects to a SQLite database. See the tip below for
+    more details.
+11. Optional path to the SQLite database, which defaults to `blobs.db`. A
+    relative path is relative to the endpoint directory. Use an absolute
+    path to store a large database elsewhere, such as a parallel file
+    system. Only valid with the `"sqlite"` backend.
 
 !!! tip
 
     Endpoints provide no data persistence by default, but this can be enabled
     by passing the `--persist` flag when configuring the endpoint or by
-    setting `"database_path"` in the `[storage]` section of the config. When
-    set, blobs stored by the endpoint will be written to a SQLite database
+    setting `backend = "sqlite"` in the `[storage]` section of the config.
+    Blobs stored by the endpoint will then be written to a SQLite database
     file. Note this will result in slower performance.
 
 An up-to-date configuration description can be found in the
