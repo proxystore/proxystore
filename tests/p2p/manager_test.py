@@ -22,7 +22,6 @@ from proxystore.p2p.manager import _closed_with
 from proxystore.p2p.manager import CloseCode
 from proxystore.p2p.manager import PathInfo
 from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.manager import selected_path
 from testing.p2p import allow_peer
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
@@ -508,25 +507,25 @@ def _path(*, selected: bool, relay: bool, addr: str, rtt: int = 5) -> Any:
     )
 
 
-def test_selected_path() -> None:
+def test_path_info_from_connection() -> None:
     connection = mock.MagicMock()
     connection.paths.return_value = [
         _path(selected=False, relay=True, addr='https://relay'),
         _path(selected=True, relay=False, addr='1.2.3.4:5', rtt=7),
     ]
-    path = selected_path(connection)
+    path = PathInfo.from_connection(connection)
     assert path == PathInfo(relayed=False, remote_addr='1.2.3.4:5', rtt_ms=7)
     assert path.describe() == 'direct to 1.2.3.4:5 (rtt 7 ms)'
 
     connection.paths.return_value = [
         _path(selected=True, relay=True, addr='https://relay'),
     ]
-    path = selected_path(connection)
+    path = PathInfo.from_connection(connection)
     assert path is not None
     assert path.describe() == 'relayed via https://relay (rtt 5 ms)'
 
     connection.paths.return_value = []
-    assert selected_path(connection) is None
+    assert PathInfo.from_connection(connection) is None
 
 
 async def test_path(managers, caplog) -> None:

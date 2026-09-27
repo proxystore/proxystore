@@ -9,7 +9,6 @@ Subsequently, all commands log errors and results and return status codes
 from __future__ import annotations
 
 import contextlib
-import enum
 import logging
 import os
 import random
@@ -28,71 +27,13 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.peers import PeerExistsError
 from proxystore.endpoint.serve import serve
 
 logger = logging.getLogger(__name__)
-
-
-class EndpointStatus(enum.Enum):
-    """Endpoint status."""
-
-    RUNNING = enum.auto()
-    """Endpoint is running on this host."""
-    STOPPED = enum.auto()
-    """Endpoint is stopped."""
-    UNKNOWN = enum.auto()
-    """Endpoint cannot be found (missing/corrupted directory)."""
-    HANGING = enum.auto()
-    """Endpoint PID file exists but process is not active.
-
-    This is either because the process died unexpectedly or the endpoint
-    is running on another host.
-    """
-
-
-def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
-    """Check status of endpoint.
-
-    Args:
-        name: Name of endpoint to check.
-        proxystore_dir: Optionally specify the proxystore home directory.
-            Defaults to [`home_dir()`][proxystore.utils.environment.home_dir].
-
-    Returns:
-        `EndpointStatus.RUNNING` if the endpoint has a valid directory and \
-        the PID file points to a running process. \
-        `EndpointStatus.STOPPED` if the endpoint has a valid directory and no \
-        PID file. \
-        `EndpointStatus.UNKNOWN` if the endpoint directory is missing or the \
-        config file is missing/unreadable. \
-        `EndpointStatus.HANGING` if the endpoint has a valid directory but \
-        the PID file does not point to a running process. This can be due to \
-        the endpoint process dying unexpectedly or the endpoint process is on \
-        a different host.
-    """
-    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-    if not os.path.isdir(endpoint_dir):
-        return EndpointStatus.UNKNOWN
-
-    try:
-        endpoint_dir.read_config()
-    except (FileNotFoundError, ValueError) as e:
-        logger.error(e)
-        return EndpointStatus.UNKNOWN
-
-    pid_file = endpoint_dir.pid_path
-    if not os.path.isfile(pid_file):
-        return EndpointStatus.STOPPED
-
-    with open(pid_file) as f:
-        pid = int(f.read().strip())
-
-    if is_own_process(pid):
-        return EndpointStatus.RUNNING
-    return EndpointStatus.HANGING
 
 
 def configure_endpoint(
@@ -229,7 +170,7 @@ def list_endpoints(
     logger.info('=' * toprule_len, extra={'simple': True})
 
     for name, endpoint_id in eps:
-        status = get_status(name, proxystore_dir)
+        status = EndpointDir.from_name(name, proxystore_dir).status()
         logger.info(
             '%-*.*s %-*.*s %s',
             max_endpoint_chars,
@@ -267,7 +208,7 @@ def remove_endpoint(
         logger.error('An endpoint named %s does not exist.', name)
         return 1
 
-    status = get_status(name, proxystore_dir)
+    status = EndpointDir.from_name(name, proxystore_dir).status()
     if status in (EndpointStatus.RUNNING, EndpointStatus.HANGING):
         logger.error('Endpoint must be stopped before removing.')
         logger.error('  $ proxystore-endpoint stop %s', name)
@@ -300,7 +241,7 @@ def start_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    status = get_status(name, proxystore_dir)
+    status = EndpointDir.from_name(name, proxystore_dir).status()
     if status == EndpointStatus.RUNNING:
         logger.error('Endpoint %s is already running.', name)
         return 1
@@ -395,7 +336,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    status = get_status(name, proxystore_dir)
+    status = EndpointDir.from_name(name, proxystore_dir).status()
     if status == EndpointStatus.UNKNOWN:
         logger.error('A valid endpoint named %s does not exist.', name)
         logger.error('Use `list` to see available endpoints.')

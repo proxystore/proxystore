@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
+import enum
 import json
+import logging
 import os
 import stat
 from typing import Any
@@ -19,6 +21,25 @@ from proxystore.endpoint.peers import Peers
 from proxystore.utils.config import dump
 from proxystore.utils.config import load
 from proxystore.utils.environment import home_dir
+
+logger = logging.getLogger(__name__)
+
+
+class EndpointStatus(enum.Enum):
+    """Endpoint status."""
+
+    RUNNING = enum.auto()
+    """Endpoint is running on this host."""
+    STOPPED = enum.auto()
+    """Endpoint is stopped."""
+    UNKNOWN = enum.auto()
+    """Endpoint cannot be found (missing/corrupted directory)."""
+    HANGING = enum.auto()
+    """Endpoint PID file exists but process is not active.
+
+    This is either because the process died unexpectedly or the endpoint
+    is running on another host.
+    """
 
 
 @dataclasses.dataclass(frozen=True)
@@ -387,6 +408,34 @@ class EndpointDir:
         except (OSError, ValueError):
             return None
         return pid if is_own_process(pid) else None
+
+    def status(self) -> EndpointStatus:
+        """Get the status of the endpoint.
+
+        Returns:
+            `EndpointStatus.RUNNING` if the endpoint has a valid \
+            configuration and the PID file points to a running process. \
+            `EndpointStatus.STOPPED` if the endpoint has a valid \
+            configuration and no PID file. \
+            `EndpointStatus.UNKNOWN` if the directory or configuration is \
+            missing or invalid. \
+            `EndpointStatus.HANGING` if the endpoint has a valid \
+            configuration but the PID file does not point to a running \
+            process. This can be due to the endpoint process dying \
+            unexpectedly or the endpoint process is on a different host.
+        """
+        if not os.path.isdir(self.path):
+            return EndpointStatus.UNKNOWN
+        try:
+            self.read_config()
+        except (FileNotFoundError, ValueError) as e:
+            logger.error(e)
+            return EndpointStatus.UNKNOWN
+        if not os.path.isfile(self.pid_path):
+            return EndpointStatus.STOPPED
+        if self.running_pid() is not None:
+            return EndpointStatus.RUNNING
+        return EndpointStatus.HANGING
 
     def restrict_permissions(self) -> bool:
         """Remove all group and other permissions from the directory.

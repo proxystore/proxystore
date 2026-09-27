@@ -14,9 +14,7 @@ import pytest
 from proxystore.endpoint.commands import _wait_for_exit
 from proxystore.endpoint.commands import add_peer
 from proxystore.endpoint.commands import configure_endpoint
-from proxystore.endpoint.commands import EndpointStatus
 from proxystore.endpoint.commands import get_endpoint_id
-from proxystore.endpoint.commands import get_status
 from proxystore.endpoint.commands import list_endpoints
 from proxystore.endpoint.commands import list_peers
 from proxystore.endpoint.commands import remove_endpoint
@@ -25,6 +23,7 @@ from proxystore.endpoint.commands import start_endpoint
 from proxystore.endpoint.commands import stop_endpoint
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.identity import EndpointId
 
 _NAME = 'default'
@@ -53,46 +52,46 @@ def _patch_hostname() -> Generator[None, None, None]:
         yield
 
 
-def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
+def test_status(tmp_path: pathlib.Path, caplog) -> None:
     endpoint_dir = EndpointDir(os.path.join(tmp_path, _NAME))
     assert not os.path.isdir(endpoint_dir)
 
     # Returns UNKNOWN if directory does not exist
-    assert get_status(_NAME, str(tmp_path)) == EndpointStatus.UNKNOWN
-    with mock.patch(
-        'proxystore.endpoint.directory.home_dir',
-        return_value=str(tmp_path),
-    ):
-        assert get_status(_NAME) == EndpointStatus.UNKNOWN
+    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
 
     os.makedirs(endpoint_dir, exist_ok=True)
 
     # Returns UNKNOWN if config is not readable
-    assert get_status(_NAME, str(tmp_path)) == EndpointStatus.UNKNOWN
+    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
 
     with mock.patch.object(EndpointDir, 'read_config', return_value=None):
         # Returns STOPPED if PID file does not exist
-        assert get_status(_NAME, str(tmp_path)) == EndpointStatus.STOPPED
+        assert endpoint_dir.status() == EndpointStatus.STOPPED
 
         with open(endpoint_dir.pid_path, 'w') as f:
             f.write('0')
 
         with mock.patch(
-            'proxystore.endpoint.commands.is_own_process'
+            'proxystore.endpoint.directory.is_own_process'
         ) as mock_exists:
             # Return RUNNING if PID exists
             mock_exists.return_value = True
-            assert get_status(_NAME, str(tmp_path)) == EndpointStatus.RUNNING
+            assert endpoint_dir.status() == EndpointStatus.RUNNING
 
             # Return HANGING if PID does not exists
             mock_exists.return_value = False
-            assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
+            assert endpoint_dir.status() == EndpointStatus.HANGING
 
         # Return HANGING if PID was reused by another user's process
         with open(endpoint_dir.pid_path, 'w') as f:
             f.write('1234')
         with mock.patch('os.kill', side_effect=PermissionError):
-            assert get_status(_NAME, str(tmp_path)) == EndpointStatus.HANGING
+            assert endpoint_dir.status() == EndpointStatus.HANGING
+
+        # Return HANGING rather than raising if the PID file is malformed
+        with open(endpoint_dir.pid_path, 'w') as f:
+            f.write('not a pid')
+        assert endpoint_dir.status() == EndpointStatus.HANGING
 
 
 def test_wait_for_exit() -> None:
@@ -277,8 +276,9 @@ def test_remove_endpoint_running(
             'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
-        mock.patch(
-            'proxystore.endpoint.commands.get_status',
+        mock.patch.object(
+            EndpointDir,
+            'status',
             return_value=status,
         ),
     ):
@@ -346,8 +346,9 @@ def test_start_endpoint_running(tmp_path: pathlib.Path, caplog) -> None:
             'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
-        mock.patch(
-            'proxystore.endpoint.commands.get_status',
+        mock.patch.object(
+            EndpointDir,
+            'status',
             return_value=EndpointStatus.RUNNING,
         ),
     ):
@@ -524,8 +525,9 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
 
 def test_stop_endpoint_unknown(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
-    with mock.patch(
-        'proxystore.endpoint.commands.get_status',
+    with mock.patch.object(
+        EndpointDir,
+        'status',
         return_value=EndpointStatus.UNKNOWN,
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))
@@ -536,8 +538,9 @@ def test_stop_endpoint_unknown(tmp_path: pathlib.Path, caplog) -> None:
 
 def test_stop_endpoint_not_running(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
-    with mock.patch(
-        'proxystore.endpoint.commands.get_status',
+    with mock.patch.object(
+        EndpointDir,
+        'status',
         return_value=EndpointStatus.STOPPED,
     ):
         rv = stop_endpoint(_NAME, proxystore_dir=str(tmp_path))

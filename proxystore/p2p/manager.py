@@ -91,6 +91,22 @@ class PathInfo:
     remote_addr: str
     rtt_ms: int
 
+    @classmethod
+    def from_connection(cls, connection: iroh.Connection) -> Self | None:
+        """Get the path selected for sending on a connection.
+
+        Returns:
+            The selected path or `None` if the connection has no path.
+        """
+        for path in connection.paths():
+            if path.is_selected:
+                return cls(
+                    relayed=path.is_relay,
+                    remote_addr=path.remote_addr,
+                    rtt_ms=path.rtt_ms,
+                )
+        return None
+
     def describe(self) -> str:
         """Describe the path for logging."""
         kind = 'relayed via' if self.relayed else 'direct to'
@@ -110,18 +126,6 @@ def relay_options(
     if config.relays == 'none':
         return iroh.preset_n0(), iroh.RelayMode.disabled()
     return iroh.preset_n0(), iroh.RelayMode.custom_from_urls(config.relays)
-
-
-def selected_path(connection: iroh.Connection) -> PathInfo | None:
-    """Get the path currently selected for sending on a connection."""
-    for path in connection.paths():
-        if path.is_selected:
-            return PathInfo(
-                relayed=path.is_relay,
-                remote_addr=path.remote_addr,
-                rtt_ms=path.rtt_ms,
-            )
-    return None
 
 
 class CloseCode(enum.IntEnum):
@@ -287,7 +291,7 @@ class PeerManager:
         connection = self._outgoing.get(peer_id)
         if connection is None or connection.close_reason() is not None:
             return None
-        return selected_path(connection)
+        return PathInfo.from_connection(connection)
 
     def addr(self) -> iroh.EndpointAddr:
         """Get the current address of this endpoint.
@@ -582,7 +586,7 @@ class PeerManager:
     ) -> None:
         """Log the path of a connection if it changed."""
         direction = 'connection to' if outgoing else 'connection from'
-        path = selected_path(connection)
+        path = PathInfo.from_connection(connection)
         key = None if path is None else (path.relayed, path.remote_addr)
         stable_id = connection.stable_id()
         if stable_id in self._paths and self._paths[stable_id] == key:
