@@ -11,7 +11,7 @@ from typing import Any
 from typing import Self
 
 from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import SecretKey
@@ -339,7 +339,7 @@ class EndpointDir:
             info = ConnectionInfo(
                 host=data['host'],
                 port=data['port'],
-                token=bytes.fromhex(data['token']),
+                token=EndpointToken.from_hex(data['token']),
                 tls_fingerprint=data['tls_fingerprint'],
             )
         except (TypeError, KeyError, ValueError):
@@ -348,7 +348,6 @@ class EndpointDir:
             info is None
             or not isinstance(info.host, str)
             or not isinstance(info.port, int)
-            or len(info.token) != TOKEN_SIZE
             or not isinstance(info.tls_fingerprint, (str, type(None)))
         ):
             raise ValueError(

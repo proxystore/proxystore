@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 
 from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import generate_token
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
@@ -85,7 +85,9 @@ def test_connection_lifecycle(
     with pytest.raises(FileNotFoundError):
         endpoint_dir.read_connection()
 
-    info = ConnectionInfo('localhost', 1234, generate_token(), fingerprint)
+    info = ConnectionInfo(
+        'localhost', 1234, EndpointToken.generate(), fingerprint
+    )
     endpoint_dir.write_connection(info)
     mode = stat.S_IMODE(os.stat(endpoint_dir.connection_path).st_mode)
     assert mode == 0o600
@@ -99,8 +101,8 @@ def test_connection_lifecycle(
 
 def test_remove_connection_only_if_matches(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
-    ours = ConnectionInfo('localhost', 1234, generate_token(), None)
-    theirs = ConnectionInfo('localhost', 1234, generate_token(), None)
+    ours = ConnectionInfo('localhost', 1234, EndpointToken.generate(), None)
+    theirs = ConnectionInfo('localhost', 1234, EndpointToken.generate(), None)
 
     # No file to remove
     endpoint_dir.remove_connection(ours)
@@ -132,7 +134,7 @@ def test_read_connection_malformed(
 ) -> None:
     endpoint_dir = EndpointDir(str(tmp_path))
     if '%s' in contents:
-        contents = contents % generate_token().hex()
+        contents = contents % EndpointToken.generate().hex()
     with open(endpoint_dir.connection_path, 'w') as f:
         f.write(contents)
     with pytest.raises(ValueError, match='malformed'):

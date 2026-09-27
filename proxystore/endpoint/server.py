@@ -21,8 +21,7 @@ from typing import Any
 from typing import cast
 from typing import TYPE_CHECKING
 
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerRequestError
@@ -309,7 +308,7 @@ class ClientHandler:
     def __init__(
         self,
         endpoint: Endpoint,
-        token: bytes,
+        token: EndpointToken,
         *,
         max_object_size: int | None = None,
         handshake_timeout: float = HANDSHAKE_TIMEOUT,
@@ -433,14 +432,13 @@ class ClientHandler:
         nonce = os.urandom(NONCE_SIZE)
         challenge = Challenge(
             nonce=nonce,
-            proof=compute_proof(self.token, 'server', nonce, hello.nonce),
+            proof=self.token.proof('server', nonce, hello.nonce),
         )
         conn.write(Preamble().pack())
         await _send(conn, Status.OK, challenge.to_meta())
 
         auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
-        if not verify_proof(
-            self.token,
+        if not self.token.verify(
             'client',
             hello.nonce,
             challenge.nonce,

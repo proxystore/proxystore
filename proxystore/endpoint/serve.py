@@ -24,10 +24,8 @@ except ImportError as e:  # pragma: no cover
     ) from e
 
 from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import generate_tls_certificate
-from proxystore.endpoint.auth import generate_token
-from proxystore.endpoint.auth import pem_certificate_fingerprint
-from proxystore.endpoint.auth import server_ssl_context
+from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
@@ -148,15 +146,15 @@ async def running_endpoint(
                 endpoint_dir,
             )
 
-        token = generate_token()
+        token = EndpointToken.generate()
         ssl_context: ssl.SSLContext | None = None
         tls_fingerprint: str | None = None
         if config.tls:
-            cert_pem, key_pem = generate_tls_certificate(
+            certificate = TLSCertificate.generate(
                 f'proxystore-endpoint-{config.id.short()}',
             )
-            ssl_context = server_ssl_context(cert_pem, key_pem)
-            tls_fingerprint = pem_certificate_fingerprint(cert_pem)
+            ssl_context = certificate.ssl_context()
+            tls_fingerprint = certificate.fingerprint
             logger.info('Encrypting client connections with TLS')
 
         handler = ClientHandler(

@@ -13,7 +13,7 @@ from proxystore.connectors.endpoint import _ConnectionPool
 from proxystore.connectors.endpoint import _reset_pools_after_fork
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.endpoint import EndpointKey
-from proxystore.endpoint.auth import generate_token
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -63,7 +63,7 @@ def test_endpoint_wrong_token(
 ) -> None:
     copied_dir = copy_endpoint_dir(endpoint_dir, str(tmp_path))
     info = copied_dir.read_connection()
-    copied_dir.write_connection(info._replace(token=generate_token()))
+    copied_dir.write_connection(info._replace(token=EndpointToken.generate()))
 
     with pytest.raises(EndpointConnectorError, match='failed to prove'):
         EndpointConnector([endpoint.id], proxystore_dir=str(tmp_path))

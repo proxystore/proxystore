@@ -14,12 +14,8 @@ from unittest.mock import AsyncMock
 import pytest
 import pytest_asyncio
 
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import generate_tls_certificate
-from proxystore.endpoint.auth import generate_token
-from proxystore.endpoint.auth import pem_certificate_fingerprint
-from proxystore.endpoint.auth import server_ssl_context
-from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
@@ -53,7 +49,7 @@ MAX_OBJECT_SIZE = 10_000_000
 class _Server(NamedTuple):
     handler: ClientHandler
     endpoint: Endpoint
-    token: bytes
+    token: EndpointToken
     host: str
     port: int
 
@@ -63,7 +59,7 @@ async def server() -> AsyncGenerator[_Server, None]:
     async with Endpoint(
         name='my-endpoint', endpoint_id=EndpointId.random()
     ) as endpoint:
-        token = os.urandom(TOKEN_SIZE)
+        token = EndpointToken.generate()
         handler = ClientHandler(
             endpoint,
             token,
@@ -78,7 +74,10 @@ async def server() -> AsyncGenerator[_Server, None]:
         await tcp_server.wait_closed()
 
 
-async def _connect(server: _Server, token: bytes | None = None) -> Any:
+async def _connect(
+    server: _Server,
+    token: EndpointToken | None = None,
+) -> Any:
     token = server.token if token is None else token
     return await asyncio.to_thread(
         EndpointClient.connect,
@@ -143,7 +142,7 @@ async def test_client_wrong_token(server: _Server) -> None:
     # The client detects the server does not know the client's token first
     # (i.e., an impostor endpoint) before sending its own proof.
     with pytest.raises(EndpointAuthError, match='failed to prove'):
-        await _connect(server, token=os.urandom(TOKEN_SIZE))
+        await _connect(server, token=EndpointToken.generate())
 
 
 def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
@@ -162,8 +161,7 @@ async def test_server_rejects_bad_proof(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
             client_nonce, meta = _raw_hello(sock)
-            proof = compute_proof(
-                os.urandom(TOKEN_SIZE),
+            proof = EndpointToken.generate().proof(
                 'client',
                 client_nonce,
                 bytes.fromhex(meta['nonce']),
@@ -611,8 +609,7 @@ def _raw_handshake(server: _Server, versions: Versions) -> None:
         sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
         _recv_exactly(sock, Preamble.SIZE)
         _, meta = _recv_message(sock)
-        proof = compute_proof(
-            server.token,
+        proof = server.token.proof(
             'client',
             client_nonce,
             bytes.fromhex(meta['nonce']),
@@ -653,13 +650,13 @@ class _TLSServer(NamedTuple):
 async def tls_server(
     tmp_path: pathlib.Path,
 ) -> AsyncGenerator[_TLSServer, None]:
-    cert_pem, key_pem = generate_tls_certificate('test')
-    context = server_ssl_context(cert_pem, key_pem)
+    certificate = TLSCertificate.generate('test')
+    context = certificate.ssl_context()
 
     async with Endpoint(
         name='my-endpoint', endpoint_id=EndpointId.random()
     ) as endpoint:
-        token = generate_token()
+        token = EndpointToken.generate()
         handler = ClientHandler(endpoint, token, handshake_timeout=1)
         tcp_server = await handler.start_server(
             '127.0.0.1',
@@ -668,7 +665,7 @@ async def tls_server(
         )
         port = tcp_server.sockets[0].getsockname()[1]
         server = _Server(handler, endpoint, token, '127.0.0.1', port)
-        yield _TLSServer(server, pem_certificate_fingerprint(cert_pem))
+        yield _TLSServer(server, certificate.fingerprint)
         tcp_server.close()
         await handler.close_connections()
         await tcp_server.wait_closed()

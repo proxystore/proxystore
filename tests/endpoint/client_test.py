@@ -14,9 +14,8 @@ from unittest import mock
 
 import pytest
 
-from proxystore.endpoint.auth import compute_proof
 from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
@@ -36,7 +35,7 @@ from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
 
-TOKEN = os.urandom(TOKEN_SIZE)
+TOKEN = EndpointToken.generate()
 ENDPOINT_ID = EndpointId.random()
 
 Script = Callable[[socket.socket], None]
@@ -66,7 +65,7 @@ def _server_hello(
     client_nonce = bytes.fromhex(hello['nonce'])
     if meta is None:
         server_nonce = os.urandom(32)
-        proof = compute_proof(TOKEN, 'server', server_nonce, client_nonce)
+        proof = TOKEN.proof('server', server_nonce, client_nonce)
         meta = {'nonce': server_nonce.hex(), 'proof': proof.hex()}
     conn.sendall(Preamble(version).pack() + pack_message(status, meta))
     return client_nonce

@@ -24,8 +24,7 @@ from typing import Any
 from typing import Self
 
 from proxystore.endpoint.auth import certificate_fingerprint
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -112,7 +111,7 @@ class EndpointClient:
         cls,
         host: str,
         port: int,
-        token: bytes,
+        token: EndpointToken,
         *,
         tls_fingerprint: str | None = None,
         timeout: float | None = 10,
@@ -505,7 +504,7 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
     return tls_sock
 
 
-def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
+def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
     hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
     sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello.to_meta()))
 
@@ -529,8 +528,7 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
         )
 
     challenge = Challenge.from_meta(_recv_handshake_message(sock))
-    if not verify_proof(
-        token,
+    if not token.verify(
         'server',
         challenge.nonce,
         hello.nonce,
@@ -543,7 +541,7 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             'file was read.',
         )
 
-    proof = compute_proof(token, 'client', hello.nonce, challenge.nonce)
+    proof = token.proof('client', hello.nonce, challenge.nonce)
     sock.sendall(pack_message(Op.AUTH, Auth(proof).to_meta()))
 
     return EndpointInfo.from_meta(_recv_handshake_message(sock))
