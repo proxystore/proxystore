@@ -23,7 +23,7 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.serve import running_endpoint
+from proxystore.endpoint.serve import EndpointService
 from proxystore.endpoint.serve import serve
 from proxystore.p2p.manager import relay_options
 from proxystore.utils.environment import hostname
@@ -44,11 +44,12 @@ def _endpoint_dir(
     return write_endpoint(str(path), 'my-endpoint', **options)
 
 
-async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
+async def test_service(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path)
     connection_file = endpoint_dir.connection_path
 
-    async with running_endpoint(endpoint_dir) as endpoint:
+    async with EndpointService(endpoint_dir) as service:
+        endpoint = service.endpoint
         assert endpoint.id == config.id
         assert stat.S_IMODE(os.stat(connection_file).st_mode) == 0o600
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
@@ -65,7 +66,7 @@ async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
     ('database_path', 'max_object_size', 'expected'),
     ((None, 0, None), (':memory:', 0, None), (None, 100, 100)),
 )
-async def test_running_endpoint_object_size_limit(
+async def test_service_object_size_limit(
     database_path: str | None,
     max_object_size: int,
     expected: int | None,
@@ -77,7 +78,7 @@ async def test_running_endpoint_object_size_limit(
     )
     endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
 
-    async with running_endpoint(endpoint_dir):
+    async with EndpointService(endpoint_dir):
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         assert client.info.max_object_size == expected
         # An object larger than the limit can be set if there is no limit
@@ -88,54 +89,54 @@ async def test_running_endpoint_object_size_limit(
         client.close()
 
 
-async def test_running_endpoint_restricts_endpoint_dir(
+async def test_service_restricts_endpoint_dir(
     tmp_path: pathlib.Path,
     caplog,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     os.chmod(endpoint_dir.path, 0o777)
-    async with running_endpoint(endpoint_dir):
+    async with EndpointService(endpoint_dir):
         pass
     assert stat.S_IMODE(os.stat(endpoint_dir.path).st_mode) == 0o700
     assert any('other permissions' in r.message for r in caplog.records)
 
 
-async def test_running_endpoint_missing_secret_key(
+async def test_service_missing_secret_key(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     os.remove(endpoint_dir.secret_key_path)
     with pytest.raises(EndpointConfigError, match='does not contain a secret'):
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir):
             pass  # pragma: no cover
 
 
-async def test_running_endpoint_secret_key_mismatch(
+async def test_service_secret_key_mismatch(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
     endpoint_dir.write_secret_key(SecretKey.generate())
     with pytest.raises(ValueError, match='does not match the secret key'):
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir):
             pass  # pragma: no cover
     assert not os.path.exists(endpoint_dir.connection_path)
 
 
-async def test_running_endpoint_port_in_use(tmp_path: pathlib.Path) -> None:
+async def test_service_port_in_use(tmp_path: pathlib.Path) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
-    async with running_endpoint(endpoint_dir):
+    async with EndpointService(endpoint_dir):
         running = endpoint_dir.read_connection()
         # A second instance fails to start without replacing or removing
         # the connection file of the running instance
         with pytest.raises(OSError, match='address already in use'):
-            async with running_endpoint(endpoint_dir):
+            async with EndpointService(endpoint_dir):
                 pass  # pragma: no cover
         assert endpoint_dir.read_connection() == running
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
         await asyncio.to_thread(client.close)
 
 
-async def test_running_endpoint_start_up_failure_cleans_up(
+async def test_service_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
@@ -145,7 +146,7 @@ async def test_running_endpoint_start_up_failure_cleans_up(
         mock.patch.object(Endpoint, 'close', AsyncMock()) as mock_close,
         pytest.raises(IsADirectoryError),
     ):
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir):
             pass  # pragma: no cover
     mock_close.assert_awaited_once()
 
@@ -154,7 +155,7 @@ async def test_running_endpoint_start_up_failure_cleans_up(
     ('host', 'expected'),
     (('127.0.0.1', '127.0.0.1'), ('ip', '127.0.0.1'), ('fqdn', 'localhost')),
 )
-async def test_running_endpoint_resolves_host(
+async def test_service_resolves_host(
     host: str,
     expected: str,
     tmp_path: pathlib.Path,
@@ -166,7 +167,7 @@ async def test_running_endpoint_resolves_host(
         mock.patch('socket.gethostbyname', return_value='127.0.0.1'),
         mock.patch('socket.getfqdn', return_value='localhost'),
     ):
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir):
             info = endpoint_dir.read_connection()
             assert info.host == expected
             assert info.hostname == hostname()
@@ -240,10 +241,10 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     assert os.path.exists(log_file2)
 
 
-async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
+async def test_service_tls(tmp_path: pathlib.Path) -> None:
     endpoint_dir, config = _endpoint_dir(tmp_path, tls=True)
 
-    async with running_endpoint(endpoint_dir):
+    async with EndpointService(endpoint_dir):
         assert endpoint_dir.read_connection().tls_fingerprint is not None
         # The TLS certificate and key are not written to the directory
         assert not any('tls' in f for f in os.listdir(endpoint_dir.path))
@@ -253,15 +254,14 @@ async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:
         await asyncio.to_thread(client.close)
 
 
-async def test_running_endpoint_peering(
-    tmp_path: pathlib.Path, caplog
-) -> None:
+async def test_service_peering(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
     endpoint_dir, _ = _endpoint_dir(
         tmp_path,
         p2p=EndpointP2PConfig(enabled=True),
     )
-    async with running_endpoint(endpoint_dir) as endpoint:
+    async with EndpointService(endpoint_dir) as service:
+        endpoint = service.endpoint
         assert endpoint.peer_manager is not None
         assert endpoint.peer_manager.id == endpoint.id
     assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
@@ -280,14 +280,15 @@ def test_relay_options(relays: Any) -> None:
         assert isinstance(relay_mode, iroh.RelayMode)
 
 
-async def test_running_endpoint_peering_addr_cache(
+async def test_service_peering_addr_cache(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(
         tmp_path,
         p2p=EndpointP2PConfig(enabled=True, relays='none'),
     )
-    async with running_endpoint(endpoint_dir) as endpoint:
+    async with EndpointService(endpoint_dir) as service:
+        endpoint = service.endpoint
         assert endpoint.peer_manager is not None
         assert endpoint.peer_manager._addr_cache is not None
         path = endpoint.peer_manager._addr_cache.path
@@ -295,7 +296,7 @@ async def test_running_endpoint_peering_addr_cache(
 
 
 @pytest.mark.parametrize('relative', (True, False))
-async def test_running_endpoint_database_path(
+async def test_service_database_path(
     relative: bool,
     tmp_path: pathlib.Path,
 ) -> None:
@@ -304,7 +305,8 @@ async def test_running_endpoint_database_path(
     path = 'blobs.db' if relative else str(other / 'blobs.db')
     storage = EndpointStorageConfig(database_path=path)
     endpoint_dir, _ = _endpoint_dir(tmp_path, storage=storage)
-    async with running_endpoint(endpoint_dir) as endpoint:
+    async with EndpointService(endpoint_dir) as service:
+        endpoint = service.endpoint
         await endpoint.set('key', b'value')
     expected = (
         os.path.join(endpoint_dir.path, 'blobs.db')
@@ -312,3 +314,31 @@ async def test_running_endpoint_database_path(
         else str(other / 'blobs.db')
     )
     assert os.path.isfile(expected)
+
+
+async def test_service_lifecycle(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, config = _endpoint_dir(tmp_path)
+    service = EndpointService(endpoint_dir)
+    assert not service.running
+    for attr in ('config', 'endpoint', 'connection'):
+        with pytest.raises(RuntimeError, match='not running'):
+            getattr(service, attr)
+    # Stopping a service that is not running is a no-op
+    await service.stop()
+
+    await service.start()
+    try:
+        assert service.running
+        assert service.config == config
+        assert service.endpoint.id == config.id
+        assert service.connection == endpoint_dir.read_connection()
+        with pytest.raises(RuntimeError, match='already running'):
+            await service.start()
+    finally:
+        await service.stop()
+    assert not service.running
+    assert not os.path.exists(endpoint_dir.connection_path)
+
+    # The service can be started again after it is stopped
+    async with service:
+        assert service.running

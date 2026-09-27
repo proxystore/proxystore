@@ -1,7 +1,8 @@
 """Endpoint serving.
 
-Endpoints serve client requests over TCP using the
-[`ClientHandler`][proxystore.endpoint.server.ClientHandler].
+The [`EndpointService`][proxystore.endpoint.serve.EndpointService] runs an
+endpoint from its directory, and [`serve()`][proxystore.endpoint.serve.serve]
+runs the service in the current process until it receives a signal.
 """
 
 from __future__ import annotations
@@ -12,7 +13,8 @@ import logging
 import os
 import signal
 import ssl
-from collections.abc import AsyncIterator
+from types import TracebackType
+from typing import Self
 from typing import TYPE_CHECKING
 
 try:
@@ -90,47 +92,120 @@ async def _close_server(
     await server.wait_closed()
 
 
-@contextlib.asynccontextmanager
-async def running_endpoint(
-    endpoint_dir: EndpointDir,
-) -> AsyncIterator[Endpoint]:
-    """Run an endpoint that serves clients until the context exits.
+class EndpointService:
+    """Service which serves an endpoint to clients.
 
-    Once the context is entered, the endpoint is accepting client connections
-    and its connection file is in the endpoint directory. When the context
-    exits, the connection file is removed, client connections are closed,
-    and the endpoint is closed.
+    The service owns everything needed to run an endpoint from its
+    directory: the endpoint and its storage and peer manager, the server that
+    accepts client connections, and the connection file that clients use to
+    connect. Once started, the endpoint is accepting client connections and
+    its connection file is in the endpoint directory. When stopped, the
+    connection file is removed, client connections are closed, and the
+    endpoint is closed.
 
     Example:
         ```python
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir) as service:
             client = EndpointClient.from_dir(endpoint_dir)
             ...
         ```
 
     Args:
         endpoint_dir: Directory of the endpoint with its configuration.
-
-    Yields:
-        The running endpoint.
-
-    Raises:
-        FileNotFoundError: If the configuration or secret key does not exist.
-        ValueError: If the configuration is invalid or the ID in the
-            configuration does not match the secret key.
-        OSError: If the endpoint cannot listen on its host and port.
     """
-    config = endpoint_dir.read_config()
-    # The resolved host is only written to the connection file; the
-    # configuration is never modified by a running endpoint.
-    host = resolve_host(config.host)
-    # Fail before starting if the secret key is missing or does not match
-    # the configuration.
-    endpoint_dir.read_secret_key()
 
-    # Resources are cleaned up in the reverse order they are created,
-    # including when start up fails partway through.
-    async with contextlib.AsyncExitStack() as stack:
+    def __init__(self, endpoint_dir: EndpointDir) -> None:
+        self.endpoint_dir = endpoint_dir
+        self._stack: contextlib.AsyncExitStack | None = None
+        self._config: EndpointConfig | None = None
+        self._endpoint: Endpoint | None = None
+        self._connection: ConnectionInfo | None = None
+
+    @property
+    def running(self) -> bool:
+        """The service has been started and not stopped."""
+        return self._stack is not None
+
+    @property
+    def config(self) -> EndpointConfig:
+        """Configuration of the running endpoint."""
+        self._check_running()
+        assert self._config is not None
+        return self._config
+
+    @property
+    def endpoint(self) -> Endpoint:
+        """The running endpoint."""
+        self._check_running()
+        assert self._endpoint is not None
+        return self._endpoint
+
+    @property
+    def connection(self) -> ConnectionInfo:
+        """Information clients use to connect to the endpoint."""
+        self._check_running()
+        assert self._connection is not None
+        return self._connection
+
+    def _check_running(self) -> None:
+        if not self.running:
+            raise RuntimeError('The endpoint service is not running.')
+
+    async def __aenter__(self) -> Self:
+        await self.start()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: TracebackType | None,
+    ) -> None:
+        await self.stop()
+
+    async def start(self) -> None:
+        """Start serving the endpoint.
+
+        Raises:
+            RuntimeError: If the service is already running.
+            EndpointNotFoundError: If the configuration does not exist.
+            EndpointConfigError: If the configuration is invalid or the ID in
+                the configuration does not match the secret key.
+            OSError: If the endpoint cannot listen on its host and port.
+        """
+        if self.running:
+            raise RuntimeError('The endpoint service is already running.')
+        # Resources are cleaned up in the reverse order they are created,
+        # including when start up fails partway through.
+        stack = contextlib.AsyncExitStack()
+        try:
+            await self._start(stack)
+        except BaseException:
+            await stack.aclose()
+            raise
+        self._stack = stack
+
+    async def stop(self) -> None:
+        """Stop serving the endpoint.
+
+        This is idempotent so it is safe to call multiple times.
+        """
+        if self._stack is None:
+            return
+        logger.info('Shutting down endpoint server')
+        stack, self._stack = self._stack, None
+        await stack.aclose()
+
+    async def _start(self, stack: contextlib.AsyncExitStack) -> None:
+        endpoint_dir = self.endpoint_dir
+        config = endpoint_dir.read_config()
+        # The resolved host is only written to the connection file; the
+        # configuration is never modified by a running endpoint.
+        host = resolve_host(config.host)
+        # Fail before starting if the secret key is missing or does not
+        # match the configuration.
+        endpoint_dir.read_secret_key()
+
         endpoint = await stack.enter_async_context(
             Endpoint(
                 name=config.name,
@@ -185,6 +260,10 @@ async def running_endpoint(
         )
         endpoint_dir.write_connection(connection)
         stack.callback(endpoint_dir.remove_connection, connection)
+
+        self._config = config
+        self._endpoint = endpoint
+        self._connection = connection
         logger.info(
             'Serving endpoint %s (%s) on %s:%s',
             endpoint.id,
@@ -193,10 +272,6 @@ async def running_endpoint(
             config.port,
         )
         logger.info('Config: %s', config)
-        try:
-            yield endpoint
-        finally:
-            logger.info('Shutting down endpoint server')
 
 
 async def _serve_async(endpoint_dir: EndpointDir) -> None:
@@ -208,7 +283,7 @@ async def _serve_async(endpoint_dir: EndpointDir) -> None:
     for sig in signals:
         loop.add_signal_handler(sig, stop.set)
     try:
-        async with running_endpoint(endpoint_dir):
+        async with EndpointService(endpoint_dir):
             await stop.wait()
     finally:
         for sig in signals:
