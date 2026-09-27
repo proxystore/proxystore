@@ -380,6 +380,27 @@ from proxystore.endpoint.warnings import EndpointVersionWarning
 warnings.simplefilter('error', EndpointVersionWarning)
 ```
 
+### Protocols and File Formats
+
+The protocols and files used by endpoints are versioned independently of
+ProxyStore so incompatible changes are detected rather than causing
+unexpected errors. Each version is only incremented on an incompatible
+change.
+
+| Interface | Version | Incompatible versions |
+| --- | --- | --- |
+| Client-endpoint protocol | [`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] | The endpoint refuses the connection. |
+| Peer protocol | The `proxystore/1` protocol negotiated on peer connections | The connection fails. |
+| `config.toml` | `version` field | The configuration cannot be read. |
+| `peers.toml` | `version` field | No peers are allowed until the file is fixed. |
+| `connection.json` | `version` field | Clients cannot connect. Restart the endpoint. |
+| `peer-addrs.json` | `version` field | The cache is ignored. |
+
+The Python interfaces listed in the
+[`proxystore.endpoint`][proxystore.endpoint] documentation are public. Other
+modules, including the protocol and peer-to-peer implementations, are
+internal and may change between releases.
+
 ## Proxy Lifecycle
 
 ![Dataflow with Proxies and Endpoints](../static/endpoint-overview.svg){ width="75%" style="display: block; margin: 0 auto" }

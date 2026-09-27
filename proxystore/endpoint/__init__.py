@@ -9,6 +9,37 @@ stores with peering capabilities. Endpoints enable peer-to-peer data transfer
 between clients behind different NATs. See the
 [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI reference
 to start your own endpoints.
+
+The public interface of endpoints is provided by these modules:
+
+* [`client`][proxystore.endpoint.client]: Connect to a running endpoint.
+* [`directory`][proxystore.endpoint.directory]: Create, find, and manage
+  endpoints and the files in their directories.
+* [`config`][proxystore.endpoint.config]: Endpoint configuration.
+* [`identity`][proxystore.endpoint.identity]: Endpoint IDs and secret keys.
+* [`peers`][proxystore.endpoint.peers]: Peers an endpoint communicates with.
+* [`endpoint`][proxystore.endpoint.endpoint]: The endpoint object store.
+* [`storage`][proxystore.endpoint.storage]: Storage used by an endpoint,
+  which can be implemented to store data elsewhere.
+* [`serve`][proxystore.endpoint.serve]: Run an endpoint in the current
+  process.
+* [`process`][proxystore.endpoint.process]: Start and stop endpoint
+  processes.
+* [`exceptions`][proxystore.endpoint.exceptions]: Endpoint errors.
+
+The remaining modules ([`auth`][proxystore.endpoint.auth],
+[`files`][proxystore.endpoint.files],
+[`handler`][proxystore.endpoint.handler],
+[`protocol`][proxystore.endpoint.protocol], and
+[`server`][proxystore.endpoint.server]) and the
+[`proxystore.p2p`][proxystore.p2p] package are internal implementation
+details. They are documented for development, but their interfaces may
+change between releases without notice.
+
+Note:
+    The [`serve`][proxystore.endpoint.serve] and
+    [`process`][proxystore.endpoint.process] modules and peering require the
+    `endpoints` extra. Clients only require the base package.
 """
 
 from __future__ import annotations

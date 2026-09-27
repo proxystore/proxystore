@@ -1,5 +1,10 @@
 """Client-endpoint wire protocol.
 
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 Clients communicate with their local endpoint over a TCP connection using
 length-prefixed binary messages. This module only contains the encoding and
 decoding logic, and it only depends on the standard library so the client

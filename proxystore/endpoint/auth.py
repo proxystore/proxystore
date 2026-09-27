@@ -1,5 +1,10 @@
 """Authentication between clients and their local endpoint.
 
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 Each time an endpoint starts, it generates a random token and writes it,
 along with its address, to a connection file in the endpoint's directory
 that only the owner can read (see

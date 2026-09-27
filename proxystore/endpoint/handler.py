@@ -1,5 +1,10 @@
 """Handle requests to an endpoint.
 
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 Requests from clients (see
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler]) and from peer
 endpoints (see [`PeerManager`][proxystore.p2p.manager.PeerManager]) are

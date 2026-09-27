@@ -1,5 +1,10 @@
 """Server that handles client connections to an endpoint.
 
+Warning:
+    This module is an internal implementation detail. Its interface may
+    change between releases without notice (see
+    [`proxystore.endpoint`][proxystore.endpoint]).
+
 Clients connect to their local endpoint over TCP using the protocol defined
 in [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol]. The
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler] authenticates
