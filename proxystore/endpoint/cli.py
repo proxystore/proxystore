@@ -169,8 +169,6 @@ def configure(
     tls: bool,
 ) -> None:
     """Configure a new endpoint."""
-    if host.lower().strip() in ('ip', 'fqdn'):
-        host = host.lower().strip()
     try:
         endpoint_dir = EndpointDir.create(
             name,

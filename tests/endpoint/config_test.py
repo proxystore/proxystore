@@ -9,12 +9,12 @@ from unittest import mock
 
 import pytest
 
+from proxystore.endpoint.config import check_name
 from proxystore.endpoint.config import CONFIG_VERSION
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import resolve_host
-from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.identity import EndpointId
 
@@ -102,8 +102,12 @@ def test_get_configs(tmp_path: pathlib.Path) -> None:
         ('abc~', False),
     ),
 )
-def test_validate_name(name: str, valid: bool) -> None:
-    assert validate_name(name) == valid
+def test_check_name(name: str, valid: bool) -> None:
+    if valid:
+        assert check_name(name, 'Test') == name
+    else:
+        with pytest.raises(ValueError, match='Test names must only contain'):
+            check_name(name, 'Test')
 
 
 @pytest.mark.parametrize(
@@ -262,6 +266,8 @@ def test_config_unknown_fields(extra: dict[str, Any]) -> None:
 def test_config_host() -> None:
     assert EndpointConfig(**_options()).host == 'ip'
     assert EndpointConfig(**_options(host=' 10.0.0.1 ')).host == '10.0.0.1'
+    assert EndpointConfig(**_options(host=' IP ')).host == 'ip'
+    assert EndpointConfig(**_options(host='FQDN')).host == 'fqdn'
     with pytest.raises(ValueError, match='Host must be'):
         EndpointConfig(**_options(host=' '))
 

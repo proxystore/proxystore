@@ -33,6 +33,8 @@ directory."""
 CONFIG_VERSION = 1
 """Format version of the endpoint configuration file."""
 
+_NAME_PATTERN = re.compile(r'[A-Za-z0-9_-]+')
+
 
 class EndpointStorageConfig(BaseModel):
     """Endpoint data storage configuration.
@@ -123,9 +125,10 @@ class EndpointConfig(BaseModel):
         id: Endpoint ID. This is the public key of the endpoint's secret key
             which is stored separately in the endpoint directory.
         host: Address clients use to connect to the endpoint. `"ip"` or
-            `"fqdn"` use the IP address or fully-qualified domain name of the
-            host, determined each time the endpoint starts. Any other value
-            is used as a static address (e.g., `"127.0.0.1"`).
+            `"fqdn"` (case-insensitive) use the IP address or
+            fully-qualified domain name of the host, determined each time the
+            endpoint starts. Any other value is used as a static address
+            (e.g., `"127.0.0.1"`).
         port: Port endpoint is running on.
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
@@ -163,12 +166,7 @@ class EndpointConfig(BaseModel):
     @field_validator('name')
     @classmethod
     def _name_validator(cls, v: str) -> str:
-        if not validate_name(v):
-            raise ValueError(
-                'Name must only contain alphanumeric characters, dashes, and '
-                f' underscores. Got {v}.',
-            )
-        return v
+        return check_name(v, 'Endpoint')
 
     @model_validator(mode='before')
     @classmethod
@@ -190,12 +188,13 @@ class EndpointConfig(BaseModel):
     @field_validator('host')
     @classmethod
     def _host_validator(cls, v: str) -> str:
-        if len(v.strip()) == 0:
+        v = v.strip()
+        if len(v) == 0:
             raise ValueError(
                 'Host must be "ip", "fqdn", or an address. Got an empty '
                 'string.',
             )
-        return v.strip()
+        return v.lower() if v.lower() in ('ip', 'fqdn') else v
 
     @field_validator('port')
     @classmethod
@@ -242,6 +241,22 @@ def resolve_host(host: str) -> str:
     return host
 
 
-def validate_name(name: str) -> bool:
-    """Validate name only contains alphanumeric or dash/underscore chars."""
-    return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
+def check_name(name: str, kind: str) -> str:
+    """Check that a name only contains alphanumeric, dash, or underscore chars.
+
+    Args:
+        name: Name to check.
+        kind: Kind of name for the error message (e.g., `"Peer"`).
+
+    Returns:
+        The name.
+
+    Raises:
+        ValueError: If the name is empty or contains other characters.
+    """
+    if _NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError(
+            f'{kind} names must only contain alphanumeric characters, '
+            f'dashes, and underscores. Got {name!r}.',
+        )
+    return name

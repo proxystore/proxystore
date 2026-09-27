@@ -35,7 +35,7 @@ from pydantic import ConfigDict
 from pydantic import Field
 from pydantic import field_validator
 
-from proxystore.endpoint.config import validate_name
+from proxystore.endpoint.config import check_name
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import PeerExistsError
 from proxystore.endpoint.exceptions import PeerNotFoundError
@@ -87,11 +87,7 @@ class PeersConfig(BaseModel):
         peers: dict[str, EndpointId] = {}
         seen: dict[EndpointId, str] = {}
         for name, value in v.items():
-            if not validate_name(name):
-                raise ValueError(
-                    'Peer names must only contain alphanumeric characters, '
-                    f'dashes, and underscores. Got {name}.',
-                )
+            check_name(name, 'Peer')
             endpoint_id = EndpointId.from_str(value)
             if endpoint_id in seen:
                 raise ValueError(
@@ -170,12 +166,8 @@ class Peers:
                 ID of the owner, the endpoint is already a peer with a
                 different name, or the file cannot be parsed.
         """
-        if not validate_name(name):
-            raise EndpointConfigError(
-                'Peer names must only contain alphanumeric characters, '
-                f'dashes, and underscores. Got {name}.',
-            )
         try:
+            check_name(name, 'Peer')
             peer_id = EndpointId.from_str(endpoint_id)
         except ValueError as e:
             raise EndpointConfigError(str(e)) from None
