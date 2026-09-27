@@ -135,8 +135,8 @@ of the endpoint's `config.toml`).
 When peering is enabled, the endpoint logs the addresses it listens on for
 peer connections and whether it connected to its home relay.
 ```
-INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: listening for peer connections on 0.0.0.0:41421, [::]:36871
-INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connected to home relay
+INFO  (proxystore.endpoint.p2p.manager) :: PeerManager[self(aaaa7ce803)]: listening for peer connections on 0.0.0.0:41421, [::]:36871
+INFO  (proxystore.endpoint.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connected to home relay
 ```
 If the endpoint does not connect to a home relay, it logs a warning. The
 endpoint can still connect directly to peers, but peers behind NATs may not
@@ -148,8 +148,8 @@ The endpoint also logs the network path of each peer connection when it is
 established and when the path changes. A connection often starts relayed
 and becomes direct once hole-punching succeeds.
 ```
-INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is relayed via https://usw1-1.relay.n0.iroh.link./ (rtt 16 ms)
-INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is direct to 203.0.113.7:57600 (rtt 12 ms)
+INFO  (proxystore.endpoint.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is relayed via https://usw1-1.relay.n0.iroh.link./ (rtt 16 ms)
+INFO  (proxystore.endpoint.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to peer system-b(bbbb75951c) is direct to 203.0.113.7:57600 (rtt 12 ms)
 ```
 
 ### Ping a Peer

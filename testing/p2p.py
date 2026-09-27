@@ -9,7 +9,7 @@ import iroh
 
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import PeerManager
 from testing.utils import open_port
 
 

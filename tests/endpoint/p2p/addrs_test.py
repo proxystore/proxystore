@@ -9,7 +9,7 @@ import iroh
 import pytest
 
 from proxystore.endpoint.identity import EndpointId
-from proxystore.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.addrs import PeerAddrCache
 
 
 def test_load_missing(tmp_path: pathlib.Path) -> None:

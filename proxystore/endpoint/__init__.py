@@ -32,9 +32,9 @@ The remaining modules ([`auth`][proxystore.endpoint.auth],
 [`handler`][proxystore.endpoint.handler],
 [`protocol`][proxystore.endpoint.protocol], and
 [`server`][proxystore.endpoint.server]) and the
-[`proxystore.p2p`][proxystore.p2p] package are internal implementation
-details. They are documented for development, but their interfaces may
-change between releases without notice.
+[`proxystore.endpoint.p2p`][proxystore.endpoint.p2p] package are internal
+implementation details. They are documented for development, but their
+interfaces may change between releases without notice.
 
 Note:
     The [`serve`][proxystore.endpoint.serve] and

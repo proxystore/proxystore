@@ -7,8 +7,9 @@ Warning:
 
 Requests from clients (see
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler]) and from peer
-endpoints (see [`PeerManager`][proxystore.p2p.manager.PeerManager]) are
-both handled by
+endpoints (see
+[`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager]) are both
+handled by
 [`handle_request()`][proxystore.endpoint.handler.handle_request] which
 dispatches the request to the typed methods of the
 [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] and converts the result,

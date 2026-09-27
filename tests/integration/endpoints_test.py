@@ -12,8 +12,8 @@ import pytest
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.serve import EndpointService
-from proxystore.p2p.addrs import PeerAddrCache
 from proxystore.store.base import Store
 from testing.endpoint import write_endpoint
 

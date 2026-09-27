@@ -50,9 +50,9 @@ from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.peers import Allowlist
-from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.manager import relay_options
 
 
 class _AllowAll(Allowlist):

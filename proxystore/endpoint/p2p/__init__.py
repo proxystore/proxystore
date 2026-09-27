@@ -14,8 +14,8 @@ traffic when a direct connection cannot be established, and discovery of the
 addresses of peers. Connections are encrypted and authenticated with TLS 1.3
 so each endpoint knows the ID of its peer.
 
-The [`PeerManager`][proxystore.p2p.manager.PeerManager] only communicates
-with peers in the endpoint's allowlist (see
+The [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager] only
+communicates with peers in the endpoint's allowlist (see
 [`proxystore.endpoint.peers`][proxystore.endpoint.peers]).
 """
 

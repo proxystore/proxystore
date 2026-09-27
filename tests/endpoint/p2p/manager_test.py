@@ -15,16 +15,18 @@ from proxystore.endpoint.exceptions import PeerConnectionError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.manager import CloseCode
+from proxystore.endpoint.p2p.manager import PathInfo
+from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
-from proxystore.p2p.addrs import PeerAddrCache
-from proxystore.p2p.manager import CloseCode
-from proxystore.p2p.manager import PathInfo
-from proxystore.p2p.manager import PeerManager
 from testing.p2p import allow_peer
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
+
+_MANAGER = 'proxystore.endpoint.p2p.manager'
 
 
 class _IrohError(iroh.IrohError):
@@ -124,7 +126,7 @@ async def test_large_request(managers, tmp_path: pathlib.Path) -> None:
         connect_peers(manager1, manager3)
         data = os.urandom(1000)
         # Use a small chunk size to test data spanning multiple chunks
-        with mock.patch('proxystore.p2p.manager._CHUNK_SIZE', 300):
+        with mock.patch('proxystore.endpoint.p2p.manager._CHUNK_SIZE', 300):
             _, _, response = await _request(
                 manager1,
                 manager3.id,
@@ -355,11 +357,11 @@ async def test_exchange_write_error_reads_response(managers) -> None:
     expected = Message(Status.TOO_LARGE, {'error': 'too large'})
     with (
         mock.patch(
-            'proxystore.p2p.manager._write_message',
+            'proxystore.endpoint.p2p.manager._write_message',
             side_effect=_IrohError(),
         ),
         mock.patch(
-            'proxystore.p2p.manager._read_message',
+            'proxystore.endpoint.p2p.manager._read_message',
             return_value=expected,
         ),
     ):
@@ -377,11 +379,11 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
     read_error = _IrohError()
     with (
         mock.patch(
-            'proxystore.p2p.manager._write_message',
+            'proxystore.endpoint.p2p.manager._write_message',
             side_effect=write_error if write_fails else None,
         ),
         mock.patch(
-            'proxystore.p2p.manager._read_message',
+            'proxystore.endpoint.p2p.manager._read_message',
             side_effect=read_error,
         ),
         pytest.raises(_IrohError) as exc_info,
@@ -595,7 +597,7 @@ async def test_watch_path_changes(managers) -> None:
     connection = mock.MagicMock()
     connection.close_reason.side_effect = [None, 'closed']
     with (
-        mock.patch('proxystore.p2p.manager._PATH_WATCH_INTERVAL', 0),
+        mock.patch(_MANAGER + '._PATH_WATCH_INTERVAL', 0),
         mock.patch.object(manager1, '_report_path') as report,
     ):
         await manager1._watch_path_changes(
@@ -609,8 +611,8 @@ async def test_watch_path_changes(managers) -> None:
     connection.close_reason.side_effect = None
     connection.close_reason.return_value = None
     with (
-        mock.patch('proxystore.p2p.manager._PATH_WATCH_INTERVAL', 0),
-        mock.patch('proxystore.p2p.manager._PATH_WATCH_DURATION', 0.01),
+        mock.patch(_MANAGER + '._PATH_WATCH_INTERVAL', 0),
+        mock.patch(_MANAGER + '._PATH_WATCH_DURATION', 0.01),
         mock.patch.object(manager1, '_report_path'),
     ):
         # Stops after the watch duration

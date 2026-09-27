@@ -25,7 +25,7 @@ from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import Storage
 
 if TYPE_CHECKING:
-    from proxystore.p2p.manager import PeerManager
+    from proxystore.endpoint.p2p.manager import PeerManager
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +36,11 @@ class Endpoint:
     An endpoint is an object store with `get`/`set` functionality.
 
     By default, an endpoint operates in isolation. If initialized with a
-    [`PeerManager`][proxystore.p2p.manager.PeerManager], the endpoint can
-    forward operations to peer endpoints by passing the ID of the peer as
-    the `target` argument of an operation. See the
-    [`proxystore.p2p`][proxystore.p2p] module to learn more about peering.
+    [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager], the
+    endpoint can forward operations to peer endpoints by passing the ID of
+    the peer as the `target` argument of an operation. See the
+    [`proxystore.endpoint.p2p`][proxystore.endpoint.p2p] module to learn more
+    about peering.
 
     Warning:
         Requests made to remote endpoints will only invoke the request on

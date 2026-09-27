@@ -22,9 +22,9 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.serve import EndpointService
 from proxystore.endpoint.serve import serve
-from proxystore.p2p.manager import relay_options
 from proxystore.utils.environment import hostname
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint

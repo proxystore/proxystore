@@ -36,13 +36,13 @@ from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.peers import Allowlist
 from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
-from proxystore.p2p.addrs import PeerAddrCache
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -179,7 +179,8 @@ class PeerManager:
         max_request_size: Maximum size in bytes of the data in a request from
             a peer or `None` for no limit.
         addr_cache: Optional cache where the addresses of peers are saved
-            (see [`PeerAddrCache`][proxystore.p2p.addrs.PeerAddrCache]).
+            (see
+            [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache]).
             Cached addresses are used when connecting to peers so peers can
             be reached even if discovery is unavailable.
     """
@@ -240,7 +241,7 @@ class PeerManager:
             endpoint_dir: Directory of the endpoint.
             options: Options which override the defaults from the
                 configuration (see
-                [`PeerManager`][proxystore.p2p.manager.PeerManager]).
+                [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager]).
 
         Raises:
             FileNotFoundError: If the configuration or secret key does not
@@ -298,7 +299,7 @@ class PeerManager:
         The address contains the ID, home relay URL, and direct addresses
         of the endpoint. Other endpoints can use the address to connect to
         this endpoint without discovery (see
-        [`add_peer_addr()`][proxystore.p2p.manager.PeerManager.add_peer_addr]).
+        [`add_peer_addr()`][proxystore.endpoint.p2p.manager.PeerManager.add_peer_addr]).
         """
         return self.endpoint.addr()
 

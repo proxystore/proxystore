@@ -39,7 +39,7 @@ from proxystore.endpoint.storage import Storage
 from proxystore.utils.environment import hostname
 
 if TYPE_CHECKING:
-    from proxystore.p2p.manager import PeerManager
+    from proxystore.endpoint.p2p.manager import PeerManager
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ def _create_peer_manager(
     if not config.p2p.enabled:
         return None
 
-    from proxystore.p2p.manager import PeerManager
+    from proxystore.endpoint.p2p.manager import PeerManager
 
     relays = config.p2p.relays
     logger.info(
