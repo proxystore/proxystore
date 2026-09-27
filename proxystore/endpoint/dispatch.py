@@ -194,27 +194,25 @@ class Dispatcher:
         request: Request,
         data: MessageData,
     ) -> Message:
-        match op:
-            case Op.GET:
-                result = await self._storage.get(_key(request))
-                if result is None:
-                    return Message(Status.NOT_FOUND)
-                return Message(Status.OK, data=result)
-            case Op.SET:
-                await self._storage.set(_key(request), data)
-                return Message(Status.OK)
-            case Op.EXISTS:
-                exists = await self._storage.exists(_key(request))
-                return Message(Status.OK, {'exists': exists})
-            case Op.EVICT:
-                await self._storage.evict(_key(request))
-                return Message(Status.OK)
-            case Op.PING:
-                return Message(Status.OK, PingResult().to_meta())
-            case Op.HELLO | Op.AUTH:  # pragma: no cover
-                raise AssertionError(f'{op.name} is not a local operation.')
-            case _:  # pragma: no cover
-                assert_never(op)
+        if op == Op.GET:
+            result = await self._storage.get(_key(request))
+            if result is None:
+                return Message(Status.NOT_FOUND)
+            return Message(Status.OK, data=result)
+        if op == Op.SET:
+            await self._storage.set(_key(request), data)
+            return Message(Status.OK)
+        if op == Op.EXISTS:
+            exists = await self._storage.exists(_key(request))
+            return Message(Status.OK, {'exists': exists})
+        if op == Op.EVICT:
+            await self._storage.evict(_key(request))
+            return Message(Status.OK)
+        if op == Op.PING:
+            return Message(Status.OK, PingResult().to_meta())
+        if op in (Op.HELLO, Op.AUTH):  # pragma: no cover
+            raise AssertionError(f'{op.name} is not a local operation.')
+        assert_never(op)  # pragma: no cover
 
     async def _forward(
         self,
