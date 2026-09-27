@@ -7,6 +7,7 @@ import stat
 from typing import Any
 from unittest import mock
 
+import pydantic
 import pytest
 
 from proxystore.endpoint.auth import certificate_fingerprint
@@ -72,6 +73,16 @@ def test_token() -> None:
 def test_token_invalid(value: Any) -> None:
     with pytest.raises(ValueError, match='must be 32 bytes'):
         EndpointToken(value)
+
+
+def test_token_pydantic() -> None:
+    adapter = pydantic.TypeAdapter(EndpointToken)
+    token = EndpointToken.generate()
+    assert adapter.validate_python(token) is token
+    assert adapter.validate_python(token.hex()) == token
+    assert adapter.dump_python(token) == token.hex()
+    with pytest.raises(pydantic.ValidationError, match='hex-encoded string'):
+        adapter.validate_python(token.hex().encode())
 
 
 def test_token_from_hex_invalid() -> None:
