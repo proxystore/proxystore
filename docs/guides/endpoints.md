@@ -382,7 +382,7 @@ Clients and endpoints exchange their versions each time a client connects.
 | Client and endpoint protocol versions | Error. The connection is refused. |
 | Client uses the older HTTP API | The client receives HTTP error 426 explaining that the client should be upgraded. |
 | Endpoint uses the older HTTP API | Error explaining that the endpoint should be restarted with the client's version. |
-| ProxyStore versions | The client warns with an [`EndpointVersionWarning`][proxystore.endpoint.warnings.EndpointVersionWarning], and the endpoint logs a warning. |
+| ProxyStore versions | The client warns with an [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning], and the endpoint logs a warning. |
 | Python major or minor versions | Same as above. |
 | Python patch versions (e.g., 3.12.1 vs. 3.12.4) | None. Patch releases are compatible. |
 
@@ -396,9 +396,9 @@ To turn the warning into an error, use a
 
 ```python
 import warnings
-from proxystore.endpoint.warnings import EndpointVersionWarning
+from proxystore.warnings import VersionMismatchWarning
 
-warnings.simplefilter('error', EndpointVersionWarning)
+warnings.simplefilter('error', VersionMismatchWarning)
 ```
 
 ### Protocols and File Formats
@@ -420,10 +420,8 @@ change.
 Endpoints are used through the `proxystore-endpoint` CLI and the
 [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
 The Python interface of [`proxystore.endpoint`][proxystore.endpoint] is
-documented but, except for its
-[`exceptions`][proxystore.endpoint.exceptions] and
-[`warnings`][proxystore.endpoint.warnings] modules, is an internal
-implementation detail which may change between releases.
+documented but is an internal implementation detail which may change between
+releases.
 
 ## Proxy Lifecycle
 

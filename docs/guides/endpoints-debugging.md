@@ -114,7 +114,7 @@ with EndpointClient.from_name('myendpoint') as client:
   client.
 * **Endpoint returned HTTP error code 426**: The client is using an older
   version of ProxyStore than the endpoint. Upgrade ProxyStore on the client.
-* **`EndpointVersionWarning`**: The client and endpoint use different
+* **`VersionMismatchWarning`**: The client and endpoint use different
   ProxyStore versions or Python minor versions. See
   [Version Compatibility](endpoints.md#version-compatibility).
 * **... has format version ..., but this version of ProxyStore only supports
@@ -218,8 +218,9 @@ endpoints for further error messages. Common errors are:
   larger than the `max_object_size` of the remote endpoint.
 
 Errors forwarded from the remote endpoint name the peer (e.g., `Peer bbbb...:
-...`). The client raises the same exception type as the endpoint, such as a
-[`PeerNotAllowedError`][proxystore.endpoint.exceptions.PeerNotAllowedError]
-or a
-[`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError]
-(see [`proxystore.endpoint.exceptions`][proxystore.endpoint.exceptions]).
+...`) and the status returned by the endpoint (e.g., `PEER_NOT_ALLOWED`).
+The
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
+raises these errors as an
+[`EndpointConnectorError`][proxystore.connectors.endpoint.EndpointConnectorError]
+with the message of the original error.

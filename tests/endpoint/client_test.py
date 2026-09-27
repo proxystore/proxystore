@@ -35,7 +35,7 @@ from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
-from proxystore.endpoint.warnings import EndpointVersionWarning
+from proxystore.warnings import VersionMismatchWarning
 from testing.endpoint import decode_meta
 from testing.endpoint import encode_meta
 
@@ -386,7 +386,7 @@ def test_version_mismatch_warning(fake_server) -> None:
     port = fake_server(
         _handshake_with_info(versions=_versions(proxystore='0.0.1'))
     )
-    with pytest.warns(EndpointVersionWarning, match='ProxyStore'):
+    with pytest.warns(VersionMismatchWarning, match='ProxyStore'):
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
 
@@ -399,7 +399,7 @@ def test_python_patch_version_no_warning(fake_server) -> None:
         )
     )
     with warnings.catch_warnings():
-        warnings.simplefilter('error', EndpointVersionWarning)
+        warnings.simplefilter('error', VersionMismatchWarning)
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
 

@@ -2,12 +2,14 @@
 
 Warning:
     The Python interface of this package is an internal implementation
-    detail which may change between releases without notice, except for the
-    [`exceptions`][proxystore.endpoint.exceptions] and
-    [`warnings`][proxystore.endpoint.warnings] modules. The modules are
+    detail which may change between releases without notice. The modules are
     documented for development. Use endpoints through the
     [`proxystore-endpoint`](../cli.md#proxystore-endpoint) CLI and the
-    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
+    [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector],
+    which raises an
+    [`EndpointConnectorError`][proxystore.connectors.endpoint.EndpointConnectorError]
+    and warns with a
+    [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning].
     The formats of the files and protocols of endpoints are versioned (see
     the [Endpoints Guide](../../guides/endpoints.md#version-compatibility)).
 
@@ -44,8 +46,7 @@ The package is organized as follows:
   requests), and the [`p2p`][proxystore.endpoint.p2p] package
   (communication with peers).
 * Errors: [`exceptions`][proxystore.endpoint.exceptions] (errors raised by
-  endpoints and their clients) and
-  [`warnings`][proxystore.endpoint.warnings] (warnings raised by clients).
+  endpoints and their clients).
 
 Note:
     Endpoints and their clients (e.g., the

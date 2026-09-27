@@ -50,8 +50,8 @@ from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import supports_version
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
-from proxystore.endpoint.warnings import EndpointVersionWarning
 from proxystore.serialize import BytesLike
+from proxystore.warnings import VersionMismatchWarning
 
 logger = logging.getLogger(__name__)
 
@@ -143,7 +143,7 @@ class EndpointClient:
                 because large transfers can take arbitrarily long.
 
         Warns:
-            EndpointVersionWarning: If the endpoint uses a different
+            VersionMismatchWarning: If the endpoint uses a different
                 ProxyStore version or Python minor version than this client.
 
         Raises:
@@ -188,7 +188,7 @@ class EndpointClient:
             warnings.warn(
                 f'Endpoint {info.name} ({info.id.short()}) uses different '
                 f'versions than this client: {warning}',
-                EndpointVersionWarning,
+                VersionMismatchWarning,
                 stacklevel=2,
             )
         logger.debug(
