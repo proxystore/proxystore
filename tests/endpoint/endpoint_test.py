@@ -175,11 +175,14 @@ async def test_endpoint_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
-    # The connection file cannot be written if its path is a directory
-    os.mkdir(endpoint_dir.connection_path)
     with (
         mock.patch.object(MemoryStorage, 'close', AsyncMock()) as mock_close,
-        pytest.raises(IsADirectoryError),
+        mock.patch.object(
+            EndpointDir,
+            'write_connection',
+            side_effect=OSError('disk full'),
+        ),
+        pytest.raises(OSError, match='disk full'),
     ):
         async with Endpoint(endpoint_dir):
             pass  # pragma: no cover

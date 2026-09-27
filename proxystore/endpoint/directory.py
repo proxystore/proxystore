@@ -124,8 +124,6 @@ class EndpointStatus(enum.Enum):
     shares the endpoint directory. Whether the endpoint is still running on
     that host cannot be checked from this host.
     """
-    UNKNOWN = enum.auto()
-    """Endpoint cannot be found (missing/corrupted directory)."""
 
 
 class EndpointLock:
@@ -575,29 +573,6 @@ class EndpointDir:
         with contextlib.suppress(FileNotFoundError):
             os.remove(self.connection_path)
 
-    def check_not_running_elsewhere(self) -> None:
-        """Check that the endpoint is not running on a different host.
-
-        The connection file records the host the endpoint was started on.
-
-        Raises:
-            EndpointRunningError: If the connection file was written by an
-                endpoint on another host.
-        """
-        try:
-            info = self.read_connection()
-        except (OSError, EndpointConfigError):
-            # The file does not exist or cannot be read so it is never used.
-            return
-        if info.hostname == hostname():
-            return
-        raise EndpointRunningError(
-            f'Endpoint {self.name} appears to be running on {info.hostname} '
-            f'(PID {info.pid}). Stop the endpoint on {info.hostname}. If it '
-            'is not running, delete the connection file at '
-            f'{self.connection_path} and try again.',
-        )
-
     def status(self) -> EndpointStatus:
         """Get the status of the endpoint.
 
@@ -608,30 +583,70 @@ class EndpointDir:
 
         Returns:
             The status of the endpoint.
-        """
-        if not os.path.isdir(self.path):
-            return EndpointStatus.UNKNOWN
-        try:
-            self.read_config()
-        except (FileNotFoundError, ValueError) as e:
-            logger.debug('Unable to read endpoint configuration: %s', e)
-            return EndpointStatus.UNKNOWN
 
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+        """
+        return self._status()[0]
+
+    def check_stopped(self) -> None:
+        """Check that the endpoint is not running.
+
+        A stale connection file left by an endpoint which stopped
+        unexpectedly (see
+        [`EndpointStatus.STALE`][proxystore.endpoint.directory.EndpointStatus.STALE])
+        is removed.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+            EndpointRunningError: If the endpoint is running on this host or
+                may be running on another host.
+        """
+        status, info = self._status()
+        if status == EndpointStatus.RUNNING:
+            raise EndpointRunningError(
+                f'Endpoint {self.name} is already running.',
+            )
+        if status == EndpointStatus.OTHER_HOST:
+            assert info is not None
+            raise EndpointRunningError(
+                f'Endpoint {self.name} appears to be running on '
+                f'{info.hostname} (PID {info.pid}). Stop the endpoint on '
+                f'{info.hostname}. If it is not running, delete the '
+                f'connection file at {self.connection_path} and try again.',
+            )
+        if status == EndpointStatus.STALE:
+            logger.debug(
+                'Removing stale connection file (%s)',
+                self.connection_path,
+            )
+            self.remove_connection(info)
+
+    def _status(self) -> tuple[EndpointStatus, ConnectionInfo | None]:
+        # The status does not depend on the configuration so an endpoint
+        # with an invalid configuration can still be stopped and removed.
+        self.check_exists()
         locked = self.lock().is_locked()
-        if locked:
-            return EndpointStatus.RUNNING
         try:
             info = self.read_connection()
         except FileNotFoundError:
-            return EndpointStatus.STOPPED
+            info = None
         except (OSError, EndpointConfigError):
             # A connection file which cannot be read is never used.
-            return EndpointStatus.STALE
-        if info.hostname != hostname():
-            return EndpointStatus.OTHER_HOST
-        if locked is None and is_own_process(info.pid):
-            return EndpointStatus.RUNNING
-        return EndpointStatus.STALE
+            status = EndpointStatus.RUNNING if locked else EndpointStatus.STALE
+            return status, None
+
+        if info is not None and info.hostname != hostname():
+            # The lock of an endpoint on another host may be visible to this
+            # host depending on the file system.
+            return EndpointStatus.OTHER_HOST, info
+        if locked or (
+            locked is None and info is not None and is_own_process(info.pid)
+        ):
+            return EndpointStatus.RUNNING, info
+        if info is None:
+            return EndpointStatus.STOPPED, None
+        return EndpointStatus.STALE, info
 
     def remove(self) -> None:
         """Remove the endpoint directory and all of its files.
@@ -641,14 +656,7 @@ class EndpointDir:
             EndpointRunningError: If the endpoint is running or may be
                 running on another host.
         """
-        self.check_exists()
-        status = self.status()
-        if status == EndpointStatus.OTHER_HOST:
-            self.check_not_running_elsewhere()
-        if status == EndpointStatus.RUNNING:
-            raise EndpointRunningError(
-                f'Endpoint {self.name} must be stopped before it is removed.',
-            )
+        self.check_stopped()
         shutil.rmtree(self.path)
 
     def check_exists(self) -> None:

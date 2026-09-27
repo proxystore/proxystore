@@ -150,15 +150,13 @@ def test_start_endpoint_detached(endpoint_dir: EndpointDir, caplog) -> None:
 
 
 def test_start_endpoint_running(endpoint_dir: EndpointDir) -> None:
-    with (
-        mock.patch.object(
-            EndpointDir,
-            'status',
-            return_value=EndpointStatus.RUNNING,
-        ),
-        pytest.raises(EndpointRunningError, match='already running'),
-    ):
-        start_endpoint(endpoint_dir)
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    try:
+        with pytest.raises(EndpointRunningError, match='already running'):
+            start_endpoint(endpoint_dir)
+    finally:
+        lock.release()
 
 
 def test_start_endpoint_does_not_exist(tmp_path: pathlib.Path) -> None:

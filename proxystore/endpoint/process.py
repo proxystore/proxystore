@@ -70,14 +70,7 @@ def start_endpoint(
     # These checks are repeated by the endpoint when it starts but are
     # checked first so errors are raised to the caller rather than only
     # written to the log of a daemon.
-    status = _status(endpoint_dir)
-    if status == EndpointStatus.RUNNING:
-        raise EndpointRunningError(
-            f'Endpoint {endpoint_dir.name} is already running.',
-        )
-    if status == EndpointStatus.OTHER_HOST:
-        endpoint_dir.check_not_running_elsewhere()
-
+    endpoint_dir.check_stopped()
     host = endpoint_dir.read_config().host
     try:
         resolve_host(host)
@@ -85,13 +78,6 @@ def start_endpoint(
         raise EndpointConfigError(
             f'Unable to resolve the host address ({host}): {e}',
         ) from e
-
-    if status == EndpointStatus.STALE:
-        logger.debug(
-            'Removing stale connection file (%s)',
-            endpoint_dir.connection_path,
-        )
-        endpoint_dir.remove_connection()
 
     context: contextlib.AbstractContextManager[object]
     if detach:
@@ -211,17 +197,10 @@ def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
         EndpointRunningError: If the endpoint may be running on another host
             or is still starting.
     """
-    status = _status(endpoint_dir)
-    if status == EndpointStatus.STOPPED:
-        return False
-    if status == EndpointStatus.OTHER_HOST:
-        endpoint_dir.check_not_running_elsewhere()
-    if status == EndpointStatus.STALE:
-        logger.debug(
-            'Removing stale connection file (%s)',
-            endpoint_dir.connection_path,
-        )
-        endpoint_dir.remove_connection()
+    if endpoint_dir.status() != EndpointStatus.RUNNING:
+        # Raises if the endpoint may be running on another host and removes
+        # a stale connection file.
+        endpoint_dir.check_stopped()
         return False
 
     try:
@@ -232,8 +211,6 @@ def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
             'its connection file so it is likely still starting. Try again '
             'once it has started.',
         ) from None
-    # The lock may be visible to other hosts on some file systems.
-    endpoint_dir.check_not_running_elsewhere()
 
     logger.debug('Terminating endpoint process (PID: %s)', info.pid)
     with contextlib.suppress(ProcessLookupError):
@@ -253,15 +230,6 @@ def stop_endpoint(endpoint_dir: EndpointDir, *, timeout: float = 5) -> bool:
     # killed.
     endpoint_dir.remove_connection(info)
     return True
-
-
-def _status(endpoint_dir: EndpointDir) -> EndpointStatus:
-    status = endpoint_dir.status()
-    if status == EndpointStatus.UNKNOWN:
-        # Raise the specific reason (i.e., missing or invalid config).
-        endpoint_dir.check_exists()
-        endpoint_dir.read_config()
-    return status
 
 
 def _wait_for_exit(pid: int, timeout: float) -> bool:

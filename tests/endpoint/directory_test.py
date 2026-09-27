@@ -383,13 +383,13 @@ def test_errors_are_endpoint_errors(tmp_path: pathlib.Path) -> None:
     assert isinstance(invalid.value, ValueError)
 
 
-def test_status_unknown(tmp_path: pathlib.Path) -> None:
+def test_status_missing(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir(os.path.join(tmp_path, 'ep'))
-    # Returns UNKNOWN if directory does not exist
-    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
-    # Returns UNKNOWN if config is not readable
+    with pytest.raises(EndpointNotFoundError):
+        endpoint_dir.status()
+    # The status does not depend on the configuration
     os.makedirs(endpoint_dir)
-    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
+    assert endpoint_dir.status() == EndpointStatus.STOPPED
 
 
 def test_status(tmp_path: pathlib.Path) -> None:
@@ -412,6 +412,17 @@ def test_status(tmp_path: pathlib.Path) -> None:
 
     endpoint_dir.write_connection(_connection_info(hostname='other'))
     assert endpoint_dir.status() == EndpointStatus.OTHER_HOST
+    # The lock of an endpoint on another host may be visible to this host
+    lock.acquire()
+    assert endpoint_dir.status() == EndpointStatus.OTHER_HOST
+    lock.release()
+
+    # The lock is held but the connection file cannot be read
+    with open(endpoint_dir.connection_path, 'w') as f:
+        f.write('not json')
+    lock.acquire()
+    assert endpoint_dir.status() == EndpointStatus.RUNNING
+    lock.release()
 
 
 def test_status_locks_unsupported(tmp_path: pathlib.Path) -> None:
@@ -430,17 +441,28 @@ def test_status_locks_unsupported(tmp_path: pathlib.Path) -> None:
             assert endpoint_dir.status() == EndpointStatus.STALE
 
 
-def test_check_not_running_elsewhere(tmp_path: pathlib.Path) -> None:
+def test_check_stopped(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
-    endpoint_dir.check_not_running_elsewhere()
+    endpoint_dir.check_stopped()
+
+    # A stale connection file is removed
     endpoint_dir.write_connection(_connection_info(hostname=hostname()))
-    endpoint_dir.check_not_running_elsewhere()
+    endpoint_dir.check_stopped()
+    assert not os.path.exists(endpoint_dir.connection_path)
+
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    with pytest.raises(EndpointRunningError, match='already running'):
+        endpoint_dir.check_stopped()
+    lock.release()
+
     endpoint_dir.write_connection(_connection_info(hostname='other', pid=7))
     with pytest.raises(
         EndpointRunningError,
         match=r'running on other \(PID 7\)',
     ):
-        endpoint_dir.check_not_running_elsewhere()
+        endpoint_dir.check_stopped()
+    assert os.path.exists(endpoint_dir.connection_path)
 
 
 def test_remove(tmp_path: pathlib.Path) -> None:
@@ -459,7 +481,7 @@ def test_remove_running(tmp_path: pathlib.Path) -> None:
     lock = endpoint_dir.lock()
     lock.acquire()
     try:
-        with pytest.raises(EndpointRunningError, match='must be stopped'):
+        with pytest.raises(EndpointRunningError, match='already running'):
             endpoint_dir.remove()
     finally:
         lock.release()

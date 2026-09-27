@@ -15,7 +15,6 @@ import proxystore
 from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
@@ -151,6 +150,20 @@ def test_list_command(home_dir) -> None:
     ]
 
 
+def test_list_command_skips_removed_endpoint(home_dir) -> None:
+    EndpointDir.create('ep1', home_dir)
+    ep2 = EndpointDir.create('ep2', home_dir)
+    found = EndpointDir.find_all(home_dir)
+    # The endpoint is removed after it is found but before its status is read
+    ep2.remove()
+    runner = click.testing.CliRunner()
+    with mock.patch.object(EndpointDir, 'find_all', return_value=found):
+        result = runner.invoke(cli, ['list'])
+    assert result.exit_code == 0
+    assert 'ep1' in result.output
+    assert 'ep2' not in result.output
+
+
 def test_output_ignores_log_level(home_dir) -> None:
     # Results are printed regardless of the log level
     endpoint_dir = EndpointDir.create('ep', home_dir)
@@ -168,14 +181,12 @@ def test_remove_command(home_dir) -> None:
     assert 'proxystore-endpoint list' in result.output
 
     endpoint_dir = EndpointDir.create('myendpoint', home_dir)
-    with mock.patch.object(
-        EndpointDir,
-        'status',
-        return_value=EndpointStatus.RUNNING,
-    ):
-        result = runner.invoke(cli, ['remove', 'myendpoint'])
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    result = runner.invoke(cli, ['remove', 'myendpoint'])
+    lock.release()
     assert result.exit_code == 1
-    assert 'must be stopped' in result.output
+    assert 'already running' in result.output
     assert 'proxystore-endpoint stop' in result.output
 
     result = runner.invoke(cli, ['remove', 'myendpoint'])

@@ -216,7 +216,11 @@ def list_all() -> None:
         '=' * (name_width + status_width + 2 + len(endpoints[0][1].id)),
     )
     for endpoint_dir, config in sorted(endpoints, key=lambda e: e[1].name):
-        status = endpoint_dir.status().name
+        try:
+            status = endpoint_dir.status().name
+        except EndpointNotFoundError:
+            # The endpoint was removed since it was found.
+            continue
         click.echo(
             f'{config.name:<{name_width}} {status:<{status_width}} '
             f'{config.id}',

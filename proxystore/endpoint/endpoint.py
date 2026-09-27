@@ -215,14 +215,13 @@ class Endpoint:
     async def _start(self, stack: contextlib.AsyncExitStack) -> None:
         endpoint_dir = self.endpoint_dir
         config = endpoint_dir.read_config()
+        endpoint_dir.check_stopped()
         # The lock is held for as long as the endpoint runs so the status of
-        # the endpoint can be checked by other processes.
+        # the endpoint can be checked by other processes. Acquiring the lock
+        # fails if another instance started since the status was checked.
         lock = endpoint_dir.lock()
         lock.acquire()
         stack.callback(lock.release)
-        # A connection file from this host was left by an endpoint which
-        # stopped unexpectedly and will be replaced.
-        endpoint_dir.check_not_running_elsewhere()
 
         # The resolved host is only written to the connection file; the
         # configuration is never modified by a running endpoint.

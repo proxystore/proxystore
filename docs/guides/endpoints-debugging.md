@@ -50,7 +50,8 @@ The `proxystore-endpoint list` command shows the status of each endpoint.
   removes the file. Check the endpoint log for errors.
 * `OTHER_HOST`: The endpoint was started on another machine which shares
   the ProxyStore home directory and may still be running there.
-* `UNKNOWN`: The endpoint directory or configuration is missing or invalid.
+
+Endpoints with a missing or invalid configuration are not listed.
 
 If the file system of the ProxyStore home directory does not support file
 locks, the endpoint logs a warning and its status is determined from the
