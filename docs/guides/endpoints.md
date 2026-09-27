@@ -379,7 +379,7 @@ Clients and endpoints exchange their versions each time a client connects.
 
 | Mismatch | Result |
 | --- | --- |
-| Client and endpoint protocol versions | Error. The connection is refused. |
+| Client and endpoint protocol versions | The newest version both support is used. If there is none, the connection is refused. |
 | Client uses the older HTTP API | The client receives HTTP error 426 explaining that the client should be upgraded. |
 | Endpoint uses the older HTTP API | Error explaining that the endpoint should be restarted with the client's version. |
 | ProxyStore versions | The client warns with an [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning], and the endpoint logs a warning. |
