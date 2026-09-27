@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-import pathlib
 from collections.abc import AsyncGenerator
 from typing import Any
 from unittest import mock
@@ -19,9 +17,9 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
-from testing.p2p import allowlist
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
+from testing.p2p import policy
 
 
 def _request(
@@ -47,11 +45,9 @@ async def dispatcher() -> AsyncGenerator[Dispatcher, None]:
 
 
 @pytest.fixture
-async def peers(
-    tmp_path: pathlib.Path,
-) -> AsyncGenerator[tuple[Dispatcher, Dispatcher], None]:
-    manager1 = local_peer_manager(str(tmp_path / 'ep1'))
-    manager2 = local_peer_manager(str(tmp_path / 'ep2'), max_request_size=100)
+async def peers() -> AsyncGenerator[tuple[Dispatcher, Dispatcher], None]:
+    manager1 = local_peer_manager()
+    manager2 = local_peer_manager(max_request_size=100)
     dispatcher1 = Dispatcher(manager1.id, MemoryStorage(), manager1)
     dispatcher2 = Dispatcher(manager2.id, MemoryStorage(), manager2)
     await manager1.start(dispatcher1.handle_peer_request)
@@ -142,8 +138,8 @@ async def test_unexpected_error(dispatcher: Dispatcher) -> None:
     assert 'storage failed' in response.meta['error']
 
 
-async def test_mismatched_peer_manager_id(tmp_path: pathlib.Path) -> None:
-    manager = local_peer_manager(str(tmp_path))
+async def test_mismatched_peer_manager_id() -> None:
+    manager = local_peer_manager()
     with pytest.raises(ValueError, match='does not match'):
         Dispatcher(EndpointId.random(), MemoryStorage(), manager)
 
@@ -192,7 +188,7 @@ async def test_forward_peer_error_status(peers) -> None:
 async def test_forward_not_allowed(peers) -> None:
     dispatcher1, dispatcher2 = peers
     assert dispatcher1.peer_manager is not None
-    os.remove(allowlist(dispatcher1.peer_manager).path)
+    policy(dispatcher1.peer_manager).peers.clear()
     response = await _handle(dispatcher1, Op.GET, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
     assert 'not in the allowlist' in response.meta['error']
@@ -201,7 +197,7 @@ async def test_forward_not_allowed(peers) -> None:
 async def test_forward_peer_refused(peers) -> None:
     dispatcher1, dispatcher2 = peers
     assert dispatcher2.peer_manager is not None
-    os.remove(allowlist(dispatcher2.peer_manager).path)
+    policy(dispatcher2.peer_manager).peers.clear()
     response = await _handle(dispatcher1, Op.PING, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
     assert 'refused the connection' in response.meta['error']

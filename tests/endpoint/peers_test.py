@@ -114,25 +114,23 @@ def test_allowlist_reload(tmp_path: pathlib.Path) -> None:
     allowlist = peers.allowlist(reload_interval=0)
 
     # Missing file is an empty allowlist
-    assert allowlist.reload() == set()
     assert not allowlist.allowed(_ID1)
 
     peers.write(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
-    assert allowlist.reload() == set()
     assert allowlist.allowed(_ID1)
     assert allowlist.allowed(_ID2)
     assert allowlist.name_of(_ID2) == 'b'
     # File is unchanged so reloading is a no-op
-    assert allowlist.reload() == set()
+    with mock.patch.object(Peers, 'read') as read:
+        allowlist.reload()
+    read.assert_not_called()
 
     peers.write(PeersConfig(peers={'a': _ID1}))
-    assert allowlist.reload() == {_ID2}
     assert allowlist.allowed(_ID1)
     assert not allowlist.allowed(_ID2)
     assert allowlist.name_of(_ID2) is None
 
     os.remove(peers.path)
-    assert allowlist.reload() == {_ID1}
     assert allowlist.peers == PeersConfig()
 
 
@@ -147,7 +145,6 @@ def test_allowlist_malformed_denies_all(
 
     with open(peers.path, 'w') as f:
         f.write('[peers]\na = "not-an-id"\nb = "also-not-an-id"\n')
-    assert allowlist.reload() == {_ID1}
     assert not allowlist.allowed(_ID1)
     assert any('All peers will be denied' in r.message for r in caplog.records)
 
@@ -156,26 +153,6 @@ def test_peers_version() -> None:
     assert PeersConfig().version == 1
     with pytest.raises(ValueError, match='only supports version 1'):
         PeersConfig(version=2)
-
-
-def test_allowlist_revoked(tmp_path: pathlib.Path) -> None:
-    peers = Peers(str(tmp_path / 'peers.toml'))
-    peers.write(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
-    allowlist = peers.allowlist(reload_interval=0)
-    assert allowlist.revoked() == set()
-
-    # A removal detected by another method is still revoked
-    peers.write(PeersConfig(peers={'a': _ID1}))
-    assert allowlist.name_of(_ID2) is None
-    assert allowlist.revoked() == {_ID2}
-    assert allowlist.revoked() == set()
-
-    # A peer removed then added back before collecting is not revoked
-    os.remove(peers.path)
-    assert not allowlist.allowed(_ID1)
-    peers.write(PeersConfig(peers={'a': _ID1}))
-    assert allowlist.revoked() == set()
-    assert allowlist.allowed(_ID1)
 
 
 def test_allowlist_reload_interval(tmp_path: pathlib.Path) -> None:
@@ -189,10 +166,9 @@ def test_allowlist_reload_interval(tmp_path: pathlib.Path) -> None:
     os.remove(peers.path)
     with mock.patch('os.stat', wraps=os.stat) as stat:
         assert allowlist.allowed(_ID1)
-        assert allowlist.revoked() == set()
     stat.assert_not_called()
 
-    assert allowlist.reload(force=True) == {_ID1}
+    allowlist.reload(force=True)
     assert not allowlist.allowed(_ID1)
 
     with mock.patch('time.monotonic', return_value=time.monotonic() + 61):

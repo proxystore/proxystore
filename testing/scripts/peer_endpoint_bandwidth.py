@@ -66,9 +66,6 @@ class _AllowAll:
     def name_of(self, peer_id: EndpointId) -> str | None:
         return 'peer'
 
-    def revoked(self) -> set[EndpointId]:
-        return set()
-
 
 def apply_memmove_patch() -> None:
     """Replace the per-byte copy of bytes arguments in the iroh bindings."""

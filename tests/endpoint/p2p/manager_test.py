@@ -25,10 +25,10 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
 from testing.p2p import allow_peer
-from testing.p2p import allowlist
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
 from testing.p2p import LOCAL_PEER_OPTIONS
+from testing.p2p import policy
 from testing.utils import wait_until
 
 _MANAGER = 'proxystore.endpoint.p2p.manager'
@@ -71,13 +71,12 @@ async def _request(
 
 
 @pytest.fixture
-async def managers(
-    tmp_path: pathlib.Path,
-) -> AsyncGenerator[tuple[PeerManager, PeerManager, Handled], None]:
+async def managers() -> AsyncGenerator[
+    tuple[PeerManager, PeerManager, Handled], None
+]:
     handled: Handled = []
-    manager1 = local_peer_manager(str(tmp_path / 'm1'))
+    manager1 = local_peer_manager()
     manager2 = local_peer_manager(
-        str(tmp_path / 'm2'),
         max_request_size=1000,
     )
     await manager1.start(_echo_handler(handled))
@@ -123,9 +122,9 @@ async def test_concurrent_requests(managers) -> None:
     assert len(manager1._connections[manager2.id]) == 1
 
 
-async def test_large_request(managers, tmp_path: pathlib.Path) -> None:
+async def test_large_request(managers) -> None:
     manager1, _, _ = managers
-    manager3 = local_peer_manager(str(tmp_path / 'm3'))
+    manager3 = local_peer_manager()
     await manager3.start(_echo_handler([]))
     try:
         connect_peers(manager1, manager3)
@@ -189,14 +188,14 @@ async def test_bad_request(managers) -> None:
 
 async def test_request_not_in_allowlist(managers) -> None:
     manager1, manager2, _ = managers
-    os.remove(allowlist(manager1).path)
+    policy(manager1).peers.clear()
     with pytest.raises(PeerNotAllowedError, match='not in the allowlist'):
         await _request(manager1, manager2.id, Op.GET)
 
 
 async def test_peer_refuses_connection(managers) -> None:
     manager1, manager2, handled = managers
-    os.remove(allowlist(manager2).path)
+    policy(manager2).peers.clear()
     with pytest.raises(PeerNotAllowedError, match='refused the connection'):
         await _request(manager1, manager2.id, Op.GET)
     assert len(handled) == 0
@@ -208,7 +207,7 @@ async def test_revoke_peer(managers) -> None:
     assert manager1.id in manager2._connections
 
     # Removing the peer closes its connections and denies new requests.
-    os.remove(allowlist(manager2).path)
+    policy(manager2).peers.clear()
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
     assert manager1.id not in manager2._connections
@@ -228,14 +227,14 @@ async def test_revoke_detected_on_request(managers) -> None:
 
     # Manager 1 closes its connections to the removed peer the next time it
     # checks the allowlist.
-    os.remove(allowlist(manager1).path)
+    policy(manager1).peers.clear()
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
     assert manager2.id not in manager1._preferred
     assert manager2.id not in manager1._connections
 
 
-async def test_stale_connection_retry(managers, tmp_path) -> None:
+async def test_stale_connection_retry(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
     stale = manager1._preferred[manager2.id]
@@ -273,9 +272,9 @@ async def test_request_fails_on_fresh_connection(managers) -> None:
         await _request(manager1, manager2.id, Op.GET)
 
 
-async def test_connect_error(tmp_path: pathlib.Path) -> None:
-    manager1 = local_peer_manager(str(tmp_path / 'm1'))
-    manager2 = local_peer_manager(str(tmp_path / 'm2'))
+async def test_connect_error() -> None:
+    manager1 = local_peer_manager()
+    manager2 = local_peer_manager()
     await manager1.start(_echo_handler([]))
     try:
         allow_peer(manager1, manager2, 'peer')
@@ -286,12 +285,11 @@ async def test_connect_error(tmp_path: pathlib.Path) -> None:
         await manager1.close()
 
 
-async def test_connect_timeout(tmp_path: pathlib.Path) -> None:
+async def test_connect_timeout() -> None:
     manager1 = local_peer_manager(
-        str(tmp_path / 'm1'),
         options=dataclasses.replace(LOCAL_PEER_OPTIONS, connect_timeout=0.1),
     )
-    manager2 = local_peer_manager(str(tmp_path / 'm2'))
+    manager2 = local_peer_manager()
     await manager1.start(_echo_handler([]))
     try:
         allow_peer(manager1, manager2, 'peer')
@@ -324,16 +322,16 @@ async def test_stream_error_is_logged(managers, caplog) -> None:
     await manager1._handle_stream(manager2.id, stream)
 
 
-async def test_not_started(tmp_path: pathlib.Path) -> None:
-    manager = local_peer_manager(str(tmp_path))
+async def test_not_started() -> None:
+    manager = local_peer_manager()
     with pytest.raises(RuntimeError, match='not been started'):
         manager.addr()
     # Closing a manager that was never started is okay
     await manager.close()
 
 
-async def test_start_and_close_idempotent(tmp_path: pathlib.Path) -> None:
-    manager = local_peer_manager(str(tmp_path))
+async def test_start_and_close_idempotent() -> None:
+    manager = local_peer_manager()
     await manager.start(_echo_handler([]))
     endpoint = manager.endpoint
     await manager.start(_echo_handler([]))
@@ -363,10 +361,9 @@ async def test_spawned_task_error_is_logged(managers, caplog) -> None:
     assert 'task failed' in str(records[0].exc_info[1])
 
 
-async def test_online(tmp_path: pathlib.Path, caplog) -> None:
+async def test_online(caplog) -> None:
     caplog.set_level(logging.INFO)
     manager = local_peer_manager(
-        str(tmp_path),
         options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=1),
     )
     with mock.patch.object(iroh.Endpoint, 'online', mock.AsyncMock()):
@@ -429,14 +426,12 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
 
 
 async def test_addr_cache(tmp_path: pathlib.Path) -> None:
-    cache1 = str(tmp_path / 'm1' / 'peer-addrs.json')
-    cache2 = str(tmp_path / 'm2' / 'peer-addrs.json')
+    cache1 = str(tmp_path / 'addrs1.json')
+    cache2 = str(tmp_path / 'addrs2.json')
     manager1 = local_peer_manager(
-        str(tmp_path / 'm1'),
         addr_cache=PeerAddrCache(cache1),
     )
     manager2 = local_peer_manager(
-        str(tmp_path / 'm2'),
         addr_cache=PeerAddrCache(cache2),
     )
     await manager1.start(_echo_handler([]))
@@ -476,7 +471,7 @@ async def test_addr_cache_prunes_removed_peers(managers, tmp_path) -> None:
     manager1, manager2, _ = managers
     cache = str(tmp_path / 'peer-addrs.json')
     manager1._addr_cache = PeerAddrCache(cache)
-    removed = local_peer_manager(str(tmp_path / 'removed'))
+    removed = local_peer_manager()
     await removed.start(_echo_handler([]))
     try:
         manager1.add_peer_addr(removed.addr())
@@ -531,9 +526,8 @@ async def test_stale_addr_timeout_not_retried(managers) -> None:
     assert dial.call_count == 1
 
 
-async def test_online_error(tmp_path: pathlib.Path, caplog) -> None:
+async def test_online_error(caplog) -> None:
     manager = local_peer_manager(
-        str(tmp_path),
         options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=1),
     )
     with mock.patch.object(
@@ -553,10 +547,9 @@ async def test_online_error(tmp_path: pathlib.Path, caplog) -> None:
     )
 
 
-async def test_online_timeout(tmp_path: pathlib.Path, caplog) -> None:
+async def test_online_timeout(caplog) -> None:
     # Relays are disabled so the endpoint never connects to a home relay.
     manager = local_peer_manager(
-        str(tmp_path),
         options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=0.01),
     )
     await manager.start(_echo_handler([]))

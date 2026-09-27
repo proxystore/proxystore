@@ -102,7 +102,8 @@ class PeerPolicy(Protocol):
     """Policy of which peer endpoints an endpoint communicates with.
 
     The [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager] checks
-    the policy on each connection and request. The
+    the policy on each connection and request, and closes the connections to
+    peers which are no longer allowed. The
     [`Allowlist`][proxystore.endpoint.peers.Allowlist] is the policy of
     endpoints started from an endpoint directory.
     """
@@ -113,17 +114,6 @@ class PeerPolicy(Protocol):
 
     def name_of(self, peer_id: EndpointId) -> str | None:
         """Get the name of the peer used in logs or `None` if unknown."""
-        ...
-
-    def revoked(self) -> set[EndpointId]:
-        """Get the peers which are no longer allowed.
-
-        The peer manager closes the connections to these peers.
-
-        Returns:
-            The peers which were allowed when this method was last called \
-            but are no longer allowed.
-        """
         ...
 
 
@@ -429,7 +419,7 @@ class PeerManager:
             PeerConnectionTimeoutError: If connecting to the peer times out.
             PeerUnavailableError: If the request fails.
         """
-        if not self._is_allowed(peer_id):
+        if not self._enforce_policy(peer_id):
             raise PeerNotAllowedError(
                 f'Endpoint {peer_id} is not in the allowlist of peers. Add '
                 'the endpoint with "proxystore-endpoint peers add".',
@@ -652,8 +642,14 @@ class PeerManager:
                 return
             self._report_path(peer_id, connection)
 
-    def _is_allowed(self, peer_id: EndpointId) -> bool:
-        for removed in self._policy.revoked():
+    def _enforce_policy(self, peer_id: EndpointId) -> bool:
+        """Close connections to peers which are no longer allowed.
+
+        Returns:
+            If `peer_id` is allowed.
+        """
+        revoked = [p for p in self._connections if not self._policy.allowed(p)]
+        for removed in revoked:
             logger.warning(
                 'Closing connections to peer %s which was removed from '
                 'the allowlist',
@@ -729,7 +725,7 @@ class PeerManager:
             return
 
         peer_id = EndpointId.from_str(str(connection.remote_id()))
-        if not self._is_allowed(peer_id):
+        if not self._enforce_policy(peer_id):
             logger.warning(
                 'Refused connection from endpoint %s which is not in the '
                 'allowlist',
@@ -757,7 +753,7 @@ class PeerManager:
                 except iroh.IrohError:
                     # Connection was closed.
                     break
-                if not self._is_allowed(peer_id):
+                if not self._enforce_policy(peer_id):
                     connection.close(CloseCode.NOT_ALLOWED, b'not allowed')
                     break
                 self._spawn(self._handle_stream(peer_id, stream))

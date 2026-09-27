@@ -249,17 +249,13 @@ class Allowlist:
         self._checked: float | None = None
         self._state: _FileState | None = None
         self._peers = PeersConfig()
-        self._revoked: set[EndpointId] = set()
 
-    def reload(self, *, force: bool = False) -> set[EndpointId]:
+    def reload(self, *, force: bool = False) -> None:
         """Reload the allowlist if the file changed.
 
         Args:
             force: Check if the file changed even if the reload interval has
                 not passed since the last check.
-
-        Returns:
-            Endpoint IDs that were removed from the allowlist.
         """
         now = time.monotonic()
         if (
@@ -267,7 +263,7 @@ class Allowlist:
             and self._checked is not None
             and now - self._checked < self.reload_interval
         ):
-            return set()
+            return
         self._checked = now
 
         try:
@@ -278,10 +274,9 @@ class Allowlist:
             state = _FileState(stat.st_mtime_ns, stat.st_size, stat.st_ino)
 
         if state == self._state:
-            return set()
+            return
         self._state = state
 
-        old = set(self._peers.peers.values())
         if state is None:
             self._peers = PeersConfig()
         else:
@@ -295,23 +290,6 @@ class Allowlist:
                     e,
                 )
                 self._peers = PeersConfig()
-        current = set(self._peers.peers.values())
-        removed = old - current
-        # A peer which was removed then added back is no longer revoked.
-        self._revoked = (self._revoked | removed) - current
-        return removed
-
-    def revoked(self) -> set[EndpointId]:
-        """Get the peers removed from the allowlist since the last call.
-
-        This reloads the allowlist if the file changed (see
-        [`reload()`][proxystore.endpoint.peers.Allowlist.reload]). Peers
-        removed by any reload since the last call are included, even if
-        the reload was caused by another method.
-        """
-        self.reload()
-        revoked, self._revoked = self._revoked, set()
-        return revoked
 
     @property
     def peers(self) -> PeersConfig:
