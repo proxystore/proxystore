@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import pathlib
 import socket
@@ -40,6 +41,7 @@ from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.server import _ClientConnection
+from proxystore.endpoint.server import _format_address
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
@@ -737,3 +739,30 @@ async def test_ping_malformed(server: _Server) -> None:
     assert response.code == Status.BAD_REQUEST
     assert "invalid 'target'" in response.meta['error']
     await asyncio.to_thread(client.close)
+
+
+@pytest.mark.parametrize(
+    ('peername', 'expected'),
+    (
+        (('127.0.0.1', 5000), '127.0.0.1:5000'),
+        (('::1', 5000, 0, 0), '[::1]:5000'),
+        ('/tmp/socket', '/tmp/socket'),
+        (None, 'None'),
+    ),
+)
+def test_format_address(peername: Any, expected: str) -> None:
+    assert _format_address(peername) == expected
+
+
+async def test_client_connection_is_logged(server: _Server, caplog) -> None:
+    caplog.set_level(logging.INFO, logger='proxystore.endpoint.server')
+    client = await _connect(server)
+    await asyncio.to_thread(client.close)
+    # Wait for the server to handle the client closing the connection
+    while not any('closed' in r.message for r in caplog.records):
+        await asyncio.sleep(0.01)
+    messages = [r.message for r in caplog.records]
+    assert any(
+        'Accepted connection from client 127.0.0.1:' in m for m in messages
+    )
+    assert any('Connection with client 127.0.0.1:' in m for m in messages)

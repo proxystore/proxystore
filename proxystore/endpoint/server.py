@@ -383,7 +383,7 @@ class ClientHandler:
 
     async def _handle_connection(self, conn: _ClientConnection) -> None:
         self._connections.add(conn)
-        peer = conn.get_extra_info('peername')
+        addr = _format_address(conn.get_extra_info('peername'))
         sock = conn.get_extra_info('socket')
         if sock is not None:  # pragma: no branch
             with contextlib.suppress(OSError):
@@ -392,7 +392,7 @@ class ClientHandler:
         try:
             try:
                 authenticated = await asyncio.wait_for(
-                    self._handshake(conn, peer),
+                    self._handshake(conn, addr),
                     timeout=self.handshake_timeout,
                 )
             except TimeoutError:
@@ -400,32 +400,34 @@ class ClientHandler:
                     'Closing connection from %s because the client did '
                     'not complete the handshake within '
                     '%s seconds',
-                    peer,
+                    addr,
                     self.handshake_timeout,
                 )
                 return
             if authenticated:
+                logger.info('Accepted connection from client %s', addr)
                 await self._serve_requests(conn)
+                logger.info('Connection with client %s closed', addr)
         except (
             ConnectionError,
             asyncio.IncompleteReadError,
             EndpointProtocolError,
         ) as e:
-            logger.debug('Closing connection from %s: %r', peer, e)
+            logger.debug('Closing connection from %s: %s', addr, e)
         except Exception:
-            logger.exception('Unexpected error handling client %s', peer)
+            logger.exception('Unexpected error handling client %s', addr)
         finally:
             self._connections.discard(conn)
             conn.close()
             await conn.wait_closed()
 
-    async def _handshake(self, conn: _ClientConnection, peer: Any) -> bool:
+    async def _handshake(self, conn: _ClientConnection, addr: str) -> bool:
         preamble = await conn.readexactly(Preamble.SIZE)
         if bytes(preamble[:4]) in _HTTP_METHODS:
             logger.warning(
                 'Rejecting HTTP request from %s. The client is likely '
                 'using an older version of ProxyStore that uses the HTTP API.',
-                peer,
+                addr,
             )
             await _reply_and_close(conn, _http_upgrade_response())
             return False
@@ -435,7 +437,7 @@ class ClientHandler:
             logger.warning(
                 'Rejecting connection from %s with protocol version '
                 '%s (expected %s)',
-                peer,
+                addr,
                 version,
                 PROTOCOL_VERSION,
             )
@@ -463,14 +465,14 @@ class ClientHandler:
             logger.warning(
                 'Rejecting connection from %s because the client '
                 'failed authentication',
-                peer,
+                addr,
             )
             await _send(
                 conn, Message.error(Status.UNAUTHORIZED, 'invalid token')
             )
             return False
 
-        self._check_client_versions(peer, hello.versions)
+        self._check_client_versions(addr, hello.versions)
         info = EndpointInfo(
             id=self.dispatcher.id,
             name=self.name,
@@ -480,7 +482,7 @@ class ClientHandler:
         await _send(conn, Message(Status.OK, info.to_meta()))
         return True
 
-    def _check_client_versions(self, peer: Any, versions: Versions) -> None:
+    def _check_client_versions(self, addr: str, versions: Versions) -> None:
         mismatches = versions.mismatches(Versions.current())
         if len(mismatches) > 0 and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.
@@ -490,7 +492,7 @@ class ClientHandler:
                 '%s. Objects serialized in one '
                 'environment may fail to deserialize in another. See '
                 '%s for details.',
-                peer,
+                addr,
                 '; '.join(mismatches),
                 VERSION_DOCS_URL,
             )
@@ -522,6 +524,15 @@ class ClientHandler:
                 conn,
                 dataclasses.replace(response, request_id=request.request_id),
             )
+
+
+def _format_address(peername: Any) -> str:
+    # The peer name of a TCP socket is (host, port) for IPv4 and
+    # (host, port, flowinfo, scope_id) for IPv6.
+    if isinstance(peername, tuple) and len(peername) >= 2:
+        host, port = peername[:2]
+        return f'[{host}]:{port}' if ':' in host else f'{host}:{port}'
+    return str(peername)
 
 
 async def _read_message(
