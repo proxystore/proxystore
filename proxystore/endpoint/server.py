@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import dataclasses
 import logging
 import os
 import socket
@@ -38,7 +39,6 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
@@ -451,7 +451,7 @@ class ClientHandler:
             proof=self.token.proof('server', nonce, hello.nonce),
         )
         conn.write(Preamble().pack())
-        await _send(conn, Status.OK, challenge.to_meta())
+        await _send(conn, Message(Status.OK, challenge.to_meta()))
 
         auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
         if not self.token.verify(
@@ -465,7 +465,9 @@ class ClientHandler:
                 'failed authentication',
                 peer,
             )
-            await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
+            await _send(
+                conn, Message.error(Status.UNAUTHORIZED, 'invalid token')
+            )
             return False
 
         self._check_client_versions(peer, hello.versions)
@@ -475,7 +477,7 @@ class ClientHandler:
             versions=Versions.current(),
             max_object_size=self.max_object_size,
         )
-        await _send(conn, Status.OK, info.to_meta())
+        await _send(conn, Message(Status.OK, info.to_meta()))
         return True
 
     def _check_client_versions(self, peer: Any, versions: Versions) -> None:
@@ -507,26 +509,18 @@ class ClientHandler:
             except ObjectSizeExceededError as e:
                 # The connection is closed after responding because the
                 # client is still sending data we do not want to read.
-                await _reply_and_close(
-                    conn,
-                    pack_message(
-                        Status.TOO_LARGE,
-                        {'error': str(e)},
-                        request_id=reader.header.request_id,
-                    ),
+                response = dataclasses.replace(
+                    Message.from_error(e),
+                    request_id=reader.header.request_id,
                 )
+                await _reply_and_close(conn, response.pack_head())
                 return
 
-            response = await self.dispatcher.handle(
-                reader.message,
-                forward=True,
-            )
+            request = reader.message
+            response = await self.dispatcher.handle(request, forward=True)
             await _send(
                 conn,
-                response.code,
-                response.meta,
-                response.data,
-                request_id=reader.header.request_id,
+                dataclasses.replace(response, request_id=request.request_id),
             )
 
 
@@ -556,18 +550,10 @@ async def _read_handshake_message(
     return message.meta
 
 
-async def _send(
-    conn: _ClientConnection,
-    status: int,
-    meta: dict[str, Any] | None = None,
-    data: bytes | bytearray | None = None,
-    *,
-    request_id: int = 0,
-) -> None:
-    data_len = 0 if data is None else len(data)
-    conn.write(pack_message(status, meta, data_len, request_id=request_id))
-    if data is not None:
-        conn.write(data)
+async def _send(conn: _ClientConnection, message: Message) -> None:
+    conn.write(message.pack_head())
+    if len(message.data) > 0:
+        conn.write(message.data)
     await conn.drain()
 
 

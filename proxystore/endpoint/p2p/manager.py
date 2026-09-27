@@ -35,7 +35,6 @@ from proxystore.endpoint.p2p.addrs import PeerAddrCache
 from proxystore.endpoint.protocol import ALPN
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Status
 from proxystore.utils.tasks import spawn_guarded_background_task
 
@@ -806,7 +805,7 @@ class PeerManager:
 async def _write_message(stream: iroh.SendStream, message: Message) -> None:
     data = message.data
     view = memoryview(data).cast('B')
-    await stream.write_all(pack_message(message.code, message.meta, len(view)))
+    await stream.write_all(message.pack_head())
     for start in range(0, len(view), _CHUNK_SIZE):
         chunk = view[start : start + _CHUNK_SIZE]
         await stream.write_all(

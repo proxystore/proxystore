@@ -47,11 +47,6 @@ from testing.compat import randbytes
 MAX_OBJECT_SIZE = 10_000_000
 
 
-def _recv_meta(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
-    header, message = _recv_message(sock)
-    return header, message.meta
-
-
 class _Server(NamedTuple):
     handler: ClientHandler
     dispatcher: Dispatcher
@@ -155,9 +150,9 @@ def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     assert (
         Preamble.unpack(bytes(_recv_exactly(sock, Preamble.SIZE))).version == 1
     )
-    header, meta = _recv_meta(sock)
-    assert header.code == Status.OK
-    return client_nonce, meta
+    response = _recv_message(sock)
+    assert response.code == Status.OK
+    return client_nonce, response.meta
 
 
 async def test_server_rejects_bad_proof(server: _Server) -> None:
@@ -170,8 +165,7 @@ async def test_server_rejects_bad_proof(server: _Server) -> None:
                 bytes.fromhex(meta['nonce']),
             )
             sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-            header, meta = _recv_meta(sock)
-            assert header.code == Status.UNAUTHORIZED
+            assert _recv_message(sock).code == Status.UNAUTHORIZED
             assert _is_closed(sock)
 
     await asyncio.to_thread(_run)
@@ -183,8 +177,7 @@ async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
         with _raw_socket(server) as sock:
             _, meta = _raw_hello(sock)
             sock.sendall(pack_message(Op.AUTH, {'proof': meta['proof']}))
-            header, _ = _recv_meta(sock)
-            assert header.code == Status.UNAUTHORIZED
+            assert _recv_message(sock).code == Status.UNAUTHORIZED
 
     await asyncio.to_thread(_run)
 
@@ -269,8 +262,8 @@ async def _raw_request(
 ) -> tuple[int, dict[str, Any]]:
     def _run() -> tuple[int, dict[str, Any]]:
         client._socket.sendall(message)
-        header, meta = _recv_meta(client._socket)
-        return header.code, meta
+        response = _recv_message(client._socket)
+        return response.code, response.meta
 
     return await asyncio.to_thread(_run)
 
@@ -349,8 +342,8 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
             data_len=MAX_OBJECT_SIZE + 1,
         )
         client._socket.sendall(message + randbytes(1_000_000))
-        header, meta = _recv_meta(client._socket)
-        return header.code, meta
+        response = _recv_message(client._socket)
+        return response.code, response.meta
 
     for _ in range(10):
         code, meta = await asyncio.to_thread(_run)
@@ -625,15 +618,14 @@ def _raw_handshake(server: _Server, versions: Versions) -> None:
         hello = Hello(client_nonce, versions).to_meta()
         sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
         _recv_exactly(sock, Preamble.SIZE)
-        _, meta = _recv_meta(sock)
+        challenge = _recv_message(sock)
         proof = server.token.proof(
             'client',
             client_nonce,
-            bytes.fromhex(meta['nonce']),
+            bytes.fromhex(challenge.meta['nonce']),
         )
         sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-        header, _ = _recv_meta(sock)
-        assert header.code == Status.OK
+        assert _recv_message(sock).code == Status.OK
 
 
 async def test_client_version_mismatch_logged_once(
@@ -741,7 +733,7 @@ async def test_ping_malformed(server: _Server) -> None:
         client._socket.sendall,
         pack_message(Op.PING, {'key': None, 'target': 42}),
     )
-    header, meta = await asyncio.to_thread(_recv_meta, client._socket)
-    assert header.code == Status.BAD_REQUEST
-    assert "invalid 'target'" in meta['error']
+    response = await asyncio.to_thread(_recv_message, client._socket)
+    assert response.code == Status.BAD_REQUEST
+    assert "invalid 'target'" in response.meta['error']
     await asyncio.to_thread(client.close)

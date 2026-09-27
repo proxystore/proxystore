@@ -461,11 +461,14 @@ class Message:
             [`Status`][proxystore.endpoint.protocol.Status] of a response.
         meta: Metadata of the message.
         data: Data of the message.
+        request_id: ID of the request (see
+            [`Header`][proxystore.endpoint.protocol.Header]).
     """
 
     code: int
     meta: dict[str, Any] = dataclasses.field(default_factory=dict)
     data: bytes | bytearray = b''
+    request_id: int = 0
 
     @classmethod
     def error(cls, status: Status, message: str) -> Message:
@@ -480,6 +483,20 @@ class Message:
         [`error_status()`][proxystore.endpoint.protocol.error_status].
         """
         return cls.error(error_status(error), str(error))
+
+    def pack_head(self) -> bytes:
+        """Pack the header and metadata of the message.
+
+        The data is not included so it can be sent separately without being
+        copied (see
+        [`pack_message()`][proxystore.endpoint.protocol.pack_message]).
+        """
+        return pack_message(
+            self.code,
+            self.meta,
+            len(self.data),
+            request_id=self.request_id,
+        )
 
 
 def error_status(error: BaseException) -> Status:
@@ -791,7 +808,12 @@ class MessageReader:
             self._meta = decode_meta(buffer)
             self._read_meta()
             return
-        self._message = Message(self._header.code, self._meta, buffer)
+        self._message = Message(
+            self._header.code,
+            self._meta,
+            buffer,
+            self._header.request_id,
+        )
         self._size = 0
 
     def _read_meta(self) -> None:
@@ -806,5 +828,9 @@ class MessageReader:
         if data_len > 0:
             self._size = data_len
         else:
-            self._message = Message(self._header.code, self._meta)
+            self._message = Message(
+                self._header.code,
+                self._meta,
+                request_id=self._header.request_id,
+            )
             self._size = 0

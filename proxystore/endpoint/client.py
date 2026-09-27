@@ -34,7 +34,6 @@ from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import exists_from_meta
-from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
@@ -406,11 +405,11 @@ class EndpointClient:
                 self._socket.sendall(message)
                 self._socket.sendall(payload)
 
-            header, response = _recv_message(self._socket)
-            if header.request_id != request_id:
+            response = _recv_message(self._socket)
+            if response.request_id != request_id:
                 raise EndpointProtocolError(
                     f'Expected a response to request {request_id} but got '
-                    f'a response to request {header.request_id}.',
+                    f'a response to request {response.request_id}.',
                 )
         except EndpointError:
             self.close()
@@ -536,21 +535,21 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
 
 def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
     try:
-        header, message = _recv_message(sock, max_data_size=0)
+        message = _recv_message(sock, max_data_size=0)
     except ObjectSizeExceededError:
         raise EndpointProtocolError(
             'Endpoint sent data in a handshake message.',
         ) from None
     meta = message.meta
-    if header.code == Status.UNAUTHORIZED:
+    if message.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
             'have been restarted since the connection file was read.',
         )
-    if header.code != Status.OK:
+    if message.code != Status.OK:
         error = meta.get('error', 'no error message provided')
         raise EndpointProtocolError(
-            f'Endpoint returned status {header.code} during the handshake: '
+            f'Endpoint returned status {message.code} during the handshake: '
             f'{error}',
         )
     return meta
@@ -560,11 +559,11 @@ def _recv_message(
     sock: socket.socket,
     *,
     max_data_size: int | None = None,
-) -> tuple[Header, Message]:
+) -> Message:
     reader = MessageReader(max_data_size=max_data_size)
     while not reader.done:
         reader.feed(_recv_exactly(sock, reader.size))
-    return reader.header, reader.message
+    return reader.message
 
 
 def _recv_exactly(sock: socket.socket, size: int) -> bytearray:

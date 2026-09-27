@@ -297,7 +297,8 @@ def test_exists_from_meta() -> None:
     (({}, b''), ({'key': 'k'}, b''), ({}, b'data'), ({'key': 'k'}, b'data')),
 )
 def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
-    buffer = pack_message(Op.SET, meta, len(data), request_id=7) + data
+    message = Message(Op.SET, meta, data, request_id=7)
+    buffer = message.pack_head() + data
     reader = MessageReader()
     sizes = []
     while not reader.done:
@@ -307,8 +308,7 @@ def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
         buffer = buffer[size:]
     assert buffer == b''
     assert reader.size == 0
-    assert reader.header.request_id == 7
-    assert reader.message == Message(Op.SET, meta, data)
+    assert reader.message == message
     # Empty parts of the message are skipped
     assert 0 not in sizes
 
