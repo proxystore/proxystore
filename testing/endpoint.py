@@ -18,40 +18,35 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import serve
 from testing.utils import open_port
 
 
 def write_endpoint(
-    endpoint_dir: EndpointDir,
+    proxystore_dir: str,
+    name: str,
     **kwargs: Any,
-) -> EndpointConfig:
-    """Write an endpoint configuration and a new secret key.
+) -> tuple[EndpointDir, EndpointConfig]:
+    """Create an endpoint for testing.
 
     Args:
-        endpoint_dir: Directory to write the endpoint to.
-        kwargs: Fields of the configuration. The `name` defaults to the
-            base name of the directory, the `port` to an open port, and
-            peering is disabled.
+        proxystore_dir: ProxyStore home directory to create the endpoint in.
+        name: Name of the endpoint.
+        kwargs: Fields of the configuration. The `port` defaults to an open
+            port and peering is disabled by default.
 
     Returns:
-        The configuration.
+        The endpoint directory and configuration.
     """
-    secret_key = SecretKey.generate()
     options: dict[str, Any] = {
-        'name': os.path.basename(endpoint_dir.path),
         'port': open_port(),
         # Peering connects to n0's public relays so it is disabled by default
         # to avoid network access outside of the host in tests.
         'p2p': EndpointP2PConfig(enabled=False),
         **kwargs,
-        'id': secret_key.endpoint_id,
     }
-    config = EndpointConfig(**options)
-    endpoint_dir.write_config(config)
-    endpoint_dir.write_secret_key(secret_key)
-    return config
+    endpoint_dir = EndpointDir.create(name, proxystore_dir, **options)
+    return endpoint_dir, endpoint_dir.read_config()
 
 
 def serve_endpoint_silent(
@@ -117,9 +112,9 @@ def copy_endpoint_dir(
     Returns:
         The copied endpoint directory.
     """
-    dest = EndpointDir.from_home(
-        proxystore_dir,
+    dest = EndpointDir.from_name(
         os.path.basename(endpoint_dir.path),
+        proxystore_dir,
     )
     shutil.copytree(endpoint_dir.path, dest.path, dirs_exist_ok=True)
     return dest
@@ -132,7 +127,7 @@ def endpoint_dir(tmp_path_factory: pytest.TempPathFactory) -> EndpointDir:
     The parent of this directory can be used as a ProxyStore home directory.
     """
     home = tmp_path_factory.mktemp('endpoint-home')
-    return EndpointDir.from_home(str(home), 'endpoint-fixture')
+    return EndpointDir.from_name('endpoint-fixture', str(home))
 
 
 @pytest.fixture(scope='session')
@@ -141,7 +136,11 @@ def endpoint(
     use_uvloop: bool,
 ) -> Generator[EndpointConfig, None, None]:
     """Launch endpoint in subprocess."""
-    config = write_endpoint(endpoint_dir, host='localhost')
+    _, config = write_endpoint(
+        os.path.dirname(endpoint_dir.path),
+        os.path.basename(endpoint_dir.path),
+        host='localhost',
+    )
     context = multiprocessing.get_context('spawn')
     server_handle = context.Process(
         target=serve_endpoint_silent,

@@ -13,6 +13,7 @@ from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import generate_token
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
+from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.identity import SecretKey
 
 
@@ -171,3 +172,68 @@ def test_running_pid(tmp_path: pathlib.Path) -> None:
         return_value=False,
     ):
         assert endpoint_dir.running_pid() is None
+
+
+def test_create(tmp_path: pathlib.Path) -> None:
+    home = str(tmp_path / 'home')
+    endpoint_dir = EndpointDir.create('my-ep', home, port=1234)
+    assert endpoint_dir == EndpointDir.from_name('my-ep', home)
+    assert stat.S_IMODE(os.stat(endpoint_dir.path).st_mode) == 0o700
+
+    config = endpoint_dir.read_config()
+    assert config.name == 'my-ep'
+    assert config.port == 1234
+    assert endpoint_dir.read_secret_key().endpoint_id == config.id
+    assert [d for d, _ in EndpointDir.find_all(home)] == [endpoint_dir]
+
+
+def test_create_with_secret_key(tmp_path: pathlib.Path) -> None:
+    secret_key = SecretKey.generate()
+    endpoint_dir = EndpointDir.create(
+        'my-ep',
+        str(tmp_path),
+        secret_key=secret_key,
+        port=1234,
+    )
+    assert endpoint_dir.read_config().id == secret_key.endpoint_id
+    assert endpoint_dir.read_secret_key() == secret_key
+
+
+def test_create_existing(tmp_path: pathlib.Path) -> None:
+    EndpointDir.create('my-ep', str(tmp_path), port=1234)
+    with pytest.raises(FileExistsError, match='already exists'):
+        EndpointDir.create('my-ep', str(tmp_path), port=1234)
+
+
+def test_create_invalid_config(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ValueError, match='Port must be in range'):
+        EndpointDir.create('my-ep', str(tmp_path), port=0)
+    # Nothing is written if the configuration is invalid
+    assert not os.path.exists(tmp_path / 'my-ep')
+
+
+def test_default_home(tmp_path: pathlib.Path) -> None:
+    with mock.patch(
+        'proxystore.endpoint.directory.home_dir',
+        return_value=str(tmp_path),
+    ):
+        assert resolve_home() == str(tmp_path)
+        assert resolve_home('/other') == '/other'
+        endpoint_dir = EndpointDir.create('my-ep', port=1234)
+        assert endpoint_dir.path == str(tmp_path / 'my-ep')
+        assert EndpointDir.from_name('my-ep') == endpoint_dir
+        assert [d for d, _ in EndpointDir.find_all()] == [endpoint_dir]
+
+
+def test_read_secret_key_mismatch(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
+    endpoint_dir.write_secret_key(SecretKey.generate())
+    with pytest.raises(ValueError, match='does not match the secret key'):
+        endpoint_dir.read_secret_key()
+
+
+def test_read_secret_key_missing(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
+    os.remove(endpoint_dir.secret_key_path)
+    with pytest.raises(FileNotFoundError, match='configure it again'):
+        endpoint_dir.read_secret_key()

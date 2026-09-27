@@ -47,27 +47,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _check_secret_key(
-    endpoint_dir: EndpointDir,
-    config: EndpointConfig,
-) -> SecretKey:
-    try:
-        secret_key = endpoint_dir.read_secret_key()
-    except FileNotFoundError:
-        raise FileNotFoundError(
-            f'Endpoint directory {endpoint_dir} does not contain a secret '
-            'key. Remove the endpoint and configure it again with '
-            '"proxystore-endpoint configure".',
-        ) from None
-    endpoint_id = secret_key.endpoint_id
-    if endpoint_id != config.id:
-        raise ValueError(
-            f'The endpoint ID in the configuration ({config.id}) does not '
-            f'match the secret key ({endpoint_id}) in {endpoint_dir}.',
-        )
-    return secret_key
-
-
 def _create_peer_manager(
     endpoint_dir: EndpointDir,
     config: EndpointConfig,
@@ -167,7 +146,7 @@ async def running_endpoint(
     config = endpoint_dir.read_config()
     if config.host is None:
         raise ValueError('EndpointConfig has NoneType as host.')
-    secret_key = _check_secret_key(endpoint_dir, config)
+    secret_key = endpoint_dir.read_secret_key()
 
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.

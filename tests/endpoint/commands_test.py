@@ -60,7 +60,7 @@ def test_get_status(tmp_path: pathlib.Path, caplog) -> None:
     # Returns UNKNOWN if directory does not exist
     assert get_status(_NAME, str(tmp_path)) == EndpointStatus.UNKNOWN
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         assert get_status(_NAME) == EndpointStatus.UNKNOWN
@@ -139,7 +139,7 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
 
 def test_configure_endpoint_home_dir(tmp_path: pathlib.Path) -> None:
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         rv = configure_endpoint(
@@ -217,7 +217,7 @@ def test_list_endpoints_empty(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
 
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         rv = list_endpoints()
@@ -252,7 +252,7 @@ def test_remove_endpoints_does_not_exist(
     caplog.set_level(logging.ERROR)
 
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         rv = remove_endpoint(_NAME)
@@ -274,7 +274,7 @@ def test_remove_endpoint_running(
 
     with (
         mock.patch(
-            'proxystore.endpoint.commands.home_dir',
+            'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
         mock.patch(
@@ -343,7 +343,7 @@ def test_start_endpoint_running(tmp_path: pathlib.Path, caplog) -> None:
 
     with (
         mock.patch(
-            'proxystore.endpoint.commands.home_dir',
+            'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
         mock.patch(
@@ -363,7 +363,7 @@ def test_start_endpoint_does_not_exist(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.ERROR)
 
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         rv = start_endpoint(_NAME)
@@ -511,7 +511,7 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
         f.write(str(p.pid))
 
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         rv = stop_endpoint(_NAME)
@@ -614,7 +614,7 @@ def _configure(tmp_path: pathlib.Path, name: str = _NAME) -> EndpointConfig:
     assert (
         configure_endpoint(name, port=_PORT, proxystore_dir=str(tmp_path)) == 0
     )
-    return EndpointDir.from_home(str(tmp_path), name).read_config()
+    return EndpointDir.from_name(name, str(tmp_path)).read_config()
 
 
 def test_get_endpoint_id(tmp_path: pathlib.Path, caplog) -> None:
@@ -646,7 +646,7 @@ def test_add_list_remove_peer(tmp_path: pathlib.Path, caplog) -> None:
     assert any('has no peers' in r.message for r in caplog.records)
 
     assert add_peer(_NAME, 'peer', peer_id, proxystore_dir=home) == 0
-    endpoint_dir = EndpointDir.from_home(home, _NAME)
+    endpoint_dir = EndpointDir.from_name(_NAME, home)
     assert endpoint_dir.read_peers().peers == {'peer': peer_id}
 
     caplog.clear()
@@ -685,7 +685,7 @@ def test_peer_commands_malformed_peers(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.ERROR)
     home = str(tmp_path)
     _configure(tmp_path)
-    endpoint_dir = EndpointDir.from_home(home, _NAME)
+    endpoint_dir = EndpointDir.from_name(_NAME, home)
     with open(endpoint_dir.peers_path, 'w') as f:
         f.write('not toml')
 
@@ -707,7 +707,7 @@ def test_peer_commands_missing_endpoint(
 
 def test_peer_commands_default_home(tmp_path: pathlib.Path) -> None:
     with mock.patch(
-        'proxystore.endpoint.commands.home_dir',
+        'proxystore.endpoint.directory.home_dir',
         return_value=str(tmp_path),
     ):
         assert get_endpoint_id('missing') == 1

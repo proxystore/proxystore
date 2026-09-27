@@ -35,14 +35,11 @@ def _endpoint_dir(
     **kwargs: Any,
 ) -> tuple[EndpointDir, EndpointConfig]:
     options: dict[str, Any] = {
-        'name': 'my-endpoint',
         'host': '127.0.0.1',
         'storage': EndpointStorageConfig(database_path=':memory:'),
     }
     options.update(kwargs)
-    endpoint_dir = EndpointDir(str(path))
-    config = write_endpoint(endpoint_dir, **options)
-    return endpoint_dir, config
+    return write_endpoint(str(path), 'my-endpoint', **options)
 
 
 async def test_running_endpoint(tmp_path: pathlib.Path) -> None:
@@ -94,10 +91,10 @@ async def test_running_endpoint_restricts_endpoint_dir(
     caplog,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
-    os.chmod(tmp_path, 0o777)
+    os.chmod(endpoint_dir.path, 0o777)
     async with running_endpoint(endpoint_dir):
         pass
-    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == 0o700
+    assert stat.S_IMODE(os.stat(endpoint_dir.path).st_mode) == 0o700
     assert any('other permissions' in r.message for r in caplog.records)
 
 

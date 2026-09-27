@@ -405,7 +405,7 @@ def test_from_name_default_home(tmp_path: pathlib.Path) -> None:
     _write_config(tmp_path / 'test')
     with (
         mock.patch(
-            'proxystore.endpoint.client.home_dir',
+            'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
         pytest.raises(EndpointNotRunningError, match='Is the endpoint'),

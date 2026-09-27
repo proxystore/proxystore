@@ -55,7 +55,6 @@ from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
 from proxystore.serialize import BytesLike
-from proxystore.utils.environment import home_dir
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
@@ -259,14 +258,11 @@ class EndpointClient:
             EndpointError: If connecting to the endpoint fails (see
                 [`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]).
         """
-        proxystore_dir = (
-            home_dir() if proxystore_dir is None else proxystore_dir
-        )
-        endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+        endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
         if not os.path.isdir(endpoint_dir):
             raise EndpointNotFoundError(
                 f'An endpoint named {name} does not exist in '
-                f'{proxystore_dir}.',
+                f'{os.path.dirname(endpoint_dir.path)}.',
             )
         return cls.from_dir(endpoint_dir, timeout=timeout)
 

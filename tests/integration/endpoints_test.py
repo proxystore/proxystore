@@ -12,7 +12,6 @@ import pytest
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
-from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.peers import PeersConfig
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.p2p.addrs import save_peer_addrs
@@ -27,15 +26,17 @@ async def _peered_endpoints(
     # Each endpoint has its own ProxyStore home directory to simulate
     # endpoints on different systems.
     homes = [str(tmp_path / 'home1'), str(tmp_path / 'home2')]
-    dirs = [EndpointDir.from_home(home, 'endpoint') for home in homes]
-    configs = [
+    created = [
         write_endpoint(
-            endpoint_dir,
+            home,
+            'endpoint',
             host='127.0.0.1',
             p2p=EndpointP2PConfig(enabled=True, relays='none'),
         )
-        for endpoint_dir in dirs
+        for home in homes
     ]
+    dirs = [endpoint_dir for endpoint_dir, _ in created]
+    configs = [config for _, config in created]
     dirs[0].write_peers(PeersConfig(peers={'peer': configs[1].id}))
     dirs[1].write_peers(PeersConfig(peers={'peer': configs[0].id}))
 

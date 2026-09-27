@@ -7,6 +7,7 @@ import dataclasses
 import json
 import os
 import stat
+from typing import Any
 from typing import Self
 
 from proxystore.endpoint.auth import ConnectionInfo
@@ -19,6 +20,7 @@ from proxystore.endpoint.peers import read_peers
 from proxystore.utils.config import dump
 from proxystore.utils.config import dumps
 from proxystore.utils.config import load
+from proxystore.utils.environment import home_dir
 
 
 @dataclasses.dataclass(frozen=True)
@@ -31,8 +33,10 @@ class EndpointDir:
 
     Example:
         ```python
-        endpoint_dir = EndpointDir.from_home('/path/to/proxystore', 'my-ep')
-        assert endpoint_dir.path == '/path/to/proxystore/my-ep'
+        # Create a new endpoint with a new secret key
+        endpoint_dir = EndpointDir.create('my-ep', port=8765)
+        # Or open an existing endpoint
+        endpoint_dir = EndpointDir.from_name('my-ep')
         config = endpoint_dir.read_config()
         ```
 
@@ -49,35 +53,107 @@ class EndpointDir:
         return self.path
 
     @classmethod
-    def from_home(cls, proxystore_dir: str, name: str) -> Self:
+    def from_name(
+        cls,
+        name: str,
+        proxystore_dir: str | None = None,
+    ) -> Self:
         """Get the directory of an endpoint in a ProxyStore home directory.
 
+        The directory may not exist (e.g., because the endpoint has not been
+        created yet).
+
         Args:
-            proxystore_dir: ProxyStore home directory (see
-                [`home_dir()`][proxystore.utils.environment.home_dir]).
             name: Name of the endpoint.
+            proxystore_dir: ProxyStore home directory. Defaults to
+                [`home_dir()`][proxystore.utils.environment.home_dir].
         """
-        return cls(os.path.join(proxystore_dir, name))
+        return cls(os.path.join(resolve_home(proxystore_dir), name))
+
+    @classmethod
+    def create(
+        cls,
+        name: str,
+        proxystore_dir: str | None = None,
+        *,
+        secret_key: SecretKey | None = None,
+        **options: Any,
+    ) -> Self:
+        """Create a new endpoint.
+
+        Creates the endpoint directory, only accessible by the owner, and
+        writes a new secret key and the configuration of the endpoint.
+
+        Example:
+            ```python
+            endpoint_dir = EndpointDir.create(
+                'my-ep',
+                port=8765,
+                p2p=EndpointP2PConfig(relays='none'),
+            )
+            ```
+
+        Args:
+            name: Name of the endpoint.
+            proxystore_dir: ProxyStore home directory. Defaults to
+                [`home_dir()`][proxystore.utils.environment.home_dir].
+            secret_key: Secret key of the endpoint. A new key is generated
+                if `None`.
+            options: Other fields of the
+                [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig]
+                (e.g., `port`). The `name` and `id` are set automatically.
+
+        Returns:
+            The new endpoint directory.
+
+        Raises:
+            FileExistsError: If an endpoint with the name already exists.
+            ValueError: If the configuration is invalid.
+        """
+        secret_key = SecretKey.generate() if secret_key is None else secret_key
+        config = EndpointConfig(
+            name=name,
+            id=secret_key.endpoint_id,
+            **options,
+        )
+        endpoint_dir = cls.from_name(name, proxystore_dir)
+        os.makedirs(os.path.dirname(endpoint_dir.path), exist_ok=True)
+        # Clients trust the files in the endpoint directory, so only the
+        # owner can create or replace files in it.
+        try:
+            os.mkdir(endpoint_dir.path, mode=0o700)
+        except FileExistsError:
+            raise FileExistsError(
+                f'An endpoint named {name} already exists in '
+                f'{os.path.dirname(endpoint_dir.path)}.',
+            ) from None
+        endpoint_dir.write_secret_key(secret_key)
+        # The configuration is written last because an endpoint is only
+        # found (see find_all()) once it has a configuration.
+        endpoint_dir.write_config(config)
+        return endpoint_dir
 
     @classmethod
     def find_all(
-        cls, proxystore_dir: str
+        cls,
+        proxystore_dir: str | None = None,
     ) -> list[tuple[Self, EndpointConfig]]:
         """Find all endpoints with a valid configuration.
 
         Args:
-            proxystore_dir: ProxyStore home directory to search in (see
-                [`home_dir()`][proxystore.utils.environment.home_dir]).
+            proxystore_dir: ProxyStore home directory to search in. Defaults
+                to [`home_dir()`][proxystore.utils.environment.home_dir].
 
         Returns:
             List of each endpoint directory and its configuration.
         """
+        proxystore_dir = resolve_home(proxystore_dir)
         endpoints: list[tuple[Self, EndpointConfig]] = []
         if not os.path.isdir(proxystore_dir):
             return endpoints
 
         # Endpoint directories are always direct children of the home
-        # directory (see from_home()).
+        # directory (see from_name()).
         with os.scandir(proxystore_dir) as entries:
             paths = sorted(entry.path for entry in entries if entry.is_dir())
 
@@ -160,18 +236,39 @@ class EndpointDir:
     def read_secret_key(self) -> SecretKey:
         """Read the secret key of the endpoint.
 
+        The key is checked against the ID in the configuration of the
+        endpoint, if the configuration exists.
+
         Raises:
             FileNotFoundError: If the secret key file does not exist.
-            ValueError: If the secret key file is malformed.
+            ValueError: If the secret key file is malformed or does not
+                match the ID in the configuration.
         """
-        with open(self.secret_key_path, 'rb') as f:
-            data = f.read()
         try:
-            return SecretKey(data)
+            with open(self.secret_key_path, 'rb') as f:
+                data = f.read()
+        except FileNotFoundError:
+            raise FileNotFoundError(
+                f'Endpoint directory {self.path} does not contain a secret '
+                'key. Remove the endpoint and configure it again with '
+                '"proxystore-endpoint configure".',
+            ) from None
+        try:
+            secret_key = SecretKey(data)
         except ValueError:
             raise ValueError(
                 f'Secret key file at {self.secret_key_path} is malformed.',
             ) from None
+
+        if os.path.exists(self.config_path):
+            config = self.read_config()
+            if secret_key.endpoint_id != config.id:
+                raise ValueError(
+                    f'The endpoint ID in the configuration ({config.id}) '
+                    'does not match the secret key '
+                    f'({secret_key.endpoint_id}) in {self.path}.',
+                )
+        return secret_key
 
     @property
     def peers_path(self) -> str:
@@ -308,6 +405,16 @@ class EndpointDir:
 
     def _join(self, name: str) -> str:
         return os.path.join(self.path, name)
+
+
+def resolve_home(proxystore_dir: str | None = None) -> str:
+    """Resolve the ProxyStore home directory.
+
+    Args:
+        proxystore_dir: ProxyStore home directory. If `None`, the default
+            [`home_dir()`][proxystore.utils.environment.home_dir] is used.
+    """
+    return home_dir() if proxystore_dir is None else proxystore_dir
 
 
 def is_own_process(pid: int) -> bool:

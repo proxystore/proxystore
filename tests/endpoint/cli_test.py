@@ -39,11 +39,7 @@ def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
             return_value=str(tmp_path),
         ),
         mock.patch(
-            'proxystore.endpoint.client.home_dir',
-            return_value=str(tmp_path),
-        ),
-        mock.patch(
-            'proxystore.endpoint.commands.home_dir',
+            'proxystore.endpoint.directory.home_dir',
             return_value=str(tmp_path),
         ),
     ):
@@ -264,8 +260,12 @@ def test_test_command_errors(
 
 async def test_test_command_tls(home_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'tls-endpoint'))
-    config = write_endpoint(endpoint_dir, host='127.0.0.1', tls=True)
+    endpoint_dir, config = write_endpoint(
+        home_dir,
+        'tls-endpoint',
+        host='127.0.0.1',
+        tls=True,
+    )
 
     runner = click.testing.CliRunner()
     async with running_endpoint(endpoint_dir):

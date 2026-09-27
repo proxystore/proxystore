@@ -274,8 +274,11 @@ async def test_connector_endpoint_restart(
     caplog,
 ) -> None:
     caplog.set_level(logging.DEBUG, logger='proxystore.connectors.endpoint')
-    endpoint_dir = EndpointDir(str(tmp_path / 'restart-endpoint'))
-    config = write_endpoint(endpoint_dir, host='127.0.0.1')
+    endpoint_dir, config = write_endpoint(
+        str(tmp_path),
+        'restart-endpoint',
+        host='127.0.0.1',
+    )
 
     async with running_endpoint(endpoint_dir):
         connector = await asyncio.to_thread(
@@ -302,8 +305,12 @@ async def test_connector_endpoint_restart(
 
 
 async def test_connector_tls(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir(str(tmp_path / 'tls-endpoint'))
-    config = write_endpoint(endpoint_dir, host='127.0.0.1', tls=True)
+    endpoint_dir, config = write_endpoint(
+        str(tmp_path),
+        'tls-endpoint',
+        host='127.0.0.1',
+        tls=True,
+    )
 
     def _run() -> None:
         with EndpointConnector(

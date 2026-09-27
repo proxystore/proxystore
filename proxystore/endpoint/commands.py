@@ -29,10 +29,9 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.config import validate_name
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import is_own_process
+from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.serve import serve
-from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -74,10 +73,7 @@ def get_status(name: str, proxystore_dir: str | None = None) -> EndpointStatus:
         the endpoint process dying unexpectedly or the endpoint process is on \
         a different host.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
     if not os.path.isdir(endpoint_dir):
         return EndpointStatus.UNKNOWN
 
@@ -130,10 +126,7 @@ def configure_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
-
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
     database_path = endpoint_dir.database_path if persist_data else None
 
     host_addr: str | None = None
@@ -148,11 +141,10 @@ def configure_endpoint(
 
     port = port if port is not None else random.randint(10 * 1024, 20 * 1024)
 
-    secret_key = SecretKey.generate()
     try:
-        cfg = EndpointConfig(
-            name=name,
-            id=secret_key.endpoint_id,
+        endpoint_dir = EndpointDir.create(
+            name,
+            proxystore_dir,
             host=host_addr,
             port=port,
             host_type=host_type,
@@ -163,17 +155,14 @@ def configure_endpoint(
             ),
             storage=EndpointStorageConfig(database_path=database_path),
         )
-    except ValueError as e:
-        logger.error(str(e))
-        return 1
-
-    if os.path.exists(endpoint_dir):
+    except FileExistsError:
         logger.error('An endpoint named %s already exists.', name)
         logger.info('To reconfigure the endpoint, remove and try again.')
         return 1
-
-    endpoint_dir.write_config(cfg)
-    endpoint_dir.write_secret_key(secret_key)
+    except ValueError as e:
+        logger.error(str(e))
+        return 1
+    cfg = endpoint_dir.read_config()
 
     logger.info('Configured endpoint: %s <%s>', cfg.name, cfg.id)
     logger.info('Config and log file directory: %s', endpoint_dir)
@@ -210,8 +199,7 @@ def list_endpoints(
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
+    proxystore_dir = resolve_home(proxystore_dir)
 
     endpoints = [c for _, c in EndpointDir.find_all(proxystore_dir)]
 
@@ -274,9 +262,7 @@ def remove_endpoint(
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
 
     if not os.path.exists(endpoint_dir):
         logger.error('An endpoint named %s does not exist.', name)
@@ -295,7 +281,7 @@ def remove_endpoint(
     return 0
 
 
-def start_endpoint(  # noqa: C901
+def start_endpoint(
     name: str,
     *,
     detach: bool = False,
@@ -315,9 +301,6 @@ def start_endpoint(  # noqa: C901
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-
     status = get_status(name, proxystore_dir)
     if status == EndpointStatus.RUNNING:
         logger.error('Endpoint %s is already running.', name)
@@ -327,7 +310,7 @@ def start_endpoint(  # noqa: C901
         logger.error('Use `list` to see available endpoints.')
         return 1
 
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
     cfg = endpoint_dir.read_config()
 
     if cfg.host_type == 'fqdn':
@@ -413,9 +396,6 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         Exit code where 0 is success and 1 is failure. Failure messages \
         are logged to the default logger.
     """
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-
     status = get_status(name, proxystore_dir)
     if status == EndpointStatus.UNKNOWN:
         logger.error('A valid endpoint named %s does not exist.', name)
@@ -425,7 +405,7 @@ def stop_endpoint(name: str, *, proxystore_dir: str | None = None) -> int:
         logger.info('Endpoint %s is not running.', name)
         return 0
 
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
     cfg = endpoint_dir.read_config()
     hostname = utils.hostname()
     pid_file = endpoint_dir.pid_path
@@ -505,9 +485,7 @@ def _read_endpoint(
     name: str,
     proxystore_dir: str | None,
 ) -> tuple[EndpointDir, EndpointConfig] | None:
-    if proxystore_dir is None:
-        proxystore_dir = home_dir()
-    endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
+    endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
     if not os.path.exists(endpoint_dir):
         logger.error('An endpoint named %s does not exist.', name)
         return None

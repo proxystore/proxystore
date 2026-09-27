@@ -19,6 +19,7 @@ from typing import TypeVar
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointConnectorError
@@ -27,7 +28,6 @@ from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
-from proxystore.utils.environment import home_dir
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +90,7 @@ class EndpointConnector:
 
         # Find the first locally accessible endpoint to use as our
         # home endpoint
-        home = (
-            home_dir() if self.proxystore_dir is None else self.proxystore_dir
-        )
+        home = resolve_home(self.proxystore_dir)
         failures: list[str] = []
         found: tuple[EndpointId, EndpointDir, EndpointClient] | None = None
         for endpoint_dir, endpoint in EndpointDir.find_all(home):
