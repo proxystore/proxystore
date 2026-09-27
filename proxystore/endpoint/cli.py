@@ -377,7 +377,7 @@ def stop(name: str) -> None:
 @cli.group(name='client')
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
-    '--remote',
+    '--target',
     metavar='ID',
     help='Optional ID of a peer endpoint to forward operations to.',
 )
@@ -385,17 +385,17 @@ def stop(name: str) -> None:
 def client_group(
     ctx: click.Context,
     name: str,
-    remote: str | None,
+    target: str | None,
 ) -> None:
     """Run client operations on endpoint NAME.
 
-    Operations are performed on the endpoint or, with --remote, forwarded
+    Operations are performed on the endpoint or, with --target, forwarded
     to a peer endpoint. These are useful for testing and debugging endpoints.
     """
     ctx.ensure_object(dict)
 
     ctx.obj['ENDPOINT_NAME'] = name
-    ctx.obj['REMOTE_ENDPOINT_ID'] = remote
+    ctx.obj['TARGET_ENDPOINT_ID'] = target
 
 
 @contextlib.contextmanager
@@ -417,7 +417,7 @@ def _endpoint_client(
 def evict(ctx: click.Context, key: str) -> None:
     """Evict object from an endpoint."""
     with _endpoint_client(ctx) as client:
-        client.evict(key, ctx.obj['REMOTE_ENDPOINT_ID'])
+        client.evict(key, ctx.obj['TARGET_ENDPOINT_ID'])
     logger.info('Evicted object from endpoint.')
 
 
@@ -427,7 +427,7 @@ def evict(ctx: click.Context, key: str) -> None:
 def exists(ctx: click.Context, key: str) -> None:
     """Check if object exists in an endpoint."""
     with _endpoint_client(ctx) as client:
-        res = client.exists(key, ctx.obj['REMOTE_ENDPOINT_ID'])
+        res = client.exists(key, ctx.obj['TARGET_ENDPOINT_ID'])
     logger.info('Object exists: %s', res)
 
 
@@ -437,7 +437,7 @@ def exists(ctx: click.Context, key: str) -> None:
 def get(ctx: click.Context, key: str) -> None:
     """Get an object from an endpoint."""
     with _endpoint_client(ctx) as client:
-        res = client.get(key, ctx.obj['REMOTE_ENDPOINT_ID'])
+        res = client.get(key, ctx.obj['TARGET_ENDPOINT_ID'])
 
     if res is None:
         logger.info('Object does not exist.')
@@ -465,13 +465,13 @@ def get(ctx: click.Context, key: str) -> None:
 def ping(ctx: click.Context, count: int, interval: float) -> None:
     """Measure the latency of and path to a peer endpoint.
 
-    The endpoint sends each ping to the peer given by --remote and reports
+    The endpoint sends each ping to the peer given by --target and reports
     the time until it received the response and if the connection is direct
     or relayed. The first ping includes the time to connect to the peer if
-    the endpoint is not already connected. Without --remote, the time is the
+    the endpoint is not already connected. Without --target, the time is the
     round trip between this client and the endpoint.
     """
-    remote = ctx.obj['REMOTE_ENDPOINT_ID']
+    target = ctx.obj['TARGET_ENDPOINT_ID']
     times: list[float] = []
     with _endpoint_client(ctx) as client:
         for i in range(count):
@@ -479,7 +479,7 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
                 time.sleep(interval)
             start = time.perf_counter()
             try:
-                result = client.ping(remote)
+                result = client.ping(target)
             except (EndpointError, ValueError) as e:
                 logger.error(e)
                 raise SystemExit(1) from None
@@ -504,7 +504,7 @@ def ping(ctx: click.Context, count: int, interval: float) -> None:
                 )
             logger.info(
                 'Reply from %s: time=%.2f ms path=%s',
-                remote,
+                target,
                 result.peer_rtt_ms,
                 path,
             )
@@ -525,5 +525,5 @@ def put(ctx: click.Context, data: str) -> None:
     """Put an object in an endpoint."""
     key = str(uuid.uuid4())
     with _endpoint_client(ctx) as client:
-        client.set(key, serialize(data), ctx.obj['REMOTE_ENDPOINT_ID'])
+        client.set(key, serialize(data), ctx.obj['TARGET_ENDPOINT_ID'])
     logger.info('Put object in endpoint with key %s', key)

@@ -310,7 +310,7 @@ def test_client_command_errors(
 
     result = runner.invoke(
         cli,
-        ['client', '--remote', 'not-a-uuid', endpoint.name, command, 'key'],
+        ['client', '--target', 'not-a-uuid', endpoint.name, command, 'key'],
     )
     assert result.exit_code == 1
     assert 'not a valid endpoint ID' in caplog.records[0].message
@@ -383,9 +383,9 @@ def test_ping_command_local(
     assert '2 ping(s): min/avg/max' in messages[-1]
 
 
-def test_ping_command_remote(home_dir, caplog) -> None:
+def test_ping_command_target(home_dir, caplog) -> None:
     caplog.set_level(logging.INFO)
-    remote = EndpointId.random()
+    target = EndpointId.random()
     results = [
         PingResult(200.0, True, 'https://relay.example.com', 30),
         PingResult(2.0, False, '1.2.3.4:5', 1),
@@ -402,8 +402,8 @@ def test_ping_command_remote(home_dir, caplog) -> None:
             cli,
             [
                 'client',
-                '--remote',
-                remote,
+                '--target',
+                target,
                 'ep',
                 'ping',
                 '--interval',
@@ -415,11 +415,11 @@ def test_ping_command_remote(home_dir, caplog) -> None:
     assert result.exit_code == 0
     messages = [r.message for r in caplog.records]
     assert messages[0] == (
-        f'Reply from {remote}: time=200.00 ms '
+        f'Reply from {target}: time=200.00 ms '
         'path=relayed via https://relay.example.com (rtt 30 ms)'
     )
     assert messages[1] == (
-        f'Reply from {remote}: time=2.00 ms '
+        f'Reply from {target}: time=2.00 ms '
         'path=direct to 1.2.3.4:5 (rtt 1 ms)'
     )
     assert messages[2] == '2 ping(s): min/avg/max = 2.00/101.00/200.00 ms'

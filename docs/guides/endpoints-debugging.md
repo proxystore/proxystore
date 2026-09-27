@@ -141,7 +141,7 @@ INFO  (proxystore.p2p.manager) :: PeerManager[self(aaaa7ce803)]: connection to p
 The `proxystore-endpoint client ... ping` command measures the latency between
 two endpoints and reports whether their connection is direct or relayed.
 ```bash
-$ proxystore-endpoint client --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
+$ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
 INFO: Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
@@ -152,7 +152,7 @@ The time is measured by the local endpoint, and the first ping includes the
 time to connect to the peer. If the connection stays relayed, transfers
 between the endpoints will be slower. This typically happens when both
 endpoints are behind NATs which prevent hole-punching or a firewall blocks
-UDP traffic. Without `--remote`, the command measures the latency between
+UDP traffic. Without `--target`, the command measures the latency between
 the client and the local endpoint.
 
 ### Use the Test CLI
@@ -161,7 +161,7 @@ between two endpoints and invoke remote operations.
 Here, we will request the endpoint on system A to invoke an `exists`
 operation on the endpoint on system B.
 ```bash
-$ proxystore-endpoint client --remote bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
+$ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
 INFO: Object exists: False
 ```
 
