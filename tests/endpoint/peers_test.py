@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 import pathlib
+import time
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -109,7 +111,7 @@ def test_endpoint_dir_peers(tmp_path: pathlib.Path) -> None:
 
 def test_allowlist_reload(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
-    allowlist = peers.allowlist()
+    allowlist = peers.allowlist(reload_interval=0)
 
     # Missing file is an empty allowlist
     assert allowlist.reload() == set()
@@ -140,7 +142,7 @@ def test_allowlist_malformed_denies_all(
 ) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     peers.write(PeersConfig(peers={'a': _ID1}))
-    allowlist = peers.allowlist()
+    allowlist = peers.allowlist(reload_interval=0)
     assert allowlist.allowed(_ID1)
 
     with open(peers.path, 'w') as f:
@@ -159,7 +161,7 @@ def test_peers_version() -> None:
 def test_allowlist_revoked(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     peers.write(PeersConfig(peers={'a': _ID1, 'b': _ID2}))
-    allowlist = peers.allowlist()
+    allowlist = peers.allowlist(reload_interval=0)
     assert allowlist.revoked() == set()
 
     # A removal detected by another method is still revoked
@@ -174,3 +176,25 @@ def test_allowlist_revoked(tmp_path: pathlib.Path) -> None:
     peers.write(PeersConfig(peers={'a': _ID1}))
     assert allowlist.revoked() == set()
     assert allowlist.allowed(_ID1)
+
+
+def test_allowlist_reload_interval(tmp_path: pathlib.Path) -> None:
+    peers = Peers(str(tmp_path / 'peers.toml'))
+    peers.write(PeersConfig(peers={'a': _ID1}))
+    allowlist = peers.allowlist(reload_interval=60)
+    assert allowlist.reload_interval == 60
+    assert allowlist.allowed(_ID1)
+
+    # Changes are not checked until the interval passes
+    os.remove(peers.path)
+    with mock.patch('os.stat', wraps=os.stat) as stat:
+        assert allowlist.allowed(_ID1)
+        assert allowlist.revoked() == set()
+    stat.assert_not_called()
+
+    assert allowlist.reload(force=True) == {_ID1}
+    assert not allowlist.allowed(_ID1)
+
+    with mock.patch('time.monotonic', return_value=time.monotonic() + 61):
+        peers.write(PeersConfig(peers={'a': _ID1}))
+        assert allowlist.allowed(_ID1)

@@ -47,7 +47,8 @@ def local_peer_manager(
     options: dict[str, Any] = {'options': LOCAL_PEER_OPTIONS, **kwargs}
     return PeerManager(
         endpoint_dir.read_secret_key(),
-        Allowlist(endpoint_dir.peers_path),
+        # The allowlist is reloaded on every check so tests can change it.
+        Allowlist(endpoint_dir.peers_path, reload_interval=0),
         **options,
     )
 

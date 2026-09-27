@@ -119,7 +119,7 @@ async def test_concurrent_requests(managers) -> None:
     )
     assert [data for _, _, data in results] == [bytes([i]) for i in range(20)]
     # Requests share a single connection
-    assert len(manager1._outgoing) == 1
+    assert len(manager1._connections[manager2.id]) == 1
 
 
 async def test_large_request(managers, tmp_path: pathlib.Path) -> None:
@@ -204,13 +204,13 @@ async def test_peer_refuses_connection(managers) -> None:
 async def test_revoke_peer(managers) -> None:
     manager1, manager2, handled = managers
     await _request(manager1, manager2.id, Op.GET)
-    assert manager1.id in manager2._incoming
+    assert manager1.id in manager2._connections
 
     # Removing the peer closes its connections and denies new requests.
     os.remove(allowlist(manager2).path)
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
-    assert manager1.id not in manager2._incoming
+    assert manager1.id not in manager2._connections
     assert len(handled) == 1
 
     # Adding the peer back allows it to reconnect.
@@ -223,26 +223,31 @@ async def test_revoke_detected_on_request(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
     await _request(manager2, manager1.id, Op.GET)
-    assert manager2.id in manager1._outgoing
+    assert manager2.id in manager1._preferred
 
     # Manager 1 closes its connections to the removed peer the next time it
     # checks the allowlist.
     os.remove(allowlist(manager1).path)
     with pytest.raises(PeerNotAllowedError):
         await _request(manager1, manager2.id, Op.GET)
-    assert manager2.id not in manager1._outgoing
-    assert manager2.id not in manager1._incoming
+    assert manager2.id not in manager1._preferred
+    assert manager2.id not in manager1._connections
 
 
 async def test_stale_connection_retry(managers, tmp_path) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
-    stale = manager1._outgoing[manager2.id]
+    stale = manager1._preferred[manager2.id]
 
     # Simulate the peer restarting by closing the connection from the peer.
-    for connection in manager2._incoming[manager1.id]:
+    for connection in manager2._connections[manager1.id]:
         connection.close(CloseCode.SHUTDOWN, b'restart')
     await stale.closed()
+    # The manager stops using a closed connection once it notices, but a
+    # request can race with the closure so the connection is used again.
+    while manager2.id in manager1._preferred:
+        await asyncio.sleep(0.01)
+    manager1._preferred[manager2.id] = stale
 
     # Mark the stale connection as open so the manager tries to use it.
     with mock.patch.object(
@@ -252,7 +257,7 @@ async def test_stale_connection_retry(managers, tmp_path) -> None:
     ):
         status, _, _ = await _request(manager1, manager2.id, Op.GET)
     assert status == Status.OK
-    assert manager1._outgoing[manager2.id] is not stale
+    assert manager1._preferred[manager2.id] is not stale
 
 
 async def test_request_fails_on_fresh_connection(managers) -> None:
@@ -351,13 +356,13 @@ async def test_online(tmp_path: pathlib.Path, caplog) -> None:
     assert any('connected to home relay' in r.message for r in caplog.records)
 
 
-async def test_drop_outgoing_replaced_connection(managers) -> None:
+async def test_drop_replaced_preferred_connection(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)
-    current = manager1._outgoing[manager2.id]
+    current = manager1._preferred[manager2.id]
     # Dropping a connection that was already replaced keeps the current one.
-    manager1._drop_outgoing(manager2.id, mock.MagicMock())
-    assert manager1._outgoing[manager2.id] is current
+    manager1._drop_preferred(manager2.id, mock.MagicMock())
+    assert manager1._preferred[manager2.id] is current
 
 
 async def test_exchange_write_error_reads_response(managers) -> None:
@@ -571,7 +576,7 @@ async def test_path(managers, caplog) -> None:
         for m in messages
     )
 
-    manager1._outgoing[manager2.id].close(CloseCode.SHUTDOWN, b'close')
+    manager1._preferred[manager2.id].close(CloseCode.SHUTDOWN, b'close')
     assert manager1.path(manager2.id) is None
 
 
@@ -584,7 +589,7 @@ async def test_report_path_changes(managers, caplog) -> None:
     def _report(*paths: Any) -> list[str]:
         caplog.clear()
         connection.paths.return_value = list(paths)
-        manager1._report_path(manager2.id, connection, outgoing=True)
+        manager1._report_path(manager2.id, connection)
         return [r.message for r in caplog.records]
 
     relay = _path(selected=True, relay=True, addr='https://relay')
@@ -598,9 +603,6 @@ async def test_report_path_changes(managers, caplog) -> None:
     assert 'direct to 1.2.3.4:5' in _report(direct)[0]
     assert 'has no path' in _report()[0]
 
-    manager1._drop_outgoing(manager2.id, connection)
-    assert 42 not in manager1._paths
-
 
 async def test_watch_path_changes(managers) -> None:
     manager1, manager2, _ = managers
@@ -610,11 +612,7 @@ async def test_watch_path_changes(managers) -> None:
         mock.patch(_MANAGER + '._PATH_WATCH_INTERVAL', 0),
         mock.patch.object(manager1, '_report_path') as report,
     ):
-        await manager1._watch_path_changes(
-            manager2.id,
-            connection,
-            outgoing=True,
-        )
+        await manager1._watch_path_changes(manager2.id, connection)
     # Reported once then stopped when the connection closed
     assert report.call_count == 1
 
@@ -626,8 +624,51 @@ async def test_watch_path_changes(managers) -> None:
         mock.patch.object(manager1, '_report_path'),
     ):
         # Stops after the watch duration
-        await manager1._watch_path_changes(
-            manager2.id,
-            connection,
-            outgoing=True,
-        )
+        await manager1._watch_path_changes(manager2.id, connection)
+
+
+async def test_connection_used_in_both_directions(managers) -> None:
+    manager1, manager2, handled = managers
+    await _request(manager1, manager2.id, Op.GET)
+    # Manager 2 sends requests on the connection opened by manager 1
+    with mock.patch.object(manager2, '_dial') as dial:
+        status, _, _ = await _request(manager2, manager1.id, Op.GET)
+    assert status == Status.OK
+    dial.assert_not_called()
+    assert len(manager1._connections[manager2.id]) == 1
+    assert len(manager2._connections[manager1.id]) == 1
+    assert len(handled) == 2
+    # The path of the connection is known in both directions
+    assert manager1.path(manager2.id) is not None
+    assert manager2.path(manager1.id) is not None
+
+
+async def test_simultaneous_connections(managers) -> None:
+    manager1, manager2, _ = managers
+    results = await asyncio.gather(
+        _request(manager1, manager2.id, Op.GET),
+        _request(manager2, manager1.id, Op.GET),
+    )
+    assert all(status == Status.OK for status, _, _ in results)
+    # Each peer may have opened a connection, and both remain usable.
+    assert 1 <= len(manager1._connections[manager2.id]) <= 2
+    for _ in range(3):
+        status, _, _ = await _request(manager1, manager2.id, Op.GET)
+        assert status == Status.OK
+        status, _, _ = await _request(manager2, manager1.id, Op.GET)
+        assert status == Status.OK
+
+
+async def test_closed_connection_is_forgotten(managers) -> None:
+    manager1, manager2, _ = managers
+    await _request(manager1, manager2.id, Op.GET)
+    connection = manager1._preferred[manager2.id]
+    stable_id = connection.stable_id()
+    assert stable_id in manager1._directions
+
+    connection.close(CloseCode.SHUTDOWN, b'close')
+    while manager2.id in manager1._connections:
+        await asyncio.sleep(0.01)
+    assert manager2.id not in manager1._preferred
+    assert stable_id not in manager1._paths
+    assert stable_id not in manager1._directions

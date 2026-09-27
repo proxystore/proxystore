@@ -88,7 +88,13 @@ def test_configure_command(home_dir) -> None:
 
     assert cfg.p2p.enabled
     assert cfg.p2p.relays == 'n0'
+    assert cfg.p2p.discovery == 'n0'
     assert cfg.storage.backend == 'memory'
+
+    result = runner.invoke(cli, ['configure', 'nod', '--discovery', 'none'])
+    assert result.exit_code == 0
+    endpoint_dir = EndpointDir(os.path.join(home_dir, 'nod'))
+    assert endpoint_dir.read_config().p2p.discovery == 'none'
 
     result = runner.invoke(cli, ['configure', 'persist', '--persist'])
     assert result.exit_code == 0

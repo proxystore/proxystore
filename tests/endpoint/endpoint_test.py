@@ -242,16 +242,25 @@ async def test_endpoint_peering(tmp_path: pathlib.Path, caplog) -> None:
     'relays',
     ('n0', 'none', ['https://relay.example.com']),
 )
-def test_peer_options_from_config(relays: Any) -> None:
-    options = PeerOptions.from_config(EndpointP2PConfig(relays=relays))
+@pytest.mark.parametrize('discovery', ('n0', 'none'))
+def test_peer_options_from_config(relays: Any, discovery: Any) -> None:
+    config = EndpointP2PConfig(relays=relays, discovery=discovery)
+    with (
+        mock.patch('iroh.preset_n0', wraps=iroh.preset_n0) as n0,
+        mock.patch(
+            'iroh.preset_minimal', wraps=iroh.preset_minimal
+        ) as minimal,
+    ):
+        options = PeerOptions.from_config(config)
     assert isinstance(options.preset, iroh.Preset)
-    if relays == 'n0':
+    assert n0.called == (discovery == 'n0')
+    assert minimal.called == (discovery == 'none')
+    if relays == 'n0' and discovery == 'n0':
+        # The relays of the n0 preset are used
         assert options.relay_mode is None
-        assert options.online_timeout is not None
     else:
         assert isinstance(options.relay_mode, iroh.RelayMode)
-    if relays == 'none':
-        assert options.online_timeout is None
+    assert (options.online_timeout is None) == (relays == 'none')
 
 
 async def test_endpoint_peering_addr_cache(

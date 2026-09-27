@@ -72,12 +72,19 @@ class EndpointP2PConfig(BaseModel):
             `"n0"` uses the public relays operated by n0 (the developers of
             iroh), `"none"` disables relays, and a list of URLs uses
             self-hosted `iroh-relay` servers.
+        discovery: Service used to publish the addresses of this endpoint
+            and find the addresses of peers. `"n0"` uses the public DNS
+            discovery service operated by n0. `"none"` disables discovery
+            so peers can only be reached at their cached addresses (see
+            [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache])
+            or by connecting to this endpoint first.
     """
 
     model_config = ConfigDict(extra='forbid')
 
     enabled: bool = True
     relays: Literal['n0', 'none'] | list[str] = 'n0'
+    discovery: Literal['n0', 'none'] = 'n0'
 
     @field_validator('relays')
     @classmethod

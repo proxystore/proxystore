@@ -12,8 +12,9 @@ cluster = "bb04...9c3e"
 ```
 
 The allowlist can be changed while the endpoint is running. The endpoint
-reloads the file when it changes so a removed peer is denied access
-immediately.
+checks if the file changed at most once per second (see
+[`Allowlist`][proxystore.endpoint.peers.Allowlist]) so a removed peer is
+denied access within about a second.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import os
+import time
 from typing import Any
 
 from pydantic import BaseModel
@@ -43,6 +45,8 @@ logger = logging.getLogger(__name__)
 
 PEERS_VERSION = 1
 """Format version of the peers file."""
+RELOAD_INTERVAL = 1.0
+"""Default minimum seconds between checks for changes to the peers file."""
 
 
 class PeersConfig(BaseModel):
@@ -208,9 +212,18 @@ class Peers:
         self.write(peers)
         return peer_id
 
-    def allowlist(self) -> Allowlist:
-        """Get an allowlist which reloads the peers when the file changes."""
-        return Allowlist(self.path)
+    def allowlist(
+        self,
+        reload_interval: float = RELOAD_INTERVAL,
+    ) -> Allowlist:
+        """Get an allowlist which reloads the peers when the file changes.
+
+        Args:
+            reload_interval: Minimum seconds between checks for changes to
+                the file (see
+                [`Allowlist`][proxystore.endpoint.peers.Allowlist]).
+        """
+        return Allowlist(self.path, reload_interval=reload_interval)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -229,22 +242,49 @@ class Allowlist:
     allowlist. If the file is malformed, all peers are denied until it is
     fixed.
 
+    Checking if the file changed requires a `stat()` call which can be slow
+    on network file systems, so the file is checked at most once every
+    `reload_interval` seconds rather than on every request.
+
     Args:
         path: Path to the `peers.toml` file.
+        reload_interval: Minimum seconds between checks for changes to the
+            file. If `0`, the file is checked each time the allowlist is
+            used.
     """
 
-    def __init__(self, path: str) -> None:
+    def __init__(
+        self,
+        path: str,
+        *,
+        reload_interval: float = RELOAD_INTERVAL,
+    ) -> None:
         self.path = path
+        self.reload_interval = reload_interval
+        self._checked: float | None = None
         self._state: _FileState | None = None
         self._peers = PeersConfig()
         self._revoked: set[EndpointId] = set()
 
-    def reload(self) -> set[EndpointId]:
+    def reload(self, *, force: bool = False) -> set[EndpointId]:
         """Reload the allowlist if the file changed.
+
+        Args:
+            force: Check if the file changed even if the reload interval has
+                not passed since the last check.
 
         Returns:
             Endpoint IDs that were removed from the allowlist.
         """
+        now = time.monotonic()
+        if (
+            not force
+            and self._checked is not None
+            and now - self._checked < self.reload_interval
+        ):
+            return set()
+        self._checked = now
+
         try:
             stat = os.stat(self.path)
         except FileNotFoundError:

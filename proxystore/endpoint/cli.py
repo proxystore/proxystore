@@ -160,6 +160,15 @@ def _parse_relays(relays: str) -> Literal['n0', 'none'] | list[str]:
     ),
 )
 @click.option(
+    '--discovery',
+    default='n0',
+    type=click.Choice(['n0', 'none']),
+    help=(
+        'Service used to find the addresses of peers: "n0" (public DNS '
+        'discovery run by n0) or "none".'
+    ),
+)
+@click.option(
     '--persist/--no-persist',
     default=False,
     metavar='BOOL',
@@ -178,6 +187,7 @@ def configure(
     port: int | None,
     peering: bool,
     relays: str,
+    discovery: str,
     persist: bool,
     tls: bool,
 ) -> None:
@@ -193,6 +203,7 @@ def configure(
             p2p=EndpointP2PConfig(
                 enabled=peering,
                 relays=_parse_relays(relays),
+                discovery=discovery,
             ),
             storage=EndpointStorageConfig(
                 backend='sqlite' if persist else 'memory',

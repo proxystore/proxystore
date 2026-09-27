@@ -91,10 +91,11 @@ max_object_size = 100000000  # (7)!
 [p2p]
 enabled = true  # (8)!
 relays = "n0"  # (9)!
+discovery = "n0"  # (10)!
 
 [storage]
-backend = "sqlite"  # (10)!
-database_path = "blobs.db"  # (11)!
+backend = "sqlite"  # (11)!
+database_path = "blobs.db"  # (12)!
 ```
 
 1. Format version of the configuration file. ProxyStore uses this to detect
@@ -115,10 +116,12 @@ database_path = "blobs.db"  # (11)!
 8. Enable communication with peer endpoints. If `false`, the endpoint
    operates in isolation. Configure with `--no-peering` to disable peering.
 9. Relays used to connect to peers. See [Relays](#relays).
-10. Storage backend. `"memory"` (the default) stores objects in memory, and
+10. Discovery service used to find the addresses of peers. See
+    [Relays](#relays).
+11. Storage backend. `"memory"` (the default) stores objects in memory, and
     `"sqlite"` persists objects to a SQLite database. See the tip below for
     more details.
-11. Optional path to the SQLite database, which defaults to `blobs.db`. A
+12. Optional path to the SQLite database, which defaults to `blobs.db`. A
     relative path is relative to the endpoint directory. Use an absolute
     path to store a large database elsewhere, such as a parallel file
     system. Only valid with the `"sqlite"` backend.
@@ -187,8 +190,9 @@ and by the CLI. List peers with
 [`proxystore-endpoint peers list`](../api/cli.md#proxystore-endpoint-peers-list)
 and remove a peer with
 [`proxystore-endpoint peers remove`](../api/cli.md#proxystore-endpoint-peers-remove).
-Changes to the peers take effect immediately, even while the endpoint is
-running. Removing a peer closes its connections and denies its requests.
+Changes to the peers take effect within about a second, even while the
+endpoint is running. Removing a peer closes its connections and denies its
+requests.
 
 Endpoints owned by other users are added in the same way, so share your
 endpoint's ID with a collaborator and add theirs to share data with them.
@@ -213,9 +217,15 @@ when configuring an endpoint.
   servers. Sites that need reliability can run their own relay.
 
 By default, endpoints also publish their addresses to, and look up the
-addresses of peers from, n0's public DNS discovery service. ProxyStore does
-not operate any services, and n0's relays and discovery service are provided
-on an as-available basis. If they are unavailable:
+addresses of peers from, n0's public DNS discovery service. Set
+`discovery = "none"` in the `[p2p]` section of the configuration, or use the
+`--discovery none` flag when configuring an endpoint, to disable discovery.
+With `relays = "none"` and `discovery = "none"`, an endpoint does not
+contact any third-party service, and it can only reach peers at their cached
+addresses or peers that connected to it first.
+
+ProxyStore does not operate any services, and n0's relays and discovery
+service are provided on an as-available basis. If they are unavailable:
 
 * Peers that can be reached directly (e.g., on the same network or with
   public IP addresses) and existing connections still work.
