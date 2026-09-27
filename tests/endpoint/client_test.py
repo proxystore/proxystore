@@ -303,11 +303,14 @@ def test_request_error_no_message(fake_server) -> None:
 
 
 def test_request_unknown_status(fake_server) -> None:
-    port = fake_server(_respond_with(99))
+    # A newer endpoint may return an error status unknown to this client
+    port = fake_server(_respond_with(99, {'error': 'new error'}))
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        with pytest.raises(EndpointProtocolError, match='unknown status'):
+        with pytest.raises(EndpointRequestError, match='status code 99') as e:
             client.exists('key')
-        assert client.closed
+        assert type(e.value) is EndpointRequestError
+        assert 'new error' in str(e.value)
+        assert not client.closed
 
 
 def test_request_connection_closed(fake_server) -> None:

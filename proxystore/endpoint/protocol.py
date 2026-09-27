@@ -120,6 +120,9 @@ class Status(enum.IntEnum):
     The metadata of a response with an error status contains the error
     message. Each error status corresponds to one exception type (see
     [`raise_for_status()`][proxystore.endpoint.protocol.raise_for_status]).
+
+    Statuses added in later versions of the protocol must be errors so that
+    older clients can handle them as generic errors.
     """
 
     OK = 0
@@ -587,7 +590,8 @@ def raise_for_status(
         [`Status.NOT_FOUND`][proxystore.endpoint.protocol.Status.NOT_FOUND].
 
     Raises:
-        EndpointProtocolError: If the status is unknown.
+        EndpointRequestError: If the status is unknown (e.g., an error
+            status added in a later version of the protocol).
         EndpointError: The type in
             [`STATUS_ERRORS`][proxystore.endpoint.protocol.STATUS_ERRORS]
             for any other status.
@@ -595,8 +599,9 @@ def raise_for_status(
     try:
         status = Status(response.code)
     except ValueError:
-        raise EndpointProtocolError(
-            f'{source} returned unknown status code {response.code}.',
+        raise EndpointRequestError(
+            f'{source} returned unknown status code {response.code} for '
+            f'{op.name} request: {response.error_message}',
         ) from None
     if status in (Status.OK, Status.NOT_FOUND):
         return status

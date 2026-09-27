@@ -267,7 +267,7 @@ def test_raise_for_status_errors(
 def test_raise_for_status_unknown() -> None:
     with pytest.raises(EndpointRequestError, match='no error message'):
         raise_for_status(Message(Status.ERROR), Op.GET)
-    with pytest.raises(EndpointProtocolError, match='unknown status code 99'):
+    with pytest.raises(EndpointRequestError, match='unknown status code 99'):
         raise_for_status(Message(99), Op.GET)
 
 

@@ -437,9 +437,9 @@ class EndpointClient:
         try:
             raise_for_status(response, op)
         except (EndpointProtocolError, ObjectSizeExceededError):
-            # The connection is in an unknown state after an unknown status,
-            # and the endpoint may close the connection after rejecting data
-            # that is too large because it did not read the data.
+            # The connection is in an unknown state after a bad request, and
+            # the endpoint may close the connection after rejecting data that
+            # is too large because it did not read the data.
             self.close()
             raise
         return response
