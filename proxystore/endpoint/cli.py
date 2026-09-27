@@ -31,7 +31,6 @@ from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
-from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
@@ -41,6 +40,7 @@ from proxystore.endpoint.process import start_endpoint
 from proxystore.endpoint.process import stop_endpoint
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
+from proxystore.utils.environment import home_dir
 
 P = ParamSpec('P')
 
@@ -208,7 +208,7 @@ def list_all() -> None:
     """List all user endpoints."""
     endpoints = EndpointDir.find_all()
     if len(endpoints) == 0:
-        click.echo(f'No valid endpoint configurations in {resolve_home()}.')
+        click.echo(f'No valid endpoint configurations in {home_dir()}.')
         return
 
     name_width = max(18, *(len(c.name) for _, c in endpoints))

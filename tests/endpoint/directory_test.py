@@ -18,7 +18,6 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointLock
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
-from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointExistsError
@@ -324,17 +323,15 @@ def test_create_invalid_config(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(tmp_path / 'my-ep')
 
 
-def test_default_home(tmp_path: pathlib.Path) -> None:
-    with mock.patch(
-        'proxystore.endpoint.directory.home_dir',
-        return_value=str(tmp_path),
-    ):
-        assert resolve_home() == str(tmp_path)
-        assert resolve_home('/other') == '/other'
-        endpoint_dir = EndpointDir.create('my-ep', port=1234)
-        assert endpoint_dir.path == str(tmp_path / 'my-ep')
-        assert EndpointDir.from_name('my-ep') == endpoint_dir
-        assert [d for d, _ in EndpointDir.find_all()] == [endpoint_dir]
+def test_default_home(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv('PROXYSTORE_HOME', str(tmp_path))
+    endpoint_dir = EndpointDir.create('my-ep', port=1234)
+    assert endpoint_dir.path == str(tmp_path / 'my-ep')
+    assert EndpointDir.from_name('my-ep') == endpoint_dir
+    assert [d for d, _ in EndpointDir.find_all()] == [endpoint_dir]
 
 
 def test_read_secret_key_mismatch(tmp_path: pathlib.Path) -> None:

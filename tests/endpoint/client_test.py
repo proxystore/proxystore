@@ -430,15 +430,13 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
         assert c.info.id == ENDPOINT_ID
 
 
-def test_from_name_default_home(tmp_path: pathlib.Path) -> None:
+def test_from_name_default_home(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     _write_config(tmp_path / 'test')
-    with (
-        mock.patch(
-            'proxystore.endpoint.directory.home_dir',
-            return_value=str(tmp_path),
-        ),
-        pytest.raises(EndpointNotRunningError, match='Is the endpoint'),
-    ):
+    monkeypatch.setenv('PROXYSTORE_HOME', str(tmp_path))
+    with pytest.raises(EndpointNotRunningError, match='Is the endpoint'):
         EndpointClient.from_name('test')
 
 

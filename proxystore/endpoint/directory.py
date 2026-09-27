@@ -279,7 +279,9 @@ class EndpointDir:
             proxystore_dir: ProxyStore home directory. Defaults to
                 [`home_dir()`][proxystore.utils.environment.home_dir].
         """
-        return cls(os.path.join(resolve_home(proxystore_dir), name))
+        if proxystore_dir is None:
+            proxystore_dir = home_dir()
+        return cls(os.path.join(proxystore_dir, name))
 
     @classmethod
     def create(
@@ -363,7 +365,8 @@ class EndpointDir:
         Returns:
             List of each endpoint directory and its configuration.
         """
-        proxystore_dir = resolve_home(proxystore_dir)
+        if proxystore_dir is None:
+            proxystore_dir = home_dir()
         endpoints: list[tuple[Self, EndpointConfig]] = []
         if not os.path.isdir(proxystore_dir):
             return endpoints
@@ -693,16 +696,6 @@ class EndpointDir:
 
     def _join(self, name: str) -> str:
         return os.path.join(self.path, name)
-
-
-def resolve_home(proxystore_dir: str | None = None) -> str:
-    """Resolve the ProxyStore home directory.
-
-    Args:
-        proxystore_dir: ProxyStore home directory. If `None`, the default
-            [`home_dir()`][proxystore.utils.environment.home_dir] is used.
-    """
-    return home_dir() if proxystore_dir is None else proxystore_dir
 
 
 def is_own_process(pid: int) -> bool:

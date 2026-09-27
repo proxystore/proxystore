@@ -5,7 +5,6 @@ import importlib.metadata
 import os
 import pathlib
 import uuid
-from collections.abc import Generator
 from unittest import mock
 
 import click
@@ -32,18 +31,9 @@ CLICK_VERSION = tuple(
 
 
 @pytest.fixture
-def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
-    with (
-        mock.patch(
-            'proxystore.utils.environment.home_dir',
-            return_value=str(tmp_path),
-        ),
-        mock.patch(
-            'proxystore.endpoint.directory.home_dir',
-            return_value=str(tmp_path),
-        ),
-    ):
-        yield str(tmp_path)
+def home_dir(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> str:
+    monkeypatch.setenv('PROXYSTORE_HOME', str(tmp_path))
+    return str(tmp_path)
 
 
 def test_no_command() -> None:
