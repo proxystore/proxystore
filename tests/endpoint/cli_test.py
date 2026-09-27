@@ -17,6 +17,7 @@ import proxystore
 from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointRequestError
@@ -115,11 +116,22 @@ def test_configure_command(home_dir) -> None:
     )
 
 
+def test_configure_command_errors(home_dir, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    runner = click.testing.CliRunner()
+    assert runner.invoke(cli, ['configure', 'ep']).exit_code == 0
+
+    caplog.clear()
+    assert runner.invoke(cli, ['configure', 'ep']).exit_code == 1
+    assert 'already exists' in caplog.records[0].message
+    assert 'remove and try again' in caplog.records[1].message
+
+    caplog.clear()
+    assert runner.invoke(cli, ['configure', 'bad name']).exit_code == 1
+    assert 'alphanumeric' in caplog.records[0].message
+
+
 def test_list_command(home_dir, caplog) -> None:
-    # Note: because home_dir is mocked, there's nothing to list so we
-    # are really testing that the correct command in
-    # proxystore.endpoint.commands is called and leaving the testing of that
-    # command to tests/endpoint/commands_test.py.
     caplog.set_level(logging.INFO)
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['list'])
@@ -127,19 +139,46 @@ def test_list_command(home_dir, caplog) -> None:
     assert len(caplog.records) == 1
     assert 'No valid endpoint configurations' in caplog.records[0].message
 
+    ep1 = EndpointDir.create('ep1', home_dir)
+    ep2 = EndpointDir.create('ep2', home_dir)
+    caplog.clear()
+    result = runner.invoke(cli, ['list'])
+    assert result.exit_code == 0
+    rows = [r.message.split() for r in caplog.records[2:]]
+    assert rows == [
+        ['ep1', 'STOPPED', ep1.read_config().id],
+        ['ep2', 'STOPPED', ep2.read_config().id],
+    ]
+
 
 def test_remove_command(home_dir, caplog) -> None:
-    # Note: similar to test_list()
-    caplog.set_level(logging.ERROR)
+    caplog.set_level(logging.INFO)
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['remove', 'myendpoint'])
     assert result.exit_code == 1
-    assert len(caplog.records) == 1
-    assert any('does not exist' in record.message for record in caplog.records)
+    assert 'does not exist' in caplog.records[0].message
+    assert 'proxystore-endpoint list' in caplog.records[1].message
+
+    endpoint_dir = EndpointDir.create('myendpoint', home_dir)
+    caplog.clear()
+    with mock.patch.object(
+        EndpointDir,
+        'status',
+        return_value=EndpointStatus.RUNNING,
+    ):
+        result = runner.invoke(cli, ['remove', 'myendpoint'])
+    assert result.exit_code == 1
+    assert 'must be stopped' in caplog.records[0].message
+    assert 'proxystore-endpoint stop' in caplog.records[1].message
+
+    caplog.clear()
+    result = runner.invoke(cli, ['remove', 'myendpoint'])
+    assert result.exit_code == 0
+    assert 'Removed endpoint' in caplog.records[0].message
+    assert not os.path.exists(endpoint_dir.path)
 
 
 def test_start_command(home_dir, caplog) -> None:
-    # Note: similar to test_list()
     caplog.set_level(logging.ERROR)
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['start', 'myendpoint'])
@@ -147,15 +186,40 @@ def test_start_command(home_dir, caplog) -> None:
     assert len(caplog.records) == 2
     assert any('does not exist' in record.message for record in caplog.records)
 
+    endpoint_dir = EndpointDir.create('myendpoint', home_dir)
+    with mock.patch(
+        'proxystore.endpoint.process.start_endpoint',
+    ) as start_endpoint:
+        result = runner.invoke(cli, ['start', 'myendpoint', '--no-detach'])
+    assert result.exit_code == 0
+    start_endpoint.assert_called_once_with(
+        endpoint_dir,
+        detach=False,
+        log_level='INFO',
+    )
+
 
 def test_stop_command(home_dir, caplog) -> None:
-    # Note: similar to test_list()
-    caplog.set_level(logging.ERROR)
+    caplog.set_level(logging.INFO)
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['stop', 'myendpoint'])
     assert result.exit_code == 1
     assert len(caplog.records) == 2
     assert any('does not exist' in record.message for record in caplog.records)
+
+    EndpointDir.create('myendpoint', home_dir)
+    for stopped, message in (
+        (True, 'has been stopped'),
+        (False, 'not running'),
+    ):
+        caplog.clear()
+        with mock.patch(
+            'proxystore.endpoint.process.stop_endpoint',
+            return_value=stopped,
+        ):
+            result = runner.invoke(cli, ['stop', 'myendpoint'])
+        assert result.exit_code == 0
+        assert message in caplog.records[0].message
 
 
 def test_test_command_missing_endpoint(home_dir, caplog) -> None:
@@ -374,3 +438,53 @@ def test_ping_command_error(home_dir, caplog) -> None:
         result = runner.invoke(cli, ['test', 'ep', 'ping'])
     assert result.exit_code == 1
     assert 'peer failed' in caplog.records[-1].message
+
+
+def test_peers_command_errors(home_dir, caplog) -> None:
+    caplog.set_level(logging.ERROR)
+    runner = click.testing.CliRunner()
+    peer_id = EndpointId.random()
+
+    # Missing endpoint
+    for args in (
+        ['id', 'ep'],
+        ['peers', 'add', 'ep', 'peer', peer_id],
+        ['peers', 'remove', 'ep', 'peer'],
+        ['peers', 'list', 'ep'],
+    ):
+        caplog.clear()
+        assert runner.invoke(cli, args).exit_code == 1
+        assert 'does not exist' in caplog.records[0].message
+
+    EndpointDir.create('ep', home_dir)
+    args = ['peers', 'add', 'ep', 'peer', peer_id]
+    assert runner.invoke(cli, args).exit_code == 0
+
+    caplog.clear()
+    args = ['peers', 'add', 'ep', 'peer', EndpointId.random()]
+    assert runner.invoke(cli, args).exit_code == 1
+    assert 'already exists' in caplog.records[0].message
+    assert 'peers remove ep peer' in caplog.records[1].message
+
+    caplog.clear()
+    assert runner.invoke(cli, ['peers', 'remove', 'ep', 'x']).exit_code == 1
+    assert 'No peer named x' in caplog.records[0].message
+
+
+def test_peers_list_empty(home_dir, caplog) -> None:
+    caplog.set_level(logging.INFO)
+    EndpointDir.create('ep', home_dir)
+    runner = click.testing.CliRunner()
+    assert runner.invoke(cli, ['peers', 'list', 'ep']).exit_code == 0
+    assert 'has no peers' in caplog.records[0].message
+
+
+@pytest.mark.parametrize(
+    ('host', 'expected'),
+    (('IP', 'ip'), (' fqdn ', 'fqdn'), ('127.0.0.1', '127.0.0.1')),
+)
+def test_configure_command_host(home_dir, host: str, expected: str) -> None:
+    runner = click.testing.CliRunner()
+    result = runner.invoke(cli, ['configure', 'ep', '--host', host])
+    assert result.exit_code == 0
+    assert EndpointDir.from_name('ep', home_dir).read_config().host == expected

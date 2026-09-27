@@ -9,6 +9,7 @@ EndpointError
 ├── EndpointExistsError (also FileExistsError)
 ├── EndpointConfigError (also ValueError)
 │   └── PeerExistsError
+├── EndpointRunningError
 ├── EndpointNotRunningError
 ├── EndpointAuthError
 ├── EndpointConnectionError
@@ -59,6 +60,14 @@ class EndpointConfigError(EndpointError, ValueError):
 
 class PeerExistsError(EndpointConfigError):
     """Exception raised when adding a peer whose name is already used."""
+
+
+class EndpointRunningError(EndpointError):
+    """Exception raised when an operation requires a stopped endpoint.
+
+    For example, when starting or removing an endpoint that is already
+    running on this or another host.
+    """
 
 
 class EndpointNotRunningError(EndpointError):

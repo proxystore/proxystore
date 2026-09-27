@@ -8,6 +8,8 @@ import enum
 import json
 import logging
 import os
+import random
+import shutil
 import stat
 from typing import Any
 from typing import Self
@@ -18,6 +20,7 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
+from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.files import write_private_file
 from proxystore.endpoint.identity import SecretKey
@@ -103,6 +106,7 @@ class EndpointDir:
         proxystore_dir: str | None = None,
         *,
         secret_key: SecretKey | None = None,
+        port: int | None = None,
         **options: Any,
     ) -> Self:
         """Create a new endpoint.
@@ -125,6 +129,8 @@ class EndpointDir:
                 [`home_dir()`][proxystore.utils.environment.home_dir].
             secret_key: Secret key of the endpoint. A new key is generated
                 if `None`.
+            port: Port of the endpoint. A random port in the range
+                [10240, 20480] is chosen if `None`.
             options: Other fields of the
                 [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig]
                 (e.g., `port`). The `name` and `id` are set automatically.
@@ -137,9 +143,11 @@ class EndpointDir:
             ValueError: If the configuration is invalid.
         """
         secret_key = SecretKey.generate() if secret_key is None else secret_key
+        port = random.randint(10 * 1024, 20 * 1024) if port is None else port
         config = EndpointConfig(
             name=name,
             id=secret_key.endpoint_id,
+            port=port,
             **options,
         )
         endpoint_dir = cls.from_name(name, proxystore_dir)
@@ -206,6 +214,11 @@ class EndpointDir:
             with open(self.config_path, 'rb') as f:
                 config = load(EndpointConfig, f)
         except FileNotFoundError:
+            if not os.path.isdir(self.path):
+                raise EndpointNotFoundError(
+                    f'An endpoint named {os.path.basename(self.path)} does '
+                    f'not exist in {os.path.dirname(self.path)}.',
+                ) from None
             raise EndpointNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
@@ -461,6 +474,26 @@ class EndpointDir:
         if self.running_pid() is not None:
             return EndpointStatus.RUNNING
         return EndpointStatus.HANGING
+
+    def remove(self) -> None:
+        """Remove the endpoint directory and all of its files.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+            EndpointRunningError: If the endpoint is running or its PID file
+                exists (e.g., because it is running on another host).
+        """
+        if not os.path.isdir(self.path):
+            raise EndpointNotFoundError(
+                f'An endpoint named {os.path.basename(self.path)} does not '
+                f'exist in {os.path.dirname(self.path)}.',
+            )
+        if self.status() in (EndpointStatus.RUNNING, EndpointStatus.HANGING):
+            raise EndpointRunningError(
+                f'Endpoint {os.path.basename(self.path)} must be stopped '
+                'before it is removed.',
+            )
+        shutil.rmtree(self.path)
 
     def restrict_permissions(self) -> bool:
         """Remove all group and other permissions from the directory.

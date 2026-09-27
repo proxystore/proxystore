@@ -14,12 +14,14 @@ import pytest
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process
 from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.exceptions import EndpointConfigError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointExistsError
 from proxystore.endpoint.exceptions import EndpointNotFoundError
+from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.identity import SecretKey
 
 
@@ -316,3 +318,74 @@ def test_errors_are_endpoint_errors(tmp_path: pathlib.Path) -> None:
         endpoint_dir.read_config()
     assert isinstance(invalid.value, EndpointError)
     assert isinstance(invalid.value, ValueError)
+
+
+def test_status(tmp_path: pathlib.Path, caplog) -> None:
+    endpoint_dir = EndpointDir(os.path.join(tmp_path, 'ep'))
+    assert not os.path.isdir(endpoint_dir)
+
+    # Returns UNKNOWN if directory does not exist
+    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
+
+    os.makedirs(endpoint_dir, exist_ok=True)
+
+    # Returns UNKNOWN if config is not readable
+    assert endpoint_dir.status() == EndpointStatus.UNKNOWN
+
+    with mock.patch.object(EndpointDir, 'read_config', return_value=None):
+        # Returns STOPPED if PID file does not exist
+        assert endpoint_dir.status() == EndpointStatus.STOPPED
+
+        with open(endpoint_dir.pid_path, 'w') as f:
+            f.write('0')
+
+        with mock.patch(
+            'proxystore.endpoint.directory.is_own_process'
+        ) as mock_exists:
+            # Return RUNNING if PID exists
+            mock_exists.return_value = True
+            assert endpoint_dir.status() == EndpointStatus.RUNNING
+
+            # Return HANGING if PID does not exists
+            mock_exists.return_value = False
+            assert endpoint_dir.status() == EndpointStatus.HANGING
+
+        # Return HANGING if PID was reused by another user's process
+        with open(endpoint_dir.pid_path, 'w') as f:
+            f.write('1234')
+        with mock.patch('os.kill', side_effect=PermissionError):
+            assert endpoint_dir.status() == EndpointStatus.HANGING
+
+        # Return HANGING rather than raising if the PID file is malformed
+        with open(endpoint_dir.pid_path, 'w') as f:
+            f.write('not a pid')
+        assert endpoint_dir.status() == EndpointStatus.HANGING
+
+
+def test_remove(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    endpoint_dir.remove()
+    assert not os.path.exists(endpoint_dir.path)
+    with pytest.raises(EndpointNotFoundError, match='does not exist'):
+        endpoint_dir.remove()
+
+
+@pytest.mark.parametrize(
+    'status',
+    (EndpointStatus.RUNNING, EndpointStatus.HANGING),
+)
+def test_remove_running(
+    status: EndpointStatus, tmp_path: pathlib.Path
+) -> None:
+    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
+    with (
+        mock.patch.object(EndpointDir, 'status', return_value=status),
+        pytest.raises(EndpointRunningError, match='must be stopped'),
+    ):
+        endpoint_dir.remove()
+    assert os.path.exists(endpoint_dir.path)
+
+
+def test_create_random_port(tmp_path: pathlib.Path) -> None:
+    config = EndpointDir.create('ep', str(tmp_path)).read_config()
+    assert 10 * 1024 <= config.port <= 20 * 1024

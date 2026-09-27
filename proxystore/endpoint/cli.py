@@ -7,31 +7,38 @@ See the CLI Reference for the
 from __future__ import annotations
 
 import contextlib
+import functools
 import logging
 import sys
 import time
 import uuid
+from collections.abc import Callable
 from collections.abc import Generator
 from typing import ClassVar
+from typing import Literal
+from typing import ParamSpec
 
 import click
 
 import proxystore
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.commands import add_peer
-from proxystore.endpoint.commands import configure_endpoint
-from proxystore.endpoint.commands import get_endpoint_id
-from proxystore.endpoint.commands import list_endpoints
-from proxystore.endpoint.commands import list_peers
-from proxystore.endpoint.commands import remove_endpoint
-from proxystore.endpoint.commands import remove_peer
-from proxystore.endpoint.commands import start_endpoint
-from proxystore.endpoint.commands import stop_endpoint
+from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
+from proxystore.endpoint.directory import resolve_home
 from proxystore.endpoint.exceptions import EndpointError
+from proxystore.endpoint.exceptions import EndpointExistsError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
+from proxystore.endpoint.exceptions import EndpointRunningError
+from proxystore.endpoint.exceptions import PeerExistsError
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 
 logger = logging.getLogger(__name__)
+
+P = ParamSpec('P')
 
 
 class _CLIFormatter(logging.Formatter):
@@ -96,6 +103,31 @@ def version() -> None:
     click.echo(f'ProxyStore v{proxystore.__version__}')
 
 
+def _exit_on_error(func: Callable[P, None]) -> Callable[P, None]:
+    """Log endpoint errors and exit with status 1."""
+
+    @functools.wraps(func)
+    def _wrapped(*args: P.args, **kwargs: P.kwargs) -> None:
+        try:
+            func(*args, **kwargs)
+        except EndpointNotFoundError as e:
+            logger.error(e)
+            logger.error('Use `proxystore-endpoint list` to see endpoints.')
+            raise SystemExit(1) from None
+        except (EndpointError, ValueError) as e:
+            logger.error(e)
+            raise SystemExit(1) from None
+
+    return _wrapped
+
+
+def _parse_relays(relays: str) -> Literal['n0', 'none'] | list[str]:
+    relays = relays.strip()
+    if relays in ('n0', 'none'):
+        return relays  # type: ignore[return-value]
+    return [url.strip() for url in relays.split(',') if url.strip()]
+
+
 @cli.command()
 @click.argument('name', metavar='NAME', required=True)
 @click.option(
@@ -138,6 +170,7 @@ def version() -> None:
     metavar='BOOL',
     help='Encrypt connections from clients with TLS.',
 )
+@_exit_on_error
 def configure(
     name: str,
     host: str,
@@ -148,30 +181,80 @@ def configure(
     tls: bool,
 ) -> None:
     """Configure a new endpoint."""
-    raise SystemExit(
-        configure_endpoint(
+    if host.lower().strip() in ('ip', 'fqdn'):
+        host = host.lower().strip()
+    try:
+        endpoint_dir = EndpointDir.create(
             name,
             host=host,
-            peering=peering,
-            persist_data=persist,
-            relays=relays,
             port=port,
             tls=tls,
-        ),
-    )
+            p2p=EndpointP2PConfig(
+                enabled=peering,
+                relays=_parse_relays(relays),
+            ),
+            storage=EndpointStorageConfig(
+                database_path=DEFAULT_DATABASE_PATH if persist else None,
+            ),
+        )
+    except EndpointExistsError as e:
+        logger.error(e)
+        logger.info('To reconfigure the endpoint, remove and try again.')
+        raise SystemExit(1) from None
+
+    config = endpoint_dir.read_config()
+    logger.info('Configured endpoint: %s <%s>', name, config.id)
+    logger.info('Config and log file directory: %s', endpoint_dir)
+    logger.info('Start the endpoint with:')
+    logger.info('  $ proxystore-endpoint start %s', name)
+    if peering:
+        logger.info('Allow a peer endpoint to communicate with this one with:')
+        logger.info(
+            '  $ proxystore-endpoint peers add %s PEER_NAME PEER_ID', name
+        )
 
 
 @cli.command(name='list')
 def list_all() -> None:
     """List all user endpoints."""
-    raise SystemExit(list_endpoints())
+    endpoints = EndpointDir.find_all()
+    if len(endpoints) == 0:
+        logger.info('No valid endpoint configurations in %s.', resolve_home())
+        return
+
+    name_width = max(18, *(len(c.name) for _, c in endpoints))
+    status_width = max(len(s.name) for s in EndpointStatus)
+    logger.info(
+        '%-*s %-*s ID',
+        name_width,
+        'NAME',
+        status_width,
+        'STATUS',
+        extra={'simple': True},
+    )
+    logger.info(
+        '=' * (name_width + status_width + 2 + len(endpoints[0][1].id)),
+        extra={'simple': True},
+    )
+    for endpoint_dir, config in sorted(endpoints, key=lambda e: e[1].name):
+        logger.info(
+            '%-*s %-*s %s',
+            name_width,
+            config.name,
+            status_width,
+            endpoint_dir.status().name,
+            config.id,
+            extra={'simple': True},
+        )
 
 
 @cli.command(name='id')
 @click.argument('name', metavar='NAME', required=True)
+@_exit_on_error
 def endpoint_id(name: str) -> None:
     """Print the ID of an endpoint."""
-    raise SystemExit(get_endpoint_id(name))
+    config = EndpointDir.from_name(name).read_config()
+    logger.info(config.id, extra={'simple': True})
 
 
 @cli.group()
@@ -187,49 +270,108 @@ def peers() -> None:
 @click.argument('name', metavar='NAME', required=True)
 @click.argument('peer_name', metavar='PEER_NAME', required=True)
 @click.argument('peer_id', metavar='PEER_ID', required=True)
+@_exit_on_error
 def peers_add(name: str, peer_name: str, peer_id: str) -> None:
     """Allow endpoint NAME to communicate with peer PEER_ID."""
-    raise SystemExit(add_peer(name, peer_name, peer_id))
+    endpoint_dir = EndpointDir.from_name(name)
+    try:
+        added = endpoint_dir.peers.add(peer_name, peer_id)
+    except PeerExistsError as e:
+        logger.error('%s Remove it first with:', e)
+        logger.error(
+            '  $ proxystore-endpoint peers remove %s %s',
+            name,
+            peer_name,
+        )
+        raise SystemExit(1) from None
+    logger.info('Added peer %s <%s> to endpoint %s.', peer_name, added, name)
+    logger.info(
+        'The peer must also add this endpoint <%s> to its peers.',
+        endpoint_dir.read_config().id,
+    )
 
 
 @peers.command(name='remove')
 @click.argument('name', metavar='NAME', required=True)
 @click.argument('peer_name', metavar='PEER_NAME', required=True)
+@_exit_on_error
 def peers_remove(name: str, peer_name: str) -> None:
     """Stop endpoint NAME from communicating with peer PEER_NAME."""
-    raise SystemExit(remove_peer(name, peer_name))
+    removed = EndpointDir.from_name(name).peers.remove(peer_name)
+    logger.info(
+        'Removed peer %s <%s> from endpoint %s.',
+        peer_name,
+        removed,
+        name,
+    )
 
 
 @peers.command(name='list')
 @click.argument('name', metavar='NAME', required=True)
+@_exit_on_error
 def peers_list(name: str) -> None:
     """List the peers of endpoint NAME."""
-    raise SystemExit(list_peers(name))
+    peers = EndpointDir.from_name(name).peers.read().peers
+    if len(peers) == 0:
+        logger.info('Endpoint %s has no peers.', name)
+        logger.info('Add a peer with:')
+        logger.info('  $ proxystore-endpoint peers add %s NAME ID', name)
+        return
+
+    name_width = max(len('NAME'), *(len(n) for n in peers))
+    logger.info('%-*s ID', name_width, 'NAME', extra={'simple': True})
+    logger.info('=' * (name_width + 65), extra={'simple': True})
+    for peer_name, peer_id in sorted(peers.items()):
+        logger.info(
+            '%-*s %s',
+            name_width,
+            peer_name,
+            peer_id,
+            extra={'simple': True},
+        )
 
 
 @cli.command()
 @click.argument('name', metavar='NAME', required=True)
+@_exit_on_error
 def remove(name: str) -> None:
     """Remove an endpoint."""
-    raise SystemExit(remove_endpoint(name))
+    try:
+        EndpointDir.from_name(name).remove()
+    except EndpointRunningError as e:
+        logger.error(e)
+        logger.error('  $ proxystore-endpoint stop %s', name)
+        raise SystemExit(1) from None
+    logger.info('Removed endpoint named %s.', name)
 
 
 @cli.command()
 @click.argument('name', metavar='NAME', required=True)
 @click.option('--detach/--no-detach', default=True, help='Run as daemon.')
 @click.pass_context
+@_exit_on_error
 def start(ctx: click.Context, name: str, detach: bool) -> None:
     """Start an endpoint."""
-    raise SystemExit(
-        start_endpoint(name, detach=detach, log_level=ctx.obj['LOG_LEVEL']),
+    from proxystore.endpoint.process import start_endpoint
+
+    start_endpoint(
+        EndpointDir.from_name(name),
+        detach=detach,
+        log_level=ctx.obj['LOG_LEVEL'],
     )
 
 
 @cli.command()
 @click.argument('name', metavar='NAME', required=True)
+@_exit_on_error
 def stop(name: str) -> None:
     """Stop a detached endpoint."""
-    raise SystemExit(stop_endpoint(name))
+    from proxystore.endpoint.process import stop_endpoint
+
+    if stop_endpoint(EndpointDir.from_name(name)):
+        logger.info('Endpoint %s has been stopped.', name)
+    else:
+        logger.info('Endpoint %s is not running.', name)
 
 
 @cli.group()
