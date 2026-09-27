@@ -12,9 +12,9 @@ import random
 import shutil
 import stat
 from typing import Any
+from typing import NamedTuple
 from typing import Self
 
-from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.exceptions import EndpointConfigError
@@ -33,6 +33,31 @@ logger = logging.getLogger(__name__)
 
 CONNECTION_VERSION = 1
 """Format version of the connection file."""
+
+
+class ConnectionInfo(NamedTuple):
+    """Information that clients use to connect to a running endpoint.
+
+    The endpoint writes this to the connection file in its directory each
+    time it starts and removes it when it stops (see
+    [`EndpointDir.write_connection()`][proxystore.endpoint.directory.EndpointDir.write_connection]).
+
+    Attributes:
+        host: Host address the endpoint is listening on.
+        port: Port the endpoint is listening on.
+        token: Token that the client and endpoint prove they know.
+        tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
+            certificate or `None` if the endpoint does not use TLS.
+        hostname: Name of the machine the endpoint is running on.
+        pid: Process ID of the endpoint on that machine.
+    """
+
+    host: str
+    port: int
+    token: EndpointToken
+    tls_fingerprint: str | None
+    hostname: str
+    pid: int
 
 
 class EndpointStatus(enum.Enum):

@@ -8,7 +8,7 @@ Warning:
 Each time an endpoint starts, it generates a random token and writes it,
 along with its address, to a connection file in the endpoint's directory
 that only the owner can read (see
-[`ConnectionInfo`][proxystore.endpoint.auth.ConnectionInfo]). Clients read
+[`ConnectionInfo`][proxystore.endpoint.directory.ConnectionInfo]). Clients read
 the connection file, so any process that can read the user's ProxyStore
 home directory is trusted.
 
@@ -35,7 +35,6 @@ import secrets
 import ssl
 import tempfile
 from typing import Literal
-from typing import NamedTuple
 from typing import Self
 
 from proxystore.endpoint.files import write_private_file
@@ -43,31 +42,6 @@ from proxystore.serialize import BytesLike
 
 TOKEN_SIZE = 32
 """Size in bytes of an endpoint token."""
-
-
-class ConnectionInfo(NamedTuple):
-    """Information that clients use to connect to a running endpoint.
-
-    The endpoint writes this to its directory each time it starts and
-    removes it when it stops (see
-    [`EndpointDir`][proxystore.endpoint.directory.EndpointDir]).
-
-    Attributes:
-        host: Host address the endpoint is listening on.
-        port: Port the endpoint is listening on.
-        token: Token that the client and endpoint prove they know.
-        tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
-            certificate or `None` if the endpoint does not use TLS.
-        hostname: Name of the machine the endpoint is running on.
-        pid: Process ID of the endpoint on that machine.
-    """
-
-    host: str
-    port: int
-    token: EndpointToken
-    tls_fingerprint: str | None
-    hostname: str
-    pid: int
 
 
 class EndpointToken:

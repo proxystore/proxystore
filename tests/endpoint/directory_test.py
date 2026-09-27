@@ -11,8 +11,8 @@ from unittest import mock
 
 import pytest
 
-from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.directory import is_own_process

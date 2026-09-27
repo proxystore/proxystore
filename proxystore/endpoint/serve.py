@@ -25,11 +25,11 @@ except ImportError as e:  # pragma: no cover
         '"pip install proxystore[endpoints]".',
     ) from e
 
-from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import resolve_host
+from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.handler import handle_request

@@ -14,12 +14,12 @@ from unittest import mock
 
 import pytest
 
-from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError

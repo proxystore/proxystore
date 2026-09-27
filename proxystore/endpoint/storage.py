@@ -9,7 +9,6 @@ from typing import runtime_checkable
 
 import aiosqlite
 
-from proxystore.endpoint.config import MAX_OBJECT_SIZE_DEFAULT
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.utils.data import bytes_to_readable
 
@@ -76,13 +75,14 @@ class DictStorage:
 
     Args:
         max_object_size: Optional max size in bytes for any single
-            object stored by the endpoint. If exceeded, an error is raised.
+            object stored by the endpoint or `None` for no limit. If
+            exceeded, an error is raised.
     """
 
     def __init__(
         self,
         *,
-        max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
+        max_object_size: int | None = None,
     ) -> None:
         self._data: dict[str, bytes | bytearray] = {}
         self._max_object_size = max_object_size
@@ -155,14 +155,15 @@ class SQLiteStorage:
     Args:
         database_path: Path to database file.
         max_object_size: Optional max size in bytes for any single
-            object stored by the endpoint. If exceeded, an error is raised.
+            object stored by the endpoint or `None` for no limit. If
+            exceeded, an error is raised.
     """
 
     def __init__(
         self,
         database_path: str | pathlib.Path = ':memory:',
         *,
-        max_object_size: int | None = MAX_OBJECT_SIZE_DEFAULT,
+        max_object_size: int | None = None,
     ) -> None:
         if database_path == ':memory:':
             self.database_path = database_path
