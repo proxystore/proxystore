@@ -32,6 +32,9 @@ from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import resolve_host
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.handler import handle_request
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
@@ -40,6 +43,7 @@ from proxystore.utils.environment import hostname
 
 if TYPE_CHECKING:
     from proxystore.endpoint.p2p.manager import PeerManager
+    from proxystore.endpoint.p2p.manager import RequestHandler
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +65,24 @@ def _create_peer_manager(
         relays if isinstance(relays, str) else ', '.join(relays),
     )
     return PeerManager.from_endpoint_dir(endpoint_dir)
+
+
+def peer_request_handler(endpoint: Endpoint) -> RequestHandler:
+    """Create a handler of requests from peers to an endpoint.
+
+    Requests from peers are handled like requests from clients except they
+    are never forwarded to another peer.
+    """
+
+    async def _handle(peer: EndpointId, request: Message) -> Message:
+        logger.debug(
+            'Received op %s request from peer %s',
+            request.code,
+            peer.short(),
+        )
+        return await handle_request(endpoint, request, forward=False)
+
+    return _handle
 
 
 def _create_storage(
@@ -206,14 +228,20 @@ class EndpointService:
         # match the configuration.
         endpoint_dir.read_secret_key()
 
+        peer_manager = _create_peer_manager(endpoint_dir, config)
         endpoint = await stack.enter_async_context(
             Endpoint(
                 name=config.name,
                 endpoint_id=config.id,
-                peer_manager=_create_peer_manager(endpoint_dir, config),
+                peer_manager=peer_manager,
                 storage=_create_storage(endpoint_dir, config),
             ),
         )
+        if peer_manager is not None:
+            # The peer manager is closed before the endpoint so no requests
+            # from peers are handled after the endpoint is closed.
+            await peer_manager.start(peer_request_handler(endpoint))
+            stack.push_async_callback(peer_manager.close)
 
         if endpoint_dir.restrict_permissions():
             logger.warning(

@@ -53,6 +53,7 @@ from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.p2p.manager import relay_options
 from proxystore.endpoint.peers import Allowlist
+from proxystore.endpoint.serve import peer_request_handler
 
 
 class _AllowAll(Allowlist):
@@ -96,7 +97,15 @@ async def _endpoint(relays: Literal['n0', 'none'], tmp_dir: str) -> Endpoint:
         _AllowAll(os.path.join(tmp_dir, 'peers.toml')),
         **_relay_options(relays),
     )
-    return await Endpoint('benchmark', manager.id, peer_manager=manager)
+    endpoint = Endpoint('benchmark', manager.id, peer_manager=manager)
+    await manager.start(peer_request_handler(endpoint))
+    return endpoint
+
+
+async def _close(endpoint: Endpoint) -> None:
+    assert endpoint.peer_manager is not None
+    await endpoint.peer_manager.close()
+    await endpoint.close()
 
 
 async def _time(coro: Any) -> float:
@@ -147,7 +156,7 @@ async def run_local(
             get_mbps = size * 8 / 1e6 / min(get_times)
             print(f'{size:>12} {set_mbps:>12.1f} {get_mbps:>12.1f}')
     finally:
-        await endpoint.close()
+        await _close(endpoint)
 
 
 async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
@@ -162,7 +171,7 @@ async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
         with contextlib.suppress(asyncio.CancelledError):
             await asyncio.Event().wait()
     finally:
-        await endpoint.close()
+        await _close(endpoint)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

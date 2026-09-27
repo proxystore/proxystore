@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from proxystore.endpoint.exceptions import PeerRequestError
-from proxystore.endpoint.handler import handle_request
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import check_response
 from proxystore.endpoint.protocol import exists_from_meta
@@ -63,15 +62,18 @@ class Endpoint:
         interface.
 
     Note:
-        If the endpoint has a peer manager, the endpoint must be used as a
-        context manager or initialized with await so the peer manager is
-        started.
+        The endpoint only uses the peer manager to send requests to peers.
+        The owner of the peer manager is responsible for starting it with a
+        handler of requests from peers (see
+        [`handle_request()`][proxystore.endpoint.handler.handle_request]) and
+        closing it, as the
+        [`EndpointService`][proxystore.endpoint.serve.EndpointService] does.
 
     Args:
         name: Readable name of the endpoint.
         endpoint_id: ID of the endpoint.
-        peer_manager: Optional peer manager used to communicate with peer
-            endpoints. The manager is closed when the endpoint is closed.
+        peer_manager: Optional peer manager used to send requests to peer
+            endpoints.
         storage: Storage interface to use. If `None`,
             [`DictStorage`][proxystore.endpoint.storage.DictStorage] is used.
 
@@ -124,16 +126,7 @@ class Endpoint:
         """Peer manager used to communicate with peer endpoints."""
         return self._peer_manager
 
-    async def async_init(self) -> None:
-        """Start the peer manager, if one was provided.
-
-        This is idempotent so it is safe to call multiple times.
-        """
-        if self._peer_manager is not None:
-            await self._peer_manager.start(self._handle_peer_request)
-
     async def __aenter__(self) -> Endpoint:
-        await self.async_init()
         return self
 
     async def __aexit__(
@@ -183,20 +176,6 @@ class Endpoint:
             error=PeerRequestError,
         )
         return response
-
-    async def _handle_peer_request(
-        self,
-        peer: EndpointId,
-        request: Message,
-    ) -> Message:
-        """Handle a request from a peer endpoint."""
-        logger.debug(
-            '%s: received op %s request from %s',
-            self._log_prefix,
-            request.code,
-            peer,
-        )
-        return await handle_request(self, request, forward=False)
 
     async def evict(
         self,
@@ -369,14 +348,12 @@ class Endpoint:
         )
 
     async def close(self) -> None:
-        """Close the endpoint and its peer manager.
+        """Close the endpoint and its storage.
 
         This is idempotent so it is safe to call multiple times.
         """
         if self._closed:
             return
         self._closed = True
-        if self._peer_manager is not None:
-            await self._peer_manager.close()
         await self._storage.close()
         logger.info('%s: endpoint closed', self._log_prefix)

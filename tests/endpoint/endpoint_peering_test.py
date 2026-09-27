@@ -17,6 +17,7 @@ from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.serve import peer_request_handler
 from proxystore.endpoint.storage import DictStorage
 from testing.compat import randbytes
 from testing.p2p import connect_peers
@@ -38,8 +39,14 @@ async def endpoints(
             storage=DictStorage(max_object_size=100),
         ) as ep2,
     ):
+        await manager1.start(peer_request_handler(ep1))
+        await manager2.start(peer_request_handler(ep2))
         connect_peers(manager1, manager2)
-        yield ep1, ep2
+        try:
+            yield ep1, ep2
+        finally:
+            await manager1.close()
+            await manager2.close()
 
 
 async def test_init_mismatched_id(tmp_path: pathlib.Path) -> None:
@@ -48,13 +55,17 @@ async def test_init_mismatched_id(tmp_path: pathlib.Path) -> None:
         Endpoint('ep', EndpointId.random(), peer_manager=manager)
 
 
-async def test_init_idempotent(tmp_path: pathlib.Path) -> None:
+async def test_close_does_not_close_peer_manager(
+    tmp_path: pathlib.Path,
+) -> None:
     manager = local_peer_manager(str(tmp_path))
     endpoint = await Endpoint('ep', manager.id, peer_manager=manager)
     assert endpoint.peer_manager is manager
-    await endpoint.async_init()
-    await endpoint.close()
-    await endpoint.close()
+    with mock.patch.object(manager, 'close') as close:
+        await endpoint.close()
+        await endpoint.close()
+    # The owner of the peer manager (e.g., the EndpointService) closes it
+    close.assert_not_called()
 
 
 async def test_remote_operations(endpoints) -> None:
@@ -121,7 +132,7 @@ async def test_remote_malformed_exists(endpoints) -> None:
 
 async def test_handle_peer_request_errors(endpoints) -> None:
     ep1, ep2 = endpoints
-    handle = ep2._handle_peer_request
+    handle = peer_request_handler(ep2)
 
     response = await handle(ep1.id, Message(Op.GET, {}))
     assert response.code == Status.BAD_REQUEST
