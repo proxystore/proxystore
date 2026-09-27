@@ -43,10 +43,9 @@ request ID of each request in its response.
 
 Peers do not use the handshake because iroh authenticates each endpoint.
 Each request to a peer is sent on its own stream so the request ID is
-unused. The version of the peer protocol is part of the
-[`ALPN`][proxystore.endpoint.protocol.ALPN] and always matches
-[`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] because
-peers exchange the same messages.
+unused. Peers exchange the same messages as clients and endpoints, and the
+protocol version is negotiated as part of the ALPN of the connection (see
+[`supported_alpns()`][proxystore.endpoint.protocol.supported_alpns]).
 """
 
 from __future__ import annotations
@@ -91,8 +90,6 @@ Clients and endpoints use the newest version both support, so keeping
 support for older versions lets clients and endpoints be upgraded
 separately. Only increase this when dropping support for an old version.
 """
-ALPN = f'proxystore/{PROTOCOL_VERSION}'.encode()
-"""Application protocol negotiated on connections between endpoints."""
 NONCE_SIZE = 32
 """Size in bytes of the random nonces exchanged in the handshake."""
 MAX_META_SIZE = 64 * 1024
@@ -125,6 +122,40 @@ def negotiate_version(newest: int) -> int | None:
     """
     version = min(newest, PROTOCOL_VERSION)
     return version if supports_version(version) else None
+
+
+def alpn(version: int) -> bytes:
+    """Get the application protocol of a version of the peer protocol."""
+    return f'proxystore/{version}'.encode()
+
+
+def alpn_version(protocol: bytes) -> int:
+    """Get the version of the peer protocol from its application protocol.
+
+    Raises:
+        ValueError: If `protocol` is not an application protocol of
+            ProxyStore.
+    """
+    prefix = b'proxystore/'
+    if not protocol.startswith(prefix):
+        raise ValueError(f'Unknown application protocol {protocol!r}.')
+    return int(protocol[len(prefix) :])
+
+
+def supported_alpns() -> list[bytes]:
+    """Get the application protocols of the supported peer protocols.
+
+    Endpoints accept connections with any of these protocols and try each
+    protocol when connecting to a peer, so the newest version supported by
+    both peers is used.
+
+    Returns:
+        The application protocol of each supported version, newest first.
+    """
+    return [
+        alpn(version)
+        for version in range(PROTOCOL_VERSION, MIN_PROTOCOL_VERSION - 1, -1)
+    ]
 
 
 class Op(enum.IntEnum):

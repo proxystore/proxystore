@@ -16,7 +16,8 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.protocol import ALPN
+from proxystore.endpoint.protocol import alpn
+from proxystore.endpoint.protocol import alpn_version
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import EndpointInfo
@@ -40,6 +41,7 @@ from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import STATUS_ERRORS
+from proxystore.endpoint.protocol import supported_alpns
 from proxystore.endpoint.protocol import supports_version
 from proxystore.endpoint.protocol import Versions
 
@@ -364,8 +366,19 @@ def test_negotiate_version(
     assert supports_version(newest) == (2 <= newest <= 4)
 
 
-def test_alpn_matches_protocol_version() -> None:
-    assert f'proxystore/{PROTOCOL_VERSION}'.encode() == ALPN
+def test_alpn() -> None:
+    assert alpn(PROTOCOL_VERSION) == f'proxystore/{PROTOCOL_VERSION}'.encode()
+    assert alpn_version(alpn(42)) == 42
+    with pytest.raises(ValueError, match='Unknown application protocol'):
+        alpn_version(b'other/1')
+
+
+def test_supported_alpns(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert supported_alpns() == [alpn(PROTOCOL_VERSION)]
+    monkeypatch.setattr(protocol, 'MIN_PROTOCOL_VERSION', 2)
+    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', 4)
+    # Newest version first
+    assert supported_alpns() == [alpn(4), alpn(3), alpn(2)]
 
 
 def test_versions_mismatch_warning() -> None:

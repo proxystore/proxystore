@@ -32,10 +32,11 @@ from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
-from proxystore.endpoint.protocol import ALPN
+from proxystore.endpoint.protocol import alpn_version
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import supported_alpns
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
@@ -122,6 +123,11 @@ class PeerConnection:
     def closed(self) -> bool:
         """The connection is closed."""
         return self.connection.close_reason() is not None
+
+    @property
+    def version(self) -> int:
+        """Protocol version negotiated on the connection."""
+        return alpn_version(self.connection.alpn())
 
     def path(self) -> PathInfo | None:
         """Get the path selected for sending on the connection."""
@@ -430,7 +436,7 @@ class PeerManager:
             iroh.EndpointOptions(
                 preset=options.preset,
                 secret_key=self._secret_key.to_bytes(),
-                alpns=[ALPN],
+                alpns=supported_alpns(),
                 relay_mode=options.relay_mode,
                 bind_addr=options.bind_addr,
             ),
@@ -601,10 +607,6 @@ class PeerManager:
                 )
                 self._addr_hints.pop(peer_id, None)
                 connection = await self._dial(peer_id, id_only)
-            logger.info(
-                'Connected to peer %s',
-                self.peer_name(peer_id),
-            )
             peer_connection = await self._add_connection(
                 peer_id,
                 connection,
@@ -625,6 +627,12 @@ class PeerManager:
         # time, each peer may prefer a different connection which is fine
         # because requests are accepted on all connections.
         peer_connection = PeerConnection(peer_id, connection, dialed)
+        logger.info(
+            '%s peer %s (protocol version %s)',
+            'Connected to' if dialed else 'Accepted connection from',
+            self.peer_name(peer_id),
+            peer_connection.version,
+        )
         self._connections.setdefault(peer_id, set()).add(peer_connection)
         self._preferred[peer_id] = peer_connection
         await self._remember_addr(peer_id)
@@ -638,20 +646,35 @@ class PeerManager:
         peer_id: EndpointId,
         addr: iroh.EndpointAddr,
     ) -> iroh.Connection:
-        try:
-            return await asyncio.wait_for(
-                self.endpoint.connect(addr, ALPN),
-                timeout=self._options.connect_timeout,
-            )
-        except TimeoutError:
-            raise PeerConnectionTimeoutError(
-                f'Connecting to peer {peer_id} timed out after '
-                f'{self._options.connect_timeout} seconds.',
-            ) from None
-        except iroh.IrohError as e:
-            raise PeerUnavailableError(
-                f'Failed to connect to peer {peer_id}: {e.message()}',
-            ) from None
+        # A connection only offers one application protocol, so each
+        # supported version is tried from newest to oldest until the peer
+        # accepts one.
+        for alpn in supported_alpns():
+            try:
+                return await asyncio.wait_for(
+                    self.endpoint.connect(addr, alpn),
+                    timeout=self._options.connect_timeout,
+                )
+            except TimeoutError:
+                raise PeerConnectionTimeoutError(
+                    f'Connecting to peer {peer_id} timed out after '
+                    f'{self._options.connect_timeout} seconds.',
+                ) from None
+            except iroh.IrohError as e:
+                if not _unsupported_protocol(e):
+                    raise PeerUnavailableError(
+                        f'Failed to connect to peer {peer_id}: {e.message()}',
+                    ) from None
+                logger.debug(
+                    'Peer %s does not support protocol %r',
+                    self.peer_name(peer_id),
+                    alpn,
+                )
+        raise PeerUnavailableError(
+            f'Peer {peer_id} supports none of the protocol versions of this '
+            'endpoint. Use compatible versions of ProxyStore for the '
+            'endpoints.',
+        )
 
     async def _remember_addr(self, peer_id: EndpointId) -> None:
         addr = await self.endpoint.remote_addr(
@@ -773,10 +796,6 @@ class PeerManager:
             connection.close(CloseCode.NOT_ALLOWED, b'not allowed')
             return
 
-        logger.info(
-            'Accepted connection from peer %s',
-            self.peer_name(peer_id),
-        )
         await self._add_connection(peer_id, connection, dialed=False)
 
     async def _serve_connection(self, connection: PeerConnection) -> None:
@@ -877,6 +896,12 @@ async def _read_exact(stream: iroh.RecvStream, size: int) -> bytes | bytearray:
         chunk = min(_CHUNK_SIZE, size - start)
         buffer[start : start + chunk] = await stream.read_exact(chunk)
     return data
+
+
+def _unsupported_protocol(error: iroh.IrohError) -> bool:
+    # The bindings only expose the TLS alert raised when the peer does not
+    # accept the application protocol as a string.
+    return "doesn't support any known protocol" in error.message()
 
 
 def _closed_with(reason: str, code: CloseCode) -> bool:

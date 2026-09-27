@@ -21,10 +21,12 @@ from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerConnection
 from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.protocol import alpn
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from testing.endpoint import decode_meta
 from testing.endpoint import encode_meta
@@ -289,6 +291,30 @@ async def test_connect_error() -> None:
             await _request(manager1, manager2.id, Op.GET)
     finally:
         await manager1.close()
+
+
+async def test_connect_falls_back_to_older_version(managers, caplog) -> None:
+    caplog.set_level(logging.DEBUG)
+    manager1, manager2, _ = managers
+    newer = [alpn(PROTOCOL_VERSION + 1), alpn(PROTOCOL_VERSION)]
+    # Manager 1 also supports a newer version which manager 2 does not
+    with mock.patch(f'{_MANAGER}.supported_alpns', return_value=newer):
+        status, _, _ = await _request(manager1, manager2.id, Op.GET)
+    assert status == Status.OK
+    assert manager1._preferred[manager2.id].version == PROTOCOL_VERSION
+    assert any(
+        'does not support protocol' in r.message for r in caplog.records
+    )
+
+
+async def test_connect_no_common_version(managers) -> None:
+    manager1, manager2, _ = managers
+    newer = [alpn(PROTOCOL_VERSION + 1)]
+    with (
+        mock.patch(f'{_MANAGER}.supported_alpns', return_value=newer),
+        pytest.raises(PeerUnavailableError, match='none of the protocol'),
+    ):
+        await _request(manager1, manager2.id, Op.GET)
 
 
 async def test_connect_timeout() -> None:
