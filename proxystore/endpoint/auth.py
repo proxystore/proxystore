@@ -50,9 +50,6 @@ from pydantic_core import CoreSchema
 from proxystore.endpoint.files import write_private_file
 from proxystore.serialize import BytesLike
 
-TOKEN_SIZE = 32
-"""Size in bytes of an endpoint token."""
-
 
 class EndpointToken:
     """Token that a client and endpoint prove they know.
@@ -62,18 +59,18 @@ class EndpointToken:
     the token is validated from and serialized to its hex encoding.
 
     Args:
-        token: Token as [`TOKEN_SIZE`][proxystore.endpoint.auth.TOKEN_SIZE]
-            bytes.
+        token: Token as 32 bytes.
 
     Raises:
         ValueError: If `token` is not the correct size.
     """
 
     __slots__ = ('_token',)
+    _SIZE = 32
 
     def __init__(self, token: bytes) -> None:
-        if not isinstance(token, bytes) or len(token) != TOKEN_SIZE:
-            raise ValueError(f'Endpoint token must be {TOKEN_SIZE} bytes.')
+        if not isinstance(token, bytes) or len(token) != self._SIZE:
+            raise ValueError(f'Endpoint token must be {self._SIZE} bytes.')
         self._token = token
 
     def __repr__(self) -> str:
@@ -90,7 +87,7 @@ class EndpointToken:
     @classmethod
     def generate(cls) -> Self:
         """Generate a new random token."""
-        return cls(secrets.token_bytes(TOKEN_SIZE))
+        return cls(secrets.token_bytes(cls._SIZE))
 
     @classmethod
     def from_hex(cls, value: str) -> Self:

@@ -12,7 +12,6 @@ import pytest
 from proxystore.endpoint.auth import certificate_fingerprint
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.auth import TLSCertificate
-from proxystore.endpoint.auth import TOKEN_SIZE
 from proxystore.endpoint.files import write_private_file
 
 
@@ -69,7 +68,7 @@ def test_token() -> None:
     assert token.hex() not in repr(token)
 
 
-@pytest.mark.parametrize('value', (b'short', 'a' * TOKEN_SIZE, b'x' * 33))
+@pytest.mark.parametrize('value', (b'short', 'a' * 32, b'x' * 33))
 def test_token_invalid(value: Any) -> None:
     with pytest.raises(ValueError, match='must be 32 bytes'):
         EndpointToken(value)
