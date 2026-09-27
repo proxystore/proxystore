@@ -702,6 +702,16 @@ async def test_simultaneous_connections(managers) -> None:
         assert status == Status.OK
 
 
+async def test_close_notifies_peers(managers) -> None:
+    manager1, manager2, _ = managers
+    await _request(manager1, manager2.id, Op.GET)
+    connection = manager1._preferred[manager2.id]
+
+    await manager2.close()
+    await connection.closed()
+    assert 'shutdown' in str(connection.close_reason())
+
+
 async def test_closed_connection_is_forgotten(managers) -> None:
     manager1, manager2, _ = managers
     await _request(manager1, manager2.id, Op.GET)

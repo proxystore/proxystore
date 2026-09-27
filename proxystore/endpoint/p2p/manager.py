@@ -395,13 +395,16 @@ class PeerManager:
         if self._closed:
             return
         self._closed = True
+        # Connections are closed before the tasks are cancelled because
+        # cancelling the task serving a connection forgets the connection
+        # without closing it.
+        for peer_id in list(self._connections):
+            self._close_peer(peer_id, CloseCode.SHUTDOWN, b'shutdown')
         for task in (self._accept_task, self._online_task, *self._tasks):
             if task is not None:
                 task.cancel()
                 with contextlib.suppress(asyncio.CancelledError):
                     await task
-        for peer_id in list(self._connections):
-            self._close_peer(peer_id, CloseCode.SHUTDOWN, b'shutdown')
         if self._endpoint is not None:
             await self._endpoint.close()
         logger.info('Peer manager closed')
