@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 
 import proxystore
+from proxystore.endpoint import protocol
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
@@ -29,6 +30,7 @@ from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import Meta
+from proxystore.endpoint.protocol import negotiate_version
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
@@ -38,6 +40,7 @@ from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import STATUS_ERRORS
+from proxystore.endpoint.protocol import supports_version
 from proxystore.endpoint.protocol import Versions
 
 
@@ -344,6 +347,21 @@ def test_message_reader_errors() -> None:
     assert reader.done
     with pytest.raises(RuntimeError, match='already been read'):
         reader.feed(b'')
+
+
+@pytest.mark.parametrize(
+    ('newest', 'expected'),
+    ((1, None), (2, 2), (3, 3), (4, 4), (5, 4), (100, 4)),
+)
+def test_negotiate_version(
+    newest: int,
+    expected: int | None,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(protocol, 'MIN_PROTOCOL_VERSION', 2)
+    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', 4)
+    assert negotiate_version(newest) == expected
+    assert supports_version(newest) == (2 <= newest <= 4)
 
 
 def test_alpn_matches_protocol_version() -> None:

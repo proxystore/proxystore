@@ -410,7 +410,7 @@ change.
 
 | Interface | Version | Incompatible versions |
 | --- | --- | --- |
-| Client-endpoint protocol | [`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] | The endpoint refuses the connection. |
+| Client-endpoint protocol | [`MIN_PROTOCOL_VERSION`][proxystore.endpoint.protocol.MIN_PROTOCOL_VERSION] to [`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION] | The client and endpoint use the newest version both support. If there is none, the endpoint refuses the connection. |
 | Peer protocol | The [`ALPN`][proxystore.endpoint.protocol.ALPN] negotiated on peer connections, which includes `PROTOCOL_VERSION` | The connection fails. |
 | `config.toml` | `version` field | The configuration cannot be read. |
 | `peers.toml` | `version` field | No peers are allowed until the file is fixed. |

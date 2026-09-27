@@ -33,6 +33,7 @@ from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
@@ -195,17 +196,32 @@ async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
     await asyncio.to_thread(_run)
 
 
-async def test_protocol_version_mismatch(server: _Server) -> None:
+async def test_protocol_version_unsupported(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
-            # The HELLO of a different protocol version is never read
-            hello = Message(
-                Op.HELLO, encode_meta({'future': 'format'})
-            ).pack_head()
-            sock.sendall(Preamble(PROTOCOL_VERSION + 1).pack() + hello)
+            # The HELLO of an unsupported protocol version is never read
+            hello = Message(Op.HELLO, encode_meta({'old': 'format'}))
+            version = MIN_PROTOCOL_VERSION - 1
+            sock.sendall(Preamble(version).pack() + hello.pack_head())
             preamble = _recv_exactly(sock, Preamble.SIZE)
             assert Preamble.unpack(bytes(preamble)).version == PROTOCOL_VERSION
             assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+
+
+async def test_protocol_version_negotiated(server: _Server) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            # A newer client uses the newest version the endpoint supports
+            hello = Hello(nonce=os.urandom(32), versions=Versions.current())
+            message = Message(Op.HELLO, hello.encode())
+            sock.sendall(
+                Preamble(PROTOCOL_VERSION + 1).pack() + message.pack_head(),
+            )
+            preamble = _recv_exactly(sock, Preamble.SIZE)
+            assert Preamble.unpack(bytes(preamble)).version == PROTOCOL_VERSION
+            assert _recv_message(sock).code == Status.OK
 
     await asyncio.to_thread(_run)
 

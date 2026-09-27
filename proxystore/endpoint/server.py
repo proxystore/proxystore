@@ -38,6 +38,8 @@ from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
+from proxystore.endpoint.protocol import negotiate_version
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Preamble
@@ -392,7 +394,7 @@ class ClientHandler:
 
         try:
             try:
-                authenticated = await asyncio.wait_for(
+                version = await asyncio.wait_for(
                     self._handshake(conn, addr),
                     timeout=self.handshake_timeout,
                 )
@@ -405,8 +407,12 @@ class ClientHandler:
                     self.handshake_timeout,
                 )
                 return
-            if authenticated:
-                logger.info('Accepted connection from client %s', addr)
+            if version is not None:
+                logger.info(
+                    'Accepted connection from client %s (protocol version %s)',
+                    addr,
+                    version,
+                )
                 await self._serve_requests(conn)
                 logger.info('Connection with client %s closed', addr)
         except (
@@ -422,7 +428,11 @@ class ClientHandler:
             conn.close()
             await conn.wait_closed()
 
-    async def _handshake(self, conn: _ClientConnection, addr: str) -> bool:
+    async def _handshake(
+        self, conn: _ClientConnection, addr: str
+    ) -> int | None:
+        # Returns the negotiated protocol version if the client is
+        # authenticated.
         preamble = await conn.readexactly(Preamble.SIZE)
         if bytes(preamble[:4]) in _HTTP_METHODS:
             logger.warning(
@@ -431,21 +441,23 @@ class ClientHandler:
                 addr,
             )
             await _reply_and_close(conn, _http_upgrade_response())
-            return False
+            return None
 
-        version = Preamble.unpack(preamble).version
-        if version != PROTOCOL_VERSION:
+        client_version = Preamble.unpack(preamble).version
+        version = negotiate_version(client_version)
+        if version is None:
             logger.warning(
-                'Rejecting connection from %s with protocol version '
-                '%s (expected %s)',
+                'Rejecting connection from %s with protocol version %s '
+                '(supported versions are %s to %s)',
                 addr,
-                version,
+                client_version,
+                MIN_PROTOCOL_VERSION,
                 PROTOCOL_VERSION,
             )
-            # Only the preamble format is the same across protocol versions
-            # so the client detects the mismatch from our preamble.
-            await _reply_and_close(conn, Preamble().pack())
-            return False
+            # The client detects the mismatch from the version in our
+            # preamble.
+            await _reply_and_close(conn, Preamble(PROTOCOL_VERSION).pack())
+            return None
 
         hello = Hello.decode(await _read_handshake_message(conn, Op.HELLO))
         nonce = os.urandom(NONCE_SIZE)
@@ -453,7 +465,7 @@ class ClientHandler:
             nonce=nonce,
             proof=self.token.proof('server', nonce, hello.nonce),
         )
-        conn.write(Preamble().pack())
+        conn.write(Preamble(version).pack())
         await _send(conn, Message(Status.OK, challenge.encode()))
 
         auth = Auth.decode(await _read_handshake_message(conn, Op.AUTH))
@@ -471,7 +483,7 @@ class ClientHandler:
             await _send(
                 conn, Message.error(Status.UNAUTHORIZED, 'invalid token')
             )
-            return False
+            return None
 
         self._check_client_versions(addr, hello.versions)
         info = EndpointInfo(
@@ -481,7 +493,7 @@ class ClientHandler:
             max_object_size=self.max_object_size,
         )
         await _send(conn, Message(Status.OK, info.encode()))
-        return True
+        return version
 
     def _check_client_versions(self, addr: str, versions: Versions) -> None:
         warning = versions.mismatch_warning(Versions.current())

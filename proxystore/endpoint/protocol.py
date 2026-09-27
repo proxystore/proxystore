@@ -16,19 +16,25 @@ blocking client, the asyncio server, and the iroh streams of peers.
 A connection starts with a handshake:
 
 1. The client sends a preamble ([`MAGIC`][proxystore.endpoint.protocol.MAGIC]
-   and [`PROTOCOL_VERSION`][proxystore.endpoint.protocol.PROTOCOL_VERSION])
-   followed by a [`HELLO`][proxystore.endpoint.protocol.Op.HELLO] message
-   with a random nonce and the client's versions.
-2. The endpoint replies with its preamble and a message with its own nonce and
-   a proof that it knows the endpoint's token.
+   and the newest protocol version it supports) followed by a
+   [`HELLO`][proxystore.endpoint.protocol.Op.HELLO] message with a random
+   nonce and the client's versions.
+2. The endpoint replies with a preamble containing the negotiated protocol
+   version (see
+   [`negotiate_version()`][proxystore.endpoint.protocol.negotiate_version])
+   and a message with its own nonce and a proof that it knows the endpoint's
+   token.
 3. The client verifies the endpoint's proof then sends an
    [`AUTH`][proxystore.endpoint.protocol.Op.AUTH] message with its own proof.
 4. The endpoint verifies the client's proof and replies with its
    information (ID, name, and versions).
 
-The preamble format must never change so that clients and endpoints using
-different protocol versions can detect the mismatch. If the protocol versions
-differ, the endpoint replies with only its preamble and closes the connection.
+The formats of the preamble and the
+[`Hello`][proxystore.endpoint.protocol.Hello] message must never change
+(fields may only be added to `Hello`) because they are sent before the
+version is negotiated. If the client and endpoint support no common version,
+the endpoint replies with only its preamble, containing the newest version it
+supports, and closes the connection.
 
 After the handshake, each request and response is a message consisting of a
 fixed-size [`Header`][proxystore.endpoint.protocol.Header], JSON-encoded
@@ -74,9 +80,16 @@ from proxystore.serialize import BytesLike
 MAGIC = b'PSEP'
 """Bytes that start every connection."""
 PROTOCOL_VERSION = 1
-"""Version of the protocol.
+"""Newest version of the protocol supported by this version of ProxyStore.
 
 Increment on any incompatible change to the handshake or message formats.
+"""
+MIN_PROTOCOL_VERSION = 1
+"""Oldest version of the protocol supported by this version of ProxyStore.
+
+Clients and endpoints use the newest version both support, so keeping
+support for older versions lets clients and endpoints be upgraded
+separately. Only increase this when dropping support for an old version.
 """
 ALPN = f'proxystore/{PROTOCOL_VERSION}'.encode()
 """Application protocol negotiated on connections between endpoints."""
@@ -93,6 +106,25 @@ MessageData: TypeAlias = bytes | bytearray
 Unlike [`BytesLike`][proxystore.serialize.BytesLike], views are excluded
 because endpoints store the data after handling the message.
 """
+
+
+def supports_version(version: int) -> bool:
+    """Check if this version of ProxyStore supports a protocol version."""
+    return MIN_PROTOCOL_VERSION <= version <= PROTOCOL_VERSION
+
+
+def negotiate_version(newest: int) -> int | None:
+    """Negotiate the protocol version used with another client or endpoint.
+
+    Args:
+        newest: Newest version supported by the other side.
+
+    Returns:
+        The newest version supported by both sides or `None` if there is \
+        no common version.
+    """
+    version = min(newest, PROTOCOL_VERSION)
+    return version if supports_version(version) else None
 
 
 class Op(enum.IntEnum):

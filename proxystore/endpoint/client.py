@@ -49,6 +49,7 @@ from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
@@ -57,6 +58,7 @@ from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import supports_version
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
@@ -92,11 +94,19 @@ class EndpointClient:
     Args:
         sock: Connected socket that has completed the handshake.
         info: Information about the endpoint.
+        protocol_version: Protocol version negotiated in the handshake.
     """
 
-    def __init__(self, sock: socket.socket, info: EndpointInfo) -> None:
+    def __init__(
+        self,
+        sock: socket.socket,
+        info: EndpointInfo,
+        *,
+        protocol_version: int,
+    ) -> None:
         self._socket = sock
         self.info = info
+        self.protocol_version = protocol_version
         self.closed = False
         self._next_request_id = 1
 
@@ -172,7 +182,7 @@ class EndpointClient:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             if tls_fingerprint is not None:
                 sock = _wrap_tls(sock, tls_fingerprint)
-            info = _handshake(sock, token)
+            info, version = _handshake(sock, token)
             sock.settimeout(None)
         except OSError as e:
             sock.close()
@@ -199,7 +209,7 @@ class EndpointClient:
             port,
             tls_fingerprint is not None,
         )
-        return cls(sock, info)
+        return cls(sock, info, protocol_version=version)
 
     @classmethod
     def from_dir(
@@ -501,7 +511,11 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
     return tls_sock
 
 
-def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
+def _handshake(
+    sock: socket.socket,
+    token: EndpointToken,
+) -> tuple[EndpointInfo, int]:
+    # Returns the information of the endpoint and the negotiated version.
     hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
     sock.sendall(
         Preamble().pack() + Message(Op.HELLO, hello.encode()).pack_head()
@@ -516,14 +530,14 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
             f'the client. See {VERSION_DOCS_URL} for details.',
         )
     version = Preamble.unpack(preamble).version
-    if version != PROTOCOL_VERSION:
-        # Only the preamble format is the same across protocol versions so
-        # nothing after it can be parsed.
+    if not supports_version(version):
+        # The endpoint supports no common version so nothing after the
+        # preamble can be parsed.
         raise EndpointProtocolError(
-            f'Endpoint uses protocol version {version} but the client uses '
-            f'protocol version {PROTOCOL_VERSION}. Use the same version of '
-            f'ProxyStore for the client and endpoint. See {VERSION_DOCS_URL} '
-            'for details.',
+            f'Endpoint uses protocol version {version} but the client '
+            f'supports protocol versions {MIN_PROTOCOL_VERSION} to '
+            f'{PROTOCOL_VERSION}. Use compatible versions of ProxyStore for '
+            f'the client and endpoint. See {VERSION_DOCS_URL} for details.',
         )
 
     challenge = Challenge.decode(_recv_handshake_message(sock))
@@ -543,7 +557,7 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
     proof = token.proof('client', hello.nonce, challenge.nonce)
     sock.sendall(Message(Op.AUTH, Auth(proof=proof).encode()).pack_head())
 
-    return EndpointInfo.decode(_recv_handshake_message(sock))
+    return EndpointInfo.decode(_recv_handshake_message(sock)), version
 
 
 def _recv_handshake_message(sock: socket.socket) -> bytes:

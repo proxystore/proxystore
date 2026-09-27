@@ -14,6 +14,7 @@ from unittest import mock
 
 import pytest
 
+from proxystore.endpoint import protocol
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
@@ -143,10 +144,23 @@ def test_connect_and_close(fake_server) -> None:
         assert client.info.id == ENDPOINT_ID
         assert client.info.name == 'fake'
         assert client.info.max_object_size is None
+        assert client.protocol_version == PROTOCOL_VERSION
         assert 'fake' in repr(client)
     assert client.closed
     # Closing again is a no-op
     client.close()
+
+
+def test_connect_older_protocol_version(
+    fake_server,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A client which also supports a newer version uses the older version
+    # negotiated by the endpoint.
+    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', PROTOCOL_VERSION + 1)
+    port = fake_server(_complete_handshake)
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        assert client.protocol_version == PROTOCOL_VERSION
 
     with pytest.raises(EndpointConnectionError, match='closed'):
         client.exists('key')
