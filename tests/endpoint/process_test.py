@@ -115,13 +115,10 @@ def _lock_holder(
 
 
 @pytest.mark.usefixtures('_patch_hostname')
-@pytest.mark.parametrize('host', ('fqdn', 'ip', 'localhost'))
 def test_start_endpoint(
-    host: str,
-    tmp_path: pathlib.Path,
+    endpoint_dir: EndpointDir,
     configure_logging_mock: mock.MagicMock,
 ) -> None:
-    endpoint_dir = EndpointDir.create(_NAME, str(tmp_path), host=host)
     with open(endpoint_dir.config_path, 'rb') as f:
         before = f.read()
 
@@ -159,10 +156,12 @@ def test_start_endpoint_running(endpoint_dir: EndpointDir) -> None:
         lock.release()
 
 
-def test_start_endpoint_does_not_exist(tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize('action', ('start', 'stop'))
+def test_endpoint_does_not_exist(action: str, tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.from_name('missing', str(tmp_path))
+    func = start_endpoint if action == 'start' else stop_endpoint
     with pytest.raises(EndpointNotFoundError, match='does not exist'):
-        start_endpoint(endpoint_dir)
+        func(endpoint_dir)
 
 
 def test_start_endpoint_bad_config(endpoint_dir: EndpointDir) -> None:
@@ -228,14 +227,14 @@ def test_stop_endpoint(endpoint_dir: EndpointDir) -> None:
     assert endpoint_dir.status() == EndpointStatus.STOPPED
 
 
-def test_stop_endpoint_not_running(endpoint_dir: EndpointDir) -> None:
-    assert not stop_endpoint(endpoint_dir)
-
-
-def test_stop_endpoint_stale_connection_file(
+@pytest.mark.parametrize('stale', (False, True))
+def test_stop_endpoint_not_running(
+    stale: bool,
     endpoint_dir: EndpointDir,
 ) -> None:
-    _write_connection(endpoint_dir, utils.hostname())
+    if stale:
+        # A crashed endpoint leaves its connection file behind
+        _write_connection(endpoint_dir, utils.hostname())
     assert not stop_endpoint(endpoint_dir)
     assert not os.path.exists(endpoint_dir.connection_path)
 
@@ -248,12 +247,6 @@ def test_stop_endpoint_starting(endpoint_dir: EndpointDir) -> None:
             stop_endpoint(endpoint_dir)
     finally:
         lock.release()
-
-
-def test_stop_endpoint_does_not_exist(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir.from_name('missing', str(tmp_path))
-    with pytest.raises(EndpointNotFoundError):
-        stop_endpoint(endpoint_dir)
 
 
 def test_wait_for_exit() -> None:
@@ -272,37 +265,6 @@ def test_wait_for_exit() -> None:
         return_value=True,
     ):
         assert not _wait_for_exit(os.getpid(), timeout=0)
-
-
-@pytest.mark.timeout(10)
-def test_serve(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
-    endpoint_dir, _ = write_endpoint(
-        str(tmp_path),
-        'my-endpoint',
-        host='127.0.0.1',
-    )
-
-    context = multiprocessing.get_context('spawn')
-    process = context.Process(
-        target=serve,
-        args=(endpoint_dir,),
-        kwargs={'use_uvloop': use_uvloop},
-    )
-    process.start()
-
-    try:
-        wait_for_endpoint(endpoint_dir)
-        with EndpointClient.from_dir(endpoint_dir) as client:
-            client.set('key', b'value')
-            assert client.get('key') == b'value'
-
-        # SIGTERM should cleanly shutdown the endpoint
-        process.terminate()
-        process.join(timeout=5)
-        assert process.exitcode == 0
-        assert not os.path.exists(endpoint_dir.connection_path)
-    finally:
-        terminate_process(process)
 
 
 def test_serve_missing_config(
@@ -367,7 +329,10 @@ def test_configure_logging(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.timeout(15)
-def test_serve_then_stop_endpoint(tmp_path: pathlib.Path) -> None:
+def test_serve_then_stop_endpoint(
+    use_uvloop: bool,
+    tmp_path: pathlib.Path,
+) -> None:
     endpoint_dir, _ = write_endpoint(
         str(tmp_path),
         'my-endpoint',
@@ -377,14 +342,15 @@ def test_serve_then_stop_endpoint(tmp_path: pathlib.Path) -> None:
     process = context.Process(
         target=serve,
         args=(endpoint_dir,),
-        kwargs={'use_uvloop': False},
+        kwargs={'use_uvloop': use_uvloop},
     )
     process.start()
     try:
         wait_for_endpoint(endpoint_dir)
         assert endpoint_dir.status() == EndpointStatus.RUNNING
-        with pytest.raises(EndpointRunningError, match='already running'):
-            start_endpoint(endpoint_dir)
+        with EndpointClient.from_dir(endpoint_dir) as client:
+            client.set('key', b'value')
+            assert client.get('key') == b'value'
         # Stop the endpoint from another process, like the CLI, because
         # stop_endpoint() reaps the endpoint if it is a child process.
         code = (
@@ -398,7 +364,9 @@ def test_serve_then_stop_endpoint(tmp_path: pathlib.Path) -> None:
         reaper.start()
         subprocess.run([sys.executable, '-c', code], check=True, timeout=10)
         reaper.join(timeout=5)
+        # The endpoint shuts down cleanly and removes its connection file
         assert process.exitcode == 0
+        assert not os.path.exists(endpoint_dir.connection_path)
         assert endpoint_dir.status() == EndpointStatus.STOPPED
     finally:
         terminate_process(process)

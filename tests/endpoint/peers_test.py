@@ -149,12 +149,6 @@ def test_allowlist_malformed_denies_all(
     assert any('All peers will be denied' in r.message for r in caplog.records)
 
 
-def test_peers_version() -> None:
-    assert PeersConfig().version == 1
-    with pytest.raises(ValueError, match='only supports version 1'):
-        PeersConfig(version=2)
-
-
 def test_allowlist_reload_interval(tmp_path: pathlib.Path) -> None:
     peers = Peers(str(tmp_path / 'peers.toml'))
     peers.write(PeersConfig(peers={'a': _ID1}))

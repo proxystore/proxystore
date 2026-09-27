@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import dataclasses
 import logging
 import os
@@ -12,6 +13,7 @@ from unittest import mock
 import iroh
 import pytest
 
+from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerUnavailableError
@@ -21,6 +23,7 @@ from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerConnection
 from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import PeerOptions
 from proxystore.endpoint.protocol import alpn
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import MAX_META_SIZE
@@ -338,20 +341,31 @@ async def test_connect_timeout() -> None:
         await manager1.close()
 
 
-async def test_handle_incoming_accept_error(managers) -> None:
+async def test_handle_incoming_accept_error(managers, caplog) -> None:
+    caplog.set_level(logging.DEBUG, logger=_MANAGER)
     manager1, _, _ = managers
     incoming = mock.AsyncMock()
     incoming.accept.side_effect = _IrohError()
     await manager1._handle_incoming(incoming)
+    assert len(manager1._connections) == 0
+    assert any(
+        'Failed to accept connection: boom' in r.message
+        for r in caplog.records
+    )
 
 
 async def test_stream_error_is_logged(managers, caplog) -> None:
+    caplog.set_level(logging.DEBUG, logger=_MANAGER)
     manager1, manager2, _ = managers
     stream = mock.MagicMock()
     stream.recv.return_value.read_exact = mock.AsyncMock(
         side_effect=_IrohError(),
     )
     await manager1._handle_stream(manager2.id, stream)
+    assert any(
+        'Stream from' in r.message and 'failed: boom' in r.message
+        for r in caplog.records
+    )
 
 
 async def test_not_started() -> None:
@@ -393,17 +407,44 @@ async def test_spawned_task_error_is_logged(managers, caplog) -> None:
     assert 'task failed' in str(records[0].exc_info[1])
 
 
-async def test_online(caplog) -> None:
+@pytest.mark.parametrize(
+    ('online', 'timeout', 'message'),
+    (
+        (mock.AsyncMock(), 1, 'Connected to home relay'),
+        (
+            mock.AsyncMock(side_effect=RuntimeError('online failed')),
+            1,
+            'Failed to wait for a home relay',
+        ),
+        # Relays are disabled so the endpoint never connects to a home relay
+        (None, 0.01, 'Not connected to a home relay'),
+    ),
+)
+async def test_online(
+    online: mock.AsyncMock | None,
+    timeout: float,
+    message: str,
+    caplog,
+) -> None:
     caplog.set_level(logging.INFO)
     manager = local_peer_manager(
-        options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=1),
+        options=dataclasses.replace(
+            LOCAL_PEER_OPTIONS, online_timeout=timeout
+        ),
     )
-    with mock.patch.object(iroh.Endpoint, 'online', mock.AsyncMock()):
+    patch = (
+        contextlib.nullcontext()
+        if online is None
+        else mock.patch.object(iroh.Endpoint, 'online', online)
+    )
+    with patch:
         await manager.start(_echo_handler([]))
         assert manager._online_task is not None
         await manager._online_task
+    # Errors do not stop the manager from closing
     await manager.close()
-    assert any('Connected to home relay' in r.message for r in caplog.records)
+    assert manager.endpoint.is_closed()
+    assert any(message in r.message for r in caplog.records)
 
 
 async def test_drop_replaced_preferred_connection(managers) -> None:
@@ -417,45 +458,40 @@ async def test_drop_replaced_preferred_connection(managers) -> None:
     assert manager1._preferred[manager2.id] is current
 
 
-async def test_exchange_write_error_reads_response(managers) -> None:
-    manager1, _, _ = managers
-    connection = mock.AsyncMock()
-    connection.open_bi.return_value = mock.MagicMock()
-    expected = Message.error(Status.TOO_LARGE, 'too large')
-    with (
-        mock.patch(
-            'proxystore.endpoint.p2p.manager._write_message',
-            side_effect=_IrohError(),
-        ),
-        mock.patch(
-            'proxystore.endpoint.p2p.manager._read_message',
-            return_value=expected,
-        ),
-    ):
-        request = Message(Op.SET, data=b'x')
-        response = await manager1._exchange(connection, request)
-    assert response == expected
-
-
-@pytest.mark.parametrize('write_fails', (True, False))
-async def test_exchange_read_error(managers, write_fails: bool) -> None:
+@pytest.mark.parametrize(
+    ('write_fails', 'read_fails'),
+    ((True, False), (True, True), (False, True)),
+)
+async def test_exchange_errors(
+    managers,
+    write_fails: bool,
+    read_fails: bool,
+) -> None:
     manager1, _, _ = managers
     connection = mock.AsyncMock()
     connection.open_bi.return_value = mock.MagicMock()
     write_error = _IrohError()
     read_error = _IrohError()
+    # The peer stops reading a rejected request but still responds
+    expected = Message.error(Status.TOO_LARGE, 'too large')
     with (
         mock.patch(
-            'proxystore.endpoint.p2p.manager._write_message',
+            f'{_MANAGER}._write_message',
             side_effect=write_error if write_fails else None,
         ),
         mock.patch(
-            'proxystore.endpoint.p2p.manager._read_message',
-            side_effect=read_error,
+            f'{_MANAGER}._read_message',
+            side_effect=read_error if read_fails else None,
+            return_value=expected,
         ),
-        pytest.raises(_IrohError) as exc_info,
     ):
-        await manager1._exchange(connection, Message(Op.SET, data=b'x'))
+        request = Message(Op.SET, data=b'x')
+        if not read_fails:
+            assert await manager1._exchange(connection, request) == expected
+            return
+        with pytest.raises(_IrohError) as exc_info:
+            await manager1._exchange(connection, request)
+    # The write error is raised if both fail because it is the cause
     assert exc_info.value is (write_error if write_fails else read_error)
 
 
@@ -558,39 +594,6 @@ async def test_stale_addr_timeout_not_retried(managers) -> None:
     ):
         await _request(manager1, manager2.id, Op.GET)
     assert dial.call_count == 1
-
-
-async def test_online_error(caplog) -> None:
-    manager = local_peer_manager(
-        options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=1),
-    )
-    with mock.patch.object(
-        iroh.Endpoint,
-        'online',
-        mock.AsyncMock(side_effect=RuntimeError('online failed')),
-    ):
-        await manager.start(_echo_handler([]))
-        assert manager._online_task is not None
-        await manager._online_task
-    # The error does not stop the manager from closing.
-    await manager.close()
-    assert manager._endpoint is not None
-    assert manager._endpoint.is_closed()
-    assert any(
-        'Failed to wait for a home relay' in r.message for r in caplog.records
-    )
-
-
-async def test_online_timeout(caplog) -> None:
-    # Relays are disabled so the endpoint never connects to a home relay.
-    manager = local_peer_manager(
-        options=dataclasses.replace(LOCAL_PEER_OPTIONS, online_timeout=0.01),
-    )
-    await manager.start(_echo_handler([]))
-    assert manager._online_task is not None
-    await manager._online_task
-    await manager.close()
-    assert any('Not connected to a home' in r.message for r in caplog.records)
 
 
 def _path(*, selected: bool, relay: bool, addr: str, rtt: int = 5) -> Any:
@@ -757,3 +760,28 @@ async def test_closed_connection_is_forgotten(managers) -> None:
     connection.connection.close(CloseCode.SHUTDOWN, b'close')
     await wait_until(lambda: manager2.id not in manager1._connections)
     assert manager2.id not in manager1._preferred
+
+
+@pytest.mark.parametrize(
+    'relays',
+    ('n0', 'none', ['https://relay.example.com']),
+)
+@pytest.mark.parametrize('discovery', ('n0', 'none'))
+def test_peer_options_from_config(relays: Any, discovery: Any) -> None:
+    config = EndpointP2PConfig(relays=relays, discovery=discovery)
+    with (
+        mock.patch('iroh.preset_n0', wraps=iroh.preset_n0) as n0,
+        mock.patch(
+            'iroh.preset_minimal', wraps=iroh.preset_minimal
+        ) as minimal,
+    ):
+        options = PeerOptions.from_config(config)
+    assert isinstance(options.preset, iroh.Preset)
+    assert n0.called == (discovery == 'n0')
+    assert minimal.called == (discovery == 'none')
+    if relays == 'n0' and discovery == 'n0':
+        # The relays of the n0 preset are used
+        assert options.relay_mode is None
+    else:
+        assert isinstance(options.relay_mode, iroh.RelayMode)
+    assert (options.online_timeout is None) == (relays == 'none')

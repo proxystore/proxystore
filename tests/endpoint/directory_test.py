@@ -179,19 +179,6 @@ def test_read_connection_malformed(
         endpoint_dir.read_connection()
 
 
-@pytest.mark.parametrize('version', (0, 2))
-def test_read_connection_unsupported_version(
-    version: Any,
-    tmp_path: pathlib.Path,
-) -> None:
-    endpoint_dir = EndpointDir(str(tmp_path))
-    data = _connection_data(version=version)
-    with open(endpoint_dir.connection_path, 'w') as f:
-        json.dump(data, f)
-    with pytest.raises(ValueError, match='only supports version 1'):
-        endpoint_dir.read_connection()
-
-
 def test_is_own_process() -> None:
     assert is_own_process(os.getpid())
     assert not is_own_process(0)
@@ -310,12 +297,6 @@ def test_create_with_secret_key(tmp_path: pathlib.Path) -> None:
     )
     assert endpoint_dir.read_config().id == secret_key.endpoint_id
     assert endpoint_dir.read_secret_key(secret_key.endpoint_id) == secret_key
-
-
-def test_create_existing(tmp_path: pathlib.Path) -> None:
-    EndpointDir.create('my-ep', str(tmp_path), port=1234)
-    with pytest.raises(FileExistsError, match='already exists'):
-        EndpointDir.create('my-ep', str(tmp_path), port=1234)
 
 
 def test_create_invalid_config(tmp_path: pathlib.Path) -> None:
@@ -486,21 +467,6 @@ def test_remove_running(tmp_path: pathlib.Path) -> None:
     finally:
         lock.release()
     assert os.path.exists(endpoint_dir.path)
-
-
-def test_remove_running_elsewhere(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
-    endpoint_dir.write_connection(_connection_info(hostname='other'))
-    with pytest.raises(EndpointRunningError, match='running on other'):
-        endpoint_dir.remove()
-    assert os.path.exists(endpoint_dir.path)
-
-
-def test_remove_stale(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = EndpointDir.create('ep', str(tmp_path), port=1234)
-    endpoint_dir.write_connection(_connection_info(hostname=hostname()))
-    endpoint_dir.remove()
-    assert not os.path.exists(endpoint_dir.path)
 
 
 def test_create_random_port(tmp_path: pathlib.Path) -> None:

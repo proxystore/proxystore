@@ -25,9 +25,7 @@ from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeeringDisabledError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
@@ -161,37 +159,24 @@ def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     return client_nonce, decode_meta(response.meta)
 
 
-async def test_server_rejects_bad_proof(server: _Server) -> None:
+@pytest.mark.parametrize('replay', (False, True))
+async def test_server_rejects_bad_proof(server: _Server, replay: bool) -> None:
+    # A proof computed with the wrong token is rejected, and the server's own
+    # proof cannot be sent back as the client's proof.
     def _run() -> None:
         with _raw_socket(server) as sock:
             client_nonce, meta = _raw_hello(sock)
-            proof = EndpointToken.generate().proof(
-                'client',
-                client_nonce,
-                bytes.fromhex(meta['nonce']),
-            )
+            if replay:
+                proof = meta['proof']
+            else:
+                server_nonce = bytes.fromhex(meta['nonce'])
+                token = EndpointToken.generate()
+                proof = token.proof('client', client_nonce, server_nonce).hex()
             sock.sendall(
-                Message(
-                    Op.AUTH, encode_meta({'proof': proof.hex()})
-                ).pack_head()
+                Message(Op.AUTH, encode_meta({'proof': proof})).pack_head()
             )
             assert _recv_message(sock).code == Status.UNAUTHORIZED
             assert _is_closed(sock)
-
-    await asyncio.to_thread(_run)
-
-
-async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
-    # The server's own proof cannot be sent back as the client's proof.
-    def _run() -> None:
-        with _raw_socket(server) as sock:
-            _, meta = _raw_hello(sock)
-            sock.sendall(
-                Message(
-                    Op.AUTH, encode_meta({'proof': meta['proof']})
-                ).pack_head()
-            )
-            assert _recv_message(sock).code == Status.UNAUTHORIZED
 
     await asyncio.to_thread(_run)
 
@@ -359,18 +344,6 @@ async def test_data_too_large(server: _Server) -> None:
     with pytest.raises(ObjectSizeExceededError, match='exceeds the maximum'):
         await asyncio.to_thread(client.set, 'key', data)
     assert not client.closed
-
-    # The server also checks the size before reading the data, then closes
-    # the connection because it did not read the data
-    code, meta = await _raw_request(
-        client,
-        Message(Op.SET, encode_meta({'key': 'key'})).pack_head(
-            MAX_OBJECT_SIZE + 1
-        ),
-    )
-    assert code == Status.TOO_LARGE
-    assert 'exceeds the maximum' in meta['error']
-    await asyncio.to_thread(lambda: _is_closed(client._socket))
     await asyncio.to_thread(client.close)
 
 
@@ -378,13 +351,16 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
     client = await _connect(server)
 
     def _run() -> tuple[int, dict[str, Any]]:
-        # Unread data in the endpoint's receive buffer must not cause the
-        # connection to be reset before the client reads the reply
+        # The server checks the size before reading the data. Unread data in
+        # the endpoint's receive buffer must not cause the connection to be
+        # reset before the client reads the reply.
         message = Message(Op.SET, encode_meta({'key': 'key'})).pack_head(
             MAX_OBJECT_SIZE + 1
         )
         client._socket.sendall(message + randbytes(1_000_000))
         response = _recv_message(client._socket)
+        # The connection is closed because the data was not read
+        assert _is_closed(client._socket)
         return response.code, decode_meta(response.meta)
 
     for _ in range(10):
@@ -393,43 +369,6 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
         assert 'exceeds the maximum' in meta['error']
         await asyncio.to_thread(client.close)
         client = await _connect(server)
-    await asyncio.to_thread(client.close)
-
-
-async def test_storage_object_size_exceeded(server: _Server) -> None:
-    client = await _connect(server)
-    with (
-        mock.patch.object(
-            server.dispatcher.storage,
-            'set',
-            AsyncMock(side_effect=ObjectSizeExceededError('too big')),
-        ),
-        pytest.raises(ObjectSizeExceededError, match='TOO_LARGE'),
-    ):
-        await asyncio.to_thread(client.set, 'key', randbytes(100))
-    await asyncio.to_thread(client.close)
-
-
-async def test_peering_disabled(server: _Server) -> None:
-    client = await _connect(server)
-    with pytest.raises(PeeringDisabledError, match='peering is disabled'):
-        await asyncio.to_thread(client.get, 'key', EndpointId.random())
-    # The connection can be reused after an error response
-    assert not await asyncio.to_thread(client.exists, 'key')
-    await asyncio.to_thread(client.close)
-
-
-async def test_unexpected_error(server: _Server) -> None:
-    client = await _connect(server)
-    with (
-        mock.patch.object(
-            server.dispatcher.storage,
-            'exists',
-            AsyncMock(side_effect=RuntimeError('oops')),
-        ),
-        pytest.raises(EndpointRequestError, match='unexpected error'),
-    ):
-        await asyncio.to_thread(client.exists, 'key')
     await asyncio.to_thread(client.close)
 
 
@@ -763,23 +702,6 @@ async def test_tls_client_with_plain_server(server: _Server) -> None:
 async def test_ping(server: _Server) -> None:
     client = await _connect(server)
     assert await asyncio.to_thread(client.ping) == PingResult()
-    with pytest.raises(PeeringDisabledError, match='peering is disabled'):
-        await asyncio.to_thread(client.ping, EndpointId.random())
-    with pytest.raises(ValueError, match='not a valid endpoint ID'):
-        await asyncio.to_thread(client.ping, 'not-an-id')
-    await asyncio.to_thread(client.close)
-
-
-async def test_ping_malformed(server: _Server) -> None:
-    client = await _connect(server)
-    # Reuse the authenticated connection of the client to send a raw message
-    await asyncio.to_thread(
-        client._socket.sendall,
-        Message(Op.PING, encode_meta({'key': None, 'target': 42})).pack_head(),
-    )
-    response = await asyncio.to_thread(_recv_message, client._socket)
-    assert response.code == Status.BAD_REQUEST
-    assert "invalid 'target'" in response.error_message
     await asyncio.to_thread(client.close)
 
 

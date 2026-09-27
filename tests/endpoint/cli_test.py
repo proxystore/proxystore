@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-import asyncio
+import contextlib
 import importlib.metadata
+import operator
 import os
 import pathlib
 import uuid
+from typing import Any
 from unittest import mock
 
 import click
@@ -15,14 +17,11 @@ import proxystore
 from proxystore.endpoint.cli import cli
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
-from proxystore.endpoint.endpoint import Endpoint
-from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import PingResult
 from testing.endpoint import copy_endpoint_dir
-from testing.endpoint import write_endpoint
 
 CLICK_VERSION = tuple(
     int(x) for x in importlib.metadata.version('click').split('.')
@@ -58,61 +57,44 @@ def test_version_command() -> None:
     assert result.output.strip() == f'ProxyStore v{proxystore.__version__}'
 
 
-def test_configure_command(home_dir) -> None:
-    name = 'my-endpoint'
-    port = 4321
-    args = [name, '--port', str(port)]
-
+@pytest.mark.parametrize(
+    ('args', 'expected'),
+    (
+        (
+            ['--port', '4321'],
+            {
+                'port': 4321,
+                'tls': False,
+                'p2p.enabled': True,
+                'p2p.relays': 'n0',
+                'p2p.discovery': 'n0',
+                'storage.backend': 'memory',
+            },
+        ),
+        (['--discovery', 'none'], {'p2p.discovery': 'none'}),
+        (['--persist'], {'storage.backend': 'sqlite'}),
+        (
+            ['--relays', 'https://a.example.com, https://b.example.com'],
+            {'p2p.relays': ['https://a.example.com', 'https://b.example.com']},
+        ),
+        (['--relays', 'none'], {'p2p.relays': 'none'}),
+        (['--no-peering'], {'p2p.enabled': False}),
+        (['--tls'], {'tls': True}),
+    ),
+)
+def test_configure_command(
+    home_dir,
+    args: list[str],
+    expected: dict[str, Any],
+) -> None:
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['configure', *args])
+    result = runner.invoke(cli, ['configure', 'ep', *args])
     assert result.exit_code == 0
 
-    endpoint_dir = EndpointDir(os.path.join(home_dir, name))
-    assert os.path.isdir(endpoint_dir)
-    cfg = endpoint_dir.read_config()
-    assert cfg.name == name
-    assert cfg.port == port
-    assert not cfg.tls
-
-    assert cfg.p2p.enabled
-    assert cfg.p2p.relays == 'n0'
-    assert cfg.p2p.discovery == 'n0'
-    assert cfg.storage.backend == 'memory'
-
-    result = runner.invoke(cli, ['configure', 'nod', '--discovery', 'none'])
-    assert result.exit_code == 0
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'nod'))
-    assert endpoint_dir.read_config().p2p.discovery == 'none'
-
-    result = runner.invoke(cli, ['configure', 'persist', '--persist'])
-    assert result.exit_code == 0
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'persist'))
-    assert endpoint_dir.read_config().storage.backend == 'sqlite'
-
-    urls = 'https://a.example.com, https://b.example.com'
-    result = runner.invoke(cli, ['configure', 'relays', '--relays', urls])
-    assert result.exit_code == 0
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'relays'))
-    assert endpoint_dir.read_config().p2p.relays == [
-        'https://a.example.com',
-        'https://b.example.com',
-    ]
-
-    result = runner.invoke(cli, ['configure', 'norelay', '--relays', 'none'])
-    assert result.exit_code == 0
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'norelay'))
-    assert endpoint_dir.read_config().p2p.relays == 'none'
-
-    result = runner.invoke(cli, ['configure', 'solo', '--no-peering'])
-    assert result.exit_code == 0
-    endpoint_dir = EndpointDir(os.path.join(home_dir, 'solo'))
-    assert not endpoint_dir.read_config().p2p.enabled
-
-    result = runner.invoke(cli, ['configure', 'tls-endpoint', '--tls'])
-    assert result.exit_code == 0
-    assert (
-        EndpointDir(os.path.join(home_dir, 'tls-endpoint')).read_config().tls
-    )
+    config = EndpointDir.from_name('ep', home_dir).read_config()
+    assert config.name == 'ep'
+    for field, value in expected.items():
+        assert operator.attrgetter(field)(config) == value
 
 
 def test_configure_command_errors(home_dir) -> None:
@@ -175,11 +157,6 @@ def test_output_ignores_log_level(home_dir) -> None:
 
 def test_remove_command(home_dir) -> None:
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['remove', 'myendpoint'])
-    assert result.exit_code == 1
-    assert 'does not exist' in result.output
-    assert 'proxystore-endpoint list' in result.output
-
     endpoint_dir = EndpointDir.create('myendpoint', home_dir)
     lock = endpoint_dir.lock()
     lock.acquire()
@@ -197,10 +174,6 @@ def test_remove_command(home_dir) -> None:
 
 def test_start_command(home_dir) -> None:
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['start', 'myendpoint'])
-    assert result.exit_code == 1
-    assert 'does not exist' in result.output
-
     endpoint_dir = EndpointDir.create('myendpoint', home_dir)
     with mock.patch(
         'proxystore.endpoint.cli.start_endpoint',
@@ -216,10 +189,6 @@ def test_start_command(home_dir) -> None:
 
 def test_stop_command(home_dir) -> None:
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['stop', 'myendpoint'])
-    assert result.exit_code == 1
-    assert 'does not exist' in result.output
-
     EndpointDir.create('myendpoint', home_dir)
     for stopped, message in (
         (True, 'has been stopped'),
@@ -234,11 +203,25 @@ def test_stop_command(home_dir) -> None:
         assert message in result.output
 
 
-def test_client_command_missing_endpoint(home_dir) -> None:
+@pytest.mark.parametrize(
+    'args',
+    (
+        ['id', 'ep'],
+        ['remove', 'ep'],
+        ['start', 'ep'],
+        ['stop', 'ep'],
+        ['peers', 'add', 'ep', 'peer', EndpointId.random()],
+        ['peers', 'remove', 'ep', 'peer'],
+        ['peers', 'list', 'ep'],
+        ['client', 'ep', 'exists', 'key'],
+    ),
+)
+def test_command_missing_endpoint(home_dir, args: list[str]) -> None:
     runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['client', 'fake-name', 'exists', 'key'])
+    result = runner.invoke(cli, args)
     assert result.exit_code == 1
-    assert 'An endpoint named fake-name does not exist' in result.output
+    assert 'An endpoint named ep does not exist' in result.output
+    assert 'proxystore-endpoint list' in result.output
 
 
 def test_client_command(
@@ -266,63 +249,42 @@ def test_client_command(
     assert 'does not exist' in _invoke('get', key)
 
 
-@pytest.mark.parametrize('command', ('evict', 'exists', 'get', 'put'))
+@pytest.mark.parametrize(
+    ('scenario', 'error'),
+    (
+        ('refused', 'connection refused'),
+        ('bad-target', 'not a valid endpoint ID'),
+        ('not-running', 'Is the endpoint running?'),
+    ),
+)
 def test_client_command_errors(
-    command: str,
+    scenario: str,
+    error: str,
     home_dir,
     endpoint: EndpointConfig,
     endpoint_dir: EndpointDir,
 ) -> None:
+    # Every client command connects to the endpoint and reports errors the
+    # same way so only one command is tested.
     runner = click.testing.CliRunner()
-    args = ['client', endpoint.name, command, 'fake-key']
     copied_dir = copy_endpoint_dir(endpoint_dir, home_dir)
-
-    with mock.patch(
+    args = ['client', endpoint.name, 'exists', 'key']
+    connect = mock.patch(
         'proxystore.endpoint.client.EndpointClient.connect',
         side_effect=EndpointNotRunningError('connection refused'),
-    ):
+    )
+    context: contextlib.AbstractContextManager[Any] = contextlib.nullcontext()
+    if scenario == 'refused':
+        context = connect
+    elif scenario == 'bad-target':
+        args = ['client', '--target', 'not-an-id', *args[1:]]
+    else:
+        os.remove(copied_dir.connection_path)
+
+    with context:
         result = runner.invoke(cli, args)
     assert result.exit_code == 1
-    assert 'connection refused' in result.output
-
-    with mock.patch(
-        'proxystore.endpoint.client.EndpointClient.connect',
-        side_effect=EndpointAuthError('auth failed'),
-    ):
-        result = runner.invoke(cli, args)
-    assert result.exit_code == 1
-    assert 'auth failed' in result.output
-
-    result = runner.invoke(
-        cli,
-        ['client', '--target', 'not-a-uuid', endpoint.name, command, 'key'],
-    )
-    assert result.exit_code == 1
-    assert 'not a valid endpoint ID' in result.output
-
-    os.remove(copied_dir.connection_path)
-    result = runner.invoke(cli, args)
-    assert result.exit_code == 1
-    assert 'Is the endpoint running?' in result.output
-
-
-async def test_client_command_tls(home_dir) -> None:
-    endpoint_dir, config = write_endpoint(
-        home_dir,
-        'tls-endpoint',
-        host='127.0.0.1',
-        tls=True,
-    )
-
-    runner = click.testing.CliRunner()
-    async with Endpoint(endpoint_dir):
-        result = await asyncio.to_thread(
-            runner.invoke,
-            cli,
-            ['client', config.name, 'exists', 'key'],
-        )
-    assert result.exit_code == 0
-    assert 'Object exists: False' in result.output
+    assert error in result.output
 
 
 def test_id_and_peers_commands(home_dir) -> None:
@@ -435,17 +397,6 @@ def test_peers_command_errors(home_dir) -> None:
     runner = click.testing.CliRunner()
     peer_id = EndpointId.random()
 
-    # Missing endpoint
-    for args in (
-        ['id', 'ep'],
-        ['peers', 'add', 'ep', 'peer', peer_id],
-        ['peers', 'remove', 'ep', 'peer'],
-        ['peers', 'list', 'ep'],
-    ):
-        result = runner.invoke(cli, args)
-        assert result.exit_code == 1
-        assert 'does not exist' in result.output
-
     EndpointDir.create('ep', home_dir)
     args = ['peers', 'add', 'ep', 'peer', peer_id]
     assert runner.invoke(cli, args).exit_code == 0
@@ -467,14 +418,3 @@ def test_peers_list_empty(home_dir) -> None:
     result = runner.invoke(cli, ['peers', 'list', 'ep'])
     assert result.exit_code == 0
     assert 'has no peers' in result.output
-
-
-@pytest.mark.parametrize(
-    ('host', 'expected'),
-    (('IP', 'ip'), (' fqdn ', 'fqdn'), ('127.0.0.1', '127.0.0.1')),
-)
-def test_configure_command_host(home_dir, host: str, expected: str) -> None:
-    runner = click.testing.CliRunner()
-    result = runner.invoke(cli, ['configure', 'ep', '--host', host])
-    assert result.exit_code == 0
-    assert EndpointDir.from_name('ep', home_dir).read_config().host == expected

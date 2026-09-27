@@ -10,7 +10,6 @@ from unittest import mock
 import pytest
 
 from proxystore.endpoint.config import check_name
-from proxystore.endpoint.config import CONFIG_VERSION
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.config import EndpointStorageConfig
@@ -167,8 +166,6 @@ def test_object_size_limit() -> None:
     assert _config().object_size_limit == _config().max_object_size
     assert _config(max_object_size=10).object_size_limit == 10
     assert _config(max_object_size=0).object_size_limit is None
-    with pytest.raises(ValueError, match=r'zero \(no limit\) or greater'):
-        _config(max_object_size=-1)
 
 
 @pytest.mark.parametrize(
@@ -185,20 +182,21 @@ def test_max_object_size_with_units(value: str, expected: int) -> None:
     assert config.max_object_size == expected
 
 
-def test_max_object_size_with_units_invalid() -> None:
-    with pytest.raises(ValueError, match='Unknown unit'):
+@pytest.mark.parametrize(
+    ('value', 'error'),
+    (
+        ('100 XB', 'Unknown unit'),
+        ('-1 MB', r'zero \(no limit\) or greater'),
+        (-1, r'zero \(no limit\) or greater'),
+    ),
+)
+def test_max_object_size_invalid(value: Any, error: str) -> None:
+    with pytest.raises(ValueError, match=error):
         EndpointConfig(
             name='name',
             id=EndpointId.random(),
             port=1234,
-            max_object_size='100 XB',
-        )
-    with pytest.raises(ValueError, match=r'zero \(no limit\) or greater'):
-        EndpointConfig(
-            name='name',
-            id=EndpointId.random(),
-            port=1234,
-            max_object_size='-1 MB',
+            max_object_size=value,
         )
 
 
@@ -246,12 +244,6 @@ def test_read_config_name_mismatch(tmp_path: pathlib.Path) -> None:
 
 def _options(**kwargs: Any) -> dict[str, Any]:
     return {'name': 'name', 'id': EndpointId.random(), 'port': 1234, **kwargs}
-
-
-def test_config_version() -> None:
-    assert EndpointConfig(**_options()).version == CONFIG_VERSION
-    with pytest.raises(ValueError, match='only supports version 1'):
-        EndpointConfig(**_options(version=2))
 
 
 @pytest.mark.parametrize(

@@ -256,19 +256,6 @@ def test_raise_for_status_ok(status: Status) -> None:
     assert raise_for_status(Message(status), Op.GET) == status
 
 
-@pytest.mark.parametrize(('status', 'error'), tuple(STATUS_ERRORS.items()))
-def test_raise_for_status_errors(
-    status: Status,
-    error: type[EndpointError],
-) -> None:
-    response = Message.error(status, 'failed')
-    with pytest.raises(error, match=f'Peer x returned {status.name}') as e:
-        raise_for_status(response, Op.SET, source='Peer x')
-    # The most specific type is raised
-    assert type(e.value) is error
-    assert 'for SET request: failed' in str(e.value)
-
-
 def test_raise_for_status_unknown() -> None:
     with pytest.raises(EndpointRequestError, match='no error message'):
         raise_for_status(Message(Status.ERROR), Op.GET)
@@ -288,8 +275,11 @@ def test_error_status_round_trip(
 ) -> None:
     response = Message.from_error(error('failed'))
     assert response == Message.error(status, 'failed')
-    with pytest.raises(error):
-        raise_for_status(response, Op.GET)
+    with pytest.raises(error, match=f'Peer x returned {status.name}') as e:
+        raise_for_status(response, Op.SET, source='Peer x')
+    # The most specific type is raised
+    assert type(e.value) is error
+    assert 'for SET request: failed' in str(e.value)
 
 
 def test_error_status_subclass_and_unknown() -> None:

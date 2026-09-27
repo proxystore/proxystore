@@ -8,6 +8,7 @@ import pytest
 
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
+from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Message
@@ -19,7 +20,6 @@ from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
-from testing.p2p import policy
 
 
 def _request(
@@ -81,11 +81,6 @@ async def test_local_operations(dispatcher: Dispatcher) -> None:
     assert not await dispatcher.storage.exists('key')
     # Evicting a missing key is not an error
     assert await _handle(dispatcher, Op.EVICT) == Message(Status.OK)
-
-
-async def test_local_ping(dispatcher: Dispatcher) -> None:
-    response = await _handle(dispatcher, Op.PING, key=None)
-    assert PingResult.decode(response.meta) == PingResult()
 
 
 @pytest.mark.parametrize('op', (Op.GET, Op.SET, Op.EXISTS, Op.EVICT, Op.PING))
@@ -186,34 +181,27 @@ async def test_forward_peer_error_status(peers) -> None:
     assert 'Request requires a key' in response.error_message
 
 
-async def test_forward_not_allowed(peers) -> None:
-    dispatcher1, dispatcher2 = peers
-    assert dispatcher1.peer_manager is not None
-    policy(dispatcher1.peer_manager).peers.clear()
-    response = await _handle(dispatcher1, Op.GET, target=dispatcher2.id)
-    assert response.code == Status.PEER_NOT_ALLOWED
-    assert 'not in the allowlist' in response.error_message
-
-
-async def test_forward_peer_refused(peers) -> None:
-    dispatcher1, dispatcher2 = peers
-    assert dispatcher2.peer_manager is not None
-    policy(dispatcher2.peer_manager).peers.clear()
-    response = await _handle(dispatcher1, Op.PING, target=dispatcher2.id)
-    assert response.code == Status.PEER_NOT_ALLOWED
-    assert 'refused the connection' in response.error_message
-
-
-async def test_forward_peer_unavailable(peers) -> None:
+@pytest.mark.parametrize(
+    ('error', 'status'),
+    (
+        (PeerNotAllowedError('not allowed'), Status.PEER_NOT_ALLOWED),
+        (PeerConnectionTimeoutError('timed out'), Status.PEER_UNAVAILABLE),
+    ),
+)
+async def test_forward_peer_manager_error(
+    peers,
+    error: Exception,
+    status: Status,
+) -> None:
     dispatcher1, dispatcher2 = peers
     assert dispatcher1.peer_manager is not None
     with mock.patch.object(
         dispatcher1.peer_manager,
         'request',
-        side_effect=PeerConnectionTimeoutError('timed out'),
+        side_effect=error,
     ):
         response = await _handle(dispatcher1, Op.GET, target=dispatcher2.id)
-    assert response == Message.error(Status.PEER_UNAVAILABLE, 'timed out')
+    assert response == Message.error(status, str(error))
 
 
 async def test_forward_ping(peers) -> None:

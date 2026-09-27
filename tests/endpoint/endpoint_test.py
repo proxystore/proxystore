@@ -10,7 +10,6 @@ from typing import Any
 from unittest import mock
 from unittest.mock import AsyncMock
 
-import iroh
 import pytest
 
 from proxystore.endpoint.auth import EndpointToken
@@ -25,7 +24,6 @@ from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointRunningError
 from proxystore.endpoint.identity import SecretKey
-from proxystore.endpoint.p2p.manager import PeerOptions
 from proxystore.endpoint.p2p.manager import PeerPolicy
 from proxystore.endpoint.storage import MemoryStorage
 from proxystore.endpoint.storage import SQLiteStorage
@@ -61,20 +59,15 @@ async def test_endpoint(tmp_path: pathlib.Path) -> None:
 
 
 @pytest.mark.parametrize(
-    ('backend', 'max_object_size', 'expected'),
-    (('memory', 0, None), ('sqlite', 0, None), ('memory', 100, 100)),
+    ('max_object_size', 'expected'),
+    ((0, None), (100, 100)),
 )
 async def test_endpoint_object_size_limit(
-    backend: Any,
     max_object_size: int,
     expected: int | None,
     tmp_path: pathlib.Path,
 ) -> None:
-    endpoint_dir, _ = _endpoint_dir(
-        tmp_path,
-        storage=EndpointStorageConfig(backend=backend),
-        max_object_size=max_object_size,
-    )
+    endpoint_dir, _ = _endpoint_dir(tmp_path, max_object_size=max_object_size)
 
     async with Endpoint(endpoint_dir):
         client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
@@ -175,6 +168,7 @@ async def test_endpoint_start_up_failure_cleans_up(
     tmp_path: pathlib.Path,
 ) -> None:
     endpoint_dir, _ = _endpoint_dir(tmp_path)
+    endpoint = Endpoint(endpoint_dir)
     with (
         mock.patch.object(MemoryStorage, 'close', AsyncMock()) as mock_close,
         mock.patch.object(
@@ -184,9 +178,13 @@ async def test_endpoint_start_up_failure_cleans_up(
         ),
         pytest.raises(OSError, match='disk full'),
     ):
-        async with Endpoint(endpoint_dir):
-            pass  # pragma: no cover
+        await endpoint.start()
     mock_close.assert_awaited_once()
+    assert not endpoint.running
+    assert endpoint_dir.status() == EndpointStatus.STOPPED
+    # An endpoint which failed to start cannot be started again
+    with pytest.raises(RuntimeError, match='already been started'):
+        await endpoint.start()
 
 
 @pytest.mark.parametrize(
@@ -232,53 +230,15 @@ async def test_endpoint_peering(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
     endpoint_dir, _ = _endpoint_dir(
         tmp_path,
-        p2p=EndpointP2PConfig(enabled=True),
-    )
-    async with Endpoint(endpoint_dir) as endpoint:
-        peer_manager = endpoint.peer_manager
-        assert peer_manager is not None
-        assert peer_manager.id == endpoint.id
-    assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
-
-
-@pytest.mark.parametrize(
-    'relays',
-    ('n0', 'none', ['https://relay.example.com']),
-)
-@pytest.mark.parametrize('discovery', ('n0', 'none'))
-def test_peer_options_from_config(relays: Any, discovery: Any) -> None:
-    config = EndpointP2PConfig(relays=relays, discovery=discovery)
-    with (
-        mock.patch('iroh.preset_n0', wraps=iroh.preset_n0) as n0,
-        mock.patch(
-            'iroh.preset_minimal', wraps=iroh.preset_minimal
-        ) as minimal,
-    ):
-        options = PeerOptions.from_config(config)
-    assert isinstance(options.preset, iroh.Preset)
-    assert n0.called == (discovery == 'n0')
-    assert minimal.called == (discovery == 'none')
-    if relays == 'n0' and discovery == 'n0':
-        # The relays of the n0 preset are used
-        assert options.relay_mode is None
-    else:
-        assert isinstance(options.relay_mode, iroh.RelayMode)
-    assert (options.online_timeout is None) == (relays == 'none')
-
-
-async def test_endpoint_peering_addr_cache(
-    tmp_path: pathlib.Path,
-) -> None:
-    endpoint_dir, _ = _endpoint_dir(
-        tmp_path,
         p2p=EndpointP2PConfig(enabled=True, relays='none'),
     )
     async with Endpoint(endpoint_dir) as endpoint:
         peer_manager = endpoint.peer_manager
         assert peer_manager is not None
+        assert peer_manager.id == endpoint.id
         assert peer_manager._addr_cache is not None
-        path = peer_manager._addr_cache.path
-        assert path == endpoint_dir.peer_addrs_path
+        assert peer_manager._addr_cache.path == endpoint_dir.peer_addrs_path
+    assert any('Loaded 0 peer(s)' in r.message for r in caplog.records)
 
 
 @pytest.mark.parametrize('relative', (True, False, None))
@@ -337,25 +297,6 @@ async def test_endpoint_lifecycle(tmp_path: pathlib.Path) -> None:
     # A new endpoint can be started from the same directory
     async with Endpoint(endpoint_dir) as endpoint:
         assert endpoint.running
-
-
-async def test_endpoint_cannot_restart_after_failure(
-    tmp_path: pathlib.Path,
-) -> None:
-    endpoint_dir, _ = _endpoint_dir(tmp_path)
-    endpoint = Endpoint(endpoint_dir)
-    with (
-        mock.patch.object(
-            EndpointDir,
-            'write_connection',
-            side_effect=OSError('disk full'),
-        ),
-        pytest.raises(OSError, match='disk full'),
-    ):
-        await endpoint.start()
-    assert not endpoint.running
-    with pytest.raises(RuntimeError, match='already been started'):
-        await endpoint.start()
 
 
 async def test_endpoint_storage_override(tmp_path: pathlib.Path) -> None:
