@@ -45,6 +45,7 @@ from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import ExistsResult
+from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
@@ -183,13 +184,11 @@ class EndpointClient:
             sock.close()
             raise
 
-        mismatches = Versions.current().mismatches(info.versions)
-        if len(mismatches) > 0:
+        warning = Versions.current().mismatch_warning(info.versions)
+        if warning is not None:
             warnings.warn(
                 f'Endpoint {info.name} ({info.id.short()}) uses different '
-                f'versions than this client: {"; ".join(mismatches)}. Objects '
-                'serialized in one environment may fail to deserialize in '
-                f'another. See {VERSION_DOCS_URL} for details.',
+                f'versions than this client: {warning}',
                 EndpointVersionWarning,
                 stacklevel=2,
             )
@@ -548,12 +547,7 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
 
 
 def _recv_handshake_message(sock: socket.socket) -> bytes:
-    try:
-        message = _recv_message(sock, max_data_size=0)
-    except ObjectSizeExceededError:
-        raise EndpointProtocolError(
-            'Endpoint sent data in a handshake message.',
-        ) from None
+    message = _recv_message(sock, HandshakeReader())
     if message.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
@@ -569,10 +563,9 @@ def _recv_handshake_message(sock: socket.socket) -> bytes:
 
 def _recv_message(
     sock: socket.socket,
-    *,
-    max_data_size: int | None = None,
+    reader: MessageReader | None = None,
 ) -> Message:
-    reader = MessageReader(max_data_size=max_data_size)
+    reader = MessageReader() if reader is None else reader
     while not reader.done:
         reader.feed(_recv_exactly(sock, reader.size))
     return reader.message

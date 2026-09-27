@@ -33,6 +33,7 @@ from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
@@ -483,18 +484,14 @@ class ClientHandler:
         return True
 
     def _check_client_versions(self, addr: str, versions: Versions) -> None:
-        mismatches = versions.mismatches(Versions.current())
-        if len(mismatches) > 0 and versions not in self._warned_versions:
+        warning = versions.mismatch_warning(Versions.current())
+        if warning is not None and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.
             self._warned_versions.add(versions)
             logger.warning(
-                'Client %s uses different versions than this endpoint: '
-                '%s. Objects serialized in one '
-                'environment may fail to deserialize in another. See '
-                '%s for details.',
+                'Client %s uses different versions than this endpoint: %s',
                 addr,
-                '; '.join(mismatches),
-                VERSION_DOCS_URL,
+                warning,
             )
 
     async def _serve_requests(self, conn: _ClientConnection) -> None:
@@ -548,12 +545,7 @@ async def _read_handshake_message(
     conn: _ClientConnection,
     expected: Op,
 ) -> bytes:
-    try:
-        message = await _read_message(conn, MessageReader(max_data_size=0))
-    except ObjectSizeExceededError:
-        raise EndpointProtocolError(
-            f'Client sent data in a {expected.name} message.',
-        ) from None
+    message = await _read_message(conn, HandshakeReader())
     if message.code != expected:
         raise EndpointProtocolError(
             f'Expected {expected.name} message but got op {message.code}.',

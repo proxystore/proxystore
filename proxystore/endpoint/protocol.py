@@ -349,6 +349,26 @@ class Versions(Meta):
             )
         return mismatches
 
+    def mismatch_warning(self, endpoint: Versions) -> str | None:
+        """Describe the version mismatches between a client and an endpoint.
+
+        Args:
+            endpoint: Versions of the endpoint.
+
+        Returns:
+            A warning describing the
+            [`mismatches()`][proxystore.endpoint.protocol.Versions.mismatches]
+            and their consequences or `None` if the versions are compatible.
+        """
+        mismatches = self.mismatches(endpoint)
+        if len(mismatches) == 0:
+            return None
+        return (
+            f'{"; ".join(mismatches)}. Objects serialized in one environment '
+            'may fail to deserialize in another. See '
+            f'{VERSION_DOCS_URL} for details.'
+        )
+
 
 class Hello(Meta):
     """First message of the handshake sent by the client.
@@ -712,3 +732,30 @@ class MessageReader:
                 request_id=self._header.request_id,
             )
             self._size = 0
+
+
+class HandshakeReader(MessageReader):
+    """Parser of a handshake message which does not perform I/O.
+
+    Handshake messages never contain data, so a message with data is
+    rejected before its data is read (see
+    [`MessageReader`][proxystore.endpoint.protocol.MessageReader]).
+    """
+
+    def __init__(self) -> None:
+        super().__init__(max_data_size=0)
+
+    def feed(self, buffer: bytes | bytearray) -> None:
+        """Feed the next part of the message.
+
+        Raises:
+            EndpointProtocolError: If the message is malformed or contains
+                data.
+        """
+        try:
+            super().feed(buffer)
+        except ObjectSizeExceededError:
+            raise EndpointProtocolError(
+                'Handshake message with code '
+                f'{self.header.code} contains data.',
+            ) from None

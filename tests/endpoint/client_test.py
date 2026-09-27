@@ -201,7 +201,7 @@ def test_handshake_message_with_data(fake_server) -> None:
         )
 
     port = fake_server(_script)
-    with pytest.raises(EndpointProtocolError, match='sent data'):
+    with pytest.raises(EndpointProtocolError, match='contains data'):
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 

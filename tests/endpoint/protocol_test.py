@@ -22,6 +22,7 @@ from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import error_status
 from proxystore.endpoint.protocol import ErrorInfo
 from proxystore.endpoint.protocol import ExistsResult
+from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
@@ -347,3 +348,25 @@ def test_message_reader_errors() -> None:
 
 def test_alpn_matches_protocol_version() -> None:
     assert f'proxystore/{PROTOCOL_VERSION}'.encode() == ALPN
+
+
+def test_versions_mismatch_warning() -> None:
+    client = _versions('1.0.0', '3.12.4')
+    assert client.mismatch_warning(client) is None
+    warning = client.mismatch_warning(_versions('1.0.1', '3.12.4'))
+    assert warning is not None
+    assert warning.startswith('ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)')
+    assert 'may fail to deserialize' in warning
+
+
+def test_handshake_reader() -> None:
+    reader = HandshakeReader()
+    reader.feed(Message(Status.OK, b'{}').pack_head()[: Header.SIZE])
+    reader.feed(b'{}')
+    assert reader.message == Message(Status.OK, b'{}')
+
+    reader = HandshakeReader()
+    head = Message(Op.HELLO, b'{}').pack_head(1)
+    reader.feed(head[: Header.SIZE])
+    with pytest.raises(EndpointProtocolError, match='code 1 contains data'):
+        reader.feed(head[Header.SIZE :])
