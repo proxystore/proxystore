@@ -8,7 +8,6 @@ import pydantic
 import pytest
 
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.identity import SECRET_KEY_SIZE
 from proxystore.endpoint.identity import SecretKey
 
 # Well-formed and a valid public key
@@ -57,7 +56,7 @@ def test_short_and_log_name() -> None:
 
 def test_secret_key() -> None:
     secret_key = SecretKey.generate()
-    assert len(secret_key.to_bytes()) == SECRET_KEY_SIZE
+    assert SecretKey(secret_key.to_bytes()) == secret_key
     endpoint_id = secret_key.endpoint_id
     assert isinstance(endpoint_id, EndpointId)
     # The ID is deterministic for a secret key
@@ -80,7 +79,7 @@ def test_secret_key_repr_hides_key() -> None:
 
 
 def test_secret_key_bad_size() -> None:
-    with pytest.raises(ValueError, match='must be 32 bytes'):
+    with pytest.raises(ValueError, match='not a valid ed25519 secret key'):
         SecretKey(b'abc')
 
 

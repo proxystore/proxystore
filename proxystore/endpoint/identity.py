@@ -22,9 +22,6 @@ from pydantic import GetCoreSchemaHandler
 from pydantic_core import core_schema
 from pydantic_core import CoreSchema
 
-SECRET_KEY_SIZE = 32
-"""Size in bytes of an endpoint secret key."""
-
 _ENDPOINT_ID_PATTERN = re.compile(r'[0-9a-f]{64}')
 
 
@@ -141,24 +138,24 @@ class SecretKey:
         ```
 
     Args:
-        key: Secret key as
-            [`SECRET_KEY_SIZE`][proxystore.endpoint.identity.SECRET_KEY_SIZE]
-            bytes.
+        key: Raw bytes of the secret key.
 
     Raises:
-        ValueError: If `key` is not the correct size.
+        ValueError: If `key` is not a valid secret key.
     """
 
     __slots__ = ('_endpoint_id', '_key')
 
     def __init__(self, key: bytes) -> None:
-        if len(key) != SECRET_KEY_SIZE:
+        try:
+            public = iroh.SecretKey.from_bytes(key).public()
+        except iroh.IrohError:
             raise ValueError(
-                f'Endpoint secret key must be {SECRET_KEY_SIZE} bytes but got '
-                f'{len(key)} bytes.',
-            )
+                f'Endpoint secret key is not a valid ed25519 secret key '
+                f'({len(key)} bytes).',
+            ) from None
         self._key = bytes(key)
-        self._endpoint_id: EndpointId | None = None
+        self._endpoint_id = EndpointId(str(public))
 
     def __repr__(self) -> str:
         return f'{type(self).__name__}(endpoint_id={self.endpoint_id!r})'
@@ -179,9 +176,6 @@ class SecretKey:
     @property
     def endpoint_id(self) -> EndpointId:
         """ID of the endpoint with this secret key (i.e., the public key)."""
-        if self._endpoint_id is None:
-            public = iroh.SecretKey.from_bytes(self._key).public()
-            self._endpoint_id = EndpointId(str(public))
         return self._endpoint_id
 
     def to_bytes(self) -> bytes:
