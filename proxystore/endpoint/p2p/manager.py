@@ -670,9 +670,25 @@ class PeerManager:
             connection.close(code, reason)
 
     def _spawn(self, coro: Coroutine[Any, Any, None]) -> None:
-        task = asyncio.create_task(coro)
+        # Tasks are named after their coroutine (e.g.,
+        # PeerManager._handle_stream) for the logs.
+        task = asyncio.create_task(
+            coro, name=getattr(coro, '__qualname__', None)
+        )
         self._tasks.add(task)
-        task.add_done_callback(self._tasks.discard)
+        task.add_done_callback(self._task_done)
+
+    def _task_done(self, task: asyncio.Task[None]) -> None:
+        # Unexpected errors in tasks for a peer are logged when the task
+        # finishes rather than when it is garbage collected. The endpoint
+        # keeps running because one peer should not stop the endpoint.
+        self._tasks.discard(task)
+        if not task.cancelled() and task.exception() is not None:
+            logger.error(
+                'Unexpected error in task %s',
+                task.get_name(),
+                exc_info=task.exception(),
+            )
 
     async def _wait_online(self, timeout: float) -> None:
         try:

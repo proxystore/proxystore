@@ -342,6 +342,27 @@ async def test_start_and_close_idempotent(tmp_path: pathlib.Path) -> None:
     await manager.close()
 
 
+async def test_spawned_task_error_is_logged(managers, caplog) -> None:
+    manager1, _, _ = managers
+
+    async def _fail() -> None:
+        raise RuntimeError('task failed')
+
+    before = set(manager1._tasks)
+    manager1._spawn(_fail())
+    (task,) = manager1._tasks - before
+    with pytest.raises(RuntimeError):
+        await task
+    # Done callbacks are scheduled after the task completes.
+    await asyncio.sleep(0)
+    assert task not in manager1._tasks
+    records = [r for r in caplog.records if 'Unexpected error' in r.message]
+    assert len(records) == 1
+    assert '_fail' in records[0].message
+    assert records[0].exc_info is not None
+    assert 'task failed' in str(records[0].exc_info[1])
+
+
 async def test_online(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
     manager = local_peer_manager(
