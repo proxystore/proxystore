@@ -914,8 +914,14 @@ async def _read_exact(
     stream: iroh.RecvStream,
     size: int,
     prefix: bytes = b'',
-) -> bytearray:
+) -> bytes | bytearray:
     """Read `size` bytes, starting with the already read `prefix`."""
+    if len(prefix) == 0 and size <= _CHUNK_SIZE:
+        # Avoid copying the data into a new buffer. This is the usual case
+        # for data larger than _SMALL_SIZE because the head is written
+        # separately (see _write_message()) so it is usually read without
+        # any of the data.
+        return await stream.read_exact(size)
     data = bytearray(size)
     buffer = memoryview(data)
     buffer[: len(prefix)] = prefix

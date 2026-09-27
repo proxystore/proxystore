@@ -19,6 +19,7 @@ from proxystore.endpoint.exceptions import PeerNotAllowedError
 from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.manager import _read_message
 from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerConnection
@@ -28,6 +29,7 @@ from proxystore.endpoint.protocol import alpn
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
@@ -367,6 +369,38 @@ async def test_stream_error_is_logged(managers, caplog) -> None:
         'Stream from' in r.message and 'failed: boom' in r.message
         for r in caplog.records
     )
+
+
+def _mock_recv(first_read: bytes, *read_exact: bytes) -> mock.MagicMock:
+    recv = mock.MagicMock()
+    recv.read = mock.AsyncMock(return_value=first_read)
+    recv.read_exact = mock.AsyncMock(side_effect=read_exact)
+    return recv
+
+
+async def test_read_message_large_data_without_prefix() -> None:
+    data = os.urandom(200)
+    head = Message(Op.SET, encode_meta({}), data).pack_head()
+    recv = _mock_recv(head, data)
+    with mock.patch(f'{_MANAGER}._SMALL_SIZE', 100):
+        message = await _read_message(recv, MessageReader())
+    # The data read by the bindings is used without being copied.
+    assert message.data is data
+    recv.read_exact.assert_awaited_once_with(len(data))
+
+
+async def test_read_message_large_data_with_prefix() -> None:
+    data = os.urandom(200)
+    head = Message(Op.SET, encode_meta({}), data).pack_head()
+    # The first read includes part of the data.
+    recv = _mock_recv(head + data[:50], data[50:150], data[150:])
+    with (
+        mock.patch(f'{_MANAGER}._SMALL_SIZE', 100),
+        mock.patch(f'{_MANAGER}._CHUNK_SIZE', 100),
+    ):
+        message = await _read_message(recv, MessageReader())
+    assert message.data == data
+    assert [c.args for c in recv.read_exact.await_args_list] == [(100,), (50,)]
 
 
 async def test_stream_ends_early(managers, caplog) -> None:
