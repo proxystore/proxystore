@@ -167,6 +167,37 @@ def test_object_size_limit() -> None:
         _config(max_object_size=-1)
 
 
+@pytest.mark.parametrize(
+    ('value', 'expected'),
+    (('100 MB', 100_000_000), ('1GiB', 2**30), ('1000', 1000), ('0', 0)),
+)
+def test_max_object_size_with_units(value: str, expected: int) -> None:
+    config = EndpointConfig(
+        name='name',
+        id=EndpointId.random(),
+        port=1234,
+        max_object_size=value,
+    )
+    assert config.max_object_size == expected
+
+
+def test_max_object_size_with_units_invalid() -> None:
+    with pytest.raises(ValueError, match='Unknown unit'):
+        EndpointConfig(
+            name='name',
+            id=EndpointId.random(),
+            port=1234,
+            max_object_size='100 XB',
+        )
+    with pytest.raises(ValueError, match=r'zero \(no limit\) or greater'):
+        EndpointConfig(
+            name='name',
+            id=EndpointId.random(),
+            port=1234,
+            max_object_size='-1 MB',
+        )
+
+
 def test_legacy_uuid_config(tmp_path: pathlib.Path) -> None:
     with pytest.raises(ValueError, match='older version of ProxyStore'):
         EndpointConfig.model_validate(

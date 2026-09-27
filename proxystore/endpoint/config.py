@@ -22,6 +22,7 @@ from pydantic import model_validator
 
 from proxystore.endpoint.files import check_format_version
 from proxystore.endpoint.identity import EndpointId
+from proxystore.utils.data import readable_to_bytes
 from proxystore.utils.environment import hostname
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
@@ -131,6 +132,9 @@ class EndpointConfig(BaseModel):
             starts, and clients only trust that certificate.
         max_object_size: Maximum size in bytes of an object that clients
             or peers can set on the endpoint. If `0`, there is no limit.
+            A string with units is also accepted (e.g., `"100 MB"` or
+            `"1 GiB"`, see
+            [`readable_to_bytes()`][proxystore.utils.data.readable_to_bytes]).
         p2p: Peer-to-peer configuration.
         storage: Storage configuration.
 
@@ -199,6 +203,11 @@ class EndpointConfig(BaseModel):
         if v < 1 or v > 65535:
             raise ValueError('Port must be in range [1, 65535].')
         return v
+
+    @field_validator('max_object_size', mode='before')
+    @classmethod
+    def _max_object_size_parser(cls, v: Any) -> Any:
+        return readable_to_bytes(v) if isinstance(v, str) else v
 
     @field_validator('max_object_size')
     @classmethod

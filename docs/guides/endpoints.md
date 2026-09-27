@@ -86,7 +86,7 @@ id = "00a28e0d64fdb50d85d5cd1ff9d620cd6215a28c5c6c3e19637e09d2cbb54741"  # (3)!
 port = 8765  # (4)!
 host = "ip"  # (5)!
 tls = false  # (6)!
-max_object_size = 100000000  # (7)!
+max_object_size = "100 MB"  # (7)!
 
 [p2p]
 enabled = true  # (8)!
@@ -111,8 +111,10 @@ database_path = "blobs.db"  # (12)!
    (e.g., `host = "127.0.0.1"`).
 6. Encrypt connections between clients and the endpoint with TLS. See
    [Security](#security) for details.
-7. Maximum size in bytes of an object that clients or peers can set.
-   Defaults to 100 MB if omitted. Set to `0` to disable object size limits.
+7. Maximum size of an object that clients or peers can set, in bytes
+   (e.g., `100000000`) or as a string with units (e.g., `"100 MB"` or
+   `"1 GiB"`). Defaults to 100 MB if omitted. Set to `0` to disable object
+   size limits.
 8. Enable communication with peer endpoints. If `false`, the endpoint
    operates in isolation. Configure with `--no-peering` to disable peering.
 9. Relays used to connect to peers. See [Relays](#relays).
