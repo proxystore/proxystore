@@ -33,6 +33,8 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import PeeringDisabledError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.protocol import ErrorInfo
+from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageData
 from proxystore.endpoint.protocol import Op
@@ -50,7 +52,7 @@ class Dispatcher:
     Example:
         ```python
         dispatcher = Dispatcher(endpoint_id, MemoryStorage())
-        request = Message(Op.SET, Request('key').to_meta(), b'value')
+        request = Message(Op.SET, Request(key='key').encode(), b'value')
         response = await dispatcher.handle(request)
         assert response.code == Status.OK
         ```
@@ -155,7 +157,7 @@ class Dispatcher:
             )
 
         try:
-            meta = Request.from_meta(request.meta)
+            meta = Request.decode(request.meta)
             target = meta.target
             if target is None or target == self.id:
                 logger.debug(
@@ -202,12 +204,12 @@ class Dispatcher:
             return Message(Status.OK)
         if op == Op.EXISTS:
             exists = await self._storage.exists(_key(request))
-            return Message(Status.OK, {'exists': exists})
+            return Message(Status.OK, ExistsResult(exists=exists).encode())
         if op == Op.EVICT:
             await self._storage.evict(_key(request))
             return Message(Status.OK)
         if op == Op.PING:
-            return Message(Status.OK, PingResult().to_meta())
+            return Message(Status.OK, PingResult().encode())
         if op in (Op.HELLO, Op.AUTH):  # pragma: no cover
             raise AssertionError(f'{op.name} is not a local operation.')
         assert_never(op)  # pragma: no cover
@@ -231,13 +233,13 @@ class Dispatcher:
             self._peer_name(target),
         )
         # The target is removed so the peer handles the request itself.
-        peer_request = Message(op, Request(request.key).to_meta(), data)
+        peer_request = Message(op, Request(key=request.key).encode(), data)
         start = time.perf_counter()
         response = await self._peer_manager.request(target, peer_request)
         rtt_ms = (time.perf_counter() - start) * 1000
 
         if response.code not in (Status.OK, Status.NOT_FOUND):
-            error = response.meta.get('error', 'no error message provided')
+            error = response.error_message
             logger.debug(
                 '%s request forwarded to peer %s failed with status %s: %s',
                 op.name,
@@ -245,7 +247,7 @@ class Dispatcher:
                 response.code,
                 error,
             )
-            meta = {**response.meta, 'error': f'Peer {target}: {error}'}
+            meta = ErrorInfo(error=f'Peer {target}: {error}').encode()
             return Message(response.code, meta, response.data)
         if op == Op.PING:
             return Message(Status.OK, self._ping_result(target, rtt_ms))
@@ -256,20 +258,18 @@ class Dispatcher:
             return peer_id.log_name('unknown')
         return self._peer_manager.peer_name(peer_id)
 
-    def _ping_result(
-        self, target: EndpointId, rtt_ms: float
-    ) -> dict[str, object]:
+    def _ping_result(self, target: EndpointId, rtt_ms: float) -> bytes:
         assert self._peer_manager is not None
         path = self._peer_manager.path(target)
         if path is None:  # pragma: no cover
             # The connection closed after the response was received.
-            return PingResult(peer_rtt_ms=rtt_ms).to_meta()
+            return PingResult(peer_rtt_ms=rtt_ms).encode()
         return PingResult(
             peer_rtt_ms=rtt_ms,
             relayed=path.relayed,
             remote_addr=path.remote_addr,
             path_rtt_ms=path.rtt_ms,
-        ).to_meta()
+        ).encode()
 
 
 def _key(request: Request) -> str:

@@ -102,7 +102,7 @@ async def _request(
     target: EndpointId,
     data: bytes = b'',
 ) -> Message:
-    request = Message(op, Request('key', target).to_meta(), data)
+    request = Message(op, Request(key='key', target=target).encode(), data)
     response = await endpoint.dispatcher.handle(request)
     raise_for_status(response, op)
     return response

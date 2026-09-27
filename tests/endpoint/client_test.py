@@ -28,12 +28,15 @@ from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.warnings import EndpointVersionWarning
+from testing.endpoint import decode_meta
+from testing.endpoint import encode_meta
 
 TOKEN = EndpointToken.generate()
 ENDPOINT_ID = EndpointId.random()
@@ -42,14 +45,18 @@ Script = Callable[[socket.socket], None]
 
 
 def _info(**overrides: Any) -> dict[str, Any]:
-    info = {
-        'id': ENDPOINT_ID,
-        'name': 'fake',
-        'max_object_size': None,
-        **Versions.current()._asdict(),
-    }
+    info = EndpointInfo(
+        id=ENDPOINT_ID,
+        name='fake',
+        versions=Versions.current(),
+        max_object_size=None,
+    ).model_dump(mode='json')
     info.update(overrides)
     return info
+
+
+def _versions(**overrides: str) -> dict[str, str]:
+    return {**Versions.current().model_dump(), **overrides}
 
 
 def _server_hello(
@@ -62,19 +69,22 @@ def _server_hello(
     """Read the client's HELLO and reply. Returns the client nonce."""
     _recv_exactly(conn, Preamble.SIZE)
     hello = _recv_message(conn)
-    client_nonce = bytes.fromhex(hello.meta['nonce'])
+    client_nonce = bytes.fromhex(decode_meta(hello.meta)['nonce'])
     if meta is None:
         server_nonce = os.urandom(32)
         proof = TOKEN.proof('server', server_nonce, client_nonce)
         meta = {'nonce': server_nonce.hex(), 'proof': proof.hex()}
-    conn.sendall(Preamble(version).pack() + Message(status, meta).pack_head())
+    conn.sendall(
+        Preamble(version).pack()
+        + Message(status, encode_meta(meta)).pack_head()
+    )
     return client_nonce
 
 
 def _complete_handshake(conn: socket.socket) -> None:
     _server_hello(conn)
     _recv_message(conn)
-    conn.sendall(Message(Status.OK, _info()).pack_head())
+    conn.sendall(Message(Status.OK, encode_meta(_info())).pack_head())
 
 
 @pytest.fixture
@@ -185,7 +195,9 @@ def test_handshake_message_with_data(fake_server) -> None:
         _recv_exactly(conn, Preamble.SIZE)
         _recv_message(conn)
         conn.sendall(
-            Preamble().pack() + Message(Status.OK, {}).pack_head(1) + b'x',
+            Preamble().pack()
+            + Message(Status.OK, encode_meta({})).pack_head(1)
+            + b'x',
         )
 
     port = fake_server(_script)
@@ -197,7 +209,11 @@ def test_handshake_rejected(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
         _recv_message(conn)
-        conn.sendall(Message(Status.UNAUTHORIZED, {'error': 'no'}).pack_head())
+        conn.sendall(
+            Message(
+                Status.UNAUTHORIZED, encode_meta({'error': 'no'})
+            ).pack_head()
+        )
 
     port = fake_server(_script)
     with pytest.raises(EndpointAuthError, match='rejected'):
@@ -221,7 +237,7 @@ def test_handshake_bad_info(
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
         _recv_message(conn)
-        conn.sendall(Message(status, meta).pack_head())
+        conn.sendall(Message(status, encode_meta(meta)).pack_head())
 
     port = fake_server(_script)
     with pytest.raises(EndpointProtocolError, match=match):
@@ -238,7 +254,9 @@ def _respond_with(
         _complete_handshake(conn)
         request = _recv_message(conn)
         request_id_ = request.request_id if request_id is None else request_id
-        response = Message(status, meta or {}, request_id=request_id_)
+        response = Message(
+            status, encode_meta(meta or {}), request_id=request_id_
+        )
         conn.sendall(response.pack_head())
 
     return _script
@@ -253,7 +271,9 @@ def test_request_ids(fake_server) -> None:
             request = _recv_message(conn)
             ids.append(request.request_id)
             response = Message(
-                Status.OK, {'exists': True}, request_id=request.request_id
+                Status.OK,
+                encode_meta({'exists': True}),
+                request_id=request.request_id,
             ).pack_head()
             conn.sendall(response)
 
@@ -338,13 +358,17 @@ def _handshake_with_info(**info: Any) -> Script:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
         _recv_message(conn)
-        conn.sendall(Message(Status.OK, _info(**info)).pack_head())
+        conn.sendall(
+            Message(Status.OK, encode_meta(_info(**info))).pack_head()
+        )
 
     return _script
 
 
 def test_version_mismatch_warning(fake_server) -> None:
-    port = fake_server(_handshake_with_info(proxystore='0.0.1'))
+    port = fake_server(
+        _handshake_with_info(versions=_versions(proxystore='0.0.1'))
+    )
     with pytest.warns(EndpointVersionWarning, match='ProxyStore'):
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
@@ -352,7 +376,11 @@ def test_version_mismatch_warning(fake_server) -> None:
 
 def test_python_patch_version_no_warning(fake_server) -> None:
     major, minor, _ = Versions.current().python.split('.', 2)
-    port = fake_server(_handshake_with_info(python=f'{major}.{minor}.999'))
+    port = fake_server(
+        _handshake_with_info(
+            versions=_versions(python=f'{major}.{minor}.999'),
+        )
+    )
     with warnings.catch_warnings():
         warnings.simplefilter('error', EndpointVersionWarning)
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)

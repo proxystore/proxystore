@@ -368,8 +368,18 @@ def test_ping_command_local(
 def test_ping_command_target(home_dir) -> None:
     target = EndpointId.random()
     results = [
-        PingResult(200.0, True, 'https://relay.example.com', 30),
-        PingResult(2.0, False, '1.2.3.4:5', 1),
+        PingResult(
+            peer_rtt_ms=200.0,
+            relayed=True,
+            remote_addr='https://relay.example.com',
+            path_rtt_ms=30,
+        ),
+        PingResult(
+            peer_rtt_ms=2.0,
+            relayed=False,
+            remote_addr='1.2.3.4:5',
+            path_rtt_ms=1,
+        ),
     ]
     client = mock.MagicMock()
     client.ping.side_effect = results

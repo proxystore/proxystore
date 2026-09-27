@@ -9,7 +9,7 @@ import pytest
 from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.identity import EndpointId
-from proxystore.endpoint.protocol import exists_from_meta
+from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
@@ -28,7 +28,7 @@ def _request(
     target: EndpointId | None = None,
     data: bytes = b'',
 ) -> Message:
-    return Message(op, Request(key, target).to_meta(), data)
+    return Message(op, Request(key=key, target=target).encode(), data)
 
 
 async def _handle(
@@ -63,12 +63,13 @@ async def peers() -> AsyncGenerator[tuple[Dispatcher, Dispatcher], None]:
 async def test_local_operations(dispatcher: Dispatcher) -> None:
     data = randbytes(100)
     response = await _handle(dispatcher, Op.EXISTS)
-    assert response == Message(Status.OK, {'exists': False})
+    assert response == Message(Status.OK, ExistsResult(exists=False).encode())
     assert (await _handle(dispatcher, Op.GET)).code == Status.NOT_FOUND
 
     assert await _handle(dispatcher, Op.SET, data=data) == Message(Status.OK)
     assert await dispatcher.storage.get('key') == data
-    assert exists_from_meta((await _handle(dispatcher, Op.EXISTS)).meta)
+    response = await _handle(dispatcher, Op.EXISTS)
+    assert ExistsResult.decode(response.meta).exists
     response = await _handle(dispatcher, Op.GET)
     assert response == Message(Status.OK, data=data)
 
@@ -84,20 +85,20 @@ async def test_local_operations(dispatcher: Dispatcher) -> None:
 
 async def test_local_ping(dispatcher: Dispatcher) -> None:
     response = await _handle(dispatcher, Op.PING, key=None)
-    assert PingResult.from_meta(response.meta) == PingResult()
+    assert PingResult.decode(response.meta) == PingResult()
 
 
 @pytest.mark.parametrize('op', (Op.GET, Op.SET, Op.EXISTS, Op.EVICT, Op.PING))
 async def test_peering_disabled(dispatcher: Dispatcher, op: Op) -> None:
     response = await _handle(dispatcher, op, target=EndpointId.random())
     assert response.code == Status.PEERING_DISABLED
-    assert 'peering is disabled' in response.meta['error']
+    assert 'peering is disabled' in response.error_message
 
 
 async def test_bad_requests(dispatcher: Dispatcher) -> None:
-    response = await dispatcher.handle(Message(Op.GET, {}))
+    response = await dispatcher.handle(Message(Op.GET, b'{"key": 42}'))
     assert response.code == Status.BAD_REQUEST
-    assert "invalid 'key'" in response.meta['error']
+    assert "invalid 'key'" in response.error_message
 
     response = await _handle(dispatcher, Op.GET, key=None)
     assert response == Message.error(
@@ -135,7 +136,7 @@ async def test_unexpected_error(dispatcher: Dispatcher) -> None:
     ):
         response = await _handle(dispatcher, Op.GET)
     assert response.code == Status.ERROR
-    assert 'storage failed' in response.meta['error']
+    assert 'storage failed' in response.error_message
 
 
 async def test_mismatched_peer_manager_id() -> None:
@@ -155,7 +156,7 @@ async def test_forward_operations(peers) -> None:
     assert not await dispatcher1.storage.exists('key')
 
     response = await _handle(dispatcher1, Op.EXISTS, target=target)
-    assert response == Message(Status.OK, {'exists': True})
+    assert response == Message(Status.OK, ExistsResult(exists=True).encode())
     response = await _handle(dispatcher1, Op.GET, target=target)
     assert response.code == Status.OK
     assert response.data == data
@@ -178,11 +179,11 @@ async def test_forward_peer_error_status(peers) -> None:
         data=randbytes(101),
     )
     assert response.code == Status.TOO_LARGE
-    assert response.meta['error'].startswith(f'Peer {target}: ')
+    assert response.error_message.startswith(f'Peer {target}: ')
 
     response = await _handle(dispatcher1, Op.GET, key=None, target=target)
     assert response.code == Status.BAD_REQUEST
-    assert 'Request requires a key' in response.meta['error']
+    assert 'Request requires a key' in response.error_message
 
 
 async def test_forward_not_allowed(peers) -> None:
@@ -191,7 +192,7 @@ async def test_forward_not_allowed(peers) -> None:
     policy(dispatcher1.peer_manager).peers.clear()
     response = await _handle(dispatcher1, Op.GET, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
-    assert 'not in the allowlist' in response.meta['error']
+    assert 'not in the allowlist' in response.error_message
 
 
 async def test_forward_peer_refused(peers) -> None:
@@ -200,7 +201,7 @@ async def test_forward_peer_refused(peers) -> None:
     policy(dispatcher2.peer_manager).peers.clear()
     response = await _handle(dispatcher1, Op.PING, target=dispatcher2.id)
     assert response.code == Status.PEER_NOT_ALLOWED
-    assert 'refused the connection' in response.meta['error']
+    assert 'refused the connection' in response.error_message
 
 
 async def test_forward_peer_unavailable(peers) -> None:
@@ -218,7 +219,7 @@ async def test_forward_peer_unavailable(peers) -> None:
 async def test_forward_ping(peers) -> None:
     dispatcher1, dispatcher2 = peers
     response = await _handle(dispatcher1, Op.PING, key=None, target=None)
-    assert PingResult.from_meta(response.meta) == PingResult()
+    assert PingResult.decode(response.meta) == PingResult()
 
     response = await _handle(
         dispatcher1,
@@ -226,7 +227,7 @@ async def test_forward_ping(peers) -> None:
         key=None,
         target=dispatcher2.id,
     )
-    result = PingResult.from_meta(response.meta)
+    result = PingResult.decode(response.meta)
     assert result.peer_rtt_ms is not None
     assert result.peer_rtt_ms > 0
     assert result.relayed is False

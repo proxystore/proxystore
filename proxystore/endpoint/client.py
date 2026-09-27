@@ -29,7 +29,6 @@ import socket
 import ssl
 import warnings
 from types import TracebackType
-from typing import Any
 from typing import Self
 
 from proxystore.endpoint.auth import certificate_fingerprint
@@ -45,7 +44,7 @@ from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
 from proxystore.endpoint.protocol import EndpointInfo
-from proxystore.endpoint.protocol import exists_from_meta
+from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
@@ -296,7 +295,7 @@ class EndpointClient:
             ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        self._request(Op.EVICT, Request(key, _parse_target(target)))
+        self._request(Op.EVICT, _request(key, target))
 
     def exists(self, key: str, target: str | None = None) -> bool:
         """Check if an object associated with the key exists.
@@ -312,11 +311,8 @@ class EndpointClient:
             ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        response = self._request(
-            Op.EXISTS,
-            Request(key, _parse_target(target)),
-        )
-        return exists_from_meta(response.meta)
+        response = self._request(Op.EXISTS, _request(key, target))
+        return ExistsResult.decode(response.meta).exists
 
     def get(
         self,
@@ -336,10 +332,7 @@ class EndpointClient:
             ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        response = self._request(
-            Op.GET,
-            Request(key, _parse_target(target)),
-        )
+        response = self._request(Op.GET, _request(key, target))
         if response.code == Status.NOT_FOUND:
             return None
         data = response.data
@@ -372,7 +365,7 @@ class EndpointClient:
                 f'Data size ({size} bytes) exceeds the maximum object size '
                 f'of the endpoint ({max_size} bytes).',
             )
-        self._request(Op.SET, Request(key, _parse_target(target)), data)
+        self._request(Op.SET, _request(key, target), data)
 
     def ping(self, target: str | None = None) -> PingResult:
         """Measure the latency of and path to a peer endpoint.
@@ -390,11 +383,8 @@ class EndpointClient:
             ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        response = self._request(
-            Op.PING,
-            Request(target=_parse_target(target)),
-        )
-        return PingResult.from_meta(response.meta)
+        response = self._request(Op.PING, _request(None, target))
+        return PingResult.decode(response.meta)
 
     def _request(
         self,
@@ -413,7 +403,7 @@ class EndpointClient:
         # Request IDs are in the range [1, 2^32 - 1] because 0 is reserved
         # for handshake messages.
         self._next_request_id = request_id % _MAX_REQUEST_ID + 1
-        message = Message(op, request.to_meta(), request_id=request_id)
+        message = Message(op, request.encode(), request_id=request_id)
         head = message.pack_head(data_len)
 
         try:
@@ -470,8 +460,10 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
     return f'{message} Is the endpoint running?'
 
 
-def _parse_target(target: str | None) -> EndpointId | None:
-    return None if target is None else EndpointId.from_str(target)
+def _request(key: str | None, target: str | None) -> Request:
+    # The target is parsed first for a clear error if it is invalid.
+    parsed = None if target is None else EndpointId.from_str(target)
+    return Request(key=key, target=parsed)
 
 
 def _as_bytes_view(data: BytesLike) -> memoryview:
@@ -513,7 +505,7 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
 def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
     hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
     sock.sendall(
-        Preamble().pack() + Message(Op.HELLO, hello.to_meta()).pack_head()
+        Preamble().pack() + Message(Op.HELLO, hello.encode()).pack_head()
     )
 
     preamble = _recv_exactly(sock, Preamble.SIZE)
@@ -535,7 +527,7 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
             'for details.',
         )
 
-    challenge = Challenge.from_meta(_recv_handshake_message(sock))
+    challenge = Challenge.decode(_recv_handshake_message(sock))
     if not token.verify(
         'server',
         challenge.nonce,
@@ -550,31 +542,29 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
         )
 
     proof = token.proof('client', hello.nonce, challenge.nonce)
-    sock.sendall(Message(Op.AUTH, Auth(proof).to_meta()).pack_head())
+    sock.sendall(Message(Op.AUTH, Auth(proof=proof).encode()).pack_head())
 
-    return EndpointInfo.from_meta(_recv_handshake_message(sock))
+    return EndpointInfo.decode(_recv_handshake_message(sock))
 
 
-def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
+def _recv_handshake_message(sock: socket.socket) -> bytes:
     try:
         message = _recv_message(sock, max_data_size=0)
     except ObjectSizeExceededError:
         raise EndpointProtocolError(
             'Endpoint sent data in a handshake message.',
         ) from None
-    meta = message.meta
     if message.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
             'have been restarted since the connection file was read.',
         )
     if message.code != Status.OK:
-        error = meta.get('error', 'no error message provided')
         raise EndpointProtocolError(
             f'Endpoint returned status {message.code} during the handshake: '
-            f'{error}',
+            f'{message.error_message}',
         )
-    return meta
+    return message.meta
 
 
 def _recv_message(

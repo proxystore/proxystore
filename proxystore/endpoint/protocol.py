@@ -47,14 +47,17 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import json
 import platform
 import struct
-from typing import Any
+from typing import Annotated
 from typing import ClassVar
-from typing import NamedTuple
 from typing import Self
 from typing import TypeAlias
+
+from pydantic import BaseModel
+from pydantic import ConfigDict
+from pydantic import Field
+from pydantic import ValidationError
 
 import proxystore
 from proxystore.endpoint.exceptions import EndpointAuthError
@@ -246,7 +249,60 @@ class Header:
         return header
 
 
-class Versions(NamedTuple):
+class Meta(BaseModel):
+    """Base model of the metadata of a message.
+
+    Metadata is encoded as a JSON object. Unknown fields are ignored so that
+    fields can be added to a message without breaking older readers, and
+    `bytes` fields are hex-encoded.
+
+    Example:
+        ```python
+        meta = Request(key='abc').encode()
+        assert Request.decode(meta) == Request(key='abc')
+        ```
+    """
+
+    model_config = ConfigDict(
+        extra='ignore',
+        frozen=True,
+        strict=True,
+        ser_json_bytes='hex',
+        val_json_bytes='hex',
+    )
+
+    def encode(self) -> bytes:
+        """Encode as message metadata."""
+        return self.__pydantic_serializer__.to_json(self)
+
+    @classmethod
+    def decode(cls, meta: bytes | bytearray) -> Self:
+        """Decode from message metadata.
+
+        Empty metadata is decoded as an empty JSON object.
+
+        Raises:
+            EndpointProtocolError: If the metadata is malformed.
+        """
+        try:
+            return cls.model_validate_json(meta if len(meta) > 0 else b'{}')
+        except ValidationError as e:
+            error = e.errors()[0]
+            if len(error['loc']) == 0:
+                reason = error['msg']
+            else:
+                field = '.'.join(str(part) for part in error['loc'])
+                reason = f'missing or invalid {field!r} field ({error["msg"]})'
+            raise EndpointProtocolError(
+                f'Malformed {cls.__name__} message: {reason}.',
+            ) from None
+
+
+Nonce = Annotated[bytes, Field(min_length=NONCE_SIZE, max_length=NONCE_SIZE)]
+"""Random nonce exchanged in the handshake."""
+
+
+class Versions(Meta):
     """ProxyStore and Python versions of a client or endpoint.
 
     Attributes:
@@ -260,7 +316,10 @@ class Versions(NamedTuple):
     @classmethod
     def current(cls) -> Self:
         """Get the ProxyStore and Python versions of this process."""
-        return cls(proxystore.__version__, platform.python_version())
+        return cls(
+            proxystore=proxystore.__version__,
+            python=platform.python_version(),
+        )
 
     def mismatches(self, endpoint: Versions) -> list[str]:
         """Find differences between this client's and the endpoint's versions.
@@ -291,8 +350,7 @@ class Versions(NamedTuple):
         return mismatches
 
 
-@dataclasses.dataclass(frozen=True)
-class Hello:
+class Hello(Meta):
     """First message of the handshake sent by the client.
 
     Attributes:
@@ -300,28 +358,11 @@ class Hello:
         versions: Versions of the client.
     """
 
-    nonce: bytes
+    nonce: Nonce
     versions: Versions
 
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {'nonce': self.nonce.hex(), **self.versions._asdict()}
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
-
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        return cls(
-            nonce=_get_hex(meta, 'nonce', cls, size=NONCE_SIZE),
-            versions=_get_versions(meta, cls),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class Challenge:
+class Challenge(Meta):
     """Reply of the endpoint to [`Hello`][proxystore.endpoint.protocol.Hello].
 
     Attributes:
@@ -329,28 +370,11 @@ class Challenge:
         proof: Proof that the endpoint knows the token.
     """
 
-    nonce: bytes
+    nonce: Nonce
     proof: bytes
 
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {'nonce': self.nonce.hex(), 'proof': self.proof.hex()}
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
-
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        return cls(
-            nonce=_get_hex(meta, 'nonce', cls, size=NONCE_SIZE),
-            proof=_get_hex(meta, 'proof', cls),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class Auth:
+class Auth(Meta):
     """Second message of the handshake with the proof of the client.
 
     Attributes:
@@ -359,22 +383,8 @@ class Auth:
 
     proof: bytes
 
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {'proof': self.proof.hex()}
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
-
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        return cls(proof=_get_hex(meta, 'proof', cls))
-
-
-@dataclasses.dataclass(frozen=True)
-class EndpointInfo:
+class EndpointInfo(Meta):
     """Information about an endpoint sent at the end of the handshake.
 
     Attributes:
@@ -390,37 +400,8 @@ class EndpointInfo:
     versions: Versions
     max_object_size: int | None
 
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {
-            'id': self.id,
-            'name': self.name,
-            'max_object_size': self.max_object_size,
-            **self.versions._asdict(),
-        }
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
-
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        return cls(
-            id=_parse_id(_get(meta, 'id', str, cls), 'id', cls),
-            name=_get(meta, 'name', str, cls),
-            versions=_get_versions(meta, cls),
-            max_object_size=_get(
-                meta,
-                'max_object_size',
-                (int, type(None)),
-                cls,
-            ),
-        )
-
-
-@dataclasses.dataclass(frozen=True)
-class Request:
+class Request(Meta):
     """Metadata of a request.
 
     Requests are sent by clients to their local endpoint and by endpoints to
@@ -434,30 +415,49 @@ class Request:
             for the endpoint receiving the request.
     """
 
-    key: str | None = None
+    key: str | None = Field(default=None, min_length=1)
     target: EndpointId | None = None
 
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return {'key': self.key, 'target': self.target}
 
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
+class ExistsResult(Meta):
+    """Result of an [`EXISTS`][proxystore.endpoint.protocol.Op.EXISTS] request.
 
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        key = _get(meta, 'key', (str, type(None)), cls)
-        if key is not None and len(key) == 0:
-            raise _malformed(cls, 'key')
-        target = _get(meta, 'target', (str, type(None)), cls)
-        return cls(
-            key=key,
-            target=None
-            if target is None
-            else _parse_id(target, 'target', cls),
-        )
+    Attributes:
+        exists: If an object associated with the key exists.
+    """
+
+    exists: bool
+
+
+class PingResult(Meta):
+    """Result of a [`PING`][proxystore.endpoint.protocol.Op.PING] request.
+
+    Attributes:
+        peer_rtt_ms: Time in milliseconds for the local endpoint to send a
+            request to the peer and receive the response or `None` if the
+            local endpoint was pinged. The time of the first ping to a peer
+            includes establishing the connection.
+        relayed: If the connection to the peer is relayed, or `None` if the
+            path is unknown or the local endpoint was pinged.
+        remote_addr: Address of the peer (or relay) on the path.
+        path_rtt_ms: Round-trip time in milliseconds of the path estimated
+            by QUIC.
+    """
+
+    peer_rtt_ms: float | None = None
+    relayed: bool | None = None
+    remote_addr: str | None = None
+    path_rtt_ms: int | None = None
+
+
+class ErrorInfo(Meta):
+    """Metadata of a response with an error status.
+
+    Attributes:
+        error: Message describing the error.
+    """
+
+    error: str
 
 
 @dataclasses.dataclass(frozen=True)
@@ -467,21 +467,23 @@ class Message:
     Attributes:
         code: [`Op`][proxystore.endpoint.protocol.Op] of a request or
             [`Status`][proxystore.endpoint.protocol.Status] of a response.
-        meta: Metadata of the message.
+        meta: JSON-encoded metadata of the message. Each operation or
+            response defines the model of its metadata (e.g.,
+            [`Request`][proxystore.endpoint.protocol.Request]).
         data: Data of the message.
         request_id: ID of the request (see
             [`Header`][proxystore.endpoint.protocol.Header]).
     """
 
     code: int
-    meta: dict[str, Any] = dataclasses.field(default_factory=dict)
+    meta: bytes = b''
     data: MessageData = b''
     request_id: int = 0
 
     @classmethod
     def error(cls, status: Status, message: str) -> Message:
         """Create a response with an error message."""
-        return cls(status, {'error': message})
+        return cls(status, ErrorInfo(error=message).encode())
 
     @classmethod
     def from_error(cls, error: BaseException) -> Message:
@@ -491,6 +493,18 @@ class Message:
         [`error_status()`][proxystore.endpoint.protocol.error_status].
         """
         return cls.error(error_status(error), str(error))
+
+    @property
+    def error_message(self) -> str:
+        """Error message of a response with an error status.
+
+        This never raises so a malformed error response can still be
+        reported.
+        """
+        try:
+            return ErrorInfo.decode(self.meta).error
+        except EndpointProtocolError:
+            return 'no error message provided'
 
     def pack_head(self, data_len: int | None = None) -> bytes:
         """Pack the header and metadata of the message.
@@ -505,10 +519,15 @@ class Message:
                 the data is not stored in the message (e.g., a view of a
                 buffer sent by a client).
         """
-        meta = encode_meta(self.meta) if len(self.meta) > 0 else b''
         data_len = len(self.data) if data_len is None else data_len
-        header = Header(self.code, 0, self.request_id, len(meta), data_len)
-        return header.pack() + meta
+        header = Header(
+            self.code,
+            0,
+            self.request_id,
+            len(self.meta),
+            data_len,
+        )
+        return header.pack() + self.meta
 
 
 def error_status(error: BaseException) -> Status:
@@ -561,140 +580,10 @@ def raise_for_status(
         ) from None
     if status in (Status.OK, Status.NOT_FOUND):
         return status
-    reason = response.meta.get('error', 'no error message provided')
     raise STATUS_ERRORS[status](
-        f'{source} returned {status.name} for {op.name} request: {reason}',
+        f'{source} returned {status.name} for {op.name} request: '
+        f'{response.error_message}',
     )
-
-
-def exists_from_meta(meta: dict[str, Any]) -> bool:
-    """Get the result of an EXISTS response from its metadata.
-
-    Raises:
-        EndpointProtocolError: If the metadata is malformed.
-    """
-    exists = meta.get('exists')
-    if not isinstance(exists, bool):
-        raise EndpointProtocolError(
-            "Malformed EXISTS response: missing or invalid 'exists' field.",
-        )
-    return exists
-
-
-@dataclasses.dataclass(frozen=True)
-class PingResult:
-    """Result of a [`PING`][proxystore.endpoint.protocol.Op.PING] request.
-
-    Attributes:
-        peer_rtt_ms: Time in milliseconds for the local endpoint to send a
-            request to the peer and receive the response or `None` if the
-            local endpoint was pinged. The time of the first ping to a peer
-            includes establishing the connection.
-        relayed: If the connection to the peer is relayed, or `None` if the
-            path is unknown or the local endpoint was pinged.
-        remote_addr: Address of the peer (or relay) on the path.
-        path_rtt_ms: Round-trip time in milliseconds of the path estimated
-            by QUIC.
-    """
-
-    peer_rtt_ms: float | None = None
-    relayed: bool | None = None
-    remote_addr: str | None = None
-    path_rtt_ms: int | None = None
-
-    def to_meta(self) -> dict[str, Any]:
-        """Encode as message metadata."""
-        return dataclasses.asdict(self)
-
-    @classmethod
-    def from_meta(cls, meta: dict[str, Any]) -> Self:
-        """Decode from message metadata.
-
-        Raises:
-            EndpointProtocolError: If the metadata is malformed.
-        """
-        none = type(None)
-        return cls(
-            peer_rtt_ms=_get(meta, 'peer_rtt_ms', (int, float, none), cls),
-            relayed=_get(meta, 'relayed', (bool, none), cls),
-            remote_addr=_get(meta, 'remote_addr', (str, none), cls),
-            path_rtt_ms=_get(meta, 'path_rtt_ms', (int, none), cls),
-        )
-
-
-def _parse_id(value: str, field: str, message: type) -> EndpointId:
-    try:
-        return EndpointId.from_str(value)
-    except ValueError:
-        raise _malformed(message, field) from None
-
-
-def _malformed(message: type, field: str) -> EndpointProtocolError:
-    return EndpointProtocolError(
-        f'Malformed {message.__name__} message: missing or invalid '
-        f'{field!r} field.',
-    )
-
-
-def _get(
-    meta: dict[str, Any],
-    field: str,
-    kind: type | tuple[type, ...],
-    message: type,
-) -> Any:
-    if field not in meta or not isinstance(meta[field], kind):
-        raise _malformed(message, field)
-    return meta[field]
-
-
-def _get_hex(
-    meta: dict[str, Any],
-    field: str,
-    message: type,
-    *,
-    size: int | None = None,
-) -> bytes:
-    try:
-        value = bytes.fromhex(_get(meta, field, str, message))
-    except ValueError:
-        raise _malformed(message, field) from None
-    if size is not None and len(value) != size:
-        raise _malformed(message, field)
-    return value
-
-
-def _get_versions(meta: dict[str, Any], message: type) -> Versions:
-    return Versions(
-        proxystore=_get(meta, 'proxystore', str, message),
-        python=_get(meta, 'python', str, message),
-    )
-
-
-def encode_meta(meta: dict[str, Any]) -> bytes:
-    """Encode message metadata."""
-    return json.dumps(meta, separators=(',', ':')).encode()
-
-
-def decode_meta(buffer: bytes | bytearray) -> dict[str, Any]:
-    """Decode message metadata.
-
-    Raises:
-        EndpointProtocolError: If the metadata is not a JSON object.
-    """
-    if len(buffer) == 0:
-        return {}
-    try:
-        meta = json.loads(buffer)
-    except (UnicodeDecodeError, json.JSONDecodeError) as e:
-        raise EndpointProtocolError(
-            f'Failed to decode message metadata: {e}',
-        ) from e
-    if not isinstance(meta, dict):
-        raise EndpointProtocolError(
-            f'Expected message metadata to be a JSON object but got '
-            f'{type(meta).__name__}.',
-        )
-    return meta
 
 
 class MessageReader:
@@ -723,7 +612,7 @@ class MessageReader:
     def __init__(self, *, max_data_size: int | None = None) -> None:
         self._max_data_size = max_data_size
         self._header: Header | None = None
-        self._meta: dict[str, Any] | None = None
+        self._meta: bytes | None = None
         self._message: Message | None = None
         self._size = Header.SIZE
 
@@ -773,7 +662,8 @@ class MessageReader:
         Raises:
             RuntimeError: If the message is already done.
             ValueError: If `buffer` is not the expected size.
-            EndpointProtocolError: If the header or metadata is malformed.
+            EndpointProtocolError: If the header is malformed (the metadata
+                is decoded by the receiver of the message).
             ObjectSizeExceededError: If the size of the data exceeds the
                 maximum. The
                 [`header`][proxystore.endpoint.protocol.MessageReader.header]
@@ -793,7 +683,7 @@ class MessageReader:
                 return
             buffer = b''
         if self._meta is None:
-            self._meta = decode_meta(buffer)
+            self._meta = bytes(buffer)
             self._read_meta()
             return
         self._message = Message(

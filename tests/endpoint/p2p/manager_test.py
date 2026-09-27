@@ -22,9 +22,12 @@ from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerConnection
 from proxystore.endpoint.p2p.manager import PeerManager
 from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import Status
+from testing.endpoint import decode_meta
+from testing.endpoint import encode_meta
 from testing.p2p import allow_peer
 from testing.p2p import connect_peers
 from testing.p2p import local_peer_manager
@@ -49,10 +52,12 @@ Handled = list[tuple[EndpointId, int, dict[str, Any], bytes | bytearray]]
 
 def _echo_handler(handled: Handled) -> Any:
     async def _handler(peer: EndpointId, request: Message) -> Message:
-        handled.append((peer, request.code, request.meta, request.data))
-        if request.meta.get('raise'):
+        meta = decode_meta(request.meta)
+        handled.append((peer, request.code, meta, request.data))
+        if meta.get('raise'):
             raise RuntimeError('handler failed')
-        return Message(Status.OK, {'echo': request.meta}, request.data)
+        echo = encode_meta({'echo': meta})
+        return Message(Status.OK, echo, request.data)
 
     return _handler
 
@@ -66,9 +71,9 @@ async def _request(
 ) -> tuple[int, dict[str, Any], bytes | bytearray]:
     response = await manager.request(
         peer_id,
-        Message(code, {} if meta is None else meta, data),
+        Message(code, b'' if meta is None else encode_meta(meta), data),
     )
-    return response.code, response.meta, response.data
+    return response.code, decode_meta(response.meta), response.data
 
 
 @pytest.fixture
@@ -179,9 +184,9 @@ async def test_bad_request(managers) -> None:
     manager1, manager2, _ = managers
     connection, _ = await manager1._get_connection(manager2.id)
     stream = await connection.connection.open_bi()
-    # Header with invalid metadata
-    await stream.send().write_all(Header(Op.GET, 0, 0, 1, 0).pack())
-    await stream.send().write_all(b'x')
+    # Header with metadata which exceeds the maximum size
+    header = Header(Op.GET, 0, 0, MAX_META_SIZE + 1, 0).pack()
+    await stream.send().write_all(header)
     await stream.send().finish()
     response = await stream.recv().read_to_end(1000)
     assert response[0] == Status.BAD_REQUEST
@@ -390,7 +395,7 @@ async def test_exchange_write_error_reads_response(managers) -> None:
     manager1, _, _ = managers
     connection = mock.AsyncMock()
     connection.open_bi.return_value = mock.MagicMock()
-    expected = Message(Status.TOO_LARGE, {'error': 'too large'})
+    expected = Message.error(Status.TOO_LARGE, 'too large')
     with (
         mock.patch(
             'proxystore.endpoint.p2p.manager._write_message',
@@ -401,7 +406,7 @@ async def test_exchange_write_error_reads_response(managers) -> None:
             return_value=expected,
         ),
     ):
-        request = Message(Op.SET, {}, b'x')
+        request = Message(Op.SET, data=b'x')
         response = await manager1._exchange(connection, request)
     assert response == expected
 
@@ -424,7 +429,7 @@ async def test_exchange_read_error(managers, write_fails: bool) -> None:
         ),
         pytest.raises(_IrohError) as exc_info,
     ):
-        await manager1._exchange(connection, Message(Op.SET, {}, b'x'))
+        await manager1._exchange(connection, Message(Op.SET, data=b'x'))
     assert exc_info.value is (write_error if write_fails else read_error)
 
 

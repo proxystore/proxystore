@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import logging
 import multiprocessing
 import os
@@ -161,3 +162,13 @@ def endpoint(
     yield config
 
     terminate_process(server_handle)
+
+
+def encode_meta(meta: dict[str, Any]) -> bytes:
+    """Encode raw message metadata (e.g., to send malformed metadata)."""
+    return json.dumps(meta).encode()
+
+
+def decode_meta(meta: bytes) -> dict[str, Any]:
+    """Decode raw message metadata."""
+    return {} if len(meta) == 0 else json.loads(meta)

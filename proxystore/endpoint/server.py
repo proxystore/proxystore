@@ -446,16 +446,16 @@ class ClientHandler:
             await _reply_and_close(conn, Preamble().pack())
             return False
 
-        hello = Hello.from_meta(await _read_handshake_message(conn, Op.HELLO))
+        hello = Hello.decode(await _read_handshake_message(conn, Op.HELLO))
         nonce = os.urandom(NONCE_SIZE)
         challenge = Challenge(
             nonce=nonce,
             proof=self.token.proof('server', nonce, hello.nonce),
         )
         conn.write(Preamble().pack())
-        await _send(conn, Message(Status.OK, challenge.to_meta()))
+        await _send(conn, Message(Status.OK, challenge.encode()))
 
-        auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
+        auth = Auth.decode(await _read_handshake_message(conn, Op.AUTH))
         if not self.token.verify(
             'client',
             hello.nonce,
@@ -479,7 +479,7 @@ class ClientHandler:
             versions=Versions.current(),
             max_object_size=self.max_object_size,
         )
-        await _send(conn, Message(Status.OK, info.to_meta()))
+        await _send(conn, Message(Status.OK, info.encode()))
         return True
 
     def _check_client_versions(self, addr: str, versions: Versions) -> None:
@@ -547,7 +547,7 @@ async def _read_message(
 async def _read_handshake_message(
     conn: _ClientConnection,
     expected: Op,
-) -> dict[str, Any]:
+) -> bytes:
     try:
         message = await _read_message(conn, MessageReader(max_data_size=0))
     except ObjectSizeExceededError:

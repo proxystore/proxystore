@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import platform
 from typing import Any
@@ -17,16 +18,16 @@ from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import ALPN
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import decode_meta
-from proxystore.endpoint.protocol import encode_meta
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import error_status
-from proxystore.endpoint.protocol import exists_from_meta
+from proxystore.endpoint.protocol import ErrorInfo
+from proxystore.endpoint.protocol import ExistsResult
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
+from proxystore.endpoint.protocol import Meta
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
 from proxystore.endpoint.protocol import PingResult
@@ -55,13 +56,17 @@ def test_preamble_bad_magic() -> None:
         Preamble.unpack(b'GET /x')
 
 
+def _json(meta: dict[str, Any]) -> bytes:
+    return json.dumps(meta).encode()
+
+
 def test_message_round_trip() -> None:
-    meta = {'key': 'abc', 'target': None}
+    meta = Request(key='abc').encode()
     message = Message(Op.SET, meta).pack_head(100)
 
     header = Header.unpack(message[: Header.SIZE])
-    assert header == Header(Op.SET, 0, 0, len(encode_meta(meta)), 100)
-    assert decode_meta(message[Header.SIZE :]) == meta
+    assert header == Header(Op.SET, 0, 0, len(meta), 100)
+    assert Request.decode(message[Header.SIZE :]) == Request(key='abc')
 
 
 def test_message_no_meta() -> None:
@@ -69,7 +74,8 @@ def test_message_no_meta() -> None:
     header = Header.unpack(message)
     assert header.meta_len == 0
     assert header.data_len == 0
-    assert decode_meta(b'') == {}
+    # Empty metadata is an empty object
+    assert Request.decode(b'') == Request()
 
 
 def test_header_meta_too_large() -> None:
@@ -78,32 +84,43 @@ def test_header_meta_too_large() -> None:
         Header.unpack(header)
 
 
-@pytest.mark.parametrize('buffer', (b'{', b'\xff\xfe', b'[1, 2]'))
-def test_decode_meta_invalid(buffer: bytes) -> None:
-    with pytest.raises(EndpointProtocolError):
-        decode_meta(buffer)
+@pytest.mark.parametrize(
+    ('buffer', 'error'),
+    (
+        (b'{', 'Invalid JSON'),
+        (b'\xff\xfe', 'Invalid JSON'),
+        (b'[1, 2]', 'Input should be an object'),
+    ),
+)
+def test_decode_meta_invalid(buffer: bytes, error: str) -> None:
+    with pytest.raises(EndpointProtocolError, match=error):
+        Request.decode(buffer)
+
+
+def _versions(proxystore: str, python: str) -> Versions:
+    return Versions(proxystore=proxystore, python=python)
 
 
 @pytest.mark.parametrize(
     ('client', 'endpoint', 'expected'),
     (
         # Same versions
-        (Versions('1.0.0', '3.12.4'), Versions('1.0.0', '3.12.4'), []),
+        (_versions('1.0.0', '3.12.4'), _versions('1.0.0', '3.12.4'), []),
         # Python patch versions are compatible
-        (Versions('1.0.0', '3.12.4'), Versions('1.0.0', '3.12.9'), []),
+        (_versions('1.0.0', '3.12.4'), _versions('1.0.0', '3.12.9'), []),
         (
-            Versions('1.0.0', '3.12.4'),
-            Versions('1.0.1', '3.12.4'),
+            _versions('1.0.0', '3.12.4'),
+            _versions('1.0.1', '3.12.4'),
             ['ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)'],
         ),
         (
-            Versions('1.0.0', '3.12.4'),
-            Versions('1.0.0', '3.13.0'),
+            _versions('1.0.0', '3.12.4'),
+            _versions('1.0.0', '3.13.0'),
             ['Python 3.12.4 (client) vs. 3.13.0 (endpoint)'],
         ),
         (
-            Versions('1.0.0', '3.12.4'),
-            Versions('1.0.1', '3.13.0'),
+            _versions('1.0.0', '3.12.4'),
+            _versions('1.0.1', '3.13.0'),
             [
                 'ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)',
                 'Python 3.12.4 (client) vs. 3.13.0 (endpoint)',
@@ -121,117 +138,111 @@ def test_versions_mismatches(
 
 _NONCE = os.urandom(NONCE_SIZE)
 _PROOF = os.urandom(32)
-_VERSIONS = Versions('1.0.0', '3.12.4')
+_VERSIONS = _versions('1.0.0', '3.12.4')
+_ID = EndpointId.random()
 
 
 @pytest.mark.parametrize(
-    'message',
+    'meta',
     (
-        Hello(_NONCE, _VERSIONS),
-        Challenge(_NONCE, _PROOF),
-        Auth(_PROOF),
-        EndpointInfo(EndpointId.random(), 'name', _VERSIONS, 100),
-        EndpointInfo(EndpointId.random(), 'name', _VERSIONS, None),
-        Request('key'),
-        Request('key', EndpointId.random()),
+        Hello(nonce=_NONCE, versions=_VERSIONS),
+        Challenge(nonce=_NONCE, proof=_PROOF),
+        Auth(proof=_PROOF),
+        EndpointInfo(id=_ID, name='n', versions=_VERSIONS, max_object_size=1),
+        EndpointInfo(
+            id=_ID,
+            name='n',
+            versions=_VERSIONS,
+            max_object_size=None,
+        ),
+        Request(),
+        Request(key='key'),
+        Request(target=_ID),
+        Request(key='key', target=_ID),
+        ExistsResult(exists=True),
+        PingResult(),
+        PingResult(
+            peer_rtt_ms=12.5,
+            relayed=True,
+            remote_addr='https://relay.example.com',
+            path_rtt_ms=10,
+        ),
+        ErrorInfo(error='failed'),
     ),
 )
-def test_message_meta_round_trip(
-    message: Hello | Challenge | Auth | EndpointInfo | Request,
-) -> None:
-    meta = decode_meta(encode_meta(message.to_meta()))
-    assert type(message).from_meta(meta) == message
+def test_meta_round_trip(meta: Meta) -> None:
+    assert type(meta).decode(meta.encode()) == meta
+
+
+def test_meta_encoding() -> None:
+    # Bytes are hex-encoded and unknown fields are ignored
+    meta = Auth(proof=_PROOF).encode()
+    assert json.loads(meta) == {'proof': _PROOF.hex()}
+    assert (
+        Auth.decode(_json({'proof': _PROOF.hex(), 'new': 1})).proof == _PROOF
+    )
+    # IDs are normalized
+    assert Request.decode(_json({'target': _ID.upper()})).target == _ID
+    # Integers are valid floats
+    assert PingResult.decode(_json({'peer_rtt_ms': 1})).peer_rtt_ms == 1.0
+
+
+_HELLO = Hello(nonce=_NONCE, versions=_VERSIONS).model_dump(mode='json')
+_INFO = EndpointInfo(
+    id=_ID,
+    name='n',
+    versions=_VERSIONS,
+    max_object_size=1,
+).model_dump(mode='json')
 
 
 @pytest.mark.parametrize(
-    ('message', 'meta', 'field'),
+    ('model', 'meta', 'field'),
     (
-        (Hello, {'python': '3.12.4', 'proxystore': '1.0.0'}, 'nonce'),
-        (Hello, {**Hello(_NONCE, _VERSIONS).to_meta(), 'nonce': 42}, 'nonce'),
-        (Hello, {**Hello(_NONCE, _VERSIONS).to_meta(), 'nonce': 'x'}, 'nonce'),
+        (Hello, {'versions': _HELLO['versions']}, 'nonce'),
+        (Hello, {**_HELLO, 'nonce': 42}, 'nonce'),
+        (Hello, {**_HELLO, 'nonce': 'x'}, 'nonce'),
         # Nonces must have the expected size
-        (Hello, Hello(_NONCE[:-1], _VERSIONS).to_meta(), 'nonce'),
-        (Hello, {'nonce': _NONCE.hex(), 'python': '3.12.4'}, 'proxystore'),
+        (Hello, {**_HELLO, 'nonce': _NONCE[:-1].hex()}, 'nonce'),
+        (
+            Hello,
+            {**_HELLO, 'versions': {'python': '3.12.4'}},
+            'versions.proxystore',
+        ),
         (Challenge, {'nonce': _NONCE.hex()}, 'proof'),
         (Auth, {'proof': None}, 'proof'),
         (EndpointInfo, {}, 'id'),
-        (
-            EndpointInfo,
-            {
-                **EndpointInfo(
-                    EndpointId.random(), 'n', _VERSIONS, 1
-                ).to_meta(),
-                'id': 'x',
-            },
-            'id',
-        ),
-        (
-            EndpointInfo,
-            {
-                **EndpointInfo(
-                    EndpointId.random(), 'n', _VERSIONS, 1
-                ).to_meta(),
-                'max_object_size': '1',
-            },
-            'max_object_size',
-        ),
-        (Request, {'target': None}, 'key'),
-        (Request, {'key': '', 'target': None}, 'key'),
-        (Request, {'key': 'key'}, 'target'),
+        (EndpointInfo, {**_INFO, 'id': 'x'}, 'id'),
+        (EndpointInfo, {**_INFO, 'max_object_size': '1'}, 'max_object_size'),
+        (Request, {'key': ''}, 'key'),
+        (Request, {'key': 42}, 'key'),
         (Request, {'key': 'key', 'target': 42}, 'target'),
         (Request, {'key': 'key', 'target': 'not-an-id'}, 'target'),
+        (ExistsResult, {}, 'exists'),
+        (ExistsResult, {'exists': 'yes'}, 'exists'),
+        (PingResult, {'relayed': 'yes'}, 'relayed'),
+        (PingResult, {'path_rtt_ms': 1.5}, 'path_rtt_ms'),
     ),
 )
-def test_message_meta_malformed(
-    message: type[Hello | Challenge | Auth | EndpointInfo | Request],
+def test_meta_malformed(
+    model: type[Meta],
     meta: dict[str, Any],
     field: str,
 ) -> None:
-    with pytest.raises(EndpointProtocolError, match=f"invalid '{field}'"):
-        message.from_meta(meta)
+    name = model.__name__
+    with pytest.raises(
+        EndpointProtocolError,
+        match=f"Malformed {name} message: missing or invalid '{field}'",
+    ):
+        model.decode(_json(meta))
 
 
-@pytest.mark.parametrize(
-    'message',
-    (
-        PingResult(),
-        PingResult(12.5, True, 'https://relay.example.com', 10),
-        PingResult(1, False, '1.2.3.4:5', 0),
-    ),
-)
-def test_ping_meta_round_trip(message: PingResult) -> None:
-    meta = decode_meta(encode_meta(message.to_meta()))
-    assert type(message).from_meta(meta) == message
-
-
-@pytest.mark.parametrize(
-    ('message', 'meta', 'field'),
-    (
-        (PingResult, {}, 'peer_rtt_ms'),
-        (PingResult, {**PingResult().to_meta(), 'relayed': 'yes'}, 'relayed'),
-        (
-            PingResult,
-            {**PingResult().to_meta(), 'path_rtt_ms': 1.5},
-            'path_rtt_ms',
-        ),
-    ),
-)
-def test_ping_meta_malformed(
-    message: type[PingResult],
-    meta: dict[str, Any],
-    field: str,
-) -> None:
-    with pytest.raises(EndpointProtocolError, match=f"invalid '{field}'"):
-        message.from_meta(meta)
-
-
-@pytest.mark.parametrize(
-    'request_',
-    (Request(), Request(target=EndpointId.random()), Request('key')),
-)
-def test_request_optional_key_round_trip(request_: Request) -> None:
-    meta = decode_meta(encode_meta(request_.to_meta()))
-    assert Request.from_meta(meta) == request_
+def test_error_message() -> None:
+    assert Message.error(Status.ERROR, 'failed').error_message == 'failed'
+    assert Message(Status.ERROR).error_message == 'no error message provided'
+    assert Message(Status.ERROR, b'[]').error_message == (
+        'no error message provided'
+    )
 
 
 @pytest.mark.parametrize('status', (Status.OK, Status.NOT_FOUND))
@@ -283,19 +294,16 @@ def test_error_status_subclass_and_unknown() -> None:
     assert error_status(RuntimeError()) == Status.ERROR
 
 
-def test_exists_from_meta() -> None:
-    assert exists_from_meta({'exists': True})
-    assert not exists_from_meta({'exists': False})
-    for meta in ({}, {'exists': 'yes'}):
-        with pytest.raises(EndpointProtocolError, match='Malformed EXISTS'):
-            exists_from_meta(meta)
-
-
 @pytest.mark.parametrize(
     ('meta', 'data'),
-    (({}, b''), ({'key': 'k'}, b''), ({}, b'data'), ({'key': 'k'}, b'data')),
+    (
+        (b'', b''),
+        (b'{"key":"k"}', b''),
+        (b'', b'data'),
+        (b'{"key":"k"}', b'data'),
+    ),
 )
-def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
+def test_message_reader(meta: bytes, data: bytes) -> None:
     message = Message(Op.SET, meta, data, request_id=7)
     buffer = message.pack_head() + data
     reader = MessageReader()
@@ -314,7 +322,7 @@ def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
 
 def test_message_reader_max_data_size() -> None:
     reader = MessageReader(max_data_size=3)
-    buffer = Message(Op.SET, {'key': 'k'}, request_id=3).pack_head(4)
+    buffer = Message(Op.SET, b'{"key":"k"}', request_id=3).pack_head(4)
     reader.feed(buffer[: Header.SIZE])
     with pytest.raises(ObjectSizeExceededError, match='4 bytes'):
         reader.feed(buffer[Header.SIZE :])
