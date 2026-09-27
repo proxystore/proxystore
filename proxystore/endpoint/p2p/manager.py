@@ -199,9 +199,9 @@ class PeerOptions:
     """Options of the connections of a peer manager to peers.
 
     Attributes:
-        preset: iroh preset used to configure discovery and relays. `None`
-            uses `iroh.preset_n0()` which uses n0's public relays and DNS
-            discovery.
+        preset: iroh preset used to configure discovery and relays.
+            Defaults to `iroh.preset_n0()` which uses n0's public relays and
+            DNS discovery.
         relay_mode: Relay mode which overrides the relays of the preset or
             `None` to use the relays of the preset.
         bind_addr: Address to bind to (e.g., `"127.0.0.1:0"`) or `None` to
@@ -212,7 +212,7 @@ class PeerOptions:
             the endpoint does not wait (e.g., because relays are disabled).
     """
 
-    preset: iroh.Preset | None = None
+    preset: iroh.Preset = dataclasses.field(default_factory=iroh.preset_n0)
     relay_mode: iroh.RelayMode | None = None
     bind_addr: str | None = None
     connect_timeout: float = 30
@@ -428,11 +428,7 @@ class PeerManager:
         options = self._options
         self._endpoint = await iroh.Endpoint.bind(
             iroh.EndpointOptions(
-                preset=(
-                    iroh.preset_n0()
-                    if options.preset is None
-                    else options.preset
-                ),
+                preset=options.preset,
                 secret_key=self._secret_key.to_bytes(),
                 alpns=[ALPN],
                 relay_mode=options.relay_mode,
@@ -498,35 +494,52 @@ class PeerManager:
                 'the endpoint with "proxystore-endpoint peers add".',
             )
 
-        for attempt in range(2):
-            connection, fresh = await self._get_connection(peer_id)
+        connection, fresh = await self._get_connection(peer_id)
+        if not fresh:
             try:
-                response = await self._exchange(connection.connection, request)
-                connection.report_path(self.peer_name(peer_id))
-                return response
-            except iroh.IrohError as e:
-                reason = connection.connection.close_reason()
-                self._drop_preferred(connection)
-                if reason is not None and _closed_with(
-                    reason,
-                    CloseCode.NOT_ALLOWED,
-                ):
-                    raise PeerNotAllowedError(
-                        f'Peer {peer_id} refused the connection because '
-                        'this endpoint is not in its allowlist of peers.',
-                    ) from None
+                return await self._send(connection, request)
+            except PeerUnavailableError as e:
                 # A cached connection may have been closed (e.g., because
                 # the peer restarted) so retry once with a new connection.
-                if fresh or attempt > 0:
-                    raise PeerUnavailableError(
-                        f'Request to peer {peer_id} failed: {_message(e)}',
-                    ) from None
                 logger.debug(
                     'Retrying request to %s with a new connection: %s',
                     self.peer_name(peer_id),
-                    _message(e),
+                    e,
                 )
-        raise AssertionError('Unreachable.')
+            connection, _ = await self._get_connection(peer_id)
+        return await self._send(connection, request)
+
+    async def _send(
+        self,
+        connection: PeerConnection,
+        request: Message,
+    ) -> Message:
+        """Send a request on a connection and wait for the response.
+
+        Raises:
+            PeerNotAllowedError: If the peer closed the connection because
+                this endpoint is not allowed.
+            PeerUnavailableError: If the request fails.
+        """
+        peer_id = connection.peer_id
+        try:
+            response = await self._exchange(connection.connection, request)
+        except iroh.IrohError as e:
+            self._drop_preferred(connection)
+            reason = connection.connection.close_reason()
+            if reason is not None and _closed_with(
+                reason,
+                CloseCode.NOT_ALLOWED,
+            ):
+                raise PeerNotAllowedError(
+                    f'Peer {peer_id} refused the connection because '
+                    'this endpoint is not in its allowlist of peers.',
+                ) from None
+            raise PeerUnavailableError(
+                f'Request to peer {peer_id} failed: {e.message()}',
+            ) from None
+        connection.report_path(self.peer_name(peer_id))
+        return response
 
     async def _exchange(
         self,
@@ -637,7 +650,7 @@ class PeerManager:
             ) from None
         except iroh.IrohError as e:
             raise PeerUnavailableError(
-                f'Failed to connect to peer {peer_id}: {_message(e)}',
+                f'Failed to connect to peer {peer_id}: {e.message()}',
             ) from None
 
     async def _remember_addr(self, peer_id: EndpointId) -> None:
@@ -746,7 +759,7 @@ class PeerManager:
         except iroh.IrohError as e:
             logger.debug(
                 'Failed to accept connection: %s',
-                _message(e),
+                e.message(),
             )
             return
 
@@ -827,7 +840,7 @@ class PeerManager:
             logger.debug(
                 'Stream from %s failed: %s',
                 self.peer_name(peer_id),
-                _message(e),
+                e.message(),
             )
 
 
@@ -870,7 +883,3 @@ def _closed_with(reason: str, code: CloseCode) -> bool:
     # The bindings only expose the reason a connection was closed as a string
     # (e.g., "closed by peer: not allowed (code 1)").
     return reason.endswith(f'(code {int(code)})')
-
-
-def _message(error: iroh.IrohError) -> str:
-    return error.message()
