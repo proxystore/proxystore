@@ -51,7 +51,6 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
@@ -414,20 +413,16 @@ class EndpointClient:
         # Request IDs are in the range [1, 2^32 - 1] because 0 is reserved
         # for handshake messages.
         self._next_request_id = request_id % _MAX_REQUEST_ID + 1
-        message = pack_message(
-            op,
-            request.to_meta(),
-            data_len,
-            request_id=request_id,
-        )
+        message = Message(op, request.to_meta(), request_id=request_id)
+        head = message.pack_head(data_len)
 
         try:
             if payload is None:
-                self._socket.sendall(message)
+                self._socket.sendall(head)
             elif data_len < _COALESCE_THRESHOLD:
-                self._socket.sendall(message + payload)
+                self._socket.sendall(head + payload)
             else:
-                self._socket.sendall(message)
+                self._socket.sendall(head)
                 self._socket.sendall(payload)
 
             response = _recv_message(self._socket)
@@ -517,7 +512,9 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
 
 def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
     hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
-    sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello.to_meta()))
+    sock.sendall(
+        Preamble().pack() + Message(Op.HELLO, hello.to_meta()).pack_head()
+    )
 
     preamble = _recv_exactly(sock, Preamble.SIZE)
     if preamble.startswith(b'HTTP/'):
@@ -553,7 +550,7 @@ def _handshake(sock: socket.socket, token: EndpointToken) -> EndpointInfo:
         )
 
     proof = token.proof('client', hello.nonce, challenge.nonce)
-    sock.sendall(pack_message(Op.AUTH, Auth(proof).to_meta()))
+    sock.sendall(Message(Op.AUTH, Auth(proof).to_meta()).pack_head())
 
     return EndpointInfo.from_meta(_recv_handshake_message(sock))
 

@@ -492,19 +492,23 @@ class Message:
         """
         return cls.error(error_status(error), str(error))
 
-    def pack_head(self) -> bytes:
+    def pack_head(self, data_len: int | None = None) -> bytes:
         """Pack the header and metadata of the message.
 
         The data is not included so it can be sent separately without being
-        copied (see
-        [`pack_message()`][proxystore.endpoint.protocol.pack_message]).
+        copied.
+
+        Args:
+            data_len: Length in bytes of the data sent after the head.
+                Defaults to the length of
+                [`data`][proxystore.endpoint.protocol.Message]. Set this when
+                the data is not stored in the message (e.g., a view of a
+                buffer sent by a client).
         """
-        return pack_message(
-            self.code,
-            self.meta,
-            len(self.data),
-            request_id=self.request_id,
-        )
+        meta = encode_meta(self.meta) if len(self.meta) > 0 else b''
+        data_len = len(self.data) if data_len is None else data_len
+        header = Header(self.code, 0, self.request_id, len(meta), data_len)
+        return header.pack() + meta
 
 
 def error_status(error: BaseException) -> Status:
@@ -664,30 +668,6 @@ def _get_versions(meta: dict[str, Any], message: type) -> Versions:
         proxystore=_get(meta, 'proxystore', str, message),
         python=_get(meta, 'python', str, message),
     )
-
-
-def pack_message(
-    code: int,
-    meta: dict[str, Any] | None = None,
-    data_len: int = 0,
-    *,
-    request_id: int = 0,
-) -> bytes:
-    """Pack the header and metadata of a message.
-
-    The data (if any) is not included so it can be sent separately without
-    being copied.
-
-    Args:
-        code: Op or status code.
-        meta: Metadata to include in the message.
-        data_len: Length in bytes of the data that will follow.
-        request_id: ID of the request (see
-            [`Header`][proxystore.endpoint.protocol.Header]).
-    """
-    meta_bytes = b'' if meta is None else encode_meta(meta)
-    header = Header(code, 0, request_id, len(meta_bytes), data_len)
-    return header.pack() + meta_bytes
 
 
 def encode_meta(meta: dict[str, Any]) -> bytes:

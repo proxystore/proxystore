@@ -32,8 +32,8 @@ from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
@@ -149,7 +149,7 @@ async def test_client_wrong_token(server: _Server) -> None:
 def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     client_nonce = os.urandom(32)
     hello = Hello(client_nonce, Versions.current()).to_meta()
-    sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
+    sock.sendall(Preamble().pack() + Message(Op.HELLO, hello).pack_head())
     assert (
         Preamble.unpack(bytes(_recv_exactly(sock, Preamble.SIZE))).version == 1
     )
@@ -167,7 +167,7 @@ async def test_server_rejects_bad_proof(server: _Server) -> None:
                 client_nonce,
                 bytes.fromhex(meta['nonce']),
             )
-            sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
+            sock.sendall(Message(Op.AUTH, {'proof': proof.hex()}).pack_head())
             assert _recv_message(sock).code == Status.UNAUTHORIZED
             assert _is_closed(sock)
 
@@ -179,7 +179,9 @@ async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
             _, meta = _raw_hello(sock)
-            sock.sendall(pack_message(Op.AUTH, {'proof': meta['proof']}))
+            sock.sendall(
+                Message(Op.AUTH, {'proof': meta['proof']}).pack_head()
+            )
             assert _recv_message(sock).code == Status.UNAUTHORIZED
 
     await asyncio.to_thread(_run)
@@ -189,7 +191,7 @@ async def test_protocol_version_mismatch(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
             # The HELLO of a different protocol version is never read
-            hello = pack_message(Op.HELLO, {'future': 'format'})
+            hello = Message(Op.HELLO, {'future': 'format'}).pack_head()
             sock.sendall(Preamble(PROTOCOL_VERSION + 1).pack() + hello)
             preamble = _recv_exactly(sock, Preamble.SIZE)
             assert Preamble.unpack(bytes(preamble)).version == PROTOCOL_VERSION
@@ -204,24 +206,21 @@ async def test_protocol_version_mismatch(server: _Server) -> None:
         # Bad magic
         b'XXXX\x00\x01',
         # First message is not HELLO
-        Preamble().pack() + pack_message(Op.AUTH, {'proof': '00'}),
+        Preamble().pack() + Message(Op.AUTH, {'proof': '00'}).pack_head(),
         # HELLO is missing the nonce
-        Preamble().pack() + pack_message(Op.HELLO, {}),
+        Preamble().pack() + Message(Op.HELLO, {}).pack_head(),
         # HELLO has malformed metadata
         Preamble().pack() + Header(Op.HELLO, 0, 0, 2, 0).pack() + b'[]',
         # HELLO nonce is too short
         Preamble().pack()
-        + pack_message(
-            Op.HELLO,
-            Hello(os.urandom(16), Versions.current()).to_meta(),
-        ),
+        + Message(
+            Op.HELLO, Hello(os.urandom(16), Versions.current()).to_meta()
+        ).pack_head(),
         # HELLO contains data
         Preamble().pack()
-        + pack_message(
-            Op.HELLO,
-            Hello(os.urandom(32), Versions.current()).to_meta(),
-            data_len=1,
-        )
+        + Message(
+            Op.HELLO, Hello(os.urandom(32), Versions.current()).to_meta()
+        ).pack_head(1)
         + b'x',
     ),
 )
@@ -241,7 +240,7 @@ async def test_bad_auth_message_closes_connection(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
             _raw_hello(sock)
-            sock.sendall(pack_message(Op.GET, {'key': 'key'}))
+            sock.sendall(Message(Op.GET, {'key': 'key'}).pack_head())
             assert _is_closed(sock)
 
     await asyncio.to_thread(_run)
@@ -274,18 +273,18 @@ async def _raw_request(
 async def test_bad_requests(server: _Server) -> None:
     client = await _connect(server)
 
-    code, meta = await _raw_request(client, pack_message(Op.GET, {}))
+    code, meta = await _raw_request(client, Message(Op.GET, {}).pack_head())
     assert code == Status.BAD_REQUEST
     assert "invalid 'key'" in meta['error']
 
     request = Request('key').to_meta()
-    code, meta = await _raw_request(client, pack_message(99, request))
+    code, meta = await _raw_request(client, Message(99, request).pack_head())
     assert code == Status.BAD_REQUEST
     assert 'unknown op' in meta['error']
 
     code, meta = await _raw_request(
         client,
-        pack_message(Op.GET, {'key': 'key', 'target': 'not-an-id'}),
+        Message(Op.GET, {'key': 'key', 'target': 'not-an-id'}).pack_head(),
     )
     assert code == Status.BAD_REQUEST
     assert "invalid 'target'" in meta['error']
@@ -325,7 +324,7 @@ async def test_data_too_large(server: _Server) -> None:
     # the connection because it did not read the data
     code, meta = await _raw_request(
         client,
-        pack_message(Op.SET, {'key': 'key'}, data_len=MAX_OBJECT_SIZE + 1),
+        Message(Op.SET, {'key': 'key'}).pack_head(MAX_OBJECT_SIZE + 1),
     )
     assert code == Status.TOO_LARGE
     assert 'exceeds the maximum' in meta['error']
@@ -339,10 +338,8 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
     def _run() -> tuple[int, dict[str, Any]]:
         # Unread data in the endpoint's receive buffer must not cause the
         # connection to be reset before the client reads the reply
-        message = pack_message(
-            Op.SET,
-            {'key': 'key'},
-            data_len=MAX_OBJECT_SIZE + 1,
+        message = Message(Op.SET, {'key': 'key'}).pack_head(
+            MAX_OBJECT_SIZE + 1
         )
         client._socket.sendall(message + randbytes(1_000_000))
         response = _recv_message(client._socket)
@@ -619,7 +616,7 @@ def _raw_handshake(server: _Server, versions: Versions) -> None:
     with _raw_socket(server) as sock:
         client_nonce = os.urandom(32)
         hello = Hello(client_nonce, versions).to_meta()
-        sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
+        sock.sendall(Preamble().pack() + Message(Op.HELLO, hello).pack_head())
         _recv_exactly(sock, Preamble.SIZE)
         challenge = _recv_message(sock)
         proof = server.token.proof(
@@ -627,7 +624,7 @@ def _raw_handshake(server: _Server, versions: Versions) -> None:
             client_nonce,
             bytes.fromhex(challenge.meta['nonce']),
         )
-        sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
+        sock.sendall(Message(Op.AUTH, {'proof': proof.hex()}).pack_head())
         assert _recv_message(sock).code == Status.OK
 
 
@@ -734,7 +731,7 @@ async def test_ping_malformed(server: _Server) -> None:
     # Reuse the authenticated connection of the client to send a raw message
     await asyncio.to_thread(
         client._socket.sendall,
-        pack_message(Op.PING, {'key': None, 'target': 42}),
+        Message(Op.PING, {'key': None, 'target': 42}).pack_head(),
     )
     response = await asyncio.to_thread(_recv_message, client._socket)
     assert response.code == Status.BAD_REQUEST

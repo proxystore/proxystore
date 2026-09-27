@@ -29,7 +29,6 @@ from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
@@ -58,7 +57,7 @@ def test_preamble_bad_magic() -> None:
 
 def test_message_round_trip() -> None:
     meta = {'key': 'abc', 'target': None}
-    message = pack_message(Op.SET, meta, data_len=100)
+    message = Message(Op.SET, meta).pack_head(100)
 
     header = Header.unpack(message[: Header.SIZE])
     assert header == Header(Op.SET, 0, 0, len(encode_meta(meta)), 100)
@@ -66,7 +65,7 @@ def test_message_round_trip() -> None:
 
 
 def test_message_no_meta() -> None:
-    message = pack_message(Op.GET)
+    message = Message(Op.GET).pack_head()
     header = Header.unpack(message)
     assert header.meta_len == 0
     assert header.data_len == 0
@@ -315,7 +314,7 @@ def test_message_reader(meta: dict[str, Any], data: bytes) -> None:
 
 def test_message_reader_max_data_size() -> None:
     reader = MessageReader(max_data_size=3)
-    buffer = pack_message(Op.SET, {'key': 'k'}, 4, request_id=3)
+    buffer = Message(Op.SET, {'key': 'k'}, request_id=3).pack_head(4)
     reader.feed(buffer[: Header.SIZE])
     with pytest.raises(ObjectSizeExceededError, match='4 bytes'):
         reader.feed(buffer[Header.SIZE :])
@@ -332,7 +331,7 @@ def test_message_reader_errors() -> None:
         _ = reader.message
     with pytest.raises(ValueError, match='Expected'):
         reader.feed(b'x')
-    reader.feed(pack_message(Status.OK))
+    reader.feed(Message(Status.OK).pack_head())
     assert reader.done
     with pytest.raises(RuntimeError, match='already been read'):
         reader.feed(b'')
