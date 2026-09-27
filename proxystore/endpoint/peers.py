@@ -302,11 +302,12 @@ class Allowlist:
         else:
             try:
                 self._peers = Peers(self.path).read()
-            except ValueError:
-                logger.exception(
+            except ValueError as e:
+                logger.error(
                     'Failed to load peer allowlist from %s. All peers will '
-                    'be denied until the file is fixed',
+                    'be denied until the file is fixed: %s',
                     self.path,
+                    e,
                 )
                 self._peers = PeersConfig()
         current = set(self._peers.peers.values())

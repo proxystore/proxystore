@@ -159,11 +159,11 @@ def serve(endpoint_dir: EndpointDir, *, use_uvloop: bool = True) -> None:
             uvloop.run(_serve_async(endpoint_dir))
         else:
             asyncio.run(_serve_async(endpoint_dir))
-    except Exception as e:
+    except Exception:
         # Intercept exception so we can log it in the case that the endpoint
         # is running as a daemon process. Otherwise the user will never see
         # the exception.
-        logger.exception('Caught unhandled exception: %r', e)
+        logger.exception('Endpoint failed with an unhandled exception')
         raise
     except KeyboardInterrupt:  # pragma: no cover
         # SIGINT is handled by _serve_async once the event loop is running,

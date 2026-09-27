@@ -289,7 +289,7 @@ class Endpoint:
             host,
             config.port,
         )
-        logger.info('Config: %s', config)
+        logger.info('Config: %s', config.model_dump_json())
 
     def _create_storage(self, config: EndpointConfig) -> Storage:
         if self._storage is not None:
