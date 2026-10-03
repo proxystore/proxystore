@@ -387,10 +387,7 @@ def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
 
 @pytest.mark.parametrize('populate_target', (True, False))
 def test_default_populate_target(populate_target: bool) -> None:
-    with Store(
-        LocalConnector(),
-        populate_target=populate_target,
-    ) as store:
+    with Store(LocalConnector(), populate_target=populate_target) as store:
         proxy = store.proxy('value')
         assert is_resolved(proxy) == populate_target
 
@@ -403,9 +400,7 @@ def test_default_populate_target(populate_target: bool) -> None:
 
 @pytest.mark.parametrize('populate_target', (True, False))
 def test_proxy_already_serialized_object(populate_target: bool) -> None:
-    with Store(
-        LocalConnector(),
-    ) as store:
+    with Store(LocalConnector()) as store:
         value = [1, 2, 3]
         value_bytes = pickle.dumps(value)
         value_proxy = store.proxy(

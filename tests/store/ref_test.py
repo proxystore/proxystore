@@ -34,10 +34,7 @@ T = TypeVar('T')
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
-    with Store(
-        FileConnector(str(tmp_path)),
-        cache_size=0,
-    ) as store:
+    with Store(FileConnector(str(tmp_path)), cache_size=0) as store:
         yield store
         if not store_is_empty(store):  # pragma: no cover
             raise RuntimeError('Test left objects in the store.')

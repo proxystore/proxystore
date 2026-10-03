@@ -28,9 +28,7 @@ def test_get_key_from_proxy_not_created_by_store() -> None:
 
 
 def test_async_resolve() -> None:
-    with (
-        Store(LocalConnector(), populate_target=False) as store,
-    ):
+    with Store(LocalConnector(), populate_target=False) as store:
         value = 'value'
         p = store.proxy(value)
 
