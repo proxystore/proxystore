@@ -333,8 +333,10 @@ async def test_connector_endpoint_restart(
         connector = await asyncio.to_thread(
             EndpointConnector,
             [config.id],
-            proxystore_dir=str(tmp_path),
+            proxystore_dir=tmp_path,
         )
+        # Paths are converted to str so the config is serializable.
+        assert connector.config()['proxystore_dir'] == str(tmp_path)
         key = await asyncio.to_thread(connector.put, b'value')
 
     # The idle connection in the pool was closed by the endpoint and the

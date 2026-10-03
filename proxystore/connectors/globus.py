@@ -73,21 +73,21 @@ class GlobusEndpoint:
         self,
         uuid: str,
         endpoint_path: str,
-        local_path: str | None,
+        local_path: str | os.PathLike[str],
         host_regex: str | Pattern[str],
     ) -> None:
         if not isinstance(uuid, str):
             raise TypeError('uuid must be a str.')
         if not isinstance(endpoint_path, str):
             raise TypeError('endpoint_path must be a str.')
-        if not isinstance(local_path, str):
-            raise TypeError('local_path must be a str.')
+        if not isinstance(local_path, (str, os.PathLike)):
+            raise TypeError('local_path must be a str or os.PathLike.')
         if not isinstance(host_regex, (str, Pattern)):
             raise TypeError('host_regex must be a str or re.Pattern.')
 
         self.uuid = uuid
         self.endpoint_path = endpoint_path
-        self.local_path = local_path
+        self.local_path = os.fspath(local_path)
         self.host_regex = host_regex
 
     def __eq__(self, endpoint: object) -> bool:

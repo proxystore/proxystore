@@ -45,7 +45,7 @@ class FileConnector:
 
     def __init__(
         self,
-        store_dir: str,
+        store_dir: str | os.PathLike[str],
         *,
         clear: bool = True,
         buffering: int = -1,

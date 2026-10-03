@@ -99,7 +99,7 @@ class EndpointConnector:
     def __init__(
         self,
         endpoints: Sequence[str] | None = None,
-        proxystore_dir: str | None = None,
+        proxystore_dir: str | os.PathLike[str] | None = None,
         reconnect_timeout: float = 5,
     ) -> None:
         if endpoints is not None and len(endpoints) == 0:
@@ -109,7 +109,10 @@ class EndpointConnector:
             if endpoints is None
             else [EndpointId.from_str(e) for e in endpoints]
         )
-        self.proxystore_dir = proxystore_dir
+        # Stored as a str so the config is serializable (e.g., to TOML).
+        self.proxystore_dir = (
+            None if proxystore_dir is None else os.fspath(proxystore_dir)
+        )
         self.reconnect_timeout = reconnect_timeout
 
         home = (

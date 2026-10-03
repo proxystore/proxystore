@@ -51,3 +51,11 @@ def test_paths_work_after_cwd_change(tmp_path: pathlib.Path) -> None:
         connector.close()
 
     os.chdir(current)
+
+
+def test_store_dir_path(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    with FileConnector(store_dir) as connector:
+        assert os.path.isdir(store_dir)
+        # Paths are converted to str so the config is serializable.
+        assert connector.config()['store_dir'] == str(store_dir)
