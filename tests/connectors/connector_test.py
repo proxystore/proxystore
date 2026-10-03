@@ -4,6 +4,7 @@ from typing import Any
 
 from proxystore.connectors.protocols import Connector
 from proxystore.connectors.protocols import DeferrableConnector
+from proxystore.store.base import Store
 
 
 def test_connector_repr(connectors: Connector[Any]) -> None:
@@ -48,6 +49,14 @@ def test_connector_config(connectors: Connector[Any]) -> None:
 
     assert isinstance(new_connector, Connector)
     assert type(connector) is type(new_connector)
+
+
+def test_connector_store_config(connectors: Connector[Any]) -> None:
+    # The store recreates the connector from the store config when a proxy
+    # is resolved in another process.
+    store = Store('test-connector-store-config', connectors)
+    new_store = Store.from_config(store.config())
+    assert type(new_store.connector) is type(connectors)
 
 
 def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:

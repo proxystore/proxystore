@@ -51,9 +51,10 @@ class ConnectorConfig(BaseModel):
             [`Connector`][proxystore.connectors.protocols.Connector] type.
             E.g., `'file'` or `'FileConnector'` are valid shortcuts for
             `'proxystore.connectors.file.FileConnector'`.
-        options: Dictionary of keyword arguments to pass to the
-            [`Connector`][proxystore.connectors.protocols.Connector]
-            constructor.
+        options: Connector configuration passed to
+            [`Connector.from_config()`][proxystore.connectors.protocols.Connector.from_config].
+            For the builtin connectors, these are the keyword arguments
+            of the constructor.
     """
 
     model_config = ConfigDict(extra='forbid')
@@ -102,12 +103,18 @@ class ConnectorConfig(BaseModel):
     def get_connector(self) -> Connector[Any]:
         """Get the connector specified by the configuration.
 
+        The connector is created with the
+        [`from_config()`][proxystore.connectors.protocols.Connector.from_config]
+        method of the connector type so `options` must be the configuration
+        format returned by
+        [`config()`][proxystore.connectors.protocols.Connector.config].
+
         Returns:
             A [`Connector`][proxystore.connectors.protocols.Connector] \
             instance.
         """
         connector_type = self.get_connector_type()
-        return connector_type(**self.options)
+        return connector_type.from_config(self.options)
 
 
 class StoreConfig(BaseModel):
