@@ -1755,34 +1755,6 @@
   
   
     <li class="md-nav__item">
-      <a href="commands/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    commands
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="config/" class="md-nav__link">
         
   
@@ -1819,6 +1791,34 @@
     
   
     directory
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="dispatch/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    dispatch
   
 
     
@@ -1895,14 +1895,14 @@
   
   
     <li class="md-nav__item">
-      <a href="protocol/" class="md-nav__link">
+      <a href="files/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    protocol
+    files
   
 
     
@@ -1923,14 +1923,249 @@
   
   
     <li class="md-nav__item">
-      <a href="serve/" class="md-nav__link">
+      <a href="identity/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    serve
+    identity
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_1_3_11" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="p2p/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    p2p
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_1_3_11" id="__nav_4_1_3_11_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_1_3_11_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_1_3_11">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    p2p
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="p2p/addrs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    addrs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="p2p/bindings/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    bindings
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="p2p/manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    manager
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="peers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    peers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    protocol
   
 
     
@@ -1987,34 +2222,6 @@
     
   
     storage
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="warnings/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    warnings
   
 
     
@@ -3762,6 +3969,21 @@
         <p>Endpoints for direct, cross-site communication.</p>
 
 
+<details class="warning" open>
+  <summary>Warning</summary>
+  <p>The Python interface of this package is an internal implementation
+detail which may change between releases without notice. The modules are
+documented for development. Use endpoints through the
+<a href="../cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a> CLI and the
+<a class="autorefs autorefs-internal" title="            EndpointConnector" href="../connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>,
+which raises an
+<a class="autorefs autorefs-internal" title="            EndpointConnectorError" href="../connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnectorError"><code>EndpointConnectorError</code></a>
+and warns with a
+<a class="autorefs autorefs-internal" title="            VersionMismatchWarning" href="../warnings/#proxystore.warnings.VersionMismatchWarning"><code>VersionMismatchWarning</code></a>.
+The formats of the files and protocols of endpoints are versioned (see
+the <a href="../../guides/endpoints/#version-compatibility">Endpoints Guide</a>).</p>
+</details>
+
 <details class="note" open>
   <summary>Note</summary>
   <p>Please refer to the <a href="../../guides/endpoints/">Endpoints Guide</a> for an
@@ -3771,7 +3993,40 @@ stores with peering capabilities. Endpoints enable peer-to-peer data transfer
 between clients behind different NATs. See the
 <a href="../cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a> CLI reference
 to start your own endpoints.</p>
+<p>The package is organized as follows:</p>
+<ul>
+<li>Files shared by endpoints and clients:
+  <a class="autorefs autorefs-internal" href="directory/#proxystore.endpoint.directory"><code>directory</code></a> (creating, finding, and
+  managing endpoints and the files in their directories),
+  <a class="autorefs autorefs-internal" href="config/#proxystore.endpoint.config"><code>config</code></a> (configuration),
+  <a class="autorefs autorefs-internal" href="identity/#proxystore.endpoint.identity"><code>identity</code></a> (endpoint IDs and secret keys),
+  <a class="autorefs autorefs-internal" href="peers/#proxystore.endpoint.peers"><code>peers</code></a> (the peers an endpoint communicates
+  with), and <a class="autorefs autorefs-internal" href="files/#proxystore.endpoint.files"><code>files</code></a> (reading and writing
+  files).</li>
+<li>Running endpoints: <a class="autorefs autorefs-internal" href="endpoint/#proxystore.endpoint.endpoint"><code>endpoint</code></a> (run an
+  endpoint), <a class="autorefs autorefs-internal" href="process/#proxystore.endpoint.process"><code>process</code></a> (run, start, and stop
+  endpoint processes), <a class="autorefs autorefs-internal" href="storage/#proxystore.endpoint.storage"><code>storage</code></a> (storage of
+  objects), and <a class="autorefs autorefs-internal" href="cli/#proxystore.endpoint.cli"><code>cli</code></a> (the implementation of the
+  CLI).</li>
+<li>Communication: <a class="autorefs autorefs-internal" href="client/#proxystore.endpoint.client"><code>client</code></a> (connect to a
+  running endpoint), <a class="autorefs autorefs-internal" href="protocol/#proxystore.endpoint.protocol"><code>protocol</code></a> (the wire
+  protocol), <a class="autorefs autorefs-internal" href="auth/#proxystore.endpoint.auth"><code>auth</code></a> (client authentication),
+  <a class="autorefs autorefs-internal" href="server/#proxystore.endpoint.server"><code>server</code></a> (the server which accepts client
+  connections), <a class="autorefs autorefs-internal" href="dispatch/#proxystore.endpoint.dispatch"><code>dispatch</code></a> (handling
+  requests), and the <a class="autorefs autorefs-internal" href="p2p/#proxystore.endpoint.p2p"><code>p2p</code></a> package
+  (communication with peers).</li>
+<li>Errors: <a class="autorefs autorefs-internal" href="exceptions/#proxystore.endpoint.exceptions"><code>exceptions</code></a> (errors raised by
+  endpoints and their clients).</li>
+</ul>
 
+
+<details class="note" open>
+  <summary>Note</summary>
+  <p>Endpoints and their clients (e.g., the
+<a class="autorefs autorefs-internal" title="            EndpointConnector" href="../connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>)
+require the <code>endpoints</code> extra. Clients and endpoints share the ProxyStore
+home directory so they are expected to share a Python environment too.</p>
+</details>
 
 
 

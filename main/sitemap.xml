@@ -105,15 +105,15 @@
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
-         <loc>https://docs.proxystore.dev/latest/api/endpoint/commands/</loc>
-         <lastmod>2026-10-03</lastmod>
-    </url>
-    <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/config/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
          <loc>https://docs.proxystore.dev/latest/api/endpoint/directory/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/dispatch/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
@@ -125,11 +125,23 @@
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
-         <loc>https://docs.proxystore.dev/latest/api/endpoint/protocol/</loc>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/files/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
-         <loc>https://docs.proxystore.dev/latest/api/endpoint/serve/</loc>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/identity/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/peers/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/process/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/protocol/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
@@ -141,7 +153,19 @@
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
-         <loc>https://docs.proxystore.dev/latest/api/endpoint/warnings/</loc>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/p2p/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/p2p/addrs/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/p2p/bindings/</loc>
+         <lastmod>2026-10-03</lastmod>
+    </url>
+    <url>
+         <loc>https://docs.proxystore.dev/latest/api/endpoint/p2p/manager/</loc>
          <lastmod>2026-10-03</lastmod>
     </url>
     <url>
