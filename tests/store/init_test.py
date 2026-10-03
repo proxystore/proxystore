@@ -11,7 +11,10 @@ from proxystore.proxy import Proxy
 from proxystore.store import get_or_create_store
 from proxystore.store import get_store
 from proxystore.store.base import Store
+from proxystore.store.exceptions import NonProxiableTypeError
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.exceptions import ProxyStoreFactoryError
+from proxystore.store.exceptions import StoreError
 
 
 def _is_registered(store: Store[LocalConnector]) -> bool:
@@ -112,3 +115,8 @@ def test_same_name_proxies_resolve_with_correct_store() -> None:
         assert proxy2 == 'value2'
         assert get_store(proxy1) is store1
         assert get_store(proxy2) is store2
+
+
+def test_store_exceptions_are_store_errors() -> None:
+    assert issubclass(ProxyResolveMissingKeyError, StoreError)
+    assert issubclass(NonProxiableTypeError, StoreError)
