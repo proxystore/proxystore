@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import uuid
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
@@ -26,7 +27,6 @@ from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import NonProxiableTypeError
-from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
 from proxystore.store.future import Future
@@ -61,7 +61,7 @@ class Store(Generic[ConnectorT]):
         [`close()`][proxystore.store.base.Store.close] on exit.
 
         ```python
-        with Store('my-store', connector=...) as store:
+        with Store(...) as store:
             key = store.put('value')
             store.get(key)
         ```
@@ -77,7 +77,7 @@ class Store(Generic[ConnectorT]):
         from proxystore.store import Store
         from proxystore.connectors.local import LocalConnector
 
-        with Store('example', LocalConnector(), register=True) as store:
+        with Store(LocalConnector()) as store:
             data = [1, 2, 3]
             data_bytes = pickle.dumps(data)
 
@@ -102,6 +102,15 @@ class Store(Generic[ConnectorT]):
         This class is generally thread-safe, with cache access and connector
         operations guarded by a lock that is local to each store instance.
 
+    Note:
+        Each store has a unique [`id`][proxystore.store.base.Store.id] which
+        is used to register the store in a registry that is global to the
+        Python process. The store is registered when initialized and
+        unregistered when [`close()`][proxystore.store.base.Store.close]
+        is called. Proxies created by a store contain the configuration of
+        the store, including the ID, so the store can be found in the
+        registry, or initialized if needed, when a proxy is resolved.
+
     Warning:
         This class cannot be pickled. If you need to recreate a
         [`Store`][proxystore.store.base.Store] within another process, share
@@ -114,8 +123,9 @@ class Store(Generic[ConnectorT]):
         [`get_or_create_store()`][proxystore.store.get_or_create_store].
 
     Args:
-        name: Name of the store instance.
         connector: Connector instance to use for object storage.
+        name: Optional name of the store used in logs and error messages.
+            The name does not need to be unique.
         serializer: Optional callable which serializes the object. If `None`,
             the default serializer
             ([`serialize()`][proxystore.serialize.serialize]) will be used.
@@ -128,26 +138,26 @@ class Store(Generic[ConnectorT]):
         metrics: Enable recording operation metrics.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
-        register: Register the store instance after initialization.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
-        StoreExistsError: If `register=True` and a store with `name` already
-            exists.
     """  # noqa: E501
 
     def __init__(
         self,
-        name: str,
         connector: ConnectorT,
         *,
+        name: str | None = None,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
         metrics: bool = False,
         populate_target: bool = True,
-        register: bool = False,
+        _id: str | None = None,
     ) -> None:
+        # _id is private and only used by from_config() to recreate a store
+        # with the same ID. Users should not set it because stores with the
+        # same ID are considered the same store.
         if cache_size < 0:
             raise ValueError(
                 f'Cache size cannot be negative. Got {cache_size}.',
@@ -155,25 +165,16 @@ class Store(Generic[ConnectorT]):
 
         self.connector = connector
         self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
+        self._id = _id if _id is not None else uuid.uuid4().hex
         self._name = name
         self._metrics = StoreMetrics() if metrics else None
         self._cache_size = cache_size
         self._serializer = serializer
         self._deserializer = deserializer
         self._populate_target = populate_target
-        self._register = register
-
-        if self._register:
-            try:
-                proxystore.store.register_store(self)
-            except StoreExistsError as e:
-                e.add_note(
-                    'Consider using get_store(name) rather than '
-                    'initializing a new instance with register=True.',
-                )
-                raise
-
         self._lock = threading.RLock()
+
+        proxystore.store._register_store(self)
 
         logger.info('Initialized %s', self)
 
@@ -191,6 +192,7 @@ class Store(Generic[ConnectorT]):
     def __repr__(self) -> str:
         config = self.config().model_dump()
 
+        del config['id']
         del config['name']
         del config['connector']
 
@@ -203,12 +205,31 @@ class Store(Generic[ConnectorT]):
         config['metrics'] = self.metrics is not None
 
         params = ', '.join(f'{k}={v}' for k, v in config.items())
-        return f'Store(name={self.name}, connector={self.connector}, {params})'
+        name = '' if self.name is None else f'name={self.name}, '
+        return (
+            f'Store(id={self.id}, {name}connector={self.connector}, {params})'
+        )
 
     @property
-    def name(self) -> str:
-        """Name of this [`Store`][proxystore.store.base.Store] instance."""
+    def id(self) -> str:
+        """Unique ID of this [`Store`][proxystore.store.base.Store].
+
+        The ID is shared by stores initialized from the
+        [`config()`][proxystore.store.base.Store.config] of this store
+        (e.g., when a proxy created by this store is resolved in another
+        process).
+        """
+        return self._id
+
+    @property
+    def name(self) -> str | None:
+        """Optional name of this [`Store`][proxystore.store.base.Store]."""
         return self._name
+
+    @property
+    def _label(self) -> str:
+        # Name used in logs.
+        return self.id if self.name is None else self.name
 
     @property
     def metrics(self) -> StoreMetrics | None:
@@ -236,10 +257,7 @@ class Store(Generic[ConnectorT]):
     def close(self, *args: Any, **kwargs: Any) -> None:
         """Close the connector associated with the store.
 
-        This will (1) close the connector and (2) unregister the store if
-        this instance is registered (e.g., because `register=True` was set
-        during initialization or it was registered with
-        [`register_store()`][proxystore.store.register_store]).
+        This will (1) unregister the store and (2) close the connector.
 
         Warning:
             This method should only be called at the end of the program
@@ -252,9 +270,7 @@ class Store(Generic[ConnectorT]):
             kwargs: Keyword arguments to pass to
                 [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
         """
-        with proxystore.store._stores_lock:
-            if proxystore.store.get_store(self.name) is self:
-                proxystore.store.unregister_store(self.name)
+        proxystore.store._unregister_store(self)
         with self._lock:
             self.connector.close(*args, **kwargs)
 
@@ -272,6 +288,7 @@ class Store(Generic[ConnectorT]):
             Store configuration.
         """
         return StoreConfig(
+            id=self.id,
             name=self.name,
             connector=ConnectorConfig(
                 kind=get_object_path(type(self.connector)),
@@ -282,12 +299,21 @@ class Store(Generic[ConnectorT]):
             cache_size=self._cache_size,
             metrics=self.metrics is not None,
             populate_target=self._populate_target,
-            auto_register=self._register,
         )
 
     @classmethod
     def from_config(cls, config: StoreConfig) -> Store[Any]:
         """Create a new store instance from a configuration.
+
+        The new store has the same [`id`][proxystore.store.base.Store.id]
+        as the store which produced the configuration. If `config` does not
+        contain an ID (e.g., a configuration loaded from a TOML file),
+        a new ID is generated.
+
+        Tip:
+            Use [`get_or_create_store()`][proxystore.store.get_or_create_store]
+            to reuse a store with the same ID that already exists in this
+            process.
 
         Args:
             config: Configuration returned by `#!python .config()`.
@@ -297,14 +323,14 @@ class Store(Generic[ConnectorT]):
         """
         connector = cast(ConnectorT, config.connector.get_connector())
         return cls(
+            connector,
             name=config.name,
-            connector=connector,
             serializer=config.serializer,
             deserializer=config.deserializer,
             cache_size=config.cache_size,
             metrics=config.metrics,
             populate_target=config.populate_target,
-            register=config.auto_register,
+            _id=config.id,
         )
 
     def future(
@@ -336,7 +362,7 @@ class Store(Generic[ConnectorT]):
                 # until the remote_foo function has called set_result.
                 ...
 
-            with Store('future-example', FileConnector(...)) as store:
+            with Store(FileConnector(...)) as store:
                 future = store.future()
 
                 # The invoke_remote function invokes a provided function
@@ -418,8 +444,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.future', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): FUTURE %s in %.3f ms',
-            self.name,
+            'Store(%s): FUTURE %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -448,8 +474,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.evict', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): EVICT %s in %.3f ms',
-            self.name,
+            'Store(%s): EVICT %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -480,8 +506,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.exists', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): EXISTS %s in %.3f ms',
-            self.name,
+            'Store(%s): EXISTS %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -521,8 +547,8 @@ class Store(Generic[ConnectorT]):
                     self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
                 logger.debug(
-                    'Store(name="%s"): GET %s in %.3f ms (cached=True)',
-                    self.name,
+                    'Store(%s): GET %s in %.3f ms (cached=True)',
+                    self._label,
                     key,
                     timer.elapsed_ms,
                 )
@@ -571,8 +597,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): GET %s in %.3f ms (cached=False)',
-            self.name,
+            'Store(%s): GET %s in %.3f ms (cached=False)',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -713,8 +739,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.proxy', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): PROXY %s in %.3f ms',
-            self.name,
+            'Store(%s): PROXY %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -867,8 +893,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.proxy_batch', keys, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): PROXY_BATCH (%s items) in %.3f ms',
-            self.name,
+            'Store(%s): PROXY_BATCH (%s items) in %.3f ms',
+            self._label,
             len(proxies),
             timer.elapsed_ms,
         )
@@ -915,7 +941,7 @@ class Store(Generic[ConnectorT]):
         )
         proxy = Proxy(factory)
 
-        logger.debug('Store(name="%s"): PROXY_FROM_KEY %s', self.name, key)
+        logger.debug('Store(%s): PROXY_FROM_KEY %s', self._label, key)
 
         if lifetime is not None:
             lifetime.add_proxy(proxy)
@@ -1154,8 +1180,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.put', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): PUT %s in %.3f ms',
-            self.name,
+            'Store(%s): PUT %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )
@@ -1223,8 +1249,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.put_batch', keys, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): PUT_BATCH (%s items) in %.3f ms',
-            self.name,
+            'Store(%s): PUT_BATCH (%s items) in %.3f ms',
+            self._label,
             len(keys),
             timer.elapsed_ms,
         )
@@ -1298,8 +1324,8 @@ class Store(Generic[ConnectorT]):
             self.metrics.add_time('store.set', key, timer.elapsed_ms)
 
         logger.debug(
-            'Store(name="%s"): SET %s in %.3f ms',
-            self.name,
+            'Store(%s): SET %s in %.3f ms',
+            self._label,
             key,
             timer.elapsed_ms,
         )

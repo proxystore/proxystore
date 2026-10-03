@@ -33,23 +33,19 @@ def process(x: dict[str, str]) -> None:
     # More computation using x...
 
 
-with Store(
-    'example',
-    connector=LocalConnector(),  # (2)!
-    register=True,  # (3)!
-) as store:
+with Store(LocalConnector(), name='example') as store:  # (2)!
     x = {'hello': 'world'}
-    proxy = store.proxy(x)  # (4)!
+    proxy = store.proxy(x)  # (3)!
     assert isinstance(proxy, Proxy)
-    process(proxy)  # (5)!
+    process(proxy)  # (4)!
 ```
 
-1. `x` is resolved from the store named "example" on the first use of `x` and `x` then acts as a transparent reference to the target object (the dictionary).
+1. `x` is resolved from the store on the first use of `x` and `x` then acts as a transparent reference to the target object (the dictionary).
 2. The `Connector` defines the low-level communication method used by the `Store`. Here, the [`LocalConnector`][proxystore.connectors.local.LocalConnector] stores data in the processes memory, but other connectors are provided to remote storage and transfer services.
-3. Passing the `register=True` will call [`register_store()`][proxystore.store.register_store] automatically to register the instance globally by name.
-   This enables proxies to reuse the same store instance to improve performance.
-4. Store the object and get a proxy.
-5. Always succeeds regardless of if `proxy` is the true object or a proxy.
+   Every store is registered globally within the process by its unique ID, so proxies resolved in the same process reuse the same store instance to improve performance.
+   The optional `name` is used in logs.
+3. Store the object and get a proxy.
+4. Always succeeds regardless of if `proxy` is the true object or a proxy.
 
 ## Asynchronous Resolving
 
@@ -82,7 +78,7 @@ multiple proxies refer to the same object.
 from proxystore.store import Store
 
 # Cache size of 16 is the default
-Store('example', connector=..., cache_size=16)
+Store(..., cache_size=16)
 ```
 
 ## Transactional Guarantees

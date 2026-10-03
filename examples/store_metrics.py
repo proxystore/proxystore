@@ -11,58 +11,54 @@ import tempfile
 from pprint import pprint
 
 from proxystore.connectors.file import FileConnector
-from proxystore.store import register_store
 from proxystore.store.base import Store
 
-fp = tempfile.TemporaryDirectory()
+with (
+    tempfile.TemporaryDirectory() as tmp_dir,
+    Store(FileConnector(tmp_dir), metrics=True) as store,
+):
+    assert store.metrics is not None
 
-store = Store('example', FileConnector(fp.name), metrics=True)
-register_store(store)
-assert store.metrics is not None
+    target = list(range(100))
+    key = store.put(target)
+    store.get(key)
 
-target = list(range(100))
-key = store.put(target)
-store.get(key)
+    metrics = store.metrics.get_metrics(key)
+    assert metrics is not None
+    attrs = tuple(field.name for field in dataclasses.fields(metrics))
+    print(f'Metrics attributes: {attrs}')
+    print('Attributes:')
+    pprint(metrics.attributes)
+    print('Counters:')
+    pprint(metrics.counters)
+    print('Times:')
+    print(metrics.times)
 
-metrics = store.metrics.get_metrics(key)
-assert metrics is not None
-attrs = tuple(field.name for field in dataclasses.fields(metrics))
-print(f'Metrics attributes: {attrs}')
-print('Attributes:')
-pprint(metrics.attributes)
-print('Counters:')
-pprint(metrics.counters)
-print('Times:')
-print(metrics.times)
+    store.get(key)
+    metrics = store.metrics.get_metrics(key)
+    assert metrics is not None
+    print('Counters:')
+    pprint(metrics.counters)
+    print('Get Time:')
+    pprint(metrics.times['store.get'])
+    print(f'Access by attribute: {metrics.times["store.get"].avg_time_ms}')
 
-store.get(key)
-metrics = store.metrics.get_metrics(key)
-assert metrics is not None
-print('Counters:')
-pprint(metrics.counters)
-print('Get Time:')
-pprint(metrics.times['store.get'])
-print(f'Access by attribute: {metrics.times["store.get"].avg_time_ms}')
+    # Disable populate_target so the proxy is not already resolved
+    proxy = store.proxy(target, populate_target=False)
+    # Force proxy to resolve
+    assert proxy[0] == 0
 
-# Disable populate_target so the proxy is not already resolved
-proxy = store.proxy(target, populate_target=False)
-# Force proxy to resolve
-assert proxy[0] == 0
+    metrics = store.metrics.get_metrics(proxy)
+    assert metrics is not None
+    print('Times:')
+    print(metrics.times)
 
-metrics = store.metrics.get_metrics(proxy)
-assert metrics is not None
-print('Times:')
-print(metrics.times)
+    keys = store.put_batch(['value1', 'value2', 'value3'])
+    metrics = store.metrics.get_metrics(keys)
+    assert metrics is not None
+    print('Times:')
+    print(metrics.times)
 
-keys = store.put_batch(['value1', 'value2', 'value3'])
-metrics = store.metrics.get_metrics(keys)
-assert metrics is not None
-print('Times:')
-print(metrics.times)
-
-times = store.metrics.aggregate_times()
-print('Aggregate times:')
-pprint(times)
-
-store.close()
-fp.cleanup()
+    times = store.metrics.aggregate_times()
+    print('Aggregate times:')
+    pprint(times)

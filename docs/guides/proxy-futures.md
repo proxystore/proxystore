@@ -36,7 +36,7 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
 from proxystore.store.future import Future
 
-with Store('proxy-future-example', LocalConnector()) as store:
+with Store(LocalConnector()) as store:
     future: Future[str] = store.future()
     proxy = future.proxy()
 
@@ -100,7 +100,7 @@ def bar(data: MyData) -> None:
     compute(data)
 
 
-with Store('proxy-future-example', RedisConnector(...)) as store:
+with Store(RedisConnector(...)) as store:
     future: Future[MyData] = store.future()
 
     # The invoke_remote function will execute the function with

@@ -60,24 +60,21 @@ Objects associated with the lifetime are evicted when the lifetime is closed/end
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import ContextLifetime
 
-store = Store(...)
+with Store(...) as store:  # (1)!
+    lifetime = ContextLifetime(store)  # (2)!
 
-lifetime = ContextLifetime(store)  # (1)!
+    key = store.put('value', lifetime=lifetime)  # (3)!
+    proxy = store.proxy('value', lifetime=lifetime)  # (4)!
 
-key = store.put('value', lifetime=lifetime)  # (2)!
-proxy = store.proxy('value', lifetime=lifetime)  # (3)!
-
-lifetime.close()  # (4)!
-assert not store.exists(key)
-
-store.close()  # (5)!
+    lifetime.close()  # (5)!
+    assert not store.exists(key)
 ```
 
-1. The [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] and all its associated objects must be associated with the same [`Store`][proxystore.store.base.Store].
-2. A new key can be automatically associated with a lifetime.
-3. The target object of a proxy can be automatically associated with a lifetime.
-4. Ending a lifetime will cause all of its associated objects to be evicted.
-5. The [`Store`][proxystore.store.base.Store] should be closed after any associated lifetimes because lifetimes use the [`Store`][proxystore.store.base.Store] for cleanup.
+1. The [`Store`][proxystore.store.base.Store] should be closed after any associated lifetimes because lifetimes use the [`Store`][proxystore.store.base.Store] for cleanup.
+2. The [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] and all its associated objects must be associated with the same [`Store`][proxystore.store.base.Store].
+3. A new key can be automatically associated with a lifetime.
+4. The target object of a proxy can be automatically associated with a lifetime.
+5. Ending a lifetime will cause all of its associated objects to be evicted.
 
 The [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] can be used as a context manager.
 
@@ -85,15 +82,12 @@ The [`ContextLifetime`][proxystore.store.lifetimes.ContextLifetime] can be used 
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import ContextLifetime
 
-store = Store(...)
+with Store(...) as store:
+    with ContextLifetime(store) as lifetime:
+        key = store.put('value', lifetime=lifetime)
+        proxy = store.proxy('value', lifetime=lifetime)
 
-with ContextLifetime(store) as lifetime:
-    key = store.put('value', lifetime=lifetime)
-    proxy = store.proxy('value', lifetime=lifetime)
-
-assert not store.exists(key)
-
-store.close()
+    assert not store.exists(key)
 ```
 
 ### Leased Lifetime
@@ -137,14 +131,13 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
 from proxystore.store.lifetimes import StaticLifetime
 
-store = Store('default', LocalConnector(), register=True)  # (1)!
+store = Store(LocalConnector())  # (1)!
 
 key = store.put('value', lifetime=StaticLifetime())  # (2)!
 proxy = store.proxy('value', lifetime=StaticLifetime())  # (3)!
 ```
 
 1. The atexit handler will call `store.close()` at the end of the program.
-   Setting `register=True` is recommended to prevent another instance being created internally when a proxy is resolved.
 2. The object associated with `key` will be evicted at the end of
    the program.
 3. The object associated with `proxy` will be evicted at the end of
@@ -191,20 +184,18 @@ from proxystore.store.base import Store
 from proxystore.store.ref import borrow
 from proxystore.store.scopes import submit
 
-store = Store(...)
-proxy = store.owned_proxy([1, 2, 3])
-borrowed = borrow(proxy)  # (1)!
+with Store(...) as store:
+    proxy = store.owned_proxy([1, 2, 3])
+    borrowed = borrow(proxy)  # (1)!
 
-with ProcessPoolExecutor() as pool:
-    future: Future[int] = submit(
-        pool.submit,  # (2)!
-        args=(sum, borrowed),  # (3)!
-    )
-    assert future.result() == 6  # (4)!
+    with ProcessPoolExecutor() as pool:
+        future: Future[int] = submit(
+            pool.submit,  # (2)!
+            args=(sum, borrowed),  # (3)!
+        )
+        assert future.result() == 6  # (4)!
 
-del proxy  # (5)!
-
-store.close()
+    del proxy  # (5)!
 ```
 
 1. Borrow an [`OwnedProxy`][proxystore.store.ref.OwnedProxy] as a [`RefProxy`][proxystore.store.ref.RefProxy].

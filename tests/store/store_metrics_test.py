@@ -8,7 +8,6 @@ import pytest
 
 from proxystore.connectors.file import FileConnector
 from proxystore.serialize import serialize
-from proxystore.store import store_registration
 from proxystore.store.base import Store
 from proxystore.store.future import Future
 
@@ -20,15 +19,11 @@ def store(
     # We use FileConnector here instead of LocalConnector (as in the rest of
     # the tests) because FileConnector operations take *some* amount of time.
     path = str(tmp_path)
-    with (
-        Store(
-            'test',
-            connector=FileConnector(path),
-            metrics=True,
-            populate_target=False,
-        ) as store,
-        store_registration(store),
-    ):
+    with Store(
+        FileConnector(path),
+        metrics=True,
+        populate_target=False,
+    ) as store:
         yield store
 
 

@@ -14,7 +14,6 @@ from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyOr
 from proxystore.store import get_or_create_store
 from proxystore.store import Store
-from proxystore.store import unregister_store
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import EventBatch
@@ -142,8 +141,7 @@ class StreamConsumer(Generic[T]):
             interfaces.
 
         Args:
-            stores: Close and [unregister][proxystore.store.unregister_store]
-                the [`Store`][proxystore.store.Store] instances
+            stores: Close the [`Store`][proxystore.store.Store] instances
                 used to resolve objects consumed from the stream.
             subscriber: Close the
                 [`Subscriber`][proxystore.stream.protocols.Subscriber]
@@ -152,7 +150,6 @@ class StreamConsumer(Generic[T]):
         if stores:
             for store in self._stores.values():
                 store.close()
-                unregister_store(store)
         if subscriber:
             self.subscriber.close()
 
@@ -161,7 +158,7 @@ class StreamConsumer(Generic[T]):
             if event.topic in self._stores:
                 return self._stores[event.topic]
 
-            store = get_or_create_store(event.store_config, register=True)
+            store = get_or_create_store(event.store_config)
             self._stores[event.topic] = store
             return store
 
@@ -344,7 +341,7 @@ class StreamConsumer(Generic[T]):
             obj = store.get(key)
             if obj is None:
                 raise ValueError(
-                    f'Store(name="{store.name}") returned None for key={key}.',
+                    f'{store!r} returned None for key={key}.',
                 )
             if event.evict:
                 store.evict(key)

@@ -78,19 +78,15 @@ $ python example.py
 
 ## Using ProxyStore
 
-Now we will update our script to use ProxyStore. This takes three steps:
+Now we will update our script to use ProxyStore. This takes two steps:
 
 1. Initialize a [`Connector`][proxystore.connectors.protocols.Connector] and
    [`Store`][proxystore.store.base.Store]. The `Connector` is the interface
    to the byte-level communication channel that will be used, and the `Store`
    is the high-level interface provided by ProxyStore.
-2. Register the `Store` instance globally. This is not strictly necessary, but
-   is an optimization which enables proxies to share the same original `Store`
-   instance, because the `Store` and `Connector` can have state (e.g., caches,
-   open connections, etc.).
-3. Proxy the function inputs.
+2. Proxy the function inputs.
 
-```python linenums="1" title="example.py" hl_lines="2 3 10 14 19"
+```python linenums="1" title="example.py" hl_lines="2 3 13 17"
 from globus_compute_sdk import Executor
 from proxystore.connectors.file import FileConnector
 from proxystore.store import Store
@@ -102,38 +98,21 @@ def average(x: list[float]) -> float:
     return sum(x) / len(x)
 
 
-store = Store(
-    'my-store', FileConnector('./proxystore-cache'), register=True
-)  # (1)!
-
-with Executor(endpoint_id=ENDPOINT_UUID) as gce:
+with (
+    Store(FileConnector('./proxystore-cache')) as store,  # (1)!
+    Executor(endpoint_id=ENDPOINT_UUID) as gce,
+):
     x = list(range(1, 100000))
     p = store.proxy(x)  # (2)!
     future = gce.submit(average, p)
 
     print(future.result())
-
-store.close()  # (3)!
 ```
 
 1. Create a new store using the file system for mediated communication.
-   Register the store instance so states (e.g., caches, etc.) can be shared.
+   Using the store as a context manager closes the `Store`, cleaning up any
+   resources, when the block exits.
 2. Proxy the input data.
-3. Close the `Store` to cleanup any resources.
-
-!!! tip
-
-    The [`Store`][proxystore.store.base.Store] can also be used as a context
-    manager that will automatically clean up resources.
-
-    ```python
-    with Store('my-store', FileConnector('./proxystore-cache')) as store:
-        x = list(range(1, 100000))
-        p = store.proxy(x)
-        future = gce.submit(average, p)
-
-        print(future.result())
-    ```
 
 We can also use ProxyStore to return data via the same communication method.
 

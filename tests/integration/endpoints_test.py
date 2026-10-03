@@ -51,9 +51,9 @@ async def _peered_endpoints(
             yield configs, homes
 
 
-def _store(name: str, endpoints: Sequence[str], home: str) -> Store[Any]:
+def _store(endpoints: Sequence[str], home: str) -> Store[Any]:
     connector = EndpointConnector(endpoints, proxystore_dir=home)
-    return Store(name, connector, register=False)
+    return Store(connector)
 
 
 @pytest.mark.integration
@@ -63,8 +63,8 @@ async def test_endpoint_transfer(tmp_path: pathlib.Path) -> None:
 
         def _transfer() -> None:
             with (
-                _store('store1', endpoints, homes[0]) as store1,
-                _store('store2', endpoints, homes[1]) as store2,
+                _store(endpoints, homes[0]) as store1,
+                _store(endpoints, homes[1]) as store2,
             ):
                 # Endpoint 1 requests from endpoint 2
                 key = store2.put([1, 2, 3])

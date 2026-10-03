@@ -21,7 +21,7 @@ from proxystore.store import Store
 from proxystore.store.executor import StoreExecutor, ProxyType
 
 base_executor = ProcessPoolExecutor()
-store = Store('executor-example', FileConnector('./object-cache'))
+store = Store(FileConnector('./object-cache'))
 
 def concat(base: str, *, num: int) -> str:
     return f'{base}-{num}'
@@ -69,7 +69,7 @@ from typing import runtime_checkable
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
-from proxystore.store import get_store
+from proxystore.store import get_or_create_store
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
 from proxystore.store.types import ConnectorKeyT
@@ -106,10 +106,7 @@ class _FunctionWrapper(Generic[P, R]):
         return result
 
     def get_store(self) -> Store[Any]:
-        store = get_store(self.store_config.name)
-        if store is None:
-            store = Store.from_config(self.store_config)
-        return store
+        return get_or_create_store(self.store_config)
 
 
 def _proxy_iterable(
@@ -411,8 +408,7 @@ class StoreExecutor(Executor):
             This will close the [`Store`][proxystore.store.base.Store] passed
             to this [`StoreExecutor`][proxystore.store.executor.StoreExecutor]
             instance if `close_store=True`, but it is possible the store is
-            reinitialized again if `ownership=True` was configured and
-            `register=True` was passed to the store. Any
+            reinitialized again if `ownership=True` was configured. Any
             [`OwnedProxy`][proxystore.store.ref.OwnedProxy]
             instances returned by functions invoked through this executor that
             are still alive will evict themselves once they are garbage

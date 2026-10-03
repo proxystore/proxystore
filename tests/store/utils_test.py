@@ -7,14 +7,13 @@ from proxystore.factory import SimpleFactory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import Store
-from proxystore.store import store_registration
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.utils import get_key
 from proxystore.store.utils import resolve_async
 
 
 def test_get_key_from_proxy() -> None:
-    with Store('store', LocalConnector()) as store:
+    with Store(LocalConnector()) as store:
         key = store.put('value')
         proxy: Proxy[str] = store.proxy_from_key(key)
 
@@ -29,10 +28,7 @@ def test_get_key_from_proxy_not_created_by_store() -> None:
 
 
 def test_async_resolve() -> None:
-    with (
-        Store('store', LocalConnector(), populate_target=False) as store,
-        store_registration(store),
-    ):
+    with Store(LocalConnector(), populate_target=False) as store:
         value = 'value'
         p = store.proxy(value)
 

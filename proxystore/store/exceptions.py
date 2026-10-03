@@ -11,10 +11,6 @@ class StoreError(Exception):
     """Base exception class for store errors."""
 
 
-class StoreExistsError(StoreError):
-    """Exception raised when a store with the same name already exists."""
-
-
 class ProxyStoreFactoryError(StoreError):
     """Exception raised when a proxy was not created by a Store."""
 
@@ -26,7 +22,8 @@ class ProxyResolveMissingKeyError(Exception):
         self,
         key: base.ConnectorKeyT,
         store_type: type[base.Store[Any]],
-        store_name: str,
+        store_name: str | None,
+        store_id: str | None = None,
     ) -> None:
         """Init ProxyResolveMissingKeyError.
 
@@ -35,13 +32,20 @@ class ProxyResolveMissingKeyError(Exception):
                 the store.
             store_type: Type of store that the key could not be found in.
             store_name: Name of store that the key could not be found in.
+            store_id: ID of store that the key could not be found in.
         """
         self.key = key
         self.store_type = store_type
         self.store_name = store_name
+        self.store_id = store_id
+        store = ', '.join(
+            f'{attr}={value!r}'
+            for attr, value in (('id', store_id), ('name', store_name))
+            if value is not None
+        )
         super().__init__(
             f"Cannot resolve target object with key='{self.key}' "
-            f"from {self.store_type.__name__}(name='{self.store_name}') "
+            f'from {self.store_type.__name__}({store}) '
             'because there is no object associated with the key. This can '
             'often occur when the target object is evicted from the store '
             'while proxies of the target still exist.',

@@ -20,7 +20,6 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
-from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.executor import _FunctionWrapper
 from proxystore.store.executor import ProxyAlways
@@ -52,11 +51,7 @@ def test_default_behavior(
         base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
-    store = Store(
-        'test-default-behavior',
-        FileConnector(str(tmp_path)),
-        register=True,
-    )
+    store = Store(FileConnector(str(tmp_path)))
 
     with StoreExecutor(base_executor, store) as executor:
         assert isinstance(executor.should_proxy, ProxyNever)
@@ -95,11 +90,7 @@ def test_proxy_behavior(
         base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
-    store = Store(
-        'test-proxy-behavior',
-        FileConnector(str(tmp_path)),
-        register=True,
-    )
+    store = Store(FileConnector(str(tmp_path)))
 
     with StoreExecutor(
         base_executor,
@@ -141,11 +132,7 @@ def test_proxy_behavior(
 
 
 def test_function_wrapper() -> None:
-    with Store(
-        'test-function-wrapper',
-        LocalConnector(),
-        register=False,
-    ) as store:
+    with Store(LocalConnector()) as store:
         wrapped = _FunctionWrapper(
             power,
             store_config=store.config(),
@@ -161,8 +148,6 @@ def test_function_wrapper() -> None:
             return_owned_proxy=False,
         )
         assert wrapped(2, exp=3) == 8
-
-        unregister_store(store)
 
 
 @pytest.mark.parametrize(
@@ -215,11 +200,7 @@ class DaskLikeClient:
 
 
 def test_dask_like_client(tmp_path: pathlib.Path) -> None:
-    store = Store(
-        'test-dask-like-client',
-        FileConnector(str(tmp_path)),
-        register=True,
-    )
+    store = Store(FileConnector(str(tmp_path)))
 
     with StoreExecutor(
         DaskLikeClient(),  # type: ignore[arg-type]
@@ -253,7 +234,7 @@ class BadExecutor:
 
 
 def test_warn_unsupported_shutdown_method() -> None:
-    store = Store('test-function-wrapper', LocalConnector(), register=False)
+    store = Store(LocalConnector())
     executor = StoreExecutor(BadExecutor(), store)  # type: ignore[arg-type]
     with pytest.warns(RuntimeWarning, match='Cannot shutdown BadExecutor'):
         executor.shutdown()

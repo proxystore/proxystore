@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import proxystore.store
 from proxystore.connectors.protocols import Connector
 from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.store.base import Store
@@ -54,9 +55,14 @@ def test_connector_config(connectors: Connector[Any]) -> None:
 def test_connector_store_config(connectors: Connector[Any]) -> None:
     # The store recreates the connector from the store config when a proxy
     # is resolved in another process.
-    store = Store('test-connector-store-config', connectors)
+    store = Store(connectors)
     new_store = Store.from_config(store.config())
     assert type(new_store.connector) is type(connectors)
+
+    # Unregister rather than close the stores because closing would close
+    # the connector fixture which is shared by other tests.
+    proxystore.store._unregister_store(store)
+    proxystore.store._unregister_store(new_store)
 
 
 def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:
