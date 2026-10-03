@@ -23,6 +23,17 @@ class Connector(Protocol[KeyT]):
     a byte-level object store.
 
     Note:
+        Keys and connector configurations are included in pickled proxies,
+        which may be exchanged between processes using different versions
+        of a connector. Keys are pickled by the import path of the key type,
+        so the key type and its fields should not change. Configuration keys
+        can be added, but
+        [`from_config()`][proxystore.connectors.protocols.Connector.from_config]
+        should ignore unknown keys from newer versions, ideally with a
+        [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning],
+        as the builtin connectors do.
+
+    Note:
         Implementations of
         [`put()`][proxystore.connectors.protocols.Connector.put] and
         [`put_batch()`][proxystore.connectors.protocols.Connector.put_batch]
@@ -61,6 +72,11 @@ class Connector(Protocol[KeyT]):
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self:
         """Create a new connector instance from a configuration.
+
+        Note:
+            The builtin connectors ignore unknown keys in `config`, such as
+            options added by a newer version, with a
+            [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning].
 
         Args:
             config: Configuration returned by `#!python .config()`.

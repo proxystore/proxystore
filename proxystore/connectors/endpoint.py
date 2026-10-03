@@ -17,6 +17,7 @@ from typing import NamedTuple
 from typing import Self
 from typing import TypeVar
 
+from proxystore._compat import init_kwargs
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
@@ -214,7 +215,7 @@ class EndpointConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        return cls(**config)
+        return cls(**init_kwargs(cls, config))
 
     def _request(
         self,

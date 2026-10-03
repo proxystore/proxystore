@@ -10,6 +10,7 @@ from proxystore.store.base import Store
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
 from proxystore.utils.imports import get_object_path
+from proxystore.warnings import VersionMismatchWarning
 
 
 @pytest.mark.parametrize(
@@ -64,12 +65,13 @@ def test_connector_config_bad_kind() -> None:
         config.get_connector()
 
 
-def test_connector_config_bad_extras() -> None:
+def test_connector_config_unknown_options() -> None:
     config = ConnectorConfig(kind='local', options={'wrong_arg': True})
     assert config.options['wrong_arg']
 
-    with pytest.raises(TypeError, match='wrong_arg'):
-        config.get_connector()
+    with pytest.warns(VersionMismatchWarning, match='wrong_arg'):
+        connector = config.get_connector()
+    assert isinstance(connector, LocalConnector)
 
 
 def test_to_from_config() -> None:
