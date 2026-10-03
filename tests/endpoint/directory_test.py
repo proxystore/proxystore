@@ -8,7 +8,6 @@ import pathlib
 import stat
 import subprocess
 import sys
-import threading
 from typing import Any
 from unittest import mock
 
@@ -210,7 +209,10 @@ def test_lock(tmp_path: pathlib.Path) -> None:
     # The lock conflicts with other lock objects, even in this process
     other = endpoint_dir.lock()
     assert other.is_locked()
-    with pytest.raises(EndpointRunningError, match='already running'):
+    with (
+        mock.patch.object(EndpointLock, '_ACQUIRE_TIMEOUT', 0),
+        pytest.raises(EndpointRunningError, match='already running'),
+    ):
         other.acquire()
     assert not other.held
     with pytest.raises(RuntimeError, match='already held'):
@@ -234,11 +236,14 @@ def test_lock_concurrent_check(tmp_path: pathlib.Path) -> None:
         fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
         # Concurrent checks do not see each other as the endpoint.
         assert lock.is_locked() is False
-        # Acquiring waits for the check to finish.
-        timer = threading.Timer(0.02, fcntl.flock, (fd, fcntl.LOCK_UN))
-        timer.start()
-        lock.acquire()
-        timer.join()
+        # Acquiring is retried until the check finishes, which happens
+        # while acquire() waits to retry.
+        with mock.patch(
+            'proxystore.endpoint.directory.time.sleep',
+            side_effect=lambda _: fcntl.flock(fd, fcntl.LOCK_UN),
+        ) as sleep:
+            lock.acquire()
+        sleep.assert_called_once()
         assert lock.held
     finally:
         os.close(fd)

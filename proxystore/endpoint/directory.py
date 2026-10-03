@@ -145,7 +145,7 @@ class EndpointLock:
     # Other processes (and threads) check if the lock is held by briefly
     # holding a shared lock, so acquiring the exclusive lock is retried for
     # this long before deciding the lock is held by a running endpoint.
-    _ACQUIRE_TIMEOUT: ClassVar[float] = 0.1
+    _ACQUIRE_TIMEOUT: ClassVar[float] = 1
 
     def __init__(self, path: str) -> None:
         self.path = path
