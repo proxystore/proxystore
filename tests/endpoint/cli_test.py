@@ -20,8 +20,6 @@ from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.serve import running_endpoint
-from proxystore.p2p.nat import NatMapping
-from proxystore.p2p.nat import Result
 from testing.endpoint import copy_endpoint_dir
 from testing.utils import open_port
 
@@ -72,39 +70,10 @@ def test_version_command() -> None:
     assert result.output.strip() == f'ProxyStore v{proxystore.__version__}'
 
 
-def test_check_nat_normal(caplog) -> None:
-    caplog.set_level(logging.INFO)
-    runner = click.testing.CliRunner()
-
-    r = Result(
-        NatMapping.EndpointIndependent,
-        '192.168.1.1',
-        1234,
-        True,
-    )
-    with mock.patch(
-        'proxystore.p2p.nat.check_nat',
-        mock.AsyncMock(return_value=r),
-    ):
-        result = runner.invoke(cli, ['check-nat'])
-
-    assert result.exit_code == 0
-    assert caplog.records[1].message == (
-        'NAT Behavior:   Endpoint-independent mapping'
-    )
-    assert caplog.records[2].message == 'External IP:    192.168.1.1'
-    assert caplog.records[3].message == 'External Port:  1234'
-    assert caplog.records[4].message.startswith(
-        'NAT traversal for peer-to-peer methods (e.g., hole-punching) '
-        'is likely to work.',
-    )
-
-
 def test_configure_command(home_dir) -> None:
     name = 'my-endpoint'
     port = 4321
-    relay_server = 'ws://server:1234'
-    args = [name, '--port', str(port), '--relay-address', relay_server]
+    args = [name, '--port', str(port)]
 
     runner = click.testing.CliRunner()
     result = runner.invoke(cli, ['configure', *args])
@@ -115,7 +84,6 @@ def test_configure_command(home_dir) -> None:
     cfg = endpoint_dir.read_config()
     assert cfg.name == name
     assert cfg.port == port
-    assert cfg.relay.address == relay_server
     assert not cfg.tls
 
     result = runner.invoke(cli, ['configure', 'tls-endpoint', '--tls'])

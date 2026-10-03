@@ -8,24 +8,7 @@ from globus_sdk import TransferClient
 from globus_sdk.scopes import AuthScopes
 from globus_sdk.scopes import GCSCollectionScopes
 from globus_sdk.scopes import Scope
-from globus_sdk.scopes import StaticScopeCollection
 from globus_sdk.scopes import TransferScopes
-
-
-class _ProxyStoreRelayScopes(StaticScopeCollection):
-    resource_server = 'ebd5bbed-95e2-47cf-9c80-39e2064274bd'
-    relay_all = Scope(
-        f'https://auth.globus.org/scopes/{resource_server}/relay_all',
-    )
-
-
-ProxyStoreRelayScopes = _ProxyStoreRelayScopes()
-"""ProxyStore Relay Server scopes.
-
-Supported Scopes:
-
-* `relay_all`
-"""
 
 
 def get_all_scopes_by_resource_server(
@@ -33,8 +16,8 @@ def get_all_scopes_by_resource_server(
 ) -> dict[str, list[Scope]]:
     """Get all scopes needed by the ProxyStore library by resource server.
 
-    This returns scopes for three resource servers: Globus Auth, Globus
-    Transfer, and the ProxyStore Relay Server.
+    This returns scopes for two resource servers: Globus Auth and Globus
+    Transfer.
 
     Args:
         collections: Iterable of collection UUIDs to request consent for.
@@ -43,7 +26,6 @@ def get_all_scopes_by_resource_server(
     """
     return {
         **get_auth_scopes_by_resource_server(),
-        **get_relay_scopes_by_resource_server(),
         **get_transfer_scopes_by_resource_server(collections),
     }
 
@@ -55,15 +37,6 @@ def get_auth_scopes_by_resource_server() -> dict[str, list[Scope]]:
             AuthScopes.openid,
             AuthScopes.email,
             AuthScopes.view_identity_set,
-        ],
-    }
-
-
-def get_relay_scopes_by_resource_server() -> dict[str, list[Scope]]:
-    """Get all scopes for the relay server by resource server."""
-    return {
-        ProxyStoreRelayScopes.resource_server: [
-            ProxyStoreRelayScopes.relay_all,
         ],
     }
 

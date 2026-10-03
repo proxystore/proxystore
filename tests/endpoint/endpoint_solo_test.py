@@ -5,6 +5,7 @@ import uuid
 import pytest
 
 from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.exceptions import PeeringNotAvailableError
 from testing.compat import randbytes
 
 _NAME = 'test-endpoint'
@@ -22,18 +23,6 @@ async def test_init() -> None:
     await endpoint.close()
     # Closing again is a no-op
     await endpoint.close()
-
-
-@pytest.mark.asyncio
-async def test_init_requires_name_uuid() -> None:
-    message = (
-        'The name and uuid parameters must be provided if a PeerManager '
-        'is not provided.'
-    )
-    with pytest.raises(ValueError, match=message):
-        Endpoint(name='test')
-    with pytest.raises(ValueError, match=message):
-        Endpoint(uuid=uuid.uuid4())
 
 
 @pytest.mark.asyncio
@@ -55,7 +44,16 @@ async def test_get() -> None:
         data = randbytes(100)
         await endpoint.set('key', data)
         assert (await endpoint.get('key')) == data
-        assert (await endpoint.get('key', endpoint=uuid.uuid4())) == data
+        assert (await endpoint.get('key', endpoint=_UUID)) == data
+
+
+@pytest.mark.parametrize('op', ('evict', 'exists', 'get', 'set'))
+@pytest.mark.asyncio
+async def test_remote_endpoint_not_available(op: str) -> None:
+    async with Endpoint(name=_NAME, uuid=_UUID) as endpoint:
+        args = ('key', b'data') if op == 'set' else ('key',)
+        with pytest.raises(PeeringNotAvailableError):
+            await getattr(endpoint, op)(*args, endpoint=uuid.uuid4())
 
 
 @pytest.mark.asyncio

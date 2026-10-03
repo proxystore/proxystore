@@ -50,9 +50,9 @@ def login(
 ) -> None:
     """Authenticate with Globus Auth.
 
-    This requests scopes for Globus Auth, Globus Transfer, and the ProxyStore
-    relay server. Collections can be strung together. E.g., request transfer
-    scopes for multiple collections with:
+    This requests scopes for Globus Auth and Globus Transfer. Collections can
+    be strung together. E.g., request transfer scopes for multiple collections
+    with:
 
     $ proxystore-globus-auth login -c UUID -c UUID -c UUID
 

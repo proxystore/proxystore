@@ -25,7 +25,6 @@ from proxystore.endpoint.directory import EndpointDir
 _NAME = 'default'
 _UUID = uuid.uuid4()
 _PORT = 1234
-_SERVER = None
 
 
 @pytest.fixture
@@ -115,7 +114,6 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     rv = configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     assert rv == 0
@@ -127,7 +125,6 @@ def test_configure_endpoint_basic(tmp_path: pathlib.Path, caplog) -> None:
     assert cfg.name == _NAME
     assert cfg.host is None
     assert cfg.port == _PORT
-    assert cfg.relay.address == _SERVER
 
     assert any(
         str(cfg.uuid) in record.message and record.levelname == 'INFO'
@@ -143,7 +140,6 @@ def test_configure_endpoint_home_dir(tmp_path: pathlib.Path) -> None:
         rv = configure_endpoint(
             name=_NAME,
             port=_PORT,
-            relay_server=_SERVER,
         )
     assert rv == 0
 
@@ -160,7 +156,6 @@ def test_configure_endpoint_invalid_name(
     rv = configure_endpoint(
         name='abc?',
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     assert rv == 1
@@ -177,7 +172,6 @@ def test_configure_endpoint_already_exists_error(
     rv = configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     assert rv == 0
@@ -185,7 +179,6 @@ def test_configure_endpoint_already_exists_error(
     rv = configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     assert rv == 1
@@ -204,7 +197,6 @@ def test_list_endpoints(tmp_path: pathlib.Path, caplog) -> None:
             configure_endpoint(
                 name=name,
                 port=_PORT,
-                relay_server=_SERVER,
                 proxystore_dir=str(tmp_path),
             )
 
@@ -236,7 +228,6 @@ def test_remove_endpoint(tmp_path: pathlib.Path, caplog) -> None:
     configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     assert len([c for _, c in EndpointDir.find_all(str(tmp_path))]) == 1
@@ -301,7 +292,6 @@ def test_start_endpoint(host: str, tmp_path: pathlib.Path) -> None:
         name=_NAME,
         port=_PORT,
         host=host,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
 
@@ -328,7 +318,6 @@ def test_start_endpoint_detached(tmp_path: pathlib.Path, caplog) -> None:
     configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
     with (
@@ -504,7 +493,6 @@ def test_stop_endpoint(tmp_path: pathlib.Path) -> None:
     configure_endpoint(
         name=_NAME,
         port=_PORT,
-        relay_server=_SERVER,
         proxystore_dir=str(tmp_path),
     )
 

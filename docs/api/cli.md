@@ -36,11 +36,3 @@ This page provides documentation for our command line tools.
     :depth: 1
     :list_subcommands: True
     :style: table
-
-::: mkdocs-click
-    :module: proxystore.p2p.relay.run
-    :command: cli
-    :prog_name: proxystore-relay
-    :depth: 1
-    :list_subcommands: True
-    :style: table

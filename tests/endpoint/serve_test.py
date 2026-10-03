@@ -12,7 +12,6 @@ from unittest import mock
 from unittest.mock import AsyncMock
 
 import pytest
-from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
@@ -20,12 +19,10 @@ from proxystore.endpoint.config import EndpointStorageConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
-from proxystore.endpoint.serve import _get_auth_headers
 from proxystore.endpoint.serve import running_endpoint
 from proxystore.endpoint.serve import serve
 from testing.endpoint import terminate_process
 from testing.endpoint import wait_for_endpoint
-from testing.mocked.globus import get_testing_app
 from testing.utils import open_port
 
 
@@ -201,87 +198,6 @@ def test_serve_logging(use_uvloop: bool, tmp_path: pathlib.Path) -> None:
     _serve(log_file2)
     assert os.path.isdir(tmp_dir)
     assert os.path.exists(log_file2)
-
-
-def test_get_auth_headers_none() -> None:
-    assert _get_auth_headers(None) == {}
-
-
-def test_get_auth_headers_globus() -> None:
-    globus_app = get_testing_app()
-    mock_authorizer = mock.MagicMock()
-    header = 'Bearer <TOKEN>'
-
-    with (
-        mock.patch(
-            'proxystore.endpoint.serve.get_globus_app',
-            return_value=globus_app,
-        ),
-        mock.patch.object(
-            globus_app,
-            'get_authorizer',
-            return_value=mock_authorizer,
-        ),
-        mock.patch.object(
-            mock_authorizer,
-            'get_authorization_header',
-            return_value=header,
-        ),
-    ):
-        assert _get_auth_headers('globus')['Authorization'] == header
-
-
-def test_get_auth_headers_globus_missing() -> None:
-    globus_app = get_testing_app()
-
-    with (
-        mock.patch(
-            'proxystore.endpoint.serve.get_globus_app',
-            return_value=globus_app,
-        ),
-        mock.patch.object(
-            globus_app,
-            'get_authorizer',
-            side_effect=TokenValidationError(),
-        ),
-        pytest.raises(
-            SystemExit,
-        ),
-    ):
-        assert _get_auth_headers('globus')
-
-
-async def test_running_endpoint_cancels_nat_check(
-    relay_server,
-    tmp_path: pathlib.Path,
-) -> None:
-    # The NAT check runs concurrently with serving so that a slow or blocked
-    # network cannot delay the endpoint from accepting requests. Shutting the
-    # endpoint down must therefore cancel a check which has not finished
-    # rather than wait for it.
-    cancelled = asyncio.Event()
-
-    async def never_finishes() -> None:
-        try:
-            await asyncio.sleep(60)
-        except asyncio.CancelledError:
-            cancelled.set()
-            raise
-
-    endpoint_dir, config = _endpoint_dir(tmp_path)
-    config.relay.address = relay_server.address
-    endpoint_dir.write_config(config)
-
-    with mock.patch(
-        'proxystore.endpoint.serve.check_nat_and_log',
-        side_effect=never_finishes,
-    ):
-        async with running_endpoint(endpoint_dir):
-            pass
-
-    # Coverage on Python 3.11 does not trace this line after the NAT check
-    # task is cancelled, but it is executed.
-    assert cancelled.is_set()  # pragma: >=3.12 cover
 
 
 async def test_running_endpoint_tls(tmp_path: pathlib.Path) -> None:

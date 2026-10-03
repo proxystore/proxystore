@@ -14,8 +14,6 @@ import signal
 import ssl
 import uuid
 from collections.abc import AsyncIterator
-from typing import Any
-from typing import Literal
 
 try:
     import uvloop
@@ -24,9 +22,6 @@ except ImportError as e:  # pragma: no cover
         f'{e}. To enable endpoint serving, install proxystore with '
         '"pip install proxystore[endpoints]".',
     ) from e
-
-from aiortc import RTCIceServer
-from globus_sdk.token_storage import TokenValidationError
 
 from proxystore.endpoint.auth import ConnectionInfo
 from proxystore.endpoint.auth import generate_tls_certificate
@@ -40,40 +35,8 @@ from proxystore.endpoint.server import ClientHandler
 from proxystore.endpoint.storage import DictStorage
 from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
-from proxystore.globus.app import get_globus_app
-from proxystore.globus.scopes import get_relay_scopes_by_resource_server
-from proxystore.p2p.manager import PeerManager
-from proxystore.p2p.nat import check_nat_and_log
-from proxystore.p2p.relay.client import RelayClient
 
 logger = logging.getLogger(__name__)
-
-
-def _get_auth_headers(
-    method: Literal['globus'] | None,
-    **kwargs: Any,
-) -> dict[str, str]:
-    if method is None:
-        return {}
-    if method == 'globus':
-        app = get_globus_app()
-        scopes = get_relay_scopes_by_resource_server()
-        assert len(scopes) == 1
-        app.add_scope_requirements(scopes)
-        logger.info('Initialized Globus app')
-        try:
-            authorizer = app.get_authorizer(*scopes.keys())
-        except TokenValidationError:
-            logger.exception(
-                'Failed to find valid tokens for the specified relay '
-                'resource server. Have you logged in yet? If not, login then '
-                'try again.\n  $ proxystore-globus-auth login',
-            )
-            raise SystemExit(1) from None
-        bearer = authorizer.get_authorization_header()
-        assert bearer is not None
-        return {'Authorization': bearer}
-    raise AssertionError('Unreachable.')
 
 
 def _create_storage(config: EndpointConfig) -> Storage:
@@ -89,46 +52,6 @@ def _create_storage(config: EndpointConfig) -> Storage:
         )
     logger.warning('Database path not provided. Data will not be persisted')
     return DictStorage(max_object_size=config.storage.object_size_limit)
-
-
-def _create_peer_manager(config: EndpointConfig) -> PeerManager | None:
-    if config.relay.address is None:
-        return None
-
-    headers = _get_auth_headers(
-        method=config.relay.auth.method,
-        **config.relay.auth.kwargs,
-    )
-    relay_client = RelayClient(
-        address=config.relay.address,
-        client_name=config.name,
-        client_uuid=uuid.UUID(config.uuid),
-        extra_headers=headers,
-        verify_certificate=config.relay.verify_certificate,
-    )
-    ice_servers = (
-        None
-        if config.relay.ice_servers is None
-        else [
-            RTCIceServer(
-                urls=server.urls,
-                username=server.username,
-                credential=server.credential,
-            )
-            for server in config.relay.ice_servers
-        ]
-    )
-    return PeerManager(
-        relay_client,
-        peer_channels=config.relay.peer_channels,
-        ice_servers=ice_servers,
-    )
-
-
-async def _cancel(task: asyncio.Task[Any]) -> None:
-    task.cancel()
-    with contextlib.suppress(asyncio.CancelledError):
-        await task
 
 
 async def _close_server(
@@ -177,19 +100,10 @@ async def running_endpoint(
     # Resources are cleaned up in the reverse order they are created,
     # including when start up fails partway through.
     async with contextlib.AsyncExitStack() as stack:
-        peer_manager = _create_peer_manager(config)
-        if peer_manager is not None:
-            # The NAT check only produces diagnostic logs so it is run
-            # concurrently rather than delaying the endpoint from serving
-            # requests on networks where STUN is slow or blocked.
-            nat_check = asyncio.create_task(check_nat_and_log())
-            stack.push_async_callback(_cancel, nat_check)
-
         endpoint = await stack.enter_async_context(
             Endpoint(
                 name=config.name,
                 uuid=uuid.UUID(config.uuid),
-                peer_manager=peer_manager,
                 storage=_create_storage(config),
             ),
         )
