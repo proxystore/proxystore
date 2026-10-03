@@ -18,7 +18,15 @@ from typing import Literal
 from typing import NamedTuple
 from typing import Self
 
-import globus_sdk
+try:
+    import globus_sdk
+except ImportError as e:  # pragma: no cover
+    if e.name == 'globus_sdk':
+        raise ImportError(
+            'The GlobusConnector requires the globus-sdk package. Install it '
+            'with "pip install proxystore[globus]".',
+        ) from e
+    raise
 
 from proxystore._compat import init_kwargs
 from proxystore.globus.client import get_transfer_client

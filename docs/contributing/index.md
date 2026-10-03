@@ -78,7 +78,7 @@ MKDocs.
 
 ```bash
 # Manually
-$ pip install -e .[endpoints] --group docs
+$ pip install -e .[endpoints,globus] --group docs
 $ mkdocs build --strict  # Build only to site/index.html
 $ mkdocs serve           # Serve locally
 

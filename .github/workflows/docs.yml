@@ -38,7 +38,7 @@ jobs:
       - name: Install Packages
         run: |
           pip install --upgrade setuptools pip
-          pip install .[endpoints] --group docs
+          pip install .[endpoints,globus] --group docs
 
       - name: Configure git
         run: |

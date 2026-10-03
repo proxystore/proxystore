@@ -57,5 +57,5 @@ jobs:
           GRIFFE_GIT_COMMIT_HASH: ${{ github.ref_name }}
         run: |
           pip install --upgrade pip
-          pip install .[endpoints] --group docs
+          pip install .[endpoints,globus] --group docs
           mike deploy --push --update-aliases "${{ env.PACKAGE_VERSION }}" latest
