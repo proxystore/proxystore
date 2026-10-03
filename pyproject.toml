@@ -24,10 +24,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    # Click 8.1.4 fails mypy: https://github.com/pallets/click/issues/2558
-    "click!=8.1.4",
     "cloudpickle>=3",
-    "globus-sdk>=4,<5",
     "pydantic>=2,<3",
     "tomli-w",
     "typing-extensions>=4.6.0 ; python_version<'3.12'",
@@ -39,13 +36,19 @@ Documentation = "https://docs.proxystore.dev"
 Source = "https://github.com/proxystore/proxystore"
 
 [project.optional-dependencies]
-all = ["proxystore[endpoints,kafka,redis,zmq]"]
+all = ["proxystore[endpoints,globus,kafka,redis,zmq]"]
 endpoints = [
     "aiosqlite",
+    # Click 8.1.4 fails mypy: https://github.com/pallets/click/issues/2558
+    "click!=8.1.4",
     "iroh>=1.1,<2",
     "cryptography>=39.0.1",
     "uvloop>=0.18.0",
     "python-daemon",
+]
+globus = [
+    "click!=8.1.4",
+    "globus-sdk>=4,<5",
 ]
 kafka = ["confluent-kafka"]
 redis = ["redis>=3.4"]

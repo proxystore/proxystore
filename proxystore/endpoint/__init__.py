@@ -59,7 +59,14 @@ from __future__ import annotations
 
 import importlib.util
 
-_EXTRA_MODULES = ('aiosqlite', 'cryptography', 'daemon', 'iroh', 'uvloop')
+_EXTRA_MODULES = (
+    'aiosqlite',
+    'click',
+    'cryptography',
+    'daemon',
+    'iroh',
+    'uvloop',
+)
 _missing = [m for m in _EXTRA_MODULES if importlib.util.find_spec(m) is None]
 if _missing:  # pragma: no cover
     raise ImportError(
