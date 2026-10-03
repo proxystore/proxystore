@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 
 from proxystore.connectors.local import LocalConnector
-from proxystore.factory import SimpleFactory
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.utils import get_key
 from proxystore.store.utils import resolve_async
+from testing.factories import SimpleFactory
 
 
 def test_get_key_from_proxy() -> None:

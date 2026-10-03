@@ -4,7 +4,6 @@ import pickle as pkl
 
 import pytest
 
-from proxystore.factory import SimpleFactory
 from proxystore.proxy import extract
 from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
@@ -13,6 +12,7 @@ from proxystore.proxy import ProxyLocker
 from proxystore.proxy import resolve
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
+from testing.factories import SimpleFactory
 
 
 def test_proxy_utils() -> None:
