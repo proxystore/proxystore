@@ -29,7 +29,7 @@ from testing.stream import create_message_pubsub_pair
 def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
-    with Store(FileConnector(str(tmp_path))) as store:
+    with Store(FileConnector(tmp_path)) as store:
         yield store
 
 
@@ -162,7 +162,7 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     topic = 'default'
     publisher, subscriber = create_message_pubsub_pair(topic)
 
-    store = Store(FileConnector(str(tmp_path)))
+    store = Store(FileConnector(tmp_path))
 
     producer = StreamProducer[str](publisher, default_store=store)
     consumer = StreamConsumer[str](subscriber)

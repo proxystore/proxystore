@@ -51,7 +51,7 @@ def test_default_behavior(
         base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
-    store = Store(FileConnector(str(tmp_path)))
+    store = Store(FileConnector(tmp_path))
 
     with StoreExecutor(base_executor, store) as executor:
         assert isinstance(executor.should_proxy, ProxyNever)
@@ -90,7 +90,7 @@ def test_proxy_behavior(
         base_executor = base_executor_type(max_workers=1, mp_context=context)
     else:
         base_executor = base_executor_type()
-    store = Store(FileConnector(str(tmp_path)))
+    store = Store(FileConnector(tmp_path))
 
     with StoreExecutor(
         base_executor,
@@ -200,7 +200,7 @@ class DaskLikeClient:
 
 
 def test_dask_like_client(tmp_path: pathlib.Path) -> None:
-    store = Store(FileConnector(str(tmp_path)))
+    store = Store(FileConnector(tmp_path))
 
     with StoreExecutor(
         DaskLikeClient(),  # type: ignore[arg-type]

@@ -79,13 +79,13 @@ def globus_connector(
             globus.GlobusEndpoint(
                 uuid='EP1UUID',
                 endpoint_path='/~/',
-                local_path=str(tmp_path),
+                local_path=tmp_path,
                 host_regex=hostname(),
             ),
             globus.GlobusEndpoint(
                 uuid='EP2UUID',
                 endpoint_path='/~/',
-                local_path=str(tmp_path),
+                local_path=tmp_path,
                 host_regex=hostname(),
             ),
         ],
@@ -118,7 +118,7 @@ def file_connector(
 ) -> Generator[Connector[Any], None, None]:
     """FileConnector fixture."""
     tmp_path = tmp_path_factory.mktemp('file-connector-fixture')
-    with file.FileConnector(str(tmp_path), buffering=0) as connector:
+    with file.FileConnector(tmp_path, buffering=0) as connector:
         yield connector
 
 

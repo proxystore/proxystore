@@ -8,7 +8,7 @@ from proxystore.connectors.file import FileConnector
 
 
 def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=str(tmp_path))
+    connector = FileConnector(store_dir=tmp_path)
 
     assert os.path.exists(tmp_path)
     connector.close()
@@ -16,7 +16,7 @@ def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
 
 
 def test_close_override_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=str(tmp_path), clear=True)
+    connector = FileConnector(store_dir=tmp_path, clear=True)
 
     assert os.path.exists(tmp_path)
     connector.close(clear=False)
@@ -24,8 +24,8 @@ def test_close_override_default(tmp_path: pathlib.Path) -> None:
 
 
 def test_multiple_closed_connectors(tmp_path: pathlib.Path) -> None:
-    connector1 = FileConnector(store_dir=str(tmp_path))
-    connector2 = FileConnector(store_dir=str(tmp_path))
+    connector1 = FileConnector(store_dir=tmp_path)
+    connector2 = FileConnector(store_dir=tmp_path)
 
     assert os.path.exists(tmp_path)
     connector1.close(clear=True)

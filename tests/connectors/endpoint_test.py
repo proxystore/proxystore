@@ -63,7 +63,7 @@ def test_endpoints_default_none_running(tmp_path: pathlib.Path) -> None:
     write_endpoint(str(tmp_path), 'stopped')
 
     with pytest.raises(EndpointConnectorError, match='running endpoint'):
-        EndpointConnector(proxystore_dir=str(tmp_path))
+        EndpointConnector(proxystore_dir=tmp_path)
 
 
 def test_endpoints_default_multiple_running(tmp_path: pathlib.Path) -> None:
@@ -77,7 +77,7 @@ def test_endpoints_default_multiple_running(tmp_path: pathlib.Path) -> None:
         ),
         pytest.raises(EndpointConnectorError) as exc_info,
     ):
-        EndpointConnector(proxystore_dir=str(tmp_path))
+        EndpointConnector(proxystore_dir=tmp_path)
     message = str(exc_info.value)
     assert 'multiple running endpoints' in message
     for config in configs:
@@ -92,7 +92,7 @@ def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:
     with pytest.raises(EndpointConnectorError) as exc_info:
         EndpointConnector(
             endpoints=[endpoint_id],
-            proxystore_dir=str(tmp_path),
+            proxystore_dir=tmp_path,
         )
     message = str(exc_info.value)
     assert 'Failed to connect' in message
@@ -112,7 +112,7 @@ def test_endpoint_wrong_token(
     )
 
     with pytest.raises(EndpointConnectorError, match='failed to prove'):
-        EndpointConnector([endpoint.id], proxystore_dir=str(tmp_path))
+        EndpointConnector([endpoint.id], proxystore_dir=tmp_path)
 
 
 def test_endpoint_id_mismatch(
@@ -127,7 +127,7 @@ def test_endpoint_id_mismatch(
     copied_dir.write_config(config)
 
     with pytest.raises(EndpointConnectorError, match='Expected endpoint'):
-        EndpointConnector([config.id], proxystore_dir=str(tmp_path))
+        EndpointConnector([config.id], proxystore_dir=tmp_path)
 
 
 def test_request_error(endpoint_connector) -> None:
@@ -371,7 +371,7 @@ async def test_connector_tls(tmp_path: pathlib.Path) -> None:
     def _run() -> None:
         with EndpointConnector(
             [config.id],
-            proxystore_dir=str(tmp_path),
+            proxystore_dir=tmp_path,
         ) as connector:
             key = connector.put(b'value')
             assert connector.get(key) == b'value'
