@@ -413,11 +413,6 @@ class Store(Generic[ConnectorT]):
             This method only works if the `connector` is of type
             [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
 
-        Warning:
-            This method and the
-            [`Future.proxy()`][proxystore.store.future.Future.proxy]
-            are experimental features and may change in future releases.
-
         Args:
             evict: If a proxy returned by
                 [`Future.proxy()`][proxystore.store.future.Future.proxy]

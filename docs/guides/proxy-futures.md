@@ -13,12 +13,6 @@ This guide walks through the use of the
     [Concepts](../concepts/index.md){target=_blank} page to learn more about
     ProxyStore's core concepts.
 
-!!! warning
-
-    The [`Store.future()`][proxystore.store.base.Store.future] and
-    [`Future`][proxystore.store.future.Future] interfaces are
-    experimental features and may change in future releases.
-
 The [`Future`][proxystore.store.future.Future] interface enables
 a data producer to preemptively send a proxy to a data consumer before the
 target data has been created. The consumer of the target data proxy will

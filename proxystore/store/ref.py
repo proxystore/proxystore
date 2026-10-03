@@ -1,8 +1,5 @@
 """Object ownership and borrowing with proxies.
 
-Warning:
-    These features are experimental and may change in future releases.
-
 This module implements Rust-like ownership and borrowing rules for Python
 objects in shared memory using transparent object proxies. Thus, these
 proxy reference types are similar to the type returned by
