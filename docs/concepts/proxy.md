@@ -36,6 +36,25 @@ p = Proxy(resolve_object)
 just-in-time resolution, and then `p` will behave exactly like `obj`.
 A factory for a [`Proxy`][proxystore.proxy.Proxy] can be
 any callable object (i.e., object which implements `__call__`).
+For example, [`functools.partial()`][functools.partial] creates a factory
+which calls a function with preset arguments.
+
+```python linenums="1"
+import functools
+from proxystore.proxy import Proxy
+
+
+def load_data(path: str) -> bytes:
+    with open(path, 'rb') as f:
+        return f.read()
+
+
+p = Proxy(functools.partial(load_data, 'data.bin'))
+```
+
+A factory should be serializable (e.g., with [`pickle`][pickle]) if the
+proxy will be sent to other processes because only the factory is
+serialized with the proxy.
 
 Proxies are powerful because they can intercept and redefine functionality of
 an object while emulating the rest of the objects behavior.

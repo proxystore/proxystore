@@ -35,9 +35,10 @@ Thus, proxies can be used anywhere in-place of the true object and will
 resolve themselves without the program being aware.
 
 ProxyStore provides the proxy interface to a number of commonly used object
-stores as well as the [`Proxy`][proxystore.proxy.Proxy] and
-[`Factory`][proxystore.factory.Factory] building blocks to allow developers
-to create powerful just-in-time resolution functionality for Python objects.
+stores as well as the [`Proxy`][proxystore.proxy.Proxy] building block,
+which can be initialized with any *factory* (a callable which returns the
+target object), to allow developers to create powerful just-in-time
+resolution functionality for Python objects.
 
 ## Usage
 

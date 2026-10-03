@@ -6,7 +6,6 @@ import pytest
 
 import proxystore.store
 from proxystore.connectors.local import LocalConnector
-from proxystore.factory import SimpleFactory
 from proxystore.proxy import Proxy
 from proxystore.store import get_or_create_store
 from proxystore.store import get_store
@@ -15,6 +14,7 @@ from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreError
+from testing.factories import SimpleFactory
 
 
 def _is_registered(store: Store[LocalConnector]) -> bool:
