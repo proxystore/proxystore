@@ -75,3 +75,7 @@ def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:
         connector.set(key, obj)
         connector.set(key, obj)
         assert connector.get(key) == obj
+
+
+def test_deferrable_connector_is_connector() -> None:
+    assert issubclass(DeferrableConnector, Connector)

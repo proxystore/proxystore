@@ -7,6 +7,7 @@ from typing import Any
 from typing import NamedTuple
 from typing import Protocol
 from typing import runtime_checkable
+from typing import Self
 from typing import TypeVar
 
 from proxystore.serialize import BytesLike
@@ -20,19 +21,29 @@ class Connector(Protocol[KeyT]):
 
     The Connector protocol defines the interface for interacting with
     a byte-level object store.
+
+    Note:
+        Implementations of
+        [`put()`][proxystore.connectors.protocols.Connector.put] and
+        [`put_batch()`][proxystore.connectors.protocols.Connector.put_batch]
+        may accept additional connector-specific keyword arguments. These are
+        passed via the `connector_options` parameter of
+        [`Store`][proxystore.store.base.Store] methods such as
+        [`Store.put()`][proxystore.store.base.Store.put].
     """
 
-    def close(self) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
-
-        Warning:
-            The semantics of `close` may differ by implementation. Some may
-            delete objects stored in the connector while others may just close
-            connection objects. Please refer to the implementation-specific
-            docstrings for details.
 
         Note:
             Implementations should make this idempotent.
+
+        Args:
+            clear: Remove the objects stored by the connector (e.g., delete
+                the directory used by the connector) in addition to closing
+                any resources. If `None`, the default of the connector is
+                used. Connectors that do not store objects which outlive the
+                connector may ignore this argument.
         """
         ...
 
@@ -48,7 +59,7 @@ class Connector(Protocol[KeyT]):
         ...
 
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Connector[Any]:
+    def from_config(cls, config: dict[str, Any]) -> Self:
         """Create a new connector instance from a configuration.
 
         Args:
@@ -126,7 +137,7 @@ class Connector(Protocol[KeyT]):
 
 
 @runtime_checkable
-class DeferrableConnector(Protocol[KeyT]):
+class DeferrableConnector(Connector[KeyT], Protocol[KeyT]):
     """Extension of the [`Connector`][proxystore.connectors.protocols.Connector] with `set` semantics.
 
     Extends the [`Connector`][proxystore.connectors.protocols.Connector]
@@ -134,7 +145,7 @@ class DeferrableConnector(Protocol[KeyT]):
     deferring associating an object with the key.
     """  # noqa: E501
 
-    def new_key(self, obj: bytes | None = None) -> KeyT:
+    def new_key(self, obj: BytesLike | None = None) -> KeyT:
         """Create a new key.
 
         Note:

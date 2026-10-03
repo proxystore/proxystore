@@ -141,6 +141,7 @@ Running the example again with logging enabled but `#!python populate_target=Tru
 The [`Store`][proxystore.store.base.Store], by default, will not delete stored objects once they are no longer needed.
 In the above example, this means that `x` will be stored in the [`FileConnector`][proxystore.connectors.file.FileConnector] until [`Store.close()`][proxystore.store.base.Store.close] is called and the directory `/tmp/proxystore-cache` is deleted.
 (Here, [`Store.close()`][proxystore.store.base.Store.close] is called when exiting the `with` context block.)
+Only the store which created `x`, the [`owner`][proxystore.store.base.Store.owner], clears the connector when closed; stores created on the Dask workers to resolve proxies do not.
 However, it is not a requirement that [`Connector`][proxystore.connectors.protocols.Connector] implementations clear stored objects when closed.
 In this case, the shared object `x` would be "leaked" because it was never deleted when no longer needed by the application.
 

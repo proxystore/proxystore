@@ -64,8 +64,13 @@ class LocalConnector:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}()'
 
-    def close(self) -> None:
-        """Close the connector and clean up."""
+    def close(self, *, clear: bool | None = None) -> None:
+        """Close the connector and clean up.
+
+        Args:
+            clear: Ignored because objects are stored in the memory of the
+                connector.
+        """
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

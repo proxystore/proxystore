@@ -182,8 +182,12 @@ class EndpointConnector:
             f'in {self.endpoint_dir})'
         )
 
-    def close(self) -> None:
-        """Close the connector and clean up."""
+    def close(self, *, clear: bool | None = None) -> None:
+        """Close the connector and clean up.
+
+        Args:
+            clear: Ignored because objects are owned by the endpoints.
+        """
         self._pool.close()
 
     def config(self) -> dict[str, Any]:

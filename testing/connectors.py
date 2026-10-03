@@ -162,7 +162,7 @@ def zmq_connector() -> Generator[Connector[Any], None, None]:
     """ZeroMQConnector fixture."""
     connector = zmq.ZeroMQConnector(open_port(), address='127.0.0.1')
     yield connector
-    connector.close(kill_server=True)
+    connector.close(clear=True)
 
 
 @pytest.fixture(scope='session', params=FIXTURE_LIST)
