@@ -40,6 +40,28 @@ class PolicyDict(TypedDict):
 class Policy:
     """Policy that allows validating a set of constraints.
 
+    Tags are matched in two ways when an object is put with a set of tags:
+
+    * `subset_tags`: the tags of the put must be a subset of the policy's
+      `subset_tags`. I.e., the policy lists every tag it *accepts*.
+    * `superset_tags`: the tags of the put must be a superset of the
+      policy's `superset_tags`. I.e., the policy lists the tags it
+      *requires*.
+
+    Example:
+        ```python
+        >>> policy = Policy(subset_tags=['small', 'fast'])
+        >>> policy.is_valid(subset_tags=['fast'])
+        True
+        >>> policy.is_valid(subset_tags=['fast', 'persistent'])
+        False
+        >>> policy = Policy(superset_tags=['persistent'])
+        >>> policy.is_valid(superset_tags=['persistent', 'large'])
+        True
+        >>> policy.is_valid(superset_tags=['large'])
+        False
+        ```
+
     Attributes:
         priority: Priority for breaking ties between policies (higher is
             preferred).
