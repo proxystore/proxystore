@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import pathlib
 import threading
 from typing import Any
@@ -17,6 +18,7 @@ from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.endpoint import Endpoint
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
@@ -39,6 +41,46 @@ def test_no_endpoints_match(endpoint_connector) -> None:
             endpoints=[EndpointId.random()],
             proxystore_dir=endpoint_connector.config()['proxystore_dir'],
         )
+
+
+def test_endpoints_default_single_running(
+    endpoint: EndpointConfig,
+    endpoint_dir: EndpointDir,
+) -> None:
+    home = os.path.dirname(endpoint_dir.path)
+    with EndpointConnector(proxystore_dir=home) as connector:
+        assert connector.endpoint_id == endpoint.id
+        assert connector.config()['endpoints'] is None
+        key = connector.put(b'value')
+        assert connector.get(key) == b'value'
+
+        with EndpointConnector.from_config(connector.config()) as other:
+            assert other.endpoint_id == endpoint.id
+
+
+def test_endpoints_default_none_running(tmp_path: pathlib.Path) -> None:
+    write_endpoint(str(tmp_path), 'stopped')
+
+    with pytest.raises(EndpointConnectorError, match='running endpoint'):
+        EndpointConnector(proxystore_dir=str(tmp_path))
+
+
+def test_endpoints_default_multiple_running(tmp_path: pathlib.Path) -> None:
+    configs = [write_endpoint(str(tmp_path), f'ep{i}')[1] for i in range(2)]
+
+    with (
+        mock.patch.object(
+            EndpointDir,
+            'status',
+            return_value=EndpointStatus.RUNNING,
+        ),
+        pytest.raises(EndpointConnectorError) as exc_info,
+    ):
+        EndpointConnector(proxystore_dir=str(tmp_path))
+    message = str(exc_info.value)
+    assert 'multiple running endpoints' in message
+    for config in configs:
+        assert f'{config.name} ({config.id})' in message
 
 
 def test_endpoint_not_started(tmp_path: pathlib.Path) -> None:

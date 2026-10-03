@@ -302,6 +302,30 @@ The primary interface to endpoints is the
 from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.store import Store
 
+with Store(name='default', connector=EndpointConnector()) as store:
+    proxy = store.proxy(my_object)
+```
+
+The [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
+sends all operations to its *home* endpoint, an endpoint running on the same
+system. By default, the connector scans the ProxyStore home directory and uses
+the only running endpoint as its home endpoint, connecting with the
+`connection.json` file that the running endpoint writes to its directory (see
+[Security](#security)). An error is raised if there are no running endpoints
+or several.
+
+The connector's configuration is stored in each proxy created by the store,
+so when a proxy is resolved on a different system, the connector is recreated
+there and uses the endpoint running on that system. The key of an object
+contains the ID of the endpoint storing the object, and a request for an
+object stored on a different endpoint is forwarded by the home endpoint to
+that peer. Which peers an endpoint communicates with is controlled by the
+endpoint's allowlist of peers (see [Peering](#peering)).
+
+If a system may run multiple endpoints, specify the endpoints which the
+connector may use as its home endpoint.
+
+```python linenums="1"
 connector = EndpointConnector(
     endpoints=[
         'ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173',
@@ -309,25 +333,14 @@ connector = EndpointConnector(
         ...,
     ],
 )
-store = Store(name='default', connector=connector)
-
-p = store.proxy(my_object)
 ```
 
-The [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] takes
-a list of endpoint IDs. This list represents any endpoint that proxies
-created by this store may interact with to resolve themselves. The
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will use this
-list to find its *home* endpoint, the endpoint that will be used to issue
-operations to. To find the *home* endpoint, the ProxyStore home directory
-will be scanned for any endpoint configurations matching
-one of the IDs. If a match is found, the
-[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] will attempt
-to connect to the endpoint using the `connection.json` file that the running
-endpoint writes to its directory (see [Security](#security)). This
-process is repeated until a reachable endpoint is found. While the user could
-specify the home endpoint directly, the home endpoint may change when a proxy
-travels to a different machine.
+The connector uses the first endpoint in the ProxyStore home directory which
+matches one of the IDs and is reachable. The list should contain the endpoint
+to use on each system where proxies created by the store will be resolved.
+The list only selects the home endpoint and is not an allowlist: requests for
+objects stored on endpoints which are not in the list are still forwarded to
+those peers.
 
 ## Version Compatibility
 
@@ -412,18 +425,18 @@ The flow of data and their associated proxies are shown in **Fig. 1**.
 1. Host A creates a proxy of the *target* object. The serialized *target*
    is placed in Host A's home/local endpoint (Endpoint 1).
    The proxy contains the key referencing the *target*, the endpoint ID with
-   the *target* data (Endpoint 1's ID), and the list of
-   all endpoint IDs configured with the
-   [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
-   (the IDs of Endpoints 1 and 2).
+   the *target* data (Endpoint 1's ID), and the configuration of the
+   [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector].
 2. Host A communicates the proxy object to Host B. This communication is
    cheap because the proxy is just a thin reference to the object.
 3. Host B receives the proxy and attempts to use the proxy initiating the
-   proxy *resolve* process. The proxy requests the data from Host B's
-   home endpoint (Endpoint 2).
+   proxy *resolve* process. The connector is recreated on Host B and finds
+   the endpoint running on Host B (Endpoint 2), and the proxy requests the
+   data from this home endpoint.
 4. Endpoint 2 sees that the proxy is requesting data from a different endpoint
    (Endpoint 1) so Endpoint 2 initiates a peer connection to Endpoint 1 and
-   requests the data.
+   requests the data. This requires each endpoint to have the other in its
+   allowlist of peers.
 5. Endpoint 1 sends the data to Endpoint 2.
 6. Endpoint 2 replies to Host B's request for the data with the data received
    from Endpoint 1. Host B deserializes the target object and the proxy

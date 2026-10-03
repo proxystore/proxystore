@@ -18,7 +18,9 @@ from typing import Self
 from typing import TypeVar
 
 from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.directory import EndpointStatus
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
@@ -68,9 +70,17 @@ class EndpointConnector:
         will be used.
 
     Args:
-        endpoints: Sequence of valid and running endpoint
-            IDs to use. At least one of these endpoints must be
-            accessible by this process.
+        endpoints: IDs of the endpoints which the connector may use as its
+            *home* endpoint, the local endpoint which all requests are sent
+            to. The connector uses the first of these endpoints found in
+            `proxystore_dir` which it can connect to. This is not an
+            allowlist: requests for objects stored on other endpoints are
+            forwarded by the home endpoint, and which peers an endpoint
+            communicates with is controlled by the allowlist of peers of
+            each endpoint. The list is part of the connector's
+            configuration so a proxy resolved on another system will use
+            whichever of these endpoints is on that system. If `None`, the
+            connector uses the only endpoint running in `proxystore_dir`.
         proxystore_dir: Optionally specify the proxystore home
             directory. Defaults to
             [`home_dir()`][proxystore.utils.environment.home_dir].
@@ -82,35 +92,43 @@ class EndpointConnector:
         ValueError: If endpoints is an empty list or contains an invalid
             endpoint ID.
         EndpointConnectorError: If unable to connect to any of the endpoints
-            provided.
+            provided, or if `endpoints` is `None` and there is not exactly
+            one endpoint running in `proxystore_dir`.
     """
 
     def __init__(
         self,
-        endpoints: Sequence[str],
+        endpoints: Sequence[str] | None = None,
         proxystore_dir: str | None = None,
         reconnect_timeout: float = 5,
     ) -> None:
-        if len(endpoints) == 0:
+        if endpoints is not None and len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
-        self.endpoints: list[EndpointId] = [
-            EndpointId.from_str(e) for e in endpoints
-        ]
+        self.endpoints: list[EndpointId] | None = (
+            None
+            if endpoints is None
+            else [EndpointId.from_str(e) for e in endpoints]
+        )
         self.proxystore_dir = proxystore_dir
         self.reconnect_timeout = reconnect_timeout
 
-        # Find the first locally accessible endpoint to use as our
-        # home endpoint
         home = (
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
         )
+        if self.endpoints is None:
+            candidates = _find_running(home)
+        else:
+            candidates = [
+                (endpoint_dir, endpoint)
+                for endpoint_dir, endpoint in EndpointDir.find_all(home)
+                if endpoint.id in self.endpoints
+            ]
+
+        # Use the first locally accessible endpoint as our home endpoint
         failures: list[str] = []
         found: tuple[EndpointId, EndpointDir, EndpointClient] | None = None
-        for endpoint_dir, endpoint in EndpointDir.find_all(home):
+        for endpoint_dir, endpoint in candidates:
             endpoint_id = endpoint.id
-            if endpoint_id not in self.endpoints:
-                continue
-
             logger.debug('Attempting connection to %s', endpoint_id)
             try:
                 client = _connect(endpoint_dir, endpoint_id)
@@ -175,7 +193,9 @@ class EndpointConnector:
         the connector object.
         """
         return {
-            'endpoints': list(self.endpoints),
+            'endpoints': (
+                None if self.endpoints is None else list(self.endpoints)
+            ),
             'proxystore_dir': self.proxystore_dir,
             'reconnect_timeout': self.reconnect_timeout,
         }
@@ -320,6 +340,33 @@ class EndpointConnector:
             'Set',
             lambda client: client.set(key.object_id, obj, key.endpoint_id),
         )
+
+
+def _find_running(home: str) -> list[tuple[EndpointDir, EndpointConfig]]:
+    running: list[tuple[EndpointDir, EndpointConfig]] = []
+    for endpoint_dir, endpoint in EndpointDir.find_all(home):
+        try:
+            status = endpoint_dir.status()
+        except EndpointError:  # pragma: no cover
+            # The endpoint directory was removed after it was found.
+            continue
+        if status == EndpointStatus.RUNNING:
+            running.append((endpoint_dir, endpoint))
+
+    if len(running) == 0:
+        raise EndpointConnectorError(
+            f'Failed to find a running endpoint in {home}. Start an '
+            'endpoint or specify the endpoints to use.',
+        )
+    if len(running) > 1:
+        names = ', '.join(
+            f'{endpoint.name} ({endpoint.id})' for _, endpoint in running
+        )
+        raise EndpointConnectorError(
+            f'Found multiple running endpoints in {home}: {names}. Specify '
+            'the endpoints to use.',
+        )
+    return running
 
 
 def _connect(
