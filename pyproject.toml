@@ -143,7 +143,6 @@ allow_untyped_defs = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 filterwarnings = [
-    "ignore::proxystore.warnings.ExperimentalWarning",
     "ignore::DeprecationWarning:proxystore.*",
     "ignore::DeprecationWarning:testing.*",
     "ignore::DeprecationWarning:tests.*",

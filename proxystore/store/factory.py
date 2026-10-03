@@ -17,6 +17,9 @@ from proxystore._compat import drop_unknown_fields
 from proxystore._compat import STATE_VERSION_KEY
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
+from proxystore.store.future import _deserialize_with_exceptions
+from proxystore.store.future import _FutureException
+from proxystore.store.future import PollingPolicy
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
@@ -178,15 +181,9 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         evict: If True, evict the object from the store once
             [`resolve()`][proxystore.store.factory.StoreFactory.resolve]
             is called.
-        polling_interval: Initial seconds to sleep between polling the store
-            for the object.
-        polling_backoff_factor: Multiplicative factor applied to the
-            polling_interval applied after each unsuccessful poll.
-        polling_interval_limit: Maximum polling interval allowed. Prevents
-            the backoff factor from increasing the current polling interval
-            to unreasonable values.
-        polling_timeout: Optional maximum number of seconds to poll for. If
-            the timeout is reached an error is raised.
+        polling: Policy for polling the store for the object. If `None`,
+            the default
+            [`PollingPolicy`][proxystore.store.future.PollingPolicy] is used.
     """
 
     def __init__(
@@ -196,10 +193,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         *,
         deserializer: DeserializerT | None = None,
         evict: bool = False,
-        polling_interval: float = 1,
-        polling_backoff_factor: float = 1,
-        polling_interval_limit: float | None = None,
-        polling_timeout: float | None = None,
+        polling: PollingPolicy | None = None,
     ) -> None:
         super().__init__(
             key,
@@ -207,11 +201,10 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
             evict=evict,
             deserializer=deserializer,
         )
-        self._polling_interval = polling_interval
-        self._polling_backoff_factor = polling_backoff_factor
-        self._polling_interval_limit = polling_interval_limit
-        self._polling_timeout = polling_timeout
+        self.polling = polling if polling is not None else PollingPolicy()
 
+    # The polling policy is pickled as separate fields rather than as a
+    # PollingPolicy so the pickle format does not depend on that type.
     _STATE_FIELDS = StoreFactory._STATE_FIELDS | {
         'polling_interval',
         'polling_backoff_factor',
@@ -221,61 +214,62 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
 
     def __getstate__(self) -> dict[str, Any]:
         state = super().__getstate__()
-        state['polling_interval'] = self._polling_interval
-        state['polling_backoff_factor'] = self._polling_backoff_factor
-        state['polling_interval_limit'] = self._polling_interval_limit
-        state['polling_timeout'] = self._polling_timeout
+        state['polling_interval'] = self.polling.interval
+        state['polling_backoff_factor'] = self.polling.backoff_factor
+        state['polling_interval_limit'] = self.polling.interval_limit
+        state['polling_timeout'] = self.polling.timeout
         return state
 
     def __setstate__(self, state: dict[str, Any]) -> None:
         super().__setstate__(state)
-        self._polling_interval = state.get('polling_interval', 1)
-        self._polling_backoff_factor = state.get('polling_backoff_factor', 1)
-        self._polling_interval_limit = state.get('polling_interval_limit')
-        self._polling_timeout = state.get('polling_timeout')
+        self.polling = PollingPolicy(
+            interval=state.get('polling_interval', 1),
+            backoff_factor=state.get('polling_backoff_factor', 1),
+            interval_limit=state.get('polling_interval_limit'),
+            timeout=state.get('polling_timeout'),
+        )
 
-    def resolve(self) -> T:
-        """Get object associated with key from store.
-
-        Raises:
-            ProxyResolveMissingKeyError: If the object associated with the
-                key is not available after `polling_timeout` seconds.
-        """
+    def _poll(self, timeout: float | None) -> tuple[T] | None:
+        # Poll the store for the object until timeout seconds have elapsed.
+        # Returns the object in a tuple, to distinguish an object which is
+        # None, or None if the timeout was reached. Raises the exception if
+        # an exception was set on the future.
         with Timer() as timer:
             store = self.get_store()
-            sleep_interval = self._polling_interval
+            deserializer = _deserialize_with_exceptions(
+                self.deserializer
+                if self.deserializer is not None
+                else store.deserializer,
+            )
+            sleep_interval = self.polling.interval
             time_waited = 0.0
 
             while True:
                 obj = store.get(
                     self.key,
-                    deserializer=self.deserializer,
+                    deserializer=deserializer,
                     default=_MISSING_OBJECT,
                 )
 
                 # Break because we found the object or we hit the timeout
                 if obj is not _MISSING_OBJECT or (
-                    self._polling_timeout is not None
-                    and time_waited >= self._polling_timeout
+                    timeout is not None and time_waited >= timeout
                 ):
                     break
 
                 time.sleep(sleep_interval)
                 time_waited += sleep_interval
-                new_interval = sleep_interval * self._polling_backoff_factor
+                new_interval = sleep_interval * self.polling.backoff_factor
                 sleep_interval = (
                     new_interval
-                    if self._polling_interval_limit is None
-                    else min(new_interval, self._polling_interval_limit)
+                    if self.polling.interval_limit is None
+                    else min(new_interval, self.polling.interval_limit)
                 )
 
             if obj is _MISSING_OBJECT:
-                raise ProxyResolveMissingKeyError(
-                    self.key,
-                    type(store),
-                    store.name,
-                    store.id,
-                )
+                return None
+            if isinstance(obj, _FutureException):
+                raise obj.exception
             if self.evict:
                 store.evict(self.key)
 
@@ -287,4 +281,24 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                 total_time,
             )
 
-        return cast(T, obj)
+        return (cast(T, obj),)
+
+    def resolve(self) -> T:
+        """Get object associated with key from store.
+
+        Raises:
+            ProxyResolveMissingKeyError: If the object associated with the
+                key is not available after the timeout of the polling policy.
+            Exception: The exception set on the future associated with this
+                factory.
+        """
+        obj = self._poll(self.polling.timeout)
+        if obj is None:
+            store = self.get_store()
+            raise ProxyResolveMissingKeyError(
+                self.key,
+                type(store),
+                store.name,
+                store.id,
+            )
+        return obj[0]

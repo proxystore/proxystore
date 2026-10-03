@@ -8,10 +8,14 @@ import pytest
 
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
+from proxystore.proxy import ProxyResolveError
+from proxystore.proxy import resolve
 from proxystore.serialize import BytesLike
 from proxystore.serialize import SerializationError
 from proxystore.store import Store
-from proxystore.store.future import Future
+from proxystore.store.exceptions import ProxyResolveMissingKeyError
+from proxystore.store.future import PollingPolicy
+from proxystore.store.future import ProxyFuture
 from proxystore.store.lifetimes import ContextLifetime
 
 
@@ -230,7 +234,7 @@ def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
 
 
 def test_future(store: Store[LocalConnector]) -> None:
-    future: Future[str] = store.future()
+    future: ProxyFuture[str] = store.future()
     proxy = future.proxy()
     assert not future.done()
     future.set_result('test_value')
@@ -239,11 +243,61 @@ def test_future(store: Store[LocalConnector]) -> None:
     assert proxy == 'test_value'
 
 
+def test_future_result_none(store: Store[LocalConnector]) -> None:
+    future: ProxyFuture[None] = store.future()
+    future.set_result(None)
+    assert future.result(timeout=0) is None
+
+
+def test_future_result_timeout(store: Store[LocalConnector]) -> None:
+    future: ProxyFuture[str] = store.future(
+        polling=PollingPolicy(interval=0.001),
+    )
+    with pytest.raises(TimeoutError):
+        future.result(timeout=0.002)
+
+
+def test_future_result_policy_timeout(store: Store[LocalConnector]) -> None:
+    future: ProxyFuture[str] = store.future(
+        polling=PollingPolicy(interval=0.001, timeout=0.002),
+    )
+    with pytest.raises(TimeoutError):
+        future.result()
+    with pytest.raises(ProxyResolveError) as exc_info:
+        resolve(future.proxy())
+    assert isinstance(exc_info.value.cause, ProxyResolveMissingKeyError)
+
+
+@pytest.mark.parametrize('custom_serializer', (True, False))
+def test_future_set_exception(
+    custom_serializer: bool,
+    store: Store[LocalConnector],
+) -> None:
+    future: ProxyFuture[str] = (
+        store.future(
+            serializer=str.encode,
+            deserializer=lambda b: bytes(b).decode(),
+        )
+        if custom_serializer
+        else store.future()
+    )
+    proxy = future.proxy()
+    assert not future.done()
+
+    future.set_exception(ValueError('Oops'))
+    assert future.done()
+    with pytest.raises(ValueError, match='Oops'):
+        future.result()
+    with pytest.raises(ProxyResolveError) as exc_info:
+        resolve(proxy)
+    assert isinstance(exc_info.value.cause, ValueError)
+
+
 def test_future_in_threads(store: Store[LocalConnector]) -> None:
-    future: Future[str] = store.future()
+    future: ProxyFuture[str] = store.future()
 
     def _foo(
-        future: Future[str],
+        future: ProxyFuture[str],
         barrier: threading.Barrier,
     ) -> None:
         future.set_result('test_value')

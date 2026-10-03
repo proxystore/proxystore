@@ -9,7 +9,7 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.serialize import serialize
 from proxystore.store.base import Store
-from proxystore.store.future import Future
+from proxystore.store.future import ProxyFuture
 
 
 @pytest.fixture
@@ -82,7 +82,7 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     get_time = proxy_metrics.times['store.get'].avg_time_ms
     assert resolve_time < get_time + 100
 
-    future: Future[Any] = store.future()
+    future: ProxyFuture[Any] = store.future()
     future_metrics = store.metrics.get_metrics(future._factory.key)
     assert future_metrics is not None
     assert future_metrics.times['store.future'].count == 1

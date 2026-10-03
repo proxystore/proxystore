@@ -106,8 +106,8 @@ class StreamProducer(Generic[T]):
             [`Store`][proxystore.store.Store] to be used with topics
             not explicitly set in `stores`. If no default is provided, objects
             are included directly in the event.
-        filter_: Optional filter to apply prior to sending objects to the
-            stream. If the filter returns `True` for a given object's
+        keep: Optional filter to apply prior to sending objects to the
+            stream. If the filter returns `False` for a given object's
             metadata, the object will *not* be sent to the stream. The filter
             is applied before aggregation or batching.
         stores: Mapping from topic names to an optional
@@ -124,14 +124,14 @@ class StreamProducer(Generic[T]):
         aggregator: Callable[[list[T]], T] | None = None,
         batch_size: int = 1,
         default_store: Store[Any] | None = None,
-        filter_: Filter | None = None,
+        keep: Filter | None = None,
         stores: Mapping[str, Store[Any] | None] | None = None,
     ) -> None:
         self.publisher = publisher
         self._default_store = default_store
         self._aggregator = aggregator
         self._batch_size = batch_size
-        self._filter: Filter = filter_ if filter_ is not None else NullFilter()
+        self._keep: Filter = keep if keep is not None else NullFilter()
         self._stores = stores
 
         # Mapping between topic and buffers
@@ -312,7 +312,7 @@ class StreamProducer(Generic[T]):
         This method:
 
         1. Applies the filter to the metadata associated with this event,
-           skipping streaming this object if the filter returns `True`.
+           skipping streaming this object if the filter returns `False`.
         2. Adds the object to the internal event buffer for this topic.
         3. Flushes the event buffer once the batch size is reached.
 
@@ -351,7 +351,7 @@ class StreamProducer(Generic[T]):
             raise TopicClosedError(f'Topic "{topic}" has been closed.')
 
         metadata = metadata if metadata is not None else {}
-        if self._filter(metadata):
+        if not self._keep(metadata):
             return
 
         item = _BufferedObject(obj, evict, metadata)

@@ -184,6 +184,51 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     assert store.id not in proxystore.store._stores
 
 
+def test_topic_with_multiple_stores(tmp_path: pathlib.Path) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with (
+        Store(FileConnector(tmp_path / 'store1')) as store1,
+        Store(FileConnector(tmp_path / 'store2')) as store2,
+    ):
+        producer1 = StreamProducer[str](publisher, default_store=store1)
+        producer2 = StreamProducer[str](publisher, default_store=store2)
+        consumer = StreamConsumer[str](subscriber)
+
+        producer1.send(topic, 'value1')
+        producer2.send(topic, 'value2')
+        producer1.close_topics(topic)
+
+        assert list(consumer.iter_objects()) == ['value1', 'value2']
+
+        consumer.close()
+        producer1.close()
+
+
+def test_consumer_caches_store_without_id(
+    store: Store[FileConnector],
+) -> None:
+    _, subscriber = create_message_pubsub_pair('default')
+    consumer = StreamConsumer[str](subscriber)
+
+    key = store.put('value')
+    config = store.config().model_copy(update={'id': None})
+    event = NewObjectKeyEvent.from_key(
+        key,
+        evict=False,
+        metadata={},
+        store_config=config,
+        topic='default',
+    )
+    new_store = consumer._get_store(event)
+    assert new_store is not store
+    assert consumer._get_store(event) is new_store
+
+    new_store.close()
+    consumer.close()
+
+
 @pytest.mark.parametrize('toggle_side', (True, False))
 def test_filtering_stream(
     toggle_side: bool,
@@ -192,18 +237,18 @@ def test_filtering_stream(
     topic = 'default'
     publisher, subscriber = create_message_pubsub_pair(topic)
 
-    def filter_(metadata: dict[str, Any] | None) -> bool:
+    def keep(metadata: dict[str, Any] | None) -> bool:
         assert metadata is not None
-        return metadata['index'] % 2 != 0
+        return metadata['index'] % 2 == 0
 
     producer = StreamProducer[int](
         publisher,
         stores={topic: store},
-        filter_=filter_ if toggle_side else None,
+        keep=keep if toggle_side else None,
     )
     consumer = StreamConsumer[int](
         subscriber,
-        filter_=filter_ if not toggle_side else None,
+        keep=keep if not toggle_side else None,
     )
 
     for i in range(10):

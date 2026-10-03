@@ -7,19 +7,19 @@ from typing import Any
 
 
 class NullFilter:
-    """Filter which never filters out objects."""
+    """Filter which keeps all objects."""
 
     def __call__(self, metadata: dict[str, Any]) -> bool:
         """Apply the filter to event metadata."""
-        return False
+        return True
 
 
 class SamplingFilter:
-    """Filter that randomly filters out objects.
+    """Filter that randomly keeps objects.
 
     Args:
-        p: Probability of the filter returning `True`. I.e., the object gets
-            filtered out.
+        p: Probability of the filter returning `True`. I.e., the probability
+            that an object is kept.
 
     Raises:
         ValueError: if `p` is not in the range `[0, 1]`.
@@ -34,4 +34,4 @@ class SamplingFilter:
 
     def __call__(self, metadata: dict[str, Any]) -> bool:
         """Apply the filter to event metadata."""
-        return random.random() <= self._p
+        return random.random() < self._p
