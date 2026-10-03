@@ -1098,6 +1098,24 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy Futures
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1114,6 +1132,36 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts-and-exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts and Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -3855,6 +3903,25 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#timeouts-and-exceptions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts and Exceptions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -3883,7 +3950,7 @@
 <p><em>Last updated 1 November 2023</em></p>
 <p>This guide walks through the use of the
 <a class="autorefs autorefs-internal" title="            future" href="../../api/store/base/#proxystore.store.base.Store.future"><code>Store.future()</code></a> interface and associated
-<a class="autorefs autorefs-internal" title="            Future" href="../../api/store/future/#proxystore.store.future.Future"><code>Future</code></a>.</p>
+<a class="autorefs autorefs-internal" title="            ProxyFuture" href="../../api/store/future/#proxystore.store.future.ProxyFuture"><code>ProxyFuture</code></a>.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Some familiarity with ProxyStore is assumed. Check out the
@@ -3891,20 +3958,14 @@
 <a href="../../concepts/" target="_blank">Concepts</a> page to learn more about
 ProxyStore's core concepts.</p>
 </div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The <a class="autorefs autorefs-internal" title="            future" href="../../api/store/base/#proxystore.store.base.Store.future"><code>Store.future()</code></a> and
-<a class="autorefs autorefs-internal" title="            Future" href="../../api/store/future/#proxystore.store.future.Future"><code>Future</code></a> interfaces are
-experimental features and may change in future releases.</p>
-</div>
-<p>The <a class="autorefs autorefs-internal" title="            Future" href="../../api/store/future/#proxystore.store.future.Future"><code>Future</code></a> interface enables
+<p>The <a class="autorefs autorefs-internal" title="            ProxyFuture" href="../../api/store/future/#proxystore.store.future.ProxyFuture"><code>ProxyFuture</code></a> interface enables
 a data producer to preemptively send a proxy to a data consumer before the
 target data has been created. The consumer of the target data proxy will
 block when the proxy is first used and resolved until the producer
 has created the target data.</p>
 <p>Here is a trivial example using a <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> and
 <a class="autorefs autorefs-internal" title="            LocalConnector" href="../../api/connectors/local/#proxystore.connectors.local.LocalConnector"><code>LocalConnector</code></a>. The
-<a class="autorefs autorefs-internal" title="            proxy" href="../../api/store/future/#proxystore.store.future.Future.proxy"><code>future.proxy()</code></a> method is used
+<a class="autorefs autorefs-internal" title="            proxy" href="../../api/store/future/#proxystore.store.future.ProxyFuture.proxy"><code>future.proxy()</code></a> method is used
 to create a <a class="autorefs autorefs-internal" title="            Proxy" href="../../api/proxy/#proxystore.proxy.Proxy"><code>Proxy</code></a> which will resolve to the
 result of the future.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">example.py</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-0-1"> 1</a></span>
@@ -3919,10 +3980,10 @@ result of the future.</p>
 <span class="normal"><a href="#__codelineno-0-10">10</a></span>
 <span class="normal"><a href="#__codelineno-0-11">11</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.local</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalConnector</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyFuture</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4"></a>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalConnector</span><span class="p">())</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">()</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6"></a>    <span class="n">future</span><span class="p">:</span> <span class="n">ProxyFuture</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">()</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7"></a>    <span class="n">proxy</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">proxy</span><span class="p">()</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8"></a>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9"></a>    <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="s1">'value'</span><span class="p">)</span>
@@ -3949,11 +4010,11 @@ protocol such as the
 <a class="autorefs autorefs-internal" title="            FileConnector" href="../../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a>, and
 <a class="autorefs autorefs-internal" title="            RedisConnector" href="../../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a>.</p>
 </div>
-<p>The power of <a class="autorefs autorefs-internal" title="            Future" href="../../api/store/future/#proxystore.store.future.Future"><code>Future</code></a> comes when
+<p>The power of <a class="autorefs autorefs-internal" title="            ProxyFuture" href="../../api/store/future/#proxystore.store.future.ProxyFuture"><code>ProxyFuture</code></a> comes when
 the data producer and consumer are executing independently in time and space
 (i.e., execution occurs in different processes, potentially on different
 systems, and in an undefined order). The
-<a class="autorefs autorefs-internal" title="            Future" href="../../api/store/future/#proxystore.store.future.Future"><code>Future</code></a> enables the producer
+<a class="autorefs autorefs-internal" title="            ProxyFuture" href="../../api/store/future/#proxystore.store.future.ProxyFuture"><code>ProxyFuture</code></a> enables the producer
 and consumer to share a data dependency, while allowing the consumer to
 eagerly start execution before the data dependencies are fully satisfied.</p>
 <p>Consider the following example where we have a client which invokes two
@@ -3993,13 +4054,13 @@ at the same time. (We could even start <code>bar()</code> before <code>foo()</co
 <span class="normal"><a href="#__codelineno-1-31">31</a></span>
 <span class="normal"><a href="#__codelineno-1-32">32</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.connectors.redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisConnector</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">Future</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyFuture</span>
 </span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4"></a>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5"></a>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyData</span><span class="p">:</span> <span class="o">...</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7"></a>
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8"></a>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">[</span><span class="n">MyData</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">ProxyFuture</span><span class="p">[</span><span class="n">MyData</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10"></a>    <span class="n">data</span><span class="p">:</span> <span class="n">MyData</span> <span class="o">=</span> <span class="n">compute</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11"></a>    <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12"></a>
@@ -4013,7 +4074,7 @@ at the same time. (We could even start <code>bar()</code> before <code>foo()</co
 </span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20"></a>
 </span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21"></a>
 </span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22"></a><span class="k">with</span> <span class="n">Store</span><span class="p">(</span><span class="n">RedisConnector</span><span class="p">(</span><span class="o">...</span><span class="p">))</span> <span class="k">as</span> <span class="n">store</span><span class="p">:</span>
-</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a>    <span class="n">future</span><span class="p">:</span> <span class="n">Future</span><span class="p">[</span><span class="n">MyData</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">()</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23"></a>    <span class="n">future</span><span class="p">:</span> <span class="n">ProxyFuture</span><span class="p">[</span><span class="n">MyData</span><span class="p">]</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">()</span>
 </span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24"></a>
 </span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25"></a>    <span class="c1"># The invoke_remote function will execute the function with</span>
 </span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26"></a>    <span class="c1"># the provided arguments on an arbitrary remote process.</span>
@@ -4028,6 +4089,39 @@ at the same time. (We could even start <code>bar()</code> before <code>foo()</co
 This allows <code>bar()</code> to eagerly execute code which does not depend on the
 data produced by <code>foo()</code>. <code>bar()</code> will only block once the data is needed by
 the computation.</p>
+<h2 id="timeouts-and-exceptions">Timeouts and Exceptions<a class="headerlink" href="#timeouts-and-exceptions" title="Permanent link">&para;</a></h2>
+<p>By default, <a class="autorefs autorefs-internal" title="            result" href="../../api/store/future/#proxystore.store.future.ProxyFuture.result"><code>ProxyFuture.result()</code></a> and resolving the proxy of a future wait forever for the result to be set.
+The <a class="autorefs autorefs-internal" title="            PollingPolicy
+
+
+  
+      dataclass
+  " href="../../api/store/future/#proxystore.store.future.PollingPolicy"><code>PollingPolicy</code></a> controls how often the store is polled for the result and the default timeout.
+A timeout can also be passed to <a class="autorefs autorefs-internal" title="            result" href="../../api/store/future/#proxystore.store.future.ProxyFuture.result"><code>result()</code></a> which raises a <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#TimeoutError"><code>TimeoutError</code></a> if the result is not set in time.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-2-1">1</a></span>
+<span class="normal"><a href="#__codelineno-2-2">2</a></span>
+<span class="normal"><a href="#__codelineno-2-3">3</a></span>
+<span class="normal"><a href="#__codelineno-2-4">4</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.future</span><span class="w"> </span><span class="kn">import</span> <span class="n">PollingPolicy</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3"></a><span class="n">future</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">future</span><span class="p">(</span><span class="n">polling</span><span class="o">=</span><span class="n">PollingPolicy</span><span class="p">(</span><span class="n">interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">))</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4"></a><span class="n">result</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
+<p>If the producer fails, it can set an exception on the future with <a class="autorefs autorefs-internal" title="            set_exception" href="../../api/store/future/#proxystore.store.future.ProxyFuture.set_exception"><code>set_exception()</code></a> rather than leaving the consumer waiting.
+The exception is raised by <a class="autorefs autorefs-internal" title="            result" href="../../api/store/future/#proxystore.store.future.ProxyFuture.result"><code>result()</code></a>, and resolving the proxy of the future raises a <a class="autorefs autorefs-internal" title="            ProxyResolveError" href="../../api/proxy/#proxystore.proxy.ProxyResolveError"><code>ProxyResolveError</code></a> caused by the exception.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
+<span class="normal"><a href="#__codelineno-3-2">2</a></span>
+<span class="normal"><a href="#__codelineno-3-3">3</a></span>
+<span class="normal"><a href="#__codelineno-3-4">4</a></span>
+<span class="normal"><a href="#__codelineno-3-5">5</a></span>
+<span class="normal"><a href="#__codelineno-3-6">6</a></span>
+<span class="normal"><a href="#__codelineno-3-7">7</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">foo</span><span class="p">(</span><span class="n">future</span><span class="p">:</span> <span class="n">ProxyFuture</span><span class="p">[</span><span class="n">MyData</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a>    <span class="k">try</span><span class="p">:</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3"></a>        <span class="n">data</span><span class="p">:</span> <span class="n">MyData</span> <span class="o">=</span> <span class="n">compute</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4"></a>    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5"></a>        <span class="n">future</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6"></a>    <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7"></a>        <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></code></pre></div></td></tr></table></div>
 
 
 
