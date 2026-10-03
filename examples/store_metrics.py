@@ -15,7 +15,7 @@ from proxystore.store.base import Store
 
 fp = tempfile.TemporaryDirectory()
 
-store = Store(FileConnector(fp.name), name='example', metrics=True)
+store = Store(FileConnector(fp.name), metrics=True)
 assert store.metrics is not None
 
 target = list(range(100))

@@ -22,7 +22,6 @@ def store(
     with (
         Store(
             connector=FileConnector(path),
-            name='test',
             metrics=True,
             populate_target=False,
         ) as store,

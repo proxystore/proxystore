@@ -13,7 +13,7 @@ from proxystore.store.utils import resolve_async
 
 
 def test_get_key_from_proxy() -> None:
-    with Store(LocalConnector(), name='store') as store:
+    with Store(LocalConnector()) as store:
         key = store.put('value')
         proxy: Proxy[str] = store.proxy_from_key(key)
 
@@ -29,7 +29,7 @@ def test_get_key_from_proxy_not_created_by_store() -> None:
 
 def test_async_resolve() -> None:
     with (
-        Store(LocalConnector(), name='store', populate_target=False) as store,
+        Store(LocalConnector(), populate_target=False) as store,
     ):
         value = 'value'
         p = store.proxy(value)

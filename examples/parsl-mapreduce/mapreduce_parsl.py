@@ -65,11 +65,10 @@ if __name__ == '__main__':
     if args.proxy:
         store: Store[Any]
         if args.redis_port is None:
-            store = Store(LocalConnector(), name='local')
+            store = Store(LocalConnector())
         else:
             store = Store(
                 RedisConnector('localhost', args.redis_port),
-                name='redis',
             )
 
     mapped_results = []

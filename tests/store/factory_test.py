@@ -16,7 +16,7 @@ FactoryT = PollingStoreFactory[LocalConnector, str]
 
 def test_polling_store_factory_resolve() -> None:
     with (
-        Store(LocalConnector(), name='polling-store-factory-resolve') as store,
+        Store(LocalConnector()) as store,
     ):
         value = 'test-value'
         key = store.put(value)
@@ -30,7 +30,7 @@ def test_polling_store_factory_resolve() -> None:
 
 def test_polling_store_factory_evict() -> None:
     with (
-        Store(LocalConnector(), name='polling-store-factory-evict') as store,
+        Store(LocalConnector()) as store,
     ):
         value = 'test-value'
         key = store.put(value)
@@ -47,7 +47,6 @@ def test_polling_store_factory_metrics() -> None:
     with (
         Store(
             LocalConnector(),
-            name='polling-store-factory-metrics',
             metrics=True,
         ) as store,
     ):
@@ -67,7 +66,7 @@ def test_polling_store_factory_metrics() -> None:
 
 def test_polling_store_factory_timeout() -> None:
     with (
-        Store(LocalConnector(), name='polling-store-factory-timeout') as store,
+        Store(LocalConnector()) as store,
     ):
         key = store.connector.new_key()
         factory: FactoryT = PollingStoreFactory(
@@ -85,7 +84,7 @@ def test_polling_store_factory_timeout() -> None:
 
 def test_polling_store_factory_backoff() -> None:
     with (
-        Store(LocalConnector(), name='polling-store-factory-backoff') as store,
+        Store(LocalConnector()) as store,
     ):
         key = store.connector.new_key()
         factory: FactoryT = PollingStoreFactory(
@@ -110,9 +109,7 @@ def test_polling_store_factory_backoff() -> None:
 
 def test_polling_store_factory_serialize() -> None:
     with (
-        Store(
-            LocalConnector(), name='polling-store-factory-serialize'
-        ) as store,
+        Store(LocalConnector()) as store,
     ):
         value = 'test-value'
         key = store.put(value)

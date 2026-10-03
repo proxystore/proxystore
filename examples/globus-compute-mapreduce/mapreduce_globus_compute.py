@@ -97,14 +97,12 @@ if __name__ == '__main__':
 
     store: Store[Any] | None = None
     if args.ps_file:
-        store = Store(FileConnector(store_dir=args.ps_file_dir), name='file')
+        store = Store(FileConnector(store_dir=args.ps_file_dir))
     elif args.ps_globus:
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-        store = Store(GlobusConnector(endpoints=endpoints), name='globus')
+        store = Store(GlobusConnector(endpoints=endpoints))
     elif args.ps_redis:
-        store = Store(
-            RedisConnector('localhost', args.ps_redis_port), name='redis'
-        )
+        store = Store(RedisConnector('localhost', args.ps_redis_port))
 
     start = time.perf_counter()
 

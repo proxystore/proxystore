@@ -92,7 +92,7 @@ def test_metrics_by_proxy() -> None:
     proxy: Proxy[Any] = Proxy(
         StoreFactory(
             key,
-            StoreConfig(name='test', connector=ConnectorConfig(kind='test')),
+            StoreConfig(connector=ConnectorConfig(kind='test')),
         ),
     )
 
@@ -109,7 +109,6 @@ def test_metrics_by_proxies() -> None:
             StoreFactory(
                 key,
                 StoreConfig(
-                    name='test',
                     connector=ConnectorConfig(kind='test'),
                 ),
             ),

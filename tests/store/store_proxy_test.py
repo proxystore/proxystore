@@ -47,9 +47,7 @@ def test_factory_evicts_on_resolve(store: Store[LocalConnector]) -> None:
 
 
 def test_factory_recreates_store() -> None:
-    with Store(
-        LocalConnector(include_data_in_config=True), name='test'
-    ) as store:
+    with Store(LocalConnector(include_data_in_config=True)) as store:
         key = store.put([1, 2, 3])
         f: StoreFactory[Any, list[int]] = StoreFactory(
             key,
@@ -193,7 +191,6 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
 def test_proxy_recreates_store() -> None:
     with Store(
         LocalConnector(include_data_in_config=True),
-        name='test',
         cache_size=0,
         populate_target=False,
     ) as store:
@@ -392,7 +389,6 @@ def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
 def test_default_populate_target(populate_target: bool) -> None:
     with Store(
         LocalConnector(),
-        name='test-default-populate-target',
         populate_target=populate_target,
     ) as store:
         proxy = store.proxy('value')
@@ -409,7 +405,6 @@ def test_default_populate_target(populate_target: bool) -> None:
 def test_proxy_already_serialized_object(populate_target: bool) -> None:
     with Store(
         LocalConnector(),
-        name='test-proxy-already-serialized-objects',
     ) as store:
         value = [1, 2, 3]
         value_bytes = pickle.dumps(value)

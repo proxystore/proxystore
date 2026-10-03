@@ -20,7 +20,7 @@ class _TestKey(NamedTuple):
     field2: int
 
 
-MOCK_CONFIG = StoreConfig(name='test', connector=ConnectorConfig(kind='test'))
+MOCK_CONFIG = StoreConfig(connector=ConnectorConfig(kind='test'))
 MOCK_END_OF_STREAM = EndOfStreamEvent('topic')
 MOCK_NEW_OBJECT = NewObjectEvent('topic', 123, {})
 MOCK_NEW_OBJECT_KEY = NewObjectKeyEvent.from_key(

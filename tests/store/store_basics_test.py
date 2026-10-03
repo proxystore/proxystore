@@ -17,7 +17,7 @@ from proxystore.store.lifetimes import ContextLifetime
 
 def test_negative_cache_size() -> None:
     with pytest.raises(ValueError, match='Cache size cannot be negative'):
-        Store(LocalConnector(), name='test', cache_size=-1)
+        Store(LocalConnector(), cache_size=-1)
 
 
 def test_store_name_and_id() -> None:
@@ -63,7 +63,7 @@ def test_operations_on_missing_key(store: Store[LocalConnector]) -> None:
 
 
 def test_caching() -> None:
-    with Store(LocalConnector(), name='test', cache_size=0) as store:
+    with Store(LocalConnector(), cache_size=0) as store:
         assert store.cache.maxsize == 0
         value = 'test_value'
 
@@ -72,7 +72,7 @@ def test_caching() -> None:
         assert store.get(key1) == value
         assert not store.is_cached(key1)
 
-    with Store(LocalConnector(), name='test', cache_size=1) as store:
+    with Store(LocalConnector(), cache_size=1) as store:
         # Add our test value
         key1 = store.put(value)
 
@@ -144,7 +144,7 @@ def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
 
 
 def test_set() -> None:
-    with Store(LocalConnector(), name='test-set', cache_size=1) as store:
+    with Store(LocalConnector(), cache_size=1) as store:
         key = store.connector.new_key()
         assert not store.exists(key)
         store._set(key, 'test_value')

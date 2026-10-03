@@ -30,9 +30,7 @@ def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
     with (
-        Store(
-            FileConnector(str(tmp_path)), name='stream-test-fixture'
-        ) as store,
+        Store(FileConnector(str(tmp_path))) as store,
     ):
         yield store
 
@@ -168,7 +166,6 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
 
     store = Store(
         FileConnector(str(tmp_path)),
-        name='test-use-and-register-default-store',
     )
 
     producer = StreamProducer[str](publisher, default_store=store)

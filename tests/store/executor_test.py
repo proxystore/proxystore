@@ -53,7 +53,6 @@ def test_default_behavior(
         base_executor = base_executor_type()
     store = Store(
         FileConnector(str(tmp_path)),
-        name='test-default-behavior',
     )
 
     with StoreExecutor(base_executor, store) as executor:
@@ -95,7 +94,6 @@ def test_proxy_behavior(
         base_executor = base_executor_type()
     store = Store(
         FileConnector(str(tmp_path)),
-        name='test-proxy-behavior',
     )
 
     with StoreExecutor(
@@ -140,7 +138,6 @@ def test_proxy_behavior(
 def test_function_wrapper() -> None:
     with Store(
         LocalConnector(),
-        name='test-function-wrapper',
     ) as store:
         wrapped = _FunctionWrapper(
             power,
@@ -211,7 +208,6 @@ class DaskLikeClient:
 def test_dask_like_client(tmp_path: pathlib.Path) -> None:
     store = Store(
         FileConnector(str(tmp_path)),
-        name='test-dask-like-client',
     )
 
     with StoreExecutor(
@@ -246,7 +242,7 @@ class BadExecutor:
 
 
 def test_warn_unsupported_shutdown_method() -> None:
-    store = Store(LocalConnector(), name='test-function-wrapper')
+    store = Store(LocalConnector())
     executor = StoreExecutor(BadExecutor(), store)  # type: ignore[arg-type]
     with pytest.warns(RuntimeWarning, match='Cannot shutdown BadExecutor'):
         executor.shutdown()

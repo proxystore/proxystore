@@ -30,7 +30,6 @@ def store(
 ) -> Generator[Store[FileConnector], None, None]:
     with Store(
         FileConnector(str(tmp_path)),
-        name='stream-test-fixture',
         cache_size=0,
         populate_target=False,
     ) as store:
