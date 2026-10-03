@@ -13,6 +13,15 @@ Warning:
     this connector within trusted networks which are not publicly accessible,
     such as the interconnect of an HPC cluster.
 
+Note:
+    Only the [`ZeroMQConnector`][proxystore.connectors.zmq.ZeroMQConnector]
+    and its key and exception types are public. The server functions and
+    classes (e.g., [`ZeroMQServer`][proxystore.connectors.zmq.ZeroMQServer]
+    and [`spawn_server()`][proxystore.connectors.zmq.spawn_server]) are
+    internal implementation details which may change between releases
+    without notice (see
+    [Versioning and Compatibility](../../versioning.md)).
+
 Messages are multipart ZeroMQ messages. A request consists of a request ID
 frame, a JSON header frame (e.g., `#!json {"op": "get", "obj_id": "..."}`),
 and optionally a data frame. The reply echoes the request ID and contains a

@@ -1,4 +1,10 @@
-"""Build Globus Auth scopes."""
+"""Build Globus Auth scopes.
+
+Warning:
+    This module is an internal implementation detail which may change
+    between releases without notice (see
+    [Versioning and Compatibility](../../versioning.md)).
+"""
 
 from __future__ import annotations
 
