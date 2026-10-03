@@ -30,7 +30,7 @@ STATE_VERSION_KEY = 'version'
 
 def drop_unknown_fields(
     kind: str,
-    data: Mapping[str, Any],
+    data: dict[str, Any],
     known: Iterable[str],
 ) -> dict[str, Any]:
     """Remove unknown fields from data and warn if any were found.
@@ -47,16 +47,15 @@ def drop_unknown_fields(
     known = known if isinstance(known, (set, frozenset)) else set(known)
     if known.issuperset(data):
         # Fast path for the common case of the same version.
-        return dict(data) if not isinstance(data, dict) else data
+        return data
     unknown = sorted(set(data) - known)
-    if len(unknown) > 0:
-        warnings.warn(
-            f'Ignoring unknown fields of {kind}: {", ".join(unknown)}. '
-            'This can occur when objects are exchanged between processes '
-            'using different versions of ProxyStore.',
-            category=VersionMismatchWarning,
-            stacklevel=3,
-        )
+    warnings.warn(
+        f'Ignoring unknown fields of {kind}: {", ".join(unknown)}. '
+        'This can occur when objects are exchanged between processes '
+        'using different versions of ProxyStore.',
+        category=VersionMismatchWarning,
+        stacklevel=3,
+    )
     return {k: v for k, v in data.items() if k in known}
 
 
@@ -79,4 +78,4 @@ def init_kwargs(
     if any(p.kind is p.VAR_KEYWORD for p in parameters.values()):
         return dict(config)
     name = getattr(cls, '__name__', repr(cls))
-    return drop_unknown_fields(name, config, parameters)
+    return drop_unknown_fields(name, dict(config), parameters)
