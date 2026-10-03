@@ -95,7 +95,7 @@ def test_batch_ops_across_servers(connector: ZeroMQConnector) -> None:
             keys = [keys[0], keys[2], keys[1], keys[3]]
             assert connector.get_batch(keys) == [b'a', b'c', b'b', b'd']
         finally:
-            other.close(kill_server=True)
+            other.close(clear=True)
 
 
 def test_concurrent_threads(connector: ZeroMQConnector) -> None:
@@ -118,7 +118,7 @@ def test_server_shared_between_connectors() -> None:
     other = ZeroMQConnector(port, address=ADDRESS)
     assert other.server is None
     # Only the connector which spawned the server can stop it
-    other.close(kill_server=True)
+    other.close(clear=True)
 
     # By default, closing the owner does not stop the server
     owner.close()
@@ -129,10 +129,21 @@ def test_server_shared_between_connectors() -> None:
     atexit.unregister(owner._kill_hook)
 
 
-def test_close_kill_server() -> None:
+def test_close_clear_stops_server() -> None:
     port = open_port()
     connector = ZeroMQConnector(port, address=ADDRESS, timeout=10)
-    connector.close(kill_server=True)
+    connector.close(clear=True)
+    assert connector.server is None
+
+    with pytest.raises(ServerTimeoutError):
+        wait_for_server(ADDRESS, port, timeout=0.1)
+
+
+def test_close_clear_default_stops_server() -> None:
+    port = open_port()
+    connector = ZeroMQConnector(port, address=ADDRESS, timeout=10, clear=True)
+    assert connector.config()['clear']
+    connector.close()
     assert connector.server is None
 
     with pytest.raises(ServerTimeoutError):

@@ -71,11 +71,18 @@ class FileConnector:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(directory={self.store_dir})'
 
-    def close(self, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:
             This will delete the `store_dir` directory by default.
+
+        Note:
+            A [`Store`][proxystore.store.base.Store] only clears its
+            connector when closed if the store is the
+            [`owner`][proxystore.store.base.Store.owner]. Stores created
+            implicitly, such as when resolving a proxy, never clear their
+            connector.
 
         Warning:
             This method should only be called at the end of the program

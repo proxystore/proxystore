@@ -11,10 +11,10 @@ KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 class Connector(Protocol[KeyT]):
-    def close(self) -> None: ...
+    def close(self, *, clear: bool | None = None) -> None: ...
     def config(self) -> dict[str, Any]: ...
     @classmethod
-    def from_config(cls, config: dict[str, Any]) -> Connector[KeyT]: ...
+    def from_config(cls, config: dict[str, Any]) -> Self: ...
     def evict(self, key: KeyT) -> None: ...
     def exists(self, key: KeyT) -> bool: ...
     def get(self, key: KeyT) -> BytesLike | None: ...
@@ -36,6 +36,18 @@ are provided in the [`proxystore.connectors`][proxystore.connectors] module,
 and users can easily create their own.
 A [`Connector`][proxystore.connectors.protocols.Connector] instance is used
 by the [`Store`][proxystore.store.base.Store] to store and retrieve serialized objects.
+
+The `clear` argument of `close()` controls whether the objects stored by the connector are also removed (e.g., deleting the directory used by the [`FileConnector`][proxystore.connectors.file.FileConnector]).
+When `clear` is `None`, the connector should use its own default.
+A [`Store`][proxystore.store.base.Store] only clears its connector when closed if it is the [`owner`][proxystore.store.base.Store.owner]; stores created implicitly, such as when a proxy is resolved in another process, always pass `#!python clear=False`.
+
+Implementations of `put()` and `put_batch()` may accept additional, connector-specific keyword arguments.
+These are passed from [`Store`][proxystore.store.base.Store] methods via the `connector_options` parameter.
+For example, the [`MultiConnector`][proxystore.connectors.multi.MultiConnector] routes objects based on tags.
+
+```python
+store.put(obj, connector_options={'subset_tags': ['small']})
+```
 
 ## Extensions
 

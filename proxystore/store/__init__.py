@@ -69,6 +69,11 @@ def get_store(proxy: Proxy[T]) -> Store[Any]:
 def get_or_create_store(store_config: StoreConfig) -> Store[Any]:
     """Get a registered store or initialize a new instance from the config.
 
+    Note:
+        A new store is not the
+        [`owner`][proxystore.store.base.Store.owner] of the objects stored
+        by its connector, so closing the store does not clear the connector.
+
     Args:
         store_config: Store configuration. If a store with the same
             [`id`][proxystore.store.config.StoreConfig] is registered, that
@@ -81,7 +86,7 @@ def get_or_create_store(store_config: StoreConfig) -> Store[Any]:
     with _stores_lock:
         if store_config.id is not None and store_config.id in _stores:
             return _stores[store_config.id]
-        return Store.from_config(store_config)
+        return Store.from_config(store_config, owner=False)
 
 
 def _register_store(store: Store[Any]) -> None:

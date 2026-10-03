@@ -59,7 +59,7 @@ class RedisConnector:
             f'port={self.port})'
         )
 
-    def close(self, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:

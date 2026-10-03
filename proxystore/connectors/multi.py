@@ -290,14 +290,20 @@ class MultiConnector:
             f'The connector which created {key} does not exist.',
         )
 
-    def close(self) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:
             This will call `close()` on all managed connectors.
+
+        Args:
+            clear: Passed to `close()` of each managed connector.
         """
         for connector, _ in self.connectors.values():
-            connector.close()
+            if clear is None:
+                connector.close()
+            else:
+                connector.close(clear=clear)
 
     def config(self) -> dict[str, ConnectorPolicyConfig]:
         """Get the connector configuration.

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import threading
 import uuid
+from collections.abc import Mapping
 from collections.abc import Sequence
 from types import TracebackType
 from typing import Any
@@ -138,6 +139,12 @@ class Store(Generic[ConnectorT]):
         metrics: Enable recording operation metrics.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
+        owner: This store owns the objects stored by the connector, so
+            the connector is cleared (e.g., the directory of a
+            [`FileConnector`][proxystore.connectors.file.FileConnector] is
+            deleted), according to the connector's `clear` setting, when
+            this store is closed. Stores created implicitly, such as when a
+            proxy is resolved in another process, are never owners.
 
     Raises:
         ValueError: If `cache_size` is less than zero.
@@ -153,6 +160,7 @@ class Store(Generic[ConnectorT]):
         cache_size: int = 16,
         metrics: bool = False,
         populate_target: bool = True,
+        owner: bool = True,
         _id: str | None = None,
     ) -> None:
         # _id is private and only used by from_config() to recreate a store
@@ -172,6 +180,7 @@ class Store(Generic[ConnectorT]):
         self._serializer = serializer
         self._deserializer = deserializer
         self._populate_target = populate_target
+        self._owner = owner
         self._lock = threading.RLock()
 
         proxystore.store._register_store(self)
@@ -222,6 +231,15 @@ class Store(Generic[ConnectorT]):
         return self._id
 
     @property
+    def owner(self) -> bool:
+        """This store owns the objects stored by its connector.
+
+        Only the owner clears the connector when closed. See
+        [`close()`][proxystore.store.base.Store.close].
+        """
+        return self._owner
+
+    @property
     def name(self) -> str | None:
         """Optional name of this [`Store`][proxystore.store.base.Store]."""
         return self._name
@@ -254,7 +272,7 @@ class Store(Generic[ConnectorT]):
             else proxystore.serialize.deserialize
         )
 
-    def close(self, *args: Any, **kwargs: Any) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector associated with the store.
 
         This will (1) unregister the store and (2) close the connector.
@@ -265,14 +283,21 @@ class Store(Generic[ConnectorT]):
             proxies have been resolved.
 
         Args:
-            args: Positional arguments to pass to
-                [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
-            kwargs: Keyword arguments to pass to
-                [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
+            clear: Clear the objects stored by the connector (see
+                [`Connector.close()`][proxystore.connectors.protocols.Connector.close]).
+                If `None`, the connector's default is used if this store is
+                the [`owner`][proxystore.store.base.Store.owner] and the
+                connector is not cleared otherwise.
         """
+        if clear is None and not self.owner:
+            clear = False
+
         proxystore.store._unregister_store(self)
         with self._lock:
-            self.connector.close(*args, **kwargs)
+            if clear is None:
+                self.connector.close()
+            else:
+                self.connector.close(clear=clear)
 
     def config(self) -> StoreConfig:
         """Get the store configuration.
@@ -302,7 +327,12 @@ class Store(Generic[ConnectorT]):
         )
 
     @classmethod
-    def from_config(cls, config: StoreConfig) -> Store[Any]:
+    def from_config(
+        cls,
+        config: StoreConfig,
+        *,
+        owner: bool = True,
+    ) -> Store[Any]:
         """Create a new store instance from a configuration.
 
         The new store has the same [`id`][proxystore.store.base.Store.id]
@@ -317,6 +347,9 @@ class Store(Generic[ConnectorT]):
 
         Args:
             config: Configuration returned by `#!python .config()`.
+            owner: The new store owns the objects stored by the connector.
+                See the `owner` parameter of
+                [`Store`][proxystore.store.base.Store].
 
         Returns:
             Store instance.
@@ -330,6 +363,7 @@ class Store(Generic[ConnectorT]):
             cache_size=config.cache_size,
             metrics=config.metrics,
             populate_target=config.populate_target,
+            owner=owner,
             _id=config.id,
         )
 
@@ -616,8 +650,10 @@ class Store(Generic[ConnectorT]):
         with self._lock:
             return self.cache.exists(key)
 
+    # The first overload overlaps with the second because a NonProxiableT
+    # is also a T, but the first overload is matched first.
     @overload
-    def proxy(
+    def proxy(  # type: ignore[overload-overlap]
         self,
         obj: NonProxiableT,
         *,
@@ -627,7 +663,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> NonProxiableT: ...
 
     @overload
@@ -641,7 +677,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> Proxy[T]: ...
 
     def proxy(
@@ -654,7 +690,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = False,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> Proxy[T] | NonProxiableT:
         """Create a proxy that will resolve to an object in the store.
 
@@ -680,7 +716,7 @@ class Store(Generic[ConnectorT]):
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
@@ -712,7 +748,11 @@ class Store(Generic[ConnectorT]):
             )
 
         with Timer() as timer:
-            key = self.put(obj, serializer=serializer, **kwargs)
+            key = self.put(
+                obj,
+                serializer=serializer,
+                connector_options=connector_options,
+            )
             factory: StoreFactory[ConnectorT, T] = StoreFactory(
                 key,
                 store_config=self.config(),
@@ -746,8 +786,10 @@ class Store(Generic[ConnectorT]):
         )
         return proxy
 
+    # The first overload overlaps with the second because a NonProxiableT
+    # is also a T, but the first overload is matched first.
     @overload
-    def proxy_batch(
+    def proxy_batch(  # type: ignore[overload-overlap]
         self,
         objs: Sequence[NonProxiableT],
         *,
@@ -757,7 +799,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> list[NonProxiableT]: ...
 
     @overload
@@ -771,7 +813,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> list[Proxy[T]]: ...
 
     # MyPy raises the following:
@@ -787,7 +829,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = False,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> list[Proxy[T] | NonProxiableT]:
         """Create proxies that will resolve to an object in the store.
 
@@ -811,7 +853,7 @@ class Store(Generic[ConnectorT]):
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
         Returns:
@@ -855,7 +897,7 @@ class Store(Generic[ConnectorT]):
             keys = self.put_batch(
                 proxiable_objs,
                 serializer=serializer,
-                **kwargs,
+                connector_options=connector_options,
             )
             factories: list[StoreFactory[ConnectorT, T]] = [
                 StoreFactory(
@@ -948,8 +990,10 @@ class Store(Generic[ConnectorT]):
 
         return proxy
 
+    # The first overload overlaps with the second because a NonProxiableT
+    # is also a T, but the first overload is matched first.
     @overload
-    def locked_proxy(
+    def locked_proxy(  # type: ignore[overload-overlap]
         self,
         obj: NonProxiableT,
         *,
@@ -959,7 +1003,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> NonProxiableT: ...
 
     @overload
@@ -973,7 +1017,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> ProxyLocker[T]: ...
 
     def locked_proxy(
@@ -986,7 +1030,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> ProxyLocker[T] | NonProxiableT:
         """Proxy an object and return [`ProxyLocker`][proxystore.proxy.ProxyLocker].
 
@@ -1010,7 +1054,7 @@ class Store(Generic[ConnectorT]):
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
@@ -1034,15 +1078,17 @@ class Store(Generic[ConnectorT]):
             deserializer=deserializer,
             populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
-            **kwargs,
+            connector_options=connector_options,
         )
 
         if isinstance(possible_proxy, Proxy):
             return ProxyLocker(possible_proxy)
         return possible_proxy
 
+    # The first overload overlaps with the second because a NonProxiableT
+    # is also a T, but the first overload is matched first.
     @overload
-    def owned_proxy(
+    def owned_proxy(  # type: ignore[overload-overlap]
         self,
         obj: NonProxiableT,
         *,
@@ -1050,7 +1096,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> NonProxiableT: ...
 
     @overload
@@ -1062,7 +1108,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = ...,
     ) -> OwnedProxy[T]: ...
 
     def owned_proxy(
@@ -1073,7 +1119,7 @@ class Store(Generic[ConnectorT]):
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> OwnedProxy[T] | NonProxiableT:
         """Create a proxy that will enforce ownership rules over the object.
 
@@ -1096,7 +1142,7 @@ class Store(Generic[ConnectorT]):
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
                 constants like `bool` or `None`) rather than raising a
                 [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
@@ -1116,7 +1162,7 @@ class Store(Generic[ConnectorT]):
             deserializer=deserializer,
             populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
-            **kwargs,
+            connector_options=connector_options,
         )
 
         if isinstance(possible_proxy, Proxy):
@@ -1134,7 +1180,7 @@ class Store(Generic[ConnectorT]):
         *,
         lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> ConnectorKeyT:
         """Put an object in the store.
 
@@ -1144,7 +1190,7 @@ class Store(Generic[ConnectorT]):
                 store instance.
             lifetime: Attach the key to this lifetime. The object associated
                 with the key will be evicted when the lifetime ends.
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
         Returns:
@@ -1165,7 +1211,7 @@ class Store(Generic[ConnectorT]):
             raise TypeError('Serializer must return a bytes-like object.')
 
         with self._lock, Timer() as connector_timer:
-            key = self.connector.put(obj, **kwargs)
+            key = self.connector.put(obj, **(connector_options or {}))
 
         if lifetime is not None:
             lifetime.add_key(key, store=self)
@@ -1193,7 +1239,7 @@ class Store(Generic[ConnectorT]):
         *,
         lifetime: Lifetime | None = None,
         serializer: SerializerT | None = None,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> list[ConnectorKeyT]:
         """Put multiple objects in the store.
 
@@ -1203,7 +1249,7 @@ class Store(Generic[ConnectorT]):
                 store instance.
             lifetime: Attach the keys to this lifetime. The objects associated
                 with each key will be evicted when the lifetime ends.
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
         Returns:
@@ -1229,7 +1275,10 @@ class Store(Generic[ConnectorT]):
             _objs = list(map(_serialize, objs))
 
         with self._lock, Timer() as connector_timer:
-            keys = self.connector.put_batch(_objs, **kwargs)
+            keys = self.connector.put_batch(
+                _objs,
+                **(connector_options or {}),
+            )
 
         if lifetime is not None:
             lifetime.add_key(*keys, store=self)
@@ -1262,7 +1311,7 @@ class Store(Generic[ConnectorT]):
         obj: Any,
         *,
         serializer: SerializerT | None = None,
-        **kwargs: Any,
+        connector_options: Mapping[str, Any] | None = None,
     ) -> None:
         """Set a key in the store to an object.
 
@@ -1281,7 +1330,7 @@ class Store(Generic[ConnectorT]):
             obj: Object to put in the store.
             serializer: Optionally override the default serializer for the
                 store instance.
-            kwargs: Additional keyword arguments to pass to
+            connector_options: Additional keyword arguments to pass to
                 [`DeferrableConnector.set()`][proxystore.connectors.protocols.DeferrableConnector.set].
 
         Raises:
@@ -1310,7 +1359,7 @@ class Store(Generic[ConnectorT]):
 
         with self._lock:
             with Timer() as connector_timer:
-                self.connector.set(key, obj, **kwargs)
+                self.connector.set(key, obj, **(connector_options or {}))
 
             self.cache.evict(key)
 

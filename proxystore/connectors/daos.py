@@ -144,7 +144,7 @@ class DAOSConnector:
                 f'namespace={self.namespace}.',
             )
 
-    def close(self, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:

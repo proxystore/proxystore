@@ -99,8 +99,8 @@ class ZeroMQConnector:
         The first connector created on a host spawns a
         [`ZeroMQServer`][proxystore.connectors.zmq.ZeroMQServer] in a
         new process which other connectors on the host will use. Closing the
-        connector does not stop the server by default, but the server is
-        stopped when the process which spawned it exits.
+        connector does not stop the server by default (see `clear`), but the
+        server is stopped when the process which spawned it exits.
 
     Example:
         ```python
@@ -124,6 +124,10 @@ class ZeroMQConnector:
             [`ServerTimeoutError`][proxystore.connectors.zmq.ServerTimeoutError].
             When operating on multiple objects, the timeout applies to each
             response. `None` waits forever.
+        clear: Stop the server on this host, if it was spawned by this
+            connector, when
+            [`close()`][proxystore.connectors.zmq.ZeroMQConnector.close] is
+            called. This will lose all objects stored in the server.
 
     Raises:
         ServerTimeoutError: If a server on this host could not be connected
@@ -137,12 +141,14 @@ class ZeroMQConnector:
         interface: str | None = None,
         timeout: float = 5,
         request_timeout: float | None = 60,
+        clear: bool = False,
     ) -> None:
         self._address = address
         self._interface = interface
         self.port = port
         self.timeout = timeout
         self.request_timeout = request_timeout
+        self.clear = clear
 
         if self._address is not None:
             self.address = self._address
@@ -283,17 +289,19 @@ class ZeroMQConnector:
 
         return [reply for reply in replies if reply is not None]
 
-    def close(self, kill_server: bool = False) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector.
 
         Args:
-            kill_server: Stop the server on this host if it was spawned by
+            clear: Stop the server on this host if it was spawned by
                 this connector. This will lose all objects stored in the
-                server.
+                server. Overrides the default value of `clear` provided when
+                the connector was instantiated.
         """
         self._pool.close()
 
-        if kill_server and self.server is not None:
+        clear = self.clear if clear is None else clear
+        if clear and self.server is not None:
             _kill_server(self.server)
             atexit.unregister(self._kill_hook)
             logger.info(
@@ -315,6 +323,7 @@ class ZeroMQConnector:
             'interface': self._interface,
             'timeout': self.timeout,
             'request_timeout': self.request_timeout,
+            'clear': self.clear,
         }
 
     @classmethod

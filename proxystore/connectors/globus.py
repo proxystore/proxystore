@@ -500,12 +500,19 @@ class GlobusConnector:
 
         return tuple(tids)
 
-    def close(self, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> None:
         """Close the connector and clean up.
 
         Warning:
             This will delete the directory at `local_path` on each endpoint
             by default.
+
+        Note:
+            A [`Store`][proxystore.store.base.Store] only clears its
+            connector when closed if the store is the
+            [`owner`][proxystore.store.base.Store.owner]. Stores created
+            implicitly, such as when resolving a proxy, never clear their
+            connector.
 
         Warning:
             This method should only be called at the end of the program when

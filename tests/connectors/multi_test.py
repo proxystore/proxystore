@@ -11,8 +11,11 @@ import pytest
 from proxystore.connectors.local import LocalConnector
 from proxystore.connectors.multi import MultiConnector
 from proxystore.connectors.multi import MultiConnectorError
+from proxystore.connectors.multi import MultiKey
 from proxystore.connectors.multi import Policy
 from proxystore.connectors.protocols import Connector
+from proxystore.store.base import Store
+from proxystore.store.utils import get_key
 
 
 @contextlib.contextmanager
@@ -209,3 +212,54 @@ def test_dormant_connectors() -> None:
             match='dormant',
         ):
             remote_connector.get(key2)
+
+
+@pytest.mark.parametrize('clear', (None, True, False))
+def test_multi_connector_close_passes_clear(clear: bool | None) -> None:
+    connector1 = mock.MagicMock()
+    connector2 = mock.MagicMock()
+    connector = MultiConnector(
+        {'c1': (connector1, Policy()), 'c2': (connector2, Policy())},
+    )
+    connector.close(clear=clear)
+    for c in (connector1, connector2):
+        if clear is None:
+            c.close.assert_called_once_with()
+        else:
+            c.close.assert_called_once_with(clear=clear)
+
+
+def _connector_name(key: tuple[Any, ...]) -> str:
+    assert isinstance(key, MultiKey)
+    return key.connector_name
+
+
+def test_store_connector_options_route_objects() -> None:
+    with multi_connector_from_policies(
+        Policy(priority=1, subset_tags=['a']),
+        Policy(priority=2, subset_tags=['b']),
+    ) as (multi_connector, _, _):
+        store = Store(multi_connector, owner=False)
+
+        key = store.put('value', connector_options={'subset_tags': ['a']})
+        assert _connector_name(key) == 'c1'
+
+        keys = store.put_batch(
+            ['value1', 'value2'],
+            connector_options={'subset_tags': ['b']},
+        )
+        assert all(_connector_name(key) == 'c2' for key in keys)
+
+        proxy = store.proxy('value', connector_options={'subset_tags': ['a']})
+        assert _connector_name(get_key(proxy)) == 'c1'
+
+        proxies = store.proxy_batch(
+            ['value1', 'value2'],
+            connector_options={'subset_tags': ['b']},
+        )
+        assert all(_connector_name(get_key(p)) == 'c2' for p in proxies)
+
+        with pytest.raises(MultiConnectorError):
+            store.put('value', connector_options={'subset_tags': ['c']})
+
+        store.close()
