@@ -44,8 +44,8 @@ require the `endpoints` extra (`pip install proxystore[endpoints]`). Clients
 and endpoints share the ProxyStore home directory, so use the same Python
 environment for both. Peering uses the
 [`iroh`](https://pypi.org/project/iroh/){target=_blank} package which only
-provides wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer), macOS
-(arm64), and Windows (x86_64).
+provides wheels for Linux (x86_64 and aarch64, glibc 2.28 or newer) and macOS
+(arm64).
 
 ## Endpoint CLI
 

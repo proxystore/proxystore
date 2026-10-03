@@ -6,12 +6,13 @@ import contextlib
 import dataclasses
 import enum
 import errno
+import fcntl
 import logging
 import os
 import random
 import shutil
 import stat
-import sys
+import time
 from typing import ClassVar
 from typing import Self
 from typing import TypedDict
@@ -36,9 +37,6 @@ from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.peers import Peers
 from proxystore.utils.environment import home_dir
 from proxystore.utils.environment import hostname
-
-if sys.platform != 'win32':  # pragma: no branch
-    import fcntl
 
 logger = logging.getLogger(__name__)
 
@@ -144,9 +142,14 @@ class EndpointLock:
         path: Path of the lock file.
     """
 
+    # Other processes (and threads) check if the lock is held by briefly
+    # holding a shared lock, so acquiring the exclusive lock is retried for
+    # this long before deciding the lock is held by a running endpoint.
+    _ACQUIRE_TIMEOUT: ClassVar[float] = 1
+
     def __init__(self, path: str) -> None:
         self.path = path
-        self.supported = sys.platform != 'win32'
+        self.supported = True
         self._fd: int | None = None
 
     @property
@@ -166,7 +169,12 @@ class EndpointLock:
             raise RuntimeError('The lock is already held.')
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
         try:
-            if self._flock(fd) is False:
+            deadline = time.monotonic() + self._ACQUIRE_TIMEOUT
+            while (acquired := self._flock(fd, fcntl.LOCK_EX)) is False:
+                if time.monotonic() >= deadline:
+                    break
+                time.sleep(0.005)
+            if acquired is False:
                 raise EndpointRunningError(
                     'Endpoint '
                     f'{os.path.basename(os.path.dirname(self.path))} is '
@@ -183,7 +191,7 @@ class EndpointLock:
         if self._fd is None:
             return
         fd, self._fd = self._fd, None
-        if self.supported:  # pragma: no branch
+        if self.supported:
             with contextlib.suppress(OSError):
                 fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
@@ -200,7 +208,9 @@ class EndpointLock:
         except FileNotFoundError:
             return False if self.supported else None
         try:
-            acquired = self._flock(fd)
+            # A shared lock is used so concurrent checks do not conflict
+            # with each other, only with the exclusive lock of the endpoint.
+            acquired = self._flock(fd, fcntl.LOCK_SH)
             if acquired is None:
                 return None
             if acquired:
@@ -209,12 +219,12 @@ class EndpointLock:
         finally:
             os.close(fd)
 
-    def _flock(self, fd: int) -> bool | None:
+    def _flock(self, fd: int, operation: int) -> bool | None:
         # Returns if the lock was acquired or None if locks are unsupported.
         if not self.supported:  # pragma: no cover
             return None
         try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(fd, operation | fcntl.LOCK_NB)
         except BlockingIOError:
             return False
         except OSError as e:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import errno
+import fcntl
 import json
 import os
 import pathlib
@@ -208,7 +209,10 @@ def test_lock(tmp_path: pathlib.Path) -> None:
     # The lock conflicts with other lock objects, even in this process
     other = endpoint_dir.lock()
     assert other.is_locked()
-    with pytest.raises(EndpointRunningError, match='already running'):
+    with (
+        mock.patch.object(EndpointLock, '_ACQUIRE_TIMEOUT', 0),
+        pytest.raises(EndpointRunningError, match='already running'),
+    ):
         other.acquire()
     assert not other.held
     with pytest.raises(RuntimeError, match='already held'):
@@ -221,6 +225,29 @@ def test_lock(tmp_path: pathlib.Path) -> None:
     other.release()
     # Releasing a lock which is not held is a no-op
     other.release()
+
+
+def test_lock_concurrent_check(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    lock = endpoint_dir.lock()
+    # Simulate another thread or process checking if the lock is held.
+    fd = os.open(lock.path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        # Concurrent checks do not see each other as the endpoint.
+        assert lock.is_locked() is False
+        # Acquiring is retried until the check finishes, which happens
+        # while acquire() waits to retry.
+        with mock.patch(
+            'proxystore.endpoint.directory.time.sleep',
+            side_effect=lambda _: fcntl.flock(fd, fcntl.LOCK_UN),
+        ) as sleep:
+            lock.acquire()
+        sleep.assert_called_once()
+        assert lock.held
+    finally:
+        os.close(fd)
+    lock.release()
 
 
 def test_lock_released_when_process_exits(tmp_path: pathlib.Path) -> None:
