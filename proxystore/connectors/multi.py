@@ -284,7 +284,7 @@ class MultiConnector:
         the connector object.
         """
         configs: dict[str, ConnectorPolicyConfig] = (
-            self.dormant_connectors
+            dict(self.dormant_connectors)
             if self.dormant_connectors is not None
             else {}
         )

@@ -197,6 +197,11 @@ def test_dormant_connectors() -> None:
         assert remote_connector.dormant_connectors is not None
         assert len(remote_connector.dormant_connectors) == 1
 
+        # Getting the config should not add active connectors to the
+        # dormant connectors.
+        remote_connector.config()
+        assert len(remote_connector.dormant_connectors) == 1
+
         with pytest.raises(MultiConnectorError, match='constraints'):
             remote_connector.put(b'data', subset_tags=['b'])
         with pytest.raises(  # pragma: <3.14 cover
