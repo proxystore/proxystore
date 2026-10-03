@@ -268,6 +268,8 @@ async def test_bad_auth_message_closes_connection(server: _Server) -> None:
 
 
 async def test_handshake_timeout(server: _Server, caplog) -> None:
+    server.handler.handshake_timeout = 0.05
+
     def _run() -> None:
         with _raw_socket(server) as sock:
             # Server should close the connection after the handshake timeout
@@ -409,7 +411,7 @@ async def test_close_cancels_requests(server: _Server) -> None:
     ):
         request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
         await started.wait()
-        await server.handler.close(timeout=0.1)
+        await server.handler.close(timeout=0.01)
         assert cancelled.is_set()
         assert len(server.handler._tasks) == 0
         with pytest.raises(EndpointConnectionError):

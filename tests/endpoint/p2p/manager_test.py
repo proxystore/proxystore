@@ -327,7 +327,7 @@ async def test_connect_no_common_version(managers) -> None:
 
 async def test_connect_timeout() -> None:
     manager1 = local_peer_manager(
-        options=dataclasses.replace(LOCAL_PEER_OPTIONS, connect_timeout=0.1),
+        options=dataclasses.replace(LOCAL_PEER_OPTIONS, connect_timeout=0.01),
     )
     manager2 = local_peer_manager()
     await manager1.start(_echo_handler([]))

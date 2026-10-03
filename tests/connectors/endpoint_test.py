@@ -28,6 +28,7 @@ from proxystore.endpoint.identity import EndpointId
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
 from testing.endpoint import write_endpoint
+from testing.utils import wait_until
 
 
 def test_no_endpoints_provided() -> None:
@@ -344,8 +345,13 @@ async def test_connector_endpoint_restart(
 
     # A request made while the endpoint is stopped succeeds once the
     # endpoint restarts within the reconnect timeout
+    caplog.clear()
     request = asyncio.create_task(asyncio.to_thread(connector.exists, key))
-    await asyncio.sleep(0.2)
+    await wait_until(
+        lambda: any(
+            'Retrying connection' in r.message for r in caplog.records
+        ),
+    )
     assert not request.done()
     async with Endpoint(endpoint_dir):
         assert not await request
