@@ -61,7 +61,7 @@ class Store(Generic[ConnectorT]):
         [`close()`][proxystore.store.base.Store.close] on exit.
 
         ```python
-        with Store(connector=...) as store:
+        with Store(...) as store:
             key = store.put('value')
             store.get(key)
         ```

@@ -78,7 +78,7 @@ multiple proxies refer to the same object.
 from proxystore.store import Store
 
 # Cache size of 16 is the default
-Store(connector=..., cache_size=16)
+Store(..., cache_size=16)
 ```
 
 ## Transactional Guarantees
