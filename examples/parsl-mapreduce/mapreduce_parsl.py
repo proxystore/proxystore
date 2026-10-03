@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 from typing import Any
 
 import numpy as np
@@ -10,6 +11,7 @@ import parsl
 from parsl import python_app
 
 from proxystore.connectors.local import LocalConnector
+from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store.base import Store
 
@@ -62,22 +64,23 @@ if __name__ == '__main__':
 
     parsl.load()
 
-    if args.proxy:
-        store: Store[Any]
-        if args.redis_port is None:
-            store = Store(LocalConnector())
-        else:
-            store = Store(
-                RedisConnector('localhost', args.redis_port),
-            )
-
-    mapped_results = []
-    for _ in range(args.num_arrays):
-        x = np.random.rand(args.size, args.size)
+    with contextlib.ExitStack() as stack:
+        store: Store[Any] | None = None
         if args.proxy:
-            x = store.proxy(x)
-        mapped_results.append(app_double(x))
+            connector: Connector[Any] = (
+                LocalConnector()
+                if args.redis_port is None
+                else RedisConnector('localhost', args.redis_port)
+            )
+            store = stack.enter_context(Store(connector))
 
-    total = app_sum(inputs=mapped_results)
+        mapped_results = []
+        for _ in range(args.num_arrays):
+            x = np.random.rand(args.size, args.size)
+            if store is not None:
+                x = store.proxy(x)
+            mapped_results.append(app_double(x))
 
-    print('Sum:', total.result())
+        total = app_sum(inputs=mapped_results)
+
+        print('Sum:', total.result())

@@ -120,18 +120,15 @@ class ContextLifetime:
         from proxystore.store.base import Store
         from proxystore.store.lifetimes import ContextLifetime
 
-        store = Store(...)
+        with Store(...) as store:
+            with ContextLifetime(store) as lifetime:
+                # Objects in the store can be associated with this lifetime.
+                key = store.put('value', lifetime=lifetime)
+                proxy = store.proxy('value', lifetime=lifetime)
 
-        with ContextLifetime(store) as lifetime:
-            # Objects in the store can be associated with this lifetime.
-            key = store.put('value', lifetime=lifetime)
-            proxy = store.proxy('value', lifetime=lifetime)
-
-        # Objects associated with the lifetime are evicted once the
-        # lifetime ends.
-        assert not store.exists(key)
-
-        store.close()
+            # Objects associated with the lifetime are evicted once the
+            # lifetime ends.
+            assert not store.exists(key)
         ```
 
     Args:

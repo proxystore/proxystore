@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import sys
 import time
 from typing import Any
@@ -13,6 +14,7 @@ from globus_compute_sdk import Executor
 from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoints
+from proxystore.connectors.protocols import Connector
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store.base import Store
 
@@ -95,33 +97,35 @@ if __name__ == '__main__':
     )
     args = parser.parse_args()
 
-    store: Store[Any] | None = None
+    connector: Connector[Any] | None = None
     if args.ps_file:
-        store = Store(FileConnector(store_dir=args.ps_file_dir))
+        connector = FileConnector(store_dir=args.ps_file_dir)
     elif args.ps_globus:
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-        store = Store(GlobusConnector(endpoints=endpoints))
+        connector = GlobusConnector(endpoints=endpoints)
     elif args.ps_redis:
-        store = Store(RedisConnector('localhost', args.ps_redis_port))
+        connector = RedisConnector('localhost', args.ps_redis_port)
 
-    start = time.perf_counter()
+    with contextlib.ExitStack() as stack:
+        store: Store[Any] | None = None
+        if connector is not None:
+            store = stack.enter_context(Store(connector))
 
-    with Executor(endpoint_id=args.endpoint) as gce:
-        futures = []
-        for _ in range(args.num_arrays):
-            x = np.random.rand(args.size, args.size)
+        start = time.perf_counter()
+
+        with Executor(endpoint_id=args.endpoint) as gce:
+            futures = []
+            for _ in range(args.num_arrays):
+                x = np.random.rand(args.size, args.size)
+                if store is not None:
+                    x = store.proxy(x)
+                futures.append(gce.submit(app_double, x))
+
+            mapped_results = [future.result() for future in futures]
+
             if store is not None:
-                x = store.proxy(x)
-            futures.append(gce.submit(app_double, x))
+                mapped_results = store.proxy(mapped_results)
+            total = gce.submit(app_sum, mapped_results).result()
 
-        mapped_results = [future.result() for future in futures]
-
-        if store is not None:
-            mapped_results = store.proxy(mapped_results)
-        total = gce.submit(app_sum, mapped_results).result()
-
-    print(f'Sum: {total}')
-    print(f'Time: {time.perf_counter() - start:.2f}')
-
-    if store is not None:
-        store.close()
+        print(f'Sum: {total}')
+        print(f'Time: {time.perf_counter() - start:.2f}')

@@ -111,15 +111,12 @@ def submit(
         from proxystore.store.ref import borrow
         from proxystore.store.scopes import submit
 
-        store = Store(...)
-        proxy = store.owned_proxy([1, 2, 3])
-        borrowed = borrow(proxy)
+        with Store(...) as store, ProcessPoolExecutor() as pool:
+            proxy = store.owned_proxy([1, 2, 3])
+            borrowed = borrow(proxy)
 
-        with ProcessPoolExecutor() as pool:
             future: Future[int] = submit(pool.submit, args=(sum, borrowed))
             assert future.result() == 6
-
-        store.close()
         ```
 
     Tip:
