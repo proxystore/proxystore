@@ -154,12 +154,17 @@ class StreamConsumer(Generic[T]):
             self.subscriber.close()
 
     def _get_store(self, event: NewObjectKeyEvent) -> Store[Any]:
+        # Stores are cached by ID because events in a topic can come from
+        # different stores (e.g., multiple producers). A config without an
+        # ID is cached by topic.
+        config = event.store_config
+        cache_key = config.id if config.id is not None else event.topic
         with _consumer_get_store_lock:
-            if event.topic in self._stores:
-                return self._stores[event.topic]
+            if cache_key in self._stores:
+                return self._stores[cache_key]
 
-            store = get_or_create_store(event.store_config)
-            self._stores[event.topic] = store
+            store = get_or_create_store(config)
+            self._stores[cache_key] = store
             return store
 
     def _next_batch(self) -> EventBatch:
