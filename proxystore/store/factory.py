@@ -80,7 +80,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
         store = self.get_store()
         if store.metrics is not None:
-            store.metrics.add_time('factory.call', self.key, timer.elapsed_ns)
+            store.metrics.add_time('factory.call', self.key, timer.elapsed_ms)
 
         return obj
 
@@ -126,7 +126,7 @@ class StoreFactory(Generic[ConnectorT, T]):
                 store.evict(self.key)
 
         if store.metrics is not None:
-            total_time = timer.elapsed_ns
+            total_time = timer.elapsed_ms
             store.metrics.add_time('factory.resolve', self.key, total_time)
 
         return cast(T, obj)
@@ -234,7 +234,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                 store.evict(self.key)
 
         if store.metrics is not None:
-            total_time = timer.elapsed_ns
+            total_time = timer.elapsed_ms
             store.metrics.add_time(
                 'factory.polling_resolve',
                 self.key,

@@ -9,6 +9,7 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.store.base import Store
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
+from proxystore.utils.imports import get_object_path
 
 
 @pytest.mark.parametrize(
@@ -23,6 +24,21 @@ from proxystore.store.config import StoreConfig
 def test_get_connector_type(kind: str, expected: type) -> None:
     config = ConnectorConfig(kind=kind)
     assert config.get_connector_type() == expected
+
+
+@pytest.mark.parametrize(
+    ('kind', 'expected'),
+    (
+        ('daos', 'proxystore.connectors.daos.DAOSConnector'),
+        ('DAOSConnector', 'proxystore.connectors.daos.DAOSConnector'),
+        ('zmq', 'proxystore.connectors.zmq.ZeroMQConnector'),
+        ('zeromq', 'proxystore.connectors.zmq.ZeroMQConnector'),
+        ('ZeroMQConnector', 'proxystore.connectors.zmq.ZeroMQConnector'),
+    ),
+)
+def test_get_connector_type_by_module(kind: str, expected: str) -> None:
+    config = ConnectorConfig(kind=kind)
+    assert get_object_path(config.get_connector_type()) == expected
 
 
 def test_local_connector_config() -> None:

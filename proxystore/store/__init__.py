@@ -24,6 +24,7 @@ __all__ = [
     'Store',
     'StoreConfig',
     'StoreFactory',
+    'get_or_create_store',
     'get_store',
     'register_store',
     'store_registration',
@@ -44,10 +45,16 @@ def get_store(val: str | Proxy[T]) -> Store[Any] | None:
         val: name of the store to get or a [`Proxy`][proxystore.proxy.Proxy]
             instance.
 
+    Note:
+        If `val` is a proxy, the store which created the proxy is
+        initialized and registered from the configuration in the proxy's
+        factory if the store is not already registered. Thus, `None` is
+        only returned when looking up a store by name.
+
     Returns:
         [`Store`][proxystore.store.base.Store] if a store matching the \
-        name or belonging to the proxy exists. If the store does not exist, \
-        returns `None`.
+        name or belonging to the proxy exists. If no store with the \
+        name exists, returns `None`.
 
     Raises:
         ProxyStoreFactoryError: If the value is a proxy but does not contain a

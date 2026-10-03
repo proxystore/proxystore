@@ -18,12 +18,14 @@ from proxystore.utils.config import load
 from proxystore.utils.imports import import_from_path
 
 _KNOWN_CONNECTORS = {
+    'proxystore.connectors.daos.DAOSConnector',
     'proxystore.connectors.endpoint.EndpointConnector',
     'proxystore.connectors.file.FileConnector',
     'proxystore.connectors.globus.GlobusConnector',
     'proxystore.connectors.local.LocalConnector',
     'proxystore.connectors.multi.MultiConnector',
     'proxystore.connectors.redis.RedisConnector',
+    'proxystore.connectors.zmq.ZeroMQConnector',
 }
 
 
@@ -51,9 +53,10 @@ class ConnectorConfig(BaseModel):
             [`Connector`][proxystore.connectors.protocols.Connector] type.
             E.g., `'file'` or `'FileConnector'` are valid shortcuts for
             `'proxystore.connectors.file.FileConnector'`.
-        options: Dictionary of keyword arguments to pass to the
-            [`Connector`][proxystore.connectors.protocols.Connector]
-            constructor.
+        options: Connector configuration passed to
+            [`Connector.from_config()`][proxystore.connectors.protocols.Connector.from_config].
+            For the builtin connectors, these are the keyword arguments
+            of the constructor.
     """
 
     model_config = ConfigDict(extra='forbid')
@@ -74,10 +77,13 @@ class ConnectorConfig(BaseModel):
         If the import fails, `kind` will be checked against a list of known
         (i.e., builtin)
         [`Connector`][proxystore.connectors.protocols.Connector] types.
-        `kind` will be psuedo-fuzzy matched against the class names of the
-        known [`Connector`][proxystore.connectors.protocols.Connector] types.
+        `kind` will be psuedo-fuzzy matched against the class and module
+        names of the known
+        [`Connector`][proxystore.connectors.protocols.Connector] types.
         For example, `kind='local'` and `kind='LocalConnector'` will both
-        match to `'proxystore.connectors.local.LocalConnector'`.
+        match to `'proxystore.connectors.local.LocalConnector'`, and
+        `kind='zmq'` matches
+        `'proxystore.connectors.zmq.ZeroMQConnector'`.
 
         Returns:
             [`Connector`][proxystore.connectors.protocols.Connector] type.
@@ -92,9 +98,9 @@ class ConnectorConfig(BaseModel):
             return import_from_path(self.kind)
         except ImportError as e:
             for path in _KNOWN_CONNECTORS:
-                _, name = path.rsplit('.', 1)
+                _, module, name = path.rsplit('.', 2)
                 name = name.lower()
-                choices = [name, name.replace('connector', '')]
+                choices = [module, name, name.replace('connector', '')]
                 if self.kind.lower() in choices:
                     return import_from_path(path)
             raise ValueError(f'Unknown connector type "{self.kind}".') from e
@@ -102,12 +108,18 @@ class ConnectorConfig(BaseModel):
     def get_connector(self) -> Connector[Any]:
         """Get the connector specified by the configuration.
 
+        The connector is created with the
+        [`from_config()`][proxystore.connectors.protocols.Connector.from_config]
+        method of the connector type so `options` must be the configuration
+        format returned by
+        [`config()`][proxystore.connectors.protocols.Connector.config].
+
         Returns:
             A [`Connector`][proxystore.connectors.protocols.Connector] \
             instance.
         """
         connector_type = self.get_connector_type()
-        return connector_type(**self.options)
+        return connector_type.from_config(self.options)
 
 
 class StoreConfig(BaseModel):

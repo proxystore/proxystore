@@ -237,7 +237,9 @@ class Store(Generic[ConnectorT]):
         """Close the connector associated with the store.
 
         This will (1) close the connector and (2) unregister the store if
-        `register=True` was set during initialization.
+        this instance is registered (e.g., because `register=True` was set
+        during initialization or it was registered with
+        [`register_store()`][proxystore.store.register_store]).
 
         Warning:
             This method should only be called at the end of the program
@@ -250,8 +252,9 @@ class Store(Generic[ConnectorT]):
             kwargs: Keyword arguments to pass to
                 [`Connector.close()`][proxystore.connectors.protocols.Connector.close].
         """
-        if self._register:
-            proxystore.store.unregister_store(self.name)
+        with proxystore.store._stores_lock:
+            if proxystore.store.get_store(self.name) is self:
+                proxystore.store.unregister_store(self.name)
         with self._lock:
             self.connector.close(*args, **kwargs)
 

@@ -81,6 +81,11 @@ def test_store_single_key_operations(store: Store[FileConnector]) -> None:
     assert proxy_metrics.times['store.proxy'].count == 1
     assert proxy_metrics.times['factory.call'].count == 1
     assert proxy_metrics.times['factory.resolve'].count == 1
+    # Factory times are recorded in milliseconds, like the store times. The
+    # resolve includes the store get so the times should be similar.
+    resolve_time = proxy_metrics.times['factory.resolve'].avg_time_ms
+    get_time = proxy_metrics.times['store.get'].avg_time_ms
+    assert resolve_time < get_time + 100
 
     future: Future[Any] = store.future()
     future_metrics = store.metrics.get_metrics(future._factory.key)
