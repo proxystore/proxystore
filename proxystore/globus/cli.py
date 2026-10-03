@@ -1,5 +1,11 @@
 """ProxyStore Globus Auth CLI.
 
+Warning:
+    The Python interface of this module is an internal implementation detail
+    which may change between releases without notice (see
+    [Versioning and Compatibility](../../versioning.md)). Use the
+    `proxystore-globus-auth` CLI instead.
+
 ```bash
 # basic login/logout
 proxystore-globus-auth login

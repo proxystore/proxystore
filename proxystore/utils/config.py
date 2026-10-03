@@ -1,4 +1,10 @@
-"""Read and write TOML config files using Pydantic BaseClasses."""
+"""Read and write TOML config files using Pydantic BaseClasses.
+
+Warning:
+    This module is an internal implementation detail which may change
+    between releases without notice (see
+    [Versioning and Compatibility](../../versioning.md)).
+"""
 
 from __future__ import annotations
 
