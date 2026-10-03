@@ -106,3 +106,20 @@ def test_store_registration() -> None:
 
     assert get_store(local1.name) is None
     assert get_store(local2.name) is None
+
+
+def test_close_unregisters_store() -> None:
+    store = Store('test', connector=LocalConnector())
+    register_store(store)
+    store.close()
+    assert get_store('test') is None
+
+
+def test_close_does_not_unregister_other_store() -> None:
+    store = Store('test', connector=LocalConnector())
+    other = Store('test', connector=LocalConnector())
+    register_store(other)
+    store.close()
+    assert get_store('test') is other
+    other.close()
+    assert get_store('test') is None
