@@ -10,21 +10,28 @@ from proxystore.stream.filters import SamplingFilter
 
 
 def test_null_filter():
-    filter_ = NullFilter()
-    assert not filter_({})
-    assert not filter_({'field': True})
+    keep = NullFilter()
+    assert keep({})
+    assert keep({'field': True})
 
 
 def test_sampling_filter():
-    filter_ = SamplingFilter(0.2)
+    keep = SamplingFilter(0.2)
 
     with mock.patch('random.random', return_value=0.1):
-        assert filter_({})
-        assert filter_({'field': True})
+        assert keep({})
+        assert keep({'field': True})
 
     with mock.patch('random.random', return_value=0.3):
-        assert not filter_({})
-        assert not filter_({'field': True})
+        assert not keep({})
+        assert not keep({'field': True})
+
+
+def test_sampling_filter_bounds():
+    with mock.patch('random.random', return_value=0.0):
+        assert not SamplingFilter(0)({})
+    with mock.patch('random.random', return_value=0.999):
+        assert SamplingFilter(1)({})
 
 
 def test_sampling_filter_value_error():

@@ -192,18 +192,18 @@ def test_filtering_stream(
     topic = 'default'
     publisher, subscriber = create_message_pubsub_pair(topic)
 
-    def filter_(metadata: dict[str, Any] | None) -> bool:
+    def keep(metadata: dict[str, Any] | None) -> bool:
         assert metadata is not None
-        return metadata['index'] % 2 != 0
+        return metadata['index'] % 2 == 0
 
     producer = StreamProducer[int](
         publisher,
         stores={topic: store},
-        filter_=filter_ if toggle_side else None,
+        keep=keep if toggle_side else None,
     )
     consumer = StreamConsumer[int](
         subscriber,
-        filter_=filter_ if not toggle_side else None,
+        keep=keep if not toggle_side else None,
     )
 
     for i in range(10):

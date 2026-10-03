@@ -89,8 +89,8 @@ class StreamConsumer(Generic[T]):
             [`Subscriber`][proxystore.stream.protocols.Subscriber] protocols.
             Used to listen for new event messages indicating new objects
             in the stream.
-        filter_: Optional filter to apply to event metadata received from the
-            stream. If the filter returns `True`, the event will be
+        keep: Optional filter to apply to event metadata received from the
+            stream. If the filter returns `False`, the event will be
             dropped (i.e., not yielded back to the user), and the object
             associated with that event will be deleted if the `evict` flag
             was set on the producer side.
@@ -100,11 +100,11 @@ class StreamConsumer(Generic[T]):
         self,
         subscriber: Subscriber,
         *,
-        filter_: Filter | None = None,
+        keep: Filter | None = None,
     ) -> None:
         self.subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
-        self._filter: Filter = filter_ if filter_ is not None else NullFilter()
+        self._keep: Filter = keep if keep is not None else NullFilter()
 
         self._current_batch: EventBatch | None = None
 
@@ -196,7 +196,7 @@ class StreamConsumer(Generic[T]):
             # if the event was an end of stream event.
             event = self._next_event()
 
-            if not self._filter(event.metadata):
+            if self._keep(event.metadata):
                 return event
 
             if (

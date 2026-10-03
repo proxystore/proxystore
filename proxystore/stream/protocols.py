@@ -134,8 +134,9 @@ class Filter(Protocol):
 
     A filter takes as input the dictionary of metadata associated with a new
     object event and returns a boolean indicating if the event should be
-    dropped. I.e., if the filter returns `True`, the event will be filtered
-    out of the stream and lost.
+    kept, like the function passed to the builtin [`filter()`][filter].
+    I.e., if the filter returns `False`, the event will be filtered out of
+    the stream and lost.
     """
 
     def __call__(self, metadata: dict[str, Any]) -> bool:
