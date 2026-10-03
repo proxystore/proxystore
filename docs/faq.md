@@ -119,6 +119,7 @@ The same applies to [`StoreConfig`][proxystore.store.config.StoreConfig] instanc
 When an older version receives fields added by a newer version (e.g., a new connector option), the unknown fields are ignored with a [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning].
 Features which depend on those fields may not take effect in the older process, so upgrading all processes is still recommended.
 Proxies are not compatible between major versions (e.g., 1.x and 2.x).
+See [Versioning and Compatibility](versioning.md) for more details.
 
 ## Runtime Type Checking
 
