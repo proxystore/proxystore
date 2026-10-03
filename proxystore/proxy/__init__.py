@@ -73,6 +73,9 @@ DefaultClassType: TypeAlias = type | None
 DefaultHashType: TypeAlias = Exception | int | None
 
 
+# Pickled proxies reference this function by its import path so it is part
+# of the pickle format of proxies. Its name, location, and parameters must not
+# change within a major version (see proxystore._compat).
 def _proxy_trampoline(
     factory: FactoryType[T],
     default_class: DefaultClassType = None,

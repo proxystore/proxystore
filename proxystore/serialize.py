@@ -252,6 +252,13 @@ def _register_serializer(serializer: type[_Serializer]) -> None:
 
 # Registration order determines priority so we register in the order
 # we want serialization to be tried.
+#
+# Serialized objects are exchanged between processes which may use different
+# 2.x versions of ProxyStore. Within a major version, identifiers must not
+# change and the serializer chosen for an existing type must not change
+# because an older version cannot deserialize an unknown identifier. New
+# serializers must only be used for types which no existing serializer
+# supports.
 _register_serializer(_BytesSerializer)
 _register_serializer(_StrSerializer)
 _register_serializer(_NumpySerializer)
