@@ -19,6 +19,7 @@ from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
+from proxystore.store.future import PollingPolicy
 from proxystore.stream.events import dict_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import event_to_dict
@@ -135,12 +136,10 @@ def test_polling_store_factory_state() -> None:
     factory: PollingStoreFactory[Any, Any] = PollingStoreFactory(
         ('key',),
         CONFIG,
-        polling_interval=2,
-        polling_timeout=3,
+        polling=PollingPolicy(interval=2, timeout=3),
     )
     new = pickle.loads(pickle.dumps(factory))
-    assert new._polling_interval == 2
-    assert new._polling_timeout == 3
+    assert new.polling == factory.polling
 
     state = factory.__getstate__()
     del state['polling_interval']
@@ -148,8 +147,7 @@ def test_polling_store_factory_state() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter('error')
         new.__setstate__(state)
-    assert new._polling_interval == 1
-    assert new._polling_timeout == 3
+    assert new.polling == PollingPolicy(interval=1, timeout=3)
 
 
 def test_event_unknown_fields() -> None:

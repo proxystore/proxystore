@@ -4,7 +4,7 @@
 
 This guide walks through the use of the
 [`Store.future()`][proxystore.store.base.Store.future] interface and associated
-[`Future`][proxystore.store.future.Future].
+[`ProxyFuture`][proxystore.store.future.ProxyFuture].
 
 !!! note
 
@@ -13,7 +13,7 @@ This guide walks through the use of the
     [Concepts](../concepts/index.md){target=_blank} page to learn more about
     ProxyStore's core concepts.
 
-The [`Future`][proxystore.store.future.Future] interface enables
+The [`ProxyFuture`][proxystore.store.future.ProxyFuture] interface enables
 a data producer to preemptively send a proxy to a data consumer before the
 target data has been created. The consumer of the target data proxy will
 block when the proxy is first used and resolved until the producer
@@ -21,17 +21,17 @@ has created the target data.
 
 Here is a trivial example using a [`Store`][proxystore.store.base.Store] and
 [`LocalConnector`][proxystore.connectors.local.LocalConnector]. The
-[`future.proxy()`][proxystore.store.future.Future.proxy] method is used
+[`future.proxy()`][proxystore.store.future.ProxyFuture.proxy] method is used
 to create a [`Proxy`][proxystore.proxy.Proxy] which will resolve to the
 result of the future.
 
 ```python linenums="1" title="example.py"
 from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
-from proxystore.store.future import Future
+from proxystore.store.future import ProxyFuture
 
 with Store(LocalConnector()) as store:
-    future: Future[str] = store.future()
+    future: ProxyFuture[str] = store.future()
     proxy = future.proxy()
 
     future.set_result('value')
@@ -59,11 +59,11 @@ with Store(LocalConnector()) as store:
     [`FileConnector`][proxystore.connectors.file.FileConnector], and
     [`RedisConnector`][proxystore.connectors.redis.RedisConnector].
 
-The power of [`Future`][proxystore.store.future.Future] comes when
+The power of [`ProxyFuture`][proxystore.store.future.ProxyFuture] comes when
 the data producer and consumer are executing independently in time and space
 (i.e., execution occurs in different processes, potentially on different
 systems, and in an undefined order). The
-[`Future`][proxystore.store.future.Future] enables the producer
+[`ProxyFuture`][proxystore.store.future.ProxyFuture] enables the producer
 and consumer to share a data dependency, while allowing the consumer to
 eagerly start execution before the data dependencies are fully satisfied.
 
@@ -75,13 +75,13 @@ at the same time. (We could even start `bar()` before `foo()`!)
 ```python linenums="1" title="client.py"
 from proxystore.connectors.redis import RedisConnector
 from proxystore.store import Store
-from proxystore.store.future import Future
+from proxystore.store.future import ProxyFuture
 
 
 class MyData: ...
 
 
-def foo(future: Future[MyData]) -> None:
+def foo(future: ProxyFuture[MyData]) -> None:
     data: MyData = compute(...)
     future.set_result(data)
 
@@ -95,7 +95,7 @@ def bar(data: MyData) -> None:
 
 
 with Store(RedisConnector(...)) as store:
-    future: Future[MyData] = store.future()
+    future: ProxyFuture[MyData] = store.future()
 
     # The invoke_remote function will execute the function with
     # the provided arguments on an arbitrary remote process.
@@ -111,3 +111,29 @@ In this example, `foo()` and `bar()` started executing at the same time.
 This allows `bar()` to eagerly execute code which does not depend on the
 data produced by `foo()`. `bar()` will only block once the data is needed by
 the computation.
+
+## Timeouts and Exceptions
+
+By default, [`ProxyFuture.result()`][proxystore.store.future.ProxyFuture.result] and resolving the proxy of a future wait forever for the result to be set.
+The [`PollingPolicy`][proxystore.store.future.PollingPolicy] controls how often the store is polled for the result and the default timeout.
+A timeout can also be passed to [`result()`][proxystore.store.future.ProxyFuture.result] which raises a [`TimeoutError`][TimeoutError] if the result is not set in time.
+
+```python linenums="1"
+from proxystore.store.future import PollingPolicy
+
+future = store.future(polling=PollingPolicy(interval=0.1, timeout=60))
+result = future.result(timeout=10)
+```
+
+If the producer fails, it can set an exception on the future with [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception] rather than leaving the consumer waiting.
+The exception is raised by [`result()`][proxystore.store.future.ProxyFuture.result], and resolving the proxy of the future raises a [`ProxyResolveError`][proxystore.proxy.ProxyResolveError] caused by the exception.
+
+```python linenums="1"
+def foo(future: ProxyFuture[MyData]) -> None:
+    try:
+        data: MyData = compute(...)
+    except Exception as e:
+        future.set_exception(e)
+    else:
+        future.set_result(data)
+```

@@ -30,7 +30,8 @@ from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.factory import PollingStoreFactory
 from proxystore.store.factory import StoreFactory
-from proxystore.store.future import Future
+from proxystore.store.future import PollingPolicy
+from proxystore.store.future import ProxyFuture
 from proxystore.store.lifetimes import Lifetime
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.ref import into_owned
@@ -373,20 +374,17 @@ class Store(Generic[ConnectorT]):
         evict: bool = False,
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
-        polling_interval: float = 1,
-        polling_backoff_factor: float = 1,
-        polling_interval_limit: float | None = None,
-        polling_timeout: float | None = None,
-    ) -> Future[T]:
+        polling: PollingPolicy | None = None,
+    ) -> ProxyFuture[T]:
         """Create a future to an object.
 
         Example:
             ```python
             from proxystore.connectors.file import FileConnector
             from proxystore.store import Store
-            from proxystore.store.future import Future
+            from proxystore.store.future import ProxyFuture
 
-            def remote_foo(future: Future) -> None:
+            def remote_foo(future: ProxyFuture) -> None:
                 # Computation that generates a result value needed by
                 # the remote_bar function.
                 future.set_result(...)
@@ -415,21 +413,16 @@ class Store(Generic[ConnectorT]):
 
         Args:
             evict: If a proxy returned by
-                [`Future.proxy()`][proxystore.store.future.Future.proxy]
+                [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
                 should evict the object once resolved.
             serializer: Optionally override the default serializer for the
                 store instance.
             deserializer: Optionally override the default deserializer for the
                 store instance.
-            polling_interval: Initial seconds to sleep between polling the
-                store for the object.
-            polling_backoff_factor: Multiplicative factor applied to the
-                polling_interval applied after each unsuccessful poll.
-            polling_interval_limit: Maximum polling interval allowed. Prevents
-                the backoff factor from increasing the current polling interval
-                to unreasonable values.
-            polling_timeout: Optional maximum number of seconds to poll for. If
-                the timeout is reached an error is raised.
+            polling: Policy for polling the store for the result of the
+                future. If `None`, the default
+                [`PollingPolicy`][proxystore.store.future.PollingPolicy] is
+                used.
 
         Returns:
             Future which can be used to get the result object at a later time \
@@ -446,7 +439,7 @@ class Store(Generic[ConnectorT]):
                 'The provided connector is type '
                 f'{type(self.connector).__name__} which does not implement '
                 f'the {DeferrableConnector.__name__} necessary to use the '
-                f'{Future.__name__} interface.',
+                f'{ProxyFuture.__name__} interface.',
             )
 
         with Timer() as connector_timer:
@@ -461,12 +454,9 @@ class Store(Generic[ConnectorT]):
             store_config=self.config(),
             deserializer=deserializer,
             evict=evict,
-            polling_interval=polling_interval,
-            polling_backoff_factor=polling_backoff_factor,
-            polling_interval_limit=polling_interval_limit,
-            polling_timeout=polling_timeout,
+            polling=polling,
         )
-        future = Future(factory, serializer=serializer)
+        future = ProxyFuture(factory, serializer=serializer)
 
         timer.stop()
         if self.metrics is not None:

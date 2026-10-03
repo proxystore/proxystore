@@ -10,6 +10,7 @@ from proxystore.serialize import serialize
 from proxystore.store import Store
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import PollingStoreFactory
+from proxystore.store.future import PollingPolicy
 
 FactoryT = PollingStoreFactory[LocalConnector, str]
 
@@ -62,8 +63,7 @@ def test_polling_store_factory_timeout() -> None:
             key=key,
             store_config=store.config(),
             evict=True,
-            polling_interval=0.001,
-            polling_timeout=0.002,
+            polling=PollingPolicy(interval=0.001, timeout=0.002),
         )
         with pytest.raises(
             ProxyResolveMissingKeyError,
@@ -78,10 +78,12 @@ def test_polling_store_factory_backoff() -> None:
             key=key,
             store_config=store.config(),
             evict=True,
-            polling_interval=0.001,
-            polling_backoff_factor=2,
-            polling_interval_limit=0.004,
-            polling_timeout=0.011,
+            polling=PollingPolicy(
+                interval=0.001,
+                backoff_factor=2,
+                interval_limit=0.004,
+                timeout=0.011,
+            ),
         )
         start = time.perf_counter()
         with pytest.raises(ProxyResolveMissingKeyError):
