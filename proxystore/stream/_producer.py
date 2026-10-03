@@ -13,7 +13,6 @@ from typing import Self
 from typing import TypeVar
 
 from proxystore.store import Store
-from proxystore.store import unregister_store
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import Event
 from proxystore.stream.events import event_to_bytes
@@ -192,8 +191,7 @@ class StreamProducer(Generic[T]):
                 first.
             publisher: Close the
                 [`Publisher`][proxystore.stream.protocols.Publisher] interface.
-            stores: Close and [unregister][proxystore.store.unregister_store]
-                the [`Store`][proxystore.store.Store] instances.
+            stores: Close the [`Store`][proxystore.store.Store] instances.
         """  # noqa: E501
         self.close_topics(*topics)
         if stores:
@@ -203,7 +201,6 @@ class StreamProducer(Generic[T]):
             for store in known_stores:
                 if store is not None:
                     store.close()
-                    unregister_store(store)
         if publisher:
             self.publisher.close()
 

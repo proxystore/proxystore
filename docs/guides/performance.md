@@ -13,10 +13,9 @@ from proxystore.connectors.file import FileConnector
 from proxystore.store.base import Store
 
 store = Store(
+    FileConnector('/tmp/proxystore-dump'),
     name='example-store',
-    connector=FileConnector('/tmp/proxystore-dump'),
     metrics=True,  # (1)!
-    register=True,
 )
 assert store.metrics is not None
 ```
@@ -160,12 +159,11 @@ proxy internally resolved the factory so we also see metrics about the
 
 !!! warning
 
-    For metrics to appropriately be tracked when a proxy is resolved, the
-    [`Store`][proxystore.store.base.Store] needs to be registered globally
-    by setting `register=True` in the constructor or by manually registering
-    with [`register_store()`][proxystore.store.register_store]. Otherwise,
-    the factory will initialize a second [`Store`][proxystore.store.base.Store]
-    to register and record its metrics to the second instance.
+    Metrics are local to a [`Store`][proxystore.store.base.Store] instance.
+    When a proxy is resolved in a process where the store which created the
+    proxy does not exist (or has been closed), the factory initializes a
+    second [`Store`][proxystore.store.base.Store] which records the metrics
+    of resolving the proxy.
 
 ## Metrics for Batch Operations
 

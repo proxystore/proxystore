@@ -121,7 +121,7 @@ connector = DAOSConnector(
     namespace='proxystore',
 )
 
-with Store('my-store', connector) as store:
+with Store(connector) as store:
     key = store.put(my_object)
     assert store.get(key) == my_object
 

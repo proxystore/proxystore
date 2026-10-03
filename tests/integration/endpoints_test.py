@@ -53,7 +53,7 @@ async def _peered_endpoints(
 
 def _store(name: str, endpoints: Sequence[str], home: str) -> Store[Any]:
     connector = EndpointConnector(endpoints, proxystore_dir=home)
-    return Store(name, connector, register=False)
+    return Store(connector, name=name)
 
 
 @pytest.mark.integration

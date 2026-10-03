@@ -9,11 +9,10 @@ from typing import Any
 
 import pytest
 
+import proxystore.store
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import Proxy
-from proxystore.store import get_store
 from proxystore.store import Store
-from proxystore.store import store_registration
 from proxystore.stream import StreamConsumer
 from proxystore.stream import StreamProducer
 from proxystore.stream.events import bytes_to_event
@@ -31,8 +30,9 @@ def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
     with (
-        Store('stream-test-fixture', FileConnector(str(tmp_path))) as store,
-        store_registration(store),
+        Store(
+            FileConnector(str(tmp_path)), name='stream-test-fixture'
+        ) as store,
     ):
         yield store
 
@@ -167,8 +167,8 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     publisher, subscriber = create_message_pubsub_pair(topic)
 
     store = Store(
-        'test-use-and-register-default-store',
         FileConnector(str(tmp_path)),
+        name='test-use-and-register-default-store',
     )
 
     producer = StreamProducer[str](publisher, default_store=store)
@@ -176,15 +176,19 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
 
     producer.send(topic, 'value')
 
-    assert get_store(store.name) is None
+    # Unregister the store of the producer so the consumer must create
+    # a new store, as would happen in a different process.
+    proxystore.store._unregister_store(store)
+    assert store.id not in proxystore.store._stores
     consumer.next()
-    assert get_store(store.name) is not None
+    consumer_store = proxystore.store._stores[store.id]
+    assert consumer_store is not store
 
     producer.close(stores=True)
     consumer.close(stores=True)
 
     # Should get unregistered when closed
-    assert get_store(store.name) is None
+    assert store.id not in proxystore.store._stores
 
 
 @pytest.mark.parametrize('toggle_side', (True, False))

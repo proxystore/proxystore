@@ -61,11 +61,9 @@ Other [connector types][proxystore.connectors] can be used to store and transfer
 
 ```python title="Basic ProxyStore Usage" linenums="1"
 from proxystore.connectors.local import LocalConnector
-from proxystore.store import get_store
 from proxystore.store import Store
 
-store = Store('example', connector=LocalConnector(), register=True)
-store = get_store('example')  # (1)!
+store = Store(LocalConnector(), name='example')  # (1)!
 
 key = store.put(my_object)  # (2)!
 assert my_object == store.get(key)
@@ -75,7 +73,7 @@ p = store.proxy(my_object)  # (3)!
 assert isinstance(p, type(my_object))  # (4)!
 ```
 
-1. Passing `register=True` adds the store by name to a global registry, and registered store can be retrieved by name.
+1. The optional `name` is used in logs. Each store also has a unique ID which is used to find the store, or create it if needed, when a proxy is resolved.
 2. Stores have basic get/put functionality.
 3. Create a proxy of an object, putting it into the store.
 4. The proxy, when used, will behave as the target.

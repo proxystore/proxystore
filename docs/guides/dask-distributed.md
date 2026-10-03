@@ -74,10 +74,9 @@ def main() -> None:
     client = Client(processes=True)
 
     with Store(
+        FileConnector('/tmp/proxystore-cache'),
         name='dask',
-        connector=FileConnector('/tmp/proxystore-cache'),
         populate_target=True,  # (1)!
-        register=True,  # (2)!
     ) as store:
         x = list(range(100))
         proxy = store.proxy(x)
@@ -93,7 +92,6 @@ if __name__ == '__main__':
 ```
 
 1. Setting `populate_target=True` is always recommended with Dask Distributed. This is the default, but it is set explicitly here for clarity.
-2. Setting `register=True` is always recommended with Dask Distributed.
 
 As expected, the result is the same.
 
@@ -109,9 +107,8 @@ The transparent nature of `proxy` means that when used by the task, `proxy` will
 
 ### Performance Tips
 
-In the above example, we set two flags (`register` and `populate_target`) which will improve performance with ProxyStore in Dask Distributed applications.
-Passing `#!python register=True` will call [`register_store()`][proxystore.store.register_store] automatically to register the [`Store`][proxystore.store.base.Store] instance globally by name.
-This enables proxies to reuse the same store instance, improving performance by sharing the same cache and stateful connections.
+Every [`Store`][proxystore.store.base.Store] instance is registered globally within its process by its unique ID.
+This enables proxies resolved in the same process to reuse the same store instance, improving performance by sharing the same cache and stateful connections.
 
 Most important for ProxyStore performance in Dask Distributed is `#!python populate_target=True`.
 When `True`, created proxies will be "pre-resolved" and have their `__class__` and `__hash__` attributes cached inside the proxy.
@@ -125,17 +122,13 @@ logging.basicConfig(level=logging.DEBUG)
 
 ```bash
 $ python example.py
-INFO:proxystore.store:Registered a store named "dask"
-INFO:proxystore.store.base:Initialized Store(name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False, auto_register=True)
-DEBUG:proxystore.store.base:Store(name="dask"): PUT FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.085 ms
-DEBUG:proxystore.store.base:Store(name="dask"): PROXY FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.146 ms
-DEBUG:proxystore.store.base:Store(name="dask"): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.045 ms (cached=False)
-INFO:proxystore.store:Registered a store named "dask"
-INFO:proxystore.store.base:Initialized Store(name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False, auto_register=True)
-INFO:proxystore.store:Registered a store named "dask"
-DEBUG:proxystore.store.base:Store(name="dask"): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.054 ms (cached=False)
+INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False)
+DEBUG:proxystore.store.base:Store(dask): PUT FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.085 ms
+DEBUG:proxystore.store.base:Store(dask): PROXY FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.146 ms
+DEBUG:proxystore.store.base:Store(dask): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.045 ms (cached=False)
+INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False)
+DEBUG:proxystore.store.base:Store(dask): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.054 ms (cached=False)
 Result: 4950
-INFO:proxystore.store:Unregistered a store named dask
 ```
 
 Each `GET` message corresponds to an instance of `proxy` being resolved.

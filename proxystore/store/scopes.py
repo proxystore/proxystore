@@ -111,7 +111,7 @@ def submit(
         from proxystore.store.ref import borrow
         from proxystore.store.scopes import submit
 
-        store = Store('example', ...)
+        store = Store(...)
         proxy = store.owned_proxy([1, 2, 3])
         borrowed = borrow(proxy)
 

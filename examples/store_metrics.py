@@ -11,13 +11,11 @@ import tempfile
 from pprint import pprint
 
 from proxystore.connectors.file import FileConnector
-from proxystore.store import register_store
 from proxystore.store.base import Store
 
 fp = tempfile.TemporaryDirectory()
 
-store = Store('example', FileConnector(fp.name), metrics=True)
-register_store(store)
+store = Store(FileConnector(fp.name), name='example', metrics=True)
 assert store.metrics is not None
 
 target = list(range(100))

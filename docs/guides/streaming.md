@@ -78,7 +78,7 @@ from proxystore.store import Store
 from proxystore.stream import StreamProducer
 from proxystore.stream.shims.redis import RedisPublisher
 
-store = Store('example', FileConnector(...))  # (1)!
+store = Store(FileConnector(...))  # (1)!
 publisher = RedisPublisher(...)  # (2)!
 producer = StreamProducer(publisher, stores={'my-topic': store})  # (3)!
 

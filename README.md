@@ -62,7 +62,7 @@ def process(data: dict[str, str]) -> str:
 
 
 if __name__ == '__main__':
-    with Store('example', FileConnector('./proxystore-data')) as store:
+    with Store(FileConnector('./proxystore-data')) as store:
         # Put the object in the store and get back a proxy, a lightweight
         # reference which is cheap to send to other processes.
         proxy = store.proxy({'hello': 'world'})

@@ -8,7 +8,6 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store import Store
-from proxystore.store import store_registration
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import PollingStoreFactory
 
@@ -17,8 +16,7 @@ FactoryT = PollingStoreFactory[LocalConnector, str]
 
 def test_polling_store_factory_resolve() -> None:
     with (
-        Store('polling-store-factory-resolve', LocalConnector()) as store,
-        store_registration(store),
+        Store(LocalConnector(), name='polling-store-factory-resolve') as store,
     ):
         value = 'test-value'
         key = store.put(value)
@@ -32,8 +30,7 @@ def test_polling_store_factory_resolve() -> None:
 
 def test_polling_store_factory_evict() -> None:
     with (
-        Store('polling-store-factory-evict', LocalConnector()) as store,
-        store_registration(store),
+        Store(LocalConnector(), name='polling-store-factory-evict') as store,
     ):
         value = 'test-value'
         key = store.put(value)
@@ -49,11 +46,10 @@ def test_polling_store_factory_evict() -> None:
 def test_polling_store_factory_metrics() -> None:
     with (
         Store(
-            'polling-store-factory-metrics',
             LocalConnector(),
+            name='polling-store-factory-metrics',
             metrics=True,
         ) as store,
-        store_registration(store),
     ):
         value = 'test-value'
         key = store.put(value)
@@ -71,8 +67,7 @@ def test_polling_store_factory_metrics() -> None:
 
 def test_polling_store_factory_timeout() -> None:
     with (
-        Store('polling-store-factory-timeout', LocalConnector()) as store,
-        store_registration(store),
+        Store(LocalConnector(), name='polling-store-factory-timeout') as store,
     ):
         key = store.connector.new_key()
         factory: FactoryT = PollingStoreFactory(
@@ -90,8 +85,7 @@ def test_polling_store_factory_timeout() -> None:
 
 def test_polling_store_factory_backoff() -> None:
     with (
-        Store('polling-store-factory-backoff', LocalConnector()) as store,
-        store_registration(store),
+        Store(LocalConnector(), name='polling-store-factory-backoff') as store,
     ):
         key = store.connector.new_key()
         factory: FactoryT = PollingStoreFactory(
@@ -116,8 +110,9 @@ def test_polling_store_factory_backoff() -> None:
 
 def test_polling_store_factory_serialize() -> None:
     with (
-        Store('polling-store-factory-serialize', LocalConnector()) as store,
-        store_registration(store),
+        Store(
+            LocalConnector(), name='polling-store-factory-serialize'
+        ) as store,
     ):
         value = 'test-value'
         key = store.put(value)

@@ -95,10 +95,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary."""
-        return proxystore.store.get_or_create_store(
-            self.store_config,
-            register=True,
-        )
+        return proxystore.store.get_or_create_store(self.store_config)
 
     def resolve(self) -> T:
         """Get object associated with key from store.
@@ -120,6 +117,7 @@ class StoreFactory(Generic[ConnectorT, T]):
                     self.key,
                     type(store),
                     store.name,
+                    store.id,
                 )
 
             if self.evict:
@@ -229,6 +227,7 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
                     self.key,
                     type(store),
                     store.name,
+                    store.id,
                 )
             if self.evict:
                 store.evict(self.key)

@@ -10,29 +10,24 @@ from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.serialize import BytesLike
 from proxystore.serialize import SerializationError
-from proxystore.store import get_store
 from proxystore.store import Store
-from proxystore.store.exceptions import StoreExistsError
 from proxystore.store.future import Future
 from proxystore.store.lifetimes import ContextLifetime
 
 
 def test_negative_cache_size() -> None:
     with pytest.raises(ValueError, match='Cache size cannot be negative'):
-        Store('test', LocalConnector(), cache_size=-1)
+        Store(LocalConnector(), name='test', cache_size=-1)
 
 
-def test_init_and_register() -> None:
-    name = 'test-store'
-    assert get_store(name) is None
-    with Store(name, LocalConnector(), register=True) as store:
-        assert get_store(name) is store
+def test_store_name_and_id() -> None:
+    with Store(LocalConnector()) as store:
+        assert store.name is None
+        assert store.id in repr(store)
 
-        with pytest.raises(StoreExistsError):
-            Store(name, LocalConnector(), register=True)
-
-    # Context manager close should unregister the store.
-    assert get_store(name) is None
+    with Store(LocalConnector(), name='test') as store:
+        assert store.name == 'test'
+        assert 'name=test' in repr(store)
 
 
 @pytest.mark.parametrize(
@@ -68,7 +63,7 @@ def test_operations_on_missing_key(store: Store[LocalConnector]) -> None:
 
 
 def test_caching() -> None:
-    with Store('test', LocalConnector(), cache_size=0) as store:
+    with Store(LocalConnector(), name='test', cache_size=0) as store:
         assert store.cache.maxsize == 0
         value = 'test_value'
 
@@ -77,7 +72,7 @@ def test_caching() -> None:
         assert store.get(key1) == value
         assert not store.is_cached(key1)
 
-    with Store('test', LocalConnector(), cache_size=1) as store:
+    with Store(LocalConnector(), name='test', cache_size=1) as store:
         # Add our test value
         key1 = store.put(value)
 
@@ -149,7 +144,7 @@ def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
 
 
 def test_set() -> None:
-    with Store('test-set', LocalConnector(), cache_size=1) as store:
+    with Store(LocalConnector(), name='test-set', cache_size=1) as store:
         key = store.connector.new_key()
         assert not store.exists(key)
         store._set(key, 'test_value')

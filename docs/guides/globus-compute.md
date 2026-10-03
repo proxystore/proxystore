@@ -102,9 +102,7 @@ def average(x: list[float]) -> float:
     return sum(x) / len(x)
 
 
-store = Store(
-    'my-store', FileConnector('./proxystore-cache'), register=True
-)  # (1)!
+store = Store(FileConnector('./proxystore-cache'))  # (1)!
 
 with Executor(endpoint_id=ENDPOINT_UUID) as gce:
     x = list(range(1, 100000))
@@ -117,7 +115,6 @@ store.close()  # (3)!
 ```
 
 1. Create a new store using the file system for mediated communication.
-   Register the store instance so states (e.g., caches, etc.) can be shared.
 2. Proxy the input data.
 3. Close the `Store` to cleanup any resources.
 
@@ -127,7 +124,7 @@ store.close()  # (3)!
     manager that will automatically clean up resources.
 
     ```python
-    with Store('my-store', FileConnector('./proxystore-cache')) as store:
+    with Store(FileConnector('./proxystore-cache')) as store:
         x = list(range(1, 100000))
         p = store.proxy(x)
         future = gce.submit(average, p)

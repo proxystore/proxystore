@@ -73,11 +73,13 @@ def test_connector_config_bad_extras() -> None:
 
 
 def test_to_from_config() -> None:
-    original = Store('test-to-from-config', LocalConnector(), register=False)
+    original = Store(LocalConnector(), name='test-to-from-config')
     original_config = original.config()
 
     new = Store.from_config(original_config)
+    assert new.id == original.id
     assert new.name == original.name
+    assert new.config() == original_config
 
     original.close()
     new.close()
@@ -100,6 +102,7 @@ options = {{ store_dir = "{store_dir}" }}
 """)
 
     config = StoreConfig.from_toml(config_file)
+    assert config.id is None
     assert config.name == 'test'
     assert config.cache_size == 0
     assert config.metrics
@@ -129,3 +132,19 @@ def test_store_config_write_toml(tmp_path: pathlib.Path) -> None:
 
     new_config = StoreConfig.from_toml(config_file)
     assert config == new_config
+
+
+def test_store_config_write_toml_excludes_id(tmp_path: pathlib.Path) -> None:
+    config_file = tmp_path / 'config.toml'
+
+    with Store(LocalConnector()) as store:
+        config = store.config()
+        assert config.id == store.id
+
+        config.write_toml(config_file)
+        new_config = StoreConfig.from_toml(config_file)
+        assert new_config.id is None
+        assert new_config == config.model_copy(update={'id': None})
+
+        with Store.from_config(new_config) as new_store:
+            assert new_store.id != store.id

@@ -231,7 +231,7 @@ For example, this is the case with [`Store.proxy_from_key()`][proxystore.store.b
 from proxystore.connectors.local import LocalConnector
 from proxystore.store import Store
 
-with Store('example', LocalConnector()) as store:
+with Store(LocalConnector()) as store:
     key = store.put('value')
     proxy: Proxy[str] = store.proxy_from_key(key)
 ```

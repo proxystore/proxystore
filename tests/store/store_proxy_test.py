@@ -5,6 +5,7 @@ from typing import Any
 
 import pytest
 
+import proxystore.store
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
@@ -15,8 +16,6 @@ from proxystore.proxy import resolve
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store import get_store
-from proxystore.store import register_store
-from proxystore.store import unregister_store
 from proxystore.store.base import Store
 from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
@@ -48,19 +47,21 @@ def test_factory_evicts_on_resolve(store: Store[LocalConnector]) -> None:
 
 
 def test_factory_recreates_store() -> None:
-    with Store('test', LocalConnector(include_data_in_config=True)) as store:
+    with Store(
+        LocalConnector(include_data_in_config=True), name='test'
+    ) as store:
         key = store.put([1, 2, 3])
         f: StoreFactory[Any, list[int]] = StoreFactory(
             key,
             store_config=store.config(),
         )
-        assert get_store(store.name) is None
+        # Unregister the store so the factory recreates it.
+        proxystore.store._unregister_store(store)
         assert f() == [1, 2, 3]
-        new_store = get_store(store.name)
-        assert new_store is not None
+        new_store = f.get_store()
+        assert new_store is not store
         assert store.config() == new_store.config()
-
-        unregister_store(store)
+        new_store.close()
 
 
 def test_factory_resolve_async(store: Store[LocalConnector]) -> None:
@@ -191,31 +192,28 @@ def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
 
 def test_proxy_recreates_store() -> None:
     with Store(
-        'test',
         LocalConnector(include_data_in_config=True),
+        name='test',
         cache_size=0,
         populate_target=False,
     ) as store:
-        register_store(store)
-
         p: Proxy[list[int]] = store.proxy([1, 2, 3])
         key = get_key(p)
         assert key is not None
 
         # Unregister store so proxy recreates it when resolved
-        unregister_store(store)
+        proxystore.store._unregister_store(store)
 
         # Resolve the proxy
         assert p == [1, 2, 3]
 
         # The store that created the proxy had cache_size=0 so the restored
         # store should also have cache_size=0.
-        s = get_store(store.name)
-        assert store.cache.maxsize == 0
-        assert s is not None
+        s = get_store(p)
+        assert s is not store
+        assert s.cache.maxsize == 0
         assert not s.is_cached(key)
-
-        unregister_store(store)
+        s.close()
 
 
 def test_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
@@ -393,8 +391,8 @@ def test_owned_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
 @pytest.mark.parametrize('populate_target', (True, False))
 def test_default_populate_target(populate_target: bool) -> None:
     with Store(
-        'test-default-populate-target',
         LocalConnector(),
+        name='test-default-populate-target',
         populate_target=populate_target,
     ) as store:
         proxy = store.proxy('value')
@@ -410,9 +408,8 @@ def test_default_populate_target(populate_target: bool) -> None:
 @pytest.mark.parametrize('populate_target', (True, False))
 def test_proxy_already_serialized_object(populate_target: bool) -> None:
     with Store(
-        'test-proxy-already-serialized-objects',
         LocalConnector(),
-        register=True,
+        name='test-proxy-already-serialized-objects',
     ) as store:
         value = [1, 2, 3]
         value_bytes = pickle.dumps(value)

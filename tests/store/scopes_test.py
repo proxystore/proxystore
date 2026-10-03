@@ -15,7 +15,6 @@ import pytest
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import is_resolved
 from proxystore.store import Store
-from proxystore.store import store_registration
 from proxystore.store.ref import borrow
 from proxystore.store.ref import mut_borrow
 from proxystore.store.ref import ReferenceInvalidError
@@ -30,13 +29,12 @@ def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
     with Store(
-        'stream-test-fixture',
         FileConnector(str(tmp_path)),
+        name='stream-test-fixture',
         cache_size=0,
         populate_target=False,
     ) as store:
-        with store_registration(store):
-            yield store
+        yield store
         if not store_is_empty(store):  # pragma: no cover
             raise RuntimeError('Test left objects in the store.')
 

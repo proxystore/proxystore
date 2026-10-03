@@ -14,7 +14,6 @@ from proxystore.connectors.file import FileConnector
 from proxystore.connectors.globus import GlobusConnector
 from proxystore.connectors.globus import GlobusEndpoints
 from proxystore.connectors.redis import RedisConnector
-from proxystore.store import register_store
 from proxystore.store.base import Store
 
 
@@ -98,15 +97,14 @@ if __name__ == '__main__':
 
     store: Store[Any] | None = None
     if args.ps_file:
-        store = Store('file', FileConnector(store_dir=args.ps_file_dir))
+        store = Store(FileConnector(store_dir=args.ps_file_dir), name='file')
     elif args.ps_globus:
         endpoints = GlobusEndpoints.from_json(args.ps_globus_config)
-        store = Store('globus', GlobusConnector(endpoints=endpoints))
+        store = Store(GlobusConnector(endpoints=endpoints), name='globus')
     elif args.ps_redis:
-        store = Store('redis', RedisConnector('localhost', args.ps_redis_port))
-
-    if store is not None:
-        register_store(store)
+        store = Store(
+            RedisConnector('localhost', args.ps_redis_port), name='redis'
+        )
 
     start = time.perf_counter()
 

@@ -393,15 +393,14 @@ class StaticLifetime:
         from proxystore.store import Store
         from proxystore.store.lifetimes import StaticLifetime
 
-        store = Store('default', LocalConnector(), register=True)  # (1)!
+        store = Store(LocalConnector())  # (1)!
 
         key = store.put('value', lifetime=StaticLifetime())  # (2)!
         proxy = store.proxy('value', lifetime=StaticLifetime())  # (3)!
         ```
 
         1. The atexit handler will call `store.close()` at the end of the
-           program. Setting `register=True` is recommended to prevent another
-           instance being created internally when a proxy is resolved.
+           program.
         2. The object associated with `key` will be evicted at the end of
            the program.
         3. The object associated with `proxy` will be evicted at the end of
@@ -459,9 +458,8 @@ class StaticLifetime:
         Warning:
             This method will initialize new
             [`Store`][proxystore.store.base.Store] instances if the stores
-            which were used to create the input proxies have not been
-            registered by setting the `register` flag or by calling
-            [`register_store()`][proxystore.store.register_store].
+            which were used to create the input proxies do not exist in this
+            process (e.g., because they were closed).
 
         Args:
             proxies: One or more proxies of objects to associate with this

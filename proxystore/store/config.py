@@ -130,7 +130,13 @@ class StoreConfig(BaseModel):
         information about each configuration option.
 
     Attributes:
-        name: Store name.
+        id: Unique ID of the store. Stores initialized from configurations
+            with the same ID are considered to be the same store, so a
+            proxy resolved in a process where a store with the same ID
+            exists will use that store. If `None`, a new ID is generated
+            when a store is initialized from the configuration. The ID is
+            not included when writing the configuration to a TOML file.
+        name: Optional store name.
         connector: Connector configuration.
         serializer: Optional serializer.
         deserializer: Optional deserializer.
@@ -138,19 +144,18 @@ class StoreConfig(BaseModel):
         metrics: Enable recording operation metrics.
         populate_target: Set the default value for the `populate_target`
             parameter of proxy methods.
-        auto_register: Auto-register the store.
     """
 
     model_config = ConfigDict(extra='forbid')
 
-    name: str
+    id: str | None = Field(None)
+    name: str | None = Field(None)
     connector: ConnectorConfig
     serializer: SerializerT | None = Field(None)
     deserializer: DeserializerT | None = Field(None)
     cache_size: int = Field(16)
     metrics: bool = Field(False)
     populate_target: bool = Field(True)
-    auto_register: bool = Field(False)
 
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:
@@ -185,14 +190,14 @@ class StoreConfig(BaseModel):
             config.write_toml('config.toml')
             ```
             The resulting TOML file contains the full configuration,
-            including default options, and can be loaded again
-            using `#!python StoreConfig.from_toml('config.toml')`.
+            including default options but excluding the
+            [`id`][proxystore.store.config.StoreConfig], and can be loaded
+            again using `#!python StoreConfig.from_toml('config.toml')`.
             ```toml title="config.toml"
             name = "example"
             cache_size = 16
             metrics = false
             populate_target = true
-            auto_register = false
 
             [connector]
             kind = "file"
@@ -206,5 +211,7 @@ class StoreConfig(BaseModel):
         """
         filepath = pathlib.Path(filepath)
         filepath.parent.mkdir(parents=True, exist_ok=True)
+        # The ID is excluded so that stores initialized from the same file
+        # in different processes do not share an ID unintentionally.
         with open(filepath, 'wb') as f:
-            dump(self, f)
+            dump(self.model_copy(update={'id': None}), f)
