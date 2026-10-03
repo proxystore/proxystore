@@ -20,6 +20,7 @@ from typing import Self
 
 import globus_sdk
 
+from proxystore._compat import init_kwargs
 from proxystore.globus.client import get_transfer_client
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import hostname
@@ -565,7 +566,7 @@ class GlobusConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        return cls(**config)
+        return cls(**init_kwargs(cls, config))
 
     def evict(self, key: GlobusKey) -> None:
         """Evict the object associated with the key.

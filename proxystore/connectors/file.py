@@ -12,6 +12,7 @@ from typing import Any
 from typing import NamedTuple
 from typing import Self
 
+from proxystore._compat import init_kwargs
 from proxystore.serialize import BytesLike
 
 logger = logging.getLogger(__name__)
@@ -118,7 +119,7 @@ class FileConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        return cls(**config)
+        return cls(**init_kwargs(cls, config))
 
     def evict(self, key: FileKey) -> None:
         """Evict the object associated with the key.

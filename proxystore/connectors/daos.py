@@ -22,6 +22,7 @@ Check out the DAOS guide for installation instructions:
         raise ImportError(import_error_message) from e
     raise
 
+from proxystore._compat import init_kwargs
 from proxystore.serialize import BytesLike
 
 
@@ -185,7 +186,7 @@ class DAOSConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        return cls(**config)
+        return cls(**init_kwargs(cls, config))
 
     def evict(self, key: DAOSKey) -> None:
         """Evict the object associated with the key.

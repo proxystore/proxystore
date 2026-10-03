@@ -5,11 +5,14 @@ from __future__ import annotations
 import pathlib
 from typing import Any
 from typing import Self
+from typing import TypeVar
 
 from pydantic import BaseModel
 from pydantic import ConfigDict
 from pydantic import Field
 
+from proxystore._compat import drop_unknown_fields
+from proxystore._compat import STATE_VERSION_KEY
 from proxystore.connectors.protocols import Connector
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
@@ -63,6 +66,11 @@ class ConnectorConfig(BaseModel):
 
     kind: str
     options: dict[str, Any] = Field(default_factory=dict)
+
+    def __reduce__(self) -> tuple[Any, ...]:
+        # Pickle as a plain dict rather than pydantic's internal state so
+        # the format is compatible between 2.x versions.
+        return (_load_connector_config, (_dump_model_state(self),))
 
     def get_connector_type(self) -> type[Connector[Any]]:
         """Resolve the class type for the specified connector.
@@ -157,6 +165,11 @@ class StoreConfig(BaseModel):
     metrics: bool = Field(False)
     populate_target: bool = Field(True)
 
+    def __reduce__(self) -> tuple[Any, ...]:
+        # Pickle as a plain dict rather than pydantic's internal state so
+        # the format is compatible between 2.x versions.
+        return (_load_store_config, (_dump_model_state(self),))
+
     @classmethod
     def from_toml(cls, filepath: str | pathlib.Path) -> Self:
         """Create a configuration file from a TOML file.
@@ -215,3 +228,56 @@ class StoreConfig(BaseModel):
         # in different processes do not share an ID unintentionally.
         with open(filepath, 'wb') as f:
             dump(self.model_copy(update={'id': None}), f)
+
+
+# The following functions are referenced by pickled configurations so they
+# must not be renamed or moved within a major version.
+_STATE_VERSION = 1
+_CONNECTOR_CONFIG_FIELDS = frozenset(ConnectorConfig.model_fields)
+_STORE_CONFIG_FIELDS = frozenset(StoreConfig.model_fields)
+
+BaseModelT = TypeVar('BaseModelT', bound=BaseModel)
+
+
+def _dump_model_state(model: BaseModel) -> dict[str, Any]:
+    state = {name: getattr(model, name) for name in type(model).model_fields}
+    state[STATE_VERSION_KEY] = _STATE_VERSION
+    return state
+
+
+def _load_model_state(
+    model_type: type[BaseModelT],
+    fields: frozenset[str],
+    state: dict[str, Any],
+) -> BaseModelT:
+    state = drop_unknown_fields(
+        model_type.__name__,
+        state,
+        fields | {STATE_VERSION_KEY},
+    )
+    # The state is created when unpickling so it is safe to modify.
+    state.pop(STATE_VERSION_KEY, None)
+    # The state was produced by a validated model so validation is skipped.
+    if state.keys() == fields:
+        # Fast path when all fields are present: restore the model in the
+        # same way as pydantic's own pickle support.
+        model = model_type.__new__(model_type)
+        model.__setstate__(
+            {
+                '__dict__': state,
+                '__pydantic_extra__': None,
+                '__pydantic_fields_set__': set(state),
+                '__pydantic_private__': None,
+            },
+        )
+        return model
+    # Slower path which fills the defaults of missing fields.
+    return model_type.model_construct(**state)
+
+
+def _load_connector_config(state: dict[str, Any]) -> ConnectorConfig:
+    return _load_model_state(ConnectorConfig, _CONNECTOR_CONFIG_FIELDS, state)
+
+
+def _load_store_config(state: dict[str, Any]) -> StoreConfig:
+    return _load_model_state(StoreConfig, _STORE_CONFIG_FIELDS, state)

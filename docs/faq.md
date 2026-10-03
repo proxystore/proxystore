@@ -109,6 +109,17 @@ dump = pickle.dumps(proxy)
 assert sys.getsizeof(dump) < 200
 ```
 
+### Can processes using different ProxyStore versions share proxies?
+
+Yes, within the same major version.
+Proxies created by a [`Store`][proxystore.store.base.Store] contain the configuration of the store and the key to the object, and these are pickled in a format which is compatible between all 2.x versions of ProxyStore.
+For example, a proxy created with ProxyStore 2.3 can be resolved by a process using ProxyStore 2.0, and vice versa.
+The same applies to [`StoreConfig`][proxystore.store.config.StoreConfig] instances and the events of the [streaming interface](guides/streaming.md).
+
+When an older version receives fields added by a newer version (e.g., a new connector option), the unknown fields are ignored with a [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning].
+Features which depend on those fields may not take effect in the older process, so upgrading all processes is still recommended.
+Proxies are not compatible between major versions (e.g., 1.x and 2.x).
+
 ## Runtime Type Checking
 
 ### How do I check the type of a proxy?

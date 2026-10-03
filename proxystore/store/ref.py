@@ -93,6 +93,10 @@ class _WeakRefFinalizer:
             getattr(obj, self.method)()
 
 
+# Pickled reference proxies reference this function by its import path and
+# include the name of the proxy kind so both are part of the pickle format of
+# proxies. The function name, location, and parameters, and the kind names
+# must not change within a major version (see proxystore._compat).
 def _proxy_trampoline(
     kind: str,
     factory: FactoryType[T],

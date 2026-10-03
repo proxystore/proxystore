@@ -11,6 +11,7 @@ from typing import Self
 
 import redis
 
+from proxystore._compat import init_kwargs
 from proxystore.serialize import BytesLike
 
 
@@ -96,7 +97,7 @@ class RedisConnector:
         Args:
             config: Configuration returned by `#!python .config()`.
         """
-        return cls(**config)
+        return cls(**init_kwargs(cls, config))
 
     def evict(self, key: RedisKey) -> None:
         """Evict the object associated with the key.

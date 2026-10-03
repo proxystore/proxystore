@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING
 from typing import TypeVar
 
 import proxystore
+from proxystore._compat import drop_unknown_fields
+from proxystore._compat import STATE_VERSION_KEY
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.types import ConnectorKeyT
@@ -26,6 +28,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 _default_pool = ThreadPoolExecutor()
+_STATE_VERSION = 1
 _MISSING_OBJECT = object()
 
 T = TypeVar('T')
@@ -84,14 +87,36 @@ class StoreFactory(Generic[ConnectorT, T]):
 
         return obj
 
+    # The pickled state of factories is part of the format of proxies which
+    # must be compatible between 2.x versions. Fields can be added (with
+    # defaults in __setstate__) but not removed or renamed. See
+    # proxystore._compat for details.
+    _STATE_FIELDS: frozenset[str] = frozenset(
+        (STATE_VERSION_KEY, 'key', 'store_config', 'evict', 'deserializer'),
+    )
+
     def __getstate__(self) -> dict[str, Any]:
-        # Override pickling behavior to not serialize a possible future
-        state = self.__dict__.copy()
-        state['_obj_future'] = None
-        return state
+        # A possible future is not included because it is specific to this
+        # instance of the factory.
+        return {
+            STATE_VERSION_KEY: _STATE_VERSION,
+            'key': self.key,
+            'store_config': self.store_config,
+            'evict': self.evict,
+            'deserializer': self.deserializer,
+        }
 
     def __setstate__(self, state: dict[str, Any]) -> None:
-        self.__dict__.update(state)
+        state = drop_unknown_fields(
+            type(self).__name__,
+            state,
+            self._STATE_FIELDS,
+        )
+        self.key = state['key']
+        self.store_config = state['store_config']
+        self.evict = state.get('evict', False)
+        self.deserializer = state.get('deserializer')
+        self._obj_future = None
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary."""
@@ -186,6 +211,28 @@ class PollingStoreFactory(StoreFactory[ConnectorT, T]):
         self._polling_backoff_factor = polling_backoff_factor
         self._polling_interval_limit = polling_interval_limit
         self._polling_timeout = polling_timeout
+
+    _STATE_FIELDS = StoreFactory._STATE_FIELDS | {
+        'polling_interval',
+        'polling_backoff_factor',
+        'polling_interval_limit',
+        'polling_timeout',
+    }
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = super().__getstate__()
+        state['polling_interval'] = self._polling_interval
+        state['polling_backoff_factor'] = self._polling_backoff_factor
+        state['polling_interval_limit'] = self._polling_interval_limit
+        state['polling_timeout'] = self._polling_timeout
+        return state
+
+    def __setstate__(self, state: dict[str, Any]) -> None:
+        super().__setstate__(state)
+        self._polling_interval = state.get('polling_interval', 1)
+        self._polling_backoff_factor = state.get('polling_backoff_factor', 1)
+        self._polling_interval_limit = state.get('polling_interval_limit')
+        self._polling_timeout = state.get('polling_timeout')
 
     def resolve(self) -> T:
         """Get object associated with key from store.

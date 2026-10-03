@@ -6,11 +6,21 @@ import dataclasses
 import enum
 from typing import Any
 
+from proxystore._compat import drop_unknown_fields
 from proxystore.serialize import deserialize
 from proxystore.serialize import serialize
 from proxystore.store.config import StoreConfig
 from proxystore.utils.imports import get_object_path
 from proxystore.utils.imports import import_from_path
+
+# Events are exchanged between processes which may use different 2.x versions
+# of ProxyStore. Fields can be added to events (with defaults) but not
+# removed or renamed. See proxystore._compat for details.
+
+
+def _event_fields(cls: type[Any], data: dict[str, Any]) -> dict[str, Any]:
+    fields = [field.name for field in dataclasses.fields(cls)]
+    return drop_unknown_fields(cls.__name__, data, fields)
 
 
 @dataclasses.dataclass
@@ -22,7 +32,7 @@ class EndOfStreamEvent:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EndOfStreamEvent:
         """Create a new event instance from its dictionary representation."""
-        return cls(**data)
+        return cls(**_event_fields(cls, data))
 
 
 @dataclasses.dataclass
@@ -36,7 +46,7 @@ class NewObjectEvent:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NewObjectEvent:
         """Create a new event instance from its dictionary representation."""
-        return NewObjectEvent(**data)
+        return cls(**_event_fields(cls, data))
 
 
 @dataclasses.dataclass
@@ -53,7 +63,7 @@ class NewObjectKeyEvent:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> NewObjectKeyEvent:
         """Create a new event instance from its dictionary representation."""
-        return NewObjectKeyEvent(**data)
+        return cls(**_event_fields(cls, data))
 
     @classmethod
     def from_key(
@@ -99,6 +109,7 @@ class EventBatch:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> EventBatch:
         """Create a new event instance from its dictionary representation."""
+        data = _event_fields(cls, data)
         events = [dict_to_event(d) for d in data['events']]
         return cls(events=events, topic=data['topic'])  # type: ignore[arg-type]
 

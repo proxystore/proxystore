@@ -16,6 +16,7 @@ from typing import TypedDict
 from typing import TypeVar
 
 from proxystore import utils
+from proxystore._compat import init_kwargs
 from proxystore.connectors.protocols import Connector
 from proxystore.serialize import BytesLike
 from proxystore.utils.imports import get_object_path
@@ -341,7 +342,7 @@ class MultiConnector:
         connectors: dict[str, tuple[Connector[Any], Policy]] = {}
         dormant_connectors: dict[str, ConnectorPolicyConfig] = {}
         for name, (conn_path, conn_config, policy_dict) in config.items():
-            policy = Policy(**policy_dict)
+            policy = Policy(**init_kwargs(Policy, policy_dict))
             if policy.is_valid_on_host():
                 connector_type = import_from_path(conn_path)
                 connector = connector_type.from_config(conn_config)
