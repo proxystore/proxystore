@@ -686,6 +686,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#can-processes-using-different-proxystore-versions-share-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can processes using different ProxyStore versions share proxies?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4077,6 +4088,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#can-processes-using-different-proxystore-versions-share-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Can processes using different ProxyStore versions share proxies?
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4371,6 +4393,14 @@ For example, here the target object is a large 10,000 character string but the s
 </span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15"></a><span class="n">dump</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">proxy</span><span class="p">)</span>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16"></a><span class="k">assert</span> <span class="n">sys</span><span class="o">.</span><span class="n">getsizeof</span><span class="p">(</span><span class="n">dump</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">200</span>
 </span></code></pre></div></td></tr></table></div>
+<h3 id="can-processes-using-different-proxystore-versions-share-proxies">Can processes using different ProxyStore versions share proxies?<a class="headerlink" href="#can-processes-using-different-proxystore-versions-share-proxies" title="Permanent link">&para;</a></h3>
+<p>Yes, within the same major version.
+Proxies created by a <a class="autorefs autorefs-internal" title="            Store" href="../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> contain the configuration of the store and the key to the object, and these are pickled in a format which is compatible between all 2.x versions of ProxyStore.
+For example, a proxy created with ProxyStore 2.3 can be resolved by a process using ProxyStore 2.0, and vice versa.
+The same applies to <a class="autorefs autorefs-internal" title="            StoreConfig" href="../api/store/config/#proxystore.store.config.StoreConfig"><code>StoreConfig</code></a> instances and the events of the <a href="../guides/streaming/">streaming interface</a>.</p>
+<p>When an older version receives fields added by a newer version (e.g., a new connector option), the unknown fields are ignored with a <a class="autorefs autorefs-internal" title="            VersionMismatchWarning" href="../api/warnings/#proxystore.warnings.VersionMismatchWarning"><code>VersionMismatchWarning</code></a>.
+Features which depend on those fields may not take effect in the older process, so upgrading all processes is still recommended.
+Proxies are not compatible between major versions (e.g., 1.x and 2.x).</p>
 <h2 id="runtime-type-checking">Runtime Type Checking<a class="headerlink" href="#runtime-type-checking" title="Permanent link">&para;</a></h2>
 <h3 id="how-do-i-check-the-type-of-a-proxy">How do I check the type of a proxy?<a class="headerlink" href="#how-do-i-check-the-type-of-a-proxy" title="Permanent link">&para;</a></h3>
 <p>To check if an object is a proxy, use <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span></code>.
