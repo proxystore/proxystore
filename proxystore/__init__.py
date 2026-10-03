@@ -1,8 +1,7 @@
-"""ProxyStore is a library for decoupling object communication from code."""
+"""Pass-by-reference for distributed apps via transparent object proxies."""
 
 from __future__ import annotations
 
 import importlib.metadata as importlib_metadata
-import sys
 
 __version__ = importlib_metadata.version('proxystore')

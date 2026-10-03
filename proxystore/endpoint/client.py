@@ -7,57 +7,58 @@ Note:
     It is not intended that clients from outside the local network interact
     with an endpoint this way. (Rather, they should connect to their own
     local endpoint, which peers with remote endpoints.)
-
-This module does not depend on the `endpoints` extra dependencies so clients
-do not need to install them.
 """
 
 from __future__ import annotations
 
 import hmac
+import logging
 import os
 import socket
 import ssl
-import uuid
 import warnings
 from types import TracebackType
-from typing import Any
 from typing import Self
 
 from proxystore.endpoint.auth import certificate_fingerprint
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
-from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
-from proxystore.endpoint.protocol import Header
+from proxystore.endpoint.protocol import ExistsResult
+from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Hello
+from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
+from proxystore.endpoint.protocol import raise_for_status
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
+from proxystore.endpoint.protocol import supports_version
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
-from proxystore.endpoint.warnings import EndpointVersionWarning
 from proxystore.serialize import BytesLike
-from proxystore.utils.environment import home_dir
+from proxystore.warnings import VersionMismatchWarning
+
+logger = logging.getLogger(__name__)
 
 # Payloads smaller than this are copied into the same buffer as the header
 # so the request is sent with a single system call.
 _COALESCE_THRESHOLD = 64 * 1024
+_MAX_REQUEST_ID = 2**32 - 1
 
 
 class EndpointClient:
@@ -82,12 +83,21 @@ class EndpointClient:
     Args:
         sock: Connected socket that has completed the handshake.
         info: Information about the endpoint.
+        protocol_version: Protocol version negotiated in the handshake.
     """
 
-    def __init__(self, sock: socket.socket, info: EndpointInfo) -> None:
+    def __init__(
+        self,
+        sock: socket.socket,
+        info: EndpointInfo,
+        *,
+        protocol_version: int,
+    ) -> None:
         self._socket = sock
         self.info = info
+        self.protocol_version = protocol_version
         self.closed = False
+        self._next_request_id = 1
 
     def __enter__(self) -> Self:
         return self
@@ -102,7 +112,7 @@ class EndpointClient:
 
     def __repr__(self) -> str:
         return (
-            f'{type(self).__name__}(uuid={self.info.uuid}, '
+            f'{type(self).__name__}(id={self.info.id}, '
             f'name={self.info.name!r})'
         )
 
@@ -111,7 +121,7 @@ class EndpointClient:
         cls,
         host: str,
         port: int,
-        token: bytes,
+        token: EndpointToken,
         *,
         tls_fingerprint: str | None = None,
         timeout: float | None = 10,
@@ -133,7 +143,7 @@ class EndpointClient:
                 because large transfers can take arbitrarily long.
 
         Warns:
-            EndpointVersionWarning: If the endpoint uses a different
+            VersionMismatchWarning: If the endpoint uses a different
                 ProxyStore version or Python minor version than this client.
 
         Raises:
@@ -161,7 +171,7 @@ class EndpointClient:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
             if tls_fingerprint is not None:
                 sock = _wrap_tls(sock, tls_fingerprint)
-            info = _handshake(sock, token)
+            info, version = _handshake(sock, token)
             sock.settimeout(None)
         except OSError as e:
             sock.close()
@@ -173,17 +183,22 @@ class EndpointClient:
             sock.close()
             raise
 
-        mismatches = Versions.current().mismatches(info.versions)
-        if len(mismatches) > 0:
+        warning = Versions.current().mismatch_warning(info.versions)
+        if warning is not None:
             warnings.warn(
-                f'Endpoint {info.name} ({info.uuid}) uses different versions '
-                f'than this client: {"; ".join(mismatches)}. Objects '
-                'serialized in one environment may fail to deserialize in '
-                f'another. See {VERSION_DOCS_URL} for details.',
-                EndpointVersionWarning,
+                f'Endpoint {info.name} ({info.id.short()}) uses different '
+                f'versions than this client: {warning}',
+                VersionMismatchWarning,
                 stacklevel=2,
             )
-        return cls(sock, info)
+        logger.debug(
+            'Connected to endpoint %s at %s:%s (tls=%s)',
+            info.id.log_name(info.name),
+            host,
+            port,
+            tls_fingerprint is not None,
+        )
+        return cls(sock, info, protocol_version=version)
 
     @classmethod
     def from_dir(
@@ -211,10 +226,7 @@ class EndpointClient:
             EndpointError: If the connection or handshake fails (see
                 [`connect()`][proxystore.endpoint.client.EndpointClient.connect]).
         """
-        if not os.path.isdir(endpoint_dir):
-            raise EndpointNotFoundError(
-                f'The endpoint directory {endpoint_dir} does not exist.',
-            )
+        endpoint_dir.check_exists()
         try:
             info = endpoint_dir.read_connection()
         except FileNotFoundError as e:
@@ -257,15 +269,7 @@ class EndpointClient:
             EndpointError: If connecting to the endpoint fails (see
                 [`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]).
         """
-        proxystore_dir = (
-            home_dir() if proxystore_dir is None else proxystore_dir
-        )
-        endpoint_dir = EndpointDir.from_home(proxystore_dir, name)
-        if not os.path.isdir(endpoint_dir):
-            raise EndpointNotFoundError(
-                f'An endpoint named {name} does not exist in '
-                f'{proxystore_dir}.',
-            )
+        endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
         return cls.from_dir(endpoint_dir, timeout=timeout)
 
     def close(self) -> None:
@@ -273,83 +277,83 @@ class EndpointClient:
         if not self.closed:
             self.closed = True
             self._socket.close()
+            logger.debug(
+                'Closed connection to endpoint %s',
+                self.info.id.log_name(self.info.name),
+            )
 
-    def evict(self, key: str, endpoint: uuid.UUID | str | None = None) -> None:
+    def evict(self, key: str, target: str | None = None) -> None:
         """Evict the object associated with the key.
 
         Args:
             key: Key associated with object to evict.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        self._request(Op.EVICT, key, endpoint)
+        self._request(Op.EVICT, _request(key, target))
 
-    def exists(
-        self, key: str, endpoint: uuid.UUID | str | None = None
-    ) -> bool:
+    def exists(self, key: str, target: str | None = None) -> bool:
         """Check if an object associated with the key exists.
 
         Args:
             key: Key potentially associated with stored object.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Returns:
             If an object associated with the key exists.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        _, meta, _ = self._request(Op.EXISTS, key, endpoint)
-        exists = meta.get('exists')
-        if not isinstance(exists, bool):
-            raise EndpointProtocolError(
-                'Malformed EXISTS response: missing or invalid '
-                "'exists' field.",
-            )
-        return exists
+        response = self._request(Op.EXISTS, _request(key, target))
+        return ExistsResult.decode(response.meta).exists
 
     def get(
         self,
         key: str,
-        endpoint: uuid.UUID | str | None = None,
+        target: str | None = None,
     ) -> bytearray | None:
         """Get the serialized object associated with the key.
 
         Args:
             key: Key associated with object to retrieve.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Returns:
             Serialized object or `None` if the object does not exist.
 
         Raises:
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
-        status, _, data = self._request(Op.GET, key, endpoint)
-        return None if status == Status.NOT_FOUND else data
+        response = self._request(Op.GET, _request(key, target))
+        if response.code == Status.NOT_FOUND:
+            return None
+        data = response.data
+        # Data is always read into a bytearray unless it is empty.
+        return data if isinstance(data, bytearray) else bytearray(data)
 
     def set(
         self,
         key: str,
         data: BytesLike,
-        endpoint: uuid.UUID | str | None = None,
+        target: str | None = None,
     ) -> None:
         """Set the serialized object associated with the key.
 
         Args:
             key: Key to associate with the object.
             data: Serialized object.
-            endpoint: Optional UUID of remote endpoint to forward operation to.
+            target: Optional ID of a peer endpoint to forward the operation to.
 
         Raises:
             ObjectSizeExceededError: If the size of `data` exceeds the
                 maximum object size of the endpoint.
-            ValueError: If `endpoint` is not a valid UUID.
+            ValueError: If `target` is not a valid endpoint ID.
             EndpointError: If the request fails.
         """
         size = memoryview(data).nbytes
@@ -359,36 +363,62 @@ class EndpointClient:
                 f'Data size ({size} bytes) exceeds the maximum object size '
                 f'of the endpoint ({max_size} bytes).',
             )
-        self._request(Op.SET, key, endpoint, data)
+        self._request(Op.SET, _request(key, target), data)
+
+    def ping(self, target: str | None = None) -> PingResult:
+        """Measure the latency of and path to a peer endpoint.
+
+        The local endpoint sends a request to the peer and reports the time
+        until it received the response and the network path of the
+        connection. The first ping to a peer includes the time to establish
+        the connection.
+
+        Args:
+            target: Optional ID of the peer endpoint to ping. If `None`,
+                the local endpoint is pinged.
+
+        Raises:
+            ValueError: If `target` is not a valid endpoint ID.
+            EndpointError: If the request fails.
+        """
+        response = self._request(Op.PING, _request(None, target))
+        return PingResult.decode(response.meta)
 
     def _request(
         self,
         op: Op,
-        key: str,
-        endpoint: uuid.UUID | str | None,
+        request: Request,
         data: BytesLike | None = None,
-    ) -> tuple[Status, dict[str, Any], bytearray]:
+    ) -> Message:
         if self.closed:
             raise EndpointConnectionError(
                 'Connection to the endpoint is closed.',
             )
 
-        request = Request(key, _parse_endpoint(endpoint))
         payload = _as_bytes_view(data) if data is not None else None
         data_len = 0 if payload is None else len(payload)
-        message = pack_message(op, request.to_meta(), data_len)
+        request_id = self._next_request_id
+        # Request IDs are in the range [1, 2^32 - 1] because 0 is reserved
+        # for handshake messages.
+        self._next_request_id = request_id % _MAX_REQUEST_ID + 1
+        message = Message(op, request.encode(), request_id=request_id)
+        head = message.pack_head(data_len)
 
         try:
             if payload is None:
-                self._socket.sendall(message)
+                self._socket.sendall(head)
             elif data_len < _COALESCE_THRESHOLD:
-                self._socket.sendall(message + payload)
+                self._socket.sendall(head + payload)
             else:
-                self._socket.sendall(message)
+                self._socket.sendall(head)
                 self._socket.sendall(payload)
 
-            header, response_meta = _recv_message(self._socket)
-            response_data = _recv_exactly(self._socket, header.data_len)
+            response = _recv_message(self._socket)
+            if response.request_id != request_id:
+                raise EndpointProtocolError(
+                    f'Expected a response to request {request_id} but got '
+                    f'a response to request {response.request_id}.',
+                )
         except EndpointError:
             self.close()
             raise
@@ -404,25 +434,14 @@ class EndpointClient:
             raise
 
         try:
-            status = Status(header.code)
-        except ValueError:
+            raise_for_status(response, op)
+        except (EndpointProtocolError, ObjectSizeExceededError):
+            # The connection is in an unknown state after a bad request, and
+            # the endpoint may close the connection after rejecting data that
+            # is too large because it did not read the data.
             self.close()
-            raise EndpointProtocolError(
-                f'Endpoint returned unknown status code {header.code}.',
-            ) from None
-        if status in (Status.OK, Status.NOT_FOUND):
-            return status, response_meta, response_data
-
-        error = response_meta.get('error', 'no error message provided')
-        description = (
-            f'Endpoint returned {status.name} for {op.name} request: {error}'
-        )
-        if status == Status.TOO_LARGE:
-            # The endpoint may close the connection because it did not read
-            # the data of the request.
-            self.close()
-            raise ObjectSizeExceededError(description)
-        raise EndpointRequestError(description)
+            raise
+        return response
 
 
 def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
@@ -430,26 +449,19 @@ def _missing_connection_file_message(endpoint_dir: EndpointDir) -> str:
         'Unable to find the connection file of the endpoint in '
         f'{endpoint_dir}.'
     )
-    pid = endpoint_dir.running_pid()
-    if pid is None:
-        return f'{message} Is the endpoint running?'
-    # Endpoints started with older versions of ProxyStore (which used an
-    # HTTP API) never write a connection file.
-    return (
-        f'{message} The endpoint process (PID {pid}) is running, so the '
-        'endpoint is either still starting or was started with an older '
-        'version of ProxyStore. Restart the endpoint with the same version '
-        f'of ProxyStore as the client. See {VERSION_DOCS_URL} for details.'
-    )
+    if endpoint_dir.lock().is_locked():
+        # The endpoint holds its lock before it writes its connection file.
+        return (
+            f'{message} The endpoint is running but has not written its '
+            'connection file so it is likely still starting.'
+        )
+    return f'{message} Is the endpoint running?'
 
 
-def _parse_endpoint(endpoint: uuid.UUID | str | None) -> uuid.UUID | None:
-    if endpoint is None or isinstance(endpoint, uuid.UUID):
-        return endpoint
-    try:
-        return uuid.UUID(endpoint)
-    except ValueError:
-        raise ValueError(f'{endpoint} is not a valid endpoint UUID.') from None
+def _request(key: str | None, target: str | None) -> Request:
+    # The target is parsed first for a clear error if it is invalid.
+    parsed = None if target is None else EndpointId.from_str(target)
+    return Request(key=key, target=parsed)
 
 
 def _as_bytes_view(data: BytesLike) -> memoryview:
@@ -488,9 +500,15 @@ def _wrap_tls(sock: socket.socket, fingerprint: str) -> ssl.SSLSocket:
     return tls_sock
 
 
-def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
+def _handshake(
+    sock: socket.socket,
+    token: EndpointToken,
+) -> tuple[EndpointInfo, int]:
+    # Returns the information of the endpoint and the negotiated version.
     hello = Hello(nonce=os.urandom(NONCE_SIZE), versions=Versions.current())
-    sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello.to_meta()))
+    sock.sendall(
+        Preamble().pack() + Message(Op.HELLO, hello.encode()).pack_head()
+    )
 
     preamble = _recv_exactly(sock, Preamble.SIZE)
     if preamble.startswith(b'HTTP/'):
@@ -501,19 +519,18 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             f'the client. See {VERSION_DOCS_URL} for details.',
         )
     version = Preamble.unpack(preamble).version
-    if version != PROTOCOL_VERSION:
-        # Only the preamble format is the same across protocol versions so
-        # nothing after it can be parsed.
+    if not supports_version(version):
+        # The endpoint supports no common version so nothing after the
+        # preamble can be parsed.
         raise EndpointProtocolError(
-            f'Endpoint uses protocol version {version} but the client uses '
-            f'protocol version {PROTOCOL_VERSION}. Use the same version of '
-            f'ProxyStore for the client and endpoint. See {VERSION_DOCS_URL} '
-            'for details.',
+            f'Endpoint uses protocol version {version} but the client '
+            f'supports protocol versions {MIN_PROTOCOL_VERSION} to '
+            f'{PROTOCOL_VERSION}. Use compatible versions of ProxyStore for '
+            f'the client and endpoint. See {VERSION_DOCS_URL} for details.',
         )
 
-    challenge = Challenge.from_meta(_recv_handshake_message(sock))
-    if not verify_proof(
-        token,
+    challenge = Challenge.decode(_recv_handshake_message(sock))
+    if not token.verify(
         'server',
         challenge.nonce,
         hello.nonce,
@@ -526,36 +543,35 @@ def _handshake(sock: socket.socket, token: bytes) -> EndpointInfo:
             'file was read.',
         )
 
-    proof = compute_proof(token, 'client', hello.nonce, challenge.nonce)
-    sock.sendall(pack_message(Op.AUTH, Auth(proof).to_meta()))
+    proof = token.proof('client', hello.nonce, challenge.nonce)
+    sock.sendall(Message(Op.AUTH, Auth(proof=proof).encode()).pack_head())
 
-    return EndpointInfo.from_meta(_recv_handshake_message(sock))
+    return EndpointInfo.decode(_recv_handshake_message(sock)), version
 
 
-def _recv_handshake_message(sock: socket.socket) -> dict[str, Any]:
-    header, meta = _recv_message(sock)
-    if header.code == Status.UNAUTHORIZED:
+def _recv_handshake_message(sock: socket.socket) -> bytes:
+    message = _recv_message(sock, HandshakeReader())
+    if message.code == Status.UNAUTHORIZED:
         raise EndpointAuthError(
             'The endpoint rejected the token of the client. The endpoint may '
             'have been restarted since the connection file was read.',
         )
-    if header.code != Status.OK:
-        error = meta.get('error', 'no error message provided')
+    if message.code != Status.OK:
         raise EndpointProtocolError(
-            f'Endpoint returned status {header.code} during the handshake: '
-            f'{error}',
+            f'Endpoint returned status {message.code} during the handshake: '
+            f'{message.error_message}',
         )
-    if header.data_len != 0:
-        raise EndpointProtocolError(
-            'Endpoint sent data in a handshake message.',
-        )
-    return meta
+    return message.meta
 
 
-def _recv_message(sock: socket.socket) -> tuple[Header, dict[str, Any]]:
-    header = Header.unpack(_recv_exactly(sock, Header.SIZE))
-    meta = decode_meta(_recv_exactly(sock, header.meta_len))
-    return header, meta
+def _recv_message(
+    sock: socket.socket,
+    reader: MessageReader | None = None,
+) -> Message:
+    reader = MessageReader() if reader is None else reader
+    while not reader.done:
+        reader.feed(_recv_exactly(sock, reader.size))
+    return reader.message
 
 
 def _recv_exactly(sock: socket.socket, size: int) -> bytearray:

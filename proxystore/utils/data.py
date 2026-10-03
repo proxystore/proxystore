@@ -113,12 +113,10 @@ def readable_to_bytes(size: str) -> int:
         pass
 
     # Ensure space between value and unit
-    size = re.sub(r'([a-zA-Z]+)', r' \1', size.strip())
-
-    parts = [s.strip() for s in size.split()]
+    parts = re.sub(r'([a-zA-Z]+)', r' \1', size.strip()).split()
     if len(parts) != 2:
         raise ValueError(
-            'Input string "{size}" must contain only a value and a unit.',
+            f'Input string "{size}" must contain only a value and a unit.',
         )
 
     value, unit = parts

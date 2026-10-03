@@ -1,82 +1,174 @@
-"""Endpoint implementation."""
+"""ProxyStore endpoints.
+
+An [`Endpoint`][proxystore.endpoint.endpoint.Endpoint] runs an endpoint
+from its directory in the current event loop. Use
+[`serve()`][proxystore.endpoint.process.serve] to run an endpoint in the
+current process until it receives a signal, or
+[`start_endpoint()`][proxystore.endpoint.process.start_endpoint] to run an
+endpoint as a daemon.
+"""
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import logging
-from collections.abc import Generator
+import os
+import ssl
 from types import TracebackType
-from typing import Any
-from uuid import UUID
+from typing import Self
 
-from proxystore.endpoint.exceptions import PeeringNotAvailableError
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.auth import TLSCertificate
+from proxystore.endpoint.config import DEFAULT_DATABASE_PATH
+from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.config import resolve_host
+from proxystore.endpoint.directory import ConnectionInfo
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.dispatch import Dispatcher
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.manager import PeerManager
+from proxystore.endpoint.p2p.manager import PeerOptions
+from proxystore.endpoint.p2p.manager import PeerPolicy
+from proxystore.endpoint.peers import Allowlist
+from proxystore.endpoint.server import ClientHandler
+from proxystore.endpoint.storage import MemoryStorage
+from proxystore.endpoint.storage import SQLiteStorage
 from proxystore.endpoint.storage import Storage
+from proxystore.utils.environment import hostname
 
 logger = logging.getLogger(__name__)
 
 
-def log_name(uuid: UUID, name: str) -> str:
-    """Return string formatted as `#!python 'name(uuid-prefix)'`."""
-    uuid_ = str(uuid)
-    return f'{name}({uuid_[: min(8, len(uuid_))]})'
+@dataclasses.dataclass(frozen=True)
+class _Running:
+    # State of a running endpoint. The stack closes the resources of the
+    # endpoint when it stops.
+    stack: contextlib.AsyncExitStack
+    config: EndpointConfig
+    dispatcher: Dispatcher
+    connection: ConnectionInfo
 
 
 class Endpoint:
-    """ProxyStore Endpoint.
+    """ProxyStore endpoint.
 
-    An endpoint is an object store with `get`/`set` functionality.
+    An endpoint is an object store which serves clients on the local network
+    and forwards requests from its clients to peer endpoints.
+
+    The endpoint owns everything needed to run from its directory: the
+    storage of objects, the
+    [`PeerManager`][proxystore.endpoint.p2p.manager.PeerManager] which
+    communicates with peers, the
+    [`Dispatcher`][proxystore.endpoint.dispatch.Dispatcher] which handles
+    requests, the server that accepts client connections, and the connection
+    file that clients use to connect. The endpoint reads the configuration
+    and secret key once when it starts. While running, the endpoint only
+    reads the peers file (see
+    [`Allowlist`][proxystore.endpoint.peers.Allowlist]) and the cache of
+    peer addresses (see
+    [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache]).
+
+    Once started, the endpoint holds the lock of its directory (see
+    [`EndpointDir.lock()`][proxystore.endpoint.directory.EndpointDir.lock]),
+    is accepting client connections, and its connection file is in the
+    endpoint directory. When stopped, the connection file is removed, client
+    connections are closed, the peer manager is closed, the storage is
+    closed, and the lock is released. An endpoint can only be started once,
+    so create a new endpoint to run it again.
 
     Example:
         ```python
-        async with Endpoint('ep1', uuid.uuid4()) as endpoint:
-            serialized_data = b'data string'
-            await endpoint.set('key', serialized_data)
-            assert await endpoint.get('key') == serialized_data
-            await endpoint.evict('key')
-            assert not await endpoint.exists('key')
+        async with Endpoint(EndpointDir.from_name('my-endpoint')) as endpoint:
+            client = EndpointClient.from_dir(endpoint.endpoint_dir)
+            ...
         ```
 
-    Note:
-        Endpoints can be configured and started via the
-        [`proxystore-endpoint`](../cli.md#proxystore-endpoint) command-line
-        interface.
-
     Args:
-        name: Readable name of the endpoint.
-        uuid: UUID of the endpoint.
-        storage: Storage interface to use. If `None`,
-            [`DictStorage`][proxystore.endpoint.storage.DictStorage] is used.
+        endpoint_dir: Directory of the endpoint with its configuration.
+        storage: Storage of the endpoint. Defaults to the storage backend
+            in the configuration. The endpoint closes the storage when it
+            stops.
+        peer_policy: Policy of which peers are allowed. Defaults to the
+            [`Allowlist`][proxystore.endpoint.peers.Allowlist] of the peers
+            file in the endpoint directory. Only used if peering is enabled.
+        peer_options: Options of connections to peers. Defaults to the
+            options for the peer-to-peer configuration (see
+            [`PeerOptions.from_config()`][proxystore.endpoint.p2p.manager.PeerOptions.from_config]).
+            Only used if peering is enabled.
     """
 
     def __init__(
         self,
-        name: str,
-        uuid: UUID,
+        endpoint_dir: EndpointDir,
         *,
         storage: Storage | None = None,
+        peer_policy: PeerPolicy | None = None,
+        peer_options: PeerOptions | None = None,
     ) -> None:
-        self._name = name
-        self._uuid = uuid
-        self._storage = DictStorage() if storage is None else storage
-        self._closed = False
+        self.endpoint_dir = endpoint_dir
+        self._storage = storage
+        self._peer_policy = peer_policy
+        self._peer_options = peer_options
 
-        logger.info('%s: initialized endpoint', self._log_prefix)
+        self._started = False
+        self._running: _Running | None = None
+
+    def __repr__(self) -> str:
+        return f'{type(self).__name__}({self.endpoint_dir.path!r})'
 
     @property
-    def _log_prefix(self) -> str:
-        return f'{type(self).__name__}[{log_name(self.uuid, self.name)}]'
+    def running(self) -> bool:
+        """The endpoint has been started and not stopped."""
+        return self._running is not None
+
+    @property
+    def config(self) -> EndpointConfig:
+        """Configuration of the running endpoint."""
+        return self._state().config
+
+    @property
+    def id(self) -> EndpointId:
+        """ID of the running endpoint."""
+        return self.config.id
 
     @property
     def name(self) -> str:
-        """Name of this endpoint."""
-        return self._name
+        """Name of the running endpoint."""
+        return self.config.name
 
     @property
-    def uuid(self) -> UUID:
-        """UUID of this endpoint."""
-        return self._uuid
+    def dispatcher(self) -> Dispatcher:
+        """Dispatcher which handles requests to the running endpoint.
 
-    async def __aenter__(self) -> Endpoint:
+        The dispatcher is an implementation detail which is exposed for
+        testing and benchmarking.
+        """
+        return self._state().dispatcher
+
+    @property
+    def peer_manager(self) -> PeerManager | None:
+        """Peer manager of the running endpoint or `None` if peering is off.
+
+        The peer manager is an implementation detail which is exposed for
+        testing and benchmarking.
+        """
+        return self.dispatcher.peer_manager
+
+    @property
+    def connection(self) -> ConnectionInfo:
+        """Information clients use to connect to the running endpoint."""
+        return self._state().connection
+
+    def _state(self) -> _Running:
+        if self._running is None:
+            raise RuntimeError('The endpoint is not running.')
+        return self._running
+
+    async def __aenter__(self) -> Self:
+        await self.start()
         return self
 
     async def __aexit__(
@@ -85,123 +177,172 @@ class Endpoint:
         exc_value: BaseException | None,
         exc_traceback: TracebackType | None,
     ) -> None:
-        await self.close()
+        await self.stop()
 
-    def __await__(self) -> Generator[Any, None, Endpoint]:
-        return self.__aenter__().__await__()
-
-    def _check_local(self, endpoint: UUID | None) -> None:
-        if endpoint is not None and endpoint != self.uuid:
-            raise PeeringNotAvailableError(
-                f'Cannot forward request to endpoint {endpoint} because '
-                'peering is not available.',
-            )
-
-    async def evict(self, key: str, endpoint: UUID | None = None) -> None:
-        """Evict key from endpoint.
-
-        Args:
-            key: Key to evict.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
+    async def start(self) -> None:
+        """Start the endpoint.
 
         Raises:
-            PeeringNotAvailableError: If `endpoint` is not this endpoint.
+            RuntimeError: If the endpoint has already been started, even if
+                it failed to start or was stopped.
+            EndpointRunningError: If another instance of the endpoint is
+                running on this host or may be running on another host.
+            EndpointNotFoundError: If the configuration does not exist.
+            EndpointConfigError: If the configuration is invalid or the ID in
+                the configuration does not match the secret key.
+            OSError: If the endpoint cannot listen on its host and port.
         """
-        logger.debug(
-            '%s: EVICT key=%s on endpoint=%s',
-            self._log_prefix,
-            key,
-            endpoint,
-        )
-        self._check_local(endpoint)
-        await self._storage.evict(key)
+        if self._started:
+            raise RuntimeError('The endpoint has already been started.')
+        self._started = True
+        # Resources are cleaned up in the reverse order they are created,
+        # including when start up fails partway through.
+        stack = contextlib.AsyncExitStack()
+        try:
+            self._running = await self._start(stack)
+        except BaseException:
+            await stack.aclose()
+            raise
 
-    async def exists(self, key: str, endpoint: UUID | None = None) -> bool:
-        """Check if key exists on endpoint.
-
-        Args:
-            key: Key to check.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
-
-        Returns:
-            If the key exists.
-
-        Raises:
-            PeeringNotAvailableError: If `endpoint` is not this endpoint.
-        """
-        logger.debug(
-            '%s: EXISTS key=%s on endpoint=%s',
-            self._log_prefix,
-            key,
-            endpoint,
-        )
-        self._check_local(endpoint)
-        return await self._storage.exists(key)
-
-    async def get(
-        self,
-        key: str,
-        endpoint: UUID | None = None,
-    ) -> bytes | bytearray | None:
-        """Get value associated with key on endpoint.
-
-        Args:
-            key: Key to get value for.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
-
-        Returns:
-            Value associated with key.
-
-        Raises:
-            PeeringNotAvailableError: If `endpoint` is not this endpoint.
-        """
-        logger.debug(
-            '%s: GET key=%s on endpoint=%s',
-            self._log_prefix,
-            key,
-            endpoint,
-        )
-        self._check_local(endpoint)
-        return await self._storage.get(key, None)
-
-    async def set(
-        self,
-        key: str,
-        data: bytes | bytearray,
-        endpoint: UUID | None = None,
-    ) -> None:
-        """Set key with data on endpoint.
-
-        Args:
-            key: Key to associate with value.
-            data: Value to associate with key.
-            endpoint: Endpoint to perform operation on. If unspecified, the
-                operation is performed on the local endpoint.
-
-        Raises:
-            ObjectSizeExceededError: If the max object size is configured and
-                the data exceeds that size.
-            PeeringNotAvailableError: If `endpoint` is not this endpoint.
-        """
-        logger.debug(
-            '%s: SET key=%s on endpoint=%s',
-            self._log_prefix,
-            key,
-            endpoint,
-        )
-        self._check_local(endpoint)
-        await self._storage.set(key, data)
-
-    async def close(self) -> None:
-        """Close the endpoint.
+    async def stop(self) -> None:
+        """Stop the endpoint.
 
         This is idempotent so it is safe to call multiple times.
         """
-        if self._closed:
+        if self._running is None:
             return
-        self._closed = True
-        await self._storage.close()
-        logger.info('%s: endpoint closed', self._log_prefix)
+        logger.info('Shutting down endpoint')
+        running, self._running = self._running, None
+        await running.stack.aclose()
+
+    async def _start(self, stack: contextlib.AsyncExitStack) -> _Running:
+        endpoint_dir = self.endpoint_dir
+        config = endpoint_dir.read_config()
+        endpoint_dir.check_stopped()
+        # The lock is held for as long as the endpoint runs so the status of
+        # the endpoint can be checked by other processes. Acquiring the lock
+        # fails if another instance started since the status was checked.
+        lock = endpoint_dir.lock()
+        lock.acquire()
+        stack.callback(lock.release)
+
+        # The resolved host is only written to the connection file; the
+        # configuration is never modified by a running endpoint.
+        host = resolve_host(config.host)
+        # Fail before starting if the secret key is missing or does not
+        # match the configuration.
+        secret_key = endpoint_dir.read_secret_key(config.id)
+
+        storage = self._create_storage(config)
+        stack.push_async_callback(storage.close)
+        peer_manager = self._create_peer_manager(config, secret_key)
+        dispatcher = Dispatcher(config.id, storage, peer_manager)
+        if peer_manager is not None:
+            # The peer manager is closed before the storage so no requests
+            # from peers are handled after the storage is closed.
+            await peer_manager.start(dispatcher.handle_peer_request)
+            stack.push_async_callback(peer_manager.close)
+
+        if endpoint_dir.restrict_permissions():
+            logger.warning(
+                'Removed group and other permissions from '
+                '%s because clients trust the files in the '
+                'endpoint directory and it contains the secret key',
+                endpoint_dir,
+            )
+
+        token = EndpointToken.generate()
+        ssl_context: ssl.SSLContext | None = None
+        tls_fingerprint: str | None = None
+        if config.tls:
+            certificate = TLSCertificate.generate(
+                f'proxystore-endpoint-{config.id.short()}',
+            )
+            ssl_context = certificate.ssl_context()
+            tls_fingerprint = certificate.fingerprint
+            logger.info('Encrypting client connections with TLS')
+
+        handler = ClientHandler(
+            dispatcher,
+            token,
+            name=config.name,
+            max_object_size=config.object_size_limit,
+        )
+        await handler.start(host, config.port, ssl_context=ssl_context)
+        stack.push_async_callback(handler.close)
+
+        # The connection file is only written once the server is listening
+        # so that a failed start (e.g., because another instance of the
+        # endpoint is using the port) does not replace or remove the
+        # connection file of the running instance.
+        connection = ConnectionInfo(
+            host=host,
+            port=config.port,
+            token=token,
+            tls_fingerprint=tls_fingerprint,
+            hostname=hostname(),
+            pid=os.getpid(),
+        )
+        endpoint_dir.write_connection(connection)
+        stack.callback(endpoint_dir.remove_connection, connection)
+
+        logger.info(
+            'Serving endpoint %s (%s) on %s:%s',
+            config.id,
+            config.name,
+            host,
+            config.port,
+        )
+        logger.info('Config: %s', config.model_dump_json())
+        return _Running(stack, config, dispatcher, connection)
+
+    def _create_storage(self, config: EndpointConfig) -> Storage:
+        if self._storage is not None:
+            logger.info('Using storage %r', self._storage)
+            return self._storage
+        if config.storage.backend == 'sqlite':
+            database_path = self.endpoint_dir.resolve_path(
+                config.storage.database_path or DEFAULT_DATABASE_PATH,
+            )
+            logger.info(
+                'Using SQLite database for storage (path: %s)',
+                database_path,
+            )
+            return SQLiteStorage(database_path)
+        logger.info('Storing objects in memory. Objects are lost on shutdown')
+        return MemoryStorage()
+
+    def _create_peer_manager(
+        self,
+        config: EndpointConfig,
+        secret_key: SecretKey,
+    ) -> PeerManager | None:
+        if not config.p2p.enabled:
+            logger.info('Peering is disabled')
+            return None
+
+        policy = self._peer_policy
+        if policy is None:
+            allowlist = Allowlist(self.endpoint_dir.peers_path)
+            logger.info(
+                'Loaded %d peer(s) from %s',
+                len(allowlist.peers.peers),
+                allowlist.path,
+            )
+            policy = allowlist
+
+        relays = config.p2p.relays
+        logger.info(
+            'Using relays: %s',
+            relays if isinstance(relays, str) else ', '.join(relays),
+        )
+        options = self._peer_options
+        if options is None:
+            options = PeerOptions.from_config(config.p2p)
+        return PeerManager(
+            secret_key,
+            policy,
+            options=options,
+            max_request_size=config.object_size_limit,
+            addr_cache=PeerAddrCache(self.endpoint_dir.peer_addrs_path),
+        )

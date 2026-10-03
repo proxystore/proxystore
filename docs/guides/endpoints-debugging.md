@@ -1,6 +1,6 @@
 # Endpoints Debugging
 
-*Last updated 25 September 2026*
+*Last updated 26 September 2026*
 
 This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.
@@ -10,12 +10,14 @@ are encountering issues using ProxyStore Endpoints.
 Consider you configured and started an endpoint as follows:
 ```bash
 $ proxystore-endpoint configure myendpoint
-INFO: Configured endpoint: myendpoint <f4dc841d-377e-4785-8d66-8eade34f63cd>
-INFO: Config and log file directory: ~/.local/share/proxystore/myendpoint
-INFO: Start the endpoint with:
-INFO:   $ proxystore-endpoint start myendpoint
+Configured endpoint: myendpoint <4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275>
+Config and log file directory: ~/.local/share/proxystore/myendpoint
+Start the endpoint with:
+  $ proxystore-endpoint start myendpoint
+Allow a peer endpoint to communicate with this one with:
+  $ proxystore-endpoint peers add myendpoint PEER_NAME PEER_ID
 $ proxystore-endpoint start myendpoint
-INFO: Starting endpoint process as daemon.
+INFO: Starting endpoint process as daemon
 INFO: Logs will be written to ~/.local/share/proxystore/myendpoint/log.txt
 ```
 
@@ -26,15 +28,28 @@ in this case is `~/.local/share/proxystore/myendpoint`
 specification).
 ```bash
 $ grep "Serving endpoint" ~/.local/share/proxystore/myendpoint/log.txt
-INFO  (proxystore.endpoint.serve) :: Serving endpoint f4dc841d-377e-4785-8d66-8eade34f63cd (myendpoint) on 127.0.1.1:8766
+INFO  (proxystore.endpoint.endpoint) :: Serving endpoint 4d9608737803500da670a46f2c1cf1868dbd6605addb22a14df2d4e3324c6275 (myendpoint) on 127.0.1.1:8766
 ```
 The logs are the first place to check for any potential issues.
 
-If you see an error similar to:
-```
-[Errno 8] nodename nor servname provided, or not known
-```
-Try changing the `host_type` parameters from `fqdn` to `ip` in the `config.toml` file in the endpoint directory.
+### Check the Endpoint Status
+The `proxystore-endpoint list` command shows the status of each endpoint.
+
+* `RUNNING`: The endpoint is running. A running endpoint holds a lock on the
+  `endpoint.lock` file in its directory which the operating system releases
+  when the endpoint exits, even if it crashes.
+* `STOPPED`: The endpoint is not running.
+* `STALE`: The endpoint stopped unexpectedly (e.g., it was killed) and left
+  its `connection.json` file behind. Starting or stopping the endpoint
+  removes the file. Check the endpoint log for errors.
+* `OTHER_HOST`: The endpoint was started on another machine which shares
+  the ProxyStore home directory and may still be running there.
+
+Endpoints with a missing or invalid configuration are not listed.
+
+If the file system of the ProxyStore home directory does not support file
+locks, the endpoint logs a warning and its status is determined from the
+process ID in its `connection.json` file instead.
 
 ### Monitor the Endpoint
 Debug level logging can be enabled when starting the endpoint, and
@@ -45,12 +60,12 @@ the endpoint.
 $ proxystore-endpoint --log-level DEBUG start myendpoint --no-detach
 ```
 
-### Use the Test CLI
-The `proxystore-endpoint` CLI provides a `test` subcommand for testing endpoint commands.
-See the [CLI Reference](../api/cli.md#proxystore-endpoint-test){target=_blank}.
+### Use the Client CLI
+The `proxystore-endpoint` CLI provides a `client` subcommand for running operations on an endpoint.
+See the [CLI Reference](../api/cli.md#proxystore-endpoint-client){target=_blank}.
 ```bash
-$ proxystore-endpoint test myendpoint exists abcdef
-INFO: Object exists: False
+$ proxystore-endpoint client myendpoint exists abcdef
+Object exists: False
 ```
 As expected, an object with key `abcdef` does not exist in the store, but
 we got a valid response so we know the endpoint is running correctly.
@@ -62,7 +77,9 @@ to connect to an endpoint directly. Clients find the endpoint's address,
 token, and TLS certificate fingerprint (if enabled) in the `connection.json`
 file that the endpoint writes to its directory when it starts, and
 [`EndpointClient.from_name()`][proxystore.endpoint.client.EndpointClient.from_name]
-reads this file for you.
+reads this file for you. The client is a debugging aid whose interface may
+change between releases; the `proxystore-endpoint client` CLI is the stable
+way to do the same.
 ```python
 from proxystore.endpoint.client import EndpointClient
 
@@ -73,6 +90,11 @@ with EndpointClient.from_name('myendpoint') as client:
 
 ### Common Errors
 
+* **Unable to resolve the host address (ip)**: The IP address of the node
+  cannot be determined from its hostname (e.g., `[Errno 8] nodename nor
+  servname provided, or not known` on macOS). Set `host = "fqdn"` or a
+  static address (e.g., `host = "127.0.0.1"`) in the `config.toml` file in
+  the endpoint directory.
 * **An endpoint named ... does not exist**: No endpoint with that name is
   configured in the ProxyStore home directory. Check the name with
   `proxystore-endpoint list` and that the client uses the same ProxyStore home
@@ -80,9 +102,8 @@ with EndpointClient.from_name('myendpoint') as client:
 * **Unable to find the connection file of the endpoint**: The endpoint is
   not running, or the client cannot read the endpoint directory. Clients on
   other nodes need the ProxyStore home directory on a shared file system.
-  If the error says the endpoint process is running, the endpoint was likely
-  started with an older version of ProxyStore. Restart it with
-  `proxystore-endpoint stop NAME` and `proxystore-endpoint start NAME`.
+  If the error says the endpoint is still starting, try again once it has
+  started and check the endpoint log if the error persists.
 * **The endpoint failed to prove that it knows the endpoint token**: The
   endpoint was restarted while the client was connecting, or a different
   process is listening on the endpoint's address (e.g., after the endpoint
@@ -92,30 +113,113 @@ with EndpointClient.from_name('myendpoint') as client:
   client.
 * **Endpoint returned HTTP error code 426**: The client is using an older
   version of ProxyStore than the endpoint. Upgrade ProxyStore on the client.
-* **`EndpointVersionWarning`**: The client and endpoint use different
+* **`VersionMismatchWarning`**: The client and endpoint use different
   ProxyStore versions or Python minor versions. See
   [Version Compatibility](endpoints.md#version-compatibility).
+* **... has format version ..., but this version of ProxyStore only supports
+  version ...**: A file in the endpoint directory was written by an
+  incompatible version of ProxyStore. Restart the endpoint if the file is
+  `connection.json`, or remove and configure the endpoint again if it is
+  `config.toml`. See
+  [Protocols and File Formats](endpoints.md#protocols-and-file-formats).
+* **The endpoint name in ... does not match the name of the directory**:
+  The endpoint directory was renamed. Rename it back or change the `name` in
+  its `config.toml` so they match.
+* **Endpoint ... appears to be running on ...**: The endpoint was started on
+  a different machine that shares the ProxyStore home directory. Stop the
+  endpoint on that machine. If it is no longer running, delete the
+  `connection.json` file in the endpoint directory.
 
 ## Test a Remote Endpoint
 
-Consider I have an endpoint running on system A with UUID
-`aaaa0259-5a8c-454b-b17d-61f010d874d4` and another on System B
-with UUID `bbbbab4d-c73a-44ee-a316-58ec8857e83a`.
+Consider you have an endpoint named "myendpoint" running on system A with ID
+`aaaa7ce803e5348b74920943c61322d9b38fcddf2decd628c9abc3c224610929` and another named "otherendpoint" on system B with ID
+`bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e`.
 
-### Use the Test CLI
-The `proxystore-endpoint test` CLI can be used to establish a peer connection
+### Check the Peers
+Each endpoint must have the other in its peers. On system A, check that
+system B's endpoint is listed, and vice versa on system B.
+```bash
+$ proxystore-endpoint peers list myendpoint
+NAME     ID
+=========================================================================
+system-b bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e
+```
+If an endpoint is missing, add it with
+[`proxystore-endpoint peers add`](../api/cli.md#proxystore-endpoint-peers-add).
+Also check that peering is enabled (`enabled = true` in the `[p2p]` section
+of the endpoint's `config.toml`).
+
+### Check the Endpoint Logs
+When peering is enabled, the endpoint logs the addresses it listens on for
+peer connections and whether it connected to its home relay.
+```
+INFO  (proxystore.endpoint.p2p.manager) :: Listening for peer connections on 0.0.0.0:41421, [::]:36871
+INFO  (proxystore.endpoint.p2p.manager) :: Connected to home relay
+```
+If the endpoint does not connect to a home relay, it logs a warning. The
+endpoint can still connect directly to peers, but peers behind NATs may not
+be able to reach it. Check that the relays are reachable from the system or
+configure self-hosted relays (see
+[Relays](endpoints.md#relays)).
+
+The endpoint also logs the network path of each peer connection when it is
+established and when the path changes. A connection often starts relayed
+and becomes direct once hole-punching succeeds.
+```
+INFO  (proxystore.endpoint.p2p.manager) :: Connection to peer system-b(bbbb75951c) is relayed via https://usw1-1.relay.n0.iroh.link./ (rtt 16 ms)
+INFO  (proxystore.endpoint.p2p.manager) :: Connection to peer system-b(bbbb75951c) is direct to 203.0.113.7:57600 (rtt 12 ms)
+```
+
+### Ping a Peer
+The `proxystore-endpoint client ... ping` command measures the latency between
+two endpoints and reports whether their connection is direct or relayed.
+```bash
+$ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint ping
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=218.10 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.31 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.09 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+Reply from bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e: time=13.25 ms path=direct to 203.0.113.7:57600 (rtt 12 ms)
+4 ping(s): min/avg/max = 13.09/64.44/218.10 ms
+```
+The time is measured by the local endpoint, and the first ping includes the
+time to connect to the peer. If the connection stays relayed, transfers
+between the endpoints will be slower. This typically happens when both
+endpoints are behind NATs which prevent hole-punching or a firewall blocks
+UDP traffic. Without `--target`, the command measures the latency between
+the client and the local endpoint.
+
+### Use the Client CLI
+The `proxystore-endpoint client` CLI can be used to establish a peer connection
 between two endpoints and invoke remote operations.
-Here, we will request the endpoint on system A (named "myendpoint") to invoke
-an `exists` operation on the endpoint on system B.
+Here, we will request the endpoint on system A to invoke an `exists`
+operation on the endpoint on system B.
 ```bash
-$ proxystore-endpoint test --remote bbbbab4d-c73a-44ee-a316-58ec8857e83a myendpoint exists abcdef
-INFO: Object exists: False
+$ proxystore-endpoint client --target bbbb75951c623dbfd969e4ec8c7406e00bb8603814ef6db50c1f9780bc60714e myendpoint exists abcdef
+Object exists: False
 ```
 
-You will get an error if the peer connection fails. For example:
-```bash
-ERROR: Endpoint returned ERROR for EXISTS request: Request to peer bbbbab4d-c73a-44ee-a316-58ec8857e83a failed: ...
-```
-If this happens, check the logs for both endpoints for further error messages.
-Peer requests typically fail because one of the endpoints is not running
-(e.g., an endpoint crashed).
+You will get an error if the peer request fails. Check the logs of both
+endpoints for further error messages. Common errors are:
+
+* **Endpoint ... is not in the allowlist of peers**: The local endpoint does
+  not have the remote endpoint in its peers.
+* **Peer ... refused the connection because this endpoint is not in its
+  allowlist of peers**: The remote endpoint does not have the local endpoint
+  in its peers. The remote endpoint logs a warning that it refused the
+  connection.
+* **Failed to connect to peer ...** or **Connecting to peer ... timed out**:
+  The remote endpoint is not running, or the endpoints cannot reach each
+  other. If relays are disabled (`relays = "none"`), the endpoints can only
+  connect directly. If discovery is unavailable, an endpoint can only reach
+  peers whose addresses are cached in its `peer-addrs.json` file.
+* **Endpoint returned TOO_LARGE for SET request: Peer ...**: The object is
+  larger than the `max_object_size` of the remote endpoint.
+
+Errors forwarded from the remote endpoint name the peer (e.g., `Peer bbbb...:
+...`) and the status returned by the endpoint (e.g., `PEER_NOT_ALLOWED`).
+The
+[`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]
+raises these errors as an
+[`EndpointConnectorError`][proxystore.connectors.endpoint.EndpointConnectorError]
+with the message of the original error.

@@ -4,17 +4,231 @@ from __future__ import annotations
 
 import contextlib
 import dataclasses
-import json
+import enum
+import errno
+import logging
 import os
+import random
+import shutil
 import stat
+import sys
+from typing import ClassVar
 from typing import Self
+from typing import TypedDict
+from typing import Unpack
 
-from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import TOKEN_SIZE
-from proxystore.endpoint.auth import write_private_file
+from pydantic import ConfigDict
+
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.config import EndpointConfig
-from proxystore.utils.config import dump
-from proxystore.utils.config import load
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.config import EndpointStorageConfig
+from proxystore.endpoint.exceptions import EndpointConfigError
+from proxystore.endpoint.exceptions import EndpointExistsError
+from proxystore.endpoint.exceptions import EndpointNotFoundError
+from proxystore.endpoint.exceptions import EndpointRunningError
+from proxystore.endpoint.files import read_model
+from proxystore.endpoint.files import VersionedFile
+from proxystore.endpoint.files import write_model
+from proxystore.endpoint.files import write_private_file
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.identity import SecretKey
+from proxystore.endpoint.peers import Peers
+from proxystore.utils.environment import home_dir
+from proxystore.utils.environment import hostname
+
+if sys.platform != 'win32':  # pragma: no branch
+    import fcntl
+
+logger = logging.getLogger(__name__)
+
+_LOCK_UNSUPPORTED_ERRNOS = frozenset(
+    (errno.ENOLCK, errno.ENOSYS, errno.EOPNOTSUPP, errno.EINVAL),
+)
+
+CONNECTION_VERSION = 1
+"""Format version of the connection file."""
+
+
+class ConnectionInfo(VersionedFile):
+    """Information that clients use to connect to a running endpoint.
+
+    The endpoint writes this to the connection file in its directory each
+    time it starts and removes it when it stops (see
+    [`EndpointDir.write_connection()`][proxystore.endpoint.directory.EndpointDir.write_connection]).
+
+    Attributes:
+        version: Format version of the connection file.
+        host: Host address the endpoint is listening on.
+        port: Port the endpoint is listening on.
+        token: Token that the client and endpoint prove they know.
+        tls_fingerprint: SHA-256 fingerprint of the endpoint's TLS
+            certificate or `None` if the endpoint does not use TLS.
+        hostname: Name of the machine the endpoint is running on.
+        pid: Process ID of the endpoint on that machine.
+    """
+
+    model_config = ConfigDict(frozen=True)
+    DESCRIPTION: ClassVar[str] = 'connection file'
+
+    version: int = CONNECTION_VERSION
+    host: str
+    port: int
+    token: EndpointToken
+    tls_fingerprint: str | None
+    hostname: str
+    pid: int
+
+
+class EndpointOptions(TypedDict, total=False):
+    """Options of a new endpoint.
+
+    See [`EndpointConfig`][proxystore.endpoint.config.EndpointConfig] for
+    the meaning and default of each option.
+    """
+
+    host: str
+    tls: bool
+    max_object_size: int | str
+    p2p: EndpointP2PConfig
+    storage: EndpointStorageConfig
+
+
+class EndpointStatus(enum.Enum):
+    """Status of an endpoint.
+
+    See
+    [`EndpointDir.status()`][proxystore.endpoint.directory.EndpointDir.status].
+    """
+
+    RUNNING = enum.auto()
+    """Endpoint is running."""
+    STOPPED = enum.auto()
+    """Endpoint is not running."""
+    STALE = enum.auto()
+    """Endpoint on this host stopped without removing its connection file.
+
+    This happens if the endpoint process was killed or crashed. Starting or
+    stopping the endpoint removes the stale connection file.
+    """
+    OTHER_HOST = enum.auto()
+    """Endpoint was started on another host and may still be running there.
+
+    The connection file was written by an endpoint on another host which
+    shares the endpoint directory. Whether the endpoint is still running on
+    that host cannot be checked from this host.
+    """
+
+
+class EndpointLock:
+    """Advisory lock held by a running endpoint.
+
+    A running endpoint holds an exclusive lock (see
+    [`fcntl.flock()`][fcntl.flock]) on the lock file in its directory for as
+    long as it runs. The operating system releases the lock when the process
+    exits, even if the process crashes, so the lock reliably shows if the
+    endpoint is running on this host. Whether the lock is also visible to
+    other hosts depends on the file system of the endpoint directory.
+
+    Some file systems (e.g., some network or parallel file systems) do not
+    support locks. Then, acquiring the lock always succeeds, `supported` is
+    `False`, and the status of the endpoint is determined from the PID in
+    its connection file instead.
+
+    Attributes:
+        path: Path of the lock file.
+        supported: If the file system supports locks. This is `True` until
+            locking fails because locks are not supported.
+
+    Args:
+        path: Path of the lock file.
+    """
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+        self.supported = sys.platform != 'win32'
+        self._fd: int | None = None
+
+    @property
+    def held(self) -> bool:
+        """This lock object holds the lock."""
+        return self._fd is not None
+
+    def acquire(self) -> None:
+        """Acquire the lock without waiting.
+
+        Raises:
+            RuntimeError: If this lock object already holds the lock.
+            EndpointRunningError: If another process (or another lock object
+                in this process) holds the lock.
+        """
+        if self._fd is not None:
+            raise RuntimeError('The lock is already held.')
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
+        try:
+            if self._flock(fd) is False:
+                raise EndpointRunningError(
+                    'Endpoint '
+                    f'{os.path.basename(os.path.dirname(self.path))} is '
+                    f'already running (its lock {self.path} is held by '
+                    'another process).',
+                )
+        except BaseException:
+            os.close(fd)
+            raise
+        self._fd = fd
+
+    def release(self) -> None:
+        """Release the lock if it is held."""
+        if self._fd is None:
+            return
+        fd, self._fd = self._fd, None
+        if self.supported:  # pragma: no branch
+            with contextlib.suppress(OSError):
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+    def is_locked(self) -> bool | None:
+        """Check if the lock is held.
+
+        Returns:
+            `True` if the lock is held by any lock object, `False` if the \
+            lock is not held, or `None` if locks are not supported.
+        """
+        try:
+            fd = os.open(self.path, os.O_RDWR)
+        except FileNotFoundError:
+            return False if self.supported else None
+        try:
+            acquired = self._flock(fd)
+            if acquired is None:
+                return None
+            if acquired:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+            return not acquired
+        finally:
+            os.close(fd)
+
+    def _flock(self, fd: int) -> bool | None:
+        # Returns if the lock was acquired or None if locks are unsupported.
+        if not self.supported:  # pragma: no cover
+            return None
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return False
+        except OSError as e:
+            if e.errno not in _LOCK_UNSUPPORTED_ERRNOS:
+                raise
+            logger.warning(
+                'The file system of %s does not support locks so the status '
+                'of the endpoint is determined from its PID: %s',
+                self.path,
+                e,
+            )
+            self.supported = False
+            return None
+        return True
 
 
 @dataclasses.dataclass(frozen=True)
@@ -27,8 +241,10 @@ class EndpointDir:
 
     Example:
         ```python
-        endpoint_dir = EndpointDir.from_home('/path/to/proxystore', 'my-ep')
-        assert endpoint_dir.path == '/path/to/proxystore/my-ep'
+        # Create a new endpoint with a new secret key
+        endpoint_dir = EndpointDir.create('my-ep', port=8765)
+        # Or open an existing endpoint
+        endpoint_dir = EndpointDir.from_name('my-ep')
         config = endpoint_dir.read_config()
         ```
 
@@ -44,36 +260,120 @@ class EndpointDir:
     def __str__(self) -> str:
         return self.path
 
+    @property
+    def name(self) -> str:
+        """Name of the endpoint (i.e., the name of the directory)."""
+        return os.path.basename(os.path.normpath(self.path))
+
     @classmethod
-    def from_home(cls, proxystore_dir: str, name: str) -> Self:
+    def from_name(
+        cls,
+        name: str,
+        proxystore_dir: str | None = None,
+    ) -> Self:
         """Get the directory of an endpoint in a ProxyStore home directory.
 
+        The directory may not exist (e.g., because the endpoint has not been
+        created yet).
+
         Args:
-            proxystore_dir: ProxyStore home directory (see
-                [`home_dir()`][proxystore.utils.environment.home_dir]).
             name: Name of the endpoint.
+            proxystore_dir: ProxyStore home directory. Defaults to
+                [`home_dir()`][proxystore.utils.environment.home_dir].
         """
+        if proxystore_dir is None:
+            proxystore_dir = home_dir()
         return cls(os.path.join(proxystore_dir, name))
 
     @classmethod
+    def create(
+        cls,
+        name: str,
+        proxystore_dir: str | None = None,
+        *,
+        secret_key: SecretKey | None = None,
+        port: int | None = None,
+        **options: Unpack[EndpointOptions],
+    ) -> Self:
+        """Create a new endpoint.
+
+        Creates the endpoint directory, only accessible by the owner, and
+        writes a new secret key and the configuration of the endpoint.
+
+        Example:
+            ```python
+            endpoint_dir = EndpointDir.create(
+                'my-ep',
+                port=8765,
+                p2p=EndpointP2PConfig(relays='none'),
+            )
+            ```
+
+        Args:
+            name: Name of the endpoint.
+            proxystore_dir: ProxyStore home directory. Defaults to
+                [`home_dir()`][proxystore.utils.environment.home_dir].
+            secret_key: Secret key of the endpoint. A new key is generated
+                if `None`.
+            port: Port of the endpoint. A random port in the range
+                [10240, 20480] is chosen if `None`.
+            options: Other options of the endpoint (see
+                [`EndpointOptions`][proxystore.endpoint.directory.EndpointOptions]).
+
+        Returns:
+            The new endpoint directory.
+
+        Raises:
+            EndpointExistsError: If an endpoint with the name already exists.
+            ValueError: If the configuration is invalid.
+        """
+        secret_key = SecretKey.generate() if secret_key is None else secret_key
+        port = random.randint(10 * 1024, 20 * 1024) if port is None else port
+        config = EndpointConfig(
+            name=name,
+            id=secret_key.endpoint_id,
+            port=port,
+            **options,
+        )
+        endpoint_dir = cls.from_name(name, proxystore_dir)
+        os.makedirs(os.path.dirname(endpoint_dir.path), exist_ok=True)
+        # Clients trust the files in the endpoint directory, so only the
+        # owner can create or replace files in it.
+        try:
+            os.mkdir(endpoint_dir.path, mode=0o700)
+        except FileExistsError:
+            raise EndpointExistsError(
+                f'An endpoint named {name} already exists in '
+                f'{os.path.dirname(endpoint_dir.path)}.',
+            ) from None
+        endpoint_dir.write_secret_key(secret_key)
+        # The configuration is written last because an endpoint is only
+        # found (see find_all()) once it has a configuration.
+        endpoint_dir.write_config(config)
+        return endpoint_dir
+
+    @classmethod
     def find_all(
-        cls, proxystore_dir: str
+        cls,
+        proxystore_dir: str | None = None,
     ) -> list[tuple[Self, EndpointConfig]]:
         """Find all endpoints with a valid configuration.
 
         Args:
-            proxystore_dir: ProxyStore home directory to search in (see
-                [`home_dir()`][proxystore.utils.environment.home_dir]).
+            proxystore_dir: ProxyStore home directory to search in. Defaults
+                to [`home_dir()`][proxystore.utils.environment.home_dir].
 
         Returns:
             List of each endpoint directory and its configuration.
         """
+        if proxystore_dir is None:
+            proxystore_dir = home_dir()
         endpoints: list[tuple[Self, EndpointConfig]] = []
         if not os.path.isdir(proxystore_dir):
             return endpoints
 
         # Endpoint directories are always direct children of the home
-        # directory (see from_home()).
+        # directory (see from_name()).
         with os.scandir(proxystore_dir) as entries:
             paths = sorted(entry.path for entry in entries if entry.is_dir())
 
@@ -91,45 +391,55 @@ class EndpointDir:
         """Read the endpoint configuration.
 
         Raises:
-            FileNotFoundError: If the configuration file does not exist.
-            ValueError: If the configuration contains an invalid value or
-                cannot be parsed.
+            EndpointNotFoundError: If the configuration file does not exist.
+            EndpointConfigError: If the configuration contains an invalid
+                value, cannot be parsed, or the name of the endpoint does
+                not match the name of the directory.
         """
         try:
-            with open(self.config_path, 'rb') as f:
-                return load(EndpointConfig, f)
+            config = read_model(EndpointConfig, self.config_path)
         except FileNotFoundError:
-            raise FileNotFoundError(
+            self.check_exists()
+            raise EndpointNotFoundError(
                 f'Endpoint directory {self.path} does not contain a valid '
                 'configuration.',
             ) from None
-        except ValueError as e:
-            # Includes TOML decoding and pydantic validation errors.
-            raise ValueError(
-                f'Unable to parse ({self.config_path}): {e!s}.',
-            ) from None
+
+        # The directory name is used to find an endpoint by name, so the
+        # name in the configuration must match it.
+        if config.name != self.name:
+            raise EndpointConfigError(
+                f'The endpoint name in {self.config_path} ({config.name}) '
+                f'does not match the name of the directory ({self.name}). '
+                'Rename the directory or change the name in the '
+                'configuration so they match.',
+            )
+        return config
 
     def write_config(self, config: EndpointConfig) -> None:
-        """Write the endpoint configuration, creating the directory if needed.
+        """Atomically write the endpoint configuration.
+
+        The directory is created, only accessible by the owner, if needed.
 
         Args:
             config: Configuration to write.
         """
-        # Clients trust the connection file in the endpoint directory, so
-        # only the owner can create or replace files in it.
         os.makedirs(self.path, mode=0o700, exist_ok=True)
-        with open(self.config_path, 'wb') as f:
-            dump(config, f)
+        write_model(self.config_path, config)
 
     @property
     def config_path(self) -> str:
         """Path to the endpoint configuration."""
         return self._join('config.toml')
 
-    @property
-    def database_path(self) -> str:
-        """Path to the default SQLite database for persisting objects."""
-        return self._join('blobs.db')
+    def resolve_path(self, path: str) -> str:
+        """Resolve a path in the configuration of the endpoint.
+
+        `~` is expanded to the user's home directory, and a relative path
+        is relative to the endpoint directory.
+        """
+        path = os.path.expanduser(path)
+        return path if os.path.isabs(path) else self._join(path)
 
     @property
     def log_path(self) -> str:
@@ -137,9 +447,84 @@ class EndpointDir:
         return self._join('log.txt')
 
     @property
-    def pid_path(self) -> str:
-        """Path to the PID file of the endpoint daemon."""
-        return self._join('daemon.pid')
+    def lock_path(self) -> str:
+        """Path to the lock file held by the running endpoint."""
+        return self._join('endpoint.lock')
+
+    def lock(self) -> EndpointLock:
+        """Get the lock held by the running endpoint.
+
+        See [`EndpointLock`][proxystore.endpoint.directory.EndpointLock].
+        """
+        return EndpointLock(self.lock_path)
+
+    @property
+    def secret_key_path(self) -> str:
+        """Path to the secret key of the endpoint."""
+        return self._join('secret.key')
+
+    def write_secret_key(self, secret_key: SecretKey) -> None:
+        """Atomically write the secret key of the endpoint.
+
+        The file is only readable by the owner.
+        """
+        write_private_file(self.secret_key_path, secret_key.to_bytes())
+
+    def read_secret_key(self, endpoint_id: EndpointId) -> SecretKey:
+        """Read the secret key of the endpoint.
+
+        Args:
+            endpoint_id: ID the secret key must match (i.e., the ID in the
+                configuration of the endpoint).
+
+        Raises:
+            EndpointConfigError: If the secret key file does not exist, is
+                malformed, or does not match the ID.
+        """
+        try:
+            with open(self.secret_key_path, 'rb') as f:
+                data = f.read()
+        except FileNotFoundError:
+            raise EndpointConfigError(
+                f'Endpoint directory {self.path} does not contain a secret '
+                'key. Remove the endpoint and configure it again with '
+                '"proxystore-endpoint configure".',
+            ) from None
+        try:
+            secret_key = SecretKey(data)
+        except ValueError:
+            raise EndpointConfigError(
+                f'Secret key file at {self.secret_key_path} is malformed.',
+            ) from None
+
+        if secret_key.endpoint_id != endpoint_id:
+            raise EndpointConfigError(
+                f'The endpoint ID in the configuration ({endpoint_id}) '
+                'does not match the secret key '
+                f'({secret_key.endpoint_id}) in {self.path}.',
+            )
+        return secret_key
+
+    @property
+    def peers_path(self) -> str:
+        """Path to the allowlist of peer endpoints."""
+        return self._join('peers.toml')
+
+    def peers(self) -> Peers:
+        """Get the peers of the endpoint.
+
+        This reads the configuration to get the ID of the endpoint.
+
+        Raises:
+            EndpointNotFoundError: If the configuration does not exist.
+            EndpointConfigError: If the configuration is invalid.
+        """
+        return Peers(self.peers_path, owner_id=self.read_config().id)
+
+    @property
+    def peer_addrs_path(self) -> str:
+        """Path to the cache of peer addresses written by the endpoint."""
+        return self._join('peer-addrs.json')
 
     @property
     def connection_path(self) -> str:
@@ -152,13 +537,7 @@ class EndpointDir:
         The file is only readable by the owner because it contains the
         endpoint's token.
         """
-        data = {
-            'host': info.host,
-            'port': info.port,
-            'token': info.token.hex(),
-            'tls_fingerprint': info.tls_fingerprint,
-        }
-        write_private_file(self.connection_path, json.dumps(data).encode())
+        write_model(self.connection_path, info)
 
     def read_connection(self) -> ConnectionInfo:
         """Read the connection file of the running endpoint.
@@ -166,31 +545,10 @@ class EndpointDir:
         Raises:
             FileNotFoundError: If the connection file does not exist (e.g.,
                 because the endpoint is not running).
-            ValueError: If the connection file is malformed.
+            EndpointConfigError: If the connection file is malformed or has
+                an unsupported format version.
         """
-        with open(self.connection_path, 'rb') as f:
-            contents = f.read()
-        try:
-            data = json.loads(contents)
-            info = ConnectionInfo(
-                host=data['host'],
-                port=data['port'],
-                token=bytes.fromhex(data['token']),
-                tls_fingerprint=data['tls_fingerprint'],
-            )
-        except (TypeError, KeyError, ValueError):
-            info = None
-        if (
-            info is None
-            or not isinstance(info.host, str)
-            or not isinstance(info.port, int)
-            or len(info.token) != TOKEN_SIZE
-            or not isinstance(info.tls_fingerprint, (str, type(None)))
-        ):
-            raise ValueError(
-                f'Connection file at {self.connection_path} is malformed.',
-            )
-        return info
+        return read_model(ConnectionInfo, self.connection_path)
 
     def remove_connection(self, info: ConnectionInfo | None = None) -> None:
         """Remove the connection file if it exists.
@@ -209,38 +567,127 @@ class EndpointDir:
         with contextlib.suppress(FileNotFoundError):
             os.remove(self.connection_path)
 
-    def running_pid(self) -> int | None:
-        """Get the PID of the endpoint daemon if it is running.
+    def status(self) -> EndpointStatus:
+        """Get the status of the endpoint.
+
+        The endpoint is running if it holds its lock (see
+        [`lock()`][proxystore.endpoint.directory.EndpointDir.lock]). If the
+        file system does not support locks, the endpoint is running if the
+        process in its connection file is running on this host.
 
         Returns:
-            The PID in the PID file if that process is running as the \
-            current user on this host, otherwise `None` (e.g., the PID file \
-            is missing or malformed, the endpoint stopped unexpectedly, or \
-            the endpoint is running on a different host).
+            The status of the endpoint.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
         """
+        return self._status()[0]
+
+    def check_stopped(self) -> None:
+        """Check that the endpoint is not running.
+
+        A stale connection file left by an endpoint which stopped
+        unexpectedly (see
+        [`EndpointStatus.STALE`][proxystore.endpoint.directory.EndpointStatus.STALE])
+        is removed.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+            EndpointRunningError: If the endpoint is running on this host or
+                may be running on another host.
+        """
+        status, info = self._status()
+        if status == EndpointStatus.RUNNING:
+            raise EndpointRunningError(
+                f'Endpoint {self.name} is already running.',
+            )
+        if status == EndpointStatus.OTHER_HOST:
+            assert info is not None
+            raise EndpointRunningError(
+                f'Endpoint {self.name} appears to be running on '
+                f'{info.hostname} (PID {info.pid}). Stop the endpoint on '
+                f'{info.hostname}. If it is not running, delete the '
+                f'connection file at {self.connection_path} and try again.',
+            )
+        if status == EndpointStatus.STALE:
+            logger.debug(
+                'Removing stale connection file (%s)',
+                self.connection_path,
+            )
+            self.remove_connection(info)
+
+    def _status(self) -> tuple[EndpointStatus, ConnectionInfo | None]:
+        # The status does not depend on the configuration so an endpoint
+        # with an invalid configuration can still be stopped and removed.
+        self.check_exists()
+        locked = self.lock().is_locked()
         try:
-            with open(self.pid_path) as f:
-                pid = int(f.read().strip())
-        except (OSError, ValueError):
-            return None
-        return pid if is_own_process(pid) else None
+            info = self.read_connection()
+        except FileNotFoundError:
+            info = None
+        except (OSError, EndpointConfigError):
+            # A connection file which cannot be read is never used.
+            status = EndpointStatus.RUNNING if locked else EndpointStatus.STALE
+            return status, None
+
+        if info is not None and info.hostname != hostname():
+            # The lock of an endpoint on another host may be visible to this
+            # host depending on the file system.
+            return EndpointStatus.OTHER_HOST, info
+        if locked or (
+            locked is None and info is not None and is_own_process(info.pid)
+        ):
+            return EndpointStatus.RUNNING, info
+        if info is None:
+            return EndpointStatus.STOPPED, None
+        return EndpointStatus.STALE, info
+
+    def remove(self) -> None:
+        """Remove the endpoint directory and all of its files.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+            EndpointRunningError: If the endpoint is running or may be
+                running on another host.
+        """
+        self.check_stopped()
+        shutil.rmtree(self.path)
+
+    def check_exists(self) -> None:
+        """Check that the endpoint directory exists.
+
+        Raises:
+            EndpointNotFoundError: If the endpoint directory does not exist.
+        """
+        if not os.path.isdir(self.path):
+            raise EndpointNotFoundError(
+                f'An endpoint named {self.name} does not exist in '
+                f'{os.path.dirname(os.path.normpath(self.path))}.',
+            )
 
     def restrict_permissions(self) -> bool:
         """Remove all group and other permissions from the directory.
 
         Clients trust the connection file in the endpoint directory, so no
         one other than the owner may be able to create, replace, or rename
-        files in it. The directory also contains the endpoint's database and
-        log which may contain user data.
+        files in it. The directory also contains the endpoint's secret key,
+        database, and log which may contain user data. Group and other
+        permissions are also removed from the secret key file.
 
         Returns:
-            `True` if the permissions of the directory were changed.
+            `True` if the permissions of the directory or secret key file \
+            were changed.
         """
-        mode = stat.S_IMODE(os.stat(self.path).st_mode)
-        if mode & 0o077 == 0:
-            return False
-        os.chmod(self.path, mode & ~0o077)
-        return True
+        changed = False
+        for path in (self.path, self.secret_key_path):
+            try:
+                mode = stat.S_IMODE(os.stat(path).st_mode)
+            except FileNotFoundError:
+                continue
+            if mode & 0o077 != 0:
+                os.chmod(path, mode & ~0o077)
+                changed = True
+        return changed
 
     def _join(self, name: str) -> str:
         return os.path.join(self.path, name)

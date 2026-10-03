@@ -1,0 +1,243 @@
+r"""Peer endpoint transfer speed test.
+
+Start the remote endpoint in one process (or on one system):
+
+```bash
+$ python -m testing.scripts.peer_endpoint_bandwidth remote --relays none
+Endpoint ID: 4c1d...
+Direct addresses: 127.0.0.1:52341, ...
+```
+
+Then start the local endpoint in another process (or on another system)
+with the ID and optionally an address of the remote:
+
+```bash
+$ python -m testing.scripts.peer_endpoint_bandwidth local 4c1d... \
+    --relays none --addr 127.0.0.1:52341
+```
+
+Without `--addr`, the remote is found using n0's DNS discovery which requires
+the default `--relays n0`.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import contextlib
+import logging
+import os
+import statistics
+import sys
+import tempfile
+import time
+from collections.abc import Sequence
+from typing import Any
+from typing import Literal
+
+import iroh
+
+from proxystore.endpoint.config import EndpointP2PConfig
+from proxystore.endpoint.directory import EndpointDir
+from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import Op
+from proxystore.endpoint.protocol import raise_for_status
+from proxystore.endpoint.protocol import Request
+from testing.utils import open_port
+
+
+class _AllowAll:
+    """Peer policy which allows all peers for benchmarking."""
+
+    def allowed(self, peer_id: EndpointId) -> bool:
+        return True
+
+    def name_of(self, peer_id: EndpointId) -> str | None:
+        return 'peer'
+
+
+async def _endpoint(
+    relays: Literal['n0', 'none'],
+    tmp_dir: str,
+) -> Endpoint:
+    endpoint_dir = EndpointDir.create(
+        'benchmark',
+        tmp_dir,
+        host='127.0.0.1',
+        port=open_port(),
+        p2p=EndpointP2PConfig(relays=relays),
+    )
+    endpoint = Endpoint(endpoint_dir, peer_policy=_AllowAll())
+    await endpoint.start()
+    return endpoint
+
+
+async def _request(
+    endpoint: Endpoint,
+    op: Op,
+    target: EndpointId,
+    data: bytes = b'',
+) -> Message:
+    request = Message(op, Request(key='key', target=target).encode(), data)
+    response = await endpoint.dispatcher.handle(request)
+    raise_for_status(response, op)
+    return response
+
+
+async def _time(coro: Any) -> float:
+    start = time.perf_counter()
+    await coro
+    return time.perf_counter() - start
+
+
+async def run_local(
+    remote: EndpointId,
+    addrs: list[str],
+    sizes: list[int],
+    repeat: int,
+    relays: Literal['n0', 'none'],
+    tmp_dir: str,
+) -> None:
+    """Measure transfer speeds to the remote endpoint."""
+    endpoint = await _endpoint(relays, tmp_dir)
+    assert endpoint.peer_manager is not None
+    if len(addrs) > 0:
+        endpoint.peer_manager.add_peer_addr(
+            iroh.EndpointAddr(
+                iroh.EndpointId.from_string(remote), None, addrs
+            ),
+        )
+
+    try:
+        connect = await _time(_request(endpoint, Op.EXISTS, remote))
+        print(f'Connection established in {connect * 1000:.1f} ms')
+
+        rtts = [
+            await _time(_request(endpoint, Op.EXISTS, remote))
+            for _ in range(100)
+        ]
+        print(f'Round trip (EXISTS): {statistics.median(rtts) * 1000:.3f} ms')
+
+        print(f'{"Size (B)":>12} {"SET (Mbps)":>12} {"GET (Mbps)":>12}')
+        for size in sizes:
+            data = os.urandom(size)
+            set_times = [
+                await _time(_request(endpoint, Op.SET, remote, data))
+                for _ in range(repeat)
+            ]
+            get_times = [
+                await _time(_request(endpoint, Op.GET, remote))
+                for _ in range(repeat)
+            ]
+            await _request(endpoint, Op.EVICT, remote)
+            set_mbps = size * 8 / 1e6 / min(set_times)
+            get_mbps = size * 8 / 1e6 / min(get_times)
+            print(f'{size:>12} {set_mbps:>12.1f} {get_mbps:>12.1f}')
+    finally:
+        await endpoint.stop()
+
+
+async def run_remote(relays: Literal['n0', 'none'], tmp_dir: str) -> None:
+    """Serve an endpoint until interrupted."""
+    endpoint = await _endpoint(relays, tmp_dir)
+    assert endpoint.peer_manager is not None
+    addr = endpoint.peer_manager.addr()
+    print(f'Endpoint ID: {endpoint.id}')
+    print(f'Direct addresses: {", ".join(addr.direct_addresses())}')
+    print('Serving remote endpoint. Use ctrl-C to stop')
+    try:
+        with contextlib.suppress(asyncio.CancelledError):
+            await asyncio.Event().wait()
+    finally:
+        await endpoint.stop()
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Peer endpoint bandwidth app."""
+    argv = argv if argv is not None else sys.argv[1:]
+
+    parser = argparse.ArgumentParser(
+        description='Measure transfer speed between two endpoints.',
+    )
+    parser.add_argument(
+        'actor',
+        choices=['local', 'remote'],
+        help='should this process act as the local or remote endpoint',
+    )
+    parser.add_argument(
+        'remote_id',
+        nargs='?',
+        help='ID of the remote endpoint (required for local)',
+    )
+    parser.add_argument(
+        '--addr',
+        action='append',
+        default=[],
+        help='direct address of the remote endpoint (can be repeated)',
+    )
+    parser.add_argument(
+        '--sizes',
+        type=int,
+        nargs='+',
+        default=[1_000, 1_000_000, 10_000_000],
+        help='sizes in bytes of data to transfer',
+    )
+    parser.add_argument(
+        '--repeat',
+        type=int,
+        default=3,
+        help='repetitions of each transfer (the best is reported)',
+    )
+    parser.add_argument(
+        '--relays',
+        choices=['n0', 'none'],
+        default='n0',
+        help='use n0 relays or disable relays',
+    )
+    parser.add_argument(
+        '--no-uvloop',
+        action='store_true',
+        help='override using uvloop if available',
+    )
+    parser.add_argument(
+        '--debug',
+        action='store_true',
+        help='enable debug logging',
+    )
+    args = parser.parse_args(argv)
+
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARNING)
+
+    run: Any = asyncio.run
+    if not args.no_uvloop:
+        try:
+            import uvloop
+
+            run = uvloop.run
+        except ImportError:  # pragma: no cover
+            print('uvloop unavailable... using default asyncio event loop')
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        if args.actor == 'local':
+            if args.remote_id is None:
+                parser.error('the remote_id is required for local')
+            coro = run_local(
+                EndpointId.from_str(args.remote_id),
+                args.addr,
+                args.sizes,
+                args.repeat,
+                args.relays,
+                tmp_dir,
+            )
+        else:
+            coro = run_remote(args.relays, tmp_dir)
+        with contextlib.suppress(KeyboardInterrupt):
+            run(coro)
+
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

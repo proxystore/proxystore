@@ -6,8 +6,6 @@ import pathlib
 import socket
 import struct
 import threading
-import uuid
-import warnings
 from collections.abc import Callable
 from collections.abc import Generator
 from typing import Any
@@ -15,13 +13,13 @@ from unittest import mock
 
 import pytest
 
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import ConnectionInfo
-from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint import protocol
+from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
+from proxystore.endpoint.directory import ConnectionInfo
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
@@ -29,28 +27,36 @@ from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
-from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.identity import EndpointId
+from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
-from proxystore.endpoint.warnings import EndpointVersionWarning
+from proxystore.warnings import VersionMismatchWarning
+from testing.endpoint import decode_meta
+from testing.endpoint import encode_meta
 
-TOKEN = os.urandom(TOKEN_SIZE)
-ENDPOINT_UUID = uuid.uuid4()
+TOKEN = EndpointToken.generate()
+ENDPOINT_ID = EndpointId.random()
 
 Script = Callable[[socket.socket], None]
 
 
 def _info(**overrides: Any) -> dict[str, Any]:
-    info = {
-        'uuid': str(ENDPOINT_UUID),
-        'name': 'fake',
-        'max_object_size': None,
-        **Versions.current()._asdict(),
-    }
+    info = EndpointInfo(
+        id=ENDPOINT_ID,
+        name='fake',
+        versions=Versions.current(),
+        max_object_size=None,
+    ).model_dump(mode='json')
     info.update(overrides)
     return info
+
+
+def _versions(**overrides: str) -> dict[str, str]:
+    return {**Versions.current().model_dump(), **overrides}
 
 
 def _server_hello(
@@ -62,20 +68,23 @@ def _server_hello(
 ) -> bytes:
     """Read the client's HELLO and reply. Returns the client nonce."""
     _recv_exactly(conn, Preamble.SIZE)
-    _, hello = _recv_message(conn)
-    client_nonce = bytes.fromhex(hello['nonce'])
+    hello = _recv_message(conn)
+    client_nonce = bytes.fromhex(decode_meta(hello.meta)['nonce'])
     if meta is None:
         server_nonce = os.urandom(32)
-        proof = compute_proof(TOKEN, 'server', server_nonce, client_nonce)
+        proof = TOKEN.proof('server', server_nonce, client_nonce)
         meta = {'nonce': server_nonce.hex(), 'proof': proof.hex()}
-    conn.sendall(Preamble(version).pack() + pack_message(status, meta))
+    conn.sendall(
+        Preamble(version).pack()
+        + Message(status, encode_meta(meta)).pack_head()
+    )
     return client_nonce
 
 
 def _complete_handshake(conn: socket.socket) -> None:
     _server_hello(conn)
     _recv_message(conn)
-    conn.sendall(pack_message(Status.OK, _info()))
+    conn.sendall(Message(Status.OK, encode_meta(_info())).pack_head())
 
 
 @pytest.fixture
@@ -131,13 +140,26 @@ def test_connect_handshake_timeout(fake_server) -> None:
 def test_connect_and_close(fake_server) -> None:
     port = fake_server(_complete_handshake)
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        assert client.info.uuid == ENDPOINT_UUID
+        assert client.info.id == ENDPOINT_ID
         assert client.info.name == 'fake'
         assert client.info.max_object_size is None
+        assert client.protocol_version == PROTOCOL_VERSION
         assert 'fake' in repr(client)
     assert client.closed
     # Closing again is a no-op
     client.close()
+
+
+def test_connect_older_protocol_version(
+    fake_server,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A client which also supports a newer version uses the older version
+    # negotiated by the endpoint.
+    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', PROTOCOL_VERSION + 1)
+    port = fake_server(_complete_handshake)
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        assert client.protocol_version == PROTOCOL_VERSION
 
     with pytest.raises(EndpointConnectionError, match='closed'):
         client.exists('key')
@@ -155,116 +177,163 @@ def test_handshake_protocol_mismatch(fake_server) -> None:
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 
-def test_handshake_error_status(fake_server) -> None:
-    port = fake_server(
-        lambda conn: _server_hello(conn, status=Status.ERROR, meta={}),
-    )
-    with pytest.raises(EndpointProtocolError, match='no error message'):
-        EndpointClient.connect('127.0.0.1', port, TOKEN)
-
-
-def test_handshake_malformed_hello_response(fake_server) -> None:
-    port = fake_server(lambda conn: _server_hello(conn, meta={'nonce': 'x'}))
-    with pytest.raises(EndpointProtocolError, match='Malformed'):
-        EndpointClient.connect('127.0.0.1', port, TOKEN)
-
-
-def test_handshake_short_nonce(fake_server) -> None:
-    nonce, proof = os.urandom(16), os.urandom(32)
-    port = fake_server(
-        lambda conn: _server_hello(
-            conn,
-            meta={'nonce': nonce.hex(), 'proof': proof.hex()},
-        ),
-    )
-    with pytest.raises(EndpointProtocolError, match="invalid 'nonce'"):
-        EndpointClient.connect('127.0.0.1', port, TOKEN)
-
-
 def test_handshake_message_with_data(fake_server) -> None:
     def _script(conn: socket.socket) -> None:
         _recv_exactly(conn, Preamble.SIZE)
         _recv_message(conn)
         conn.sendall(
-            Preamble().pack() + pack_message(Status.OK, {}, data_len=1) + b'x',
+            Preamble().pack()
+            + Message(Status.OK, encode_meta({})).pack_head(1)
+            + b'x',
         )
 
     port = fake_server(_script)
-    with pytest.raises(EndpointProtocolError, match='sent data'):
-        EndpointClient.connect('127.0.0.1', port, TOKEN)
-
-
-def test_handshake_rejected(fake_server) -> None:
-    def _script(conn: socket.socket) -> None:
-        _server_hello(conn)
-        _recv_message(conn)
-        conn.sendall(pack_message(Status.UNAUTHORIZED, {'error': 'no'}))
-
-    port = fake_server(_script)
-    with pytest.raises(EndpointAuthError, match='rejected'):
+    with pytest.raises(EndpointProtocolError, match='contains data'):
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 
 @pytest.mark.parametrize(
-    ('status', 'meta', 'match'),
+    ('stage', 'status', 'meta', 'error', 'match'),
     (
-        (Status.ERROR, {'error': 'bad'}, 'bad'),
-        (Status.OK, _info(uuid='not-a-uuid'), 'Malformed'),
-        (Status.OK, {}, 'Malformed'),
+        # Reply to HELLO
+        ('hello', Status.ERROR, {}, EndpointProtocolError, 'no error message'),
+        (
+            'hello',
+            Status.OK,
+            {'nonce': 'x'},
+            EndpointProtocolError,
+            'Malformed',
+        ),
+        # Reply to AUTH
+        (
+            'auth',
+            Status.UNAUTHORIZED,
+            {'error': 'no'},
+            EndpointAuthError,
+            'rejected',
+        ),
+        ('auth', Status.ERROR, {'error': 'bad'}, EndpointProtocolError, 'bad'),
+        (
+            'auth',
+            Status.OK,
+            _info(id='not-an-id'),
+            EndpointProtocolError,
+            'Malformed',
+        ),
+        ('auth', Status.OK, {}, EndpointProtocolError, 'Malformed'),
     ),
 )
-def test_handshake_bad_info(
+def test_handshake_bad_reply(
+    stage: str,
     status: int,
     meta: dict[str, Any],
+    error: type[Exception],
     match: str,
     fake_server,
 ) -> None:
     def _script(conn: socket.socket) -> None:
+        if stage == 'hello':
+            _server_hello(conn, status=status, meta=meta)
+            return
         _server_hello(conn)
         _recv_message(conn)
-        conn.sendall(pack_message(status, meta))
+        conn.sendall(Message(status, encode_meta(meta)).pack_head())
 
     port = fake_server(_script)
-    with pytest.raises(EndpointProtocolError, match=match):
+    with pytest.raises(error, match=match):
         EndpointClient.connect('127.0.0.1', port, TOKEN)
 
 
-def _respond_with(status: int, meta: dict[str, Any] | None = None) -> Script:
+def _respond_with(
+    status: int,
+    meta: dict[str, Any] | None = None,
+    *,
+    request_id: int | None = None,
+) -> Script:
     def _script(conn: socket.socket) -> None:
         _complete_handshake(conn)
-        _recv_message(conn)
-        conn.sendall(pack_message(status, meta))
+        request = _recv_message(conn)
+        request_id_ = request.request_id if request_id is None else request_id
+        response = Message(
+            status, encode_meta(meta or {}), request_id=request_id_
+        )
+        conn.sendall(response.pack_head())
 
     return _script
 
 
-@pytest.mark.parametrize('meta', (None, {'exists': 'yes'}))
-def test_exists_malformed_response(
+def test_request_ids(fake_server) -> None:
+    ids: list[int] = []
+
+    def _script(conn: socket.socket) -> None:
+        _complete_handshake(conn)
+        for _ in range(3):
+            request = _recv_message(conn)
+            ids.append(request.request_id)
+            response = Message(
+                Status.OK,
+                encode_meta({'exists': True}),
+                request_id=request.request_id,
+            ).pack_head()
+            conn.sendall(response)
+
+    port = fake_server(_script)
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        client._next_request_id = 2**32 - 2
+        for _ in range(3):
+            assert client.exists('key')
+    # IDs wrap around to 1 because 0 is reserved for handshake messages
+    assert ids == [2**32 - 2, 2**32 - 1, 1]
+
+
+@pytest.mark.parametrize(
+    ('status', 'meta', 'request_id', 'error', 'match', 'closed'),
+    (
+        # The connection is unusable after a response to another request
+        (Status.OK, None, 42, EndpointProtocolError, 'request 42', True),
+        # The connection is in an unknown state after a bad request
+        (
+            Status.BAD_REQUEST,
+            {'error': 'bad'},
+            None,
+            EndpointProtocolError,
+            'BAD_REQUEST .*: bad',
+            True,
+        ),
+        (
+            Status.ERROR,
+            None,
+            None,
+            EndpointRequestError,
+            'no error message',
+            False,
+        ),
+        # A newer endpoint may return an error status unknown to this client
+        (
+            99,
+            {'error': 'new error'},
+            None,
+            EndpointRequestError,
+            'status code 99.*new error',
+            False,
+        ),
+    ),
+)
+def test_request_error_response(
+    status: int,
     meta: dict[str, Any] | None,
+    request_id: int | None,
+    error: type[Exception],
+    match: str,
+    closed: bool,
     fake_server,
 ) -> None:
-    port = fake_server(_respond_with(Status.OK, meta))
-    with (
-        EndpointClient.connect('127.0.0.1', port, TOKEN) as client,
-        pytest.raises(EndpointProtocolError, match='Malformed EXISTS'),
-    ):
-        client.exists('key')
-
-
-def test_request_error_no_message(fake_server) -> None:
-    port = fake_server(_respond_with(Status.ERROR))
+    port = fake_server(_respond_with(status, meta, request_id=request_id))
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        with pytest.raises(EndpointRequestError, match='no error message'):
+        with pytest.raises(error, match=match) as e:
             client.exists('key')
-        assert not client.closed
-
-
-def test_request_unknown_status(fake_server) -> None:
-    port = fake_server(_respond_with(99))
-    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
-        with pytest.raises(EndpointProtocolError, match='unknown status'):
-            client.exists('key')
-        assert client.closed
+        assert type(e.value) is error
+        assert client.closed == closed
 
 
 def test_request_connection_closed(fake_server) -> None:
@@ -315,23 +384,18 @@ def _handshake_with_info(**info: Any) -> Script:
     def _script(conn: socket.socket) -> None:
         _server_hello(conn)
         _recv_message(conn)
-        conn.sendall(pack_message(Status.OK, _info(**info)))
+        conn.sendall(
+            Message(Status.OK, encode_meta(_info(**info))).pack_head()
+        )
 
     return _script
 
 
 def test_version_mismatch_warning(fake_server) -> None:
-    port = fake_server(_handshake_with_info(proxystore='0.0.1'))
-    with pytest.warns(EndpointVersionWarning, match='ProxyStore'):
-        client = EndpointClient.connect('127.0.0.1', port, TOKEN)
-    client.close()
-
-
-def test_python_patch_version_no_warning(fake_server) -> None:
-    major, minor, _ = Versions.current().python.split('.', 2)
-    port = fake_server(_handshake_with_info(python=f'{major}.{minor}.999'))
-    with warnings.catch_warnings():
-        warnings.simplefilter('error', EndpointVersionWarning)
+    port = fake_server(
+        _handshake_with_info(versions=_versions(proxystore='0.0.1'))
+    )
+    with pytest.warns(VersionMismatchWarning, match='ProxyStore'):
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
 
@@ -340,7 +404,7 @@ def _write_config(tmp_path: pathlib.Path, **kwargs: Any) -> EndpointDir:
     endpoint_dir = EndpointDir(str(tmp_path))
     config = EndpointConfig(
         name='test',
-        uuid=str(uuid.uuid4()),
+        id=EndpointId.random(),
         port=1,
         **kwargs,
     )
@@ -363,26 +427,34 @@ def test_from_dir_not_running(tmp_path: pathlib.Path) -> None:
 def test_from_dir_running_without_connection_file(
     tmp_path: pathlib.Path,
 ) -> None:
-    # E.g., the endpoint was started with an older version of ProxyStore
+    # The endpoint holds its lock while it is starting
     endpoint_dir = _write_config(tmp_path)
-    with open(endpoint_dir.pid_path, 'w') as f:
-        f.write(str(os.getpid()))
-    with pytest.raises(EndpointNotRunningError, match='older version'):
-        EndpointClient.from_dir(endpoint_dir)
+    lock = endpoint_dir.lock()
+    lock.acquire()
+    try:
+        with pytest.raises(EndpointNotRunningError, match='still starting'):
+            EndpointClient.from_dir(endpoint_dir)
+    finally:
+        lock.release()
 
 
-def test_from_dir_unreadable_connection_file(tmp_path: pathlib.Path) -> None:
+@pytest.mark.parametrize(
+    ('contents', 'match'),
+    ((None, 'Unable to read'), ('not json', 'malformed')),
+)
+def test_from_dir_bad_connection_file(
+    contents: str | None,
+    match: str,
+    tmp_path: pathlib.Path,
+) -> None:
     endpoint_dir = _write_config(tmp_path, host='localhost')
-    os.mkdir(endpoint_dir.connection_path)
-    with pytest.raises(EndpointAuthError, match='Unable to read'):
-        EndpointClient.from_dir(endpoint_dir)
-
-
-def test_from_dir_malformed_connection_file(tmp_path: pathlib.Path) -> None:
-    endpoint_dir = _write_config(tmp_path, host='localhost')
-    with open(endpoint_dir.connection_path, 'w') as f:
-        f.write('not json')
-    with pytest.raises(EndpointAuthError, match='malformed'):
+    if contents is None:
+        # A directory cannot be read as a file
+        os.mkdir(endpoint_dir.connection_path)
+    else:
+        with open(endpoint_dir.connection_path, 'w') as f:
+            f.write(contents)
+    with pytest.raises(EndpointAuthError, match=match):
         EndpointClient.from_dir(endpoint_dir)
 
 
@@ -395,30 +467,12 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
             port=port,
             token=TOKEN,
             tls_fingerprint=None,
+            hostname='machine',
+            pid=42,
         ),
     )
     with EndpointClient.from_name('test', proxystore_dir=str(tmp_path)) as c:
-        assert c.info.uuid == ENDPOINT_UUID
-
-
-def test_from_name_default_home(tmp_path: pathlib.Path) -> None:
-    _write_config(tmp_path / 'test')
-    with (
-        mock.patch(
-            'proxystore.endpoint.client.home_dir',
-            return_value=str(tmp_path),
-        ),
-        pytest.raises(EndpointNotRunningError, match='Is the endpoint'),
-    ):
-        EndpointClient.from_name('test')
-
-
-def test_from_name_missing(tmp_path: pathlib.Path) -> None:
-    with pytest.raises(
-        EndpointNotFoundError,
-        match='An endpoint named test does not exist',
-    ):
-        EndpointClient.from_name('test', proxystore_dir=str(tmp_path))
+        assert c.info.id == ENDPOINT_ID
 
 
 @pytest.mark.parametrize('method', ('sendall', 'recv_into'))

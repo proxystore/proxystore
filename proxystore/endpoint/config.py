@@ -3,35 +3,200 @@
 from __future__ import annotations
 
 import re
-import uuid
+import socket
+from typing import Any
+from typing import ClassVar
 from typing import Literal
+from typing import Self
 
 from pydantic import BaseModel
+from pydantic import ConfigDict
 from pydantic import Field
+from pydantic import field_validator
+from pydantic import model_validator
 
-try:
-    from pydantic import field_validator
-except ImportError:  # pragma: no cover
-    # Pydantic v1 compatibility
-    from pydantic import validator as field_validator  # type: ignore[no-redef]
+from proxystore.endpoint.files import VersionedFile
+from proxystore.endpoint.identity import EndpointId
+from proxystore.utils.data import readable_to_bytes
+from proxystore.utils.environment import hostname
 
 MAX_OBJECT_SIZE_DEFAULT = 100_000_000
 """Default maximum endpoint object size in bytes."""
+DEFAULT_DATABASE_PATH = 'blobs.db'
+"""Default path of the SQLite database, relative to the endpoint
+directory."""
+CONFIG_VERSION = 1
+"""Format version of the endpoint configuration file."""
+
+_NAME_PATTERN = re.compile(r'[A-Za-z0-9_-]+')
 
 
 class EndpointStorageConfig(BaseModel):
     """Endpoint data storage configuration.
 
     Attributes:
-        database_path: Optional path to SQLite database file that will be used
-            for storing endpoint data. If `None`, data will only be stored
-            in-memory.
-        max_object_size: Maximum object size in bytes. If `0`, there is no
-            limit on object sizes.
+        backend: Storage backend of the endpoint. `"memory"` stores objects
+            in memory so objects are lost when the endpoint stops.
+            `"sqlite"` stores objects in a SQLite database.
+        database_path: Path of the SQLite database. Only valid with the
+            `"sqlite"` backend, and defaults to
+            [`DEFAULT_DATABASE_PATH`][proxystore.endpoint.config.DEFAULT_DATABASE_PATH].
+            A relative path is relative to the endpoint directory and an
+            absolute path can be used to store the database elsewhere
+            (e.g., on a larger file system). `~` is expanded to the user's
+            home directory.
+
+    Raises:
+        ValueError: If `database_path` is set with the `"memory"` backend.
     """
 
+    model_config = ConfigDict(extra='forbid')
+
+    backend: Literal['memory', 'sqlite'] = 'memory'
     database_path: str | None = None
+
+    @model_validator(mode='after')
+    def _database_path_validator(self) -> Self:
+        if self.backend != 'sqlite' and self.database_path is not None:
+            raise ValueError(
+                'The database_path is only used by the "sqlite" backend.',
+            )
+        return self
+
+
+class EndpointP2PConfig(BaseModel):
+    """Endpoint peer-to-peer configuration.
+
+    Attributes:
+        enabled: Enable communication with peer endpoints. Only endpoints
+            in the allowlist of peers (`peers.toml` in the endpoint
+            directory) can communicate with this endpoint.
+        relays: Relay servers used to establish connections with peers
+            and to relay traffic when a direct connection is not possible.
+            `"n0"` uses the public relays operated by n0 (the developers of
+            iroh), `"none"` disables relays, and a list of URLs uses
+            self-hosted `iroh-relay` servers.
+        discovery: Service used to publish the addresses of this endpoint
+            and find the addresses of peers. `"n0"` uses the public DNS
+            discovery service operated by n0. `"none"` disables discovery
+            so peers can only be reached at their cached addresses (see
+            [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache])
+            or by connecting to this endpoint first.
+    """
+
+    model_config = ConfigDict(extra='forbid')
+
+    enabled: bool = True
+    relays: Literal['n0', 'none'] | list[str] = 'n0'
+    discovery: Literal['n0', 'none'] = 'n0'
+
+    @field_validator('relays')
+    @classmethod
+    def _relays_validator(
+        cls,
+        v: Literal['n0', 'none'] | list[str],
+    ) -> Literal['n0', 'none'] | list[str]:
+        if isinstance(v, list):
+            if len(v) == 0:
+                raise ValueError(
+                    'Relays must contain at least one URL. Use "none" to '
+                    'disable relays.',
+                )
+            for url in v:
+                if not url.startswith(('http://', 'https://')):
+                    raise ValueError(
+                        f'Relay URL must start with http:// or https://. '
+                        f'Got {url}.',
+                    )
+        return v
+
+
+class EndpointConfig(VersionedFile):
+    """Endpoint configuration.
+
+    Attributes:
+        version: Format version of the configuration.
+        name: Endpoint name. Must match the name of the endpoint directory.
+        id: Endpoint ID. This is the public key of the endpoint's secret key
+            which is stored separately in the endpoint directory.
+        host: Address clients use to connect to the endpoint. `"ip"` or
+            `"fqdn"` (case-insensitive) use the IP address or
+            fully-qualified domain name of the host, determined each time the
+            endpoint starts. Any other value is used as a static address
+            (e.g., `"127.0.0.1"`).
+        port: Port endpoint is running on.
+        tls: Encrypt connections between clients and the endpoint with TLS.
+            The endpoint generates a self-signed certificate each time it
+            starts, and clients only trust that certificate.
+        max_object_size: Maximum size in bytes of an object that clients
+            or peers can set on the endpoint. If `0`, there is no limit.
+            A string with units is also accepted (e.g., `"100 MB"` or
+            `"1 GiB"`, see
+            [`readable_to_bytes()`][proxystore.utils.data.readable_to_bytes]).
+        p2p: Peer-to-peer configuration.
+        storage: Storage configuration.
+
+    Raises:
+        ValueError: If the name does not contain only alphanumeric, dash, or
+            underscore characters, if the ID cannot be parsed, if the
+            port is not in the range [1, 65535], if the host is empty, if
+            the version is not supported, if the maximum object size is
+            negative, or if there are unknown fields.
+    """
+
+    DESCRIPTION: ClassVar[str] = 'configuration'
+
+    version: int = CONFIG_VERSION
+    name: str
+    id: EndpointId
+    port: int
+    host: str = 'ip'
+    tls: bool = False
     max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
+    p2p: EndpointP2PConfig = Field(default_factory=EndpointP2PConfig)
+    storage: EndpointStorageConfig = Field(
+        default_factory=EndpointStorageConfig,
+    )
+
+    @field_validator('name')
+    @classmethod
+    def _name_validator(cls, v: str) -> str:
+        return check_name(v, 'Endpoint')
+
+    @model_validator(mode='before')
+    @classmethod
+    def _legacy_uuid_validator(cls, data: Any) -> Any:
+        if isinstance(data, dict) and 'uuid' in data and 'id' not in data:
+            raise ValueError(
+                'The configuration was created by an older version of '
+                'ProxyStore which identified endpoints by UUID. Remove the '
+                'endpoint and configure it again with '
+                '"proxystore-endpoint configure".',
+            )
+        return data
+
+    @field_validator('host')
+    @classmethod
+    def _host_validator(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) == 0:
+            raise ValueError(
+                'Host must be "ip", "fqdn", or an address. Got an empty '
+                'string.',
+            )
+        return v.lower() if v.lower() in ('ip', 'fqdn') else v
+
+    @field_validator('port')
+    @classmethod
+    def _port_validator(cls, v: int) -> int:
+        if v < 1 or v > 65535:
+            raise ValueError('Port must be in range [1, 65535].')
+        return v
+
+    @field_validator('max_object_size', mode='before')
+    @classmethod
+    def _max_object_size_parser(cls, v: Any) -> Any:
+        return readable_to_bytes(v) if isinstance(v, str) else v
 
     @field_validator('max_object_size')
     @classmethod
@@ -48,67 +213,40 @@ class EndpointStorageConfig(BaseModel):
         return self.max_object_size if self.max_object_size > 0 else None
 
 
-class EndpointConfig(BaseModel):
-    """Endpoint configuration.
+def resolve_host(host: str) -> str:
+    """Resolve the address clients use to connect to the endpoint.
 
-    Attributes:
-        name: Endpoint name.
-        uuid: Endpoint UUID.
-        host: Host endpoint is running on.
-        host_type: Type of host address to use. If `"ip"` or `"fqdn"`, the
-            host is determined when the endpoint starts. If `"static"`, the
-            `host` field is used.
-        port: Port endpoint is running on.
-        tls: Encrypt connections between clients and the endpoint with TLS.
-            The endpoint generates a self-signed certificate each time it
-            starts, and clients only trust that certificate.
-        storage: Storage configuration.
+    Args:
+        host: `"ip"`, `"fqdn"`, or a static address (see
+            [`EndpointConfig.host`][proxystore.endpoint.config.EndpointConfig]).
+
+    Returns:
+        The IP address or fully-qualified domain name of this host, or the \
+        static address.
+    """
+    if host == 'fqdn':
+        return socket.getfqdn()
+    if host == 'ip':
+        return socket.gethostbyname(hostname())
+    return host
+
+
+def check_name(name: str, kind: str) -> str:
+    """Check that a name only contains alphanumeric, dash, or underscore chars.
+
+    Args:
+        name: Name to check.
+        kind: Kind of name for the error message (e.g., `"Peer"`).
+
+    Returns:
+        The name.
 
     Raises:
-        ValueError: If the name does not contain only alphanumeric, dash, or
-            underscore characters, if the UUID cannot be parsed, or if the
-            port is not in the range [1, 65535].
+        ValueError: If the name is empty or contains other characters.
     """
-
-    name: str
-    uuid: str
-    port: int
-    host: str | None = None
-    host_type: Literal['fqdn', 'ip', 'static'] = 'ip'
-    tls: bool = False
-    storage: EndpointStorageConfig = Field(
-        default_factory=EndpointStorageConfig,
-    )
-
-    @field_validator('name')
-    @classmethod
-    def _name_validator(cls, v: str) -> str:
-        if not validate_name(v):
-            raise ValueError(
-                'Name must only contain alphanumeric characters, dashes, and '
-                f' underscores. Got {v}.',
-            )
-        return v
-
-    @field_validator('uuid')
-    @classmethod
-    def _uuid_validator(cls, v: str) -> str:
-        try:
-            uuid.UUID(v, version=4)
-        except ValueError:
-            raise ValueError(
-                f'"{v}" is not a valid UUID4 string.',
-            ) from None
-        return v
-
-    @field_validator('port')
-    @classmethod
-    def _port_validator(cls, v: int) -> int:
-        if v < 1 or v > 65535:
-            raise ValueError('Port must be in range [1, 65535].')
-        return v
-
-
-def validate_name(name: str) -> bool:
-    """Validate name only contains alphanumeric or dash/underscore chars."""
-    return len(re.findall(r'[^A-Za-z0-9_\-]', name)) == 0 and len(name) > 0
+    if _NAME_PATTERN.fullmatch(name) is None:
+        raise ValueError(
+            f'{kind} names must only contain alphanumeric characters, '
+            f'dashes, and underscores. Got {name!r}.',
+        )
+    return name

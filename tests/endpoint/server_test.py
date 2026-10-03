@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import pathlib
 import socket
 import ssl
-import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 from typing import NamedTuple
@@ -15,67 +15,71 @@ from unittest.mock import AsyncMock
 import pytest
 import pytest_asyncio
 
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import generate_tls_certificate
-from proxystore.endpoint.auth import generate_token
-from proxystore.endpoint.auth import pem_certificate_fingerprint
-from proxystore.endpoint.auth import server_ssl_context
-from proxystore.endpoint.auth import TOKEN_SIZE
+from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import EndpointClient
-from proxystore.endpoint.endpoint import Endpoint
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointAuthError
 from proxystore.endpoint.exceptions import EndpointConnectionError
+from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import EndpointRequestError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeerRequestError
+from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
 from proxystore.endpoint.protocol import MAX_META_SIZE
+from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
+from proxystore.endpoint.protocol import PingResult
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
 from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import Versions
 from proxystore.endpoint.server import _ClientConnection
+from proxystore.endpoint.server import _format_address
 from proxystore.endpoint.server import ClientHandler
-from proxystore.endpoint.storage import DictStorage
+from proxystore.endpoint.storage import MemoryStorage
 from testing.compat import randbytes
+from testing.endpoint import decode_meta
+from testing.endpoint import encode_meta
+from testing.utils import wait_until
 
 MAX_OBJECT_SIZE = 10_000_000
 
 
 class _Server(NamedTuple):
     handler: ClientHandler
-    endpoint: Endpoint
-    token: bytes
+    dispatcher: Dispatcher
+    token: EndpointToken
     host: str
     port: int
 
 
 @pytest_asyncio.fixture()
 async def server() -> AsyncGenerator[_Server, None]:
-    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
-        token = os.urandom(TOKEN_SIZE)
-        handler = ClientHandler(
-            endpoint,
-            token,
-            max_object_size=MAX_OBJECT_SIZE,
-            handshake_timeout=1,
-        )
-        tcp_server = await handler.start_server('127.0.0.1', 0)
-        port = tcp_server.sockets[0].getsockname()[1]
-        yield _Server(handler, endpoint, token, '127.0.0.1', port)
-        tcp_server.close()
-        await handler.close_connections()
-        await tcp_server.wait_closed()
+    dispatcher = Dispatcher(EndpointId.random(), MemoryStorage())
+    token = EndpointToken.generate()
+    handler = ClientHandler(
+        dispatcher,
+        token,
+        name='my-endpoint',
+        max_object_size=MAX_OBJECT_SIZE,
+        handshake_timeout=1,
+    )
+    port = await handler.start('127.0.0.1', 0)
+    yield _Server(handler, dispatcher, token, '127.0.0.1', port)
+    await handler.close()
+    await dispatcher.storage.close()
 
 
-async def _connect(server: _Server, token: bytes | None = None) -> Any:
+async def _connect(
+    server: _Server,
+    token: EndpointToken | None = None,
+) -> Any:
     token = server.token if token is None else token
     return await asyncio.to_thread(
         EndpointClient.connect,
@@ -98,8 +102,8 @@ def _is_closed(sock: socket.socket) -> bool:
 
 async def test_operations(server: _Server) -> None:
     client = await _connect(server)
-    assert client.info.uuid == server.endpoint.uuid
-    assert client.info.name == server.endpoint.name
+    assert client.info.id == server.dispatcher.id
+    assert client.info.name == 'my-endpoint'
     assert client.info.versions == Versions.current()
 
     small, large = b'value', randbytes(5_000_000)
@@ -140,60 +144,69 @@ async def test_client_wrong_token(server: _Server) -> None:
     # The client detects the server does not know the client's token first
     # (i.e., an impostor endpoint) before sending its own proof.
     with pytest.raises(EndpointAuthError, match='failed to prove'):
-        await _connect(server, token=os.urandom(TOKEN_SIZE))
+        await _connect(server, token=EndpointToken.generate())
 
 
 def _raw_hello(sock: socket.socket) -> tuple[bytes, dict[str, Any]]:
     client_nonce = os.urandom(32)
-    hello = Hello(client_nonce, Versions.current()).to_meta()
-    sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
+    hello = Hello(nonce=client_nonce, versions=Versions.current()).encode()
+    sock.sendall(Preamble().pack() + Message(Op.HELLO, hello).pack_head())
     assert (
         Preamble.unpack(bytes(_recv_exactly(sock, Preamble.SIZE))).version == 1
     )
-    header, meta = _recv_message(sock)
-    assert header.code == Status.OK
-    return client_nonce, meta
+    response = _recv_message(sock)
+    assert response.code == Status.OK
+    return client_nonce, decode_meta(response.meta)
 
 
-async def test_server_rejects_bad_proof(server: _Server) -> None:
+@pytest.mark.parametrize('replay', (False, True))
+async def test_server_rejects_bad_proof(server: _Server, replay: bool) -> None:
+    # A proof computed with the wrong token is rejected, and the server's own
+    # proof cannot be sent back as the client's proof.
     def _run() -> None:
         with _raw_socket(server) as sock:
             client_nonce, meta = _raw_hello(sock)
-            proof = compute_proof(
-                os.urandom(TOKEN_SIZE),
-                'client',
-                client_nonce,
-                bytes.fromhex(meta['nonce']),
+            if replay:
+                proof = meta['proof']
+            else:
+                server_nonce = bytes.fromhex(meta['nonce'])
+                token = EndpointToken.generate()
+                proof = token.proof('client', client_nonce, server_nonce).hex()
+            sock.sendall(
+                Message(Op.AUTH, encode_meta({'proof': proof})).pack_head()
             )
-            sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-            header, meta = _recv_message(sock)
-            assert header.code == Status.UNAUTHORIZED
+            assert _recv_message(sock).code == Status.UNAUTHORIZED
             assert _is_closed(sock)
 
     await asyncio.to_thread(_run)
 
 
-async def test_server_rejects_replayed_server_proof(server: _Server) -> None:
-    # The server's own proof cannot be sent back as the client's proof.
+async def test_protocol_version_unsupported(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
-            _, meta = _raw_hello(sock)
-            sock.sendall(pack_message(Op.AUTH, {'proof': meta['proof']}))
-            header, _ = _recv_message(sock)
-            assert header.code == Status.UNAUTHORIZED
-
-    await asyncio.to_thread(_run)
-
-
-async def test_protocol_version_mismatch(server: _Server) -> None:
-    def _run() -> None:
-        with _raw_socket(server) as sock:
-            # The HELLO of a different protocol version is never read
-            hello = pack_message(Op.HELLO, {'future': 'format'})
-            sock.sendall(Preamble(PROTOCOL_VERSION + 1).pack() + hello)
+            # The HELLO of an unsupported protocol version is never read
+            hello = Message(Op.HELLO, encode_meta({'old': 'format'}))
+            version = MIN_PROTOCOL_VERSION - 1
+            sock.sendall(Preamble(version).pack() + hello.pack_head())
             preamble = _recv_exactly(sock, Preamble.SIZE)
             assert Preamble.unpack(bytes(preamble)).version == PROTOCOL_VERSION
             assert _is_closed(sock)
+
+    await asyncio.to_thread(_run)
+
+
+async def test_protocol_version_negotiated(server: _Server) -> None:
+    def _run() -> None:
+        with _raw_socket(server) as sock:
+            # A newer client uses the newest version the endpoint supports
+            hello = Hello(nonce=os.urandom(32), versions=Versions.current())
+            message = Message(Op.HELLO, hello.encode())
+            sock.sendall(
+                Preamble(PROTOCOL_VERSION + 1).pack() + message.pack_head(),
+            )
+            preamble = _recv_exactly(sock, Preamble.SIZE)
+            assert Preamble.unpack(bytes(preamble)).version == PROTOCOL_VERSION
+            assert _recv_message(sock).code == Status.OK
 
     await asyncio.to_thread(_run)
 
@@ -204,24 +217,29 @@ async def test_protocol_version_mismatch(server: _Server) -> None:
         # Bad magic
         b'XXXX\x00\x01',
         # First message is not HELLO
-        Preamble().pack() + pack_message(Op.AUTH, {'proof': '00'}),
+        Preamble().pack()
+        + Message(Op.AUTH, encode_meta({'proof': '00'})).pack_head(),
         # HELLO is missing the nonce
-        Preamble().pack() + pack_message(Op.HELLO, {}),
+        Preamble().pack() + Message(Op.HELLO, encode_meta({})).pack_head(),
         # HELLO has malformed metadata
-        Preamble().pack() + Header(Op.HELLO, 0, 2, 0).pack() + b'[]',
+        Preamble().pack() + Header(Op.HELLO, 0, 0, 2, 0).pack() + b'[]',
         # HELLO nonce is too short
         Preamble().pack()
-        + pack_message(
+        + Message(
             Op.HELLO,
-            Hello(os.urandom(16), Versions.current()).to_meta(),
-        ),
+            encode_meta(
+                {
+                    'nonce': os.urandom(16).hex(),
+                    'versions': Versions.current().model_dump(),
+                },
+            ),
+        ).pack_head(),
         # HELLO contains data
         Preamble().pack()
-        + pack_message(
+        + Message(
             Op.HELLO,
-            Hello(os.urandom(32), Versions.current()).to_meta(),
-            data_len=1,
-        )
+            Hello(nonce=os.urandom(32), versions=Versions.current()).encode(),
+        ).pack_head(1)
         + b'x',
     ),
 )
@@ -241,13 +259,17 @@ async def test_bad_auth_message_closes_connection(server: _Server) -> None:
     def _run() -> None:
         with _raw_socket(server) as sock:
             _raw_hello(sock)
-            sock.sendall(pack_message(Op.GET, {'key': 'key'}))
+            sock.sendall(
+                Message(Op.GET, encode_meta({'key': 'key'})).pack_head()
+            )
             assert _is_closed(sock)
 
     await asyncio.to_thread(_run)
 
 
 async def test_handshake_timeout(server: _Server, caplog) -> None:
+    server.handler.handshake_timeout = 0.05
+
     def _run() -> None:
         with _raw_socket(server) as sock:
             # Server should close the connection after the handshake timeout
@@ -265,8 +287,8 @@ async def _raw_request(
 ) -> tuple[int, dict[str, Any]]:
     def _run() -> tuple[int, dict[str, Any]]:
         client._socket.sendall(message)
-        header, meta = _recv_message(client._socket)
-        return header.code, meta
+        response = _recv_message(client._socket)
+        return response.code, decode_meta(response.meta)
 
     return await asyncio.to_thread(_run)
 
@@ -274,25 +296,29 @@ async def _raw_request(
 async def test_bad_requests(server: _Server) -> None:
     client = await _connect(server)
 
-    code, meta = await _raw_request(client, pack_message(Op.GET, {}))
+    code, meta = await _raw_request(
+        client, Message(Op.GET, encode_meta({'key': 42})).pack_head()
+    )
     assert code == Status.BAD_REQUEST
     assert "invalid 'key'" in meta['error']
 
-    request = Request('key').to_meta()
-    code, meta = await _raw_request(client, pack_message(99, request))
+    request = Request(key='key').encode()
+    code, meta = await _raw_request(client, Message(99, request).pack_head())
     assert code == Status.BAD_REQUEST
     assert 'unknown op' in meta['error']
 
     code, meta = await _raw_request(
         client,
-        pack_message(Op.GET, {'key': 'key', 'endpoint': 'not-a-uuid'}),
+        Message(
+            Op.GET, encode_meta({'key': 'key', 'target': 'not-an-id'})
+        ).pack_head(),
     )
     assert code == Status.BAD_REQUEST
-    assert "invalid 'endpoint'" in meta['error']
+    assert "invalid 'target'" in meta['error']
 
-    # The client validates the endpoint UUID before sending the request
-    with pytest.raises(ValueError, match='not a valid endpoint UUID'):
-        await asyncio.to_thread(client.get, 'key', 'not-a-uuid')
+    # The client validates the endpoint ID before sending the request
+    with pytest.raises(ValueError, match='not a valid endpoint ID'):
+        await asyncio.to_thread(client.get, 'key', 'not-an-id')
 
     # The connection is still usable after these errors
     assert not await asyncio.to_thread(client.exists, 'key')
@@ -303,7 +329,7 @@ async def test_request_meta_too_large(server: _Server) -> None:
     client = await _connect(server)
 
     def _run() -> None:
-        header = Header(Op.GET, 0, MAX_META_SIZE + 1, 0).pack()
+        header = Header(Op.GET, 0, 0, MAX_META_SIZE + 1, 0).pack()
         client._socket.sendall(header)
         assert _is_closed(client._socket)
 
@@ -320,16 +346,6 @@ async def test_data_too_large(server: _Server) -> None:
     with pytest.raises(ObjectSizeExceededError, match='exceeds the maximum'):
         await asyncio.to_thread(client.set, 'key', data)
     assert not client.closed
-
-    # The server also checks the size before reading the data, then closes
-    # the connection because it did not read the data
-    code, meta = await _raw_request(
-        client,
-        pack_message(Op.SET, {'key': 'key'}, data_len=MAX_OBJECT_SIZE + 1),
-    )
-    assert code == Status.TOO_LARGE
-    assert 'exceeds the maximum' in meta['error']
-    await asyncio.to_thread(lambda: _is_closed(client._socket))
     await asyncio.to_thread(client.close)
 
 
@@ -337,16 +353,17 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
     client = await _connect(server)
 
     def _run() -> tuple[int, dict[str, Any]]:
-        # Unread data in the endpoint's receive buffer must not cause the
-        # connection to be reset before the client reads the reply
-        message = pack_message(
-            Op.SET,
-            {'key': 'key'},
-            data_len=MAX_OBJECT_SIZE + 1,
+        # The server checks the size before reading the data. Unread data in
+        # the endpoint's receive buffer must not cause the connection to be
+        # reset before the client reads the reply.
+        message = Message(Op.SET, encode_meta({'key': 'key'})).pack_head(
+            MAX_OBJECT_SIZE + 1
         )
         client._socket.sendall(message + randbytes(1_000_000))
-        header, meta = _recv_message(client._socket)
-        return header.code, meta
+        response = _recv_message(client._socket)
+        # The connection is closed because the data was not read
+        assert _is_closed(client._socket)
+        return response.code, decode_meta(response.meta)
 
     for _ in range(10):
         code, meta = await asyncio.to_thread(_run)
@@ -357,51 +374,24 @@ async def test_data_too_large_reply_not_lost(server: _Server) -> None:
     await asyncio.to_thread(client.close)
 
 
-async def test_storage_object_size_exceeded(server: _Server) -> None:
-    server.endpoint._storage = DictStorage(max_object_size=10)
+async def test_close(server: _Server) -> None:
     client = await _connect(server)
-    with pytest.raises(ObjectSizeExceededError, match='TOO_LARGE'):
-        await asyncio.to_thread(client.set, 'key', randbytes(100))
-    await asyncio.to_thread(client.close)
-
-
-async def test_peer_request_error(server: _Server) -> None:
-    client = await _connect(server)
-    with (
-        mock.patch.object(
-            server.endpoint,
-            'get',
-            AsyncMock(side_effect=PeerRequestError('peer failed')),
-        ),
-        pytest.raises(EndpointRequestError, match='peer failed'),
-    ):
-        await asyncio.to_thread(client.get, 'key', str(uuid.uuid4()))
-    await asyncio.to_thread(client.close)
-
-
-async def test_unexpected_error(server: _Server) -> None:
-    client = await _connect(server)
-    with (
-        mock.patch.object(
-            server.endpoint,
-            'exists',
-            AsyncMock(side_effect=RuntimeError('oops')),
-        ),
-        pytest.raises(EndpointRequestError, match='unexpected error'),
-    ):
-        await asyncio.to_thread(client.exists, 'key')
-    await asyncio.to_thread(client.close)
-
-
-async def test_close_connections(server: _Server) -> None:
-    client = await _connect(server)
-    await server.handler.close_connections()
+    await server.handler.close()
     with pytest.raises(EndpointConnectionError):
         await asyncio.to_thread(client.exists, 'key')
     assert client.closed
+    # New connections are refused and closing again is a no-op
+    with pytest.raises(EndpointNotRunningError):
+        await _connect(server)
+    await server.handler.close()
 
 
-async def test_close_connections_cancels_requests(server: _Server) -> None:
+async def test_start_twice(server: _Server) -> None:
+    with pytest.raises(RuntimeError, match='already been started'):
+        await server.handler.start('127.0.0.1', 0)
+
+
+async def test_close_cancels_requests(server: _Server) -> None:
     started = asyncio.Event()
     cancelled = asyncio.Event()
 
@@ -414,10 +404,14 @@ async def test_close_connections_cancels_requests(server: _Server) -> None:
             raise
 
     client = await _connect(server)
-    with mock.patch.object(server.endpoint, 'exists', _never_finishes):
+    with mock.patch.object(
+        server.dispatcher.storage,
+        'exists',
+        _never_finishes,
+    ):
         request = asyncio.create_task(asyncio.to_thread(client.exists, 'key'))
         await started.wait()
-        await server.handler.close_connections(timeout=0.1)
+        await server.handler.close(timeout=0.01)
         assert cancelled.is_set()
         assert len(server.handler._tasks) == 0
         with pytest.raises(EndpointConnectionError):
@@ -604,19 +598,19 @@ async def test_http_request_rejected(server: _Server, caplog) -> None:
 def _raw_handshake(server: _Server, versions: Versions) -> None:
     with _raw_socket(server) as sock:
         client_nonce = os.urandom(32)
-        hello = Hello(client_nonce, versions).to_meta()
-        sock.sendall(Preamble().pack() + pack_message(Op.HELLO, hello))
+        hello = Hello(nonce=client_nonce, versions=versions).encode()
+        sock.sendall(Preamble().pack() + Message(Op.HELLO, hello).pack_head())
         _recv_exactly(sock, Preamble.SIZE)
-        _, meta = _recv_message(sock)
-        proof = compute_proof(
-            server.token,
+        challenge = _recv_message(sock)
+        proof = server.token.proof(
             'client',
             client_nonce,
-            bytes.fromhex(meta['nonce']),
+            bytes.fromhex(decode_meta(challenge.meta)['nonce']),
         )
-        sock.sendall(pack_message(Op.AUTH, {'proof': proof.hex()}))
-        header, _ = _recv_message(sock)
-        assert header.code == Status.OK
+        sock.sendall(
+            Message(Op.AUTH, encode_meta({'proof': proof.hex()})).pack_head()
+        )
+        assert _recv_message(sock).code == Status.OK
 
 
 async def test_client_version_mismatch_logged_once(
@@ -650,23 +644,22 @@ class _TLSServer(NamedTuple):
 async def tls_server(
     tmp_path: pathlib.Path,
 ) -> AsyncGenerator[_TLSServer, None]:
-    cert_pem, key_pem = generate_tls_certificate('test')
-    context = server_ssl_context(cert_pem, key_pem)
+    certificate = TLSCertificate.generate('test')
+    context = certificate.ssl_context()
 
-    async with Endpoint(name='my-endpoint', uuid=uuid.uuid4()) as endpoint:
-        token = generate_token()
-        handler = ClientHandler(endpoint, token, handshake_timeout=1)
-        tcp_server = await handler.start_server(
-            '127.0.0.1',
-            0,
-            ssl_context=context,
-        )
-        port = tcp_server.sockets[0].getsockname()[1]
-        server = _Server(handler, endpoint, token, '127.0.0.1', port)
-        yield _TLSServer(server, pem_certificate_fingerprint(cert_pem))
-        tcp_server.close()
-        await handler.close_connections()
-        await tcp_server.wait_closed()
+    dispatcher = Dispatcher(EndpointId.random(), MemoryStorage())
+    token = EndpointToken.generate()
+    handler = ClientHandler(
+        dispatcher,
+        token,
+        name='my-endpoint',
+        handshake_timeout=1,
+    )
+    port = await handler.start('127.0.0.1', 0, ssl_context=context)
+    server = _Server(handler, dispatcher, token, '127.0.0.1', port)
+    yield _TLSServer(server, certificate.fingerprint)
+    await handler.close()
+    await dispatcher.storage.close()
 
 
 def _connect_tls(server: _Server, fingerprint: str) -> EndpointClient:
@@ -706,3 +699,37 @@ async def test_tls_client_without_tls(tls_server: _TLSServer) -> None:
 async def test_tls_client_with_plain_server(server: _Server) -> None:
     with pytest.raises(EndpointProtocolError, match='TLS handshake'):
         await asyncio.to_thread(_connect_tls, server, '0' * 64)
+
+
+async def test_ping(server: _Server) -> None:
+    client = await _connect(server)
+    assert await asyncio.to_thread(client.ping) == PingResult()
+    await asyncio.to_thread(client.close)
+
+
+@pytest.mark.parametrize(
+    ('peername', 'expected'),
+    (
+        (('127.0.0.1', 5000), '127.0.0.1:5000'),
+        (('::1', 5000, 0, 0), '[::1]:5000'),
+        ('/tmp/socket', '/tmp/socket'),
+        (None, 'None'),
+    ),
+)
+def test_format_address(peername: Any, expected: str) -> None:
+    assert _format_address(peername) == expected
+
+
+async def test_client_connection_is_logged(server: _Server, caplog) -> None:
+    caplog.set_level(logging.INFO, logger='proxystore.endpoint.server')
+    client = await _connect(server)
+    await asyncio.to_thread(client.close)
+    # Wait for the server to handle the client closing the connection
+    await wait_until(
+        lambda: any('closed' in r.message for r in caplog.records),
+    )
+    messages = [r.message for r in caplog.records]
+    assert any(
+        'Accepted connection from client 127.0.0.1:' in m for m in messages
+    )
+    assert any('Connection with client 127.0.0.1:' in m for m in messages)

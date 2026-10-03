@@ -62,7 +62,7 @@ def endpoint_connector(
 ) -> Generator[Connector[Any], None, None]:
     """EndpointConnector fixture."""
     with EndpointConnector(
-        endpoints=[endpoint.uuid],
+        endpoints=[endpoint.id],
         proxystore_dir=os.path.dirname(endpoint_dir.path),
     ) as connector:
         yield connector

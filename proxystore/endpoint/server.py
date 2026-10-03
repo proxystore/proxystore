@@ -3,14 +3,15 @@
 Clients connect to their local endpoint over TCP using the protocol defined
 in [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol]. The
 [`ClientHandler`][proxystore.endpoint.server.ClientHandler] authenticates
-clients and forwards their requests to an
-[`Endpoint`][proxystore.endpoint.endpoint.Endpoint].
+clients and passes their requests to a
+[`Dispatcher`][proxystore.endpoint.dispatch.Dispatcher].
 """
 
 from __future__ import annotations
 
 import asyncio
 import contextlib
+import dataclasses
 import logging
 import os
 import socket
@@ -19,31 +20,28 @@ from collections.abc import Callable
 from collections.abc import Coroutine
 from typing import Any
 from typing import cast
-from typing import TYPE_CHECKING
 
-from proxystore.endpoint.auth import compute_proof
-from proxystore.endpoint.auth import verify_proof
+from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.dispatch import Dispatcher
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
-from proxystore.endpoint.exceptions import PeerRequestError
 from proxystore.endpoint.protocol import Auth
 from proxystore.endpoint.protocol import Challenge
-from proxystore.endpoint.protocol import decode_meta
 from proxystore.endpoint.protocol import EndpointInfo
+from proxystore.endpoint.protocol import HandshakeReader
 from proxystore.endpoint.protocol import Header
 from proxystore.endpoint.protocol import Hello
+from proxystore.endpoint.protocol import Message
+from proxystore.endpoint.protocol import MessageReader
+from proxystore.endpoint.protocol import MIN_PROTOCOL_VERSION
+from proxystore.endpoint.protocol import negotiate_version
 from proxystore.endpoint.protocol import NONCE_SIZE
 from proxystore.endpoint.protocol import Op
-from proxystore.endpoint.protocol import pack_message
 from proxystore.endpoint.protocol import Preamble
 from proxystore.endpoint.protocol import PROTOCOL_VERSION
-from proxystore.endpoint.protocol import Request
 from proxystore.endpoint.protocol import Status
 from proxystore.endpoint.protocol import VERSION_DOCS_URL
 from proxystore.endpoint.protocol import Versions
-
-if TYPE_CHECKING:
-    from proxystore.endpoint.endpoint import Endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +50,6 @@ _HTTP_METHODS = (b'GET ', b'POST', b'HEAD', b'PUT ')
 
 HANDSHAKE_TIMEOUT = 10
 """Seconds a client has to complete the handshake after connecting."""
-
-_Response = tuple[Status, dict[str, Any] | None, bytes | bytearray | None]
 
 
 class _ClientConnection(asyncio.BufferedProtocol):
@@ -282,79 +278,97 @@ class ClientHandler:
 
     The handler authenticates each client with the handshake defined in
     [`proxystore.endpoint.protocol`][proxystore.endpoint.protocol] then
-    forwards the client's requests to the endpoint.
+    passes the client's requests to the dispatcher of the endpoint.
 
     Example:
         ```python
-        handler = ClientHandler(endpoint, token)
-        server = await handler.start_server('localhost', 8765)
+        handler = ClientHandler(dispatcher, token, name='my-endpoint')
+        await handler.start('localhost', 8765)
         ...
-        server.close()
-        await handler.close_connections()
-        await server.wait_closed()
+        await handler.close()
         ```
 
     Args:
-        endpoint: Endpoint to forward client requests to.
+        dispatcher: Dispatcher which handles client requests.
         token: Token that clients must prove they know.
+        name: Name of the endpoint sent to clients.
         max_object_size: Optional maximum size in bytes of objects that
             clients can set. Requests exceeding this size are rejected
-            before the data is read. This should match the maximum object
-            size of the endpoint's storage, which rejects objects only after
-            the data is read.
+            before the data is read.
         handshake_timeout: Seconds a client has to complete the handshake.
     """
 
     def __init__(
         self,
-        endpoint: Endpoint,
-        token: bytes,
+        dispatcher: Dispatcher,
+        token: EndpointToken,
         *,
+        name: str,
         max_object_size: int | None = None,
         handshake_timeout: float = HANDSHAKE_TIMEOUT,
     ) -> None:
-        self.endpoint = endpoint
+        self.dispatcher = dispatcher
         self.token = token
+        self.name = name
         self.max_object_size = max_object_size
         self.handshake_timeout = handshake_timeout
+        self._server: asyncio.Server | None = None
         self._connections: set[_ClientConnection] = set()
         self._tasks: set[asyncio.Task[None]] = set()
         self._warned_versions: set[Versions] = set()
 
-    async def start_server(
+    async def start(
         self,
         host: str,
         port: int,
         *,
         ssl_context: ssl.SSLContext | None = None,
-    ) -> asyncio.Server:
-        """Start a server that handles connections on the host and port.
+    ) -> int:
+        """Start accepting client connections on the host and port.
 
         Args:
             host: Address to listen on.
-            port: Port to listen on.
+            port: Port to listen on or `0` for a random port.
             ssl_context: Optional SSL context to encrypt connections with TLS.
+
+        Returns:
+            The port the server is listening on.
+
+        Raises:
+            RuntimeError: If the handler has already been started.
+            OSError: If the server cannot listen on the host and port.
         """
+        if self._server is not None:
+            raise RuntimeError('The client handler has already been started.')
         loop = asyncio.get_running_loop()
-        return await loop.create_server(
+        self._server = await loop.create_server(
             lambda: _ClientConnection(self._handle_connection, self._tasks),
             host=host,
             port=port,
             ssl=ssl_context,
         )
+        return self._server.sockets[0].getsockname()[1]
 
-    async def close_connections(self, timeout: float = 1) -> None:
-        """Close all open client connections.
+    async def close(self, timeout: float = 1) -> None:
+        """Stop accepting connections and close all client connections.
 
         Connection handlers waiting on the client finish once their
         connection is closed. Handlers that do not finish within `timeout`
         seconds (e.g., because a request is waiting on a peer endpoint) are
-        cancelled.
+        cancelled. This is idempotent so it is safe to call multiple times.
 
         Args:
             timeout: Seconds to wait for connection handlers to finish
                 before cancelling them.
         """
+        if self._server is None:
+            return
+        server, self._server = self._server, None
+        server.close()
+        await self._close_connections(timeout)
+        await server.wait_closed()
+
+    async def _close_connections(self, timeout: float) -> None:
         for conn in list(self._connections):
             conn.close()
         tasks = list(self._tasks)
@@ -367,7 +381,7 @@ class ClientHandler:
 
     async def _handle_connection(self, conn: _ClientConnection) -> None:
         self._connections.add(conn)
-        peer = conn.get_extra_info('peername')
+        addr = _format_address(conn.get_extra_info('peername'))
         sock = conn.get_extra_info('socket')
         if sock is not None:  # pragma: no branch
             with contextlib.suppress(OSError):
@@ -375,8 +389,8 @@ class ClientHandler:
 
         try:
             try:
-                authenticated = await asyncio.wait_for(
-                    self._handshake(conn, peer),
+                version = await asyncio.wait_for(
+                    self._handshake(conn, addr),
                     timeout=self.handshake_timeout,
                 )
             except TimeoutError:
@@ -384,62 +398,73 @@ class ClientHandler:
                     'Closing connection from %s because the client did '
                     'not complete the handshake within '
                     '%s seconds',
-                    peer,
+                    addr,
                     self.handshake_timeout,
                 )
                 return
-            if authenticated:
+            if version is not None:
+                logger.info(
+                    'Accepted connection from client %s (protocol version %s)',
+                    addr,
+                    version,
+                )
                 await self._serve_requests(conn)
+                logger.info('Connection with client %s closed', addr)
         except (
             ConnectionError,
             asyncio.IncompleteReadError,
             EndpointProtocolError,
         ) as e:
-            logger.debug('Closing connection from %s: %r', peer, e)
+            logger.debug('Closing connection from %s: %s', addr, e)
         except Exception:
-            logger.exception('Unexpected error handling client %s', peer)
+            logger.exception('Unexpected error handling client %s', addr)
         finally:
             self._connections.discard(conn)
             conn.close()
             await conn.wait_closed()
 
-    async def _handshake(self, conn: _ClientConnection, peer: Any) -> bool:
+    async def _handshake(
+        self, conn: _ClientConnection, addr: str
+    ) -> int | None:
+        # Returns the negotiated protocol version if the client is
+        # authenticated.
         preamble = await conn.readexactly(Preamble.SIZE)
         if bytes(preamble[:4]) in _HTTP_METHODS:
             logger.warning(
                 'Rejecting HTTP request from %s. The client is likely '
                 'using an older version of ProxyStore that uses the HTTP API.',
-                peer,
+                addr,
             )
             await _reply_and_close(conn, _http_upgrade_response())
-            return False
+            return None
 
-        version = Preamble.unpack(preamble).version
-        if version != PROTOCOL_VERSION:
+        client_version = Preamble.unpack(preamble).version
+        version = negotiate_version(client_version)
+        if version is None:
             logger.warning(
-                'Rejecting connection from %s with protocol version '
-                '%s (expected %s)',
-                peer,
-                version,
+                'Rejecting connection from %s with protocol version %s '
+                '(supported versions are %s to %s)',
+                addr,
+                client_version,
+                MIN_PROTOCOL_VERSION,
                 PROTOCOL_VERSION,
             )
-            # Only the preamble format is the same across protocol versions
-            # so the client detects the mismatch from our preamble.
-            await _reply_and_close(conn, Preamble().pack())
-            return False
+            # The client detects the mismatch from the version in our
+            # preamble.
+            await _reply_and_close(conn, Preamble(PROTOCOL_VERSION).pack())
+            return None
 
-        hello = Hello.from_meta(await _read_handshake_message(conn, Op.HELLO))
+        hello = Hello.decode(await _read_handshake_message(conn, Op.HELLO))
         nonce = os.urandom(NONCE_SIZE)
         challenge = Challenge(
             nonce=nonce,
-            proof=compute_proof(self.token, 'server', nonce, hello.nonce),
+            proof=self.token.proof('server', nonce, hello.nonce),
         )
-        conn.write(Preamble().pack())
-        await _send(conn, Status.OK, challenge.to_meta())
+        conn.write(Preamble(version).pack())
+        await _send(conn, Message(Status.OK, challenge.encode()))
 
-        auth = Auth.from_meta(await _read_handshake_message(conn, Op.AUTH))
-        if not verify_proof(
-            self.token,
+        auth = Auth.decode(await _read_handshake_message(conn, Op.AUTH))
+        if not self.token.verify(
             'client',
             hello.nonce,
             challenge.nonce,
@@ -448,146 +473,97 @@ class ClientHandler:
             logger.warning(
                 'Rejecting connection from %s because the client '
                 'failed authentication',
-                peer,
+                addr,
             )
-            await _send(conn, Status.UNAUTHORIZED, {'error': 'invalid token'})
-            return False
+            await _send(
+                conn, Message.error(Status.UNAUTHORIZED, 'invalid token')
+            )
+            return None
 
-        self._check_client_versions(peer, hello.versions)
+        self._check_client_versions(addr, hello.versions)
         info = EndpointInfo(
-            uuid=self.endpoint.uuid,
-            name=self.endpoint.name,
+            id=self.dispatcher.id,
+            name=self.name,
             versions=Versions.current(),
             max_object_size=self.max_object_size,
         )
-        await _send(conn, Status.OK, info.to_meta())
-        return True
+        await _send(conn, Message(Status.OK, info.encode()))
+        return version
 
-    def _check_client_versions(self, peer: Any, versions: Versions) -> None:
-        mismatches = versions.mismatches(Versions.current())
-        if len(mismatches) > 0 and versions not in self._warned_versions:
+    def _check_client_versions(self, addr: str, versions: Versions) -> None:
+        warning = versions.mismatch_warning(Versions.current())
+        if warning is not None and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.
             self._warned_versions.add(versions)
             logger.warning(
-                'Client %s uses different versions than this endpoint: '
-                '%s. Objects serialized in one '
-                'environment may fail to deserialize in another. See '
-                '%s for details.',
-                peer,
-                '; '.join(mismatches),
-                VERSION_DOCS_URL,
+                'Client %s uses different versions than this endpoint: %s',
+                addr,
+                warning,
             )
 
     async def _serve_requests(self, conn: _ClientConnection) -> None:
         while True:
+            reader = MessageReader(max_data_size=self.max_object_size)
             try:
                 header_bytes = await conn.readexactly(Header.SIZE)
             except asyncio.IncompleteReadError:
                 # Client closed the connection between requests.
                 return
-            header = Header.unpack(header_bytes)
-            meta = decode_meta(await conn.readexactly(header.meta_len))
-
-            if (
-                self.max_object_size is not None
-                and header.data_len > self.max_object_size
-            ):
+            try:
+                reader.feed(header_bytes)
+                await _read_message(conn, reader)
+            except ObjectSizeExceededError as e:
                 # The connection is closed after responding because the
                 # client is still sending data we do not want to read.
-                error = (
-                    f'Data size ({header.data_len} bytes) exceeds the maximum '
-                    f'object size of the endpoint ({self.max_object_size} '
-                    'bytes).'
+                response = dataclasses.replace(
+                    Message.from_error(e),
+                    request_id=reader.header.request_id,
                 )
-                await _reply_and_close(
-                    conn,
-                    pack_message(Status.TOO_LARGE, {'error': error}),
-                )
+                await _reply_and_close(conn, response.pack_head())
                 return
 
-            data = (
-                await conn.readexactly(header.data_len)
-                if header.data_len > 0
-                else b''
+            request = reader.message
+            response = await self.dispatcher.handle(request)
+            await _send(
+                conn,
+                dataclasses.replace(response, request_id=request.request_id),
             )
-            status, response_meta, response_data = await self._handle_request(
-                header.code,
-                meta,
-                data,
-            )
-            await _send(conn, status, response_meta, response_data)
 
-    async def _handle_request(
-        self,
-        op: int,
-        meta: dict[str, Any],
-        data: bytes | bytearray,
-    ) -> _Response:
-        try:
-            request = Request.from_meta(meta)
-        except EndpointProtocolError as e:
-            return Status.BAD_REQUEST, {'error': str(e)}, None
 
-        try:
-            return await self._dispatch(op, request, data)
-        except PeerRequestError as e:
-            return Status.ERROR, {'error': str(e)}, None
-        except ObjectSizeExceededError as e:
-            return Status.TOO_LARGE, {'error': str(e)}, None
-        except Exception as e:
-            logger.exception('Unexpected error handling op %s request', op)
-            return Status.ERROR, {'error': f'unexpected error: {e!r}'}, None
+def _format_address(peername: Any) -> str:
+    # The peer name of a TCP socket is (host, port) for IPv4 and
+    # (host, port, flowinfo, scope_id) for IPv6.
+    if isinstance(peername, tuple) and len(peername) >= 2:
+        host, port = peername[:2]
+        return f'[{host}]:{port}' if ':' in host else f'{host}:{port}'
+    return str(peername)
 
-    async def _dispatch(
-        self,
-        op: int,
-        request: Request,
-        data: bytes | bytearray,
-    ) -> _Response:
-        key, endpoint_uuid = request.key, request.endpoint
-        if op == Op.GET:
-            result = await self.endpoint.get(key, endpoint=endpoint_uuid)
-            if result is None:
-                return Status.NOT_FOUND, None, None
-            return Status.OK, None, result
-        if op == Op.SET:
-            await self.endpoint.set(key, data, endpoint=endpoint_uuid)
-            return Status.OK, None, None
-        if op == Op.EXISTS:
-            exists = await self.endpoint.exists(key, endpoint=endpoint_uuid)
-            return Status.OK, {'exists': exists}, None
-        if op == Op.EVICT:
-            await self.endpoint.evict(key, endpoint=endpoint_uuid)
-            return Status.OK, None, None
-        return Status.BAD_REQUEST, {'error': f'unknown op {op}'}, None
+
+async def _read_message(
+    conn: _ClientConnection,
+    reader: MessageReader,
+) -> Message:
+    while not reader.done:
+        reader.feed(await conn.readexactly(reader.size))
+    return reader.message
 
 
 async def _read_handshake_message(
     conn: _ClientConnection,
     expected: Op,
-) -> dict[str, Any]:
-    header = Header.unpack(await conn.readexactly(Header.SIZE))
-    if header.code != expected:
+) -> bytes:
+    message = await _read_message(conn, HandshakeReader())
+    if message.code != expected:
         raise EndpointProtocolError(
-            f'Expected {expected.name} message but got op {header.code}.',
+            f'Expected {expected.name} message but got op {message.code}.',
         )
-    if header.data_len != 0:
-        raise EndpointProtocolError(
-            f'Client sent data in a {expected.name} message.',
-        )
-    return decode_meta(await conn.readexactly(header.meta_len))
+    return message.meta
 
 
-async def _send(
-    conn: _ClientConnection,
-    status: Status,
-    meta: dict[str, Any] | None = None,
-    data: bytes | bytearray | None = None,
-) -> None:
-    data_len = 0 if data is None else len(data)
-    conn.write(pack_message(status, meta, data_len))
-    if data is not None:
-        conn.write(data)
+async def _send(conn: _ClientConnection, message: Message) -> None:
+    conn.write(message.pack_head())
+    if len(message.data) > 0:
+        conn.write(message.data)
     await conn.drain()
 
 
