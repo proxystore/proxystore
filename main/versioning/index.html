@@ -12,31 +12,31 @@
         <meta name="author" content="Greg Pauloski and Globus Labs">
       
       
-        <link rel="canonical" href="https://docs.proxystore.dev/latest/contributing/style-guide/">
+        <link rel="canonical" href="https://docs.proxystore.dev/latest/versioning/">
       
       
-        <link rel="prev" href="../">
+        <link rel="prev" href="../faq/">
       
       
-        <link rel="next" href="../issues-pull-requests/">
+        <link rel="next" href="../concepts/">
       
       
         
       
       
-      <link rel="icon" href="../../static/favicon.png">
+      <link rel="icon" href="../static/favicon.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
-        <title>Style Guide - ProxyStore</title>
+        <title>Versioning - ProxyStore</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -55,13 +55,13 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../css/extra.css">
+      <link rel="stylesheet" href="../css/extra.css">
     
-      <link rel="stylesheet" href="../../css/mkdocstrings.css">
+      <link rel="stylesheet" href="../css/mkdocstrings.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -85,6 +85,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#versioning-and-compatibility" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -99,9 +104,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href=".." title="ProxyStore" class="md-header__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../static/icon-white.svg" alt="logo">
+  <img src="../static/icon-white.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -118,7 +123,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Style Guide
+              Versioning
             
           </span>
         </div>
@@ -244,11 +249,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../.." class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href=".." class="md-tabs__link">
           
   
   
@@ -266,7 +273,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../concepts/" class="md-tabs__link">
+      <a href="../concepts/" class="md-tabs__link">
         
   
   
@@ -285,7 +292,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../guides/" class="md-tabs__link">
+      <a href="../guides/" class="md-tabs__link">
         
   
   
@@ -313,7 +320,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../api/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -332,11 +339,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
         
   
   
@@ -355,7 +360,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../publications/" class="md-tabs__link">
+      <a href="../publications/" class="md-tabs__link">
         
   
   
@@ -390,9 +395,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
+    <a href=".." title="ProxyStore" class="md-nav__button md-logo" aria-label="ProxyStore" data-md-component="logo">
       
-  <img src="../../static/icon-white.svg" alt="logo">
+  <img src="../static/icon-white.svg" alt="logo">
 
     </a>
     ProxyStore
@@ -416,26 +421,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" checked>
         
           
-          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="">
             
   
   
@@ -453,7 +463,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_1">
             <span class="md-nav__icon md-icon"></span>
             
@@ -471,7 +481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -499,7 +509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../installation/" class="md-nav__link">
+      <a href="../installation/" class="md-nav__link">
         
   
   
@@ -527,7 +537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../get-started/" class="md-nav__link">
+      <a href="../get-started/" class="md-nav__link">
         
   
   
@@ -555,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../examples/" class="md-nav__link">
         
   
   
@@ -583,7 +593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   
@@ -608,10 +618,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../versioning/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -627,6 +664,59 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility-between-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility Between Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -719,7 +809,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../concepts/" class="md-nav__link ">
+            <a href="../concepts/" class="md-nav__link ">
               
   
   
@@ -761,7 +851,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/proxy/" class="md-nav__link">
+      <a href="../concepts/proxy/" class="md-nav__link">
         
   
   
@@ -789,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/connector/" class="md-nav__link">
+      <a href="../concepts/connector/" class="md-nav__link">
         
   
   
@@ -817,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../concepts/store/" class="md-nav__link">
+      <a href="../concepts/store/" class="md-nav__link">
         
   
   
@@ -869,7 +959,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../guides/" class="md-nav__link ">
+            <a href="../guides/" class="md-nav__link ">
               
   
   
@@ -911,7 +1001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/daos/" class="md-nav__link">
+      <a href="../guides/daos/" class="md-nav__link">
         
   
   
@@ -939,7 +1029,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/dask-distributed/" class="md-nav__link">
+      <a href="../guides/dask-distributed/" class="md-nav__link">
         
   
   
@@ -967,7 +1057,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/globus-compute/" class="md-nav__link">
+      <a href="../guides/globus-compute/" class="md-nav__link">
         
   
   
@@ -995,7 +1085,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/endpoints/" class="md-nav__link">
+      <a href="../guides/endpoints/" class="md-nav__link">
         
   
   
@@ -1023,7 +1113,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/endpoints-debugging/" class="md-nav__link">
+      <a href="../guides/endpoints-debugging/" class="md-nav__link">
         
   
   
@@ -1051,7 +1141,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/object-lifetimes/" class="md-nav__link">
+      <a href="../guides/object-lifetimes/" class="md-nav__link">
         
   
   
@@ -1079,7 +1169,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/performance/" class="md-nav__link">
+      <a href="../guides/performance/" class="md-nav__link">
         
   
   
@@ -1107,7 +1197,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/proxy-futures/" class="md-nav__link">
+      <a href="../guides/proxy-futures/" class="md-nav__link">
         
   
   
@@ -1135,7 +1225,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/streaming/" class="md-nav__link">
+      <a href="../guides/streaming/" class="md-nav__link">
         
   
   
@@ -1274,7 +1364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -1319,7 +1409,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/connectors/" class="md-nav__link ">
+            <a href="../api/connectors/" class="md-nav__link ">
               
   
   
@@ -1361,7 +1451,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/daos/" class="md-nav__link">
+      <a href="../api/connectors/daos/" class="md-nav__link">
         
   
   
@@ -1389,7 +1479,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/endpoint/" class="md-nav__link">
+      <a href="../api/connectors/endpoint/" class="md-nav__link">
         
   
   
@@ -1417,7 +1507,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/file/" class="md-nav__link">
+      <a href="../api/connectors/file/" class="md-nav__link">
         
   
   
@@ -1445,7 +1535,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/globus/" class="md-nav__link">
+      <a href="../api/connectors/globus/" class="md-nav__link">
         
   
   
@@ -1473,7 +1563,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/local/" class="md-nav__link">
+      <a href="../api/connectors/local/" class="md-nav__link">
         
   
   
@@ -1501,7 +1591,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/multi/" class="md-nav__link">
+      <a href="../api/connectors/multi/" class="md-nav__link">
         
   
   
@@ -1529,7 +1619,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/protocols/" class="md-nav__link">
+      <a href="../api/connectors/protocols/" class="md-nav__link">
         
   
   
@@ -1557,7 +1647,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/redis/" class="md-nav__link">
+      <a href="../api/connectors/redis/" class="md-nav__link">
         
   
   
@@ -1585,7 +1675,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/connectors/zmq/" class="md-nav__link">
+      <a href="../api/connectors/zmq/" class="md-nav__link">
         
   
   
@@ -1638,7 +1728,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/endpoint/" class="md-nav__link ">
+            <a href="../api/endpoint/" class="md-nav__link ">
               
   
   
@@ -1680,7 +1770,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/auth/" class="md-nav__link">
+      <a href="../api/endpoint/auth/" class="md-nav__link">
         
   
   
@@ -1708,7 +1798,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/cli/" class="md-nav__link">
+      <a href="../api/endpoint/cli/" class="md-nav__link">
         
   
   
@@ -1736,7 +1826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/client/" class="md-nav__link">
+      <a href="../api/endpoint/client/" class="md-nav__link">
         
   
   
@@ -1764,7 +1854,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/config/" class="md-nav__link">
+      <a href="../api/endpoint/config/" class="md-nav__link">
         
   
   
@@ -1792,7 +1882,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/directory/" class="md-nav__link">
+      <a href="../api/endpoint/directory/" class="md-nav__link">
         
   
   
@@ -1820,7 +1910,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/dispatch/" class="md-nav__link">
+      <a href="../api/endpoint/dispatch/" class="md-nav__link">
         
   
   
@@ -1848,7 +1938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/endpoint/" class="md-nav__link">
+      <a href="../api/endpoint/endpoint/" class="md-nav__link">
         
   
   
@@ -1876,7 +1966,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/exceptions/" class="md-nav__link">
+      <a href="../api/endpoint/exceptions/" class="md-nav__link">
         
   
   
@@ -1904,7 +1994,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/files/" class="md-nav__link">
+      <a href="../api/endpoint/files/" class="md-nav__link">
         
   
   
@@ -1932,7 +2022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/identity/" class="md-nav__link">
+      <a href="../api/endpoint/identity/" class="md-nav__link">
         
   
   
@@ -1977,7 +2067,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/endpoint/p2p/" class="md-nav__link ">
+            <a href="../api/endpoint/p2p/" class="md-nav__link ">
               
   
   
@@ -2019,7 +2109,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/p2p/addrs/" class="md-nav__link">
+      <a href="../api/endpoint/p2p/addrs/" class="md-nav__link">
         
   
   
@@ -2047,7 +2137,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/p2p/bindings/" class="md-nav__link">
+      <a href="../api/endpoint/p2p/bindings/" class="md-nav__link">
         
   
   
@@ -2075,7 +2165,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/p2p/manager/" class="md-nav__link">
+      <a href="../api/endpoint/p2p/manager/" class="md-nav__link">
         
   
   
@@ -2111,7 +2201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/peers/" class="md-nav__link">
+      <a href="../api/endpoint/peers/" class="md-nav__link">
         
   
   
@@ -2139,7 +2229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/process/" class="md-nav__link">
+      <a href="../api/endpoint/process/" class="md-nav__link">
         
   
   
@@ -2167,7 +2257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/protocol/" class="md-nav__link">
+      <a href="../api/endpoint/protocol/" class="md-nav__link">
         
   
   
@@ -2195,7 +2285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/server/" class="md-nav__link">
+      <a href="../api/endpoint/server/" class="md-nav__link">
         
   
   
@@ -2223,7 +2313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/endpoint/storage/" class="md-nav__link">
+      <a href="../api/endpoint/storage/" class="md-nav__link">
         
   
   
@@ -2259,7 +2349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/factory/" class="md-nav__link">
+      <a href="../api/factory/" class="md-nav__link">
         
   
   
@@ -2304,7 +2394,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/globus/" class="md-nav__link ">
+            <a href="../api/globus/" class="md-nav__link ">
               
   
   
@@ -2346,7 +2436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/globus/app/" class="md-nav__link">
+      <a href="../api/globus/app/" class="md-nav__link">
         
   
   
@@ -2374,7 +2464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/globus/cli/" class="md-nav__link">
+      <a href="../api/globus/cli/" class="md-nav__link">
         
   
   
@@ -2402,7 +2492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/globus/client/" class="md-nav__link">
+      <a href="../api/globus/client/" class="md-nav__link">
         
   
   
@@ -2430,7 +2520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/globus/scopes/" class="md-nav__link">
+      <a href="../api/globus/scopes/" class="md-nav__link">
         
   
   
@@ -2466,7 +2556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/mypy_plugin/" class="md-nav__link">
+      <a href="../api/mypy_plugin/" class="md-nav__link">
         
   
   
@@ -2494,7 +2584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/proxy/" class="md-nav__link">
+      <a href="../api/proxy/" class="md-nav__link">
         
   
   
@@ -2522,7 +2612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/serialize/" class="md-nav__link">
+      <a href="../api/serialize/" class="md-nav__link">
         
   
   
@@ -2567,7 +2657,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/store/" class="md-nav__link ">
+            <a href="../api/store/" class="md-nav__link ">
               
   
   
@@ -2609,7 +2699,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/base/" class="md-nav__link">
+      <a href="../api/store/base/" class="md-nav__link">
         
   
   
@@ -2637,7 +2727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/cache/" class="md-nav__link">
+      <a href="../api/store/cache/" class="md-nav__link">
         
   
   
@@ -2665,7 +2755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/config/" class="md-nav__link">
+      <a href="../api/store/config/" class="md-nav__link">
         
   
   
@@ -2693,7 +2783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/exceptions/" class="md-nav__link">
+      <a href="../api/store/exceptions/" class="md-nav__link">
         
   
   
@@ -2721,7 +2811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/executor/" class="md-nav__link">
+      <a href="../api/store/executor/" class="md-nav__link">
         
   
   
@@ -2749,7 +2839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/factory/" class="md-nav__link">
+      <a href="../api/store/factory/" class="md-nav__link">
         
   
   
@@ -2777,7 +2867,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/future/" class="md-nav__link">
+      <a href="../api/store/future/" class="md-nav__link">
         
   
   
@@ -2805,7 +2895,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/lifetimes/" class="md-nav__link">
+      <a href="../api/store/lifetimes/" class="md-nav__link">
         
   
   
@@ -2833,7 +2923,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/metrics/" class="md-nav__link">
+      <a href="../api/store/metrics/" class="md-nav__link">
         
   
   
@@ -2861,7 +2951,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/ref/" class="md-nav__link">
+      <a href="../api/store/ref/" class="md-nav__link">
         
   
   
@@ -2889,7 +2979,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/scopes/" class="md-nav__link">
+      <a href="../api/store/scopes/" class="md-nav__link">
         
   
   
@@ -2917,7 +3007,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/types/" class="md-nav__link">
+      <a href="../api/store/types/" class="md-nav__link">
         
   
   
@@ -2945,7 +3035,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/store/utils/" class="md-nav__link">
+      <a href="../api/store/utils/" class="md-nav__link">
         
   
   
@@ -2998,7 +3088,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/stream/" class="md-nav__link ">
+            <a href="../api/stream/" class="md-nav__link ">
               
   
   
@@ -3040,7 +3130,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/events/" class="md-nav__link">
+      <a href="../api/stream/events/" class="md-nav__link">
         
   
   
@@ -3068,7 +3158,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/exceptions/" class="md-nav__link">
+      <a href="../api/stream/exceptions/" class="md-nav__link">
         
   
   
@@ -3096,7 +3186,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/filters/" class="md-nav__link">
+      <a href="../api/stream/filters/" class="md-nav__link">
         
   
   
@@ -3124,7 +3214,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/protocols/" class="md-nav__link">
+      <a href="../api/stream/protocols/" class="md-nav__link">
         
   
   
@@ -3169,7 +3259,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/stream/shims/" class="md-nav__link ">
+            <a href="../api/stream/shims/" class="md-nav__link ">
               
   
   
@@ -3211,7 +3301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/shims/kafka/" class="md-nav__link">
+      <a href="../api/stream/shims/kafka/" class="md-nav__link">
         
   
   
@@ -3239,7 +3329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/shims/queue/" class="md-nav__link">
+      <a href="../api/stream/shims/queue/" class="md-nav__link">
         
   
   
@@ -3267,7 +3357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/shims/redis/" class="md-nav__link">
+      <a href="../api/stream/shims/redis/" class="md-nav__link">
         
   
   
@@ -3295,7 +3385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/stream/shims/zmq/" class="md-nav__link">
+      <a href="../api/stream/shims/zmq/" class="md-nav__link">
         
   
   
@@ -3356,7 +3446,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../api/utils/" class="md-nav__link ">
+            <a href="../api/utils/" class="md-nav__link ">
               
   
   
@@ -3398,7 +3488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/config/" class="md-nav__link">
+      <a href="../api/utils/config/" class="md-nav__link">
         
   
   
@@ -3426,7 +3516,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/counter/" class="md-nav__link">
+      <a href="../api/utils/counter/" class="md-nav__link">
         
   
   
@@ -3454,7 +3544,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/data/" class="md-nav__link">
+      <a href="../api/utils/data/" class="md-nav__link">
         
   
   
@@ -3482,7 +3572,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/environment/" class="md-nav__link">
+      <a href="../api/utils/environment/" class="md-nav__link">
         
   
   
@@ -3510,7 +3600,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/imports/" class="md-nav__link">
+      <a href="../api/utils/imports/" class="md-nav__link">
         
   
   
@@ -3538,7 +3628,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/tasks/" class="md-nav__link">
+      <a href="../api/utils/tasks/" class="md-nav__link">
         
   
   
@@ -3566,7 +3656,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/utils/timer/" class="md-nav__link">
+      <a href="../api/utils/timer/" class="md-nav__link">
         
   
   
@@ -3602,7 +3692,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/warnings/" class="md-nav__link">
+      <a href="../api/warnings/" class="md-nav__link">
         
   
   
@@ -3638,7 +3728,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/cli/" class="md-nav__link">
+      <a href="../api/cli/" class="md-nav__link">
         
   
   
@@ -3670,32 +3760,27 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../contributing/" class="md-nav__link ">
               
   
   
@@ -3713,13 +3798,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3734,17 +3819,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../contributing/style-guide/" class="md-nav__link">
         
   
   
@@ -3760,7 +3838,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -3773,7 +3850,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../issues-pull-requests/" class="md-nav__link">
+      <a href="../contributing/issues-pull-requests/" class="md-nav__link">
         
   
   
@@ -3801,7 +3878,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../releases/" class="md-nav__link">
+      <a href="../contributing/releases/" class="md-nav__link">
         
   
   
@@ -3836,7 +3913,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../publications/" class="md-nav__link">
+      <a href="../publications/" class="md-nav__link">
         
   
   
@@ -3873,6 +3950,49 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Public API
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compatibility-between-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Compatibility Between Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#python-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -3898,29 +4018,59 @@
   
 
 
-  <h1>Style Guide</h1>
-
-<p>The Python code and docstring format mostly follows Google's
-<a href="https://google.github.io/styleguide/pyguide.html" target="_blank">Python Style Guide</a>,
-but the pre-commit config is the authoritative source for code format
-compliance.</p>
-<p><strong>Nits:</strong></p>
+<h1 id="versioning-and-compatibility">Versioning and Compatibility<a class="headerlink" href="#versioning-and-compatibility" title="Permanent link">&para;</a></h1>
+<p>ProxyStore follows <a href="https://semver.org" target="_blank">semantic versioning</a>.
+Given a version <code>MAJOR.MINOR.PATCH</code>:</p>
 <ul>
-<li>Avoid imports in <code>__init__.py</code> (reduces the likelihood of circular imports).</li>
-<li>Prefer pure functions where possible.</li>
-<li>Define all class attributes inside <code>__init__</code> so all attributes are visible
-  in one place. Attributes that are defined later can be set as <code>None</code>
-  as a placeholder.</li>
-<li>Prefer f-strings (<code class="language-python highlight"><span class="sa">f</span><span class="s1">'name: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span></code>) over string format
-  (<code class="language-python highlight"><span class="s1">'name: </span><span class="si">{}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span></code>). Never use the <code>%</code> operator.</li>
-<li>Prefer <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/typing.html#typing.NamedTuple">typing.NamedTuple</a> over <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/collections.html#collections.namedtuple">collections.namedtuple</a>.</li>
-<li>Exception messages should read as complete sentences with punctuation.
-  Logging messages can forgo trailing punctuation.
-  <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Name must contain alphanumeric characters only.'</span><span class="p">)</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s1">'New connection opened to </span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s1">'</span><span class="p">)</span>
-</span></code></pre></div></li>
-<li>Document all exceptions that may be raised by a function in the docstring.</li>
+<li><strong>Major</strong> releases may make breaking changes to the public API or to the
+  format of objects exchanged between processes (e.g., pickled proxies).</li>
+<li><strong>Minor</strong> releases add features in a backwards compatible manner.</li>
+<li><strong>Patch</strong> releases fix bugs in a backwards compatible manner.</li>
 </ul>
+<h2 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">&para;</a></h2>
+<p>The public API is everything documented in the
+<a href="../api/">API Reference</a> and the <a href="../api/cli/">CLI Reference</a>,
+except for:</p>
+<ul>
+<li>Names prefixed with an underscore (e.g., <code>proxystore._compat</code> or
+  <code>Store._set()</code>).</li>
+<li>Modules documented as internal implementation details. These are used by
+  ProxyStore itself and may change between releases without notice:<ul>
+<li><a class="autorefs autorefs-internal" href="../api/endpoint/#proxystore.endpoint"><code>proxystore.endpoint</code></a>: use endpoints via the
+  <a href="../api/cli/#proxystore-endpoint"><code>proxystore-endpoint</code></a> CLI and the
+  <a class="autorefs autorefs-internal" title="            EndpointConnector" href="../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>.</li>
+<li><a class="autorefs autorefs-internal" href="../api/globus/#proxystore.globus"><code>proxystore.globus</code></a>: use the
+  <a href="../api/cli/#proxystore-globus-auth"><code>proxystore-globus-auth</code></a> CLI and
+  the <a class="autorefs autorefs-internal" title="            GlobusConnector" href="../api/connectors/globus/#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a>.</li>
+<li><a class="autorefs autorefs-internal" href="../api/utils/#proxystore.utils"><code>proxystore.utils</code></a>.</li>
+<li><a class="autorefs autorefs-internal" href="../api/store/cache/#proxystore.store.cache"><code>proxystore.store.cache</code></a>.</li>
+<li>The server functions and classes of
+  <a class="autorefs autorefs-internal" href="../api/connectors/zmq/#proxystore.connectors.zmq"><code>proxystore.connectors.zmq</code></a> (the
+  <a class="autorefs autorefs-internal" title="            ZeroMQConnector" href="../api/connectors/zmq/#proxystore.connectors.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a> is
+  public).</li>
+</ul>
+</li>
+</ul>
+<p>Deprecated features emit a <a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#DeprecationWarning"><code>DeprecationWarning</code></a> for
+at least one minor release before they are removed in the next major
+release.</p>
+<h2 id="compatibility-between-versions">Compatibility Between Versions<a class="headerlink" href="#compatibility-between-versions" title="Permanent link">&para;</a></h2>
+<p>Processes using different versions of ProxyStore with the same major
+version can exchange proxies, store configurations, and stream events.
+For example, a proxy created with ProxyStore 2.3 can be resolved by a
+process using ProxyStore 2.0, and vice versa.
+Fields added by a newer version are ignored by an older version with a
+<a class="autorefs autorefs-internal" title="            VersionMismatchWarning" href="../api/warnings/#proxystore.warnings.VersionMismatchWarning"><code>VersionMismatchWarning</code></a>.
+Proxies are not compatible between major versions.</p>
+<p>The configuration files and protocols of ProxyStore Endpoints are versioned
+separately (see the
+<a href="../guides/endpoints/#version-compatibility">Endpoints Guide</a>).</p>
+<h2 id="python-versions">Python Versions<a class="headerlink" href="#python-versions" title="Permanent link">&para;</a></h2>
+<p>Each Python version is supported until its upstream
+<a href="https://devguide.python.org/versions/" target="_blank">end-of-life</a>.
+Support for a Python version may be removed in a minor release after the
+version has reached its end-of-life. Older releases remain installable on
+those Python versions.</p>
 
 
 
@@ -3980,10 +4130,10 @@ compliance.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.path", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "latest", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

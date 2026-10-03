@@ -18,7 +18,7 @@
         <link rel="prev" href="../examples/">
       
       
-        <link rel="next" href="../concepts/">
+        <link rel="next" href="../versioning/">
       
       
         
@@ -812,6 +812,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../versioning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Versioning
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -4400,7 +4428,8 @@ For example, a proxy created with ProxyStore 2.3 can be resolved by a process us
 The same applies to <a class="autorefs autorefs-internal" title="            StoreConfig" href="../api/store/config/#proxystore.store.config.StoreConfig"><code>StoreConfig</code></a> instances and the events of the <a href="../guides/streaming/">streaming interface</a>.</p>
 <p>When an older version receives fields added by a newer version (e.g., a new connector option), the unknown fields are ignored with a <a class="autorefs autorefs-internal" title="            VersionMismatchWarning" href="../api/warnings/#proxystore.warnings.VersionMismatchWarning"><code>VersionMismatchWarning</code></a>.
 Features which depend on those fields may not take effect in the older process, so upgrading all processes is still recommended.
-Proxies are not compatible between major versions (e.g., 1.x and 2.x).</p>
+Proxies are not compatible between major versions (e.g., 1.x and 2.x).
+See <a href="../versioning/">Versioning and Compatibility</a> for more details.</p>
 <h2 id="runtime-type-checking">Runtime Type Checking<a class="headerlink" href="#runtime-type-checking" title="Permanent link">&para;</a></h2>
 <h3 id="how-do-i-check-the-type-of-a-proxy">How do I check the type of a proxy?<a class="headerlink" href="#how-do-i-check-the-type-of-a-proxy" title="Permanent link">&para;</a></h3>
 <p>To check if an object is a proxy, use <code class="language-python highlight"><span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span></code>.
