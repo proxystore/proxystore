@@ -153,33 +153,11 @@ class Store(Generic[ConnectorT]):
         cache_size: int = 16,
         metrics: bool = False,
         populate_target: bool = True,
+        _id: str | None = None,
     ) -> None:
-        self._init(
-            uuid.uuid4().hex,
-            connector,
-            name=name,
-            serializer=serializer,
-            deserializer=deserializer,
-            cache_size=cache_size,
-            metrics=metrics,
-            populate_target=populate_target,
-        )
-
-    def _init(
-        self,
-        store_id: str,
-        connector: ConnectorT,
-        *,
-        name: str | None,
-        serializer: SerializerT | None,
-        deserializer: DeserializerT | None,
-        cache_size: int,
-        metrics: bool,
-        populate_target: bool,
-    ) -> None:
-        # Shared by __init__ and from_config() because the ID is not a
-        # parameter of __init__ so that users cannot create stores with
-        # conflicting IDs.
+        # _id is private and only used by from_config() to recreate a store
+        # with the same ID. Users should not set it because stores with the
+        # same ID are considered the same store.
         if cache_size < 0:
             raise ValueError(
                 f'Cache size cannot be negative. Got {cache_size}.',
@@ -187,7 +165,7 @@ class Store(Generic[ConnectorT]):
 
         self.connector = connector
         self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
-        self._id = store_id
+        self._id = _id if _id is not None else uuid.uuid4().hex
         self._name = name
         self._metrics = StoreMetrics() if metrics else None
         self._cache_size = cache_size
@@ -344,9 +322,7 @@ class Store(Generic[ConnectorT]):
             Store instance.
         """
         connector = cast(ConnectorT, config.connector.get_connector())
-        store = cls.__new__(cls)
-        store._init(
-            config.id if config.id is not None else uuid.uuid4().hex,
+        return cls(
             connector,
             name=config.name,
             serializer=config.serializer,
@@ -354,8 +330,8 @@ class Store(Generic[ConnectorT]):
             cache_size=config.cache_size,
             metrics=config.metrics,
             populate_target=config.populate_target,
+            _id=config.id,
         )
-        return store
 
     def future(
         self,
