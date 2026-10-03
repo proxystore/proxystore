@@ -111,6 +111,16 @@ def test_globus_endpoint_objects() -> None:
         eps.get_by_host('host3')
 
 
+def test_globus_endpoint_local_path(tmp_path: pathlib.Path) -> None:
+    endpoint = GlobusEndpoint(
+        uuid='1',
+        endpoint_path='/~/',
+        local_path=tmp_path,
+        host_regex='1',
+    )
+    assert endpoint.local_path == str(tmp_path)
+
+
 def test_globus_endpoints_from_json(tmp_path: pathlib.Path) -> None:
     data = {
         'UUID1': {

@@ -8,7 +8,7 @@ from proxystore.connectors.file import FileConnector
 
 
 def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=str(tmp_path))
+    connector = FileConnector(store_dir=tmp_path)
 
     assert os.path.exists(tmp_path)
     connector.close()
@@ -16,7 +16,7 @@ def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
 
 
 def test_close_override_default(tmp_path: pathlib.Path) -> None:
-    connector = FileConnector(store_dir=str(tmp_path), clear=True)
+    connector = FileConnector(store_dir=tmp_path, clear=True)
 
     assert os.path.exists(tmp_path)
     connector.close(clear=False)
@@ -24,8 +24,8 @@ def test_close_override_default(tmp_path: pathlib.Path) -> None:
 
 
 def test_multiple_closed_connectors(tmp_path: pathlib.Path) -> None:
-    connector1 = FileConnector(store_dir=str(tmp_path))
-    connector2 = FileConnector(store_dir=str(tmp_path))
+    connector1 = FileConnector(store_dir=tmp_path)
+    connector2 = FileConnector(store_dir=tmp_path)
 
     assert os.path.exists(tmp_path)
     connector1.close(clear=True)
@@ -51,3 +51,11 @@ def test_paths_work_after_cwd_change(tmp_path: pathlib.Path) -> None:
         connector.close()
 
     os.chdir(current)
+
+
+def test_store_dir_path(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    with FileConnector(store_dir) as connector:
+        assert os.path.isdir(store_dir)
+        # Paths are converted to str so the config is serializable.
+        assert connector.config()['store_dir'] == str(store_dir)

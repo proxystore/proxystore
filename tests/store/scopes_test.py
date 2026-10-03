@@ -29,7 +29,7 @@ def store(
     tmp_path: pathlib.Path,
 ) -> Generator[Store[FileConnector], None, None]:
     with Store(
-        FileConnector(str(tmp_path)),
+        FileConnector(tmp_path),
         cache_size=0,
         populate_target=False,
     ) as store:
