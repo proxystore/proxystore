@@ -689,7 +689,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
-        skip_nonproxiable: bool = False,
+        skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
     ) -> Proxy[T] | NonProxiableT:
         """Create a proxy that will resolve to an object in the store.
@@ -714,8 +714,9 @@ class Store(Generic[ConnectorT]):
                 which will prevent garbage collecting `obj`. If `None`,
                 defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -725,9 +726,8 @@ class Store(Generic[ConnectorT]):
             returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """
@@ -828,7 +828,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
-        skip_nonproxiable: bool = False,
+        skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
     ) -> list[Proxy[T] | NonProxiableT]:
         """Create proxies that will resolve to an object in the store.
@@ -851,8 +851,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
@@ -861,9 +862,8 @@ class Store(Generic[ConnectorT]):
             object is not proxiable and `#!python skip_nonproxiable is True`.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """
@@ -1052,8 +1052,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -1064,9 +1065,8 @@ class Store(Generic[ConnectorT]):
             case `obj` is returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """  # noqa: E501
@@ -1140,8 +1140,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -1151,9 +1152,8 @@ class Store(Generic[ConnectorT]):
             returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
         """
         possible_proxy = self.proxy(
             obj,
