@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import errno
+import fcntl
 import json
 import os
 import pathlib
 import stat
 import subprocess
 import sys
+import threading
 from typing import Any
 from unittest import mock
 
@@ -221,6 +223,26 @@ def test_lock(tmp_path: pathlib.Path) -> None:
     other.release()
     # Releasing a lock which is not held is a no-op
     other.release()
+
+
+def test_lock_concurrent_check(tmp_path: pathlib.Path) -> None:
+    endpoint_dir = EndpointDir(str(tmp_path))
+    lock = endpoint_dir.lock()
+    # Simulate another thread or process checking if the lock is held.
+    fd = os.open(lock.path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_SH | fcntl.LOCK_NB)
+        # Concurrent checks do not see each other as the endpoint.
+        assert lock.is_locked() is False
+        # Acquiring waits for the check to finish.
+        timer = threading.Timer(0.02, fcntl.flock, (fd, fcntl.LOCK_UN))
+        timer.start()
+        lock.acquire()
+        timer.join()
+        assert lock.held
+    finally:
+        os.close(fd)
+    lock.release()
 
 
 def test_lock_released_when_process_exits(tmp_path: pathlib.Path) -> None:
