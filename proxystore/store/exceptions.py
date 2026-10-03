@@ -15,7 +15,7 @@ class ProxyStoreFactoryError(StoreError):
     """Exception raised when a proxy was not created by a Store."""
 
 
-class ProxyResolveMissingKeyError(Exception):
+class ProxyResolveMissingKeyError(StoreError):
     """Exception raised when the key associated with a proxy is missing."""
 
     def __init__(
@@ -52,5 +52,5 @@ class ProxyResolveMissingKeyError(Exception):
         )
 
 
-class NonProxiableTypeError(Exception):
+class NonProxiableTypeError(StoreError):
     """Exception raised when proxying an unproxiable type."""

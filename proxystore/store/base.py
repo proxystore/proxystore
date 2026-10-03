@@ -556,6 +556,20 @@ class Store(Generic[ConnectorT]):
     ) -> Any | None:
         """Get the object associated with the key.
 
+        Tip:
+            Like [`dict.get()`][dict.get], `None` is returned if the object
+            does not exist, so a missing object cannot be distinguished from
+            an object which is `None`. Use a sentinel `default` or
+            [`exists()`][proxystore.store.base.Store.exists] if you need
+            to distinguish the two.
+
+            ```python
+            missing = object()
+            obj = store.get(key, default=missing)
+            if obj is missing:
+                ...
+            ```
+
         Args:
             key: Key associated with the object to retrieve.
             deserializer: Optionally override the default deserializer for the
@@ -638,6 +652,99 @@ class Store(Generic[ConnectorT]):
         )
         return result
 
+    def get_batch(
+        self,
+        keys: Sequence[ConnectorKeyT],
+        *,
+        deserializer: DeserializerT | None = None,
+        default: object | None = None,
+    ) -> list[Any | None]:
+        """Get the objects associated with the keys.
+
+        Cached objects are returned from the cache, and the remaining objects
+        are retrieved with a single call to
+        [`Connector.get_batch()`][proxystore.connectors.protocols.Connector.get_batch].
+
+        Args:
+            keys: Sequence of keys associated with the objects to retrieve.
+            deserializer: Optionally override the default deserializer for the
+                store instance.
+            default: An optional value to be returned for each object
+                that does not exist.
+
+        Returns:
+            List with the same order as `keys` containing each object or \
+            `default` if the object does not exist.
+
+        Raises:
+            SerializationError: If an exception is caught when deserializing
+                an object.
+        """
+        timer = Timer().start()
+        deserializer = (
+            deserializer if deserializer is not None else self.deserializer
+        )
+        results: list[Any] = [default] * len(keys)
+
+        with self._lock:
+            misses: list[int] = []
+            for i, key in enumerate(keys):
+                cached = self.cache.get(key, _MISSING_OBJECT)
+                if cached is _MISSING_OBJECT:
+                    misses.append(i)
+                else:
+                    results[i] = cached
+
+            if len(misses) > 0:
+                with Timer() as connector_timer:
+                    values = self.connector.get_batch(
+                        [keys[i] for i in misses],
+                    )
+
+                with Timer() as deserializer_timer:
+                    for i, value in zip(misses, values, strict=True):
+                        if value is None:
+                            continue
+                        try:
+                            result = deserializer(value)
+                        except Exception as e:
+                            name = get_object_path(deserializer)
+                            raise SerializationError(
+                                'Failed to deserialize object '
+                                f'(deserializer={name}, key={keys[i]}).',
+                            ) from e
+                        self.cache.set(keys[i], result)
+                        results[i] = result
+
+        timer.stop()
+        if self.metrics is not None:
+            hits = len(keys) - len(misses)
+            self.metrics.add_counter('store.get_batch.cache_hits', keys, hits)
+            self.metrics.add_counter(
+                'store.get_batch.cache_misses',
+                keys,
+                len(misses),
+            )
+            if len(misses) > 0:
+                ctime = connector_timer.elapsed_ms
+                dtime = deserializer_timer.elapsed_ms
+                self.metrics.add_time('store.get_batch.connector', keys, ctime)
+                self.metrics.add_time(
+                    'store.get_batch.deserialize',
+                    keys,
+                    dtime,
+                )
+            self.metrics.add_time('store.get_batch', keys, timer.elapsed_ms)
+
+        logger.debug(
+            'Store(%s): GET_BATCH (%s items, %s cached) in %.3f ms',
+            self._label,
+            len(keys),
+            len(keys) - len(misses),
+            timer.elapsed_ms,
+        )
+        return results
+
     def is_cached(self, key: ConnectorKeyT) -> bool:
         """Check if an object associated with the key is cached locally.
 
@@ -689,7 +796,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
-        skip_nonproxiable: bool = False,
+        skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
     ) -> Proxy[T] | NonProxiableT:
         """Create a proxy that will resolve to an object in the store.
@@ -714,8 +821,9 @@ class Store(Generic[ConnectorT]):
                 which will prevent garbage collecting `obj`. If `None`,
                 defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -725,9 +833,8 @@ class Store(Generic[ConnectorT]):
             returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """
@@ -828,7 +935,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
-        skip_nonproxiable: bool = False,
+        skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
     ) -> list[Proxy[T] | NonProxiableT]:
         """Create proxies that will resolve to an object in the store.
@@ -851,8 +958,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put_batch()`][proxystore.connectors.protocols.Connector.put_batch].
 
@@ -861,9 +969,8 @@ class Store(Generic[ConnectorT]):
             object is not proxiable and `#!python skip_nonproxiable is True`.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """
@@ -1052,8 +1159,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -1064,9 +1172,8 @@ class Store(Generic[ConnectorT]):
             case `obj` is returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
             ValueError: If `evict` is `True` and `lifetime` is not `None`
                 because these parameters are mutually exclusive.
         """  # noqa: E501
@@ -1140,8 +1247,9 @@ class Store(Generic[ConnectorT]):
                 is hashable without resolving if `obj` is a hashable type.
                 If `None`, defaults to the store-wide setting.
             skip_nonproxiable: Return non-proxiable types (e.g., built-in
-                constants like `bool` or `None`) rather than raising a
-                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError].
+                constants like `bool` or `None`) directly. If `False`, a
+                [`NonProxiableTypeError`][proxystore.store.exceptions.NonProxiableTypeError]
+                is raised instead.
             connector_options: Additional keyword arguments to pass to
                 [`Connector.put()`][proxystore.connectors.protocols.Connector.put].
 
@@ -1151,9 +1259,8 @@ class Store(Generic[ConnectorT]):
             returned directly.
 
         Raises:
-            NonProxiableTypeError: If `obj` is a non-proxiable type. This
-                behavior can be overridden by setting
-                `#!python skip_nonproxiable=True`.
+            NonProxiableTypeError: If `obj` is a non-proxiable type and
+                `#!python skip_nonproxiable=False`.
         """
         possible_proxy = self.proxy(
             obj,

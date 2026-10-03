@@ -126,6 +126,63 @@ def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
         store.get(key, deserializer=_deserialize)
 
 
+def test_get_missing_with_sentinel(store: Store[LocalConnector]) -> None:
+    missing = object()
+    key = store.put(None)
+    assert store.get(key, default=missing) is None
+    store.evict(key)
+    assert store.get(key, default=missing) is missing
+
+
+def test_get_batch() -> None:
+    with Store(LocalConnector(), metrics=True) as store:
+        keys = store.put_batch(['value1', None, 'value3'])
+        missing_key = store.put('missing')
+        store.evict(missing_key)
+
+        # Cache the first object so the batch has hits and misses.
+        assert store.get(keys[0]) == 'value1'
+
+        batch_keys = [*keys, missing_key]
+        missing = object()
+        values = store.get_batch(batch_keys, default=missing)
+        assert values == ['value1', None, 'value3', missing]
+        assert all(store.is_cached(key) for key in keys)
+
+        assert store.metrics is not None
+        metrics = store.metrics.get_metrics(batch_keys)
+        assert metrics is not None
+        assert metrics.counters['store.get_batch.cache_hits'] == 1
+        assert metrics.counters['store.get_batch.cache_misses'] == 3
+        assert metrics.times['store.get_batch'].count == 1
+        assert metrics.times['store.get_batch.connector'].count == 1
+
+        # All objects are now cached so the connector is not used.
+        with mock.patch.object(store.connector, 'get_batch') as mock_get:
+            assert store.get_batch(keys) == ['value1', None, 'value3']
+            mock_get.assert_not_called()
+
+
+def test_get_batch_empty(store: Store[LocalConnector]) -> None:
+    assert store.get_batch([]) == []
+
+
+def test_get_batch_custom_deserializer(store: Store[LocalConnector]) -> None:
+    keys = store.put_batch([b'a', b'b'], serializer=lambda x: x)
+    values = store.get_batch(keys, deserializer=lambda x: bytes(x).upper())
+    assert values == [b'A', b'B']
+
+
+def test_get_batch_deserializer_error(store: Store[LocalConnector]) -> None:
+    keys = store.put_batch(['a'])
+
+    def _error(data: BytesLike) -> Any:
+        raise ValueError('Oops')
+
+    with pytest.raises(SerializationError, match='Failed to deserialize'):
+        store.get_batch(keys, deserializer=_error)
+
+
 def test_put_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 

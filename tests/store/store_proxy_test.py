@@ -220,6 +220,13 @@ def test_proxy_skip_nonproxiable(store: Store[LocalConnector]) -> None:
         assert p is t
 
 
+def test_skip_nonproxiable_by_default(store: Store[LocalConnector]) -> None:
+    assert store.proxy(None) is None
+    assert store.proxy_batch([None, True]) == [None, True]
+    assert store.locked_proxy(False) is False
+    assert store.owned_proxy(None) is None
+
+
 def test_proxy_nonproxiable_error(store: Store[LocalConnector]) -> None:
     for t in (None, True, False):
         with pytest.raises(NonProxiableTypeError):
