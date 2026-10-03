@@ -4197,6 +4197,12 @@ Running the example again with logging enabled but <code class="language-python 
 <p>The <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, will not delete stored objects once they are no longer needed.
 In the above example, this means that <code>x</code> will be stored in the <a class="autorefs autorefs-internal" title="            FileConnector" href="../../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a> until <a class="autorefs autorefs-internal" title="            close" href="../../api/store/base/#proxystore.store.base.Store.close"><code>Store.close()</code></a> is called and the directory <code>/tmp/proxystore-cache</code> is deleted.
 (Here, <a class="autorefs autorefs-internal" title="            close" href="../../api/store/base/#proxystore.store.base.Store.close"><code>Store.close()</code></a> is called when exiting the <code>with</code> context block.)
+Only the store which created <code>x</code>, the <a class="autorefs autorefs-internal" title="            owner
+
+
+  
+      property
+  " href="../../api/store/base/#proxystore.store.base.Store.owner"><code>owner</code></a>, clears the connector when closed; stores created on the Dask workers to resolve proxies do not.
 However, it is not a requirement that <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connector</code></a> implementations clear stored objects when closed.
 In this case, the shared object <code>x</code> would be "leaked" because it was never deleted when no longer needed by the application.</p>
 <p>ProxyStore provides many opt-in mechanisms for automated management of shared objects.
