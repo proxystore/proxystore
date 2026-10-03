@@ -26,6 +26,7 @@ from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.bindings import patch_buffer_write
 from proxystore.endpoint.protocol import alpn_version
 from proxystore.endpoint.protocol import Message
 from proxystore.endpoint.protocol import MessageReader
@@ -34,6 +35,8 @@ from proxystore.endpoint.protocol import supported_alpns
 from proxystore.utils.tasks import spawn_guarded_background_task
 
 logger = logging.getLogger(__name__)
+
+patch_buffer_write()
 
 _CHUNK_SIZE = 1024 * 1024
 # The iroh bindings limit the size of a single read to a u32, and each write

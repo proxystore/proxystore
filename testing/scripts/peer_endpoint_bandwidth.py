@@ -18,14 +18,6 @@ $ python -m testing.scripts.peer_endpoint_bandwidth local 4c1d... \
 
 Without `--addr`, the remote is found using n0's DNS discovery which requires
 the default `--relays n0`.
-
-Warning:
-    The iroh bindings copy each byte of data passed to Rust in a Python loop
-    which limits throughput. The `--memmove-patch` option replaces the copy
-    with `ctypes.memmove()`. This patches generated code in the bindings so
-    it is only used for benchmarking until the bindings include the fix.
-    Use the option for both the local and remote endpoints because the data
-    of a GET response is written by the remote.
 """
 
 from __future__ import annotations
@@ -33,7 +25,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import contextlib
-import ctypes
 import logging
 import os
 import statistics
@@ -65,19 +56,6 @@ class _AllowAll:
 
     def name_of(self, peer_id: EndpointId) -> str | None:
         return 'peer'
-
-
-def apply_memmove_patch() -> None:
-    """Replace the per-byte copy of bytes arguments in the iroh bindings."""
-    from iroh import iroh_ffi
-
-    def _fast_write(self: Any, value: bytes) -> None:
-        n = len(value)
-        with self._reserve(n):
-            dst = ctypes.addressof(self.rbuf.data.contents) + self.rbuf.len
-            ctypes.memmove(dst, bytes(value), n)
-
-    iroh_ffi._UniffiRustBufferBuilder.write = _fast_write  # type: ignore[method-assign]
 
 
 async def _endpoint(
@@ -219,11 +197,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         help='use n0 relays or disable relays',
     )
     parser.add_argument(
-        '--memmove-patch',
-        action='store_true',
-        help='patch the iroh bindings to copy bytes with ctypes.memmove()',
-    )
-    parser.add_argument(
         '--no-uvloop',
         action='store_true',
         help='override using uvloop if available',
@@ -236,10 +209,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.WARNING)
-
-    if args.memmove_patch:
-        apply_memmove_patch()
-        print('Applied memmove patch to iroh bindings')
 
     run: Any = asyncio.run
     if not args.no_uvloop:
