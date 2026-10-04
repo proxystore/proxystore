@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+import pytest
+import redis
+
 from proxystore.connectors.redis import RedisConnector
+from testing.mocked.redis import MockStrictRedis
 
 
 # Use redis_connector because it mocks StrictRedis client to act
@@ -41,3 +45,12 @@ def test_empty_batch(redis_connector) -> None:
     assert connector.put_batch([]) == []
     assert connector.get_batch([]) == []
     connector.close()
+
+
+def test_mocked_redis_rejects_empty_batch() -> None:
+    # The mocked client should reject empty batches like a Redis server.
+    client = MockStrictRedis({})
+    with pytest.raises(redis.exceptions.ResponseError, match='mget'):
+        client.mget([])
+    with pytest.raises(redis.exceptions.ResponseError, match='mset'):
+        client.mset({})
