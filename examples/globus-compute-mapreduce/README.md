@@ -1,9 +1,5 @@
 # MapReduce with Globus Compute and ProxyStore
 
-> Globus Compute was formerly called funcX.
-> Learn about upgrading from funcX to Globus Compute
-> [here](https://globus-compute.readthedocs.io/en/latest/funcx_upgrade.html).
-
 Example of integrating ProxyStore into a Globus Compute app.
 
 ```
