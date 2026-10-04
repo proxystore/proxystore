@@ -4069,7 +4069,7 @@
 
 
 <h1 id="object-lifetimes">Object Lifetimes<a class="headerlink" href="#object-lifetimes" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 20 April 2024</em></p>
+<p><em>Last updated 4 October 2026</em></p>
 <p>The <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, by default, leaves the responsibility of managing shared objects to the application.
 For example, an object put into a <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> will persist there until the key is manually evicted.
 Some <a class="autorefs autorefs-internal" title="            Connector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.Connector"><code>Connectors</code></a>, and therefore <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Stores</code></a>, delete all of their objects when closed but this is not a specified requirement of the protocol.</p>
@@ -4279,6 +4279,13 @@ This requires two additional rules.</p>
 <a class="autorefs autorefs-internal" title="            clone" href="../../api/store/ref/#proxystore.store.ref.clone"><code>clone()</code></a>,
 <a class="autorefs autorefs-internal" title="            into_owned" href="../../api/store/ref/#proxystore.store.ref.into_owned"><code>into_owned()</code></a>, and
 <a class="autorefs autorefs-internal" title="            update" href="../../api/store/ref/#proxystore.store.ref.update"><code>update()</code></a>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Ownership is not compatible with every execution framework.
+For example, Dask Distributed keeps multiple references to task arguments and results, which breaks the ownership rules and raises errors such as <a class="autorefs autorefs-internal" title="            ReferenceInvalidError" href="../../api/store/ref/#proxystore.store.ref.ReferenceInvalidError"><code>ReferenceInvalidError</code></a>.
+Use <a href="#lifetimes">Lifetimes</a> or <code class="language-python highlight"><span class="n">evict</span><span class="o">=</span><span class="kc">True</span></code> instead in these cases.
+See the <a href="../dask-distributed/#memory-management">Dask Distributed</a> guide for more details.</p>
+</div>
 <p>The <a class="autorefs autorefs-internal" title="            submit" href="../../api/store/scopes/#proxystore.store.scopes.submit"><code>submit()</code></a> associates proxy references with the scope of a function executed by a function executor, such as a <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.ProcessPoolExecutor"><code>ProcessPoolExecutor</code></a> or FaaS system.
 This wrapper function ensures that immutable or mutable borrows of a value passed to a function are appropriately removed once the function completes.</p>
 <div class="language-python highlight"><table class="highlighttable"><tr><th colspan="2" class="filename"><span class="filename">Reference Lifetime Scopes</span></th></tr><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-4-1"> 1</a></span>

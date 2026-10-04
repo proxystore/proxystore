@@ -4213,7 +4213,7 @@
 
 
 <h1 id="peer-to-peer-endpoints">Peer-to-Peer Endpoints<a class="headerlink" href="#peer-to-peer-endpoints" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 26 September 2026</em></p>
+<p><em>Last updated 4 October 2026</em></p>
 <p>ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.</p>
@@ -4690,8 +4690,9 @@ The flow of data and their associated proxies are shown in <strong>Fig. 1</stron
 </ol>
 <h2 id="upgrading-from-proxystore-v1">Upgrading from ProxyStore v1<a class="headerlink" href="#upgrading-from-proxystore-v1" title="Permanent link">&para;</a></h2>
 <p>ProxyStore v1 endpoints used WebRTC and a relay server hosted by the
-ProxyStore team to connect peers. The relay server has been removed, and
-endpoints are now identified by an endpoint ID rather than a UUID, so
+ProxyStore team to connect peers. ProxyStore v2 endpoints use iroh instead
+and no longer require a relay server hosted by the ProxyStore team.
+Endpoints are also identified by an endpoint ID rather than a UUID, so
 endpoints configured with ProxyStore v1 must be configured again.</p>
 <p>Stop your endpoints <strong>before</strong> upgrading ProxyStore. ProxyStore v1 tracks
 running endpoints with a <code>daemon.pid</code> file that newer versions do not read,

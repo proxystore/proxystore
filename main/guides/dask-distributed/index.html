@@ -4047,7 +4047,7 @@
 
 
 <h1 id="dask-distributed-with-proxystore">Dask Distributed with ProxyStore<a class="headerlink" href="#dask-distributed-with-proxystore" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 26 September 2026</em></p>
+<p><em>Last updated 4 October 2026</em></p>
 <p>This guide walks through using ProxyStore in <a href="https://distributed.dask.org/" target="_blank">Dask Distributed</a>.
 ProxyStore can be used to efficiently pass large intermediate values between function invocations.</p>
 <div class="admonition note">
@@ -4065,7 +4065,7 @@ work with newer versions as well.</p>
 </div>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>venv
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>.<span class="w"> </span>venv/bin/activate
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>dask<span class="o">[</span>distributed<span class="o">]==</span><span class="m">2026</span>.8.0<span class="w"> </span><span class="nv">proxystore</span><span class="o">==</span><span class="m">1</span>.1.0
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>dask<span class="o">[</span>distributed<span class="o">]==</span><span class="m">2026</span>.8.0<span class="w"> </span><span class="nv">proxystore</span><span class="o">==</span><span class="m">2</span>.0.0
 </span></code></pre></div>
 <h2 id="using-dask-distributed">Using Dask Distributed<a class="headerlink" href="#using-dask-distributed" title="Permanent link">&para;</a></h2>
 <p>Dask Distributed is a library for futures-based distributed computing.
@@ -4207,8 +4207,18 @@ However, it is not a requirement that <a class="autorefs autorefs-internal" titl
 In this case, the shared object <code>x</code> would be "leaked" because it was never deleted when no longer needed by the application.</p>
 <p>ProxyStore provides many opt-in mechanisms for automated management of shared objects.
 For single-use proxies, passing <code class="language-python highlight"><span class="n">evict</span><span class="o">=</span><span class="kc">True</span></code> to <a class="autorefs autorefs-internal" title="            proxy" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a> will automatically delete the object from the store once the proxy is resolved.
-In more complex scenarios where a proxy may be used by many processes, <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes">Lifetimes</a> or <a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref">Ownership</a> can be used.
+In more complex scenarios where a proxy may be used by many processes, <a class="autorefs autorefs-internal" href="../../api/store/lifetimes/#proxystore.store.lifetimes">Lifetimes</a> can be used.
 Check out the <a href="../object-lifetimes/">Object Lifetimes</a> guide to learn more.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><a class="autorefs autorefs-internal" href="../../api/store/ref/#proxystore.store.ref">Ownership</a> is not compatible with Dask Distributed.
+Dask keeps multiple references to task arguments and results, which breaks the ownership rules and raises errors such as <a class="autorefs autorefs-internal" title="            ReferenceInvalidError" href="../../api/store/ref/#proxystore.store.ref.ReferenceInvalidError"><code>ReferenceInvalidError</code></a>.
+The <a class="autorefs autorefs-internal" title="            StoreExecutor" href="../../api/store/executor/#proxystore.store.executor.StoreExecutor"><code>StoreExecutor</code></a> uses ownership for results by default, so set <code class="language-python highlight"><span class="n">ownership</span><span class="o">=</span><span class="kc">False</span></code> when wrapping a Dask <a class="autorefs autorefs-external" href="https://distributed.dask.org/en/latest/api.html#distributed.Client" target="_blank"><code>Client</code></a>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.store.executor</span><span class="w"> </span><span class="kn">import</span> <span class="n">StoreExecutor</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">executor</span> <span class="o">=</span> <span class="n">StoreExecutor</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">store</span><span class="p">,</span> <span class="n">should_proxy</span><span class="o">=...</span><span class="p">,</span> <span class="n">ownership</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
 
 
 
