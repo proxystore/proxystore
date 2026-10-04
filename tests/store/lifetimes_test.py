@@ -2,10 +2,16 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import pathlib
+import subprocess
+import sys
+import textwrap
+import threading
 import time
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -71,6 +77,38 @@ def test_context_lifetime_add_bad_proxy(store: Store[LocalConnector]) -> None:
         pytest.raises(ProxyStoreFactoryError),
     ):
         lifetime.add_proxy(proxy)
+
+
+def test_context_lifetime_add_key_during_close(
+    store: Store[LocalConnector],
+) -> None:
+    lifetime = ContextLifetime(store)
+    lifetime.add_key(store.put('value'))
+
+    errors: list[Exception] = []
+
+    def _add_key() -> None:
+        try:
+            lifetime.add_key(store.put('other'))
+        except RuntimeError as e:
+            errors.append(e)
+
+    thread = threading.Thread(target=_add_key)
+
+    def _evict(key: Any) -> None:
+        # Add a key from another thread while close() is evicting. The
+        # thread should wait for close() to finish rather than modifying
+        # the set of keys being iterated over.
+        thread.start()
+        thread.join(timeout=0.1)
+        assert thread.is_alive()
+
+    with mock.patch.object(store, 'evict', side_effect=_evict):
+        lifetime.close()
+
+    thread.join()
+    assert len(errors) == 1
+    assert 'Lifetime has ended' in str(errors[0])
 
 
 def test_context_lifetime_error_if_done(store: Store[LocalConnector]) -> None:
@@ -139,6 +177,39 @@ def test_lease_lifetime_extend(
         lifetime._timer.join()
 
     assert lifetime.done()
+
+
+def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    code = textwrap.dedent(
+        f"""\
+        from proxystore.connectors.file import FileConnector
+        from proxystore.store import Store
+        from proxystore.store.lifetimes import LeaseLifetime
+
+        store = Store(FileConnector({str(store_dir)!r}, clear=False))
+        lifetime = LeaseLifetime(store, expiry=60)
+        store.put('value', lifetime=lifetime)
+        """,
+    )
+    start = time.perf_counter()
+    subprocess.run([sys.executable, '-c', code], check=True, timeout=30)
+    # The process should exit without waiting for the lease to expire.
+    assert time.perf_counter() - start < 30
+    # The lease should have been closed at exit, evicting the object.
+    assert list(store_dir.iterdir()) == []
+
+
+def test_lease_lifetime_close_unregisters_atexit(
+    store: Store[LocalConnector],
+) -> None:
+    with mock.patch('proxystore.store.lifetimes.atexit') as mock_atexit:
+        lifetime = LeaseLifetime(store, expiry=60)
+        mock_atexit.register.assert_called_once_with(lifetime._callback)
+        assert lifetime._timer is not None
+        assert lifetime._timer.daemon
+        lifetime.close()
+        mock_atexit.unregister.assert_called_once_with(lifetime._callback)
 
 
 @pytest.mark.parametrize('close_store', (True, False))
