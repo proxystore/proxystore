@@ -18,6 +18,10 @@ from typing import TypeVar
 
 from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy
+from proxystore.store._compat import ignore_register_kwarg
+from proxystore.store._compat import register_store as register_store
+from proxystore.store._compat import store_registration as store_registration
+from proxystore.store._compat import unregister_store as unregister_store
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyStoreFactoryError
@@ -56,6 +60,13 @@ def get_store(proxy: Proxy[T]) -> Store[Any]:
         ProxyStoreFactoryError: If the proxy does not contain a factory of
             type [`StoreFactory`][proxystore.store.factory.StoreFactory].
     """
+    if type(proxy) is str:
+        raise TypeError(
+            'get_store() takes a proxy, not a store name. Looking up stores '
+            'by name was removed in ProxyStore v2. Keep a reference to the '
+            'store, or pass store.config() to other processes and use '
+            'get_or_create_store().',
+        )
     factory = get_factory(proxy)
     if isinstance(factory, StoreFactory):
         return factory.get_store()
@@ -66,6 +77,7 @@ def get_store(proxy: Proxy[T]) -> Store[Any]:
     )
 
 
+@ignore_register_kwarg
 def get_or_create_store(store_config: StoreConfig) -> Store[Any]:
     """Get a registered store or initialize a new instance from the config.
 
