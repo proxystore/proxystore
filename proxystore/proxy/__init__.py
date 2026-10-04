@@ -39,6 +39,7 @@
 
 from __future__ import annotations
 
+import math
 import operator
 import sys
 from collections.abc import Awaitable
@@ -381,8 +382,21 @@ class Proxy(as_metaclass(ProxyMetaType), Generic[T]):  # type: ignore[misc]
     def __reversed__(self) -> Any:
         return reversed(self.__proxy_wrapped__)  # type: ignore[call-overload]
 
-    def __round__(self) -> Any:
-        return round(self.__proxy_wrapped__)  # type: ignore[call-overload]
+    def __round__(self, ndigits: SupportsIndex | None = None) -> Any:
+        if ndigits is None:
+            # Only pass ndigits if given in case the wrapped object's
+            # __round__ does not accept it.
+            return round(self.__proxy_wrapped__)  # type: ignore[call-overload]
+        return round(self.__proxy_wrapped__, ndigits)  # type: ignore[call-overload]
+
+    def __trunc__(self) -> Any:
+        return math.trunc(self.__proxy_wrapped__)  # type: ignore[arg-type]
+
+    def __floor__(self) -> Any:
+        return math.floor(self.__proxy_wrapped__)  # type: ignore[call-overload]
+
+    def __ceil__(self) -> Any:
+        return math.ceil(self.__proxy_wrapped__)  # type: ignore[call-overload]
 
     def __lt__(self, other: Any) -> bool:
         return self.__proxy_wrapped__ < other

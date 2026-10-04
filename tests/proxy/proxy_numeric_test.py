@@ -38,6 +38,10 @@ from __future__ import annotations
 
 import decimal
 import fractions
+import math
+from typing import Any
+
+import pytest
 
 from proxystore.proxy import Proxy
 
@@ -82,6 +86,34 @@ def test_numeric_conversion() -> None:
 
     proxy = Proxy(lambda: 1.2)
     assert round(proxy) == 1
+
+
+def test_round_ndigits() -> None:
+    proxy = Proxy(lambda: 1.2345)
+    assert round(proxy, 2) == 1.23
+    assert round(proxy, None) == 1
+
+    fraction = fractions.Fraction('12345/1000')
+    assert round(Proxy(lambda: fraction), 1) == round(fraction, 1)
+
+
+def test_round_wrapped_without_ndigits() -> None:
+    class _Roundable:
+        def __round__(self) -> int:
+            return 42
+
+    assert round(Proxy(_Roundable)) == 42
+
+
+@pytest.mark.parametrize(
+    'value',
+    (1.5, -1.5, 10**20 + 1, fractions.Fraction(10**20 * 3 + 1, 3)),
+)
+def test_trunc_floor_ceil(value: Any) -> None:
+    proxy = Proxy(lambda: value)
+    assert math.trunc(proxy) == math.trunc(value)
+    assert math.floor(proxy) == math.floor(value)
+    assert math.ceil(proxy) == math.ceil(value)
 
 
 def test_add() -> None:
