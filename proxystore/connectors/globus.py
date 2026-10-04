@@ -285,7 +285,8 @@ class GlobusKey(NamedTuple):
         return False
 
     def __hash__(self) -> int:
-        return hash(self.filename) + hash(self.task_id)
+        # Hash by filename only to be consistent with __eq__.
+        return hash(self.filename)
 
     def __ne__(self, other: Any) -> bool:
         # Match keys by filename only.

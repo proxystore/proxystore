@@ -420,6 +420,10 @@ class MultiConnector:
         Raises:
             MultiConnectorError: If no connector policy matches the arguments.
         """
+        # Tags are checked against each policy so iterators (which can only
+        # be consumed once) must be converted.
+        subset_tags = set(subset_tags)
+        superset_tags = set(superset_tags)
         for connector_name in self.connectors_by_priority:
             connector, policy = self.connectors[connector_name]
             if policy.is_valid(
@@ -465,6 +469,10 @@ class MultiConnector:
         Raises:
             MultiConnectorError: If no connector policy matches the arguments.
         """
+        # Tags are passed to each put() so iterators (which can only be
+        # consumed once) must be converted.
+        subset_tags = set(subset_tags)
+        superset_tags = set(superset_tags)
         return [
             self.put(obj, subset_tags=subset_tags, superset_tags=superset_tags)
             for obj in objs

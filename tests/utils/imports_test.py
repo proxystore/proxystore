@@ -36,3 +36,8 @@ def test_import_from_path(path: str, expected: type[Any]) -> None:
 def test_import_from_path_missing_path() -> None:
     with pytest.raises(ImportError):
         import_from_path('FileConnector')
+
+
+def test_import_from_path_missing_attribute() -> None:
+    with pytest.raises(ImportError, match='MissingConnector'):
+        import_from_path('proxystore.connectors.file.MissingConnector')

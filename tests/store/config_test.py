@@ -65,6 +65,13 @@ def test_connector_config_bad_kind() -> None:
         config.get_connector()
 
 
+def test_connector_config_missing_class() -> None:
+    config = ConnectorConfig(kind='proxystore.connectors.file.FileConnectr')
+
+    with pytest.raises(ValueError, match='FileConnectr'):
+        config.get_connector_type()
+
+
 def test_connector_config_unknown_options() -> None:
     config = ConnectorConfig(kind='local', options={'wrong_arg': True})
     assert config.options['wrong_arg']

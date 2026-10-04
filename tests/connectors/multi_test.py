@@ -149,6 +149,22 @@ def test_multi_connector_policy_tags() -> None:
         assert connector2.exists(key.connector_key)
 
 
+def test_multi_connector_iterator_tags() -> None:
+    with multi_connector_from_policies(
+        Policy(priority=1, subset_tags=['b']),
+        Policy(priority=2, subset_tags=['a']),
+    ) as (multi_connector, _, _):
+        # Each policy should see all of the tags in the iterator.
+        with pytest.raises(MultiConnectorError, match='constraints'):
+            multi_connector.put(b'value', subset_tags=iter(['c']))
+
+        keys = multi_connector.put_batch(
+            [b'value1', b'value2'],
+            subset_tags=iter(['b']),
+        )
+        assert [key.connector_name for key in keys] == ['c1', 'c1']
+
+
 def test_multi_connector_policy_no_valid() -> None:
     connectors: dict[str, tuple[Connector[Any], Policy]] = {
         'connector': (LocalConnector(), Policy(max_size_bytes=1)),

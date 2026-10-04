@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import pathlib
 import tempfile
+from unittest import mock
 
 from proxystore.connectors.file import FileConnector
 
@@ -59,3 +60,35 @@ def test_store_dir_path(tmp_path: pathlib.Path) -> None:
         assert os.path.isdir(store_dir)
         # Paths are converted to str so the config is serializable.
         assert connector.config()['store_dir'] == str(store_dir)
+
+
+def test_get_after_data_removed(tmp_path: pathlib.Path) -> None:
+    with FileConnector(store_dir=tmp_path) as connector:
+        key = connector.put(b'value')
+        # Simulate a concurrent evict() removing the data file after get()
+        # has checked that the marker exists.
+        os.remove(tmp_path / key.filename)
+        assert connector.get(key) is None
+
+
+def test_evict_removes_marker_first(tmp_path: pathlib.Path) -> None:
+    with FileConnector(store_dir=tmp_path) as connector:
+        key = connector.put(b'value')
+        with mock.patch('os.remove', wraps=os.remove) as mock_remove:
+            connector.evict(key)
+        removed = [
+            os.path.basename(c.args[0]) for c in mock_remove.call_args_list
+        ]
+        assert removed == [f'{key.filename}.ready', key.filename]
+        assert not connector.exists(key)
+
+
+def test_evict_partially_removed(tmp_path: pathlib.Path) -> None:
+    with FileConnector(store_dir=tmp_path) as connector:
+        key = connector.put(b'value')
+        # Simulate a concurrent evict() removing one of the files between
+        # this evict() checking for and removing it.
+        os.remove(tmp_path / f'{key.filename}.ready')
+        with mock.patch('os.path.exists', return_value=True):
+            connector.evict(key)
+        assert not os.path.exists(tmp_path / key.filename)
