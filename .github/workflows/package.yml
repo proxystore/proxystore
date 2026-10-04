@@ -1,6 +1,11 @@
-name: publish
+# The build job runs on PRs to catch packaging issues early. The publish job
+# uploads the build to the GitHub release and PyPI for tagged releases.
+name: package
 
 on:
+  push:
+    branches: [test-me-*]
+  pull_request:
   release:
     types: [published]
   workflow_dispatch:
@@ -10,6 +15,10 @@ permissions:
 
 jobs:
   build:
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.ref }}
+      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
     timeout-minutes: 10
 
     runs-on: ubuntu-latest
