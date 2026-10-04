@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import os
 import shutil
@@ -128,11 +129,14 @@ class FileConnector:
             key: Key associated with object to evict.
         """
         path = os.path.join(self.store_dir, key.filename)
-        if os.path.exists(path):
-            os.remove(path)
         marker = path + '.ready'
-        if os.path.exists(marker):
+        # Remove the marker first so a concurrent get() does not see the
+        # marker after the data file has been removed. Either file may
+        # already have been removed by a concurrent evict().
+        with contextlib.suppress(FileNotFoundError):
             os.remove(marker)
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(path)
 
     def exists(self, key: FileKey) -> bool:
         """Check if an object associated with the key exists.
@@ -158,8 +162,12 @@ class FileConnector:
         path = os.path.join(self.store_dir, key.filename)
         marker = path + '.ready'
         if os.path.exists(marker):
-            with open(path, 'rb', buffering=self.buffering) as f:
-                return f.read()
+            try:
+                with open(path, 'rb', buffering=self.buffering) as f:
+                    return f.read()
+            except FileNotFoundError:
+                # The object was evicted after the marker was checked.
+                return None
         return None
 
     def get_batch(self, keys: Sequence[FileKey]) -> list[BytesLike | None]:
