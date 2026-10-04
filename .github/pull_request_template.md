@@ -3,19 +3,19 @@
     apply to every PR type, so N/A can be used as necessary.
 --->
 
-# Description
+## Description
 <!--- Describe your changes in detail --->
 
 
-### Fixes
-<!--- List any issue numbers above that this PR addresses --->
+## Fixes
+<!--- List any issue numbers below that this PR addresses --->
 
 - Fixes #XX
 
-### Type of Change
+## Type of Change
 <!---
-    Check which off the following types describe this PR.
-    These correspond to PR tags.
+    Check which of the following types describe this PR.
+    These correspond to PR labels.
 --->
 
 - [ ] Breaking Change (fix or enhancement which changes existing semantics of the public interface)
@@ -28,7 +28,7 @@
 - [ ] Security (security related changes)
 
 ## Testing
-<!--- Please describe the test ran to verify changes --->
+<!--- Please describe the tests run to verify changes --->
 
 
 ## Pull Request Checklist
@@ -36,8 +36,7 @@
 - [ ] I have read the [Contributing](https://docs.proxystore.dev/main/contributing/) and [PR submission](https://docs.proxystore.dev/main/contributing/issues-pull-requests/) guides.
 
 Please confirm the PR meets the following requirements.
-- [ ] Tags added to PR (e.g., breaking, bug, enhancement, internal, documentation, package, development, security).
 - [ ] Code changes pass `pre-commit` (e.g., mypy, ruff, etc.).
 - [ ] Tests have been added to show the fix is effective or that the new feature works.
-- [ ] New and existing unit tests pass locally with the changes.
+- [ ] New and existing unit tests pass locally with the changes and maintain 100% coverage.
 - [ ] Docs have been updated and reviewed if relevant.

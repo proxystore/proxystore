@@ -7,9 +7,9 @@ body:
   - type: textarea
     id: freeform
     attributes:
-      label: Describe the problem.
+      label: Describe the Problem
       description: >
-        Please describe the issue encounters, what you expected to happen,
+        Please describe the issue you encountered, what you expected to happen,
         and steps to reproduce the issue.
     validations:
       required: true
