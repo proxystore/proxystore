@@ -48,10 +48,14 @@ def mark_refs_out_of_scope(
             owner.
     """
     for ref in refs:
-        if not object.__getattribute__(ref, '__proxy_valid__'):
-            # We've already encountered and handled this reference
-            continue
         owner = object.__getattribute__(ref, '__proxy_owner__')
+        valid = object.__getattribute__(ref, '__proxy_valid__')
+        if owner is None and not valid:
+            # We've already encountered and handled this reference. Note that
+            # an invalid reference with an owner still needs handling because
+            # pickling a reference (e.g., to send it to a worker process)
+            # invalidates it without removing the owner.
+            continue
         if owner is None:
             raise RuntimeError(
                 f'Cannot mark {owner!r} as out of scope because it has '

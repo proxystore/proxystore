@@ -182,3 +182,8 @@ def test_submit_with_multiprocessing(store: Store[FileConnector]) -> None:
         assert fut.result()
         with pytest.raises(ReferenceInvalidError):
             assert isinstance(borrowed, str)
+
+    # The owner's reference count should be decremented once the future
+    # completes so the owner can be mutably borrowed again.
+    assert object.__getattribute__(proxy, '__proxy_ref_count__') == 0
+    mut_borrow(proxy)
