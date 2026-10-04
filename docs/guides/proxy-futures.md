@@ -1,6 +1,6 @@
 # Proxy Futures
 
-*Last updated 1 November 2023*
+*Last updated 4 October 2026*
 
 This guide walks through the use of the
 [`Store.future()`][proxystore.store.base.Store.future] interface and associated

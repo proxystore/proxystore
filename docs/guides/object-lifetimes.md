@@ -1,6 +1,6 @@
 # Object Lifetimes
 
-*Last updated 20 April 2024*
+*Last updated 4 October 2026*
 
 The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
 For example, an object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
@@ -173,6 +173,13 @@ Reference proxy types can be created and used using:
 [`clone()`][proxystore.store.ref.clone],
 [`into_owned()`][proxystore.store.ref.into_owned], and
 [`update()`][proxystore.store.ref.update].
+
+!!! warning
+
+    Ownership is not compatible with every execution framework.
+    For example, Dask Distributed keeps multiple references to task arguments and results, which breaks the ownership rules and raises errors such as [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError].
+    Use [Lifetimes](#lifetimes) or `#!python evict=True` instead in these cases.
+    See the [Dask Distributed](dask-distributed.md#memory-management) guide for more details.
 
 The [`submit()`][proxystore.store.scopes.submit] associates proxy references with the scope of a function executed by a function executor, such as a [`ProcessPoolExecutor`][concurrent.futures.ProcessPoolExecutor] or FaaS system.
 This wrapper function ensures that immutable or mutable borrows of a value passed to a function are appropriately removed once the function completes.

@@ -1,6 +1,6 @@
 # Streaming Objects with ProxyStore
 
-*Last updated 11 November 2024*
+*Last updated 4 October 2026*
 
 This guide describes the motivation for and usage of ProxyStore's
 streaming interface.
@@ -109,6 +109,10 @@ producer.close(topics=['my-topic'])  # (5)!
    default. Pass `stores=True` to also close the
    [`Store`][proxystore.store.Store] instances (and their
    [`Connector`][proxystore.connectors.protocols.Connector] instances).
+   Closing a store created by the producer process, as here, also clears
+   the objects in its connector if the connector clears by default
+   (e.g., the [`FileConnector`][proxystore.connectors.file.FileConnector]),
+   so only close the stores once consumers are done with the stream.
    Topics are not closed by default and must be explicitly closed using the
    `topics` parameter or
    [`close_topics()`][proxystore.stream.StreamProducer.close_topics].
@@ -154,6 +158,9 @@ consumer.close()  # (5)!
    instances (and their
    [`Connector`][proxystore.connectors.protocols.Connector] instances)
    used to resolve objects from the stream.
+   These stores are created by the consumer from the stream events, so they
+   are not the [`owner`][proxystore.store.base.Store.owner] of the objects
+   and closing them never clears the objects in the producer's store.
 
 !!! tip
 
@@ -172,6 +179,32 @@ consumer.close()  # (5)!
     [`Subscriber`][proxystore.stream.protocols.Subscriber].
     This can be more performant when objects are small (e.g., *O(kB)*).
     In this case, the [`StreamConsumer`][proxystore.stream.StreamConsumer] will yield objects directly rather than proxies of the objects.
+
+## Filtering
+
+The [`StreamProducer`][proxystore.stream.StreamProducer]
+and [`StreamConsumer`][proxystore.stream.StreamConsumer] accept an optional
+[`Filter`][proxystore.stream.protocols.Filter] via the `keep` parameter.
+A filter is called with the metadata of each event and returns `True` to
+keep the event, like the function passed to the builtin [`filter()`][filter].
+A producer will not send events which are filtered out, and a consumer will
+skip events which are filtered out (evicting the associated object if the
+`evict` flag was set by the producer).
+
+```python title="consumer.py" linenums="1"
+from proxystore.stream import StreamConsumer
+from proxystore.stream.filters import SamplingFilter
+
+consumer = StreamConsumer(
+    subscriber,
+    keep=lambda metadata: metadata.get('priority') == 'high',  # (1)!
+)
+sampled = StreamConsumer(subscriber, keep=SamplingFilter(0.1))  # (2)!
+```
+
+1. Only yield objects sent with `#!python metadata={'priority': 'high'}`.
+2. The [`SamplingFilter`][proxystore.stream.filters.SamplingFilter] keeps
+   each event with probability `p`.
 
 ## Multi-Producer/Multi-Consumer
 
