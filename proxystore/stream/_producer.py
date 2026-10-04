@@ -42,6 +42,7 @@ class _BufferedObject(Generic[T]):
 class _TopicBuffer(Generic[T]):
     objects: list[_BufferedObject[T]]
     closed: bool
+    end_of_stream_sent: bool = False
 
 
 class StreamProducer(Generic[T]):
@@ -246,9 +247,14 @@ class StreamProducer(Generic[T]):
             topic: Topic to flush.
         """
         objects = self._buffer[topic].objects
-        closed = self._buffer[topic].closed
+        # Only send the end of stream event the first time the topic is
+        # flushed after being closed.
+        send_end_of_stream = (
+            self._buffer[topic].closed
+            and not self._buffer[topic].end_of_stream_sent
+        )
 
-        if len(objects) == 0 and not closed:
+        if len(objects) == 0 and not send_end_of_stream:
             # No events to send so quick return
             return
 
@@ -290,8 +296,9 @@ class StreamProducer(Generic[T]):
                 for item in objects
             )
 
-        if closed:
+        if send_end_of_stream:
             events.append(EndOfStreamEvent(topic))
+            self._buffer[topic].end_of_stream_sent = True
 
         # If there are no new events and the stream wasn't closed we should
         # have early exited

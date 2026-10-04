@@ -16,6 +16,7 @@ from proxystore.store import Store
 from proxystore.stream import StreamConsumer
 from proxystore.stream import StreamProducer
 from proxystore.stream.events import bytes_to_event
+from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import EventBatch
 from proxystore.stream.events import NewObjectKeyEvent
 from proxystore.stream.exceptions import TopicClosedError
@@ -418,3 +419,28 @@ def test_consumer_next_object_none(store: Store[FileConnector]) -> None:
     ):
         producer.send(topic, None)
         assert consumer.next_object() is None
+
+
+def test_producer_sends_end_of_stream_once(
+    store: Store[FileConnector],
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with StreamProducer[str](publisher, stores={topic: store}) as producer:
+        producer.send(topic, 'value')
+        producer.close_topics(topic)
+        producer.flush()
+        producer.flush_topic(topic)
+        producer.close_topics(topic)
+
+        # This assumes knowledge of the internal details of the publisher.
+        messages = list(publisher._queues[topic].queue)  # type: ignore[union-attr]
+        events = []
+        for message in messages:
+            batch = bytes_to_event(message)
+            assert isinstance(batch, EventBatch)
+            events.extend(batch.events)
+        assert sum(isinstance(e, EndOfStreamEvent) for e in events) == 1
+
+    subscriber.close()
