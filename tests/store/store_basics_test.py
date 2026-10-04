@@ -341,3 +341,12 @@ def test_put_batch_lifetime(store: Store[LocalConnector]) -> None:
 
     for key in keys:
         assert not store.exists(key)
+
+
+def test_store_get_batch_repeated_key_cache() -> None:
+    with Store(LocalConnector(), cache_size=2) as store:
+        key = store.put('a')
+        assert store.get_batch([key, key]) == ['a', 'a']
+        store.evict(key)
+        for obj in 'bcd':
+            assert store.get(store.put(obj)) == obj
