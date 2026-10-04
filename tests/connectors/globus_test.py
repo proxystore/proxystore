@@ -281,6 +281,10 @@ def test_globus_connector_key_equality() -> None:
     assert key == ('a', 'c')
     assert key != 'a'
     assert hash(key) == hash(GlobusKey('a', 'b'))
+    # Equal keys must hash the same so lookups with a key that has a
+    # different task_id work.
+    assert hash(key) == hash(GlobusKey('a', 'c'))
+    assert {key: 'value'}[GlobusKey('a', 'c')] == 'value'
 
 
 @pytest.mark.parametrize(
