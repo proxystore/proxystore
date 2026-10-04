@@ -1,6 +1,6 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 26 September 2026*
+*Last updated 4 October 2026*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
@@ -445,8 +445,9 @@ The flow of data and their associated proxies are shown in **Fig. 1**.
 ## Upgrading from ProxyStore v1
 
 ProxyStore v1 endpoints used WebRTC and a relay server hosted by the
-ProxyStore team to connect peers. The relay server has been removed, and
-endpoints are now identified by an endpoint ID rather than a UUID, so
+ProxyStore team to connect peers. ProxyStore v2 endpoints use iroh instead
+and no longer require a relay server hosted by the ProxyStore team.
+Endpoints are also identified by an endpoint ID rather than a UUID, so
 endpoints configured with ProxyStore v1 must be configured again.
 
 Stop your endpoints **before** upgrading ProxyStore. ProxyStore v1 tracks
