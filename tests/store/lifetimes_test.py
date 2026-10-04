@@ -203,13 +203,13 @@ def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
 def test_lease_lifetime_close_unregisters_atexit(
     store: Store[LocalConnector],
 ) -> None:
-    callbacks = atexit._ncallbacks()
-    lifetime = LeaseLifetime(store, expiry=60)
-    assert atexit._ncallbacks() == callbacks + 1
-    assert lifetime._timer is not None
-    assert lifetime._timer.daemon
-    lifetime.close()
-    assert atexit._ncallbacks() == callbacks
+    with mock.patch('proxystore.store.lifetimes.atexit') as mock_atexit:
+        lifetime = LeaseLifetime(store, expiry=60)
+        mock_atexit.register.assert_called_once_with(lifetime._callback)
+        assert lifetime._timer is not None
+        assert lifetime._timer.daemon
+        lifetime.close()
+        mock_atexit.unregister.assert_called_once_with(lifetime._callback)
 
 
 @pytest.mark.parametrize('close_store', (True, False))
