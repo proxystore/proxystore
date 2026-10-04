@@ -280,6 +280,11 @@ class LeaseLifetime(ContextLifetime):
             assert not store.exists(key)
         ```
 
+    Note:
+        This class registers an [atexit][atexit] handler which will close
+        the lifetime at the end of the program if the lease has not yet
+        expired, evicting all objects associated with the lifetime.
+
     Args:
         store: [`Store`][proxystore.store.base.Store] instance used to create
             the objects associated with this lifetime and that will be used
@@ -309,6 +314,9 @@ class LeaseLifetime(ContextLifetime):
 
         super().__init__(store, name=name)
 
+        # The timer is a daemon thread so that a pending lease does not
+        # block interpreter exit. Instead, the lease is closed at exit.
+        self._callback = register_lifetime_atexit(self, close_stores=False)
         self._timer: threading.Timer | None = None
         self._start_timer()
 
@@ -329,6 +337,7 @@ class LeaseLifetime(ContextLifetime):
             self._timer.cancel()
         interval = max(0, self._expiry - time.time())
         self._timer = threading.Timer(interval, self._timer_callback)
+        self._timer.daemon = True
         self._timer.start()
 
     def close(self, *, close_stores: bool = False) -> None:
@@ -345,6 +354,7 @@ class LeaseLifetime(ContextLifetime):
             self._timer.cancel()
 
         super().close(close_stores=close_stores)
+        atexit.unregister(self._callback)
 
     @_error_if_done
     def extend(self, expiry: datetime | timedelta | float) -> None:

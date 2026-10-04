@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import atexit
 import contextlib
+import pathlib
+import subprocess
+import sys
+import textwrap
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -139,6 +143,39 @@ def test_lease_lifetime_extend(
         lifetime._timer.join()
 
     assert lifetime.done()
+
+
+def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
+    store_dir = tmp_path / 'store'
+    code = textwrap.dedent(
+        f"""\
+        from proxystore.connectors.file import FileConnector
+        from proxystore.store import Store
+        from proxystore.store.lifetimes import LeaseLifetime
+
+        store = Store(FileConnector({str(store_dir)!r}, clear=False))
+        lifetime = LeaseLifetime(store, expiry=60)
+        store.put('value', lifetime=lifetime)
+        """,
+    )
+    start = time.perf_counter()
+    subprocess.run([sys.executable, '-c', code], check=True, timeout=30)
+    # The process should exit without waiting for the lease to expire.
+    assert time.perf_counter() - start < 30
+    # The lease should have been closed at exit, evicting the object.
+    assert list(store_dir.iterdir()) == []
+
+
+def test_lease_lifetime_close_unregisters_atexit(
+    store: Store[LocalConnector],
+) -> None:
+    callbacks = atexit._ncallbacks()
+    lifetime = LeaseLifetime(store, expiry=60)
+    assert atexit._ncallbacks() == callbacks + 1
+    assert lifetime._timer is not None
+    assert lifetime._timer.daemon
+    lifetime.close()
+    assert atexit._ncallbacks() == callbacks
 
 
 @pytest.mark.parametrize('close_store', (True, False))
