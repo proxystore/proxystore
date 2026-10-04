@@ -55,4 +55,10 @@ def import_from_path(path: str) -> type[Any]:
             f'Object path must contain at least one module. Got {path}',
         )
     module = importlib.import_module(module_path)
-    return getattr(module, name)
+    try:
+        return getattr(module, name)
+    except AttributeError as e:
+        raise ImportError(
+            f'Cannot import name {name!r} from {module_path!r}.',
+            name=module_path,
+        ) from e
