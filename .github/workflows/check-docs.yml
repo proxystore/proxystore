@@ -10,6 +10,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check-docs:
     timeout-minutes: 10
@@ -24,22 +31,11 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.14'
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: echo "PIP_CACHE_DIR=$(pip cache dir)" >> $GITHUB_ENV
-
-      - name: Use pip cache
-        id: pip-cache
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: docs-ubuntu-latest-pip-3.12-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            docs-ubuntu-latest-pip-3.12-
-
-      - name: Install Packages
+      - name: Install packages
         run: pip install --upgrade setuptools pip tox
 
-      - name: Run Tox to build docs
+      - name: Run tox to build docs
         run: tox -e docs
