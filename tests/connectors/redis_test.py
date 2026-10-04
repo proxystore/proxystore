@@ -34,3 +34,10 @@ def test_multiple_closed_connectors(redis_connector) -> None:
     connector1.close(clear=True)
     connector2.close(clear=True)
     assert not connector2.exists(key)
+
+
+def test_empty_batch(redis_connector) -> None:
+    connector = RedisConnector('localhost', 0)
+    assert connector.put_batch([]) == []
+    assert connector.get_batch([]) == []
+    connector.close()

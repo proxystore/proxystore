@@ -139,6 +139,9 @@ class RedisConnector:
             List with same order as `keys` with the serialized objects or \
             `None` if the corresponding key does not have an associated object.
         """
+        if len(keys) == 0:
+            # Redis does not accept MGET without any keys.
+            return []
         return self._redis_client.mget([key.redis_key for key in keys])  # type: ignore[return-value]
 
     def new_key(self, obj: BytesLike | None = None) -> RedisKey:
@@ -178,6 +181,9 @@ class RedisConnector:
             List of keys with the same order as `objs` which can be used to \
             retrieve the objects.
         """
+        if len(objs) == 0:
+            # Redis does not accept MSET without any keys.
+            return []
         keys = [RedisKey(redis_key=str(uuid.uuid4())) for _ in objs]
         self._redis_client.mset(
             {

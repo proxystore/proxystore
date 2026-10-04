@@ -6,6 +6,8 @@ import queue
 from typing import Any
 from typing import TypedDict
 
+import redis
+
 
 class Message(TypedDict):
     """Pub/sub message type."""
@@ -67,10 +69,20 @@ class MockStrictRedis:
 
     def mget(self, keys: list[str]) -> list[bytes | None]:
         """Get list of values from keys."""
+        if len(keys) == 0:
+            # A Redis server rejects MGET without any keys.
+            raise redis.exceptions.ResponseError(
+                "wrong number of arguments for 'mget' command",
+            )
         return [self.data.get(key, None) for key in keys]
 
     def mset(self, values: dict[str, bytes]) -> None:
         """Set list of values."""
+        if len(values) == 0:
+            # A Redis server rejects MSET without any keys.
+            raise redis.exceptions.ResponseError(
+                "wrong number of arguments for 'mset' command",
+            )
         for key, value in values.items():
             self.set(key, value)
 
