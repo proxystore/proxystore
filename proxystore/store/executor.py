@@ -369,14 +369,23 @@ class StoreExecutor(Executor):
             An iterator equivalent to: `map(func, *iterables)` but the calls \
             may be evaluated out-of-order.
         """
-        iterables, keys = _proxy_iterable(
-            iterables,
-            self.store,
-            self.should_proxy,
-        )
+        # Proxy each element of each iterable rather than each iterable.
+        # The proxied arguments are collected into tuples (rather than lazily
+        # proxied) because some executors, such as the Dask Distributed
+        # Client, do not support mapping over iterators.
+        pargs: list[tuple[Any, ...]] = []
+        keys: list[ConnectorKeyT] = []
+        for iterable in iterables:
+            args, iterable_keys = _proxy_iterable(
+                iterable,
+                self.store,
+                self.should_proxy,
+            )
+            pargs.append(args)
+            keys.extend(iterable_keys)
 
         wrapped = self._wrapped(function)
-        results = self.executor.map(wrapped, *iterables, **kwargs)
+        results = self.executor.map(wrapped, *pargs, **kwargs)
 
         def _result_iterator() -> Generator[R, None, None]:
             for result in results:

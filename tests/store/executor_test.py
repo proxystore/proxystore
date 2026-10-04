@@ -131,6 +131,40 @@ def test_proxy_behavior(
     store.close()
 
 
+def _is_proxy(x: Any) -> bool:
+    return type(x) is Proxy
+
+
+def test_map_proxies_each_element() -> None:
+    store = Store(LocalConnector())
+
+    with StoreExecutor(
+        ThreadPoolExecutor(),
+        store,
+        should_proxy=ProxyType(str),
+        ownership=False,
+    ) as executor:
+        assert executor.submit(_is_proxy, 'a').result()
+        assert list(executor.map(_is_proxy, ['a', 1, 'b'])) == [
+            True,
+            False,
+            True,
+        ]
+
+
+def test_map_with_generator() -> None:
+    store = Store(LocalConnector())
+
+    with StoreExecutor(
+        ThreadPoolExecutor(),
+        store,
+        should_proxy=ProxyAlways(),
+        ownership=False,
+    ) as executor:
+        results = executor.map(power, (x for x in [1, 2]), [2, 3])
+        assert list(results) == [1, 8]
+
+
 def test_function_wrapper() -> None:
     with Store(LocalConnector()) as store:
         wrapped = _FunctionWrapper(
