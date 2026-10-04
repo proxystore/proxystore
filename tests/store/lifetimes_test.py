@@ -6,10 +6,12 @@ import pathlib
 import subprocess
 import sys
 import textwrap
+import threading
 import time
 from datetime import datetime
 from datetime import timedelta
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -75,6 +77,38 @@ def test_context_lifetime_add_bad_proxy(store: Store[LocalConnector]) -> None:
         pytest.raises(ProxyStoreFactoryError),
     ):
         lifetime.add_proxy(proxy)
+
+
+def test_context_lifetime_add_key_during_close(
+    store: Store[LocalConnector],
+) -> None:
+    lifetime = ContextLifetime(store)
+    lifetime.add_key(store.put('value'))
+
+    errors: list[Exception] = []
+
+    def _add_key() -> None:
+        try:
+            lifetime.add_key(store.put('other'))
+        except RuntimeError as e:
+            errors.append(e)
+
+    thread = threading.Thread(target=_add_key)
+
+    def _evict(key: Any) -> None:
+        # Add a key from another thread while close() is evicting. The
+        # thread should wait for close() to finish rather than modifying
+        # the set of keys being iterated over.
+        thread.start()
+        thread.join(timeout=0.1)
+        assert thread.is_alive()
+
+    with mock.patch.object(store, 'evict', side_effect=_evict):
+        lifetime.close()
+
+    thread.join()
+    assert len(errors) == 1
+    assert 'Lifetime has ended' in str(errors[0])
 
 
 def test_context_lifetime_error_if_done(store: Store[LocalConnector]) -> None:

@@ -149,6 +149,9 @@ class ContextLifetime:
         self.name = name if name is not None else str(uuid.uuid4())
         self._done = False
         self._keys: set[ConnectorKeyT] = set()
+        # Guards _done and _keys because a LeaseLifetime is closed by its
+        # timer thread while other threads may be adding keys.
+        self._lock = threading.RLock()
 
         logger.info('Initialized lifetime manager (name=%s)', self.name)
 
@@ -166,7 +169,6 @@ class ContextLifetime:
     def __repr__(self) -> str:
         return f'Lifetime(name={self.name}, store={self.store!r})'
 
-    @_error_if_done
     def add_key(
         self,
         *keys: ConnectorKeyT,
@@ -187,7 +189,12 @@ class ContextLifetime:
         Raises:
             RuntimeError: If this lifetime has ended.
         """
-        self._keys.update(keys)
+        with self._lock:
+            if self._done:
+                raise RuntimeError(
+                    'Lifetime has ended. Cannot use this method.',
+                )
+            self._keys.update(keys)
         logger.debug(
             'Added keys to lifetime manager (name=%s): %s',
             self.name,
@@ -232,19 +239,20 @@ class ContextLifetime:
             close_stores: Close any [`Store`][proxystore.store.base.Store]
                 store instances associated with the lifetime.
         """
-        if self.done():
-            return
+        with self._lock:
+            if self._done:
+                return
 
-        for key in self._keys:
-            self.store.evict(key)
-        self._done = True
-        logger.info(
-            'Closed lifetime manager and evicted %s '
-            'associated objects (name=%s)',
-            len(self._keys),
-            self.name,
-        )
-        self._keys.clear()
+            for key in self._keys:
+                self.store.evict(key)
+            self._done = True
+            logger.info(
+                'Closed lifetime manager and evicted %s '
+                'associated objects (name=%s)',
+                len(self._keys),
+                self.name,
+            )
+            self._keys.clear()
 
         if close_stores:
             self.store.close()
