@@ -121,8 +121,10 @@ class Store(Generic[ConnectorT]):
         [`Store.config()`][proxystore.store.base.Store.config].
 
         To reconstruct the instance from the config, use
-        [`Store.from_config()`][proxystore.store.base.Store.from_config] or
-        [`get_or_create_store()`][proxystore.store.get_or_create_store].
+        [`get_or_create_store()`][proxystore.store.get_or_create_store],
+        which reuses the store if it already exists in the process, or
+        [`Store.from_config()`][proxystore.store.base.Store.from_config],
+        which always creates a new store instance.
 
     Args:
         connector: Connector instance to use for object storage.
@@ -332,7 +334,7 @@ class Store(Generic[ConnectorT]):
         cls,
         config: StoreConfig,
         *,
-        owner: bool = True,
+        owner: bool | None = None,
     ) -> Store[Any]:
         """Create a new store instance from a configuration.
 
@@ -340,6 +342,12 @@ class Store(Generic[ConnectorT]):
         as the store which produced the configuration. If `config` does not
         contain an ID (e.g., a configuration loaded from a TOML file),
         a new ID is generated.
+
+        By default, the new store is the
+        [`owner`][proxystore.store.base.Store.owner] only if `config` does
+        not contain an ID. A config with an ID came from an existing store,
+        and that store is the owner. A config without an ID describes a new
+        store, so the new store is the owner.
 
         Tip:
             Use [`get_or_create_store()`][proxystore.store.get_or_create_store]
@@ -350,11 +358,14 @@ class Store(Generic[ConnectorT]):
             config: Configuration returned by `#!python .config()`.
             owner: The new store owns the objects stored by the connector.
                 See the `owner` parameter of
-                [`Store`][proxystore.store.base.Store].
+                [`Store`][proxystore.store.base.Store]. If `None`, the new
+                store is the owner only if `config` does not contain an ID.
 
         Returns:
             Store instance.
         """
+        if owner is None:
+            owner = config.id is None
         connector = cast(ConnectorT, config.connector.get_connector())
         return cls(
             connector,
