@@ -401,8 +401,20 @@ def test_consumer_next_object_missing(store: Store[FileConnector]) -> None:
     key = event.get_key()
 
     store.evict(key)
-    with pytest.raises(ValueError, match='returned None'):
+    with pytest.raises(ValueError, match='does not contain an object'):
         consumer.next_object()
 
     producer.close()
     consumer.close()
+
+
+def test_consumer_next_object_none(store: Store[FileConnector]) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with (
+        StreamProducer[None](publisher, stores={topic: store}) as producer,
+        StreamConsumer[None](subscriber) as consumer,
+    ):
+        producer.send(topic, None)
+        assert consumer.next_object() is None

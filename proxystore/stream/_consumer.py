@@ -28,6 +28,7 @@ from proxystore.stream.protocols import Subscriber
 logger = logging.getLogger(__name__)
 
 _consumer_get_store_lock = threading.Lock()
+_MISSING_OBJECT = object()
 
 T = TypeVar('T')
 
@@ -343,10 +344,10 @@ class StreamConsumer(Generic[T]):
         if isinstance(event, NewObjectKeyEvent):
             store = self._get_store(event)
             key = event.get_key()
-            obj = store.get(key)
-            if obj is None:
+            obj = store.get(key, default=_MISSING_OBJECT)
+            if obj is _MISSING_OBJECT:
                 raise ValueError(
-                    f'{store!r} returned None for key={key}.',
+                    f'{store!r} does not contain an object for key={key}.',
                 )
             if event.evict:
                 store.evict(key)
