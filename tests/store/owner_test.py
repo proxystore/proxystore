@@ -52,6 +52,23 @@ def test_from_config_owner(owner: bool, tmp_path: pathlib.Path) -> None:
         assert (tmp_path / 'store').exists() != owner
 
 
+def test_from_config_with_id_not_owner(tmp_path: pathlib.Path) -> None:
+    with Store(FileConnector(tmp_path / 'store')) as store:
+        new_store = Store.from_config(store.config())
+        assert not new_store.owner
+        new_store.close()
+        assert (tmp_path / 'store').exists()
+
+
+def test_from_config_without_id_owner(tmp_path: pathlib.Path) -> None:
+    with Store(FileConnector(tmp_path / 'store'), owner=False) as store:
+        config = store.config().model_copy(update={'id': None})
+        new_store = Store.from_config(config)
+        assert new_store.owner
+        new_store.close()
+        assert not (tmp_path / 'store').exists()
+
+
 def test_get_or_create_store_not_owner(tmp_path: pathlib.Path) -> None:
     with Store(FileConnector(tmp_path / 'store')) as store:
         config = store.config()
