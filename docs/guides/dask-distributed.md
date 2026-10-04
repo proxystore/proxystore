@@ -23,7 +23,7 @@ Create a new virtual environment of your choosing and install Dask Distributed a
 ```bash
 $ python -m venv venv
 $ . venv/bin/activate
-$ pip install dask[distributed]==2026.8.0 proxystore==1.1.0
+$ pip install dask[distributed]==2026.8.0 proxystore==2.0.0
 ```
 
 ## Using Dask Distributed
