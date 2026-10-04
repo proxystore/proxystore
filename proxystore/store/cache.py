@@ -71,7 +71,9 @@ class LRUCache(Generic[KeyT, ValueT]):
             return
 
         with self._lock:
-            if len(self._data) >= self.maxsize:
+            if key in self._data:
+                self._lru.remove(key)
+            elif len(self._data) >= self.maxsize:
                 lru_key = self._lru.pop()
                 del self._data[lru_key]
             self._lru.insert(0, key)
