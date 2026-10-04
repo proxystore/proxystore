@@ -1,6 +1,6 @@
 # Dask Distributed with ProxyStore
 
-*Last updated 26 September 2026*
+*Last updated 4 October 2026*
 
 This guide walks through using ProxyStore in [Dask Distributed](https://distributed.dask.org/){target=_blank}.
 ProxyStore can be used to efficiently pass large intermediate values between function invocations.
@@ -147,5 +147,17 @@ In this case, the shared object `x` would be "leaked" because it was never delet
 
 ProxyStore provides many opt-in mechanisms for automated management of shared objects.
 For single-use proxies, passing `#!python evict=True` to [`Store.proxy()`][proxystore.store.base.Store.proxy] will automatically delete the object from the store once the proxy is resolved.
-In more complex scenarios where a proxy may be used by many processes, [Lifetimes][proxystore.store.lifetimes] or [Ownership][proxystore.store.ref] can be used.
+In more complex scenarios where a proxy may be used by many processes, [Lifetimes][proxystore.store.lifetimes] can be used.
 Check out the [Object Lifetimes](object-lifetimes.md) guide to learn more.
+
+!!! warning
+
+    [Ownership][proxystore.store.ref] is not compatible with Dask Distributed.
+    Dask keeps multiple references to task arguments and results, which breaks the ownership rules and raises errors such as [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError].
+    The [`StoreExecutor`][proxystore.store.executor.StoreExecutor] uses ownership for results by default, so set `#!python ownership=False` when wrapping a Dask [`Client`][distributed.Client]{target=_blank}.
+
+    ```python
+    from proxystore.store.executor import StoreExecutor
+
+    executor = StoreExecutor(client, store, should_proxy=..., ownership=False)
+    ```
