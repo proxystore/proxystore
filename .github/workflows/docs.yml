@@ -1,12 +1,27 @@
+# Deploys the docs to the gh-pages branch with mike. Pushes to main update
+# the "main" version, and published releases (excluding pre-releases) add
+# a new version and move the "latest" alias to it.
 name: docs
 
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
+
+permissions:
+  contents: write
+
+# Deploys push to the same gh-pages branch so must not run concurrently.
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
 
 jobs:
   docs:
+    if: ${{ !github.event.release.prerelease }}
+
     timeout-minutes: 10
 
     runs-on: ubuntu-latest
@@ -21,33 +36,32 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.14'
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
-      - name: Get pip cache dir
-        id: pip-cache-dir
-        run: echo "PIP_CACHE_DIR=$(pip cache dir)" >> $GITHUB_ENV
-
-      - name: Use pip cache
-        id: pip-cache
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.PIP_CACHE_DIR }}
-          key: docs-ubuntu-latest-pip-3.12-${{ hashFiles('pyproject.toml') }}
-          restore-keys: |
-            docs-ubuntu-latest-pip-3.12-
-
-      - name: Install Packages
+      - name: Install packages
         run: |
           pip install --upgrade setuptools pip
-          pip install .[endpoints,globus] --group docs
+          pip install '.[endpoints,globus]' --group docs
 
       - name: Configure git
         run: |
           git config --local user.name "GitHub Actions Bot"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Deploy docs for main:latest to gh-pages branch
+      - name: Deploy docs for main to gh-pages branch
+        if: github.event_name != 'release'
         env:
           # Source links in the API docs point to this git ref
           GRIFFE_GIT_COMMIT_HASH: main
+        run: mike deploy --push --update-aliases main
+
+      - name: Deploy docs for release to gh-pages branch
+        if: github.event_name == 'release'
+        env:
+          # Source links in the API docs point to this git ref
+          GRIFFE_GIT_COMMIT_HASH: ${{ github.ref_name }}
+          TAG: ${{ github.ref_name }}
         run: |
-          mike deploy --push --update-aliases main
+          # Removes 'v' prefix from tag (e.g., v1.0.0 -> 1.0.0)
+          mike deploy --push --update-aliases "${TAG#v}" latest
