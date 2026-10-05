@@ -3,8 +3,20 @@
 from __future__ import annotations
 
 from typing import Any
+from typing import TYPE_CHECKING
 
-from proxystore.store import base
+if TYPE_CHECKING:
+    from proxystore.store import base
+
+
+def __getattr__(name: str) -> type[StoreError]:
+    # StoreExistsError was removed in v2. It is loaded lazily from the
+    # compatibility module so that it is not documented.
+    if name == 'StoreExistsError':
+        from proxystore.store._compat import StoreExistsError
+
+        return StoreExistsError
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
 
 
 class StoreError(Exception):
