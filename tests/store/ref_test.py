@@ -59,25 +59,28 @@ def store_is_empty(store: Store[FileConnector]) -> bool:
 
 
 @pytest.fixture
-def live_refs(
-    monkeypatch: pytest.MonkeyPatch,
-) -> weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]]:
+def live_refs() -> Generator[
+    weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
+    None,
+    None,
+]:
     # Use a separate registry so finalizing at exit in a test only
     # touches the proxies made by that test.
     refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]] = (
         weakref.WeakValueDictionary()
     )
-    monkeypatch.setattr(ref, '_live_refs', refs)
-    return refs
+    with mock.patch.object(ref, '_live_refs', refs):
+        yield refs
 
 
 def test_atexit_callback_registered_once(
     store: Store[FileConnector],
     live_refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(ref, '_atexit_registered', False)
-    with mock.patch('proxystore.store.ref.atexit') as mock_atexit:
+    with (
+        mock.patch.object(ref, '_atexit_registered', False),
+        mock.patch('proxystore.store.ref.atexit') as mock_atexit,
+    ):
         proxy = OwnedProxy(put_in_store('value', store))
         borrowed = borrow(proxy)
         other = OwnedProxy(put_in_store('value', store))

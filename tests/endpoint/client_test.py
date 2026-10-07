@@ -152,13 +152,14 @@ def test_connect_and_close(fake_server) -> None:
 
 def test_connect_older_protocol_version(
     fake_server,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # A client which also supports a newer version uses the older version
     # negotiated by the endpoint.
-    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', PROTOCOL_VERSION + 1)
     port = fake_server(_complete_handshake)
-    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+    with (
+        mock.patch.object(protocol, 'PROTOCOL_VERSION', PROTOCOL_VERSION + 1),
+        EndpointClient.connect('127.0.0.1', port, TOKEN) as client,
+    ):
         assert client.protocol_version == PROTOCOL_VERSION
 
     with pytest.raises(EndpointConnectionError, match='closed'):

@@ -333,15 +333,12 @@ def test_create_invalid_config(tmp_path: pathlib.Path) -> None:
     assert not os.path.exists(tmp_path / 'my-ep')
 
 
-def test_default_home(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv('PROXYSTORE_HOME', str(tmp_path))
-    endpoint_dir = EndpointDir.create('my-ep', port=1234)
-    assert endpoint_dir.path == str(tmp_path / 'my-ep')
-    assert EndpointDir.from_name('my-ep') == endpoint_dir
-    assert [d for d, _ in EndpointDir.find_all()] == [endpoint_dir]
+def test_default_home(tmp_path: pathlib.Path) -> None:
+    with mock.patch.dict(os.environ, {'PROXYSTORE_HOME': str(tmp_path)}):
+        endpoint_dir = EndpointDir.create('my-ep', port=1234)
+        assert endpoint_dir.path == str(tmp_path / 'my-ep')
+        assert EndpointDir.from_name('my-ep') == endpoint_dir
+        assert [d for d, _ in EndpointDir.find_all()] == [endpoint_dir]
 
 
 def test_read_secret_key_mismatch(tmp_path: pathlib.Path) -> None:
