@@ -3,8 +3,7 @@ from __future__ import annotations
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
-
-import pytest
+from unittest import mock
 
 from proxystore.connectors.local import LocalConnector
 from proxystore.store.base import Store
@@ -76,16 +75,16 @@ class _SlowFromConfig:
         return self._from_config(config, **kwargs)
 
 
-def test_making_one_store_does_not_block_others(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_making_one_store_does_not_block_others() -> None:
     slow_config = _closed_config()
     fast_config = _closed_config()
     assert slow_config.id is not None
     slow = _SlowFromConfig({slow_config.id})
-    monkeypatch.setattr(Store, 'from_config', slow)
 
-    with ThreadPoolExecutor(1) as pool:
+    with (
+        mock.patch.object(Store, 'from_config', slow),
+        ThreadPoolExecutor(1) as pool,
+    ):
         future = pool.submit(registry.get_or_create, slow_config)
         assert slow.started.wait(5)
 
@@ -102,15 +101,15 @@ def test_making_one_store_does_not_block_others(
     slow_store.close()
 
 
-def test_same_store_made_once(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_same_store_made_once() -> None:
     config = _closed_config()
     assert config.id is not None
     slow = _SlowFromConfig({config.id})
-    monkeypatch.setattr(Store, 'from_config', slow)
 
-    with ThreadPoolExecutor(2) as pool:
+    with (
+        mock.patch.object(Store, 'from_config', slow),
+        ThreadPoolExecutor(2) as pool,
+    ):
         future1 = pool.submit(registry.get_or_create, config)
         assert slow.started.wait(5)
         future2 = pool.submit(registry.get_or_create, config)
@@ -123,9 +122,7 @@ def test_same_store_made_once(
     store1.close()
 
 
-def test_store_registered_while_making(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_store_registered_while_making() -> None:
     config = _closed_config()
     from_config = Store.from_config
     registered: list[Store[Any]] = []
@@ -136,9 +133,9 @@ def test_store_registered_while_making(
         registered.append(Store(LocalConnector(), _id=config.id))
         return from_config(config, **kwargs)
 
-    monkeypatch.setattr(Store, 'from_config', _from_config)
+    with mock.patch.object(Store, 'from_config', _from_config):
+        store = registry.get_or_create(config)
 
-    store = registry.get_or_create(config)
     assert store is registered[0]
     assert config.id is not None
     assert registry.get(config.id) is store
