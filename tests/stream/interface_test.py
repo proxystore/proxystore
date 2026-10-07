@@ -185,6 +185,49 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
     assert store.id not in registry
 
 
+def test_consumer_does_not_close_producer_store(
+    tmp_path: pathlib.Path,
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with Store(FileConnector(tmp_path / 'store')) as store:
+        producer = StreamProducer[str](publisher, default_store=store)
+        consumer = StreamConsumer[str](subscriber)
+
+        producer.send(topic, 'value', evict=False)
+        # The consumer uses the store of the producer in the same process.
+        assert consumer.next() == 'value'
+        consumer.close(stores=True)
+
+        assert registry.get(store.id) is store
+        assert (tmp_path / 'store').exists()
+        assert store.get(store.put('other')) == 'other'
+        producer.close()
+
+
+def test_consumer_does_not_close_existing_store(
+    tmp_path: pathlib.Path,
+) -> None:
+    topic = 'default'
+    publisher, subscriber = create_message_pubsub_pair(topic)
+
+    with Store(FileConnector(tmp_path / 'store')) as store:
+        producer = StreamProducer[str](publisher, default_store=store)
+        consumer = StreamConsumer[str](subscriber)
+        producer.send(topic, 'value', evict=False)
+
+        # A non-owner store made by other code before the consumer.
+        registry.unregister(store)
+        existing = Store.from_config(store.config(), owner=False)
+        assert consumer.next() == 'value'
+        consumer.close(stores=True)
+
+        assert registry.get(store.id) is existing
+        existing.close()
+        producer.close()
+
+
 def test_topic_with_multiple_stores(tmp_path: pathlib.Path) -> None:
     topic = 'default'
     publisher, subscriber = create_message_pubsub_pair(topic)

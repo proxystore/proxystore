@@ -14,6 +14,7 @@ from proxystore.proxy import Proxy
 from proxystore.proxy import ProxyOr
 from proxystore.store import get_or_create_store
 from proxystore.store import Store
+from proxystore.store.registry import registry
 from proxystore.stream.events import bytes_to_event
 from proxystore.stream.events import EndOfStreamEvent
 from proxystore.stream.events import EventBatch
@@ -105,6 +106,8 @@ class StreamConsumer(Generic[T]):
     ) -> None:
         self.subscriber = subscriber
         self._stores: dict[str, Store[Any]] = {}
+        # Stores made by this consumer, which close(stores=True) closes.
+        self._made_stores: list[Store[Any]] = []
         self._keep: Filter = keep if keep is not None else NullFilter()
 
         self._current_batch: EventBatch | None = None
@@ -143,13 +146,16 @@ class StreamConsumer(Generic[T]):
 
         Args:
             stores: Close the [`Store`][proxystore.store.Store] instances
-                used to resolve objects consumed from the stream.
+                this consumer made to resolve objects consumed from the
+                stream. Stores which already existed in this process, such
+                as the store of a producer in the same process, are not
+                closed.
             subscriber: Close the
                 [`Subscriber`][proxystore.stream.protocols.Subscriber]
                 interface.
         """
         if stores:
-            for store in self._stores.values():
+            for store in self._made_stores:
                 store.close()
         if subscriber:
             self.subscriber.close()
@@ -164,8 +170,13 @@ class StreamConsumer(Generic[T]):
             if cache_key in self._stores:
                 return self._stores[cache_key]
 
+            existing = None if config.id is None else registry.get(config.id)
             store = get_or_create_store(config)
             self._stores[cache_key] = store
+            # Owners are never made here, but another thread could register
+            # one after the registry was checked above.
+            if store is not existing and not store.owner:
+                self._made_stores.append(store)
             return store
 
     def _next_batch(self) -> EventBatch:
@@ -257,7 +268,7 @@ class StreamConsumer(Generic[T]):
             producer can map topic names to
             [`Store`][proxystore.store.Store] instances. This class will
             keep track of the [`Store`][proxystore.store.Store] instances
-            used by the stream and will close and unregister them if
+            it made and will close and unregister them if
             [`close()`][proxystore.stream.StreamConsumer.close] is called
             with `stores=True`.
 
