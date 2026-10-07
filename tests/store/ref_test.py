@@ -2,21 +2,24 @@ from __future__ import annotations
 
 import copy
 import gc
+import logging
 import os
 import pathlib
 import pickle
+import weakref
 from collections.abc import Generator
 from typing import TypeVar
+from unittest import mock
 
 import pytest
 
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
+from proxystore.store import ref
 from proxystore.store import Store
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
-from proxystore.store.ref import _WeakRefFinalizer
 from proxystore.store.ref import borrow
 from proxystore.store.ref import clone
 from proxystore.store.ref import into_owned
@@ -55,28 +58,79 @@ def store_is_empty(store: Store[FileConnector]) -> bool:
     return len(files) == 0
 
 
-def test_weakref_finalizer() -> None:
-    data = {'value': 0}
+@pytest.fixture
+def live_refs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]]:
+    # Use a separate registry so finalizing at exit in a test only
+    # touches the proxies made by that test.
+    refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]] = (
+        weakref.WeakValueDictionary()
+    )
+    monkeypatch.setattr(ref, '_live_refs', refs)
+    return refs
 
-    class _TestObject:
-        def __init__(self, d: dict[str, int]) -> None:
-            self.d = d
 
-        def inc(self) -> None:
-            self.d['value'] += 1
+def test_atexit_callback_registered_once(
+    store: Store[FileConnector],
+    live_refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ref, '_atexit_registered', False)
+    with mock.patch('proxystore.store.ref.atexit') as mock_atexit:
+        proxy = OwnedProxy(put_in_store('value', store))
+        borrowed = borrow(proxy)
+        other = OwnedProxy(put_in_store('value', store))
 
-    obj = _TestObject(data)
-    finalizer = _WeakRefFinalizer(obj, 'inc')
+    mock_atexit.register.assert_called_once_with(ref._finalize_live_refs)
+    assert len(live_refs) == 3
 
-    assert obj.d['value'] == data['value'] == 0
-    finalizer()
-    assert obj.d['value'] == data['value'] == 1
+    del borrowed, proxy, other
+    gc.collect()
+    assert len(live_refs) == 0
 
-    del obj
-    # finalizer only hold weakref so after deleting obj, finalizer
-    # won't be able to invoke obj
-    finalizer()
-    assert data['value'] == 1
+
+def test_finalize_live_refs(
+    store: Store[FileConnector],
+    live_refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
+) -> None:
+    proxy1 = OwnedProxy(put_in_store('value', store))
+    borrowed = borrow(proxy1)
+    proxy2 = OwnedProxy(put_in_store('value', store))
+    mut_borrowed = mut_borrow(proxy2)
+
+    # Borrowed references are made after their owners so they should be
+    # released first and the owners should not raise.
+    ref._finalize_live_refs()
+
+    assert store_is_empty(store)
+    for proxy in (proxy1, borrowed, proxy2, mut_borrowed):
+        assert not object.__getattribute__(proxy, '__proxy_valid__')
+    assert object.__getattribute__(borrowed, '__proxy_owner__') is None
+    assert object.__getattribute__(mut_borrowed, '__proxy_owner__') is None
+
+
+def test_finalize_live_refs_continues_after_error(
+    store: Store[FileConnector],
+    live_refs: weakref.WeakValueDictionary[int, ref.BaseRefProxy[object]],
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    other = OwnedProxy(put_in_store('value', store))
+    proxy = OwnedProxy(put_in_store('value', store))
+    borrowed = borrow(proxy)
+    # Pretend the borrowed reference was sent to another process so the
+    # owner still has an outstanding borrow at exit.
+    object.__setattr__(borrowed, '__proxy_owner__', None)
+
+    with caplog.at_level(logging.ERROR, logger='proxystore.store.ref'):
+        ref._finalize_live_refs()
+
+    assert 'Failed to finalize OwnedProxy at exit' in caplog.text
+    assert not object.__getattribute__(other, '__proxy_valid__')
+    assert object.__getattribute__(proxy, '__proxy_valid__')
+
+    object.__setattr__(proxy, '__proxy_ref_count__', 0)
+    proxy.__del__()
 
 
 def test_owned_proxy_out_of_scope_evicts(store: Store[FileConnector]) -> None:
