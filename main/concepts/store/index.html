@@ -2958,6 +2958,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/store/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/store/scopes/" class="md-nav__link">
         
   
@@ -4064,7 +4092,7 @@ is generated, and then a new proxy, initialized with the factory, is returned.</
 <ol>
 <li><code>x</code> is resolved from the store on the first use of <code>x</code> and <code>x</code> then acts as a transparent reference to the target object (the dictionary).</li>
 <li>The <code>Connector</code> defines the low-level communication method used by the <code>Store</code>. Here, the <a class="autorefs autorefs-internal" title="            LocalConnector" href="../../api/connectors/local/#proxystore.connectors.local.LocalConnector"><code>LocalConnector</code></a> stores data in the processes memory, but other connectors are provided to remote storage and transfer services.
-   Every store is registered globally within the process by its unique ID, so proxies resolved in the same process reuse the same store instance to improve performance.
+   Every store is <a class="autorefs autorefs-internal" href="../../api/store/registry/#proxystore.store.registry">registered</a> globally within the process by its unique ID, so proxies resolved in the same process reuse the same store instance to improve performance.
    The optional <code>name</code> is used in logs.</li>
 <li>Store the object and get a proxy.</li>
 <li>Always succeeds regardless of if <code>proxy</code> is the true object or a proxy.</li>

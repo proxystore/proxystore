@@ -2979,6 +2979,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../api/store/registry/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    registry
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../api/store/scopes/" class="md-nav__link">
         
   
@@ -4170,7 +4198,7 @@ The resulting <code>proxy</code> acts like a reference to the <code>x</code> tha
 The reference-like nature of <code>proxy</code> means that Dask does not end up serializing or transferring <code>x</code> itself; rather, Dask serializes the lightweight <code>proxy</code>.
 The transparent nature of <code>proxy</code> means that when used by the task, <code>proxy</code> will resolve to and act like <code>x</code> ensuring that the functionality of the program is the exact same.</p>
 <h3 id="performance-tips">Performance Tips<a class="headerlink" href="#performance-tips" title="Permanent link">&para;</a></h3>
-<p>Every <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instance is registered globally within its process by its unique ID.
+<p>Every <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instance is <a class="autorefs autorefs-internal" href="../../api/store/registry/#proxystore.store.registry">registered</a> globally within its process by its unique ID.
 This enables proxies resolved in the same process to reuse the same store instance, improving performance by sharing the same cache and stateful connections.</p>
 <p>Most important for ProxyStore performance in Dask Distributed is <code class="language-python highlight"><span class="n">populate_target</span><span class="o">=</span><span class="kc">True</span></code>.
 When <code>True</code>, created proxies will be "pre-resolved" and have their <code>__class__</code> and <code>__hash__</code> attributes cached inside the proxy.
