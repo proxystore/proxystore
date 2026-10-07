@@ -22,6 +22,23 @@ from proxystore.serialize import SerializationError
 from proxystore.serialize import serialize
 
 
+@pytest.mark.parametrize(
+    'obj',
+    (
+        [1, 2, 3],
+        lambda: 42,  # Not picklable so cloudpickle is used.
+        pd.DataFrame({'a': [1, 2, 3]}),
+    ),
+)
+def test_pickle_protocol_is_fixed(obj: Any) -> None:
+    # The protocol must not depend on the Python version so that data
+    # can be read by every Python version ProxyStore supports.
+    data = serialize(obj)
+    _, pickled = data.split(b'\n', 1)
+    # Protocol 2 and newer start with the PROTO opcode and the version.
+    assert pickled[:2] == b'\x80\x05'
+
+
 def test_register_duplicate_identifiers() -> None:
     class _TestSerializer:
         identifier = _NumpySerializer.identifier
