@@ -42,6 +42,9 @@ from __future__ import annotations
 
 import atexit
 import copy
+import itertools
+import logging
+import threading
 import weakref
 from collections.abc import Callable
 from typing import Any
@@ -62,6 +65,8 @@ from proxystore.store.types import SerializerT
 T = TypeVar('T')
 FactoryType: TypeAlias = StoreFactory[Any, T]
 
+logger = logging.getLogger(__name__)
+
 
 class BaseRefProxyError(Exception):
     """Base exception type for proxy references."""
@@ -79,15 +84,44 @@ class ReferenceInvalidError(BaseRefProxyError):
     """Exception raised when a reference instance has been invalidated."""
 
 
-class _WeakRefFinalizer:
-    def __init__(self, obj: Any, method: str) -> None:
-        self.wr = weakref.ref(obj)
-        self.method = method
+# Reference proxies that are still alive, keyed in order of creation. The
+# values are weak references so this does not keep proxies alive. A WeakSet
+# cannot be used because it hashes items, and hashing a proxy resolves it.
+_live_refs: weakref.WeakValueDictionary[int, BaseRefProxy[Any]] = (
+    weakref.WeakValueDictionary()
+)
+_live_refs_counter = itertools.count()
+_atexit_lock = threading.Lock()
+_atexit_registered = False
 
-    def __call__(self) -> None:
-        obj = self.wr()
-        if obj is not None:
-            getattr(obj, self.method)()
+
+def _track_ref(proxy: BaseRefProxy[Any]) -> None:
+    """Finalize the proxy at exit if it is still alive then.
+
+    All proxies share one atexit callback because unregistering an atexit
+    callback takes time linear in the number of callbacks. The callback is
+    registered when the first proxy is made so that it runs before the
+    callbacks of stores made earlier (atexit callbacks run in reverse order).
+    """
+    global _atexit_registered  # noqa: PLW0603
+    if not _atexit_registered:
+        with _atexit_lock:
+            if not _atexit_registered:  # pragma: no branch
+                atexit.register(_finalize_live_refs)
+                _atexit_registered = True
+    _live_refs[next(_live_refs_counter)] = proxy
+
+
+def _finalize_live_refs() -> None:
+    # Newest first so borrowed references are released before their owners.
+    for proxy in reversed(list(_live_refs.values())):
+        try:
+            type(proxy).__del__(proxy)
+        except Exception:
+            logger.exception(
+                'Failed to finalize %s at exit',
+                type(proxy).__name__,
+            )
 
 
 # Pickled reference proxies reference this function by its import path and
@@ -222,14 +256,12 @@ class OwnedProxy(BaseRefProxy[T]):
     """
 
     __slots__ = (
-        '__proxy_finalizer__',
         '__proxy_ref_count__',
         '__proxy_ref_mut_count__',
     )
 
     __proxy_ref_count__: int
     __proxy_ref_mut_count__: int
-    __proxy_finalizer__: Any
 
     def __init__(
         self,
@@ -240,15 +272,10 @@ class OwnedProxy(BaseRefProxy[T]):
     ) -> None:
         object.__setattr__(self, '__proxy_ref_count__', 0)
         object.__setattr__(self, '__proxy_ref_mut_count__', 0)
-        object.__setattr__(
-            self,
-            '__proxy_finalizer__',
-            atexit.register(_WeakRefFinalizer(self, '__del__')),
-        )
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
+        _track_ref(self)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
         if object.__getattribute__(self, '__proxy_valid__'):
             ref_count = object.__getattribute__(self, '__proxy_ref_count__')
             ref_mut_count = object.__getattribute__(
@@ -284,9 +311,8 @@ class RefProxy(BaseRefProxy[T]):
         target: Optionally preset the target object.
     """
 
-    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
+    __slots__ = ('__proxy_owner__',)
 
-    __proxy_finalizer__: Any
     __proxy_owner__: OwnedProxy[T]
 
     def __init__(
@@ -298,15 +324,10 @@ class RefProxy(BaseRefProxy[T]):
         target: T | None = None,
     ) -> None:
         object.__setattr__(self, '__proxy_owner__', owner)
-        object.__setattr__(
-            self,
-            '__proxy_finalizer__',
-            atexit.register(_WeakRefFinalizer(self, '__del__')),
-        )
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
+        _track_ref(self)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
@@ -336,9 +357,8 @@ class RefMutProxy(BaseRefProxy[T]):
         target: Optionally preset the target object.
     """  # noqa: E501
 
-    __slots__ = ('__proxy_finalizer__', '__proxy_owner__')
+    __slots__ = ('__proxy_owner__',)
 
-    __proxy_finalizer__: Any
     __proxy_owner__: OwnedProxy[T]
 
     def __init__(
@@ -350,15 +370,10 @@ class RefMutProxy(BaseRefProxy[T]):
         target: T | None = None,
     ) -> None:
         object.__setattr__(self, '__proxy_owner__', owner)
-        object.__setattr__(
-            self,
-            '__proxy_finalizer__',
-            atexit.register(_WeakRefFinalizer(self, '__del__')),
-        )
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
+        _track_ref(self)
 
     def __del__(self) -> None:
-        atexit.unregister(object.__getattribute__(self, '__proxy_finalizer__'))
         # If owner is None, then this RefMutProxy was likely serialized
         # and sent to a different process. As such, it is the responsibility
         # of that code to take over reference counting.
