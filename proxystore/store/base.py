@@ -24,7 +24,6 @@ from proxystore.proxy import ProxyLocker
 from proxystore.serialize import BytesLike
 from proxystore.serialize import is_bytes_like
 from proxystore.serialize import SerializationError
-from proxystore.store import _registry
 from proxystore.store.cache import LRUCache
 from proxystore.store.config import ConnectorConfig
 from proxystore.store.config import StoreConfig
@@ -37,6 +36,7 @@ from proxystore.store.lifetimes import Lifetime
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.ref import into_owned
 from proxystore.store.ref import OwnedProxy
+from proxystore.store.registry import registry
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
@@ -187,7 +187,7 @@ class Store(Generic[ConnectorT]):
         self._owner = owner
         self._lock = threading.RLock()
 
-        _registry.register(self)
+        registry.register(self)
 
         logger.info('Initialized %s', self)
 
@@ -296,7 +296,7 @@ class Store(Generic[ConnectorT]):
         if clear is None and not self.owner:
             clear = False
 
-        _registry.unregister(self)
+        registry.unregister(self)
         with self._lock:
             if clear is None:
                 self.connector.close()

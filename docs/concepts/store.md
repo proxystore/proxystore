@@ -42,7 +42,7 @@ with Store(LocalConnector(), name='example') as store:  # (2)!
 
 1. `x` is resolved from the store on the first use of `x` and `x` then acts as a transparent reference to the target object (the dictionary).
 2. The `Connector` defines the low-level communication method used by the `Store`. Here, the [`LocalConnector`][proxystore.connectors.local.LocalConnector] stores data in the processes memory, but other connectors are provided to remote storage and transfer services.
-   Every store is registered globally within the process by its unique ID, so proxies resolved in the same process reuse the same store instance to improve performance.
+   Every store is [registered][proxystore.store.registry] globally within the process by its unique ID, so proxies resolved in the same process reuse the same store instance to improve performance.
    The optional `name` is used in logs.
 3. Store the object and get a proxy.
 4. Always succeeds regardless of if `proxy` is the true object or a proxy.

@@ -107,7 +107,7 @@ The transparent nature of `proxy` means that when used by the task, `proxy` will
 
 ### Performance Tips
 
-Every [`Store`][proxystore.store.base.Store] instance is registered globally within its process by its unique ID.
+Every [`Store`][proxystore.store.base.Store] instance is [registered][proxystore.store.registry] globally within its process by its unique ID.
 This enables proxies resolved in the same process to reuse the same store instance, improving performance by sharing the same cache and stateful connections.
 
 Most important for ProxyStore performance in Dask Distributed is `#!python populate_target=True`.

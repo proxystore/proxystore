@@ -7,9 +7,30 @@ from typing import Any
 import pytest
 
 from proxystore.connectors.local import LocalConnector
-from proxystore.store import _registry
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
+from proxystore.store.registry import StoreRegistry
+
+
+def test_registry_lookup(store_registry: StoreRegistry) -> None:
+    assert len(store_registry) == 0
+    with Store(LocalConnector()) as store:
+        assert len(store_registry) == 1
+        assert store.id in store_registry
+        assert store_registry.get(store.id) is store
+    assert len(store_registry) == 0
+    assert store.id not in store_registry
+    assert store_registry.get(store.id) is None
+
+
+def test_get_or_create_without_id(store_registry: StoreRegistry) -> None:
+    with Store(LocalConnector()) as store:
+        config = store.config().model_copy(update={'id': None})
+        new_store = store_registry.get_or_create(config)
+        assert new_store.id != store.id
+        assert not new_store.owner
+        assert store_registry.get(new_store.id) is new_store
+        new_store.close()
 
 
 def _closed_config() -> StoreConfig:
@@ -40,6 +61,7 @@ class _SlowFromConfig:
 
 
 def test_making_one_store_does_not_block_others(
+    store_registry: StoreRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     slow_config = _closed_config()
@@ -49,11 +71,11 @@ def test_making_one_store_does_not_block_others(
     monkeypatch.setattr(Store, 'from_config', slow)
 
     with ThreadPoolExecutor(1) as pool:
-        future = pool.submit(_registry.get_or_create, slow_config)
+        future = pool.submit(store_registry.get_or_create, slow_config)
         assert slow.started.wait(5)
 
         # The slow store is still being made, but this does not wait for it.
-        fast_store = _registry.get_or_create(fast_config)
+        fast_store = store_registry.get_or_create(fast_config)
         assert not future.done()
 
         slow.release.set()
@@ -65,16 +87,19 @@ def test_making_one_store_does_not_block_others(
     slow_store.close()
 
 
-def test_same_store_made_once(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_same_store_made_once(
+    store_registry: StoreRegistry,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     config = _closed_config()
     assert config.id is not None
     slow = _SlowFromConfig({config.id})
     monkeypatch.setattr(Store, 'from_config', slow)
 
     with ThreadPoolExecutor(2) as pool:
-        future1 = pool.submit(_registry.get_or_create, config)
+        future1 = pool.submit(store_registry.get_or_create, config)
         assert slow.started.wait(5)
-        future2 = pool.submit(_registry.get_or_create, config)
+        future2 = pool.submit(store_registry.get_or_create, config)
         slow.release.set()
         store1 = future1.result(timeout=5)
         store2 = future2.result(timeout=5)
@@ -85,6 +110,7 @@ def test_same_store_made_once(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_store_registered_while_making(
+    store_registry: StoreRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _closed_config()
@@ -99,7 +125,8 @@ def test_store_registered_while_making(
 
     monkeypatch.setattr(Store, 'from_config', _from_config)
 
-    store = _registry.get_or_create(config)
+    store = store_registry.get_or_create(config)
     assert store is registered[0]
-    assert _registry._stores[config.id] is store  # type: ignore[index]
+    assert config.id is not None
+    assert store_registry.get(config.id) is store
     store.close()

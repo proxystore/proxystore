@@ -5,7 +5,6 @@ from typing import Any
 
 import pytest
 
-import proxystore.store
 import proxystore.store.factory as factory_module
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import get_factory
@@ -23,6 +22,7 @@ from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.lifetimes import ContextLifetime
 from proxystore.store.ref import OwnedProxy
+from proxystore.store.registry import registry
 from proxystore.store.utils import get_key
 
 
@@ -55,7 +55,7 @@ def test_factory_recreates_store() -> None:
             store_config=store.config(),
         )
         # Unregister the store so the factory recreates it.
-        proxystore.store._registry.unregister(store)
+        registry.unregister(store)
         assert f() == [1, 2, 3]
         new_store = f.get_store()
         assert new_store is not store
@@ -225,7 +225,7 @@ def test_proxy_recreates_store() -> None:
         assert key is not None
 
         # Unregister store so proxy recreates it when resolved
-        proxystore.store._registry.unregister(store)
+        registry.unregister(store)
 
         # Resolve the proxy
         assert p == [1, 2, 3]

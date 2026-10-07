@@ -9,7 +9,8 @@ from unittest import mock
 import pytest
 import uvloop
 
-import proxystore
+from proxystore.store.registry import registry
+from proxystore.store.registry import StoreRegistry
 
 # Import fixtures from testing/ so they are known by pytest
 # and can be used with
@@ -108,8 +109,16 @@ def _disable_n0_services() -> Generator[None, None, None]:
 def _verify_no_registered_stores() -> Generator[None, None, None]:
     yield
 
-    if len(proxystore.store._registry._stores) > 0:  # pragma: no cover
+    if len(registry) > 0:  # pragma: no cover
         raise RuntimeError(
             'Test left at least one store registered: '
-            f'{tuple(proxystore.store._registry._stores.keys())}.',
+            f'{tuple(registry._stores.keys())}.',
         )
+
+
+@pytest.fixture
+def store_registry(monkeypatch: pytest.MonkeyPatch) -> StoreRegistry:
+    """Empty the global store registry for a test and restore it after."""
+    monkeypatch.setattr(registry, '_stores', {})
+    monkeypatch.setattr(registry, '_create_locks', {})
+    return registry

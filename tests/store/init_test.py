@@ -4,7 +4,6 @@ import pickle
 
 import pytest
 
-import proxystore.store
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import Proxy
 from proxystore.store import get_or_create_store
@@ -14,11 +13,12 @@ from proxystore.store.exceptions import NonProxiableTypeError
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreError
+from proxystore.store.registry import registry
 from testing.factories import SimpleFactory
 
 
 def _is_registered(store: Store[LocalConnector]) -> bool:
-    return proxystore.store._registry._stores.get(store.id) is store
+    return registry.get(store.id) is store
 
 
 def test_store_registered_until_closed() -> None:

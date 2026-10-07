@@ -1,7 +1,8 @@
 """The ProxyStore [`Store`][proxystore.store.base.Store] interface.
 
-Every [`Store`][proxystore.store.base.Store] is registered in a registry
-that is global to the Python process and keyed by the unique
+Every [`Store`][proxystore.store.base.Store] is registered in a
+[registry][proxystore.store.registry] that is global to the Python process
+and keyed by the unique
 [`id`][proxystore.store.base.Store.id] of the store. A store is registered
 when it is created and unregistered when it is closed. When a proxy is
 resolved, the store which created the proxy is looked up in the registry,
@@ -16,7 +17,6 @@ from typing import TypeVar
 
 from proxystore.proxy import get_factory
 from proxystore.proxy import Proxy
-from proxystore.store import _registry
 from proxystore.store._compat import ignore_register_kwarg
 from proxystore.store._compat import register_store as register_store
 from proxystore.store._compat import store_registration as store_registration
@@ -25,6 +25,10 @@ from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
+
+# Aliased so the registry instance does not replace the registry submodule
+# as an attribute of this package.
+from proxystore.store.registry import registry as _registry
 
 __all__ = [
     'Store',
