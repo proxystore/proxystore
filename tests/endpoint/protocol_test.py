@@ -4,6 +4,7 @@ import json
 import os
 import platform
 from typing import Any
+from unittest import mock
 
 import pytest
 
@@ -348,12 +349,13 @@ def test_message_reader_errors() -> None:
 def test_negotiate_version(
     newest: int,
     expected: int | None,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(protocol, 'MIN_PROTOCOL_VERSION', 2)
-    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', 4)
-    assert negotiate_version(newest) == expected
-    assert supports_version(newest) == (2 <= newest <= 4)
+    with (
+        mock.patch.object(protocol, 'MIN_PROTOCOL_VERSION', 2),
+        mock.patch.object(protocol, 'PROTOCOL_VERSION', 4),
+    ):
+        assert negotiate_version(newest) == expected
+        assert supports_version(newest) == (2 <= newest <= 4)
 
 
 def test_alpn() -> None:
@@ -363,12 +365,14 @@ def test_alpn() -> None:
         alpn_version(b'other/1')
 
 
-def test_supported_alpns(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_supported_alpns() -> None:
     assert supported_alpns() == [alpn(PROTOCOL_VERSION)]
-    monkeypatch.setattr(protocol, 'MIN_PROTOCOL_VERSION', 2)
-    monkeypatch.setattr(protocol, 'PROTOCOL_VERSION', 4)
-    # Newest version first
-    assert supported_alpns() == [alpn(4), alpn(3), alpn(2)]
+    with (
+        mock.patch.object(protocol, 'MIN_PROTOCOL_VERSION', 2),
+        mock.patch.object(protocol, 'PROTOCOL_VERSION', 4),
+    ):
+        # Newest version first
+        assert supported_alpns() == [alpn(4), alpn(3), alpn(2)]
 
 
 def test_versions_mismatch_warning() -> None:

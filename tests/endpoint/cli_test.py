@@ -6,6 +6,7 @@ import operator
 import os
 import pathlib
 import uuid
+from collections.abc import Generator
 from typing import Any
 from unittest import mock
 
@@ -29,9 +30,9 @@ CLICK_VERSION = tuple(
 
 
 @pytest.fixture
-def home_dir(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> str:
-    monkeypatch.setenv('PROXYSTORE_HOME', str(tmp_path))
-    return str(tmp_path)
+def home_dir(tmp_path: pathlib.Path) -> Generator[str, None, None]:
+    with mock.patch.dict(os.environ, {'PROXYSTORE_HOME': str(tmp_path)}):
+        yield str(tmp_path)
 
 
 def test_no_command() -> None:
