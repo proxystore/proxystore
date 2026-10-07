@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import logging
+import subprocess
+import sys
+import textwrap
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
@@ -165,3 +169,74 @@ def test_store_registered_while_making() -> None:
     assert config.id is not None
     assert registry.get(config.id) is store
     store.close()
+
+
+def test_close_non_owners() -> None:
+    owner = Store(LocalConnector())
+    non_owner = Store(LocalConnector(), owner=False)
+
+    with mock.patch.object(
+        non_owner.connector,
+        'close',
+        wraps=non_owner.connector.close,
+    ) as mock_close:
+        registry._close_non_owners()
+
+    mock_close.assert_called_once_with(clear=False)
+    assert non_owner.id not in registry
+    assert registry.get(owner.id) is owner
+    owner.close()
+
+
+def test_close_non_owners_continues_after_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    store1 = Store(LocalConnector(), owner=False)
+    store2 = Store(LocalConnector(), owner=False)
+
+    with (
+        mock.patch.object(store1, 'close', side_effect=RuntimeError('failed')),
+        caplog.at_level(logging.ERROR, logger='proxystore.store.registry'),
+    ):
+        registry._close_non_owners()
+
+    assert 'Failed to close' in caplog.text
+    assert store2.id not in registry
+    store1.close()
+
+
+def test_non_owners_closed_at_exit() -> None:
+    code = textwrap.dedent(
+        """\
+        import logging
+        import sys
+
+        logging.basicConfig(
+            level=logging.DEBUG,
+            stream=sys.stdout,
+            format='%(name)s %(message)s',
+        )
+
+        from proxystore.connectors.local import LocalConnector
+        from proxystore.store import Store
+
+        owner = Store(LocalConnector())
+        non_owner = Store(LocalConnector(), owner=False)
+        print('non-owner', non_owner.id)
+        """,
+    )
+    result = subprocess.run(
+        [sys.executable, '-c', code],
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+    lines = result.stdout.splitlines()
+    non_owner_id = next(
+        line.split()[1] for line in lines if line.startswith('non-owner')
+    )
+    closed = [line for line in lines if line.endswith('at exit')]
+    # Only the non-owner store is closed at exit.
+    assert len(closed) == 1
+    assert non_owner_id in closed[0]
