@@ -20,9 +20,12 @@ else:  # pragma: <3.12 cover
 
 import cloudpickle
 
-# Use at least pickle protocol 5 (added in Python 3.8), but prefer newer
-# protocols if they become available.
-_PICKLE_PROTOCOL = max(pickle.HIGHEST_PROTOCOL, 5)
+# Serialized objects are exchanged between processes which may use different
+# Python versions, so the protocol is fixed rather than using the newest
+# protocol of this Python version. Data written with a newer protocol cannot
+# be read by older Python versions. Protocol 5 is supported by all of the
+# Python versions supported by ProxyStore.
+_PICKLE_PROTOCOL = 5
 
 
 if sys.version_info >= (3, 12):  # pragma: >=3.12 cover
