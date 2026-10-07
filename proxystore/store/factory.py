@@ -14,9 +14,9 @@ from typing import Generic
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
-import proxystore
 from proxystore._compat import drop_unknown_fields
 from proxystore._compat import STATE_VERSION_KEY
+from proxystore.store import _registry
 from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyResolveMissingKeyError
 from proxystore.store.future import _deserialize_with_exceptions
@@ -151,7 +151,7 @@ class StoreFactory(Generic[ConnectorT, T]):
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary."""
-        return proxystore.store.get_or_create_store(self.store_config)
+        return _registry.get_or_create(self.store_config)
 
     def resolve(self) -> T:
         """Get object associated with key from store.

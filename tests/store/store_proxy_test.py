@@ -55,7 +55,7 @@ def test_factory_recreates_store() -> None:
             store_config=store.config(),
         )
         # Unregister the store so the factory recreates it.
-        proxystore.store._unregister_store(store)
+        proxystore.store._registry.unregister(store)
         assert f() == [1, 2, 3]
         new_store = f.get_store()
         assert new_store is not store
@@ -225,7 +225,7 @@ def test_proxy_recreates_store() -> None:
         assert key is not None
 
         # Unregister store so proxy recreates it when resolved
-        proxystore.store._unregister_store(store)
+        proxystore.store._registry.unregister(store)
 
         # Resolve the proxy
         assert p == [1, 2, 3]

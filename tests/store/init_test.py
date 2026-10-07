@@ -18,7 +18,7 @@ from testing.factories import SimpleFactory
 
 
 def _is_registered(store: Store[LocalConnector]) -> bool:
-    return proxystore.store._stores.get(store.id) is store
+    return proxystore.store._registry._stores.get(store.id) is store
 
 
 def test_store_registered_until_closed() -> None:

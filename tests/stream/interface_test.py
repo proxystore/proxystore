@@ -172,17 +172,17 @@ def test_use_and_register_default_store(tmp_path: pathlib.Path) -> None:
 
     # Unregister the store of the producer so the consumer must create
     # a new store, as would happen in a different process.
-    proxystore.store._unregister_store(store)
-    assert store.id not in proxystore.store._stores
+    proxystore.store._registry.unregister(store)
+    assert store.id not in proxystore.store._registry._stores
     consumer.next()
-    consumer_store = proxystore.store._stores[store.id]
+    consumer_store = proxystore.store._registry._stores[store.id]
     assert consumer_store is not store
 
     producer.close(stores=True)
     consumer.close(stores=True)
 
     # Should get unregistered when closed
-    assert store.id not in proxystore.store._stores
+    assert store.id not in proxystore.store._registry._stores
 
 
 def test_topic_with_multiple_stores(tmp_path: pathlib.Path) -> None:

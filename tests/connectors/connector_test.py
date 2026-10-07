@@ -61,8 +61,8 @@ def test_connector_store_config(connectors: Connector[Any]) -> None:
 
     # Unregister rather than close the stores because closing would close
     # the connector fixture which is shared by other tests.
-    proxystore.store._unregister_store(store)
-    proxystore.store._unregister_store(new_store)
+    proxystore.store._registry.unregister(store)
+    proxystore.store._registry.unregister(new_store)
 
 
 def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:

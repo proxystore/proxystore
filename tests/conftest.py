@@ -108,8 +108,8 @@ def _disable_n0_services() -> Generator[None, None, None]:
 def _verify_no_registered_stores() -> Generator[None, None, None]:
     yield
 
-    if len(proxystore.store._stores) > 0:  # pragma: no cover
+    if len(proxystore.store._registry._stores) > 0:  # pragma: no cover
         raise RuntimeError(
             'Test left at least one store registered: '
-            f'{tuple(proxystore.store._stores.keys())}.',
+            f'{tuple(proxystore.store._registry._stores.keys())}.',
         )
