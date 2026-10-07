@@ -73,7 +73,7 @@ class FileConnector:
     def __repr__(self) -> str:
         return f'{self.__class__.__name__}(directory={self.store_dir})'
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
         Warning:
@@ -96,10 +96,14 @@ class FileConnector:
                 value of `clear` provided when the
                 [`FileConnector`][proxystore.connectors.file.FileConnector]
                 was instantiated.
+
+        Returns:
+            If the store directory was removed.
         """
         clear = self.clear if clear is None else clear
         if clear and os.path.isdir(self.store_dir):
             shutil.rmtree(self.store_dir, ignore_errors=True)
+        return clear
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

@@ -60,7 +60,7 @@ class RedisConnector:
             f'port={self.port})'
         )
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
         Warning:
@@ -73,10 +73,15 @@ class RedisConnector:
                 value of `clear` provided when the
                 [`RedisConnector`][proxystore.connectors.redis.RedisConnector]
                 was instantiated.
+
+        Returns:
+            If the keys were removed.
         """
-        if self.clear if clear is None else clear:
+        clear = self.clear if clear is None else clear
+        if clear:
             self._redis_client.flushdb()
         self._redis_client.close()
+        return clear
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

@@ -45,11 +45,11 @@ def test_validate_key(connector: DAOSConnector) -> None:
 
 def test_close_persists_keys_by_default(connector: DAOSConnector) -> None:
     key = connector.put(b'value')
-    connector.close()
+    assert connector.close() is False
     assert connector.get(key) == b'value'
 
 
 def test_close_clear(connector: DAOSConnector) -> None:
     key = connector.put(b'value')
-    connector.close(clear=True)
+    assert connector.close(clear=True) is True
     assert connector.get(key) is None

@@ -23,6 +23,29 @@ class StoreError(Exception):
     """Base exception class for store errors."""
 
 
+class StoreClosedError(StoreError):
+    """Exception raised when using a store that was closed and cleared.
+
+    When the [`owner`][proxystore.store.base.Store.owner] of a store is
+    closed and its connector removes the stored objects, the ID of the store
+    stays closed for the rest of the process. Resolving proxies of the store
+    in that process raises this error instead of making a new store.
+    """
+
+    def __init__(self, store_id: str) -> None:
+        """Init StoreClosedError.
+
+        Args:
+            store_id: ID of the closed store.
+        """
+        self.store_id = store_id
+        super().__init__(
+            f'The store with id={store_id!r} was closed by its owner in this '
+            'process, which also removed the objects of the store. Proxies '
+            'of the store cannot be resolved in this process.',
+        )
+
+
 class ProxyStoreFactoryError(StoreError):
     """Exception raised when a proxy was not created by a Store."""
 

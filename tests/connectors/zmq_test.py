@@ -118,10 +118,10 @@ def test_server_shared_between_connectors() -> None:
     other = ZeroMQConnector(port, address=ADDRESS)
     assert other.server is None
     # Only the connector which spawned the server can stop it
-    other.close(clear=True)
+    assert other.close(clear=True) is False
 
     # By default, closing the owner does not stop the server
-    owner.close()
+    assert owner.close() is False
     with ZeroMQConnector(port, address=ADDRESS) as connector:
         assert connector.get(key) == b'value'
 
@@ -132,7 +132,7 @@ def test_server_shared_between_connectors() -> None:
 def test_close_clear_stops_server() -> None:
     port = open_port()
     connector = ZeroMQConnector(port, address=ADDRESS, timeout=10)
-    connector.close(clear=True)
+    assert connector.close(clear=True) is True
     assert connector.server is None
 
     with pytest.raises(ServerTimeoutError):
@@ -143,7 +143,7 @@ def test_close_clear_default_stops_server() -> None:
     port = open_port()
     connector = ZeroMQConnector(port, address=ADDRESS, timeout=10, clear=True)
     assert connector.config()['clear']
-    connector.close()
+    assert connector.close() is True
     assert connector.server is None
 
     with pytest.raises(ServerTimeoutError):

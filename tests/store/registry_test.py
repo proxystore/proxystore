@@ -5,9 +5,12 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from unittest import mock
 
+import pytest
+
 from proxystore.connectors.local import LocalConnector
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
+from proxystore.store.exceptions import StoreClosedError
 from proxystore.store.registry import registry
 from proxystore.store.registry import StoreRegistry
 
@@ -36,6 +39,28 @@ def test_registry_iter_and_clear() -> None:
 
     for store in stores:
         store.close()
+
+
+def test_registry_closed_ids() -> None:
+    store_registry = StoreRegistry()
+    with Store(LocalConnector()) as store:
+        config = store.config()
+        store_registry.register(store)
+        assert not store_registry.is_closed(store.id)
+
+        store_registry.unregister(store, closed=True)
+        assert store_registry.is_closed(store.id)
+        with pytest.raises(StoreClosedError):
+            store_registry.get_or_create(config)
+
+        # Registering a store with the ID opens it again.
+        store_registry.register(store)
+        assert not store_registry.is_closed(store.id)
+        assert store_registry.get_or_create(config) is store
+
+        store_registry.unregister(store, closed=True)
+        store_registry.clear()
+        assert not store_registry.is_closed(store.id)
 
 
 def test_get_or_create_without_id() -> None:

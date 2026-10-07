@@ -58,6 +58,8 @@ def get_store(proxy: Proxy[T]) -> Store[Any]:
     Raises:
         ProxyStoreFactoryError: If the proxy does not contain a factory of
             type [`StoreFactory`][proxystore.store.factory.StoreFactory].
+        StoreClosedError: If the owner of the store closed it and removed
+            its objects in this process.
     """
     if type(proxy) is str:
         raise TypeError(
@@ -93,5 +95,9 @@ def get_or_create_store(store_config: StoreConfig) -> Store[Any]:
 
     Returns:
         [`Store`][proxystore.store.base.Store] instance.
+
+    Raises:
+        StoreClosedError: If the owner of the store closed it and removed
+            its objects in this process.
     """
     return _registry.get_or_create(store_config)

@@ -43,7 +43,7 @@ class Connector(Protocol[KeyT]):
         [`Store.put()`][proxystore.store.base.Store.put].
     """
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool | None:
         """Close the connector and clean up.
 
         Note:
@@ -55,6 +55,12 @@ class Connector(Protocol[KeyT]):
                 any resources. If `None`, the default of the connector is
                 used. Connectors that do not store objects which outlive the
                 connector may ignore this argument.
+
+        Returns:
+            `True` if the objects stored by the connector were removed.
+            The [`Store`][proxystore.store.base.Store] which owns the
+            objects uses this to know that its proxies can no longer be
+            resolved in this process. `None` is treated as `False`.
         """
         ...
 

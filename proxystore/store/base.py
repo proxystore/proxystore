@@ -279,7 +279,13 @@ class Store(Generic[ConnectorT]):
     def close(self, *, clear: bool | None = None) -> None:
         """Close the connector associated with the store.
 
-        This will (1) unregister the store and (2) close the connector.
+        This will (1) close the connector and (2) unregister the store.
+        If this store is the [`owner`][proxystore.store.base.Store.owner]
+        and the connector removed the stored objects, the ID of the store
+        stays closed for the rest of the process, so resolving proxies of
+        the store in this process raises a
+        [`StoreClosedError`][proxystore.store.exceptions.StoreClosedError]
+        instead of making a new store.
 
         Warning:
             This method should only be called at the end of the program
@@ -296,12 +302,15 @@ class Store(Generic[ConnectorT]):
         if clear is None and not self.owner:
             clear = False
 
-        registry.unregister(self)
-        with self._lock:
-            if clear is None:
-                self.connector.close()
-            else:
-                self.connector.close(clear=clear)
+        cleared: bool | None = None
+        try:
+            with self._lock:
+                if clear is None:
+                    cleared = self.connector.close()
+                else:
+                    cleared = self.connector.close(clear=clear)
+        finally:
+            registry.unregister(self, closed=self.owner and cleared is True)
 
     def config(self) -> StoreConfig:
         """Get the store configuration.

@@ -21,6 +21,8 @@ from collections.abc import Iterator
 from typing import Any
 from typing import TYPE_CHECKING
 
+from proxystore.store.exceptions import StoreClosedError
+
 if TYPE_CHECKING:
     from proxystore.store.base import Store
     from proxystore.store.config import StoreConfig
@@ -45,6 +47,8 @@ class StoreRegistry:
         # store, so threads that need the same store make it only once.
         # Locks are never removed because a process only sees a few IDs.
         self._create_locks: dict[str, threading.Lock] = {}
+        # IDs of stores whose owner was closed and removed their objects.
+        self._closed: set[str] = set()
 
     def __contains__(self, store_id: object) -> bool:
         with self._lock:
@@ -59,12 +63,13 @@ class StoreRegistry:
             return len(self._stores)
 
     def clear(self) -> None:
-        """Unregister all stores without closing them.
+        """Unregister all stores without closing them and forget closed IDs.
 
         This is mainly useful for resetting the registry between tests.
         """
         with self._lock:
             self._stores.clear()
+            self._closed.clear()
         logger.debug('Cleared the store registry')
 
     def get(self, store_id: str) -> Store[Any] | None:
@@ -75,6 +80,25 @@ class StoreRegistry:
         """
         with self._lock:
             return self._stores.get(store_id)
+
+    def is_closed(self, store_id: str) -> bool:
+        """Check if the ID of a store is closed.
+
+        The ID of a store is closed when the
+        [`owner`][proxystore.store.base.Store.owner] of the store is closed
+        and its connector removes the stored objects. A store made with the
+        [`Store`][proxystore.store.base.Store] constructor with the same ID
+        opens the ID again.
+        """
+        with self._lock:
+            return store_id in self._closed
+
+    def _get_open(self, store_id: str) -> Store[Any] | None:
+        # Must be called with self._lock held.
+        store = self._stores.get(store_id)
+        if store is None and store_id in self._closed:
+            raise StoreClosedError(store_id)
+        return store
 
     def get_or_create(self, config: StoreConfig) -> Store[Any]:
         """Get the registered store with the ID in `config` or make one.
@@ -90,6 +114,10 @@ class StoreRegistry:
 
         Returns:
             Store instance.
+
+        Raises:
+            StoreClosedError: If the ID in `config` is
+                [closed][proxystore.store.registry.StoreRegistry.is_closed].
         """
         # base.py imports this module so Store is imported here.
         from proxystore.store.base import Store
@@ -98,7 +126,7 @@ class StoreRegistry:
             return Store.from_config(config, owner=False)
 
         with self._lock:
-            store = self._stores.get(config.id)
+            store = self._get_open(config.id)
             if store is not None:
                 return store
             create_lock = self._create_locks.setdefault(
@@ -107,8 +135,10 @@ class StoreRegistry:
             )
 
         with create_lock:
-            # Another thread may have made the store while this one waited.
-            store = self.get(config.id)
+            # Another thread may have made or closed the store while this
+            # one waited.
+            with self._lock:
+                store = self._get_open(config.id)
             if store is not None:
                 return store
 
@@ -131,14 +161,16 @@ class StoreRegistry:
             to be called.
 
         If a store with the same ID is already registered, that store stays
-        registered and `store` is ignored.
+        registered and `store` is ignored. Registering a store opens its ID
+        again if the ID was closed.
         """
         with self._lock:
+            self._closed.discard(store.id)
             if store.id not in self._stores:
                 self._stores[store.id] = store
                 logger.debug('Registered %r', store)
 
-    def unregister(self, store: Store[Any]) -> None:
+    def unregister(self, store: Store[Any], *, closed: bool = False) -> None:
         """Unregister a store.
 
         Note:
@@ -147,8 +179,16 @@ class StoreRegistry:
 
         Nothing happens if a different store with the same ID is
         registered.
+
+        Args:
+            store: Store to unregister.
+            closed: Also close the ID of the store, so proxies of the store
+                cannot be resolved in this process.
         """
         with self._lock:
+            if closed:
+                self._closed.add(store.id)
+                logger.debug('Closed store ID %s', store.id)
             if self._stores.get(store.id) is store:
                 del self._stores[store.id]
                 logger.debug('Unregistered %r', store)

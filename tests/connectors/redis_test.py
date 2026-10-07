@@ -14,7 +14,7 @@ def test_close_persists_keys_by_default(redis_connector) -> None:
     key = connector.put(b'value')
 
     assert connector.exists(key)
-    connector.close()
+    assert connector.close() is False
     # This only works with the mocked connector because otherwise
     # the connection pool used by Redis would have been closed
     assert connector.exists(key)
@@ -25,7 +25,7 @@ def test_close_override_default(redis_connector) -> None:
     key = connector.put(b'value')
 
     assert connector.exists(key)
-    connector.close(clear=True)
+    assert connector.close(clear=True) is True
     assert not connector.exists(key)
 
 
