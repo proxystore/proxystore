@@ -150,7 +150,12 @@ class StoreFactory(Generic[ConnectorT, T]):
         self._obj_future = None
 
     def get_store(self) -> Store[ConnectorT]:
-        """Get store and reinitialize if necessary."""
+        """Get store and reinitialize if necessary.
+
+        Raises:
+            StoreClosedError: If the owner of the store closed it and
+                removed its objects in this process.
+        """
         return registry.get_or_create(self.store_config)
 
     def resolve(self) -> T:
@@ -159,6 +164,8 @@ class StoreFactory(Generic[ConnectorT, T]):
         Raises:
             ProxyResolveMissingKeyError: If the key associated with this
                 factory does not exist in the store.
+            StoreClosedError: If the owner of the store closed it and
+                removed its objects in this process.
         """
         with Timer() as timer:
             store = self.get_store()

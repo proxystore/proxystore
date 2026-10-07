@@ -319,7 +319,9 @@ def test_delete_local_paths_on_close(
         ) as mocked,
     ):
         connector = GlobusConnector(endpoints=endpoints, clear=clear_default)
-        connector.close(clear=clear_override)
+        cleared = connector.close(clear=clear_override)
+
+    assert cleared is not should_exist
 
     if should_exist:
         assert mocked.call_count == 0

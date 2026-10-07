@@ -59,6 +59,7 @@ from proxystore.proxy import DefaultHashType
 from proxystore.proxy import is_resolved
 from proxystore.proxy import Proxy
 from proxystore.store.exceptions import ProxyStoreFactoryError
+from proxystore.store.exceptions import StoreClosedError
 from proxystore.store.factory import StoreFactory
 from proxystore.store.types import SerializerT
 
@@ -289,8 +290,13 @@ class OwnedProxy(BaseRefProxy[T]):
                     'RefMutProxy.',
                 )
             factory = object.__getattribute__(self, '__proxy_factory__')
-            store = factory.get_store()
-            store.evict(factory.key)
+            try:
+                store = factory.get_store()
+            except StoreClosedError:
+                # The owner of the store already removed all of its objects.
+                pass
+            else:
+                store.evict(factory.key)
             object.__setattr__(self, '__proxy_valid__', False)
 
 

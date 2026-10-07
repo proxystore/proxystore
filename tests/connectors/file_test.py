@@ -12,7 +12,7 @@ def test_close_clears_by_default(tmp_path: pathlib.Path) -> None:
     connector = FileConnector(store_dir=tmp_path)
 
     assert os.path.exists(tmp_path)
-    connector.close()
+    assert connector.close() is True
     assert not os.path.exists(tmp_path)
 
 
@@ -20,7 +20,7 @@ def test_close_override_default(tmp_path: pathlib.Path) -> None:
     connector = FileConnector(store_dir=tmp_path, clear=True)
 
     assert os.path.exists(tmp_path)
-    connector.close(clear=False)
+    assert connector.close(clear=False) is False
     assert os.path.exists(tmp_path)
 
 

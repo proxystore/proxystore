@@ -15,3 +15,10 @@ def test_connector_dict() -> None:
 
     connector3 = LocalConnector()
     assert connector3.get(key) is None
+
+
+def test_close_never_clears() -> None:
+    connector = LocalConnector()
+    key = connector.put(b'value')
+    assert connector.close(clear=True) is False
+    assert connector.get(key) == b'value'

@@ -245,6 +245,24 @@ def test_multi_connector_close_passes_clear(clear: bool | None) -> None:
             c.close.assert_called_once_with(clear=clear)
 
 
+@pytest.mark.parametrize(
+    ('results', 'expected'),
+    (((False, False), False), ((True, False), True), ((None, True), True)),
+)
+def test_multi_connector_close_returns_if_any_cleared(
+    results: tuple[bool | None, bool | None],
+    expected: bool,
+) -> None:
+    connector1 = mock.MagicMock()
+    connector1.close.return_value = results[0]
+    connector2 = mock.MagicMock()
+    connector2.close.return_value = results[1]
+    connector = MultiConnector(
+        {'c1': (connector1, Policy()), 'c2': (connector2, Policy())},
+    )
+    assert connector.close() is expected
+
+
 def _connector_name(key: tuple[Any, ...]) -> str:
     assert isinstance(key, MultiKey)
     return key.connector_name

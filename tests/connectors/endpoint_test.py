@@ -213,6 +213,15 @@ def test_connection_pool_after_fork(endpoint_connector) -> None:
     connector.close()
 
 
+def test_close_never_clears(endpoint_connector) -> None:
+    connector = EndpointConnector.from_config(endpoint_connector.config())
+    key = connector.put(b'value')
+    # Objects are owned by the endpoints so they are never removed.
+    assert connector.close(clear=True) is False
+    assert endpoint_connector.get(key) == b'value'
+    endpoint_connector.evict(key)
+
+
 def test_closed_connections_not_returned_to_pool(endpoint_connector) -> None:
     connector = EndpointConnector.from_config(endpoint_connector.config())
     client = connector._pool._idle[0]

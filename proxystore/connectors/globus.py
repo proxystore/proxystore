@@ -491,7 +491,7 @@ class GlobusConnector:
 
         return tuple(tids)
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
         Warning:
@@ -516,6 +516,9 @@ class GlobusConnector:
                 Overrides the default value of `clear` provided when the
                 [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]
                 was instantiated.
+
+        Returns:
+            If the directories were removed.
         """
         clear = self.clear if clear is None else clear
         if clear:
@@ -533,6 +536,7 @@ class GlobusConnector:
                     delete_task,
                 )
                 self._wait_on_tasks((tdata['task_id'],))
+        return clear
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

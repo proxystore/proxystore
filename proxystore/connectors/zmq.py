@@ -299,7 +299,7 @@ class ZeroMQConnector:
 
         return [reply for reply in replies if reply is not None]
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector.
 
         Args:
@@ -307,6 +307,9 @@ class ZeroMQConnector:
                 this connector. This will lose all objects stored in the
                 server. Overrides the default value of `clear` provided when
                 the connector was instantiated.
+
+        Returns:
+            If the server was stopped, removing its objects.
         """
         self._pool.close()
 
@@ -320,6 +323,8 @@ class ZeroMQConnector:
                 self.server.pid,
             )
             self.server = None
+            return True
+        return False
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

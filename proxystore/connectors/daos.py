@@ -145,7 +145,7 @@ class DAOSConnector:
                 f'namespace={self.namespace}.',
             )
 
-    def close(self, *, clear: bool | None = None) -> None:
+    def close(self, *, clear: bool | None = None) -> bool:
         """Close the connector and clean up.
 
         Warning:
@@ -158,13 +158,18 @@ class DAOSConnector:
                 default value of `clear` provided when the
                 [`DAOSConnector`][proxystore.connectors.daos.DAOSConnector]
                 was instantiated.
+
+        Returns:
+            If the keys were removed.
         """
-        if self.clear if clear is None else clear:
+        clear = self.clear if clear is None else clear
+        if clear:
             for key in list(self._dict):
                 del self._dict[key]
         # PyDAOS objects tend to call their close() on __del__.
         # This may cause issues, but we'll leave that to PyDAOS and trust
         # their choice.
+        return clear
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

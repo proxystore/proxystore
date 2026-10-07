@@ -11,7 +11,7 @@ KeyT = TypeVar('KeyT', bound=NamedTuple)
 
 
 class Connector(Protocol[KeyT]):
-    def close(self, *, clear: bool | None = None) -> None: ...
+    def close(self, *, clear: bool | None = None) -> bool | None: ...
     def config(self) -> dict[str, Any]: ...
     @classmethod
     def from_config(cls, config: dict[str, Any]) -> Self: ...
@@ -39,6 +39,7 @@ by the [`Store`][proxystore.store.base.Store] to store and retrieve serialized o
 
 The `clear` argument of `close()` controls whether the objects stored by the connector are also removed (e.g., deleting the directory used by the [`FileConnector`][proxystore.connectors.file.FileConnector]).
 When `clear` is `None`, the connector should use its own default.
+`close()` should return `True` if the objects were removed, so the owner [`Store`][proxystore.store.base.Store] knows its proxies can no longer be resolved in this process.
 A [`Store`][proxystore.store.base.Store] only clears its connector when closed if it is the [`owner`][proxystore.store.base.Store.owner]; stores created implicitly, such as when a proxy is resolved in another process, always pass `#!python clear=False`.
 
 Implementations of `put()` and `put_batch()` may accept additional, connector-specific keyword arguments.
