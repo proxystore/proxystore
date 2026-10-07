@@ -9,27 +9,43 @@ import pytest
 from proxystore.connectors.local import LocalConnector
 from proxystore.store.base import Store
 from proxystore.store.config import StoreConfig
+from proxystore.store.registry import registry
 from proxystore.store.registry import StoreRegistry
 
 
-def test_registry_lookup(store_registry: StoreRegistry) -> None:
-    assert len(store_registry) == 0
+def test_registry_lookup() -> None:
+    assert len(registry) == 0
     with Store(LocalConnector()) as store:
-        assert len(store_registry) == 1
-        assert store.id in store_registry
-        assert store_registry.get(store.id) is store
+        assert len(registry) == 1
+        assert store.id in registry
+        assert registry.get(store.id) is store
+    assert len(registry) == 0
+    assert store.id not in registry
+    assert registry.get(store.id) is None
+
+
+def test_registry_iter_and_clear() -> None:
+    store_registry = StoreRegistry()
+    stores = [Store(LocalConnector()) for _ in range(2)]
+    for store in stores:
+        store_registry.register(store)
+    assert set(store_registry) == {store.id for store in stores}
+
+    store_registry.clear()
     assert len(store_registry) == 0
-    assert store.id not in store_registry
-    assert store_registry.get(store.id) is None
+    assert list(store_registry) == []
+
+    for store in stores:
+        store.close()
 
 
-def test_get_or_create_without_id(store_registry: StoreRegistry) -> None:
+def test_get_or_create_without_id() -> None:
     with Store(LocalConnector()) as store:
         config = store.config().model_copy(update={'id': None})
-        new_store = store_registry.get_or_create(config)
+        new_store = registry.get_or_create(config)
         assert new_store.id != store.id
         assert not new_store.owner
-        assert store_registry.get(new_store.id) is new_store
+        assert registry.get(new_store.id) is new_store
         new_store.close()
 
 
@@ -61,7 +77,6 @@ class _SlowFromConfig:
 
 
 def test_making_one_store_does_not_block_others(
-    store_registry: StoreRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     slow_config = _closed_config()
@@ -71,11 +86,11 @@ def test_making_one_store_does_not_block_others(
     monkeypatch.setattr(Store, 'from_config', slow)
 
     with ThreadPoolExecutor(1) as pool:
-        future = pool.submit(store_registry.get_or_create, slow_config)
+        future = pool.submit(registry.get_or_create, slow_config)
         assert slow.started.wait(5)
 
         # The slow store is still being made, but this does not wait for it.
-        fast_store = store_registry.get_or_create(fast_config)
+        fast_store = registry.get_or_create(fast_config)
         assert not future.done()
 
         slow.release.set()
@@ -88,7 +103,6 @@ def test_making_one_store_does_not_block_others(
 
 
 def test_same_store_made_once(
-    store_registry: StoreRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _closed_config()
@@ -97,9 +111,9 @@ def test_same_store_made_once(
     monkeypatch.setattr(Store, 'from_config', slow)
 
     with ThreadPoolExecutor(2) as pool:
-        future1 = pool.submit(store_registry.get_or_create, config)
+        future1 = pool.submit(registry.get_or_create, config)
         assert slow.started.wait(5)
-        future2 = pool.submit(store_registry.get_or_create, config)
+        future2 = pool.submit(registry.get_or_create, config)
         slow.release.set()
         store1 = future1.result(timeout=5)
         store2 = future2.result(timeout=5)
@@ -110,7 +124,6 @@ def test_same_store_made_once(
 
 
 def test_store_registered_while_making(
-    store_registry: StoreRegistry,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     config = _closed_config()
@@ -125,8 +138,8 @@ def test_store_registered_while_making(
 
     monkeypatch.setattr(Store, 'from_config', _from_config)
 
-    store = store_registry.get_or_create(config)
+    store = registry.get_or_create(config)
     assert store is registered[0]
     assert config.id is not None
-    assert store_registry.get(config.id) is store
+    assert registry.get(config.id) is store
     store.close()

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import threading
+from collections.abc import Iterator
 from typing import Any
 from typing import TYPE_CHECKING
 
@@ -49,9 +50,22 @@ class StoreRegistry:
         with self._lock:
             return store_id in self._stores
 
+    def __iter__(self) -> Iterator[str]:
+        with self._lock:
+            return iter(list(self._stores))
+
     def __len__(self) -> int:
         with self._lock:
             return len(self._stores)
+
+    def clear(self) -> None:
+        """Unregister all stores without closing them.
+
+        This is mainly useful for resetting the registry between tests.
+        """
+        with self._lock:
+            self._stores.clear()
+        logger.debug('Cleared the store registry')
 
     def get(self, store_id: str) -> Store[Any] | None:
         """Get the registered store with an ID.
