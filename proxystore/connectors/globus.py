@@ -101,15 +101,19 @@ class GlobusEndpoint:
 
     def __eq__(self, endpoint: object) -> bool:
         if not isinstance(endpoint, GlobusEndpoint):
-            raise NotImplementedError
-        return (
-            self.uuid == endpoint.uuid
-            and self.endpoint_path == endpoint.endpoint_path
-            and self.local_path == endpoint.local_path
-            and self.host_regex == endpoint.host_regex
-        )
+            return NotImplemented
+        return self._fields() == endpoint._fields()
 
-    __hash__ = object.__hash__
+    def __hash__(self) -> int:
+        return hash(self._fields())
+
+    def _fields(self) -> tuple[str, str, str, str | Pattern[str]]:
+        return (
+            self.uuid,
+            self.endpoint_path,
+            self.local_path,
+            self.host_regex,
+        )
 
     def __repr__(self) -> str:
         return (
@@ -269,28 +273,7 @@ class GlobusKey(NamedTuple):
     """
 
     filename: str
-    # We support single strings for backwards compatibility with
-    # proxies created in v0.5.1 or older.
-    task_id: str | tuple[str, ...]
-
-    def __eq__(self, other: Any) -> bool:
-        """Match keys by filename only.
-
-        This is a hack around the fact that the task_id is not created until
-        after the filename is so there can be a state where the task_id
-        is empty.
-        """
-        if isinstance(other, tuple):
-            return self[0] == other[0]
-        return False
-
-    def __hash__(self) -> int:
-        # Hash by filename only to be consistent with __eq__.
-        return hash(self.filename)
-
-    def __ne__(self, other: Any) -> bool:
-        # Match keys by filename only.
-        return not self == other
+    task_id: tuple[str, ...]
 
 
 class GlobusConnector:
@@ -422,9 +405,8 @@ class GlobusConnector:
         """Get endpoint local to current host."""
         return self.endpoints.get_by_host(hostname())
 
-    def _validate_task_id(self, task_ids: str | tuple[str, ...]) -> bool:
+    def _validate_task_id(self, task_ids: tuple[str, ...]) -> bool:
         """Validate key contains a real Globus task id."""
-        task_ids = task_ids if isinstance(task_ids, tuple) else (task_ids,)
         for tid in task_ids:
             try:
                 self._transfer_client.get_task(tid)
@@ -434,9 +416,8 @@ class GlobusConnector:
                 raise e
         return True
 
-    def _wait_on_tasks(self, task_ids: str | tuple[str, ...]) -> None:
+    def _wait_on_tasks(self, task_ids: tuple[str, ...]) -> None:
         """Wait on list of Globus tasks."""
-        task_ids = task_ids if isinstance(task_ids, tuple) else (task_ids,)
         for tid in task_ids:
             done = self._transfer_client.task_wait(
                 tid,
@@ -551,7 +532,7 @@ class GlobusConnector:
                     self._transfer_client,
                     delete_task,
                 )
-                self._wait_on_tasks(tdata['task_id'])
+                self._wait_on_tasks((tdata['task_id'],))
 
     def config(self) -> dict[str, Any]:
         """Get the connector configuration.

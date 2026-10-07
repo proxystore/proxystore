@@ -81,9 +81,12 @@ def test_globus_endpoint_objects() -> None:
             host_regex=1,  # type: ignore[arg-type]
         )
 
-    # GlobusEndpoint equality done by UUID
+    # GlobusEndpoint equality is done by all fields
     assert EP1 != EP2
     assert EP1 == EP5
+    assert hash(EP1) == hash(EP5)
+    assert EP1 != 'not an endpoint'
+    assert len({EP1, EP5}) == 1
 
     # Check must pass at least one endpoint
     with pytest.raises(ValueError, match='at least one GlobusEndpoint'):
@@ -204,19 +207,19 @@ def test_globus_connector_internals(globus_connector) -> None:
         return _error
 
     connector._transfer_client.get_task = _http_error(400)  # type: ignore[method-assign]
-    assert not connector._validate_task_id('uuid')
-    assert not connector.exists(GlobusKey('fake', 'fake'))
+    assert not connector._validate_task_id(('uuid',))
+    assert not connector.exists(GlobusKey('fake', ('fake',)))
 
     connector._transfer_client.get_task = _http_error(401)  # type: ignore[method-assign]
     with pytest.raises(globus_sdk.TransferAPIError):
-        connector._validate_task_id('uuid')
+        connector._validate_task_id(('uuid',))
 
     def _fail_wait(*args, **kwargs) -> bool:
         return False
 
     connector._transfer_client.task_wait = _fail_wait  # type: ignore[method-assign]
     with pytest.raises(RuntimeError):
-        connector._wait_on_tasks('1234')
+        connector._wait_on_tasks(('1234',))
 
 
 def test_get_filepath(globus_connector) -> None:
@@ -274,17 +277,10 @@ def test_expand_user_path(globus_connector) -> None:
 
 
 def test_globus_connector_key_equality() -> None:
-    key = GlobusKey('a', 'b')
-    assert key == GlobusKey('a', 'b')
-    assert key == ('a', 'b')
-    assert key != ('b', 'b')
-    assert key == ('a', 'c')
-    assert key != 'a'
-    assert hash(key) == hash(GlobusKey('a', 'b'))
-    # Equal keys must hash the same so lookups with a key that has a
-    # different task_id work.
-    assert hash(key) == hash(GlobusKey('a', 'c'))
-    assert {key: 'value'}[GlobusKey('a', 'c')] == 'value'
+    key = GlobusKey('a', ('b',))
+    assert key == GlobusKey('a', ('b',))
+    assert key != GlobusKey('a', ('c',))
+    assert hash(key) == hash(GlobusKey('a', ('b',)))
 
 
 @pytest.mark.parametrize(
