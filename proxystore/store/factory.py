@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import threading
 import time
 from concurrent.futures import Future
 from concurrent.futures import ThreadPoolExecutor
@@ -30,11 +32,37 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-_default_pool = ThreadPoolExecutor()
 _STATE_VERSION = 1
 _MISSING_OBJECT = object()
 
 T = TypeVar('T')
+
+# Thread pool used by StoreFactory.resolve_async(). The pool is created when
+# first used and is discarded in a forked child process. The child inherits
+# the pool of the parent but not its threads, so the pool would never run
+# the tasks submitted by the child.
+_default_pool: ThreadPoolExecutor | None = None
+_default_pool_lock = threading.Lock()
+
+
+def _get_default_pool() -> ThreadPoolExecutor:
+    global _default_pool  # noqa: PLW0603
+    with _default_pool_lock:
+        if _default_pool is None:
+            _default_pool = ThreadPoolExecutor()
+        return _default_pool
+
+
+def _reset_default_pool_after_fork() -> None:
+    global _default_pool, _default_pool_lock  # noqa: PLW0603
+    # The lock may have been held by another thread of the parent when the
+    # process was forked.
+    _default_pool_lock = threading.Lock()
+    _default_pool = None
+
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=_reset_default_pool_after_fork)
 
 
 class StoreFactory(Generic[ConnectorT, T]):
@@ -160,7 +188,7 @@ class StoreFactory(Generic[ConnectorT, T]):
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
         logger.debug('Starting asynchronous resolve of %s', self.key)
-        self._obj_future = _default_pool.submit(self.resolve)
+        self._obj_future = _get_default_pool().submit(self.resolve)
 
 
 class PollingStoreFactory(StoreFactory[ConnectorT, T]):

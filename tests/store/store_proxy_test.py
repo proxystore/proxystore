@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 
 import proxystore.store
+import proxystore.store.factory as factory_module
 from proxystore.connectors.local import LocalConnector
 from proxystore.proxy import get_factory
 from proxystore.proxy import is_resolved
@@ -72,6 +73,31 @@ def test_factory_resolve_async(store: Store[LocalConnector]) -> None:
     assert f._obj_future is not None
     assert f() == [1, 2, 3]
     assert f._obj_future is None
+
+
+def test_factory_resolve_async_after_fork(
+    store: Store[LocalConnector],
+) -> None:
+    key = store.put([1, 2, 3])
+    f: StoreFactory[Any, list[int]] = StoreFactory(
+        key,
+        store_config=store.config(),
+    )
+    f.resolve_async()
+    f()
+    old_pool = factory_module._default_pool
+    assert old_pool is not None
+
+    # Simulate the fork handler running in a forked child process
+    factory_module._reset_default_pool_after_fork()
+    assert factory_module._default_pool is None
+
+    f.resolve_async()
+    assert factory_module._default_pool is not old_pool
+    assert f() == [1, 2, 3]
+
+    # This process was not actually forked so shut down the old pool
+    old_pool.shutdown()
 
 
 def test_factory_is_serializable(store: Store[LocalConnector]) -> None:
