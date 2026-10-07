@@ -8,6 +8,11 @@ unique [`id`][proxystore.store.base.Store.id], so a proxy resolved in
 the same process as the store which made it reuses that store, and
 proxies of a store from another process share one new store.
 
+Stores which are not the [`owner`][proxystore.store.base.Store.owner] of
+their objects, such as the stores made when resolving proxies, are closed
+when the process exits so that their connectors release any resources
+(e.g., sockets). These stores never clear the objects of their connector.
+
 Most code does not need this module. Use
 [`get_store()`][proxystore.store.get_store] or
 [`get_or_create_store()`][proxystore.store.get_or_create_store] instead.
@@ -15,6 +20,7 @@ Most code does not need this module. Use
 
 from __future__ import annotations
 
+import atexit
 import logging
 import threading
 from collections.abc import Iterator
@@ -193,6 +199,22 @@ class StoreRegistry:
                 del self._stores[store.id]
                 logger.debug('Unregistered %r', store)
 
+    def _close_non_owners(self) -> None:
+        with self._lock:
+            stores = [s for s in self._stores.values() if not s.owner]
+        for store in stores:
+            try:
+                store.close(clear=False)
+            except Exception:
+                logger.exception('Failed to close %r at exit', store)
+            else:
+                logger.debug('Closed %r at exit', store)
+
 
 registry = StoreRegistry()
 """Registry of the stores in this process."""
+
+# Registered on import so this runs after the other atexit callbacks of
+# ProxyStore (atexit runs callbacks in reverse order), such as the cleanup
+# of owned proxies which may still need these stores.
+atexit.register(registry._close_non_owners)
