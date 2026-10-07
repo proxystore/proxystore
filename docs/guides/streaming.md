@@ -157,10 +157,12 @@ consumer.close()  # (5)!
    Pass `stores=True` to also close the [`Store`][proxystore.store.Store]
    instances (and their
    [`Connector`][proxystore.connectors.protocols.Connector] instances)
-   used to resolve objects from the stream.
+   that the consumer made to resolve objects from the stream.
    These stores are created by the consumer from the stream events, so they
    are not the [`owner`][proxystore.store.base.Store.owner] of the objects
    and closing them never clears the objects in the producer's store.
+   Stores which already existed in the consumer's process, such as the
+   producer's store when both run in the same process, are not closed.
 
 !!! tip
 
