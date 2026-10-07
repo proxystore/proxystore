@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import atexit
-import contextlib
 import pathlib
 import subprocess
 import sys
@@ -135,48 +134,46 @@ def test_lease_lifetime_closes_after_expiry(
     expiry: Any,
 ) -> None:
     lifetime = LeaseLifetime(store, expiry=expiry)
-    time.sleep(0.001)
+    # The timer starts with no delay because the expiry has passed.
+    assert lifetime._timer is not None
+    lifetime._timer.join(timeout=5)
     assert lifetime.done()
 
     # Close is idempotent
     lifetime.close()
 
 
-@pytest.mark.parametrize(
-    'expiry',
-    (
-        datetime.fromtimestamp(time.time() - 0.001),
-        timedelta(milliseconds=1),
-        0.001,
-    ),
-)
-def test_lease_lifetime_extend(
+@pytest.mark.parametrize('expiry', (timedelta(seconds=1), 1, 1.5))
+def test_lease_lifetime_extend_relative(
     store: Store[LocalConnector],
-    expiry: Any,
+    expiry: timedelta | float,
 ) -> None:
-    # Use an initial expiry far enough in the future that the background
-    # timer cannot fire and close the lifetime before extend() is called
-    # below. A very short initial expiry (e.g. 0.001) races with the main
-    # thread reaching extend() on slow/loaded runners, causing extend() to
-    # hit the "lifetime has ended" guard (flaky on macOS). The relative
-    # extend values still expire quickly after this base.
-    initial_expiry = 0.1
-    lifetime = LeaseLifetime(store, expiry=initial_expiry)
-
-    assert lifetime._timer is not None
-    first_timer = lifetime._timer
+    # The lease is long enough that it cannot expire during the test, so
+    # this only checks the new expiry and does not wait on the timer.
+    # test_lease_lifetime_closes_after_expiry covers the lease expiring.
+    lifetime = LeaseLifetime(store, expiry=60)
+    start = lifetime._expiry
 
     lifetime.extend(expiry)
 
-    first_timer.join()
-    time.sleep(0.001)
+    seconds = (
+        expiry.total_seconds() if isinstance(expiry, timedelta) else expiry
+    )
+    assert lifetime._expiry == start + seconds
+    lifetime.close()
 
-    # Wait on possible second timer. AttributeError is raised if
-    # lifetime._timer is None because it has already been closed.
-    with contextlib.suppress(AttributeError):
-        lifetime._timer.join()
 
-    assert lifetime.done()
+def test_lease_lifetime_extend_to_datetime(
+    store: Store[LocalConnector],
+) -> None:
+    lifetime = LeaseLifetime(store, expiry=60)
+    # A datetime replaces the expiry even if it is earlier.
+    expiry = datetime.now() + timedelta(seconds=30)
+
+    lifetime.extend(expiry)
+
+    assert lifetime._expiry == expiry.timestamp()
+    lifetime.close()
 
 
 def test_lease_lifetime_does_not_block_exit(tmp_path: pathlib.Path) -> None:
