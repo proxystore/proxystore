@@ -5,13 +5,13 @@ import pickle
 
 import pytest
 
-import proxystore.store
 from proxystore.connectors.file import FileConnector
 from proxystore.proxy import Proxy
 from proxystore.store import get_or_create_store
 from proxystore.store import get_store
 from proxystore.store.base import Store
 from proxystore.store.lifetimes import ContextLifetime
+from proxystore.store.registry import registry
 from proxystore.stream import StreamConsumer
 from proxystore.stream import StreamProducer
 from testing.stream import create_message_pubsub_pair
@@ -72,7 +72,7 @@ def test_from_config_without_id_owner(tmp_path: pathlib.Path) -> None:
 def test_get_or_create_store_not_owner(tmp_path: pathlib.Path) -> None:
     with Store(FileConnector(tmp_path / 'store')) as store:
         config = store.config()
-        proxystore.store._unregister_store(store)
+        registry.unregister(store)
 
         new_store = get_or_create_store(config)
         assert new_store is not store
@@ -85,7 +85,7 @@ def test_resolved_proxy_store_does_not_clear(tmp_path: pathlib.Path) -> None:
     with Store(FileConnector(tmp_path / 'store')) as store:
         proxy = store.proxy('value', populate_target=False)
         # Simulate resolving the proxy in a different process.
-        proxystore.store._unregister_store(store)
+        registry.unregister(store)
         proxy = pickle.loads(pickle.dumps(proxy))
         assert proxy == 'value'
 
@@ -112,7 +112,7 @@ def test_stream_consumer_close_stores_does_not_clear(
         consumer = StreamConsumer[str](subscriber)
 
         producer.send(topic, 'value', evict=False)
-        proxystore.store._unregister_store(store)
+        registry.unregister(store)
         item: Proxy[str] = consumer.next()  # type: ignore[assignment]
         assert item == 'value'
 

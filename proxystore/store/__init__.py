@@ -1,7 +1,8 @@
 """The ProxyStore [`Store`][proxystore.store.base.Store] interface.
 
-Every [`Store`][proxystore.store.base.Store] is registered in a registry
-that is global to the Python process and keyed by the unique
+Every [`Store`][proxystore.store.base.Store] is registered in a
+[registry][proxystore.store.registry] that is global to the Python process
+and keyed by the unique
 [`id`][proxystore.store.base.Store.id] of the store. A store is registered
 when it is created and unregistered when it is closed. When a proxy is
 resolved, the store which created the proxy is looked up in the registry,
@@ -11,8 +12,6 @@ if the store does not exist in the process.
 
 from __future__ import annotations
 
-import logging
-import threading
 from typing import Any
 from typing import TypeVar
 
@@ -27,6 +26,10 @@ from proxystore.store.config import StoreConfig
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.factory import StoreFactory
 
+# Aliased so the registry instance does not replace the registry submodule
+# as an attribute of this package.
+from proxystore.store.registry import registry as _registry
+
 __all__ = [
     'Store',
     'StoreConfig',
@@ -36,10 +39,6 @@ __all__ = [
 ]
 
 T = TypeVar('T')
-
-_stores: dict[str, Store[Any]] = {}
-_stores_lock = threading.RLock()
-logger = logging.getLogger(__name__)
 
 
 def get_store(proxy: Proxy[T]) -> Store[Any]:
@@ -95,25 +94,4 @@ def get_or_create_store(store_config: StoreConfig) -> Store[Any]:
     Returns:
         [`Store`][proxystore.store.base.Store] instance.
     """
-    with _stores_lock:
-        if store_config.id is not None and store_config.id in _stores:
-            return _stores[store_config.id]
-        return Store.from_config(store_config, owner=False)
-
-
-def _register_store(store: Store[Any]) -> None:
-    # Only stores created from the same configuration share an ID. If a
-    # store with the same ID is already registered, that store continues to
-    # be used.
-    with _stores_lock:
-        if store.id not in _stores:
-            _stores[store.id] = store
-            logger.debug('Registered %r', store)
-
-
-def _unregister_store(store: Store[Any]) -> None:
-    # Only unregister the store if this instance is the registered store.
-    with _stores_lock:
-        if _stores.get(store.id) is store:
-            del _stores[store.id]
-            logger.debug('Unregistered %r', store)
+    return _registry.get_or_create(store_config)

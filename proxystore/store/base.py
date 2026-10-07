@@ -36,6 +36,7 @@ from proxystore.store.lifetimes import Lifetime
 from proxystore.store.metrics import StoreMetrics
 from proxystore.store.ref import into_owned
 from proxystore.store.ref import OwnedProxy
+from proxystore.store.registry import registry
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
@@ -186,7 +187,7 @@ class Store(Generic[ConnectorT]):
         self._owner = owner
         self._lock = threading.RLock()
 
-        proxystore.store._register_store(self)
+        registry.register(self)
 
         logger.info('Initialized %s', self)
 
@@ -295,7 +296,7 @@ class Store(Generic[ConnectorT]):
         if clear is None and not self.owner:
             clear = False
 
-        proxystore.store._unregister_store(self)
+        registry.unregister(self)
         with self._lock:
             if clear is None:
                 self.connector.close()

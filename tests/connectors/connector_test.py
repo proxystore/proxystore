@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-import proxystore.store
 from proxystore.connectors.protocols import Connector
 from proxystore.connectors.protocols import DeferrableConnector
 from proxystore.store.base import Store
+from proxystore.store.registry import registry
 
 
 def test_connector_repr(connectors: Connector[Any]) -> None:
@@ -61,8 +61,8 @@ def test_connector_store_config(connectors: Connector[Any]) -> None:
 
     # Unregister rather than close the stores because closing would close
     # the connector fixture which is shared by other tests.
-    proxystore.store._unregister_store(store)
-    proxystore.store._unregister_store(new_store)
+    registry.unregister(store)
+    registry.unregister(new_store)
 
 
 def test_deferrable_connector_ops(connectors: Connector[Any]) -> None:
