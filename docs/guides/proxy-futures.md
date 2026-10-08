@@ -127,6 +127,7 @@ result = future.result(timeout=10)
 
 If the producer fails, it can set an exception on the future with [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception] rather than leaving the consumer waiting.
 The exception is raised by [`result()`][proxystore.store.future.ProxyFuture.result], and resolving the proxy of the future raises a [`ProxyResolveError`][proxystore.proxy.ProxyResolveError] caused by the exception.
+The exception is stored as the result of the future using the serializer of the store, so any result which is an exception is raised in the same way, including one set with [`set_result()`][proxystore.store.future.ProxyFuture.set_result].
 
 ```python linenums="1"
 def foo(future: ProxyFuture[MyData]) -> None:

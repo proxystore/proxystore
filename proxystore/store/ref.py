@@ -61,7 +61,6 @@ from proxystore.proxy import Proxy
 from proxystore.store.exceptions import ProxyStoreFactoryError
 from proxystore.store.exceptions import StoreClosedError
 from proxystore.store.factory import StoreFactory
-from proxystore.store.types import SerializerT
 
 T = TypeVar('T')
 FactoryType: TypeAlias = StoreFactory[Any, T]
@@ -510,7 +509,6 @@ def clone(proxy: OwnedProxy[T]) -> OwnedProxy[T]:
         new_key,
         store_config=store.config(),
         evict=factory.evict,
-        deserializer=factory.deserializer,
     )
     owned = OwnedProxy(new_factory)
     _copy_attributes(proxy, owned, deepcopy=True)
@@ -562,11 +560,7 @@ def into_owned(
     return owned_proxy
 
 
-def update(
-    proxy: OwnedProxy[T] | RefMutProxy[T],
-    *,
-    serializer: SerializerT | None = None,
-) -> None:
+def update(proxy: OwnedProxy[T] | RefMutProxy[T]) -> None:
     """Update the global copy of the target.
 
     Note:
@@ -579,8 +573,6 @@ def update(
     Args:
         proxy: Proxy containing a modified local copy of the target to use
             as the new global value.
-        serializer: Optionally override the default serializer for the
-                store instance when pushing the local copy to the store.
 
     Raises:
         MutableBorrowError: if `proxy` has been mutably borrowed.
@@ -606,11 +598,7 @@ def update(
 
     store = proxy.__proxy_factory__.get_store()
     try:
-        store._set(
-            proxy.__proxy_factory__.key,
-            proxy.__proxy_wrapped__,
-            serializer=serializer,
-        )
+        store._set(proxy.__proxy_factory__.key, proxy.__proxy_wrapped__)
     except NotImplementedError as e:  # pragma: no cover
         raise NotImplementedError(
             'Mutating the global copy of the value requires a connector '

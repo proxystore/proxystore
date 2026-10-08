@@ -210,14 +210,16 @@ def test_proxy_missing_key(store: Store[LocalConnector]) -> None:
     assert isinstance(exc_info.value.cause, ProxyResolveMissingKeyError)
 
 
-def test_proxy_bad_serializer(store: Store[LocalConnector]) -> None:
+def test_proxy_bad_serializer() -> None:
     def _serialize(s: str) -> str:
         return s
 
-    with pytest.raises(TypeError):
-        # String will not be serialized and should raise error when putting
-        # array into Redis
-        store.proxy('mystring', serializer=_serialize)  # type: ignore[arg-type]
+    with (
+        Store(LocalConnector(), serializer=_serialize) as store,  # type: ignore[arg-type]
+        pytest.raises(TypeError),
+    ):
+        # The string is not serialized so putting it in the store fails
+        store.proxy('mystring')
 
 
 def test_proxy_resolve_none_type(store: Store[LocalConnector]) -> None:
@@ -324,15 +326,19 @@ def test_proxy_batch_populate_target(store: Store[LocalConnector]) -> None:
     assert not is_resolved(proxies[0])
 
 
-def test_proxy_batch_custom_serializer(store: Store[LocalConnector]) -> None:
+def test_proxy_batch_custom_serializer() -> None:
     values = [b'test_value1', b'test_value2', b'test_value3']
-    proxies: list[Proxy[bytes]] = store.proxy_batch(
-        values,
+    with Store(
+        LocalConnector(),
         serializer=lambda s: s,
         deserializer=lambda s: s,
-    )
-    for p, v in zip(proxies, values, strict=True):
-        assert p == v
+    ) as store:
+        proxies: list[Proxy[bytes]] = store.proxy_batch(
+            values,
+            populate_target=False,
+        )
+        for p, v in zip(proxies, values, strict=True):
+            assert p == v
 
 
 def test_proxy_batch_skip_nonproxiable(store: Store[LocalConnector]) -> None:
@@ -450,15 +456,14 @@ def test_default_populate_target(populate_target: bool) -> None:
 
 @pytest.mark.parametrize('populate_target', (True, False))
 def test_proxy_already_serialized_object(populate_target: bool) -> None:
-    with Store(LocalConnector()) as store:
+    with Store(
+        LocalConnector(),
+        serializer=lambda s: s,
+        deserializer=pickle.loads,
+    ) as store:
         value = [1, 2, 3]
         value_bytes = pickle.dumps(value)
-        value_proxy = store.proxy(
-            value_bytes,
-            serializer=lambda s: s,
-            deserializer=pickle.loads,
-            populate_target=populate_target,
-        )
+        value_proxy = store.proxy(value_bytes, populate_target=populate_target)
 
         if populate_target:
             # populate_target=True caches the input object and will not

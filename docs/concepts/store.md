@@ -93,7 +93,7 @@ read-many. Thus, ProxyStore does not provide `update` semantics on keys.
 All [`Store`][proxystore.store.base.Store] operations use ProxyStore's provided
 serialization utilities ([`proxystore.serialize`][proxystore.serialize]) by default.
 However, the [`Store`][proxystore.store.base.Store] can be initialized with
-custom default serializers or deserializers of the form:
+a custom serializer and deserializer of the form:
 
 ```python linenums="1"
 serializer = Callable[[Any], BytesLike]
@@ -148,6 +148,8 @@ with Store(
     However, `populate_target=False` should also be set in this case to avoid prepopulating the proxy with the serialized target object.
     See the [`Store`][proxystore.store.base.Store] docstring for more information.
 
-Custom serializers and deserializers can also be passed to individual operations, such as [`Store.put()`][proxystore.store.base.Store.put], [`Store.get()`][proxystore.store.base.Store.get], or [`Store.proxy()`][proxystore.store.base.Store.proxy], to override the defaults of the [`Store`][proxystore.store.base.Store] instance.
+Every operation of a [`Store`][proxystore.store.base.Store], and every proxy it creates, uses the serializer and deserializer of the store.
+To store some types in a custom format, handle those types in the serializer and fall back to [`serialize()`][proxystore.serialize.serialize] for the rest, as in the example above.
+The serializer and deserializer are part of the [`config()`][proxystore.store.base.Store.config] of the store, so they must be importable wherever proxies of the store are resolved.
 See Issue [#146](https://github.com/proxystore/proxystore/issues/146){target=_blank}
 for further discussion on where custom serializers can be helpful.

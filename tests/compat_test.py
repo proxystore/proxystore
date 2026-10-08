@@ -112,7 +112,6 @@ def test_store_factory_pickle() -> None:
     assert new.key == factory.key
     assert new.store_config == factory.store_config
     assert new.evict
-    assert new.deserializer is None
 
 
 def test_store_factory_unknown_and_missing_state() -> None:
