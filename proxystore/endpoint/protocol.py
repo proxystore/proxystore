@@ -363,6 +363,10 @@ Nonce = Annotated[bytes, Field(min_length=NONCE_SIZE, max_length=NONCE_SIZE)]
 """Random nonce exchanged in the handshake."""
 
 
+def _major(version: str) -> str:
+    return version.split('.', 1)[0]
+
+
 class Versions(Meta):
     """ProxyStore and Python versions of a client or endpoint.
 
@@ -385,10 +389,10 @@ class Versions(Meta):
     def mismatches(self, endpoint: Versions) -> list[str]:
         """Find differences between this client's and the endpoint's versions.
 
-        The ProxyStore versions must match exactly. The Python versions must
-        have the same major and minor version because objects pickled by one
-        Python version may not unpickle with another, but patch releases are
-        compatible.
+        The ProxyStore versions must have the same major version because
+        proxies are compatible between versions with the same major version
+        (see [Versioning](../../versioning.md)). The Python versions are not
+        compared because endpoints do not deserialize objects.
 
         Args:
             endpoint: Versions of the endpoint.
@@ -398,15 +402,10 @@ class Versions(Meta):
             versions are compatible.
         """
         mismatches = []
-        if self.proxystore != endpoint.proxystore:
+        if _major(self.proxystore) != _major(endpoint.proxystore):
             mismatches.append(
                 f'ProxyStore {self.proxystore} (client) vs. '
                 f'{endpoint.proxystore} (endpoint)',
-            )
-        if self.python.split('.')[:2] != endpoint.python.split('.')[:2]:
-            mismatches.append(
-                f'Python {self.python} (client) vs. {endpoint.python} '
-                '(endpoint)',
             )
         return mismatches
 
