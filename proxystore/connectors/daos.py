@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 import uuid
 from collections.abc import Sequence
 from types import TracebackType
@@ -101,6 +102,9 @@ class DAOSConnector:
         self.namespace = namespace
         self.clear = clear
 
+        # PyDAOS does not document whether its objects are thread-safe, so
+        # only one thread uses the container or dictionary at a time.
+        self._lock = threading.Lock()
         self._container = pydaos.DCont(self.pool, self.container)
         try:
             self._dict = self._container.get(self.namespace)
@@ -164,8 +168,9 @@ class DAOSConnector:
         """
         clear = self.clear if clear is None else clear
         if clear:
-            for key in list(self._dict):
-                del self._dict[key]
+            with self._lock:
+                for key in list(self._dict):
+                    del self._dict[key]
         # PyDAOS objects tend to call their close() on __del__.
         # This may cause issues, but we'll leave that to PyDAOS and trust
         # their choice.
@@ -200,7 +205,8 @@ class DAOSConnector:
             key: Key associated with object to evict.
         """
         self._validate_key(key)
-        self._dict.pop(key.dict_key)
+        with self._lock:
+            self._dict.pop(key.dict_key)
 
     def exists(self, key: DAOSKey) -> bool:
         """Check if an object associated with the key exists.
@@ -212,7 +218,8 @@ class DAOSConnector:
             If an object associated with the key exists.
         """
         self._validate_key(key)
-        return key.dict_key in self._dict
+        with self._lock:
+            return key.dict_key in self._dict
 
     def get(self, key: DAOSKey) -> BytesLike | None:
         """Get the serialized object associated with the key.
@@ -225,7 +232,8 @@ class DAOSConnector:
         """
         self._validate_key(key)
         try:
-            return self._dict.get(key.dict_key)
+            with self._lock:
+                return self._dict.get(key.dict_key)
         except KeyError:
             return None
 
@@ -268,7 +276,8 @@ class DAOSConnector:
             Key which can be used to retrieve the object.
         """
         key = self._new_key()
-        self._dict.put(key.dict_key, bytes(obj))
+        with self._lock:
+            self._dict.put(key.dict_key, bytes(obj))
         return key
 
     def put_batch(self, objs: Sequence[BytesLike]) -> list[DAOSKey]:
@@ -282,12 +291,12 @@ class DAOSConnector:
             retrieve the objects.
         """
         keys = [self._new_key() for _ in objs]
-        self._dict.bput(
-            {
-                key.dict_key: bytes(obj)
-                for key, obj in zip(keys, objs, strict=True)
-            },
-        )
+        values = {
+            key.dict_key: bytes(obj)
+            for key, obj in zip(keys, objs, strict=True)
+        }
+        with self._lock:
+            self._dict.bput(values)
         return keys
 
     def set(self, key: DAOSKey, obj: BytesLike) -> None:
@@ -305,4 +314,5 @@ class DAOSConnector:
             obj: Object to associate with the key.
         """
         self._validate_key(key)
-        self._dict.put(key.dict_key, bytes(obj))
+        with self._lock:
+            self._dict.put(key.dict_key, bytes(obj))

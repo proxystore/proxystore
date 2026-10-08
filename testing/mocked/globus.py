@@ -58,7 +58,7 @@ class MockTransferClient:
     def get_task(self, task_id: str) -> Any:
         """Get task."""
         assert isinstance(task_id, str)
-        return None
+        return {'task_id': task_id, 'status': 'SUCCEEDED'}
 
     def submit_delete(self, delete_data: MockDeleteData) -> dict[str, str]:
         """Submit DeleteData."""
@@ -72,11 +72,6 @@ class MockTransferClient:
         """Submit TransferData."""
         assert isinstance(transfer_data, MockTransferData)
         return {'task_id': str(uuid.uuid4())}
-
-    def task_wait(self, task_id: str, **kwargs: Any) -> bool:
-        """Wait on tasks."""
-        assert isinstance(task_id, str)
-        return True
 
 
 def get_testing_app() -> UserApp:

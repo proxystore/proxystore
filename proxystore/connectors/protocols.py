@@ -34,6 +34,17 @@ class Connector(Protocol[KeyT]):
         as the builtin connectors do.
 
     Note:
+        Implementations must be thread-safe. A
+        [`Store`][proxystore.store.base.Store] may call the methods of one
+        connector from multiple threads at the same time, including with
+        the same key (e.g., two threads calling
+        [`evict()`][proxystore.connectors.protocols.Connector.evict] while
+        another calls
+        [`get()`][proxystore.connectors.protocols.Connector.get]).
+        Connectors that use a client which is not thread-safe should guard
+        it with a lock.
+
+    Note:
         Implementations of
         [`put()`][proxystore.connectors.protocols.Connector.put] and
         [`put_batch()`][proxystore.connectors.protocols.Connector.put_batch]

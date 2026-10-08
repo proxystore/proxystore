@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import os
 import re
+import threading
+import time
 import uuid
 from collections.abc import Collection
 from collections.abc import Generator
@@ -365,6 +368,9 @@ class GlobusConnector:
         self._transfer_client = get_transfer_client(
             collections=[ep.uuid for ep in self.endpoints],
         )
+        # The GlobusApp used by the transfer client to get and refresh tokens
+        # is not thread-safe, so only one thread uses the client at a time.
+        self._transfer_client_lock = threading.Lock()
 
     def __enter__(self) -> Self:
         return self
@@ -409,7 +415,8 @@ class GlobusConnector:
         """Validate key contains a real Globus task id."""
         for tid in task_ids:
             try:
-                self._transfer_client.get_task(tid)
+                with self._transfer_client_lock:
+                    self._transfer_client.get_task(tid)
             except globus_sdk.TransferAPIError as e:
                 if e.http_status == 400:
                     return False
@@ -418,16 +425,20 @@ class GlobusConnector:
 
     def _wait_on_tasks(self, task_ids: tuple[str, ...]) -> None:
         """Wait on list of Globus tasks."""
+        # This does the same as TransferClient.task_wait() but only holds
+        # the client lock while getting the task status, not while sleeping.
         for tid in task_ids:
-            done = self._transfer_client.task_wait(
-                tid,
-                timeout=self.timeout,
-                polling_interval=self.polling_interval,
-            )
-            if not done:
-                raise RuntimeError(
-                    f'Task {tid} did not complete within the timeout',
-                )
+            deadline = time.monotonic() + self.timeout
+            while True:
+                with self._transfer_client_lock:
+                    task = self._transfer_client.get_task(tid)
+                if task['status'] != 'ACTIVE':
+                    break
+                if time.monotonic() + self.polling_interval > deadline:
+                    raise RuntimeError(
+                        f'Task {tid} did not complete within the timeout',
+                    )
+                time.sleep(self.polling_interval)
 
     def _transfer_files(
         self,
@@ -483,10 +494,11 @@ class GlobusConnector:
                 else:
                     raise AssertionError('Unreachable.')
 
-            tdata = _submit_transfer_action(
-                self._transfer_client,
-                transfer_task,
-            )
+            with self._transfer_client_lock:
+                tdata = _submit_transfer_action(
+                    self._transfer_client,
+                    transfer_task,
+                )
             tids.append(tdata['task_id'])
 
         return tuple(tids)
@@ -531,10 +543,11 @@ class GlobusConnector:
                 delete_task['notify_on_failed'] = False
                 delete_task['notify_on_inactive'] = False
                 delete_task.add_item(endpoint.endpoint_path)
-                tdata = _submit_transfer_action(
-                    self._transfer_client,
-                    delete_task,
-                )
+                with self._transfer_client_lock:
+                    tdata = _submit_transfer_action(
+                        self._transfer_client,
+                        delete_task,
+                    )
                 self._wait_on_tasks((tdata['task_id'],))
         return clear
 
@@ -572,7 +585,9 @@ class GlobusConnector:
             return
 
         path = self._get_filepath(key.filename)
-        os.remove(path)
+        # The file may already have been removed by a concurrent evict().
+        with contextlib.suppress(FileNotFoundError):
+            os.remove(path)
         self._transfer_files(key.filename, delete=True)
 
     def exists(self, key: GlobusKey) -> bool:
@@ -606,8 +621,12 @@ class GlobusConnector:
             return None
 
         path = self._get_filepath(key.filename)
-        with open(path, 'rb', buffering=self.buffering) as f:
-            return f.read()
+        try:
+            with open(path, 'rb', buffering=self.buffering) as f:
+                return f.read()
+        except FileNotFoundError:
+            # The object was evicted after exists() was checked.
+            return None
 
     def get_batch(self, keys: Sequence[GlobusKey]) -> list[BytesLike | None]:
         """Get a batch of serialized objects associated with the keys.

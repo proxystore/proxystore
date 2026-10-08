@@ -42,6 +42,10 @@ When `clear` is `None`, the connector should use its own default.
 `close()` should return `True` if the objects were removed, so the owner [`Store`][proxystore.store.base.Store] knows its proxies can no longer be resolved in this process.
 A [`Store`][proxystore.store.base.Store] only clears its connector when closed if it is the [`owner`][proxystore.store.base.Store.owner]; stores created implicitly, such as when a proxy is resolved in another process, always pass `#!python clear=False`.
 
+Connectors must be thread-safe.
+A [`Store`][proxystore.store.base.Store] may call the methods of one connector from multiple threads at the same time, including with the same key (e.g., two threads evicting a key while another gets it).
+If a connector uses a client which is not thread-safe, guard the client with a lock.
+
 Implementations of `put()` and `put_batch()` may accept additional, connector-specific keyword arguments.
 These are passed from [`Store`][proxystore.store.base.Store] methods via the `connector_options` parameter.
 For example, the [`MultiConnector`][proxystore.connectors.multi.MultiConnector] routes objects based on tags.
