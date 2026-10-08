@@ -4047,6 +4047,9 @@ A <a class="autorefs autorefs-internal" title="            Store" href="../../ap
   
       property
   " href="../../api/store/base/#proxystore.store.base.Store.owner"><code>owner</code></a>; stores created implicitly, such as when a proxy is resolved in another process, always pass <code class="language-python highlight"><span class="n">clear</span><span class="o">=</span><span class="kc">False</span></code>.</p>
+<p>Connectors must be thread-safe.
+A <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> may call the methods of one connector from multiple threads at the same time, including with the same key (e.g., two threads evicting a key while another gets it).
+If a connector uses a client which is not thread-safe, guard the client with a lock.</p>
 <p>Implementations of <code>put()</code> and <code>put_batch()</code> may accept additional, connector-specific keyword arguments.
 These are passed from <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> methods via the <code>connector_options</code> parameter.
 For example, the <a class="autorefs autorefs-internal" title="            MultiConnector" href="../../api/connectors/multi/#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a> routes objects based on tags.</p>
