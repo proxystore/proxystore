@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from concurrent.futures import Future
 from typing import Any
 
 import pytest
@@ -71,6 +72,22 @@ def test_factory_resolve_async(store: Store[LocalConnector]) -> None:
     )
     f.resolve_async()
     assert f._obj_future is not None
+    assert f() == [1, 2, 3]
+    assert f._obj_future is None
+
+
+def test_factory_resolve_async_future_from_parent(
+    store: Store[LocalConnector],
+) -> None:
+    key = store.put([1, 2, 3])
+    f: StoreFactory[Any, list[int]] = StoreFactory(
+        key,
+        store_config=store.config(),
+    )
+    # The future of a resolve_async() started by the parent before a fork
+    # never finishes in the child, so the child resolves the object itself.
+    f._obj_future = Future()
+    f._obj_future_pid = -1
     assert f() == [1, 2, 3]
     assert f._obj_future is None
 

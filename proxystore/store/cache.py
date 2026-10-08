@@ -40,6 +40,11 @@ class LRUCache(Generic[KeyT, ValueT]):
         self._lru: list[KeyT] = []
         self._lock = threading.RLock()
 
+    def _reset_after_fork(self) -> None:
+        # The lock may have been held by another thread of the parent when
+        # the process was forked.
+        self._lock = threading.RLock()
+
     def evict(self, key: KeyT) -> None:
         """Evict key from cache."""
         with self._lock:

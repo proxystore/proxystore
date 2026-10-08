@@ -103,12 +103,16 @@ class StoreFactory(Generic[ConnectorT, T]):
         # The following are not included when a factory is serialized
         # because they are specific to that instance of the factory
         self._obj_future: Future[T] | None = None
+        # ID of the process which started _obj_future. A forked child gets
+        # a copy of the future which never finishes, so it is ignored.
+        self._obj_future_pid: int | None = None
 
     def __call__(self) -> T:
         with Timer() as timer:
-            if self._obj_future is not None:
-                obj = self._obj_future.result()
-                self._obj_future = None
+            future = self._obj_future
+            self._obj_future = None
+            if future is not None and self._obj_future_pid == os.getpid():
+                obj = future.result()
             else:
                 obj = self.resolve()
 
@@ -148,6 +152,7 @@ class StoreFactory(Generic[ConnectorT, T]):
         self.evict = state.get('evict', False)
         self.deserializer = state.get('deserializer')
         self._obj_future = None
+        self._obj_future_pid = None
 
     def get_store(self) -> Store[ConnectorT]:
         """Get store and reinitialize if necessary.
@@ -196,6 +201,7 @@ class StoreFactory(Generic[ConnectorT, T]):
         """Asynchronously get object associated with key from store."""
         logger.debug('Starting asynchronous resolve of %s', self.key)
         self._obj_future = _get_default_pool().submit(self.resolve)
+        self._obj_future_pid = os.getpid()
 
 
 class PollingStoreFactory(StoreFactory[ConnectorT, T]):
