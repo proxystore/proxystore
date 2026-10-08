@@ -491,6 +491,12 @@ class ClientHandler:
         return version
 
     def _check_client_versions(self, addr: str, versions: Versions) -> None:
+        logger.debug(
+            'Client %s uses ProxyStore %s and Python %s',
+            addr,
+            versions.proxystore,
+            versions.python,
+        )
         warning = versions.mismatch_warning(Versions.current())
         if warning is not None and versions not in self._warned_versions:
             # Only warn once for each combination of client versions.

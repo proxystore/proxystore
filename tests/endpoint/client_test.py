@@ -6,6 +6,7 @@ import pathlib
 import socket
 import struct
 import threading
+import warnings
 from collections.abc import Callable
 from collections.abc import Generator
 from typing import Any
@@ -397,6 +398,19 @@ def test_version_mismatch_warning(fake_server) -> None:
         _handshake_with_info(versions=_versions(proxystore='0.0.1'))
     )
     with pytest.warns(VersionMismatchWarning, match='ProxyStore'):
+        client = EndpointClient.connect('127.0.0.1', port, TOKEN)
+    client.close()
+
+
+def test_version_same_major_no_warning(fake_server) -> None:
+    major = Versions.current().proxystore.split('.')[0]
+    port = fake_server(
+        _handshake_with_info(
+            versions=_versions(proxystore=f'{major}.999.0', python='2.7.18'),
+        ),
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter('error', VersionMismatchWarning)
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
 

@@ -1,15 +1,16 @@
 # Peer-to-Peer Endpoints
 
-*Last updated 4 October 2026*
+*Last updated 8 October 2026*
 
 ProxyStore Endpoints are in-memory object stores
 with peering capabilities. Endpoints enable data transfer with proxies
 between multiple sites using NAT traversal.
 
-!!! warning "Use the same ProxyStore and Python versions everywhere"
-    Clients and endpoints should use the same versions of ProxyStore and
-    Python. Mismatched versions can cause errors when objects are serialized
-    in one environment and deserialized in another. See
+!!! warning "Use compatible ProxyStore and Python versions everywhere"
+    Clients and endpoints should use the same major version of ProxyStore,
+    and clients which exchange objects should use the same Python minor
+    version. Mismatched versions can cause errors when objects are
+    serialized in one environment and deserialized in another. See
     [Version Compatibility](#version-compatibility) for details.
 
 ## Overview
@@ -348,14 +349,16 @@ Objects are serialized by one client and deserialized by another, possibly
 on a different system after being transferred between peer endpoints.
 Pickle and cloudpickle do not guarantee that data pickled by one Python
 version can be unpickled by another (in particular, functions and classes
-pickled by value with cloudpickle), and ProxyStore's internal formats can
-change between versions.
+pickled by value with cloudpickle). ProxyStore keeps proxies and its
+internal formats compatible between versions with the same major version
+(see [Versioning](../versioning.md)).
 
 !!! warning
 
-    Use the same ProxyStore version and the same Python major and minor
-    version (e.g., 3.12) for all clients and endpoints. After upgrading
-    ProxyStore, restart your endpoints.
+    Use the same ProxyStore major version for all clients and endpoints, and
+    the same Python major and minor version (e.g., 3.12) for all clients
+    which exchange objects. After upgrading ProxyStore to a new major
+    version, restart your endpoints.
     ```bash
     $ proxystore-endpoint stop my-endpoint
     $ proxystore-endpoint start my-endpoint
@@ -368,17 +371,17 @@ Clients and endpoints exchange their versions each time a client connects.
 | Client and endpoint protocol versions | The newest version both support is used. If there is none, the connection is refused. |
 | Client uses the older HTTP API | The client receives HTTP error 426 explaining that the client should be upgraded. |
 | Endpoint uses the older HTTP API | Error explaining that the endpoint should be restarted with the client's version. |
-| ProxyStore versions | The client warns with an [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning], and the endpoint logs a warning. |
-| Python major or minor versions | Same as above. |
-| Python patch versions (e.g., 3.12.1 vs. 3.12.4) | None. Patch releases are compatible. |
+| ProxyStore major versions (e.g., 2.x vs. 3.x) | The client warns with an [`VersionMismatchWarning`][proxystore.warnings.VersionMismatchWarning], and the endpoint logs a warning. |
+| ProxyStore minor or patch versions (e.g., 2.0 vs. 2.3) | None. Versions with the same major version are compatible. |
+| Python versions | None. Endpoints do not deserialize objects, so the Python version of an endpoint does not matter. |
 
-ProxyStore and Python versions are only checked between a client and its
-local endpoint. They are **not** checked between peer endpoints (only the
+ProxyStore versions are only checked between a client and its local
+endpoint. They are **not** checked between peer endpoints (only the
 protocol version is negotiated, see
-[Protocols and File Formats](#protocols-and-file-formats)) or between the
-client that created an object and the client that resolves it on another
-system, so keep the environments on all systems consistent (e.g., with a
-lock file).
+[Protocols and File Formats](#protocols-and-file-formats)), and Python
+versions are not checked between the client that created an object and
+the client that resolves it on another system, so keep the environments on
+all systems consistent (e.g., with a lock file).
 
 To turn the warning into an error, use a
 [warnings filter](https://docs.python.org/3/library/warnings.html#the-warnings-filter).

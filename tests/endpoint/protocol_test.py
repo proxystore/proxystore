@@ -112,26 +112,22 @@ def _versions(proxystore: str, python: str) -> Versions:
     ('client', 'endpoint', 'expected'),
     (
         # Same versions
-        (_versions('1.0.0', '3.12.4'), _versions('1.0.0', '3.12.4'), []),
-        # Python patch versions are compatible
-        (_versions('1.0.0', '3.12.4'), _versions('1.0.0', '3.12.9'), []),
+        (_versions('2.0.0', '3.12.4'), _versions('2.0.0', '3.12.4'), []),
+        # Versions with the same major version are compatible
+        (_versions('2.0.0', '3.12.4'), _versions('2.0.1', '3.12.4'), []),
+        (_versions('2.1.0', '3.12.4'), _versions('2.0.0', '3.12.4'), []),
+        (_versions('2.0.0', '3.12.4'), _versions('2.1.0.dev1', '3.12.4'), []),
+        # Python versions are not compared
+        (_versions('2.0.0', '3.12.4'), _versions('2.0.0', '3.13.0'), []),
         (
-            _versions('1.0.0', '3.12.4'),
-            _versions('1.0.1', '3.12.4'),
-            ['ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)'],
+            _versions('2.0.0', '3.12.4'),
+            _versions('3.0.0', '3.12.4'),
+            ['ProxyStore 2.0.0 (client) vs. 3.0.0 (endpoint)'],
         ),
         (
-            _versions('1.0.0', '3.12.4'),
-            _versions('1.0.0', '3.13.0'),
-            ['Python 3.12.4 (client) vs. 3.13.0 (endpoint)'],
-        ),
-        (
-            _versions('1.0.0', '3.12.4'),
-            _versions('1.0.1', '3.13.0'),
-            [
-                'ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)',
-                'Python 3.12.4 (client) vs. 3.13.0 (endpoint)',
-            ],
+            _versions('1.1.0', '3.12.4'),
+            _versions('2.0.0', '3.13.0'),
+            ['ProxyStore 1.1.0 (client) vs. 2.0.0 (endpoint)'],
         ),
     ),
 )
@@ -376,11 +372,12 @@ def test_supported_alpns() -> None:
 
 
 def test_versions_mismatch_warning() -> None:
-    client = _versions('1.0.0', '3.12.4')
+    client = _versions('2.0.0', '3.12.4')
     assert client.mismatch_warning(client) is None
-    warning = client.mismatch_warning(_versions('1.0.1', '3.12.4'))
+    assert client.mismatch_warning(_versions('2.1.0', '3.13.0')) is None
+    warning = client.mismatch_warning(_versions('3.0.0', '3.12.4'))
     assert warning is not None
-    assert warning.startswith('ProxyStore 1.0.0 (client) vs. 1.0.1 (endpoint)')
+    assert warning.startswith('ProxyStore 2.0.0 (client) vs. 3.0.0 (endpoint)')
     assert 'may fail to deserialize' in warning
 
 

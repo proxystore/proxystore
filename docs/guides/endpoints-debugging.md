@@ -1,6 +1,6 @@
 # Endpoints Debugging
 
-*Last updated 26 September 2026*
+*Last updated 8 October 2026*
 
 This guide outlines some common trouble-shooting steps to take if you
 are encountering issues using ProxyStore Endpoints.
@@ -114,7 +114,7 @@ with EndpointClient.from_name('myendpoint') as client:
 * **Endpoint returned HTTP error code 426**: The client is using an older
   version of ProxyStore than the endpoint. Upgrade ProxyStore on the client.
 * **`VersionMismatchWarning`**: The client and endpoint use different
-  ProxyStore versions or Python minor versions. See
+  major versions of ProxyStore. See
   [Version Compatibility](endpoints.md#version-compatibility).
 * **... has format version ..., but this version of ProxyStore only supports
   version ...**: A file in the endpoint directory was written by an

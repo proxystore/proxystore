@@ -192,11 +192,14 @@ class EndpointClient:
                 stacklevel=2,
             )
         logger.debug(
-            'Connected to endpoint %s at %s:%s (tls=%s)',
+            'Connected to endpoint %s at %s:%s (tls=%s, proxystore=%s, '
+            'python=%s)',
             info.id.log_name(info.name),
             host,
             port,
             tls_fingerprint is not None,
+            info.versions.proxystore,
+            info.versions.python,
         )
         return cls(sock, info, protocol_version=version)
 
