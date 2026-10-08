@@ -214,12 +214,46 @@ def test_globus_connector_internals(globus_connector) -> None:
     with pytest.raises(globus_sdk.TransferAPIError):
         connector._validate_task_id(('uuid',))
 
-    def _fail_wait(*args, **kwargs) -> bool:
-        return False
 
-    connector._transfer_client.task_wait = _fail_wait  # type: ignore[method-assign]
-    with pytest.raises(RuntimeError):
+def test_globus_connector_wait_on_tasks(globus_connector) -> None:
+    connector = GlobusConnector.from_config(globus_connector.config())
+
+    statuses = iter(['ACTIVE', 'ACTIVE', 'SUCCEEDED'])
+
+    def _get_task(task_id: str) -> dict[str, str]:
+        return {'task_id': task_id, 'status': next(statuses)}
+
+    with (
+        mock.patch.object(
+            connector._transfer_client,
+            'get_task',
+            side_effect=_get_task,
+        ) as mock_get_task,
+        mock.patch('time.sleep') as mock_sleep,
+    ):
         connector._wait_on_tasks(('1234',))
+
+    assert mock_get_task.call_count == 3
+    assert mock_sleep.call_count == 2
+
+
+def test_globus_connector_wait_on_tasks_timeout(globus_connector) -> None:
+    connector = GlobusConnector.from_config(
+        {**globus_connector.config(), 'timeout': 0},
+    )
+
+    with (
+        mock.patch.object(
+            connector._transfer_client,
+            'get_task',
+            return_value={'task_id': '1234', 'status': 'ACTIVE'},
+        ),
+        mock.patch('time.sleep') as mock_sleep,
+        pytest.raises(RuntimeError, match='did not complete'),
+    ):
+        connector._wait_on_tasks(('1234',))
+
+    mock_sleep.assert_not_called()
 
 
 def test_get_filepath(globus_connector) -> None:
@@ -327,3 +361,13 @@ def test_delete_local_paths_on_close(
         assert mocked.call_count == 0
     else:
         assert mocked.call_count == len(endpoints)
+
+
+def test_globus_connector_file_removed_after_exists(globus_connector) -> None:
+    # Another thread can evict the object after exists() is checked.
+    key = globus_connector.put(b'value')
+    os.remove(globus_connector._get_filepath(key.filename))
+
+    with mock.patch.object(globus_connector, 'exists', return_value=True):
+        assert globus_connector.get(key) is None
+        globus_connector.evict(key)

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from proxystore.connectors.protocols import Connector
@@ -38,6 +39,29 @@ def test_connector_batch_ops(connectors: Connector[Any]) -> None:
     assert all(not connector.exists(key) for key in keys)
     for key in keys:
         assert connector.get(key) is None
+
+
+def test_connector_concurrent_ops(connectors: Connector[Any]) -> None:
+    connector = connectors
+
+    def _ops(i: int) -> None:
+        value = f'value-{i}'.encode()
+        key = connector.put(value)
+        assert connector.exists(key)
+        assert connector.get(key) == value
+        assert connector.get_batch([key]) == [value]
+        # Two threads evicting the same key while a third gets it.
+        with ThreadPoolExecutor(3) as pool:
+            evicts = [pool.submit(connector.evict, key) for _ in range(2)]
+            get = pool.submit(connector.get, key)
+            for future in evicts:
+                future.result()
+            assert get.result() in (value, None)
+        assert not connector.exists(key)
+
+    with ThreadPoolExecutor(8) as pool:
+        for future in [pool.submit(_ops, i) for i in range(32)]:
+            future.result()
 
 
 def test_connector_config(connectors: Connector[Any]) -> None:
