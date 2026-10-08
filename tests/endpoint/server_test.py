@@ -632,11 +632,14 @@ async def test_client_version_mismatch_logged_once(
     await asyncio.to_thread(_raw_handshake, server, compatible)
     assert len(_warnings()) == 0
 
-    versions = Versions(proxystore='0.0.1', python=current.python)
+    # The version depends on the checkout (e.g., 0.1.dev1 without tags), so
+    # the different major version is computed from it.
+    other = f'{int(major) + 1}.0.0'
+    versions = Versions(proxystore=other, python=current.python)
     await asyncio.to_thread(_raw_handshake, server, versions)
     await asyncio.to_thread(_raw_handshake, server, versions)
     assert len(_warnings()) == 1
-    assert 'ProxyStore 0.0.1 (client)' in _warnings()[0]
+    assert f'ProxyStore {other} (client)' in _warnings()[0]
 
 
 class _TLSServer(NamedTuple):

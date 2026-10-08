@@ -394,9 +394,11 @@ def _handshake_with_info(**info: Any) -> Script:
 
 
 def test_version_mismatch_warning(fake_server) -> None:
-    port = fake_server(
-        _handshake_with_info(versions=_versions(proxystore='0.0.1'))
-    )
+    # The version depends on the checkout (e.g., 0.1.dev1 without tags), so
+    # the different major version is computed from it.
+    major = int(Versions.current().proxystore.split('.')[0])
+    other = _versions(proxystore=f'{major + 1}.0.0')
+    port = fake_server(_handshake_with_info(versions=other))
     with pytest.warns(VersionMismatchWarning, match='ProxyStore'):
         client = EndpointClient.connect('127.0.0.1', port, TOKEN)
     client.close()
