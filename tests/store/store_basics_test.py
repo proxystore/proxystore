@@ -102,6 +102,26 @@ def test_caching() -> None:
         assert store.is_cached(key2)
 
 
+def test_caching_by_deserializer() -> None:
+    def _raw(b: BytesLike) -> bytes:
+        return bytes(b)
+
+    with Store(LocalConnector()) as store:
+        key = store.put('value')
+        assert store.get(key) == 'value'
+        assert store.is_cached(key)
+
+        # The object made by the default deserializer is not returned.
+        raw = store.get(key, deserializer=_raw)
+        assert isinstance(raw, bytes)
+        assert store.get(key, deserializer=_raw) is raw
+        assert store.get(key) == 'value'
+
+        # Evicting the key removes the objects of every deserializer.
+        store.evict(key)
+        assert not store.is_cached(key)
+
+
 def test_custom_serializer(store: Store[LocalConnector]) -> None:
     # Pretend serialized string
     s = b'ABC'

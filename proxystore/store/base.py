@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import os
-import threading
 import uuid
 import weakref
 from collections.abc import Mapping
@@ -58,22 +57,13 @@ _NON_PROXIABLE_TYPES = (bool, type(None))
 _MISSING_OBJECT = object()
 
 
-class _Fetch:
-    """A get of one key from the connector that other threads can wait on."""
-
-    def __init__(self, deserializer: DeserializerT) -> None:
-        self.deserializer = deserializer
-        # The result is _MISSING_OBJECT if the key does not exist.
-        self.future: Future[Any] = Future()
-
-
-# Every store in this process, so their locks can be reset after a fork.
+# Every store in this process, so their caches can be reset after a fork.
 _stores: weakref.WeakSet[Store[Any]] = weakref.WeakSet()
 
 
 def _reset_stores_after_fork() -> None:
     for store in list(_stores):
-        store._reset_after_fork()
+        store.cache._reset_after_fork()
 
 
 if hasattr(os, 'register_at_fork'):  # pragma: no branch
@@ -129,8 +119,9 @@ class Store(Generic[ConnectorT]):
     Note:
         This class is thread-safe. Different keys are fetched from the
         connector at the same time, and a key that is already being fetched
-        by another thread is not fetched again. The thread waits for that
-        fetch instead. The connector must be thread-safe (see
+        by another thread with the same deserializer is not fetched again.
+        The thread waits for that fetch instead. The connector must be
+        thread-safe (see
         [`Connector`][proxystore.connectors.protocols.Connector]).
 
     Note:
@@ -168,6 +159,9 @@ class Store(Generic[ConnectorT]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
+            Objects are cached by key and deserializer, so getting a key
+            with a different deserializer does not return the object made
+            by another deserializer.
         metrics: Enable recording operation metrics.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
@@ -213,15 +207,6 @@ class Store(Generic[ConnectorT]):
         self._deserializer = deserializer
         self._populate_target = populate_target
         self._owner = owner
-        # Keys being fetched from the connector. A get of a key in this
-        # dict waits on the fetch with the same deserializer instead of
-        # fetching the key again. set() and evict() remove the key, so the
-        # result of a fetch started before is not cached.
-        self._fetches: dict[ConnectorKeyT, list[_Fetch]] = {}
-        # Held to check the cache and change _fetches, never while
-        # calling the connector.
-        self._fetch_lock = threading.Lock()
-
         _stores.add(self)
         registry.register(self)
 
@@ -346,67 +331,6 @@ class Store(Generic[ConnectorT]):
                 cleared = self.connector.close(clear=clear)
         finally:
             registry.unregister(self, closed=self.owner and cleared is True)
-
-    def _reset_after_fork(self) -> None:
-        # The parent's threads that were fetching keys or holding the locks
-        # do not exist in a forked child, so those fetches never finish.
-        self._fetch_lock = threading.Lock()
-        self._fetches = {}
-        self.cache._reset_after_fork()
-
-    def _get_cached_or_start_fetch(
-        self,
-        key: ConnectorKeyT,
-        deserializer: DeserializerT,
-    ) -> tuple[Any, _Fetch | None, bool]:
-        # Returns (cached object, None, False) if the key is cached.
-        # Otherwise returns (_MISSING_OBJECT, fetch, started) where started
-        # is True if the caller must do the fetch and finish it with
-        # _finish_fetch(), or False if another thread is doing the fetch.
-        # Must be called with self._fetch_lock held.
-        cached = self.cache.get(key, _MISSING_OBJECT)
-        if cached is not _MISSING_OBJECT:
-            return cached, None, False
-
-        fetches = self._fetches.setdefault(key, [])
-        for fetch in fetches:
-            if fetch.deserializer is deserializer:
-                return _MISSING_OBJECT, fetch, False
-        fetch = _Fetch(deserializer)
-        fetches.append(fetch)
-        return _MISSING_OBJECT, fetch, True
-
-    def _finish_fetch(
-        self,
-        key: ConnectorKeyT,
-        fetch: _Fetch,
-        *,
-        result: Any = _MISSING_OBJECT,
-        exception: BaseException | None = None,
-    ) -> None:
-        with self._fetch_lock:
-            fetches = self._fetches.get(key, [])
-            # The fetch is not in the list if set() or evict() was called
-            # on the key during the fetch, so the result may be old.
-            if fetch in fetches:
-                fetches.remove(fetch)
-                if len(fetches) == 0:
-                    del self._fetches[key]
-                if exception is None and result is not _MISSING_OBJECT:
-                    self.cache.set(key, result)
-
-        if exception is not None:
-            fetch.future.set_exception(exception)
-        else:
-            fetch.future.set_result(result)
-
-    def _invalidate(self, key: ConnectorKeyT) -> None:
-        # Called after the object of the key is changed or evicted in the
-        # connector. Fetches of the key started before then will not cache
-        # their result.
-        with self._fetch_lock:
-            self._fetches.pop(key, None)
-            self.cache.evict(key)
 
     def _deserialize(
         self,
@@ -617,7 +541,7 @@ class Store(Generic[ConnectorT]):
             ctime = connector_timer.elapsed_ms
             self.metrics.add_time('store.evict.connector', key, ctime)
 
-        self._invalidate(key)
+        self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:
@@ -704,13 +628,8 @@ class Store(Generic[ConnectorT]):
             deserializer if deserializer is not None else self.deserializer
         )
 
-        with self._fetch_lock:
-            cached, fetch, started = self._get_cached_or_start_fetch(
-                key,
-                deserializer,
-            )
-
-        if fetch is None:
+        cached = self.cache.get(key, deserializer, _MISSING_OBJECT)
+        if cached is not _MISSING_OBJECT:
             timer.stop()
             if self.metrics is not None:
                 self.metrics.add_counter('store.get.cache_hits', key, 1)
@@ -727,10 +646,13 @@ class Store(Generic[ConnectorT]):
         if self.metrics is not None:
             self.metrics.add_counter('store.get.cache_misses', key, 1)
 
+        # Another thread may already be getting the object of the key with
+        # the same deserializer, so wait on that instead of getting it again.
+        future, started = self.cache.start(key, deserializer)
         if started:
-            result = self._fetch(key, fetch, deserializer)
+            result = self._fetch(key, future, deserializer)
         else:
-            result = fetch.future.result()
+            result = future.result()
 
         if result is _MISSING_OBJECT:
             result = default
@@ -781,21 +703,17 @@ class Store(Generic[ConnectorT]):
         )
         results: list[Any] = [default] * len(keys)
 
-        # Keys this thread fetches and keys other threads are fetching.
-        started: list[tuple[int, _Fetch]] = []
-        waiting: list[tuple[int, _Fetch]] = []
-        with self._fetch_lock:
-            for i, key in enumerate(keys):
-                cached, fetch, start = self._get_cached_or_start_fetch(
-                    key,
-                    deserializer,
-                )
-                if fetch is None:
-                    results[i] = cached
-                elif start:
-                    started.append((i, fetch))
-                else:
-                    waiting.append((i, fetch))
+        # Indices of keys this thread fetches and keys which other threads
+        # are fetching.
+        started: list[tuple[int, Future[Any]]] = []
+        waiting: list[tuple[int, Future[Any]]] = []
+        for i, key in enumerate(keys):
+            cached = self.cache.get(key, deserializer, _MISSING_OBJECT)
+            if cached is not _MISSING_OBJECT:
+                results[i] = cached
+                continue
+            future, start = self.cache.start(key, deserializer)
+            (started if start else waiting).append((i, future))
         misses = len(started) + len(waiting)
 
         if len(started) > 0:
@@ -806,8 +724,8 @@ class Store(Generic[ConnectorT]):
                 results,
             )
 
-        for i, fetch in waiting:
-            result = fetch.future.result()
+        for i, future in waiting:
+            result = future.result()
             if result is not _MISSING_OBJECT:
                 results[i] = result
 
@@ -841,10 +759,10 @@ class Store(Generic[ConnectorT]):
     def _fetch(
         self,
         key: ConnectorKeyT,
-        fetch: _Fetch,
+        future: Future[Any],
         deserializer: DeserializerT,
     ) -> Any:
-        # Fetch the key, finish the fetch, and return the object or
+        # Fetch the key, finish its cache entry, and return the object or
         # _MISSING_OBJECT if the key does not exist.
         try:
             with Timer() as connector_timer:
@@ -869,22 +787,33 @@ class Store(Generic[ConnectorT]):
                     )
         except BaseException as e:
             # Threads waiting on this fetch get the same error.
-            self._finish_fetch(key, fetch, exception=e)
+            self.cache.fail(key, deserializer, future, e)
             raise
 
-        self._finish_fetch(key, fetch, result=result)
+        self._finish(key, deserializer, future, result)
         return result
+
+    def _finish(
+        self,
+        key: ConnectorKeyT,
+        deserializer: DeserializerT,
+        future: Future[Any],
+        result: Any,
+    ) -> None:
+        # Missing objects are not cached.
+        cache = result is not _MISSING_OBJECT
+        self.cache.finish(key, deserializer, future, result, cache=cache)
 
     def _fetch_batch(
         self,
         keys: Sequence[ConnectorKeyT],
-        started: list[tuple[int, _Fetch]],
+        started: list[tuple[int, Future[Any]]],
         deserializer: DeserializerT,
         results: list[Any],
     ) -> tuple[float, float]:
         # Fetch the keys at the indices in started with one connector call,
-        # put the objects in results, and finish each fetch. Returns the
-        # connector and deserialize times in milliseconds.
+        # put the objects in results, and finish their cache entries.
+        # Returns the connector and deserialize times in milliseconds.
         unfinished = dict(started)
         error: BaseException | None = None
         try:
@@ -894,7 +823,7 @@ class Store(Generic[ConnectorT]):
                 )
 
             with Timer() as deserializer_timer:
-                for (i, fetch), value in zip(started, values, strict=True):
+                for (i, future), value in zip(started, values, strict=True):
                     result = _MISSING_OBJECT
                     if value is not None:
                         try:
@@ -905,16 +834,16 @@ class Store(Generic[ConnectorT]):
                             )
                         except SerializationError as e:
                             del unfinished[i]
-                            self._finish_fetch(keys[i], fetch, exception=e)
+                            self.cache.fail(keys[i], deserializer, future, e)
                             error = e if error is None else error
                             continue
                         results[i] = result
                     del unfinished[i]
-                    self._finish_fetch(keys[i], fetch, result=result)
+                    self._finish(keys[i], deserializer, future, result)
         except BaseException as e:
             # Threads waiting on fetches not yet finished get the same error.
-            for i, fetch in unfinished.items():
-                self._finish_fetch(keys[i], fetch, exception=e)
+            for i, future in unfinished.items():
+                self.cache.fail(keys[i], deserializer, future, e)
             raise
 
         if error is not None:
@@ -1642,7 +1571,7 @@ class Store(Generic[ConnectorT]):
         with Timer() as connector_timer:
             self.connector.set(key, obj, **(connector_options or {}))
 
-        self._invalidate(key)
+        self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:

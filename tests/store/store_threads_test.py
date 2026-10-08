@@ -68,7 +68,7 @@ def blocking_store(
     with (
         mock.patch.object(connector, 'get', blocker.get),
         mock.patch.object(connector, 'get_batch', blocker.get_batch),
-        mock.patch('proxystore.store.base.Future', _Future),
+        mock.patch('proxystore.store.cache.Future', _Future),
         Store(connector, cache_size=cache_size) as store,
     ):
         yield store, blocker
@@ -113,7 +113,6 @@ def test_get_same_key_fetched_once() -> None:
         assert first.result(TIMEOUT) == [1, 2, 3]
         assert second.result(TIMEOUT) is first.result()
         assert blocker.calls == [key]
-        assert store._fetches == {}
 
 
 def test_get_same_key_other_deserializer_fetched_again() -> None:
@@ -149,7 +148,6 @@ def test_get_waiter_gets_fetch_error() -> None:
             first.result(TIMEOUT)
         with pytest.raises(RuntimeError, match='fetch failed'):
             second.result(TIMEOUT)
-        assert store._fetches == {}
 
 
 @pytest.mark.parametrize('method', ('evict', 'set'))
@@ -169,7 +167,6 @@ def test_change_during_fetch_not_cached(method: str) -> None:
         # the old object, must not be cached.
         get.result(TIMEOUT)
         assert not store.is_cached(key)
-        assert store._fetches == {}
 
 
 def test_get_batch_waits_on_get() -> None:
@@ -226,7 +223,6 @@ def test_get_batch_error_fails_waiters() -> None:
             batch.result(TIMEOUT)
         with pytest.raises(RuntimeError, match='fetch failed'):
             get.result(TIMEOUT)
-        assert store._fetches == {}
 
 
 def test_get_batch_deserializer_error_finishes_other_keys() -> None:
@@ -242,7 +238,6 @@ def test_get_batch_deserializer_error_finishes_other_keys() -> None:
         with pytest.raises(SerializationError):
             store.get_batch([key1, key2], deserializer=_deserializer)
 
-        assert store._fetches == {}
         assert store.is_cached(key2)
         assert not store.is_cached(key1)
 
@@ -259,7 +254,7 @@ def test_store_after_fork() -> None:
 
         # Simulate the fork handler running in a forked child process
         _reset_stores_after_fork()
-        assert store._fetches == {}
+        assert not store.cache._lock.locked()
 
         # Gets in the child do not wait on the parent's fetch or locks.
         blocker.release.set()
