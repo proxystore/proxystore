@@ -4145,7 +4145,7 @@ read-many. Thus, ProxyStore does not provide <code>update</code> semantics on ke
 <p>All <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> operations use ProxyStore's provided
 serialization utilities (<a class="autorefs autorefs-internal" href="../../api/serialize/#proxystore.serialize"><code>proxystore.serialize</code></a>) by default.
 However, the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> can be initialized with
-custom default serializers or deserializers of the form:</p>
+a custom serializer and deserializer of the form:</p>
 <p><div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-3-1">1</a></span>
 <span class="normal"><a href="#__codelineno-3-2">2</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1"></a><span class="n">serializer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">],</span> <span class="n">BytesLike</span><span class="p">]</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2"></a><span class="n">deserializer</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">BytesLike</span><span class="p">],</span> <span class="n">Any</span><span class="p">]</span>
@@ -4231,7 +4231,9 @@ inefficient. E.g.,</p>
 However, <code>populate_target=False</code> should also be set in this case to avoid prepopulating the proxy with the serialized target object.
 See the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> docstring for more information.</p>
 </div>
-<p>Custom serializers and deserializers can also be passed to individual operations, such as <a class="autorefs autorefs-internal" title="            put" href="../../api/store/base/#proxystore.store.base.Store.put"><code>Store.put()</code></a>, <a class="autorefs autorefs-internal" title="            get" href="../../api/store/base/#proxystore.store.base.Store.get"><code>Store.get()</code></a>, or <a class="autorefs autorefs-internal" title="            proxy" href="../../api/store/base/#proxystore.store.base.Store.proxy"><code>Store.proxy()</code></a>, to override the defaults of the <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> instance.
+<p>Every operation of a <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a>, and every proxy it creates, uses the serializer and deserializer of the store.
+To store some types in a custom format, handle those types in the serializer and fall back to <a class="autorefs autorefs-internal" title="            serialize" href="../../api/serialize/#proxystore.serialize.serialize"><code>serialize()</code></a> for the rest, as in the example above.
+The serializer and deserializer are part of the <a class="autorefs autorefs-internal" title="            config" href="../../api/store/base/#proxystore.store.base.Store.config"><code>config()</code></a> of the store, so they must be importable wherever proxies of the store are resolved.
 See Issue <a href="https://github.com/proxystore/proxystore/issues/146" target="_blank">#146</a>
 for further discussion on where custom serializers can be helpful.</p>
 
