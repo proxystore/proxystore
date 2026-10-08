@@ -343,6 +343,25 @@ def test_put_batch_lifetime(store: Store[LocalConnector]) -> None:
         assert not store.exists(key)
 
 
+def test_get_batch_error_while_starting() -> None:
+    with Store(LocalConnector()) as store:
+        keys = [store.put('a'), store.put('b')]
+        start = store.cache.start
+        with (
+            mock.patch.object(
+                store.cache,
+                'start',
+                side_effect=[start(keys[0]), RuntimeError('start failed')],
+            ),
+            pytest.raises(RuntimeError, match='start failed'),
+        ):
+            store.get_batch(keys)
+
+        # The key already started is not left pending.
+        assert store.cache._pending == {}
+        assert store.get_batch(keys) == ['a', 'b']
+
+
 def test_store_get_batch_repeated_key_cache() -> None:
     with Store(LocalConnector(), cache_size=2) as store:
         key = store.put('a')

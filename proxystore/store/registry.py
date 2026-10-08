@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import atexit
 import logging
+import os
 import threading
 from collections.abc import Iterator
 from typing import Any
@@ -199,6 +200,12 @@ class StoreRegistry:
                 del self._stores[store.id]
                 logger.debug('Unregistered %r', store)
 
+    def _reset_after_fork(self) -> None:
+        # The locks may have been held by other threads of the parent when
+        # the process was forked, such as a thread making a store.
+        self._lock = threading.Lock()
+        self._create_locks = {}
+
     def _close_non_owners(self) -> None:
         with self._lock:
             stores = [s for s in self._stores.values() if not s.owner]
@@ -213,6 +220,9 @@ class StoreRegistry:
 
 registry = StoreRegistry()
 """Registry of the stores in this process."""
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=registry._reset_after_fork)
 
 # Registered on import so this runs after the other atexit callbacks of
 # ProxyStore (atexit runs callbacks in reverse order), such as the cleanup

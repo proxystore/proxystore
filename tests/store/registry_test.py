@@ -240,3 +240,24 @@ def test_non_owners_closed_at_exit() -> None:
     # Only the non-owner store is closed at exit.
     assert len(closed) == 1
     assert non_owner_id in closed[0]
+
+
+def test_registry_after_fork() -> None:
+    reg = StoreRegistry()
+    config = Store(LocalConnector(), owner=False).config()
+    assert config.id is not None
+    registry.clear()
+
+    # Other threads hold the locks when the process is forked, such as a
+    # thread making the store.
+    old_lock = reg._lock
+    create_lock = reg._create_locks.setdefault(config.id, threading.Lock())
+    assert old_lock.acquire(timeout=5)
+    assert create_lock.acquire(timeout=5)
+
+    # Simulate the fork handler running in a forked child process
+    reg._reset_after_fork()
+
+    store = reg.get_or_create(config)
+    assert reg.get(config.id) is None or reg.get(config.id) is store
+    store.close()

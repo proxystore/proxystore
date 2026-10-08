@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import logging
-import threading
+import os
 import uuid
+import weakref
 from collections.abc import Mapping
 from collections.abc import Sequence
+from concurrent.futures import Future
 from types import TracebackType
 from typing import Any
 from typing import cast
@@ -53,6 +55,19 @@ NonProxiableT = TypeVar('NonProxiableT', bool, None)
 _NON_PROXIABLE_TYPES = (bool, type(None))
 
 _MISSING_OBJECT = object()
+
+
+# Every store in this process, so their caches can be reset after a fork.
+_stores: weakref.WeakSet[Store[Any]] = weakref.WeakSet()
+
+
+def _reset_stores_after_fork() -> None:
+    for store in list(_stores):
+        store.cache._reset_after_fork()
+
+
+if hasattr(os, 'register_at_fork'):  # pragma: no branch
+    os.register_at_fork(after_in_child=_reset_stores_after_fork)
 
 
 class Store(Generic[ConnectorT]):
@@ -102,8 +117,11 @@ class Store(Generic[ConnectorT]):
         applied to `data_bytes` when the proxy is resolved.
 
     Note:
-        This class is generally thread-safe, with cache access and connector
-        operations guarded by a lock that is local to each store instance.
+        This class is thread-safe. Different keys are fetched from the
+        connector at the same time, and a key that is already being fetched
+        by another thread is not fetched again. The thread waits for that
+        fetch instead. The connector must be thread-safe (see
+        [`Connector`][proxystore.connectors.protocols.Connector]).
 
     Note:
         Each store has a unique [`id`][proxystore.store.base.Store.id] which
@@ -185,8 +203,7 @@ class Store(Generic[ConnectorT]):
         self._deserializer = deserializer
         self._populate_target = populate_target
         self._owner = owner
-        self._lock = threading.RLock()
-
+        _stores.add(self)
         registry.register(self)
 
         logger.info('Initialized %s', self)
@@ -304,13 +321,27 @@ class Store(Generic[ConnectorT]):
 
         cleared: bool | None = None
         try:
-            with self._lock:
-                if clear is None:
-                    cleared = self.connector.close()
-                else:
-                    cleared = self.connector.close(clear=clear)
+            if clear is None:
+                cleared = self.connector.close()
+            else:
+                cleared = self.connector.close(clear=clear)
         finally:
             registry.unregister(self, closed=self.owner and cleared is True)
+
+    def _deserialize(
+        self,
+        key: ConnectorKeyT,
+        value: BytesLike,
+        deserializer: DeserializerT,
+    ) -> Any:
+        try:
+            return deserializer(value)
+        except Exception as e:
+            name = get_object_path(deserializer)
+            raise SerializationError(
+                'Failed to deserialize object '
+                f'(deserializer={name}, key={key}).',
+            ) from e
 
     def config(self) -> StoreConfig:
         """Get the store configuration.
@@ -499,15 +530,14 @@ class Store(Generic[ConnectorT]):
         """
         timer = Timer().start()
 
-        with self._lock:
-            with Timer() as connector_timer:
-                self.connector.evict(key)
+        with Timer() as connector_timer:
+            self.connector.evict(key)
 
-            if self.metrics is not None:
-                ctime = connector_timer.elapsed_ms
-                self.metrics.add_time('store.evict.connector', key, ctime)
+        if self.metrics is not None:
+            ctime = connector_timer.elapsed_ms
+            self.metrics.add_time('store.evict.connector', key, ctime)
 
-            self.cache.evict(key)
+        self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:
@@ -531,15 +561,14 @@ class Store(Generic[ConnectorT]):
         """
         timer = Timer().start()
 
-        with self._lock:
-            res = self.cache.exists(key)
-            if not res:
-                with Timer() as connector_timer:
-                    res = self.connector.exists(key)
+        res = self.cache.exists(key)
+        if not res:
+            with Timer() as connector_timer:
+                res = self.connector.exists(key)
 
-                if self.metrics is not None:
-                    ctime = connector_timer.elapsed_ms
-                    self.metrics.add_time('store.exists.connector', key, ctime)
+            if self.metrics is not None:
+                ctime = connector_timer.elapsed_ms
+                self.metrics.add_time('store.exists.connector', key, ctime)
 
         timer.stop()
         if self.metrics is not None:
@@ -591,60 +620,38 @@ class Store(Generic[ConnectorT]):
                 the object associated with the key.
         """
         timer = Timer().start()
+        deserializer = (
+            deserializer if deserializer is not None else self.deserializer
+        )
 
-        with self._lock:
-            cached = self.cache.get(key, _MISSING_OBJECT)
-            if cached is not _MISSING_OBJECT:
-                timer.stop()
-                if self.metrics is not None:
-                    self.metrics.add_counter('store.get.cache_hits', key, 1)
-                    self.metrics.add_time('store.get', key, timer.elapsed_ms)
-
-                logger.debug(
-                    'Store(%s): GET %s in %.3f ms (cached=True)',
-                    self._label,
-                    key,
-                    timer.elapsed_ms,
-                )
-                return cached
-
-            with Timer() as connector_timer:
-                value = self.connector.get(key)
-
+        cached = self.cache.get(key, _MISSING_OBJECT)
+        if cached is not _MISSING_OBJECT:
+            timer.stop()
             if self.metrics is not None:
-                ctime = connector_timer.elapsed_ms
-                self.metrics.add_counter('store.get.cache_misses', key, 1)
-                self.metrics.add_time('store.get.connector', key, ctime)
+                self.metrics.add_counter('store.get.cache_hits', key, 1)
+                self.metrics.add_time('store.get', key, timer.elapsed_ms)
 
-            if value is not None:
-                with Timer() as deserializer_timer:
-                    deserializer = (
-                        deserializer
-                        if deserializer is not None
-                        else self.deserializer
-                    )
-                    try:
-                        result = deserializer(value)
-                    except Exception as e:
-                        name = get_object_path(deserializer)
-                        raise SerializationError(
-                            'Failed to deserialize object '
-                            f'(deserializer={name}, key={key}).',
-                        ) from e
+            logger.debug(
+                'Store(%s): GET %s in %.3f ms (cached=True)',
+                self._label,
+                key,
+                timer.elapsed_ms,
+            )
+            return cached
 
-                if self.metrics is not None:
-                    dtime = deserializer_timer.elapsed_ms
-                    obj_size = len(value)
-                    self.metrics.add_time('store.get.deserialize', key, dtime)
-                    self.metrics.add_attribute(
-                        'store.get.object_size',
-                        key,
-                        obj_size,
-                    )
+        if self.metrics is not None:
+            self.metrics.add_counter('store.get.cache_misses', key, 1)
 
-                self.cache.set(key, result)
-            else:
-                result = default
+        # Another thread may already be getting the object of the key, so
+        # wait on that instead of getting it again.
+        future, started = self.cache.start(key)
+        if started:
+            result = self._fetch(key, future, deserializer)
+        else:
+            result = future.result()
+
+        if result is _MISSING_OBJECT:
+            result = default
 
         timer.stop()
         if self.metrics is not None:
@@ -692,48 +699,32 @@ class Store(Generic[ConnectorT]):
         )
         results: list[Any] = [default] * len(keys)
 
-        with self._lock:
-            misses: list[int] = []
-            for i, key in enumerate(keys):
-                cached = self.cache.get(key, _MISSING_OBJECT)
-                if cached is _MISSING_OBJECT:
-                    misses.append(i)
-                else:
-                    results[i] = cached
+        started, waiting = self._start_batch(keys, results)
+        misses = len(started) + len(waiting)
 
-            if len(misses) > 0:
-                with Timer() as connector_timer:
-                    values = self.connector.get_batch(
-                        [keys[i] for i in misses],
-                    )
+        if len(started) > 0:
+            ctime, dtime = self._fetch_batch(
+                keys,
+                started,
+                deserializer,
+                results,
+            )
 
-                with Timer() as deserializer_timer:
-                    for i, value in zip(misses, values, strict=True):
-                        if value is None:
-                            continue
-                        try:
-                            result = deserializer(value)
-                        except Exception as e:
-                            name = get_object_path(deserializer)
-                            raise SerializationError(
-                                'Failed to deserialize object '
-                                f'(deserializer={name}, key={keys[i]}).',
-                            ) from e
-                        self.cache.set(keys[i], result)
-                        results[i] = result
+        for i, future in waiting:
+            result = future.result()
+            if result is not _MISSING_OBJECT:
+                results[i] = result
 
         timer.stop()
         if self.metrics is not None:
-            hits = len(keys) - len(misses)
+            hits = len(keys) - misses
             self.metrics.add_counter('store.get_batch.cache_hits', keys, hits)
             self.metrics.add_counter(
                 'store.get_batch.cache_misses',
                 keys,
-                len(misses),
+                misses,
             )
-            if len(misses) > 0:
-                ctime = connector_timer.elapsed_ms
-                dtime = deserializer_timer.elapsed_ms
+            if len(started) > 0:
                 self.metrics.add_time('store.get_batch.connector', keys, ctime)
                 self.metrics.add_time(
                     'store.get_batch.deserialize',
@@ -746,10 +737,135 @@ class Store(Generic[ConnectorT]):
             'Store(%s): GET_BATCH (%s items, %s cached) in %.3f ms',
             self._label,
             len(keys),
-            len(keys) - len(misses),
+            len(keys) - misses,
             timer.elapsed_ms,
         )
         return results
+
+    def _fetch(
+        self,
+        key: ConnectorKeyT,
+        future: Future[Any],
+        deserializer: DeserializerT,
+    ) -> Any:
+        # Fetch the key, finish its cache entry, and return the object or
+        # _MISSING_OBJECT if the key does not exist.
+        try:
+            with Timer() as connector_timer:
+                value = self.connector.get(key)
+
+            if self.metrics is not None:
+                ctime = connector_timer.elapsed_ms
+                self.metrics.add_time('store.get.connector', key, ctime)
+
+            result = _MISSING_OBJECT
+            if value is not None:
+                with Timer() as deserializer_timer:
+                    result = self._deserialize(key, value, deserializer)
+
+                if self.metrics is not None:
+                    dtime = deserializer_timer.elapsed_ms
+                    self.metrics.add_time('store.get.deserialize', key, dtime)
+                    self.metrics.add_attribute(
+                        'store.get.object_size',
+                        key,
+                        len(value),
+                    )
+        except BaseException as e:
+            # Threads waiting on this fetch get the same error.
+            self.cache.fail(key, future, e)
+            raise
+
+        self._finish(key, future, result)
+        return result
+
+    def _finish(
+        self,
+        key: ConnectorKeyT,
+        future: Future[Any],
+        result: Any,
+    ) -> None:
+        # Missing objects are not cached.
+        cache = result is not _MISSING_OBJECT
+        self.cache.finish(key, future, result, cache=cache)
+
+    def _start_batch(
+        self,
+        keys: Sequence[ConnectorKeyT],
+        results: list[Any],
+    ) -> tuple[list[tuple[int, Future[Any]]], list[tuple[int, Future[Any]]]]:
+        # Put the cached objects in results and return the indices and
+        # futures of the keys this thread must fetch and the keys which
+        # other threads are fetching.
+        started: list[tuple[int, Future[Any]]] = []
+        waiting: list[tuple[int, Future[Any]]] = []
+        # Keys started by this call, so a key repeated in keys waits on the
+        # fetch of its first occurrence.
+        mine: dict[ConnectorKeyT, Future[Any]] = {}
+        try:
+            for i, key in enumerate(keys):
+                cached = self.cache.get(key, _MISSING_OBJECT)
+                if cached is not _MISSING_OBJECT:
+                    results[i] = cached
+                elif key in mine:
+                    waiting.append((i, mine[key]))
+                else:
+                    future, start = self.cache.start(key)
+                    (started if start else waiting).append((i, future))
+                    if start:
+                        mine[key] = future
+        except BaseException as e:
+            # Threads waiting on the keys already started get the error.
+            for i, future in started:
+                self.cache.fail(keys[i], future, e)
+            raise
+        return started, waiting
+
+    def _fetch_batch(
+        self,
+        keys: Sequence[ConnectorKeyT],
+        started: list[tuple[int, Future[Any]]],
+        deserializer: DeserializerT,
+        results: list[Any],
+    ) -> tuple[float, float]:
+        # Fetch the keys at the indices in started with one connector call,
+        # put the objects in results, and finish their cache entries.
+        # Returns the connector and deserialize times in milliseconds.
+        unfinished = dict(started)
+        error: BaseException | None = None
+        try:
+            with Timer() as connector_timer:
+                values = self.connector.get_batch(
+                    [keys[i] for i, _ in started],
+                )
+
+            with Timer() as deserializer_timer:
+                for (i, future), value in zip(started, values, strict=True):
+                    result = _MISSING_OBJECT
+                    if value is not None:
+                        try:
+                            result = self._deserialize(
+                                keys[i],
+                                value,
+                                deserializer,
+                            )
+                        except SerializationError as e:
+                            del unfinished[i]
+                            self.cache.fail(keys[i], future, e)
+                            error = e if error is None else error
+                            continue
+                        results[i] = result
+                    del unfinished[i]
+                    self._finish(keys[i], future, result)
+        except BaseException as e:
+            # Threads waiting on fetches not yet finished get the same error.
+            for i, future in unfinished.items():
+                self.cache.fail(keys[i], future, e)
+            raise
+
+        if error is not None:
+            raise error
+        return connector_timer.elapsed_ms, deserializer_timer.elapsed_ms
 
     def is_cached(self, key: ConnectorKeyT) -> bool:
         """Check if an object associated with the key is cached locally.
@@ -760,8 +876,7 @@ class Store(Generic[ConnectorT]):
         Returns:
             If the object is cached.
         """
-        with self._lock:
-            return self.cache.exists(key)
+        return self.cache.exists(key)
 
     # The first overload overlaps with the second because a NonProxiableT
     # is also a T, but the first overload is matched first.
@@ -1323,7 +1438,7 @@ class Store(Generic[ConnectorT]):
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
 
-        with self._lock, Timer() as connector_timer:
+        with Timer() as connector_timer:
             key = self.connector.put(obj, **(connector_options or {}))
 
         if lifetime is not None:
@@ -1387,7 +1502,7 @@ class Store(Generic[ConnectorT]):
         with Timer() as serialize_timer:
             _objs = list(map(_serialize, objs))
 
-        with self._lock, Timer() as connector_timer:
+        with Timer() as connector_timer:
             keys = self.connector.put_batch(
                 _objs,
                 **(connector_options or {}),
@@ -1470,11 +1585,10 @@ class Store(Generic[ConnectorT]):
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
 
-        with self._lock:
-            with Timer() as connector_timer:
-                self.connector.set(key, obj, **(connector_options or {}))
+        with Timer() as connector_timer:
+            self.connector.set(key, obj, **(connector_options or {}))
 
-            self.cache.evict(key)
+        self.cache.evict(key)
 
         timer.stop()
         if self.metrics is not None:
