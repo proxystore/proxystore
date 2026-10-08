@@ -119,9 +119,8 @@ class Store(Generic[ConnectorT]):
     Note:
         This class is thread-safe. Different keys are fetched from the
         connector at the same time, and a key that is already being fetched
-        by another thread with the same deserializer is not fetched again.
-        The thread waits for that fetch instead. The connector must be
-        thread-safe (see
+        by another thread is not fetched again. The thread waits for that
+        fetch instead. The connector must be thread-safe (see
         [`Connector`][proxystore.connectors.protocols.Connector]).
 
     Note:
@@ -159,9 +158,6 @@ class Store(Generic[ConnectorT]):
             used.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
-            Objects are cached by key and deserializer, so getting a key
-            with a different deserializer does not return the object made
-            by another deserializer.
         metrics: Enable recording operation metrics.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
@@ -628,7 +624,7 @@ class Store(Generic[ConnectorT]):
             deserializer if deserializer is not None else self.deserializer
         )
 
-        cached = self.cache.get(key, deserializer, _MISSING_OBJECT)
+        cached = self.cache.get(key, _MISSING_OBJECT)
         if cached is not _MISSING_OBJECT:
             timer.stop()
             if self.metrics is not None:
@@ -646,9 +642,9 @@ class Store(Generic[ConnectorT]):
         if self.metrics is not None:
             self.metrics.add_counter('store.get.cache_misses', key, 1)
 
-        # Another thread may already be getting the object of the key with
-        # the same deserializer, so wait on that instead of getting it again.
-        future, started = self.cache.start(key, deserializer)
+        # Another thread may already be getting the object of the key, so
+        # wait on that instead of getting it again.
+        future, started = self.cache.start(key)
         if started:
             result = self._fetch(key, future, deserializer)
         else:
@@ -703,17 +699,7 @@ class Store(Generic[ConnectorT]):
         )
         results: list[Any] = [default] * len(keys)
 
-        # Indices of keys this thread fetches and keys which other threads
-        # are fetching.
-        started: list[tuple[int, Future[Any]]] = []
-        waiting: list[tuple[int, Future[Any]]] = []
-        for i, key in enumerate(keys):
-            cached = self.cache.get(key, deserializer, _MISSING_OBJECT)
-            if cached is not _MISSING_OBJECT:
-                results[i] = cached
-                continue
-            future, start = self.cache.start(key, deserializer)
-            (started if start else waiting).append((i, future))
+        started, waiting = self._start_batch(keys, results)
         misses = len(started) + len(waiting)
 
         if len(started) > 0:
@@ -787,22 +773,53 @@ class Store(Generic[ConnectorT]):
                     )
         except BaseException as e:
             # Threads waiting on this fetch get the same error.
-            self.cache.fail(key, deserializer, future, e)
+            self.cache.fail(key, future, e)
             raise
 
-        self._finish(key, deserializer, future, result)
+        self._finish(key, future, result)
         return result
 
     def _finish(
         self,
         key: ConnectorKeyT,
-        deserializer: DeserializerT,
         future: Future[Any],
         result: Any,
     ) -> None:
         # Missing objects are not cached.
         cache = result is not _MISSING_OBJECT
-        self.cache.finish(key, deserializer, future, result, cache=cache)
+        self.cache.finish(key, future, result, cache=cache)
+
+    def _start_batch(
+        self,
+        keys: Sequence[ConnectorKeyT],
+        results: list[Any],
+    ) -> tuple[list[tuple[int, Future[Any]]], list[tuple[int, Future[Any]]]]:
+        # Put the cached objects in results and return the indices and
+        # futures of the keys this thread must fetch and the keys which
+        # other threads are fetching.
+        started: list[tuple[int, Future[Any]]] = []
+        waiting: list[tuple[int, Future[Any]]] = []
+        # Keys started by this call, so a key repeated in keys waits on the
+        # fetch of its first occurrence.
+        mine: dict[ConnectorKeyT, Future[Any]] = {}
+        try:
+            for i, key in enumerate(keys):
+                cached = self.cache.get(key, _MISSING_OBJECT)
+                if cached is not _MISSING_OBJECT:
+                    results[i] = cached
+                elif key in mine:
+                    waiting.append((i, mine[key]))
+                else:
+                    future, start = self.cache.start(key)
+                    (started if start else waiting).append((i, future))
+                    if start:
+                        mine[key] = future
+        except BaseException as e:
+            # Threads waiting on the keys already started get the error.
+            for i, future in started:
+                self.cache.fail(keys[i], future, e)
+            raise
+        return started, waiting
 
     def _fetch_batch(
         self,
@@ -834,16 +851,16 @@ class Store(Generic[ConnectorT]):
                             )
                         except SerializationError as e:
                             del unfinished[i]
-                            self.cache.fail(keys[i], deserializer, future, e)
+                            self.cache.fail(keys[i], future, e)
                             error = e if error is None else error
                             continue
                         results[i] = result
                     del unfinished[i]
-                    self._finish(keys[i], deserializer, future, result)
+                    self._finish(keys[i], future, result)
         except BaseException as e:
             # Threads waiting on fetches not yet finished get the same error.
             for i, future in unfinished.items():
-                self.cache.fail(keys[i], deserializer, future, e)
+                self.cache.fail(keys[i], future, e)
             raise
 
         if error is not None:

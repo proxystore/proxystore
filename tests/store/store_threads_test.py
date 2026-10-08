@@ -115,22 +115,36 @@ def test_get_same_key_fetched_once() -> None:
         assert blocker.calls == [key]
 
 
-def test_get_same_key_other_deserializer_fetched_again() -> None:
-    def _deserializer(b: BytesLike) -> Any:
-        return deserialize(b)
+def test_get_same_key_other_deserializer_shares_fetch() -> None:
+    deserializer = mock.Mock()
 
     with blocking_store() as (store, blocker):
-        key = store.put('value')
+        key = store.put([1, 2, 3])
 
         first = _start(store.get, key)
         assert blocker.entered.acquire(timeout=TIMEOUT)
-        # The second get does its own fetch, which is also blocked.
-        second = _start(store.get, key, deserializer=_deserializer)
+        # Objects are cached by key, so the fetch is shared even though the
+        # deserializer is different.
+        second = _start(store.get, key, deserializer=deserializer)
+        assert _Future.waiting.wait(TIMEOUT)
         blocker.release.set()
 
-        assert first.result(TIMEOUT) == second.result(TIMEOUT) == 'value'
-        assert blocker.calls == [key, key]
-        assert not _Future.waiting.is_set()
+        assert second.result(TIMEOUT) is first.result(TIMEOUT)
+        assert blocker.calls == [key]
+        deserializer.assert_not_called()
+
+
+def test_get_same_key_in_deserializer() -> None:
+    with Store(LocalConnector()) as store:
+        key = store.put('value')
+
+        def _deserializer(b: BytesLike) -> Any:
+            # Gets the key this deserializer is making the object of.
+            return (store.get(key), deserialize(b))
+
+        get = _start(store.get, key, deserializer=_deserializer)
+        assert get.result(TIMEOUT) == ('value', 'value')
+        assert store.get(key) == ('value', 'value')
 
 
 def test_get_waiter_gets_fetch_error() -> None:

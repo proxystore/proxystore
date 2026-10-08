@@ -200,8 +200,10 @@ class StoreFactory(Generic[ConnectorT, T]):
     def resolve_async(self) -> None:
         """Asynchronously get object associated with key from store."""
         logger.debug('Starting asynchronous resolve of %s', self.key)
-        self._obj_future = _get_default_pool().submit(self.resolve)
+        # The PID is set first so __call__ in another thread never sees the
+        # new future with an old PID.
         self._obj_future_pid = os.getpid()
+        self._obj_future = _get_default_pool().submit(self.resolve)
 
 
 class PollingStoreFactory(StoreFactory[ConnectorT, T]):
