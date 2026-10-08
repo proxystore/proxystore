@@ -115,34 +115,22 @@ def test_get_same_key_fetched_once() -> None:
         assert blocker.calls == [key]
 
 
-def test_get_same_key_other_deserializer_shares_fetch() -> None:
-    deserializer = mock.Mock()
-
-    with blocking_store() as (store, blocker):
-        key = store.put([1, 2, 3])
-
-        first = _start(store.get, key)
-        assert blocker.entered.acquire(timeout=TIMEOUT)
-        # Objects are cached by key, so the fetch is shared even though the
-        # deserializer is different.
-        second = _start(store.get, key, deserializer=deserializer)
-        assert _Future.waiting.wait(TIMEOUT)
-        blocker.release.set()
-
-        assert second.result(TIMEOUT) is first.result(TIMEOUT)
-        assert blocker.calls == [key]
-        deserializer.assert_not_called()
-
-
 def test_get_same_key_in_deserializer() -> None:
-    with Store(LocalConnector()) as store:
-        key = store.put('value')
+    inside = threading.local()
 
-        def _deserializer(b: BytesLike) -> Any:
+    def _deserializer(b: BytesLike) -> Any:
+        if getattr(inside, 'active', False):
+            return deserialize(b)
+        inside.active = True
+        try:
             # Gets the key this deserializer is making the object of.
             return (store.get(key), deserialize(b))
+        finally:
+            inside.active = False
 
-        get = _start(store.get, key, deserializer=_deserializer)
+    with Store(LocalConnector(), deserializer=_deserializer) as store:
+        key = store.put('value')
+        get = _start(store.get, key)
         assert get.result(TIMEOUT) == ('value', 'value')
         assert store.get(key) == ('value', 'value')
 
@@ -245,12 +233,12 @@ def test_get_batch_deserializer_error_finishes_other_keys() -> None:
             raise ValueError('bad')
         return deserialize(b)
 
-    with Store(LocalConnector()) as store:
-        key1 = store.put('value1', serializer=lambda s: b'bad')
+    with Store(LocalConnector(), deserializer=_deserializer) as store:
+        key1 = store.connector.put(b'bad')
         key2 = store.put('value2')
 
         with pytest.raises(SerializationError):
-            store.get_batch([key1, key2], deserializer=_deserializer)
+            store.get_batch([key1, key2])
 
         assert store.is_cached(key2)
         assert not store.is_cached(key1)

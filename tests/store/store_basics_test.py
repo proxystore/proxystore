@@ -102,32 +102,48 @@ def test_caching() -> None:
         assert store.is_cached(key2)
 
 
-def test_custom_serializer(store: Store[LocalConnector]) -> None:
-    # Pretend serialized string
-    s = b'ABC'
-    key = store.put(s, serializer=lambda s: s)
-    assert store.get(key, deserializer=lambda s: s) == s
+def test_custom_serializer() -> None:
+    with Store(
+        LocalConnector(),
+        serializer=str.encode,
+        deserializer=lambda b: bytes(b).decode().upper(),
+    ) as store:
+        key = store.put('a')
+        assert store.get(key) == 'A'
 
-    with pytest.raises(TypeError, match='bytes'):
-        # Should fail because the array is not already serialized
-        store.put([1, 2, 3], serializer=lambda s: s)
+        keys = store.put_batch(['b', 'c'])
+        assert store.get_batch(keys) == ['B', 'C']
 
-    with pytest.raises(TypeError, match='bytes'):
-        # Should fail because the array is not already serialized
-        store.put_batch([[1, 2, 3]], serializer=lambda s: s)
+        key = store.connector.new_key()
+        store._set(key, 'd')
+        assert store.get(key) == 'D'
 
 
-def test_custom_deserializer_error(store: Store[LocalConnector]) -> None:
-    key = store.put('value')
+def test_custom_serializer_must_return_bytes() -> None:
+    with Store(LocalConnector(), serializer=lambda s: s) as store:
+        # Each fails because the list is not already serialized
+        with pytest.raises(TypeError, match='bytes'):
+            store.put([1, 2, 3])
+        with pytest.raises(TypeError, match='bytes'):
+            store.put_batch([[1, 2, 3]])
+        with pytest.raises(TypeError, match='bytes'):
+            store._set(store.connector.new_key(), [1, 2, 3])
 
-    def _deserialize(x: BytesLike) -> Any:
-        raise Exception
 
-    with pytest.raises(
-        SerializationError,
-        match='Failed to deserialize object',
-    ):
-        store.get(key, deserializer=_deserialize)
+def _deserialize_error(data: BytesLike) -> Any:
+    raise ValueError('Oops')
+
+
+def test_custom_deserializer_error() -> None:
+    with Store(LocalConnector(), deserializer=_deserialize_error) as store:
+        key = store.put('value')
+        with pytest.raises(
+            SerializationError,
+            match='Failed to deserialize object',
+        ):
+            store.get(key)
+        with pytest.raises(SerializationError, match='Failed to deserialize'):
+            store.get_batch([key])
 
 
 def test_get_missing_with_sentinel(store: Store[LocalConnector]) -> None:
@@ -171,36 +187,12 @@ def test_get_batch_empty(store: Store[LocalConnector]) -> None:
     assert store.get_batch([]) == []
 
 
-def test_get_batch_custom_deserializer(store: Store[LocalConnector]) -> None:
-    keys = store.put_batch([b'a', b'b'], serializer=lambda x: x)
-    values = store.get_batch(keys, deserializer=lambda x: bytes(x).upper())
-    assert values == [b'A', b'B']
-
-
-def test_get_batch_deserializer_error(store: Store[LocalConnector]) -> None:
-    keys = store.put_batch(['a'])
-
-    def _error(data: BytesLike) -> Any:
-        raise ValueError('Oops')
-
-    with pytest.raises(SerializationError, match='Failed to deserialize'):
-        store.get_batch(keys, deserializer=_error)
-
-
 def test_put_batch(store: Store[LocalConnector]) -> None:
     values = ['test_value1', 'test_value2', 'test_value3']
 
     # Test without keys
     keys = store.put_batch(values)
     for key in keys:
-        assert store.exists(key)
-
-
-def test_put_batch_custom_serializer(store: Store[LocalConnector]) -> None:
-    values = ['test_value1', 'test_value2', 'test_value3']
-
-    new_keys = store.put_batch(values, serializer=str.encode)
-    for key in new_keys:
         assert store.exists(key)
 
 
@@ -222,15 +214,6 @@ def test_set_bad_connector_type(store: Store[LocalConnector]) -> None:
         pytest.raises(NotImplementedError, match='DeferrableConnector'),
     ):
         store._set(key, 'new-value')
-
-
-def test_set_custom_serializer(store: Store[LocalConnector]) -> None:
-    key = store.connector.new_key()
-    store._set(key, 'test_value', serializer=str.encode)
-    assert store.get(key, deserializer=lambda s: s) == b'test_value'
-
-    with pytest.raises(TypeError, match='bytes'):
-        store._set(key, 'test_value', serializer=lambda s: s)
 
 
 def test_future(store: Store[LocalConnector]) -> None:
@@ -268,29 +251,31 @@ def test_future_result_policy_timeout(store: Store[LocalConnector]) -> None:
     assert isinstance(exc_info.value.cause, ProxyResolveMissingKeyError)
 
 
-@pytest.mark.parametrize('custom_serializer', (True, False))
+@pytest.mark.parametrize('method', ('set_exception', 'set_result'))
 def test_future_set_exception(
-    custom_serializer: bool,
+    method: str,
     store: Store[LocalConnector],
 ) -> None:
-    future: ProxyFuture[str] = (
-        store.future(
-            serializer=str.encode,
-            deserializer=lambda b: bytes(b).decode(),
-        )
-        if custom_serializer
-        else store.future()
-    )
+    future: ProxyFuture[str] = store.future()
     proxy = future.proxy()
     assert not future.done()
 
-    future.set_exception(ValueError('Oops'))
+    getattr(future, method)(ValueError('Oops'))
     assert future.done()
     with pytest.raises(ValueError, match='Oops'):
         future.result()
     with pytest.raises(ProxyResolveError) as exc_info:
         resolve(proxy)
     assert isinstance(exc_info.value.cause, ValueError)
+
+
+def test_proxy_of_exception_is_not_raised(
+    store: Store[LocalConnector],
+) -> None:
+    # Only the result of a future is raised if it is an exception.
+    proxy = store.proxy(ValueError('Oops'), populate_target=False)
+    assert isinstance(proxy, ValueError)
+    assert str(proxy) == 'Oops'
 
 
 def test_future_in_threads(store: Store[LocalConnector]) -> None:

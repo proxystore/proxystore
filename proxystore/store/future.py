@@ -3,29 +3,17 @@
 from __future__ import annotations
 
 import dataclasses
-from typing import Any
 from typing import Generic
 from typing import TYPE_CHECKING
 from typing import TypeVar
 
 from proxystore.proxy import Proxy
-from proxystore.serialize import BytesLike
-from proxystore.serialize import deserialize
-from proxystore.serialize import serialize
 from proxystore.store.types import ConnectorT
-from proxystore.store.types import DeserializerT
-from proxystore.store.types import SerializerT
 
 if TYPE_CHECKING:
     from proxystore.store.factory import PollingStoreFactory
 
 T = TypeVar('T')
-
-# Prefix of exceptions set on a future. The prefix is checked before the
-# (possibly custom) deserializer of the future is applied. This is part of
-# the format of objects in a store so it must not change within a major
-# version.
-_EXCEPTION_PREFIX = b'proxystore.store.future.exception\n'
 
 
 @dataclasses.dataclass(frozen=True)
@@ -48,26 +36,6 @@ class PollingPolicy:
     timeout: float | None = None
 
 
-@dataclasses.dataclass(frozen=True)
-class _FutureException:
-    exception: BaseException
-
-
-def _serialize_exception(exception: Any) -> bytes:
-    return _EXCEPTION_PREFIX + serialize(exception)
-
-
-def _deserialize_with_exceptions(deserializer: DeserializerT) -> DeserializerT:
-    def _deserialize(data: BytesLike) -> Any:
-        view = memoryview(data).cast('B')
-        prefix_length = len(_EXCEPTION_PREFIX)
-        if view[:prefix_length] == _EXCEPTION_PREFIX:
-            return _FutureException(deserialize(view[prefix_length:]))
-        return deserializer(data)
-
-    return _deserialize
-
-
 class ProxyFuture(Generic[T]):
     """Future interface to a [`Store`][proxystore.store.base.Store].
 
@@ -75,22 +43,22 @@ class ProxyFuture(Generic[T]):
         Create a [`ProxyFuture`][proxystore.store.future.ProxyFuture] with
         [`Store.future()`][proxystore.store.base.Store.future].
 
+    Note:
+        If the result of the future is an exception, getting the result or
+        resolving the proxy of the future raises the exception. Use
+        [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception]
+        to make that clear, but
+        [`set_result()`][proxystore.store.future.ProxyFuture.set_result]
+        with an exception does the same.
+
     Args:
         factory: Factory that can resolve the object once it is resolved.
             This factory should block when resolving until the object is
             available.
-        serializer: Use a custom serializer when setting the result object
-            of this future.
     """
 
-    def __init__(
-        self,
-        factory: PollingStoreFactory[ConnectorT, T],
-        *,
-        serializer: SerializerT | None = None,
-    ) -> None:
+    def __init__(self, factory: PollingStoreFactory[ConnectorT, T]) -> None:
         self._factory = factory
-        self._serializer = serializer
 
     def done(self) -> bool:
         """Check if the result or exception has been set yet."""
@@ -117,8 +85,8 @@ class ProxyFuture(Generic[T]):
         Raises:
             TimeoutError: If the result is not available after `timeout`
                 seconds.
-            Exception: The exception set on the future with
-                [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception].
+            Exception: The result of the future if it is an exception (see
+                [`set_exception()`][proxystore.store.future.ProxyFuture.set_exception]).
         """
         if timeout is None:
             timeout = self._factory.polling.timeout
@@ -133,28 +101,25 @@ class ProxyFuture(Generic[T]):
     def set_exception(self, exception: BaseException) -> None:
         """Set the exception of this future.
 
-        The exception is raised by
+        The exception is the result of the future, so it is raised by
         [`result()`][proxystore.store.future.ProxyFuture.result] and when
-        resolving the proxy of this future. The exception must be
-        serializable with [`serialize()`][proxystore.serialize.serialize].
+        resolving the proxy of this future. The exception is serialized
+        with the serializer of the store.
 
         Args:
             exception: Exception to raise.
         """
-        self._factory.get_store()._set(
-            self._factory.key,
-            exception,
-            serializer=_serialize_exception,
-        )
+        self._factory.get_store()._set(self._factory.key, exception)
 
     def set_result(self, obj: T) -> None:
         """Set the result object of this future.
 
+        Note:
+            If `obj` is an exception, it is raised by
+            [`result()`][proxystore.store.future.ProxyFuture.result] and
+            when resolving the proxy of this future.
+
         Args:
             obj: Result object.
         """
-        self._factory.get_store()._set(
-            self._factory.key,
-            obj,
-            serializer=self._serializer,
-        )
+        self._factory.get_store()._set(self._factory.key, obj)

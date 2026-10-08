@@ -86,25 +86,24 @@ class Store(Generic[ConnectorT]):
 
     Warning:
         The default value of `populate_target=True` can cause unexpected
-        behavior when providing custom serializer/deserializers because
-        neither the serializer nor deserializer will be applied to the target
-        object being cached in the resulting [`Proxy`][proxystore.proxy.Proxy].
+        behavior when the deserializer of the store does not undo its
+        serializer because neither is applied to the target object cached
+        in the resulting [`Proxy`][proxystore.proxy.Proxy].
 
         ```python linenums="1"
         import pickle
         from proxystore.store import Store
         from proxystore.connectors.local import LocalConnector
 
-        with Store(LocalConnector()) as store:
+        with Store(
+            LocalConnector(),
+            serializer=lambda s: s,
+            deserializer=pickle.loads,
+        ) as store:
             data = [1, 2, 3]
             data_bytes = pickle.dumps(data)
 
-            data_proxy = store.proxy(
-                data_bytes,
-                serializer=lambda s: s,
-                deserializer=pickle.loads,
-                populate_target=True,
-            )
+            data_proxy = store.proxy(data_bytes, populate_target=True)
 
             print(data_proxy)
             # b'\x80\x04\x95\x0b\x00\x00\x00\x00\x00\x00\x00]\x94(K\x01K\x02K\x03e.'
@@ -113,8 +112,8 @@ class Store(Generic[ConnectorT]):
         In this example, the serialized `data_bytes` was populated as the
         target object in the resulting proxy so the proxy looks like a proxy
         of bytes rather than the intended list of integers. To fix this, set
-        `populate_target=False` so the custom deserializer is correctly
-        applied to `data_bytes` when the proxy is resolved.
+        `populate_target=False` so the deserializer is correctly applied to
+        `data_bytes` when the proxy is resolved.
 
     Note:
         This class is thread-safe. Different keys are fetched from the
@@ -149,13 +148,16 @@ class Store(Generic[ConnectorT]):
         connector: Connector instance to use for object storage.
         name: Optional name of the store used in logs and error messages.
             The name does not need to be unique.
-        serializer: Optional callable which serializes the object. If `None`,
-            the default serializer
+        serializer: Optional callable which serializes every object put in
+            the store. If `None`, the default serializer
             ([`serialize()`][proxystore.serialize.serialize]) will be used.
-        deserializer: Optional callable used by the factory to deserialize the
-            byte string. If `None`, the default deserializer
+        deserializer: Optional callable which deserializes every object
+            gotten from the store, including when proxies are resolved. If
+            `None`, the default deserializer
             ([`deserialize()`][proxystore.serialize.deserialize]) will be
-            used.
+            used. The serializer and deserializer are part of the
+            [`config()`][proxystore.store.base.Store.config] of the store,
+            so they must be importable in other processes.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
         metrics: Enable recording operation metrics.
@@ -328,16 +330,11 @@ class Store(Generic[ConnectorT]):
         finally:
             registry.unregister(self, closed=self.owner and cleared is True)
 
-    def _deserialize(
-        self,
-        key: ConnectorKeyT,
-        value: BytesLike,
-        deserializer: DeserializerT,
-    ) -> Any:
+    def _deserialize(self, key: ConnectorKeyT, value: BytesLike) -> Any:
         try:
-            return deserializer(value)
+            return self.deserializer(value)
         except Exception as e:
-            name = get_object_path(deserializer)
+            name = get_object_path(self.deserializer)
             raise SerializationError(
                 'Failed to deserialize object '
                 f'(deserializer={name}, key={key}).',
@@ -424,8 +421,6 @@ class Store(Generic[ConnectorT]):
         self,
         *,
         evict: bool = False,
-        serializer: SerializerT | None = None,
-        deserializer: DeserializerT | None = None,
         polling: PollingPolicy | None = None,
     ) -> ProxyFuture[T]:
         """Create a future to an object.
@@ -467,10 +462,6 @@ class Store(Generic[ConnectorT]):
             evict: If a proxy returned by
                 [`ProxyFuture.proxy()`][proxystore.store.future.ProxyFuture.proxy]
                 should evict the object once resolved.
-            serializer: Optionally override the default serializer for the
-                store instance.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             polling: Policy for polling the store for the result of the
                 future. If `None`, the default
                 [`PollingPolicy`][proxystore.store.future.PollingPolicy] is
@@ -504,11 +495,10 @@ class Store(Generic[ConnectorT]):
         factory: PollingStoreFactory[ConnectorT, T] = PollingStoreFactory(
             key,
             store_config=self.config(),
-            deserializer=deserializer,
             evict=evict,
             polling=polling,
         )
-        future = ProxyFuture(factory, serializer=serializer)
+        future = ProxyFuture(factory)
 
         timer.stop()
         if self.metrics is not None:
@@ -586,7 +576,6 @@ class Store(Generic[ConnectorT]):
         self,
         key: ConnectorKeyT,
         *,
-        deserializer: DeserializerT | None = None,
         default: object | None = None,
     ) -> Any | None:
         """Get the object associated with the key.
@@ -607,8 +596,6 @@ class Store(Generic[ConnectorT]):
 
         Args:
             key: Key associated with the object to retrieve.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             default: An optional value to be returned if an object
                 associated with the key does not exist.
 
@@ -620,9 +607,6 @@ class Store(Generic[ConnectorT]):
                 the object associated with the key.
         """
         timer = Timer().start()
-        deserializer = (
-            deserializer if deserializer is not None else self.deserializer
-        )
 
         cached = self.cache.get(key, _MISSING_OBJECT)
         if cached is not _MISSING_OBJECT:
@@ -645,10 +629,7 @@ class Store(Generic[ConnectorT]):
         # Another thread may already be getting the object of the key, so
         # wait on that instead of getting it again.
         future, started = self.cache.start(key)
-        if started:
-            result = self._fetch(key, future, deserializer)
-        else:
-            result = future.result()
+        result = self._fetch(key, future) if started else future.result()
 
         if result is _MISSING_OBJECT:
             result = default
@@ -669,7 +650,6 @@ class Store(Generic[ConnectorT]):
         self,
         keys: Sequence[ConnectorKeyT],
         *,
-        deserializer: DeserializerT | None = None,
         default: object | None = None,
     ) -> list[Any | None]:
         """Get the objects associated with the keys.
@@ -680,8 +660,6 @@ class Store(Generic[ConnectorT]):
 
         Args:
             keys: Sequence of keys associated with the objects to retrieve.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             default: An optional value to be returned for each object
                 that does not exist.
 
@@ -694,21 +672,13 @@ class Store(Generic[ConnectorT]):
                 an object.
         """
         timer = Timer().start()
-        deserializer = (
-            deserializer if deserializer is not None else self.deserializer
-        )
         results: list[Any] = [default] * len(keys)
 
         started, waiting = self._start_batch(keys, results)
         misses = len(started) + len(waiting)
 
         if len(started) > 0:
-            ctime, dtime = self._fetch_batch(
-                keys,
-                started,
-                deserializer,
-                results,
-            )
+            ctime, dtime = self._fetch_batch(keys, started, results)
 
         for i, future in waiting:
             result = future.result()
@@ -746,7 +716,6 @@ class Store(Generic[ConnectorT]):
         self,
         key: ConnectorKeyT,
         future: Future[Any],
-        deserializer: DeserializerT,
     ) -> Any:
         # Fetch the key, finish its cache entry, and return the object or
         # _MISSING_OBJECT if the key does not exist.
@@ -761,7 +730,7 @@ class Store(Generic[ConnectorT]):
             result = _MISSING_OBJECT
             if value is not None:
                 with Timer() as deserializer_timer:
-                    result = self._deserialize(key, value, deserializer)
+                    result = self._deserialize(key, value)
 
                 if self.metrics is not None:
                     dtime = deserializer_timer.elapsed_ms
@@ -825,7 +794,6 @@ class Store(Generic[ConnectorT]):
         self,
         keys: Sequence[ConnectorKeyT],
         started: list[tuple[int, Future[Any]]],
-        deserializer: DeserializerT,
         results: list[Any],
     ) -> tuple[float, float]:
         # Fetch the keys at the indices in started with one connector call,
@@ -844,11 +812,7 @@ class Store(Generic[ConnectorT]):
                     result = _MISSING_OBJECT
                     if value is not None:
                         try:
-                            result = self._deserialize(
-                                keys[i],
-                                value,
-                                deserializer,
-                            )
+                            result = self._deserialize(keys[i], value)
                         except SerializationError as e:
                             del unfinished[i]
                             self.cache.fail(keys[i], future, e)
@@ -887,8 +851,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -901,8 +863,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -914,8 +874,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = False,
         lifetime: Lifetime | None = None,
-        serializer: SerializerT | None = None,
-        deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
@@ -929,10 +887,6 @@ class Store(Generic[ConnectorT]):
             lifetime: Attach the proxy to this lifetime. The object associated
                 with the proxy will be evicted when the lifetime ends.
                 Mutually exclusive with the `evict` parameter.
-            serializer: Optionally override the default serializer for the
-                store instance.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             populate_target: Pass `cache_defaults=True` and `target=obj` to
                 the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
                 return a proxy that (1) is already resolved, (2) can be used
@@ -978,13 +932,11 @@ class Store(Generic[ConnectorT]):
         with Timer() as timer:
             key = self.put(
                 obj,
-                serializer=serializer,
                 connector_options=connector_options,
             )
             factory: StoreFactory[ConnectorT, T] = StoreFactory(
                 key,
                 store_config=self.config(),
-                deserializer=deserializer,
                 evict=evict,
             )
             populate_target = (
@@ -1023,8 +975,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1037,8 +987,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1053,8 +1001,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = False,
         lifetime: Lifetime | None = None,
-        serializer: SerializerT | None = None,
-        deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
@@ -1068,10 +1014,6 @@ class Store(Generic[ConnectorT]):
             lifetime: Attach the proxies to this lifetime. The objects
                 associated with each proxy will be evicted when the lifetime
                 ends. Mutually exclusive with the `evict` parameter.
-            serializer: Optionally override the default serializer for the
-                store instance.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             populate_target: Pass `cache_defaults=True` and `target=obj` to
                 the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
                 return a proxy that (1) is already resolved, (2) can be used
@@ -1124,7 +1066,6 @@ class Store(Generic[ConnectorT]):
 
             keys = self.put_batch(
                 proxiable_objs,
-                serializer=serializer,
                 connector_options=connector_options,
             )
             factories: list[StoreFactory[ConnectorT, T]] = [
@@ -1132,7 +1073,6 @@ class Store(Generic[ConnectorT]):
                     key,
                     store_config=self.config(),
                     evict=evict,
-                    deserializer=deserializer,
                 )
                 for key in keys
             ]
@@ -1176,7 +1116,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = False,
         lifetime: Lifetime | None = None,
-        deserializer: DeserializerT | None = None,
     ) -> Proxy[T]:
         """Create a proxy that will resolve to an object already in the store.
 
@@ -1187,8 +1126,6 @@ class Store(Generic[ConnectorT]):
             lifetime: Attach the proxy to this lifetime. The object associated
                 with the proxy will be evicted when the lifetime ends.
                 Mutually exclusive with the `evict` parameter.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
 
         Returns:
             A proxy of the object.
@@ -1206,7 +1143,6 @@ class Store(Generic[ConnectorT]):
         factory: StoreFactory[ConnectorT, T] = StoreFactory(
             key,
             store_config=self.config(),
-            deserializer=deserializer,
             evict=evict,
         )
         proxy = Proxy(factory)
@@ -1227,8 +1163,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1241,8 +1175,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = ...,
         lifetime: Lifetime | None = ...,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1254,8 +1186,6 @@ class Store(Generic[ConnectorT]):
         *,
         evict: bool = False,
         lifetime: Lifetime | None = None,
-        serializer: SerializerT | None = None,
-        deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
@@ -1269,10 +1199,6 @@ class Store(Generic[ConnectorT]):
             lifetime: Attach the proxy to this lifetime. The object associated
                 with the proxy will be evicted when the lifetime ends.
                 Mutually exclusive with the `evict` parameter.
-            serializer: Optionally override the default serializer for the
-                store instance.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             populate_target: Pass `cache_defaults=True` and `target=obj` to
                 the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
                 return a proxy that (1) is already resolved, (2) can be used
@@ -1302,8 +1228,6 @@ class Store(Generic[ConnectorT]):
             obj,
             evict=evict,
             lifetime=lifetime,
-            serializer=serializer,
-            deserializer=deserializer,
             populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
             connector_options=connector_options,
@@ -1320,8 +1244,6 @@ class Store(Generic[ConnectorT]):
         self,
         obj: NonProxiableT,
         *,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: Literal[True] = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1332,8 +1254,6 @@ class Store(Generic[ConnectorT]):
         self,
         obj: T,
         *,
-        serializer: SerializerT | None = ...,
-        deserializer: DeserializerT | None = ...,
         populate_target: bool | None = ...,
         skip_nonproxiable: bool = ...,
         connector_options: Mapping[str, Any] | None = ...,
@@ -1343,8 +1263,6 @@ class Store(Generic[ConnectorT]):
         self,
         obj: T | NonProxiableT,
         *,
-        serializer: SerializerT | None = None,
-        deserializer: DeserializerT | None = None,
         populate_target: bool | None = None,
         skip_nonproxiable: bool = True,
         connector_options: Mapping[str, Any] | None = None,
@@ -1357,10 +1275,6 @@ class Store(Generic[ConnectorT]):
 
         Args:
             obj: The object to place in store and return a proxy for.
-            serializer: Optionally override the default serializer for the
-                store instance.
-            deserializer: Optionally override the default deserializer for the
-                store instance.
             populate_target: Pass `cache_defaults=True` and `target=obj` to
                 the [`Proxy`][proxystore.proxy.Proxy] constructor. I.e.,
                 return a proxy that (1) is already resolved, (2) can be used
@@ -1386,8 +1300,6 @@ class Store(Generic[ConnectorT]):
         possible_proxy = self.proxy(
             obj,
             evict=False,
-            serializer=serializer,
-            deserializer=deserializer,
             populate_target=populate_target,
             skip_nonproxiable=skip_nonproxiable,
             connector_options=connector_options,
@@ -1407,15 +1319,12 @@ class Store(Generic[ConnectorT]):
         obj: Any,
         *,
         lifetime: Lifetime | None = None,
-        serializer: SerializerT | None = None,
         connector_options: Mapping[str, Any] | None = None,
     ) -> ConnectorKeyT:
         """Put an object in the store.
 
         Args:
             obj: Object to put in the store.
-            serializer: Optionally override the default serializer for the
-                store instance.
             lifetime: Attach the key to this lifetime. The object associated
                 with the key will be evicted when the lifetime ends.
             connector_options: Additional keyword arguments to pass to
@@ -1425,15 +1334,12 @@ class Store(Generic[ConnectorT]):
             A key which can be used to retrieve the object.
 
         Raises:
-            TypeError: If the output of `serializer` is not bytes.
+            TypeError: If the output of the serializer is not bytes.
         """
         timer = Timer().start()
 
         with Timer() as serialize_timer:
-            if serializer is not None:
-                obj = serializer(obj)
-            else:
-                obj = self.serializer(obj)
+            obj = self.serializer(obj)
 
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
@@ -1466,15 +1372,12 @@ class Store(Generic[ConnectorT]):
         objs: Sequence[Any],
         *,
         lifetime: Lifetime | None = None,
-        serializer: SerializerT | None = None,
         connector_options: Mapping[str, Any] | None = None,
     ) -> list[ConnectorKeyT]:
         """Put multiple objects in the store.
 
         Args:
             objs: Sequence of objects to put in the store.
-            serializer: Optionally override the default serializer for the
-                store instance.
             lifetime: Attach the keys to this lifetime. The objects associated
                 with each key will be evicted when the lifetime ends.
             connector_options: Additional keyword arguments to pass to
@@ -1484,15 +1387,12 @@ class Store(Generic[ConnectorT]):
             A list of keys which can be used to retrieve the objects.
 
         Raises:
-            TypeError: If the output of `serializer` is not bytes.
+            TypeError: If the output of the serializer is not bytes.
         """
         timer = Timer().start()
 
         def _serialize(obj: Any) -> BytesLike:
-            if serializer is not None:
-                obj = serializer(obj)
-            else:
-                obj = self.serializer(obj)
+            obj = self.serializer(obj)
 
             if not is_bytes_like(obj):
                 raise TypeError('Serializer must return a bytes-like object.')
@@ -1538,7 +1438,6 @@ class Store(Generic[ConnectorT]):
         key: ConnectorKeyT,
         obj: Any,
         *,
-        serializer: SerializerT | None = None,
         connector_options: Mapping[str, Any] | None = None,
     ) -> None:
         """Set a key in the store to an object.
@@ -1556,15 +1455,13 @@ class Store(Generic[ConnectorT]):
         Args:
             key: Key to set the object on.
             obj: Object to put in the store.
-            serializer: Optionally override the default serializer for the
-                store instance.
             connector_options: Additional keyword arguments to pass to
                 [`DeferrableConnector.set()`][proxystore.connectors.protocols.DeferrableConnector.set].
 
         Raises:
             NotImplementedError: If the `connector` is not of type
                 [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector].
-            TypeError: If the output of `serializer` is not bytes.
+            TypeError: If the output of the serializer is not bytes.
         """
         if not isinstance(self.connector, DeferrableConnector):
             raise NotImplementedError(
@@ -1577,10 +1474,7 @@ class Store(Generic[ConnectorT]):
         timer = Timer().start()
 
         with Timer() as serialize_timer:
-            if serializer is not None:
-                obj = serializer(obj)
-            else:
-                obj = self.serializer(obj)
+            obj = self.serializer(obj)
 
         if not is_bytes_like(obj):
             raise TypeError('Serializer must return a bytes-like object.')
