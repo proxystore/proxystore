@@ -521,9 +521,14 @@ def test_connect_enables_keepalive(fake_server) -> None:
     with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
         sock = client._socket
         assert sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE) != 0
-        if hasattr(socket, 'TCP_KEEPIDLE'):  # pragma: no branch
-            idle = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE)
-            assert idle == 30
+        # macOS names the idle time option TCP_KEEPALIVE.
+        name = (
+            'TCP_KEEPIDLE'
+            if hasattr(socket, 'TCP_KEEPIDLE')
+            else 'TCP_KEEPALIVE'
+        )
+        idle = sock.getsockopt(socket.IPPROTO_TCP, getattr(socket, name))
+        assert idle == 30
 
 
 @pytest.mark.parametrize('target', (None, ENDPOINT_ID))
@@ -588,15 +593,20 @@ def test_send_all_tls_slow_reader() -> None:
     # be split for the timeout to only limit the time without progress.
     certificate = TLSCertificate.generate('test')
     context = certificate.ssl_context()
-    timeout = 1
-    size = 16 * 1024 * 1024
-    # The reader reads about 10 MB/s, so each slice is sent well within the
-    # timeout (even if sleeps take longer, e.g., on macOS) but sending
-    # everything takes longer than the timeout.
-    burst = 512 * 1024
+    timeout = 0.25
+    size = 1024 * 1024
+    # Small socket buffers and slices keep the test fast. The reader reads
+    # about 1.6 MB/s, so each slice is sent well within the timeout (even if
+    # sleeps take longer, e.g., on macOS) but sending everything takes
+    # longer than the timeout.
+    buffer_size = 64 * 1024
+    burst = 32 * 1024
     received = 0
 
-    with socket.create_server(('127.0.0.1', 0)) as listener:
+    with socket.socket() as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
+        listener.bind(('127.0.0.1', 0))
+        listener.listen()
 
         def _read_slowly() -> None:
             nonlocal received
@@ -607,12 +617,17 @@ def test_send_all_tls_slow_reader() -> None:
                     target = min(received + burst, size)
                     while received < target:
                         received += len(tls.recv(burst))
-                    time.sleep(0.05)
+                    time.sleep(0.02)
 
         thread = threading.Thread(target=_read_slowly, daemon=True)
         thread.start()
-        sock = socket.create_connection(listener.getsockname())
-        with _wrap_tls(sock, certificate.fingerprint) as tls:
+        sock = socket.socket()
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, buffer_size)
+        sock.connect(listener.getsockname())
+        with (
+            mock.patch('proxystore.endpoint.client._SEND_SIZE', buffer_size),
+            _wrap_tls(sock, certificate.fingerprint) as tls,
+        ):
             tls.settimeout(timeout)
             start = time.monotonic()
             _send_all(tls, bytes(size))

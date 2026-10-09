@@ -71,6 +71,22 @@ REQUEST_TIMEOUT = 60
 _KEEPALIVE_IDLE = 30
 _KEEPALIVE_INTERVAL = 10
 _KEEPALIVE_COUNT = 3
+# TCP options which configure keepalive and their values. Not every platform
+# supports every option, and macOS names the idle time TCP_KEEPALIVE.
+_KEEPALIVE_OPTIONS = tuple(
+    (option, value)
+    for option, value in (
+        (
+            getattr(
+                socket, 'TCP_KEEPIDLE', getattr(socket, 'TCP_KEEPALIVE', None)
+            ),
+            _KEEPALIVE_IDLE,
+        ),
+        (getattr(socket, 'TCP_KEEPINTVL', None), _KEEPALIVE_INTERVAL),
+        (getattr(socket, 'TCP_KEEPCNT', None), _KEEPALIVE_COUNT),
+    )
+    if option is not None
+)
 # Data is sent in slices of this size because the timeout of a TLS socket
 # limits the time to send everything passed to one send() call.
 _SEND_SIZE = 1024 * 1024
@@ -656,17 +672,10 @@ def _enable_keepalive(sock: socket.socket) -> None:
     # Keepalive detects a host that disappeared without closing the
     # connection, which is otherwise only found once a request times out.
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-    for name, value in (
-        ('TCP_KEEPIDLE', _KEEPALIVE_IDLE),
-        ('TCP_KEEPINTVL', _KEEPALIVE_INTERVAL),
-        ('TCP_KEEPCNT', _KEEPALIVE_COUNT),
-    ):
-        # Not every platform supports every option, and the defaults of
-        # the platform are used if an option cannot be set.
-        option = getattr(socket, name, None)
-        if option is not None:  # pragma: no branch
-            with contextlib.suppress(OSError):
-                sock.setsockopt(socket.IPPROTO_TCP, option, value)
+    for option, value in _KEEPALIVE_OPTIONS:
+        # The defaults of the platform are used if an option cannot be set.
+        with contextlib.suppress(OSError):
+            sock.setsockopt(socket.IPPROTO_TCP, option, value)
 
 
 def _send_all(sock: socket.socket, data: BytesLike) -> None:
