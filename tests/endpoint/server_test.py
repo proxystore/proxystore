@@ -693,6 +693,18 @@ async def test_tls_operations(tls_server: _TLSServer) -> None:
     await asyncio.to_thread(client.close)
 
 
+async def test_tls_close_with_idle_client(tls_server: _TLSServer) -> None:
+    client = await asyncio.to_thread(
+        _connect_tls,
+        tls_server.server,
+        tls_server.fingerprint,
+    )
+    # The idle client never confirms the TLS shutdown, so the handler
+    # must abort the connection instead of waiting for it.
+    await asyncio.wait_for(tls_server.server.handler.close(timeout=0.1), 5)
+    await asyncio.to_thread(client.close)
+
+
 async def test_tls_wrong_fingerprint(tls_server: _TLSServer) -> None:
     with pytest.raises(EndpointAuthError, match='TLS certificate'):
         await asyncio.to_thread(_connect_tls, tls_server.server, '0' * 64)

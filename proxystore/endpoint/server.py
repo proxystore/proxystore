@@ -264,6 +264,11 @@ class _ClientConnection(asyncio.BufferedProtocol):
         assert self._transport is not None
         self._transport.close()
 
+    def abort(self) -> None:
+        """Close the connection immediately without flushing buffers."""
+        assert self._transport is not None
+        self._transport.abort()
+
     async def wait_closed(self) -> None:
         """Wait until the connection is closed."""
         await asyncio.shield(self._closed)
@@ -355,7 +360,9 @@ class ClientHandler:
         Connection handlers waiting on the client finish once their
         connection is closed. Handlers that do not finish within `timeout`
         seconds (e.g., because a request is waiting on a peer endpoint) are
-        cancelled. This is idempotent so it is safe to call multiple times.
+        cancelled, and connections still open are aborted (e.g., TLS
+        connections to idle clients). This is idempotent so it is safe to
+        call multiple times.
 
         Args:
             timeout: Seconds to wait for connection handlers to finish
@@ -369,12 +376,17 @@ class ClientHandler:
         await server.wait_closed()
 
     async def _close_connections(self, timeout: float) -> None:
-        for conn in list(self._connections):
+        connections = list(self._connections)
+        for conn in connections:
             conn.close()
         tasks = list(self._tasks)
         if len(tasks) == 0:
             return
         _, pending = await asyncio.wait(tasks, timeout=timeout)
+        # A TLS connection waits for the client to confirm the shutdown,
+        # but an idle client may never read from its socket.
+        for conn in connections:
+            conn.abort()
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)
