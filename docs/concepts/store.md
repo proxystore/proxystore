@@ -153,3 +153,12 @@ To store some types in a custom format, handle those types in the serializer and
 The serializer and deserializer are part of the [`config()`][proxystore.store.base.Store.config] of the store, so they must be importable wherever proxies of the store are resolved.
 See Issue [#146](https://github.com/proxystore/proxystore/issues/146){target=_blank}
 for further discussion on where custom serializers can be helpful.
+
+## Security
+
+The default deserializer uses [`pickle`][pickle], and unpickling data can run arbitrary code.
+So anyone who can write to the storage behind a store's connector (e.g., the directory of a [`FileConnector`][proxystore.connectors.file.FileConnector] or the Redis server of a [`RedisConnector`][proxystore.connectors.redis.RedisConnector]) can run code in every process that gets objects from the store or resolves its proxies.
+Treat write access to a connector's storage like write access to your code, and see [Connector Security](connector.md#security) for what protects each connector.
+
+Proxies and the [`config()`][proxystore.store.base.Store.config] of a store are also trusted.
+A store config names the connector, serializer, and deserializer to import and create, so only resolve proxies, and only create stores from configs, from sources you trust (see [Proxy Security](proxy.md#security)).

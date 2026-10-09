@@ -121,3 +121,10 @@ resolve(p)
 x = extract(p)
 assert not isinstance(x, Proxy)
 ```
+
+## Security
+
+Only unpickle proxies from sources you trust.
+Unpickling a proxy unpickles its factory, and unpickling can run arbitrary code.
+Resolving a proxy then runs the factory, which can do anything a function can do.
+For example, a [`StoreFactory`][proxystore.store.factory.StoreFactory] imports and creates the connector, serializer, and deserializer named in its store configuration and deserializes whatever bytes the connector returns (see [Store Security](store.md#security)).
