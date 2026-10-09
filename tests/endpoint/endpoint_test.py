@@ -226,6 +226,17 @@ async def test_endpoint_tls(tmp_path: pathlib.Path) -> None:
         await asyncio.to_thread(client.close)
 
 
+async def test_endpoint_without_tls(tmp_path: pathlib.Path) -> None:
+    endpoint_dir, config = _endpoint_dir(tmp_path, tls=False)
+
+    async with Endpoint(endpoint_dir):
+        assert endpoint_dir.read_connection().tls_fingerprint is None
+        client = await asyncio.to_thread(EndpointClient.from_dir, endpoint_dir)
+        assert not isinstance(client._socket, ssl.SSLSocket)
+        assert client.info.id == config.id
+        await asyncio.to_thread(client.close)
+
+
 async def test_endpoint_peering(tmp_path: pathlib.Path, caplog) -> None:
     caplog.set_level(logging.INFO)
     endpoint_dir, _ = _endpoint_dir(
