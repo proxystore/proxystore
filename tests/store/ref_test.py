@@ -7,7 +7,9 @@ import os
 import pathlib
 import pickle
 import weakref
+from collections.abc import Callable
 from collections.abc import Generator
+from typing import Any
 from typing import TypeVar
 from unittest import mock
 
@@ -26,6 +28,7 @@ from proxystore.store.ref import into_owned
 from proxystore.store.ref import mut_borrow
 from proxystore.store.ref import MutableBorrowError
 from proxystore.store.ref import OwnedProxy
+from proxystore.store.ref import ReferenceBorrowedError
 from proxystore.store.ref import ReferenceInvalidError
 from proxystore.store.ref import ReferenceNotOwnedError
 from proxystore.store.ref import update
@@ -243,6 +246,35 @@ def test_pickle_owned_proxy(store: Store[FileConnector]) -> None:
         assert proxy == 'value'
 
     new_proxy = pickle.loads(proxy_pkl)
+    assert new_proxy == 'value'
+
+
+def test_pickle_owned_proxy_twice(store: Store[FileConnector]) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+
+    new_proxy = pickle.loads(pickle.dumps(proxy))
+    with pytest.raises(ReferenceInvalidError, match='already pickled'):
+        pickle.dumps(proxy)
+    assert new_proxy == 'value'
+
+
+@pytest.mark.parametrize('borrow_func', (borrow, mut_borrow))
+def test_pickle_borrowed_owned_proxy(
+    store: Store[FileConnector],
+    borrow_func: Callable[[OwnedProxy[str]], Any],
+) -> None:
+    factory = put_in_store('value', store)
+    proxy = OwnedProxy(factory)
+    borrowed = borrow_func(proxy)
+
+    with pytest.raises(ReferenceBorrowedError):
+        pickle.dumps(proxy)
+    # The proxy keeps ownership so it is still valid.
+    assert proxy == 'value'
+
+    del borrowed
+    new_proxy = pickle.loads(pickle.dumps(proxy))
     assert new_proxy == 'value'
 
 
