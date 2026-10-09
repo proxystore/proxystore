@@ -87,7 +87,7 @@ name = "my-endpoint"  # (2)!
 id = "ed924cda74a1f625ea4e34bc7f3d4759f298b1a950dc41f87484d24023757173"  # (3)!
 port = 8765  # (4)!
 host = "ip"  # (5)!
-tls = false  # (6)!
+tls = true  # (6)!
 max_object_size = "100 MB"  # (7)!
 
 [p2p]
@@ -271,23 +271,26 @@ starts.
     `host = "127.0.0.1"` in the endpoint configuration so the endpoint is
     not reachable from other nodes.
 
-By default, objects are sent between clients and the endpoint unencrypted.
-The token only authenticates each side when a connection is established;
-the requests and responses that follow are not protected against tampering.
-This is usually acceptable within a cluster because reading or modifying
-network traffic typically requires root access. If clients connect to the
-endpoint over a network you do not trust, configure the endpoint with TLS to
-encrypt connections.
+By default, connections between clients and the endpoint are encrypted with
+TLS. The endpoint generates a new self-signed certificate each time it starts
+and writes its fingerprint to `connection.json`, and clients only trust that
+certificate. Without TLS, the token only authenticates each side when a
+connection is established, and the requests and responses that follow are
+not protected against reading or tampering.
+
+TLS reduces the throughput of large transfers between clients and the
+endpoint by about half. This rarely matters in practice because transfers
+between endpoints, which are always encrypted, are usually the bottleneck.
+If all clients reach the endpoint over a network you trust (e.g., within a
+cluster, where reading or modifying network traffic typically requires root
+access), you can turn TLS off for faster transfers.
 
 ```bash
-$ proxystore-endpoint configure my-endpoint --tls
+$ proxystore-endpoint configure my-endpoint --no-tls
 ```
 
-Or, set `tls = true` in the endpoint's `config.toml` and restart the endpoint.
-The endpoint generates a new self-signed certificate each time it starts and
-writes its fingerprint to `connection.json`, and clients only trust that
-certificate. TLS reduces the throughput of
-large transfers by about half.
+Or, set `tls = false` in the endpoint's `config.toml` and restart the
+endpoint.
 
 ## EndpointConnector
 

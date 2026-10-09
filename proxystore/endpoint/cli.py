@@ -179,9 +179,9 @@ def _parse_relays(relays: str) -> Literal['n0', 'none'] | list[str]:
 )
 @click.option(
     '--tls/--no-tls',
-    default=False,
+    default=True,
     metavar='BOOL',
-    help='Encrypt connections from clients with TLS.',
+    help='Encrypt connections from clients with TLS (on by default).',
 )
 @_exit_on_error
 def configure(

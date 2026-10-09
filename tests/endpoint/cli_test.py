@@ -65,7 +65,7 @@ def test_version_command() -> None:
             ['--port', '4321'],
             {
                 'port': 4321,
-                'tls': False,
+                'tls': True,
                 'p2p.enabled': True,
                 'p2p.relays': 'n0',
                 'p2p.discovery': 'n0',
@@ -80,7 +80,7 @@ def test_version_command() -> None:
         ),
         (['--relays', 'none'], {'p2p.relays': 'none'}),
         (['--no-peering'], {'p2p.enabled': False}),
-        (['--tls'], {'tls': True}),
+        (['--no-tls'], {'tls': False}),
     ),
 )
 def test_configure_command(

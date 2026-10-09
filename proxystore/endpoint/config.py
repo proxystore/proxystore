@@ -127,7 +127,7 @@ class EndpointConfig(VersionedFile):
         port: Port endpoint is running on.
         tls: Encrypt connections between clients and the endpoint with TLS.
             The endpoint generates a self-signed certificate each time it
-            starts, and clients only trust that certificate.
+            starts, and clients only trust that certificate. On by default.
         max_object_size: Maximum size in bytes of an object that clients
             or peers can set on the endpoint. If `0`, there is no limit.
             A string with units is also accepted (e.g., `"100 MB"` or
@@ -151,7 +151,7 @@ class EndpointConfig(VersionedFile):
     id: EndpointId
     port: int
     host: str = 'ip'
-    tls: bool = False
+    tls: bool = True
     max_object_size: int = MAX_OBJECT_SIZE_DEFAULT
     p2p: EndpointP2PConfig = Field(default_factory=EndpointP2PConfig)
     storage: EndpointStorageConfig = Field(
