@@ -24,6 +24,11 @@ def test_negative_cache_size() -> None:
         Store(LocalConnector(), cache_size=-1)
 
 
+def test_invalid_cache_mode() -> None:
+    with pytest.raises(ValueError, match='Cache mode must be'):
+        Store(LocalConnector(), cache_mode='other')  # type: ignore[arg-type]
+
+
 def test_store_name_and_id() -> None:
     with Store(LocalConnector()) as store:
         assert store.name is None
@@ -354,3 +359,82 @@ def test_store_get_batch_repeated_key_cache() -> None:
         store.evict(key)
         for obj in 'bcd':
             assert store.get(store.put(obj)) == obj
+
+
+def test_cache_mode_objects_shares_objects() -> None:
+    with Store(LocalConnector()) as store:
+        key = store.put([1, 2])
+        assert store.get(key) is store.get(key)
+        assert store.get_batch([key, key]) == [[1, 2], [1, 2]]
+
+
+def test_cache_mode_bytes() -> None:
+    with Store(LocalConnector(), cache_mode='bytes') as store:
+        key = store.put([1, 2])
+        missing = store.put('missing')
+        store.evict(missing)
+
+        first = store.get(key)
+        assert store.is_cached(key)
+        assert isinstance(store.cache.get(key), bytes)
+        second = store.get(key)
+        assert first == second == [1, 2]
+        assert first is not second
+
+        # Hits, misses, missing keys, and repeated keys each get their own
+        # object.
+        other = store.put([3])
+        values = store.get_batch([key, other, other, missing], default='d')
+        assert values == [[1, 2], [3], [3], 'd']
+        assert len({id(v) for v in values[:3]}) == 3
+        assert values[0] is not first
+        assert store.get_batch([key]) == [[1, 2]]
+
+        proxy1: Proxy[list[int]] = store.proxy_from_key(key)
+        proxy2: Proxy[list[int]] = store.proxy_from_key(key)
+        proxy1.append(3)
+        assert proxy2 == [1, 2]
+
+
+def test_cache_mode_bytes_deserializer_error() -> None:
+    with Store(
+        LocalConnector(),
+        deserializer=_deserialize_error,
+        cache_mode='bytes',
+    ) as store:
+        key = store.put('value')
+        other = store.put('other')
+        # Like the objects cache mode, data that cannot be deserialized is
+        # not cached so the next get tries the connector again.
+        with pytest.raises(SerializationError):
+            store.get(key)
+        assert not store.is_cached(key)
+        with pytest.raises(SerializationError):
+            store.get_batch([other])
+        assert not store.is_cached(other)
+
+
+def test_cache_mode_bytes_metrics() -> None:
+    with Store(LocalConnector(), cache_mode='bytes', metrics=True) as store:
+        key = store.put('value')
+        assert store.get(key) == 'value'
+        assert store.get(key) == 'value'
+        assert store.get_batch([key]) == ['value']
+
+        assert store.metrics is not None
+        metrics = store.metrics.get_metrics(key)
+        assert metrics is not None
+        # Cache hits deserialize too, so they are timed.
+        assert metrics.times['store.get.deserialize'].count == 2
+        batch = store.metrics.get_metrics([key])
+        assert batch is not None
+        assert batch.times['store.get_batch.deserialize'].count == 1
+        assert 'store.get_batch.connector' not in batch.times
+
+
+def test_cache_mode_config() -> None:
+    with Store(LocalConnector(), cache_mode='bytes') as store:
+        config = store.config()
+        assert config.cache_mode == 'bytes'
+        with Store.from_config(config) as other:
+            assert other._cache_mode == 'bytes'

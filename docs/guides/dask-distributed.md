@@ -122,11 +122,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 ```bash
 $ python example.py
-INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False)
+INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, cache_mode=objects, metrics=False, populate_target=False)
 DEBUG:proxystore.store.base:Store(dask): PUT FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.085 ms
 DEBUG:proxystore.store.base:Store(dask): PROXY FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.146 ms
 DEBUG:proxystore.store.base:Store(dask): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.045 ms (cached=False)
-INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, metrics=False, populate_target=False)
+INFO:proxystore.store.base:Initialized Store(id=b4d5fd4a4e6c4c4f9a1f4b0f2d6e8a17, name=dask, connector=FileConnector(directory=/tmp/proxystore-cache), serializer=default, deserializer=default, cache_size=16, cache_mode=objects, metrics=False, populate_target=False)
 DEBUG:proxystore.store.base:Store(dask): GET FileKey(filename='38162c47-ec81-4c29-b208-e8d4da036e6f') in 0.054 ms (cached=False)
 Result: 4950
 ```

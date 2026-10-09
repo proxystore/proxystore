@@ -39,6 +39,7 @@ from proxystore.store.metrics import StoreMetrics
 from proxystore.store.ref import into_owned
 from proxystore.store.ref import OwnedProxy
 from proxystore.store.registry import registry
+from proxystore.store.types import CacheModeT
 from proxystore.store.types import ConnectorKeyT
 from proxystore.store.types import ConnectorT
 from proxystore.store.types import DeserializerT
@@ -160,6 +161,13 @@ class Store(Generic[ConnectorT]):
             so they must be importable in other processes.
         cache_size: Size of LRU cache (in # of objects). If 0,
             the cache is disabled. The cache is local to the Python process.
+        cache_mode: What the cache holds. With `'objects'`, the cache holds
+            deserialized objects, so a cache hit is free but every
+            [`get()`][proxystore.store.base.Store.get] and proxy of a key in
+            this process shares the same object, and changing it changes
+            all of them. With `'bytes'`, the cache holds the serialized data
+            and deserializes it on every hit, so each caller gets its own
+            object at the cost of deserializing each time.
         metrics: Enable recording operation metrics.
         populate_target: Set the default value of `populate_target` for
             proxy methods of the store.
@@ -171,7 +179,8 @@ class Store(Generic[ConnectorT]):
             proxy is resolved in another process, are never owners.
 
     Raises:
-        ValueError: If `cache_size` is less than zero.
+        ValueError: If `cache_size` is less than zero or `cache_mode` is
+            not `'objects'` or `'bytes'`.
     """  # noqa: E501
 
     def __init__(
@@ -182,6 +191,7 @@ class Store(Generic[ConnectorT]):
         serializer: SerializerT | None = None,
         deserializer: DeserializerT | None = None,
         cache_size: int = 16,
+        cache_mode: CacheModeT = 'objects',
         metrics: bool = False,
         populate_target: bool = True,
         owner: bool = True,
@@ -194,6 +204,11 @@ class Store(Generic[ConnectorT]):
             raise ValueError(
                 f'Cache size cannot be negative. Got {cache_size}.',
             )
+        if cache_mode not in ('objects', 'bytes'):
+            raise ValueError(
+                "Cache mode must be 'objects' or 'bytes'. "
+                f'Got {cache_mode!r}.',
+            )
 
         self.connector = connector
         self.cache: LRUCache[ConnectorKeyT, Any] = LRUCache(cache_size)
@@ -201,6 +216,7 @@ class Store(Generic[ConnectorT]):
         self._name = name
         self._metrics = StoreMetrics() if metrics else None
         self._cache_size = cache_size
+        self._cache_mode = cache_mode
         self._serializer = serializer
         self._deserializer = deserializer
         self._populate_target = populate_target
@@ -340,6 +356,22 @@ class Store(Generic[ConnectorT]):
                 f'(deserializer={name}, key={key}).',
             ) from e
 
+    def _from_cache(
+        self,
+        key: ConnectorKeyT,
+        value: Any,
+        *,
+        timed: bool = False,
+    ) -> Any:
+        # Convert a value from the cache, or from the fetch of another
+        # thread, to the object to return. With the bytes cache mode, the
+        # value is serialized data, so each caller gets its own object.
+        if self._cache_mode == 'bytes' and value is not _MISSING_OBJECT:
+            if timed:
+                return self._timed_deserialize(key, value)
+            return self._deserialize(key, value)
+        return value
+
     def config(self) -> StoreConfig:
         """Get the store configuration.
 
@@ -363,6 +395,7 @@ class Store(Generic[ConnectorT]):
             serializer=self._serializer,
             deserializer=self._deserializer,
             cache_size=self._cache_size,
+            cache_mode=self._cache_mode,
             metrics=self.metrics is not None,
             populate_target=self._populate_target,
         )
@@ -411,6 +444,7 @@ class Store(Generic[ConnectorT]):
             serializer=config.serializer,
             deserializer=config.deserializer,
             cache_size=config.cache_size,
+            cache_mode=config.cache_mode,
             metrics=config.metrics,
             populate_target=config.populate_target,
             owner=owner,
@@ -621,7 +655,7 @@ class Store(Generic[ConnectorT]):
                 key,
                 timer.elapsed_ms,
             )
-            return cached
+            return self._from_cache(key, cached, timed=True)
 
         if self.metrics is not None:
             self.metrics.add_counter('store.get.cache_misses', key, 1)
@@ -629,7 +663,10 @@ class Store(Generic[ConnectorT]):
         # Another thread may already be getting the object of the key, so
         # wait on that instead of getting it again.
         future, started = self.cache.start(key)
-        result = self._fetch(key, future) if started else future.result()
+        if started:
+            result = self._fetch(key, future)
+        else:
+            result = self._from_cache(key, future.result(), timed=True)
 
         if result is _MISSING_OBJECT:
             result = default
@@ -674,16 +711,28 @@ class Store(Generic[ConnectorT]):
         timer = Timer().start()
         results: list[Any] = [default] * len(keys)
 
-        started, waiting = self._start_batch(keys, results)
+        started, waiting, cached = self._start_batch(keys, results)
         misses = len(started) + len(waiting)
 
+        ctime = dtime = 0.0
         if len(started) > 0:
             ctime, dtime = self._fetch_batch(keys, started, results)
 
-        for i, future in waiting:
-            result = future.result()
-            if result is not _MISSING_OBJECT:
-                results[i] = result
+        # With the bytes cache mode, cached and waited on values are
+        # deserialized here.
+        with Timer() as deserializer_timer:
+            for i, future in waiting:
+                result = self._from_cache(keys[i], future.result())
+                if result is not _MISSING_OBJECT:
+                    results[i] = result
+            for i in cached:
+                results[i] = self._from_cache(keys[i], results[i])
+        bytes_mode = self._cache_mode == 'bytes'
+        if bytes_mode:
+            dtime += deserializer_timer.elapsed_ms
+        deserialized = len(started) > 0 or (
+            bytes_mode and len(waiting) + len(cached) > 0
+        )
 
         timer.stop()
         if self.metrics is not None:
@@ -696,6 +745,7 @@ class Store(Generic[ConnectorT]):
             )
             if len(started) > 0:
                 self.metrics.add_time('store.get_batch.connector', keys, ctime)
+            if deserialized:
                 self.metrics.add_time(
                     'store.get_batch.deserialize',
                     keys,
@@ -729,23 +779,24 @@ class Store(Generic[ConnectorT]):
 
             result = _MISSING_OBJECT
             if value is not None:
-                with Timer() as deserializer_timer:
-                    result = self._deserialize(key, value)
-
-                if self.metrics is not None:
-                    dtime = deserializer_timer.elapsed_ms
-                    self.metrics.add_time('store.get.deserialize', key, dtime)
-                    self.metrics.add_attribute(
-                        'store.get.object_size',
-                        key,
-                        len(value),
-                    )
+                result = self._timed_deserialize(key, value)
         except BaseException as e:
             # Threads waiting on this fetch get the same error.
             self.cache.fail(key, future, e)
             raise
 
-        self._finish(key, future, result)
+        self._finish(key, future, result, value)
+        return result
+
+    def _timed_deserialize(self, key: ConnectorKeyT, value: BytesLike) -> Any:
+        with Timer() as deserializer_timer:
+            result = self._deserialize(key, value)
+
+        if self.metrics is not None:
+            dtime = deserializer_timer.elapsed_ms
+            self.metrics.add_time('store.get.deserialize', key, dtime)
+            size = len(value)
+            self.metrics.add_attribute('store.get.object_size', key, size)
         return result
 
     def _finish(
@@ -753,21 +804,30 @@ class Store(Generic[ConnectorT]):
         key: ConnectorKeyT,
         future: Future[Any],
         result: Any,
+        value: BytesLike | None,
     ) -> None:
-        # Missing objects are not cached.
+        # Missing objects are not cached. With the bytes cache mode, the
+        # serialized data is cached instead of the object.
         cache = result is not _MISSING_OBJECT
+        if cache and self._cache_mode == 'bytes':
+            result = value
         self.cache.finish(key, future, result, cache=cache)
 
     def _start_batch(
         self,
         keys: Sequence[ConnectorKeyT],
         results: list[Any],
-    ) -> tuple[list[tuple[int, Future[Any]]], list[tuple[int, Future[Any]]]]:
-        # Put the cached objects in results and return the indices and
-        # futures of the keys this thread must fetch and the keys which
-        # other threads are fetching.
+    ) -> tuple[
+        list[tuple[int, Future[Any]]],
+        list[tuple[int, Future[Any]]],
+        list[int],
+    ]:
+        # Put the cached values in results and return the indices and
+        # futures of the keys this thread must fetch, the keys which other
+        # threads are fetching, and the indices of the cached values.
         started: list[tuple[int, Future[Any]]] = []
         waiting: list[tuple[int, Future[Any]]] = []
+        hits: list[int] = []
         # Keys started by this call, so a key repeated in keys waits on the
         # fetch of its first occurrence.
         mine: dict[ConnectorKeyT, Future[Any]] = {}
@@ -776,6 +836,7 @@ class Store(Generic[ConnectorT]):
                 cached = self.cache.get(key, _MISSING_OBJECT)
                 if cached is not _MISSING_OBJECT:
                     results[i] = cached
+                    hits.append(i)
                 elif key in mine:
                     waiting.append((i, mine[key]))
                 else:
@@ -788,7 +849,7 @@ class Store(Generic[ConnectorT]):
             for i, future in started:
                 self.cache.fail(keys[i], future, e)
             raise
-        return started, waiting
+        return started, waiting, hits
 
     def _fetch_batch(
         self,
@@ -820,7 +881,7 @@ class Store(Generic[ConnectorT]):
                             continue
                         results[i] = result
                     del unfinished[i]
-                    self._finish(keys[i], future, result)
+                    self._finish(keys[i], future, result, value)
         except BaseException as e:
             # Threads waiting on fetches not yet finished get the same error.
             for i, future in unfinished.items():

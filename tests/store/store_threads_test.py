@@ -18,6 +18,7 @@ from proxystore.serialize import deserialize
 from proxystore.serialize import SerializationError
 from proxystore.store import Store
 from proxystore.store.base import _reset_stores_after_fork
+from proxystore.store.types import CacheModeT
 
 TIMEOUT = 5
 
@@ -61,6 +62,7 @@ class _Future(Future[Any]):
 @contextlib.contextmanager
 def blocking_store(
     cache_size: int = 0,
+    cache_mode: CacheModeT = 'objects',
 ) -> Generator[tuple[Store[LocalConnector], Blocker], None, None]:
     _Future.waiting.clear()
     connector = LocalConnector()
@@ -69,7 +71,11 @@ def blocking_store(
         mock.patch.object(connector, 'get', blocker.get),
         mock.patch.object(connector, 'get_batch', blocker.get_batch),
         mock.patch('proxystore.store.cache.Future', _Future),
-        Store(connector, cache_size=cache_size) as store,
+        Store(
+            connector,
+            cache_size=cache_size,
+            cache_mode=cache_mode,
+        ) as store,
     ):
         yield store, blocker
 
@@ -112,6 +118,22 @@ def test_get_same_key_fetched_once() -> None:
 
         assert first.result(TIMEOUT) == [1, 2, 3]
         assert second.result(TIMEOUT) is first.result()
+        assert blocker.calls == [key]
+
+
+def test_get_same_key_bytes_cache_mode() -> None:
+    with blocking_store(cache_mode='bytes') as (store, blocker):
+        key = store.put([1, 2, 3])
+
+        first = _start(store.get, key)
+        assert blocker.entered.acquire(timeout=TIMEOUT)
+        second = _start(store.get, key)
+        assert _Future.waiting.wait(TIMEOUT)
+        blocker.release.set()
+
+        # The waiter deserializes the data itself so it gets its own object.
+        assert first.result(TIMEOUT) == second.result(TIMEOUT) == [1, 2, 3]
+        assert second.result() is not first.result()
         assert blocker.calls == [key]
 
 

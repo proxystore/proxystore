@@ -14,6 +14,7 @@ from pydantic import Field
 from proxystore._compat import drop_unknown_fields
 from proxystore._compat import STATE_VERSION_KEY
 from proxystore.connectors.protocols import Connector
+from proxystore.store.types import CacheModeT
 from proxystore.store.types import DeserializerT
 from proxystore.store.types import SerializerT
 from proxystore.utils.config import dump
@@ -149,6 +150,7 @@ class StoreConfig(BaseModel):
         serializer: Optional serializer.
         deserializer: Optional deserializer.
         cache_size: Cache size.
+        cache_mode: Cache deserialized objects or serialized data.
         metrics: Enable recording operation metrics.
         populate_target: Set the default value for the `populate_target`
             parameter of proxy methods.
@@ -162,6 +164,7 @@ class StoreConfig(BaseModel):
     serializer: SerializerT | None = Field(None)
     deserializer: DeserializerT | None = Field(None)
     cache_size: int = Field(16)
+    cache_mode: CacheModeT = Field('objects')
     metrics: bool = Field(False)
     populate_target: bool = Field(True)
 
@@ -209,6 +212,7 @@ class StoreConfig(BaseModel):
             ```toml title="config.toml"
             name = "example"
             cache_size = 16
+            cache_mode = "objects"
             metrics = false
             populate_target = true
 
