@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
+from typing import Literal
 from typing import TypeVar
 
 from proxystore.connectors.protocols import Connector
@@ -17,3 +18,5 @@ SerializerT = Callable[[Any], BytesLike]
 """Serializer type alias."""
 DeserializerT = Callable[[BytesLike], Any]
 """Deserializer type alias."""
+CacheModeT = Literal['objects', 'bytes']
+"""Store cache mode type alias."""

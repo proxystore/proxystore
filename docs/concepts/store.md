@@ -82,6 +82,28 @@ from proxystore.store import Store
 Store(..., cache_size=16)
 ```
 
+By default, the cache holds deserialized objects, so a cache hit is free, but every [`get()`][proxystore.store.base.Store.get] and every proxy of the same key in a process share one object.
+Changing that object (e.g., appending to a list) changes it for all of them.
+Set `#!python cache_mode='bytes'` to cache the serialized data instead.
+Each cache hit then deserializes the data again, so each caller gets its own object, at the cost of deserializing on every hit.
+
+```python linenums="1"
+from proxystore.store import Store
+
+with Store(..., cache_mode='bytes') as store:
+    key = store.put([1, 2, 3])
+    a = store.get(key)
+    b = store.get(key)  # (1)!
+    a.append(4)
+    assert b == [1, 2, 3]
+```
+
+1. Comes from the cache, but `b` is a new object.
+
+The cache mode is part of the store's [`config()`][proxystore.store.base.Store.config], so proxies resolved in other processes use the same mode.
+With `#!python cache_mode='bytes'`, callers only get separate objects if the deserializer makes new objects from the data.
+The default deserializer does, but a custom deserializer that returns the data itself, or views of it (e.g., [`numpy.frombuffer()`](https://numpy.org/doc/stable/reference/generated/numpy.frombuffer.html){target=_blank}), shares that data between callers.
+
 ## Transactional Guarantees
 
 ProxyStore is designed around optimizing the communication of ephemeral data
