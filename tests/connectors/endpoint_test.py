@@ -316,6 +316,11 @@ def test_connection_pool_reconnect_timeout() -> None:
     assert connect.call_count == 1
 
 
+def test_request_timeout_must_be_positive(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(ValueError, match='must be positive'):
+        EndpointConnector(proxystore_dir=tmp_path, request_timeout=0)
+
+
 def test_connection_pool_does_not_retry_timeout() -> None:
     connect = mock.MagicMock(side_effect=lambda: _FakeClient(fail=False))
     pool = _ConnectionPool(connect)

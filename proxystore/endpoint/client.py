@@ -11,6 +11,7 @@ Note:
 
 from __future__ import annotations
 
+import contextlib
 import hmac
 import logging
 import os
@@ -70,6 +71,9 @@ REQUEST_TIMEOUT = 60
 _KEEPALIVE_IDLE = 30
 _KEEPALIVE_INTERVAL = 10
 _KEEPALIVE_COUNT = 3
+# Data is sent in slices of this size because the timeout of a TLS socket
+# limits the time to send everything passed to one send() call.
+_SEND_SIZE = 1024 * 1024
 
 
 class EndpointClient:
@@ -96,12 +100,16 @@ class EndpointClient:
         info: Information about the endpoint.
         protocol_version: Protocol version negotiated in the handshake.
         request_timeout: Seconds a request handled by this endpoint can go
-            without sending or receiving any data before it fails with an
+            without sending or receiving any data, including while the
+            endpoint handles the request (e.g., writes the object to its
+            storage), before it fails with an
             [`EndpointTimeoutError`][proxystore.endpoint.exceptions.EndpointTimeoutError].
             Requests forwarded to a peer endpoint have no timeout in the
-            client because the endpoint does not respond until the peer does,
-            so the endpoint times out requests to peers instead. If `None`,
-            requests have no timeout.
+            client because the endpoint does not respond until the peer
+            does. If `None`, requests have no timeout.
+
+    Raises:
+        ValueError: If `request_timeout` is not positive.
     """
 
     def __init__(
@@ -115,7 +123,7 @@ class EndpointClient:
         self._socket = sock
         self.info = info
         self.protocol_version = protocol_version
-        self.request_timeout = request_timeout
+        self.request_timeout = check_request_timeout(request_timeout)
         self.closed = False
         self._next_request_id = 1
 
@@ -169,6 +177,7 @@ class EndpointClient:
                 ProxyStore version or Python minor version than this client.
 
         Raises:
+            ValueError: If `request_timeout` is not positive.
             EndpointNotRunningError: If the connection is refused.
             EndpointConnectionError: If the connection cannot be established
                 or is lost during the handshake (e.g., a timeout).
@@ -177,6 +186,7 @@ class EndpointClient:
             EndpointProtocolError: If the endpoint uses an incompatible
                 protocol.
         """
+        check_request_timeout(request_timeout)
         try:
             sock = socket.create_connection((host, port), timeout=timeout)
         except ConnectionRefusedError as e:
@@ -628,6 +638,20 @@ def _recv_message(
     return reader.message
 
 
+def check_request_timeout(timeout: float | None) -> float | None:
+    """Check that a request timeout is positive or `None`.
+
+    Raises:
+        ValueError: If `timeout` is not positive.
+    """
+    # A timeout of 0 would make the socket non-blocking.
+    if timeout is not None and timeout <= 0:
+        raise ValueError(
+            f'The request timeout must be positive or None. Got {timeout}.',
+        )
+    return timeout
+
+
 def _enable_keepalive(sock: socket.socket) -> None:
     # Keepalive detects a host that disappeared without closing the
     # connection, which is otherwise only found once a request times out.
@@ -637,10 +661,12 @@ def _enable_keepalive(sock: socket.socket) -> None:
         ('TCP_KEEPINTVL', _KEEPALIVE_INTERVAL),
         ('TCP_KEEPCNT', _KEEPALIVE_COUNT),
     ):
-        # Not every platform supports every option.
+        # Not every platform supports every option, and the defaults of
+        # the platform are used if an option cannot be set.
         option = getattr(socket, name, None)
         if option is not None:  # pragma: no branch
-            sock.setsockopt(socket.IPPROTO_TCP, option, value)
+            with contextlib.suppress(OSError):
+                sock.setsockopt(socket.IPPROTO_TCP, option, value)
 
 
 def _send_all(sock: socket.socket, data: BytesLike) -> None:
@@ -649,7 +675,7 @@ def _send_all(sock: socket.socket, data: BytesLike) -> None:
     # without progress so large objects can be sent.
     view = memoryview(data).cast('B')
     while len(view) > 0:
-        sent = sock.send(view)
+        sent = sock.send(view[:_SEND_SIZE])
         view = view[sent:]
 
 

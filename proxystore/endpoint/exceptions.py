@@ -13,7 +13,7 @@ EndpointError
 ├── EndpointRunningError
 ├── EndpointNotRunningError
 ├── EndpointConnectionError
-│   └── EndpointTimeoutError
+├── EndpointTimeoutError
 ├── EndpointAuthError
 ├── EndpointProtocolError
 └── EndpointRequestError
@@ -102,11 +102,13 @@ class EndpointConnectionError(EndpointError):
     """
 
 
-class EndpointTimeoutError(EndpointConnectionError, TimeoutError):
+class EndpointTimeoutError(EndpointError, TimeoutError):
     """Exception raised when the endpoint stops responding to a request.
 
     The client closes the connection because the endpoint did not send or
-    receive any data for the request timeout of the client.
+    receive any data for the request timeout of the client. This is not an
+    [`EndpointConnectionError`][proxystore.endpoint.exceptions.EndpointConnectionError]
+    because retrying with a new connection is unlikely to help.
     """
 
 

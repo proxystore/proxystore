@@ -17,9 +17,12 @@ import pytest
 
 from proxystore.endpoint import protocol
 from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.auth import TLSCertificate
+from proxystore.endpoint.client import _enable_keepalive
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import _send_all
+from proxystore.endpoint.client import _wrap_tls
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import ConnectionInfo
@@ -578,3 +581,52 @@ def test_send_all_partial_sends() -> None:
     _send_all(sock, b'abcdefgh')
     sent = [bytes(c.args[0][:3]) for c in sock.send.call_args_list]
     assert sent == [b'abc', b'def', b'gh']
+
+
+def test_send_all_tls_slow_reader() -> None:
+    # The timeout of a TLS socket limits each send() call, so sending must
+    # be split for the timeout to only limit the time without progress.
+    certificate = TLSCertificate.generate('test')
+    context = certificate.ssl_context()
+    size = 8 * 1024 * 1024
+    received = 0
+
+    with socket.create_server(('127.0.0.1', 0)) as listener:
+
+        def _read_slowly() -> None:
+            nonlocal received
+            conn, _ = listener.accept()
+            with context.wrap_socket(conn, server_side=True) as tls:
+                while received < size:
+                    received += len(tls.recv(64 * 1024))
+                    time.sleep(0.005)
+
+        thread = threading.Thread(target=_read_slowly, daemon=True)
+        thread.start()
+        sock = socket.create_connection(listener.getsockname())
+        with _wrap_tls(sock, certificate.fingerprint) as tls:
+            tls.settimeout(0.5)
+            start = time.monotonic()
+            _send_all(tls, bytes(size))
+            thread.join(timeout=5)
+    assert received == size
+    # Sending took longer than the timeout, so it was not one deadline.
+    assert time.monotonic() - start > 0.5
+
+
+def test_enable_keepalive_ignores_unsupported_options() -> None:
+    sock = mock.MagicMock()
+
+    def _setsockopt(level: int, option: int, value: int) -> None:
+        if level == socket.IPPROTO_TCP:
+            raise OSError('not supported')
+
+    sock.setsockopt.side_effect = _setsockopt
+    _enable_keepalive(sock)
+    sock.setsockopt.assert_any_call(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+
+
+@pytest.mark.parametrize('timeout', (0, -1))
+def test_request_timeout_must_be_positive(timeout: float) -> None:
+    with pytest.raises(ValueError, match='must be positive'):
+        EndpointClient.connect('127.0.0.1', 1, TOKEN, request_timeout=timeout)

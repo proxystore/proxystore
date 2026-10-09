@@ -18,6 +18,7 @@ from typing import Self
 from typing import TypeVar
 
 from proxystore._compat import init_kwargs
+from proxystore.endpoint.client import check_request_timeout
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.client import REQUEST_TIMEOUT
 from proxystore.endpoint.config import EndpointConfig
@@ -28,7 +29,6 @@ from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
-from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.serialize import BytesLike
 from proxystore.utils.environment import home_dir
@@ -91,14 +91,15 @@ class EndpointConnector:
             endpoint if it is unavailable (e.g., because it is restarting)
             before a request fails.
         request_timeout: Seconds a request to the local endpoint can go
-            without sending or receiving any data before it fails. Requests
-            for objects on peer endpoints are instead timed out by the local
-            endpoint (see the `request_timeout` of the endpoint's peering
-            configuration). If `None`, requests have no timeout.
+            without sending or receiving any data, including while the
+            endpoint handles the request, before it fails. Requests for
+            objects on peer endpoints have no timeout in the client because
+            the endpoint only responds once the peer does. If `None`,
+            requests have no timeout.
 
     Raises:
         ValueError: If endpoints is an empty list or contains an invalid
-            endpoint ID.
+            endpoint ID, or if `request_timeout` is not positive.
         EndpointConnectorError: If unable to connect to any of the endpoints
             provided, or if `endpoints` is `None` and there is not exactly
             one endpoint running in `proxystore_dir`.
@@ -123,7 +124,7 @@ class EndpointConnector:
             None if proxystore_dir is None else os.fspath(proxystore_dir)
         )
         self.reconnect_timeout = reconnect_timeout
-        self.request_timeout = request_timeout
+        self.request_timeout = check_request_timeout(request_timeout)
 
         home = (
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
@@ -462,8 +463,6 @@ class _ConnectionPool:
         client = self._acquire()
         try:
             return request(client)
-        except EndpointTimeoutError:
-            raise
         except EndpointConnectionError:
             logger.debug(
                 'Retrying request with a new connection because the '
