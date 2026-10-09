@@ -403,17 +403,33 @@ def test_cache_mode_bytes_deserializer_error() -> None:
         cache_mode='bytes',
     ) as store:
         key = store.put('value')
-        with pytest.raises(SerializationError):
-            store.get(key)
-        # The data is cached even though it could not be deserialized.
-        assert store.is_cached(key)
-        with pytest.raises(SerializationError):
-            store.get(key)
-
         other = store.put('other')
+        # Like the objects cache mode, data that cannot be deserialized is
+        # not cached so the next get tries the connector again.
+        with pytest.raises(SerializationError):
+            store.get(key)
+        assert not store.is_cached(key)
         with pytest.raises(SerializationError):
             store.get_batch([other])
-        assert store.is_cached(other)
+        assert not store.is_cached(other)
+
+
+def test_cache_mode_bytes_metrics() -> None:
+    with Store(LocalConnector(), cache_mode='bytes', metrics=True) as store:
+        key = store.put('value')
+        assert store.get(key) == 'value'
+        assert store.get(key) == 'value'
+        assert store.get_batch([key]) == ['value']
+
+        assert store.metrics is not None
+        metrics = store.metrics.get_metrics(key)
+        assert metrics is not None
+        # Cache hits deserialize too, so they are timed.
+        assert metrics.times['store.get.deserialize'].count == 2
+        batch = store.metrics.get_metrics([key])
+        assert batch is not None
+        assert batch.times['store.get_batch.deserialize'].count == 1
+        assert 'store.get_batch.connector' not in batch.times
 
 
 def test_cache_mode_config() -> None:

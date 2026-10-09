@@ -356,11 +356,19 @@ class Store(Generic[ConnectorT]):
                 f'(deserializer={name}, key={key}).',
             ) from e
 
-    def _from_cache(self, key: ConnectorKeyT, value: Any) -> Any:
+    def _from_cache(
+        self,
+        key: ConnectorKeyT,
+        value: Any,
+        *,
+        timed: bool = False,
+    ) -> Any:
         # Convert a value from the cache, or from the fetch of another
         # thread, to the object to return. With the bytes cache mode, the
         # value is serialized data, so each caller gets its own object.
         if self._cache_mode == 'bytes' and value is not _MISSING_OBJECT:
+            if timed:
+                return self._timed_deserialize(key, value)
             return self._deserialize(key, value)
         return value
 
@@ -647,7 +655,7 @@ class Store(Generic[ConnectorT]):
                 key,
                 timer.elapsed_ms,
             )
-            return self._from_cache(key, cached)
+            return self._from_cache(key, cached, timed=True)
 
         if self.metrics is not None:
             self.metrics.add_counter('store.get.cache_misses', key, 1)
@@ -658,7 +666,7 @@ class Store(Generic[ConnectorT]):
         if started:
             result = self._fetch(key, future)
         else:
-            result = self._from_cache(key, future.result())
+            result = self._from_cache(key, future.result(), timed=True)
 
         if result is _MISSING_OBJECT:
             result = default
@@ -706,15 +714,25 @@ class Store(Generic[ConnectorT]):
         started, waiting, cached = self._start_batch(keys, results)
         misses = len(started) + len(waiting)
 
+        ctime = dtime = 0.0
         if len(started) > 0:
             ctime, dtime = self._fetch_batch(keys, started, results)
 
-        for i, future in waiting:
-            result = self._from_cache(keys[i], future.result())
-            if result is not _MISSING_OBJECT:
-                results[i] = result
-        for i in cached:
-            results[i] = self._from_cache(keys[i], results[i])
+        # With the bytes cache mode, cached and waited on values are
+        # deserialized here.
+        with Timer() as deserializer_timer:
+            for i, future in waiting:
+                result = self._from_cache(keys[i], future.result())
+                if result is not _MISSING_OBJECT:
+                    results[i] = result
+            for i in cached:
+                results[i] = self._from_cache(keys[i], results[i])
+        bytes_mode = self._cache_mode == 'bytes'
+        if bytes_mode:
+            dtime += deserializer_timer.elapsed_ms
+        deserialized = len(started) > 0 or (
+            bytes_mode and len(waiting) + len(cached) > 0
+        )
 
         timer.stop()
         if self.metrics is not None:
@@ -727,6 +745,7 @@ class Store(Generic[ConnectorT]):
             )
             if len(started) > 0:
                 self.metrics.add_time('store.get_batch.connector', keys, ctime)
+            if deserialized:
                 self.metrics.add_time(
                     'store.get_batch.deserialize',
                     keys,
@@ -758,21 +777,16 @@ class Store(Generic[ConnectorT]):
                 ctime = connector_timer.elapsed_ms
                 self.metrics.add_time('store.get.connector', key, ctime)
 
-            if value is None:
-                cached = _MISSING_OBJECT
-            elif self._cache_mode == 'bytes':
-                cached = value
-            else:
-                cached = self._timed_deserialize(key, value)
+            result = _MISSING_OBJECT
+            if value is not None:
+                result = self._timed_deserialize(key, value)
         except BaseException as e:
             # Threads waiting on this fetch get the same error.
             self.cache.fail(key, future, e)
             raise
 
-        self._finish(key, future, cached)
-        if self._cache_mode == 'bytes' and value is not None:
-            return self._timed_deserialize(key, value)
-        return cached
+        self._finish(key, future, result, value)
+        return result
 
     def _timed_deserialize(self, key: ConnectorKeyT, value: BytesLike) -> Any:
         with Timer() as deserializer_timer:
@@ -790,9 +804,13 @@ class Store(Generic[ConnectorT]):
         key: ConnectorKeyT,
         future: Future[Any],
         result: Any,
+        value: BytesLike | None,
     ) -> None:
-        # Missing objects are not cached.
+        # Missing objects are not cached. With the bytes cache mode, the
+        # serialized data is cached instead of the object.
         cache = result is not _MISSING_OBJECT
+        if cache and self._cache_mode == 'bytes':
+            result = value
         self.cache.finish(key, future, result, cache=cache)
 
     def _start_batch(
@@ -852,25 +870,18 @@ class Store(Generic[ConnectorT]):
 
             with Timer() as deserializer_timer:
                 for (i, future), value in zip(started, values, strict=True):
-                    if value is None:
-                        del unfinished[i]
-                        self._finish(keys[i], future, _MISSING_OBJECT)
-                        continue
-                    if self._cache_mode == 'bytes':
-                        # The data is cached even if this thread fails to
-                        # deserialize it.
-                        del unfinished[i]
-                        self._finish(keys[i], future, value)
-                    try:
-                        result = self._deserialize(keys[i], value)
-                    except SerializationError as e:
-                        if unfinished.pop(i, None) is not None:
+                    result = _MISSING_OBJECT
+                    if value is not None:
+                        try:
+                            result = self._deserialize(keys[i], value)
+                        except SerializationError as e:
+                            del unfinished[i]
                             self.cache.fail(keys[i], future, e)
-                        error = e if error is None else error
-                        continue
-                    results[i] = result
-                    if unfinished.pop(i, None) is not None:
-                        self._finish(keys[i], future, result)
+                            error = e if error is None else error
+                            continue
+                        results[i] = result
+                    del unfinished[i]
+                    self._finish(keys[i], future, result, value)
         except BaseException as e:
             # Threads waiting on fetches not yet finished get the same error.
             for i, future in unfinished.items():
