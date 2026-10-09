@@ -1,6 +1,6 @@
 # Object Lifetimes
 
-*Last updated 4 October 2026*
+*Last updated 8 October 2026*
 
 The [`Store`][proxystore.store.base.Store], by default, leaves the responsibility of managing shared objects to the application.
 For example, an object put into a [`Store`][proxystore.store.base.Store] will persist there until the key is manually evicted.
@@ -166,6 +166,11 @@ This requires two additional rules.
 
 1. At any given time, you can have either one mutable reference to the *target*, a [`RefMutProxy[T]`][proxystore.store.ref.RefMutProxy], or any number of immutable references, a [`RefProxy[T]`][proxystore.store.ref.RefProxy].
 2. References must always be valid. I.e., you cannot delete an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] while it has been borrowed via a [`RefProxy[T]`][proxystore.store.ref.RefProxy] or [`RefMutProxy[T]`][proxystore.store.ref.RefMutProxy].
+
+Pickling an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] moves ownership to the pickled copy (e.g., when passing it to a function in another process), and the original proxy becomes invalid.
+Because there can only be one owner, an [`OwnedProxy[T]`][proxystore.store.ref.OwnedProxy] can only be pickled once and cannot be pickled while it is borrowed.
+Doing so raises a [`ReferenceInvalidError`][proxystore.store.ref.ReferenceInvalidError] or [`ReferenceBorrowedError`][proxystore.store.ref.ReferenceBorrowedError], respectively.
+Some frameworks pickle task arguments more than once (e.g., to estimate their size, log them, or retry a task), so pass a borrowed reference, a [`clone()`][proxystore.store.ref.clone], or a default [`Proxy`][proxystore.proxy.Proxy] in these cases.
 
 Reference proxy types can be created and used using:
 [`borrow()`][proxystore.store.ref.borrow],

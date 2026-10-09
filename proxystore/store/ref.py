@@ -84,6 +84,10 @@ class ReferenceInvalidError(BaseRefProxyError):
     """Exception raised when a reference instance has been invalidated."""
 
 
+class ReferenceBorrowedError(BaseRefProxyError):
+    """Exception raised when moving an owned reference that is borrowed."""
+
+
 # Reference proxies that are still alive, keyed in order of creation. The
 # values are weak references so this does not keep proxies alive. A WeakSet
 # cannot be used because it hashes items, and hashing a proxy resolves it.
@@ -246,6 +250,12 @@ class OwnedProxy(BaseRefProxy[T]):
     the store once this proxy goes out of scope (this is handled via
     `__del__` and an [atexit][atexit] handler).
 
+    Pickling this proxy moves ownership to the pickled copy and invalidates
+    this proxy, so an owned proxy can only be pickled once. Use
+    [`borrow()`][proxystore.store.ref.borrow] or
+    [`clone()`][proxystore.store.ref.clone] to send the object to more than
+    one place.
+
     Args:
         factory: [`StoreFactory`][proxystore.store.factory.StoreFactory] used
             to resolve the target object from the store.
@@ -274,6 +284,36 @@ class OwnedProxy(BaseRefProxy[T]):
         object.__setattr__(self, '__proxy_ref_mut_count__', 0)
         super().__init__(factory, cache_defaults=cache_defaults, target=target)
         _track_ref(self)
+
+    def __reduce__(  # type: ignore[override]
+        self,
+    ) -> tuple[
+        Callable[
+            [str, FactoryType[T], DefaultClassType, DefaultHashType],
+            BaseRefProxy[T],
+        ],
+        tuple[str, FactoryType[T], DefaultClassType, DefaultHashType],
+    ]:
+        # Pickling twice would make two owners which each evict the object.
+        if not object.__getattribute__(self, '__proxy_valid__'):
+            raise ReferenceInvalidError(
+                'Cannot pickle an OwnedProxy that was already pickled '
+                'because pickling moves ownership to the pickled copy. Use '
+                'borrow() or clone() to send the object to more than one '
+                'place.',
+            )
+        ref_count = object.__getattribute__(self, '__proxy_ref_count__')
+        ref_mut_count = object.__getattribute__(
+            self, '__proxy_ref_mut_count__'
+        )
+        if ref_count > 0 or ref_mut_count > 0:
+            raise ReferenceBorrowedError(
+                'Cannot pickle an OwnedProxy that is borrowed because the '
+                'new owner could evict the object while '
+                f'{ref_count} RefProxy and {ref_mut_count} RefMutProxy '
+                'still use it.',
+            )
+        return super().__reduce__()
 
     def __del__(self) -> None:
         if object.__getattribute__(self, '__proxy_valid__'):
