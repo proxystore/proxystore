@@ -6,6 +6,7 @@ import pathlib
 import socket
 import struct
 import threading
+import time
 import warnings
 from collections.abc import Callable
 from collections.abc import Generator
@@ -18,6 +19,7 @@ from proxystore.endpoint import protocol
 from proxystore.endpoint.auth import EndpointToken
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
+from proxystore.endpoint.client import _send_all
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import ConnectionInfo
@@ -28,6 +30,7 @@ from proxystore.endpoint.exceptions import EndpointNotFoundError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import EndpointRequestError
+from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import EndpointInfo
 from proxystore.endpoint.protocol import Message
@@ -492,7 +495,7 @@ def test_from_name(tmp_path: pathlib.Path, fake_server) -> None:
         assert c.info.id == ENDPOINT_ID
 
 
-@pytest.mark.parametrize('method', ('sendall', 'recv_into'))
+@pytest.mark.parametrize('method', ('send', 'recv_into'))
 def test_request_interrupted_closes_connection(fake_server, method) -> None:
     def _script(conn: socket.socket) -> None:
         _complete_handshake(conn)
@@ -508,3 +511,70 @@ def test_request_interrupted_closes_connection(fake_server, method) -> None:
         client.exists('key')
     assert client.closed
     sock.close.assert_called_once()
+
+
+def test_connect_enables_keepalive(fake_server) -> None:
+    port = fake_server(_complete_handshake)
+    with EndpointClient.connect('127.0.0.1', port, TOKEN) as client:
+        sock = client._socket
+        assert sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE) != 0
+        if hasattr(socket, 'TCP_KEEPIDLE'):  # pragma: no branch
+            idle = sock.getsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE)
+            assert idle == 30
+
+
+@pytest.mark.parametrize('target', (None, ENDPOINT_ID))
+def test_request_timeout(fake_server, target: str | None) -> None:
+    release = threading.Event()
+
+    def _script(conn: socket.socket) -> None:
+        _complete_handshake(conn)
+        _recv_message(conn)
+        # Never respond.
+        release.wait(5)
+
+    port = fake_server(_script)
+    client = EndpointClient.connect(
+        '127.0.0.1',
+        port,
+        TOKEN,
+        request_timeout=0.1,
+    )
+    try:
+        with pytest.raises(EndpointTimeoutError, match=r'0\.1 seconds'):
+            client.exists('key', target=target)
+        assert client.closed
+    finally:
+        release.set()
+
+
+def test_forwarded_request_has_no_timeout(fake_server) -> None:
+    def _script(conn: socket.socket) -> None:
+        _complete_handshake(conn)
+        request = _recv_message(conn)
+        # The endpoint responds once the peer does, which can take longer
+        # than the request timeout of the client.
+        time.sleep(0.3)
+        response = Message(
+            Status.OK,
+            encode_meta({'exists': True}),
+            request_id=request.request_id,
+        )
+        conn.sendall(response.pack_head())
+
+    port = fake_server(_script)
+    with EndpointClient.connect(
+        '127.0.0.1',
+        port,
+        TOKEN,
+        request_timeout=0.1,
+    ) as client:
+        assert client.exists('key', target=EndpointId.random())
+
+
+def test_send_all_partial_sends() -> None:
+    sock = mock.MagicMock()
+    sock.send.side_effect = lambda view: min(len(view), 3)
+    _send_all(sock, b'abcdefgh')
+    sent = [bytes(c.args[0][:3]) for c in sock.send.call_args_list]
+    assert sent == [b'abc', b'def', b'gh']

@@ -108,6 +108,12 @@ with EndpointClient.from_name('myendpoint') as client:
   endpoint was restarted while the client was connecting, or a different
   process is listening on the endpoint's address (e.g., after the endpoint
   stopped). Restart the endpoint and try again.
+* **The endpoint did not send or receive any data for ... seconds**: The
+  endpoint stopped responding to a request (e.g., it is overloaded or
+  stuck). Check the endpoint log, and restart the endpoint if it is not
+  making progress. Increase the `request_timeout` of the
+  [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector] if
+  the endpoint is only slow.
 * **The endpoint responded with HTTP**: The endpoint is running an older
   version of ProxyStore. Restart the endpoint with the same version as the
   client.

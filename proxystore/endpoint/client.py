@@ -28,6 +28,7 @@ from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.protocol import Auth
@@ -60,6 +61,16 @@ logger = logging.getLogger(__name__)
 _COALESCE_THRESHOLD = 64 * 1024
 _MAX_REQUEST_ID = 2**32 - 1
 
+REQUEST_TIMEOUT = 60
+"""Default seconds a request to the local endpoint can go without progress."""
+
+# TCP keepalive probes start after the connection is idle for this many
+# seconds and are sent at this interval until this many go unanswered, so
+# a connection to a host that disappeared is closed in about a minute.
+_KEEPALIVE_IDLE = 30
+_KEEPALIVE_INTERVAL = 10
+_KEEPALIVE_COUNT = 3
+
 
 class EndpointClient:
     """Connection to a local endpoint.
@@ -84,6 +95,13 @@ class EndpointClient:
         sock: Connected socket that has completed the handshake.
         info: Information about the endpoint.
         protocol_version: Protocol version negotiated in the handshake.
+        request_timeout: Seconds a request handled by this endpoint can go
+            without sending or receiving any data before it fails with an
+            [`EndpointTimeoutError`][proxystore.endpoint.exceptions.EndpointTimeoutError].
+            Requests forwarded to a peer endpoint have no timeout in the
+            client because the endpoint does not respond until the peer does,
+            so the endpoint times out requests to peers instead. If `None`,
+            requests have no timeout.
     """
 
     def __init__(
@@ -92,10 +110,12 @@ class EndpointClient:
         info: EndpointInfo,
         *,
         protocol_version: int,
+        request_timeout: float | None = REQUEST_TIMEOUT,
     ) -> None:
         self._socket = sock
         self.info = info
         self.protocol_version = protocol_version
+        self.request_timeout = request_timeout
         self.closed = False
         self._next_request_id = 1
 
@@ -125,6 +145,7 @@ class EndpointClient:
         *,
         tls_fingerprint: str | None = None,
         timeout: float | None = 10,
+        request_timeout: float | None = REQUEST_TIMEOUT,
     ) -> Self:
         """Connect to an endpoint and complete the handshake.
 
@@ -139,8 +160,9 @@ class EndpointClient:
                 If provided, the connection is encrypted with TLS and the
                 endpoint's certificate must match the fingerprint.
             timeout: Timeout in seconds for connecting and completing the
-                handshake. Requests after the handshake have no timeout
-                because large transfers can take arbitrarily long.
+                handshake.
+            request_timeout: Seconds a request can go without progress (see
+                [`EndpointClient`][proxystore.endpoint.client.EndpointClient]).
 
         Warns:
             VersionMismatchWarning: If the endpoint uses a different
@@ -169,6 +191,7 @@ class EndpointClient:
 
         try:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+            _enable_keepalive(sock)
             if tls_fingerprint is not None:
                 sock = _wrap_tls(sock, tls_fingerprint)
             info, version = _handshake(sock, token)
@@ -201,7 +224,12 @@ class EndpointClient:
             info.versions.proxystore,
             info.versions.python,
         )
-        return cls(sock, info, protocol_version=version)
+        return cls(
+            sock,
+            info,
+            protocol_version=version,
+            request_timeout=request_timeout,
+        )
 
     @classmethod
     def from_dir(
@@ -209,6 +237,7 @@ class EndpointClient:
         endpoint_dir: EndpointDir,
         *,
         timeout: float | None = 10,
+        request_timeout: float | None = REQUEST_TIMEOUT,
     ) -> Self:
         """Connect to a local endpoint using its connection file.
 
@@ -219,6 +248,8 @@ class EndpointClient:
             endpoint_dir: Directory of the endpoint.
             timeout: Timeout in seconds for connecting and completing the
                 handshake.
+            request_timeout: Seconds a request can go without progress (see
+                [`EndpointClient`][proxystore.endpoint.client.EndpointClient]).
 
         Raises:
             EndpointNotFoundError: If the endpoint directory does not exist.
@@ -247,6 +278,7 @@ class EndpointClient:
             info.token,
             tls_fingerprint=info.tls_fingerprint,
             timeout=timeout,
+            request_timeout=request_timeout,
         )
 
     @classmethod
@@ -256,6 +288,7 @@ class EndpointClient:
         *,
         proxystore_dir: str | None = None,
         timeout: float | None = 10,
+        request_timeout: float | None = REQUEST_TIMEOUT,
     ) -> Self:
         """Connect to a local endpoint by name.
 
@@ -266,6 +299,8 @@ class EndpointClient:
                 [`home_dir()`][proxystore.utils.environment.home_dir].
             timeout: Timeout in seconds for connecting and completing the
                 handshake.
+            request_timeout: Seconds a request can go without progress (see
+                [`EndpointClient`][proxystore.endpoint.client.EndpointClient]).
 
         Raises:
             EndpointNotFoundError: If no endpoint with the name exists.
@@ -273,7 +308,11 @@ class EndpointClient:
                 [`from_dir()`][proxystore.endpoint.client.EndpointClient.from_dir]).
         """
         endpoint_dir = EndpointDir.from_name(name, proxystore_dir)
-        return cls.from_dir(endpoint_dir, timeout=timeout)
+        return cls.from_dir(
+            endpoint_dir,
+            timeout=timeout,
+            request_timeout=request_timeout,
+        )
 
     def close(self) -> None:
         """Close the connection."""
@@ -406,15 +445,20 @@ class EndpointClient:
         self._next_request_id = request_id % _MAX_REQUEST_ID + 1
         message = Message(op, request.encode(), request_id=request_id)
         head = message.pack_head(data_len)
+        # The endpoint does not respond to a request forwarded to a peer
+        # until the peer does, so only local requests have a timeout.
+        local = request.target is None or request.target == self.info.id
+        timeout = self.request_timeout if local else None
 
         try:
+            self._socket.settimeout(timeout)
             if payload is None:
-                self._socket.sendall(head)
+                _send_all(self._socket, head)
             elif data_len < _COALESCE_THRESHOLD:
-                self._socket.sendall(head + payload)
+                _send_all(self._socket, head + payload)
             else:
-                self._socket.sendall(head)
-                self._socket.sendall(payload)
+                _send_all(self._socket, head)
+                _send_all(self._socket, payload)
 
             response = _recv_message(self._socket)
             if response.request_id != request_id:
@@ -425,6 +469,13 @@ class EndpointClient:
         except EndpointError:
             self.close()
             raise
+        except TimeoutError as e:
+            self.close()
+            raise EndpointTimeoutError(
+                f'The endpoint did not send or receive any data for '
+                f'{timeout} seconds, so the request was abandoned and the '
+                'connection closed.',
+            ) from e
         except OSError as e:
             self.close()
             raise EndpointConnectionError(
@@ -575,6 +626,31 @@ def _recv_message(
     while not reader.done:
         reader.feed(_recv_exactly(sock, reader.size))
     return reader.message
+
+
+def _enable_keepalive(sock: socket.socket) -> None:
+    # Keepalive detects a host that disappeared without closing the
+    # connection, which is otherwise only found once a request times out.
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+    for name, value in (
+        ('TCP_KEEPIDLE', _KEEPALIVE_IDLE),
+        ('TCP_KEEPINTVL', _KEEPALIVE_INTERVAL),
+        ('TCP_KEEPCNT', _KEEPALIVE_COUNT),
+    ):
+        # Not every platform supports every option.
+        option = getattr(socket, name, None)
+        if option is not None:  # pragma: no branch
+            sock.setsockopt(socket.IPPROTO_TCP, option, value)
+
+
+def _send_all(sock: socket.socket, data: BytesLike) -> None:
+    # socket.sendall() limits the time to send all of the data to the
+    # timeout of the socket, but the timeout should only limit the time
+    # without progress so large objects can be sent.
+    view = memoryview(data).cast('B')
+    while len(view) > 0:
+        sent = sock.send(view)
+        view = view[sent:]
 
 
 def _recv_exactly(sock: socket.socket, size: int) -> bytearray:

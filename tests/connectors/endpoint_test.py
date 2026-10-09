@@ -16,6 +16,7 @@ from proxystore.connectors.endpoint import EndpointConnector
 from proxystore.connectors.endpoint import EndpointConnectorError
 from proxystore.connectors.endpoint import EndpointKey
 from proxystore.endpoint.auth import EndpointToken
+from proxystore.endpoint.client import REQUEST_TIMEOUT
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
@@ -24,6 +25,7 @@ from proxystore.endpoint.exceptions import EndpointConnectionError
 from proxystore.endpoint.exceptions import EndpointError
 from proxystore.endpoint.exceptions import EndpointNotRunningError
 from proxystore.endpoint.exceptions import EndpointProtocolError
+from proxystore.endpoint.exceptions import EndpointTimeoutError
 from proxystore.endpoint.identity import EndpointId
 from testing.compat import randbytes
 from testing.endpoint import copy_endpoint_dir
@@ -52,6 +54,7 @@ def test_endpoints_default_single_running(
     with EndpointConnector(proxystore_dir=home) as connector:
         assert connector.endpoint_id == endpoint.id
         assert connector.config()['endpoints'] is None
+        assert connector.config()['request_timeout'] == REQUEST_TIMEOUT
         key = connector.put(b'value')
         assert connector.get(key) == b'value'
 
@@ -311,6 +314,20 @@ def test_connection_pool_reconnect_timeout() -> None:
     with pytest.raises(EndpointProtocolError):
         pool.run(_fake_request)
     assert connect.call_count == 1
+
+
+def test_connection_pool_does_not_retry_timeout() -> None:
+    connect = mock.MagicMock(side_effect=lambda: _FakeClient(fail=False))
+    pool = _ConnectionPool(connect)
+
+    def _timeout(client: Any) -> None:
+        client.close()
+        raise EndpointTimeoutError('timed out')
+
+    with pytest.raises(EndpointTimeoutError):
+        pool.run(_timeout)
+    assert connect.call_count == 1
+    assert len(pool._idle) == 0
 
 
 def test_connection_pool_discards_interrupted_connection() -> None:
