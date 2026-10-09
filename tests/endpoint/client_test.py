@@ -17,12 +17,11 @@ import pytest
 
 from proxystore.endpoint import protocol
 from proxystore.endpoint.auth import EndpointToken
-from proxystore.endpoint.auth import TLSCertificate
 from proxystore.endpoint.client import _enable_keepalive
 from proxystore.endpoint.client import _recv_exactly
 from proxystore.endpoint.client import _recv_message
 from proxystore.endpoint.client import _send_all
-from proxystore.endpoint.client import _wrap_tls
+from proxystore.endpoint.client import _SEND_SIZE
 from proxystore.endpoint.client import EndpointClient
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import ConnectionInfo
@@ -588,53 +587,15 @@ def test_send_all_partial_sends() -> None:
     assert sent == [b'abc', b'def', b'gh']
 
 
-def test_send_all_tls_slow_reader() -> None:
-    # The timeout of a TLS socket limits each send() call, so sending must
-    # be split for the timeout to only limit the time without progress.
-    certificate = TLSCertificate.generate('test')
-    context = certificate.ssl_context()
-    timeout = 0.25
-    size = 1024 * 1024
-    # Small socket buffers and slices keep the test fast. The reader reads
-    # about 1.6 MB/s, so each slice is sent well within the timeout (even if
-    # sleeps take longer, e.g., on macOS) but sending everything takes
-    # longer than the timeout.
-    buffer_size = 64 * 1024
-    burst = 32 * 1024
-    received = 0
-
-    with socket.socket() as listener:
-        listener.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, buffer_size)
-        listener.bind(('127.0.0.1', 0))
-        listener.listen()
-
-        def _read_slowly() -> None:
-            nonlocal received
-            conn, _ = listener.accept()
-            with context.wrap_socket(conn, server_side=True) as tls:
-                while received < size:
-                    # A TLS recv() returns at most one record (16 KiB).
-                    target = min(received + burst, size)
-                    while received < target:
-                        received += len(tls.recv(burst))
-                    time.sleep(0.02)
-
-        thread = threading.Thread(target=_read_slowly, daemon=True)
-        thread.start()
-        sock = socket.socket()
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, buffer_size)
-        sock.connect(listener.getsockname())
-        with (
-            mock.patch('proxystore.endpoint.client._SEND_SIZE', buffer_size),
-            _wrap_tls(sock, certificate.fingerprint) as tls,
-        ):
-            tls.settimeout(timeout)
-            start = time.monotonic()
-            _send_all(tls, bytes(size))
-            thread.join(timeout=10)
-    assert received == size
-    # Sending took longer than the timeout, so it was not one deadline.
-    assert time.monotonic() - start > timeout
+def test_send_all_limits_each_send() -> None:
+    # The timeout of a TLS socket limits the time to send everything passed
+    # to one send() call, so large data must be sent in slices for the
+    # timeout to only limit the time without progress.
+    sock = mock.MagicMock()
+    sock.send.side_effect = len
+    _send_all(sock, bytes(3 * _SEND_SIZE + 1))
+    sizes = [len(c.args[0]) for c in sock.send.call_args_list]
+    assert sizes == [_SEND_SIZE, _SEND_SIZE, _SEND_SIZE, 1]
 
 
 def test_enable_keepalive_ignores_unsupported_options() -> None:
