@@ -588,7 +588,12 @@ def test_send_all_tls_slow_reader() -> None:
     # be split for the timeout to only limit the time without progress.
     certificate = TLSCertificate.generate('test')
     context = certificate.ssl_context()
-    size = 8 * 1024 * 1024
+    timeout = 1
+    size = 16 * 1024 * 1024
+    # The reader reads about 10 MB/s, so each slice is sent well within the
+    # timeout (even if sleeps take longer, e.g., on macOS) but sending
+    # everything takes longer than the timeout.
+    burst = 512 * 1024
     received = 0
 
     with socket.create_server(('127.0.0.1', 0)) as listener:
@@ -598,20 +603,23 @@ def test_send_all_tls_slow_reader() -> None:
             conn, _ = listener.accept()
             with context.wrap_socket(conn, server_side=True) as tls:
                 while received < size:
-                    received += len(tls.recv(64 * 1024))
-                    time.sleep(0.005)
+                    # A TLS recv() returns at most one record (16 KiB).
+                    target = min(received + burst, size)
+                    while received < target:
+                        received += len(tls.recv(burst))
+                    time.sleep(0.05)
 
         thread = threading.Thread(target=_read_slowly, daemon=True)
         thread.start()
         sock = socket.create_connection(listener.getsockname())
         with _wrap_tls(sock, certificate.fingerprint) as tls:
-            tls.settimeout(0.5)
+            tls.settimeout(timeout)
             start = time.monotonic()
             _send_all(tls, bytes(size))
-            thread.join(timeout=5)
+            thread.join(timeout=10)
     assert received == size
     # Sending took longer than the timeout, so it was not one deadline.
-    assert time.monotonic() - start > 0.5
+    assert time.monotonic() - start > timeout
 
 
 def test_enable_keepalive_ignores_unsupported_options() -> None:
