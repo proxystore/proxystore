@@ -2065,6 +2065,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#proxystore.endpoint.exceptions.EndpointTimeoutError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EndpointTimeoutError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#proxystore.endpoint.exceptions.EndpointAuthError" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4255,6 +4266,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#proxystore.endpoint.exceptions.EndpointTimeoutError" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;EndpointTimeoutError
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#proxystore.endpoint.exceptions.EndpointAuthError" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4478,15 +4500,16 @@
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>├── EndpointRunningError
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>├── EndpointNotRunningError
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>├── EndpointConnectionError
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── EndpointAuthError
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── EndpointProtocolError
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>└── EndpointRequestError
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    ├── ObjectSizeExceededError
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    └── PeerError
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        ├── PeeringDisabledError
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ├── PeerNotAllowedError
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        └── PeerUnavailableError
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>            └── PeerConnectionTimeoutError
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>├── EndpointTimeoutError
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>├── EndpointAuthError
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>├── EndpointProtocolError
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>└── EndpointRequestError
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    ├── ObjectSizeExceededError
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    └── PeerError
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        ├── PeeringDisabledError
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        ├── PeerNotAllowedError
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        └── PeerUnavailableError
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            └── PeerConnectionTimeoutError
 </span></code></pre></div>
 <p>Some exceptions also derive from a built-in exception so they can be caught
 as either (e.g., an invalid configuration is also a <code>ValueError</code>).</p>
@@ -4805,6 +4828,41 @@ to the endpoint's address is refused.</p>
         <p>Exception raised when the connection to an endpoint is closed or lost.</p>
 <p>This is only raised by a client when the connection closes unexpectedly
 (e.g., because the endpoint was stopped).</p>
+
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="proxystore.endpoint.exceptions.EndpointTimeoutError" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">EndpointTimeoutError</span>
+
+
+<a href="#proxystore.endpoint.exceptions.EndpointTimeoutError" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            EndpointError (proxystore.endpoint.exceptions.EndpointError)" href="#proxystore.endpoint.exceptions.EndpointError">EndpointError</a></code>, <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/builtins/exceptions.html#TimeoutError">TimeoutError</a></code></p>
+
+
+
+        <p>Exception raised when the endpoint stops responding to a request.</p>
+<p>The client closes the connection because the endpoint did not send or
+receive any data for the request timeout of the client. This is not an
+<a class="autorefs autorefs-internal" title="            EndpointConnectionError" href="#proxystore.endpoint.exceptions.EndpointConnectionError"><code>EndpointConnectionError</code></a>
+because retrying with a new connection is unlikely to help.</p>
 
 
 

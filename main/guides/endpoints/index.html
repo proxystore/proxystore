@@ -4563,6 +4563,20 @@ to use on each system where proxies created by the store will be resolved.
 The list only selects the home endpoint and is not an allowlist: requests for
 objects stored on endpoints which are not in the list are still forwarded to
 those peers.</p>
+<p>A request to the home endpoint fails with an
+<a class="autorefs autorefs-internal" title="            EndpointTimeoutError" href="../../api/endpoint/exceptions/#proxystore.endpoint.exceptions.EndpointTimeoutError"><code>EndpointTimeoutError</code></a>
+if no data is sent or received for <code>request_timeout</code> seconds (60 by default),
+so a stuck endpoint does not hang the client. Large objects do not time out
+while the data keeps moving, but the timeout includes the time the endpoint
+spends handling a request (e.g., writing a large object to its storage).
+Requests for objects on peers are not timed out by the connector because the
+home endpoint only responds once the peer does. The connector also enables TCP keepalive so a home endpoint whose host
+disappeared is detected even between requests.</p>
+<div class="language-python highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"><a href="#__codelineno-9-1">1</a></span></pre></div></td><td class="code"><div><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1"></a><span class="n">connector</span> <span class="o">=</span> <span class="n">EndpointConnector</span><span class="p">(</span><span class="n">request_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>  <span class="c1"># (1)!</span>
+</span></code></pre></div></td></tr></table></div>
+<ol>
+<li>Use <code class="language-python highlight"><span class="kc">None</span></code> to disable the timeout.</li>
+</ol>
 <h2 id="version-compatibility">Version Compatibility<a class="headerlink" href="#version-compatibility" title="Permanent link">&para;</a></h2>
 <p>Objects are serialized by one client and deserialized by another, possibly
 on a different system after being transferred between peer endpoints.
@@ -4577,8 +4591,8 @@ internal formats compatible between versions with the same major version
 the same Python major and minor version (e.g., 3.12) for all clients
 which exchange objects. After upgrading ProxyStore to a new major
 version, restart your endpoints.
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>start<span class="w"> </span>my-endpoint
 </span></code></pre></div></p>
 </div>
 <p>Clients and endpoints exchange their versions each time a client connects.</p>
@@ -4625,10 +4639,10 @@ the client that resolves it on another system, so keep the environments on
 all systems consistent (e.g., with a lock file).</p>
 <p>To turn the warning into an error, use a
 <a href="https://docs.python.org/3/library/warnings.html#the-warnings-filter">warnings filter</a>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">VersionMismatchWarning</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span> <span class="n">VersionMismatchWarning</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">proxystore.warnings</span><span class="w"> </span><span class="kn">import</span> <span class="n">VersionMismatchWarning</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s1">'error'</span><span class="p">,</span> <span class="n">VersionMismatchWarning</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="protocols-and-file-formats">Protocols and File Formats<a class="headerlink" href="#protocols-and-file-formats" title="Permanent link">&para;</a></h3>
 <p>The protocols and files used by endpoints are versioned independently of
@@ -4731,15 +4745,15 @@ endpoints configured with ProxyStore v1 must be configured again.</p>
 running endpoints with a <code>daemon.pid</code> file that newer versions do not read,
 so <code>proxystore-endpoint stop</code> from a newer version reports that a v1
 endpoint is not running and leaves it running.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint<span class="w">  </span><span class="c1"># With ProxyStore v1</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>stop<span class="w"> </span>my-endpoint<span class="w">  </span><span class="c1"># With ProxyStore v1</span>
 </span></code></pre></div>
 <p>If you already upgraded, stop the endpoint by terminating the process whose
 ID is in the <code>daemon.pid</code> file in the endpoint directory.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>$<span class="w"> </span><span class="nb">kill</span><span class="w"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.local/share/proxystore/my-endpoint/daemon.pid<span class="k">)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>$<span class="w"> </span><span class="nb">kill</span><span class="w"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.local/share/proxystore/my-endpoint/daemon.pid<span class="k">)</span>
 </span></code></pre></div>
 <p>Then, remove and configure the endpoint again with the new version.</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>remove<span class="w"> </span>my-endpoint
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>remove<span class="w"> </span>my-endpoint
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>$<span class="w"> </span>proxystore-endpoint<span class="w"> </span>configure<span class="w"> </span>my-endpoint
 </span></code></pre></div>
 <p>Finally, add the peers of the endpoint (see <a href="#adding-peers">Adding Peers</a>)
 and update the endpoint UUIDs passed to the
