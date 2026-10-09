@@ -18,7 +18,9 @@ from typing import Self
 from typing import TypeVar
 
 from proxystore._compat import init_kwargs
+from proxystore.endpoint.client import check_request_timeout
 from proxystore.endpoint.client import EndpointClient
+from proxystore.endpoint.client import REQUEST_TIMEOUT
 from proxystore.endpoint.config import EndpointConfig
 from proxystore.endpoint.directory import EndpointDir
 from proxystore.endpoint.directory import EndpointStatus
@@ -88,10 +90,16 @@ class EndpointConnector:
         reconnect_timeout: Seconds to keep trying to reconnect to the
             endpoint if it is unavailable (e.g., because it is restarting)
             before a request fails.
+        request_timeout: Seconds a request to the local endpoint can go
+            without sending or receiving any data, including while the
+            endpoint handles the request, before it fails. Requests for
+            objects on peer endpoints have no timeout in the client because
+            the endpoint only responds once the peer does. If `None`,
+            requests have no timeout.
 
     Raises:
         ValueError: If endpoints is an empty list or contains an invalid
-            endpoint ID.
+            endpoint ID, or if `request_timeout` is not positive.
         EndpointConnectorError: If unable to connect to any of the endpoints
             provided, or if `endpoints` is `None` and there is not exactly
             one endpoint running in `proxystore_dir`.
@@ -102,6 +110,7 @@ class EndpointConnector:
         endpoints: Sequence[str] | None = None,
         proxystore_dir: str | os.PathLike[str] | None = None,
         reconnect_timeout: float = 5,
+        request_timeout: float | None = REQUEST_TIMEOUT,
     ) -> None:
         if endpoints is not None and len(endpoints) == 0:
             raise ValueError('At least one endpoint must be specified.')
@@ -115,6 +124,7 @@ class EndpointConnector:
             None if proxystore_dir is None else os.fspath(proxystore_dir)
         )
         self.reconnect_timeout = reconnect_timeout
+        self.request_timeout = check_request_timeout(request_timeout)
 
         home = (
             home_dir() if self.proxystore_dir is None else self.proxystore_dir
@@ -135,7 +145,7 @@ class EndpointConnector:
             endpoint_id = endpoint.id
             logger.debug('Attempting connection to %s', endpoint_id)
             try:
-                client = _connect(endpoint_dir, endpoint_id)
+                client = _connect(endpoint_dir, endpoint_id, request_timeout)
             except EndpointError as e:
                 logger.debug('Connection to %s failed: %r', endpoint_id, e)
                 failures.append(f'{endpoint.name} ({endpoint_id}): {e}')
@@ -164,7 +174,7 @@ class EndpointConnector:
         self.endpoint_dir = endpoint_dir
 
         self._pool = _ConnectionPool(
-            lambda: _connect(endpoint_dir, endpoint_id),
+            lambda: _connect(endpoint_dir, endpoint_id, request_timeout),
             reconnect_timeout=reconnect_timeout,
         )
         self._pool.add(client)
@@ -210,6 +220,7 @@ class EndpointConnector:
             ),
             'proxystore_dir': self.proxystore_dir,
             'reconnect_timeout': self.reconnect_timeout,
+            'request_timeout': self.request_timeout,
         }
 
     @classmethod
@@ -384,8 +395,12 @@ def _find_running(home: str) -> list[tuple[EndpointDir, EndpointConfig]]:
 def _connect(
     endpoint_dir: EndpointDir,
     endpoint_id: EndpointId,
+    request_timeout: float | None,
 ) -> EndpointClient:
-    client = EndpointClient.from_dir(endpoint_dir)
+    client = EndpointClient.from_dir(
+        endpoint_dir,
+        request_timeout=request_timeout,
+    )
     if client.info.id != endpoint_id:
         client.close()
         raise EndpointProtocolError(
@@ -436,7 +451,8 @@ class _ConnectionPool:
         Connections can be closed by the endpoint (e.g., when the endpoint
         is restarted), so a request that fails because its connection was
         closed is retried once with a new connection. All requests are safe
-        to retry because objects are write-once.
+        to retry because objects are write-once. A request that timed out
+        is not retried because the endpoint is likely stuck.
 
         Args:
             request: Callable that makes a request with a connection.

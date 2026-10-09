@@ -346,6 +346,22 @@ The list only selects the home endpoint and is not an allowlist: requests for
 objects stored on endpoints which are not in the list are still forwarded to
 those peers.
 
+A request to the home endpoint fails with an
+[`EndpointTimeoutError`][proxystore.endpoint.exceptions.EndpointTimeoutError]
+if no data is sent or received for `request_timeout` seconds (60 by default),
+so a stuck endpoint does not hang the client. Large objects do not time out
+while the data keeps moving, but the timeout includes the time the endpoint
+spends handling a request (e.g., writing a large object to its storage).
+Requests for objects on peers are not timed out by the connector because the
+home endpoint only responds once the peer does. The connector also enables TCP keepalive so a home endpoint whose host
+disappeared is detected even between requests.
+
+```python linenums="1"
+connector = EndpointConnector(request_timeout=120)  # (1)!
+```
+
+1. Use `#!python None` to disable the timeout.
+
 ## Version Compatibility
 
 Objects are serialized by one client and deserialized by another, possibly
