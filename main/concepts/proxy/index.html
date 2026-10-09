@@ -848,6 +848,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3964,6 +3975,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4135,6 +4157,11 @@ directly.</p>
 </span><span id="__span-3-15"><a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="n">x</span> <span class="o">=</span> <span class="n">extract</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 </span><span id="__span-3-16"><a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="k">assert</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">Proxy</span><span class="p">)</span>
 </span></code></pre></div>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>Only unpickle proxies from sources you trust.
+Unpickling a proxy unpickles its factory, and unpickling can run arbitrary code.
+Resolving a proxy then runs the factory, which can do anything a function can do.
+For example, a <a class="autorefs autorefs-internal" title="            StoreFactory" href="../../api/store/factory/#proxystore.store.factory.StoreFactory"><code>StoreFactory</code></a> imports and creates the connector, serializer, and deserializer named in its store configuration and deserializes whatever bytes the connector returns (see <a href="../store/#security">Store Security</a>).</p>
 
 
 

@@ -926,6 +926,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4008,6 +4019,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4236,6 +4258,12 @@ To store some types in a custom format, handle those types in the serializer and
 The serializer and deserializer are part of the <a class="autorefs autorefs-internal" title="            config" href="../../api/store/base/#proxystore.store.base.Store.config"><code>config()</code></a> of the store, so they must be importable wherever proxies of the store are resolved.
 See Issue <a href="https://github.com/proxystore/proxystore/issues/146" target="_blank">#146</a>
 for further discussion on where custom serializers can be helpful.</p>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>The default deserializer uses <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/pickle.html#module-pickle"><code>pickle</code></a>, and unpickling data can run arbitrary code.
+So anyone who can write to the storage behind a store's connector (e.g., the directory of a <a class="autorefs autorefs-internal" title="            FileConnector" href="../../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a> or the Redis server of a <a class="autorefs autorefs-internal" title="            RedisConnector" href="../../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a>) can run code in every process that gets objects from the store or resolves its proxies.
+Treat write access to a connector's storage like write access to your code, and see <a href="../connector/#security">Connector Security</a> for what protects each connector.</p>
+<p>Proxies and the <a class="autorefs autorefs-internal" title="            config" href="../../api/store/base/#proxystore.store.base.Store.config"><code>config()</code></a> of a store are also trusted.
+A store config names the connector, serializer, and deserializer to import and create, so only resolve proxies, and only create stores from configs, from sources you trust (see <a href="../proxy/#security">Proxy Security</a>).</p>
 
 
 

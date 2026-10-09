@@ -876,6 +876,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3964,6 +3975,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4068,6 +4090,23 @@ implement the
 <a class="autorefs autorefs-internal" title="            DeferrableConnector" href="../../api/connectors/protocols/#proxystore.connectors.protocols.DeferrableConnector"><code>DeferrableConnector</code></a>
 protocol because some transfer methods require the object before creating a
 key for that object.</p>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>A <a class="autorefs autorefs-internal" title="            Store" href="../../api/store/base/#proxystore.store.base.Store"><code>Store</code></a> deserializes the bytes a connector returns with pickle by default, so anyone who can write to a connector's storage can run code in the processes that read from it (see <a href="../store/#security">Store Security</a>).
+Connectors differ in who can read and write their objects.</p>
+<ul>
+<li><a class="autorefs autorefs-internal" title="            LocalConnector" href="../../api/connectors/local/#proxystore.connectors.local.LocalConnector"><code>LocalConnector</code></a>: only the current process.</li>
+<li><a class="autorefs autorefs-internal" title="            FileConnector" href="../../api/connectors/file/#proxystore.connectors.file.FileConnector"><code>FileConnector</code></a>: anyone with access to the directory.
+  The directory is created with the default permissions of your <a href="https://en.wikipedia.org/wiki/Umask" target="_blank">umask</a>, which often lets other users read it, so use a directory that only you can access on shared systems.</li>
+<li><a class="autorefs autorefs-internal" title="            RedisConnector" href="../../api/connectors/redis/#proxystore.connectors.redis.RedisConnector"><code>RedisConnector</code></a>: anyone who can connect to the Redis server.
+  The connector does not use a password or TLS, so only use it with a Redis server on a trusted network.</li>
+<li><a class="autorefs autorefs-internal" title="            ZeroMQConnector" href="../../api/connectors/zmq/#proxystore.connectors.zmq.ZeroMQConnector"><code>ZeroMQConnector</code></a>: anyone who can reach the server's port.
+  The servers do not authenticate clients or encrypt data, so only use this connector within a trusted network, such as the interconnect of an HPC cluster.</li>
+<li><a class="autorefs autorefs-internal" title="            EndpointConnector" href="../../api/connectors/endpoint/#proxystore.connectors.endpoint.EndpointConnector"><code>EndpointConnector</code></a>: processes that can read the endpoint directory, and peer endpoints you allow.
+  See <a href="../../guides/endpoints/#security">Endpoint Security</a>.</li>
+<li><a class="autorefs autorefs-internal" title="            GlobusConnector" href="../../api/connectors/globus/#proxystore.connectors.globus.GlobusConnector"><code>GlobusConnector</code></a>: anyone with access to the directories on the Globus collections, as set by the file systems and the permissions of each collection.</li>
+<li><a class="autorefs autorefs-internal" title="            DAOSConnector" href="../../api/connectors/daos/#proxystore.connectors.daos.DAOSConnector"><code>DAOSConnector</code></a>: anyone with access to the DAOS container, as set by the DAOS pool and container access control lists.</li>
+<li><a class="autorefs autorefs-internal" title="            MultiConnector" href="../../api/connectors/multi/#proxystore.connectors.multi.MultiConnector"><code>MultiConnector</code></a>: anyone who can access any of its connectors.</li>
+</ul>
 
 
 

@@ -1248,6 +1248,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4014,6 +4025,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#security" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4041,7 +4063,7 @@
 
 
 <h1 id="streaming-objects-with-proxystore">Streaming Objects with ProxyStore<a class="headerlink" href="#streaming-objects-with-proxystore" title="Permanent link">&para;</a></h1>
-<p><em>Last updated 4 October 2026</em></p>
+<p><em>Last updated 8 October 2026</em></p>
 <p>This guide describes the motivation for and usage of ProxyStore's
 streaming interface.</p>
 <div class="admonition note">
@@ -4398,6 +4420,14 @@ but this also means that object cleanup must be handled manually by the
 application. Otherwise, the store will fill up with the entire stream of
 objects. On the other hand, if each object in the stream is only received by
 one consumer, then it <em>may</em> be safe to set <code>evict=True</code>.</p>
+<h2 id="security">Security<a class="headerlink" href="#security" title="Permanent link">&para;</a></h2>
+<p>Consumers trust every event they receive.
+Events are serialized with <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/pickle.html#module-pickle"><code>pickle</code></a>, and an event can name the connector, serializer, and deserializer of a store that the consumer then imports and creates, so anyone who can publish to a topic can run code in its consumers.
+Objects in the stream are also deserialized with pickle by default (see <a href="../../concepts/store/#security">Store Security</a>).</p>
+<p>So only allow trusted producers to publish to a topic.
+Protect the message broker with its own authentication (e.g., Kafka or Redis access control), and do not expose the
+<a class="autorefs autorefs-internal" title="            ZeroMQPublisher" href="../../api/stream/shims/zmq/#proxystore.stream.shims.zmq.ZeroMQPublisher"><code>ZeroMQPublisher</code></a> port outside a trusted network because ZeroMQ publishers and subscribers do not authenticate each other.
+The connectors of the stores used by producers need the same protection (see <a href="../../concepts/connector/#security">Connector Security</a>).</p>
 
 
 
