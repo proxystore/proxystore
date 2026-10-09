@@ -68,3 +68,21 @@ implement the
 [`DeferrableConnector`][proxystore.connectors.protocols.DeferrableConnector]
 protocol because some transfer methods require the object before creating a
 key for that object.
+
+## Security
+
+A [`Store`][proxystore.store.base.Store] deserializes the bytes a connector returns with pickle by default, so anyone who can write to a connector's storage can run code in the processes that read from it (see [Store Security](store.md#security)).
+Connectors differ in who can read and write their objects.
+
+* [`LocalConnector`][proxystore.connectors.local.LocalConnector]: only the current process.
+* [`FileConnector`][proxystore.connectors.file.FileConnector]: anyone with access to the directory.
+  The directory is created with the default permissions of your [umask](https://en.wikipedia.org/wiki/Umask){target=_blank}, which often lets other users read it, so use a directory that only you can access on shared systems.
+* [`RedisConnector`][proxystore.connectors.redis.RedisConnector]: anyone who can connect to the Redis server.
+  The connector does not use a password or TLS, so only use it with a Redis server on a trusted network.
+* [`ZeroMQConnector`][proxystore.connectors.zmq.ZeroMQConnector]: anyone who can reach the server's port.
+  The servers do not authenticate clients or encrypt data, so only use this connector within a trusted network, such as the interconnect of an HPC cluster.
+* [`EndpointConnector`][proxystore.connectors.endpoint.EndpointConnector]: processes that can read the endpoint directory, and peer endpoints you allow.
+  See [Endpoint Security](../guides/endpoints.md#security).
+* [`GlobusConnector`][proxystore.connectors.globus.GlobusConnector]: anyone with access to the directories on the Globus collections, as set by the file systems and the permissions of each collection.
+* [`DAOSConnector`][proxystore.connectors.daos.DAOSConnector]: anyone with access to the DAOS container, as set by the DAOS pool and container access control lists.
+* [`MultiConnector`][proxystore.connectors.multi.MultiConnector]: anyone who can access any of its connectors.

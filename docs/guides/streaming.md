@@ -1,6 +1,6 @@
 # Streaming Objects with ProxyStore
 
-*Last updated 4 October 2026*
+*Last updated 8 October 2026*
 
 This guide describes the motivation for and usage of ProxyStore's
 streaming interface.
@@ -244,3 +244,14 @@ but this also means that object cleanup must be handled manually by the
 application. Otherwise, the store will fill up with the entire stream of
 objects. On the other hand, if each object in the stream is only received by
 one consumer, then it *may* be safe to set `evict=True`.
+
+## Security
+
+Consumers trust every event they receive.
+Events are serialized with [`pickle`][pickle], and an event can name the connector, serializer, and deserializer of a store that the consumer then imports and creates, so anyone who can publish to a topic can run code in its consumers.
+Objects in the stream are also deserialized with pickle by default (see [Store Security](../concepts/store.md#security)).
+
+So only allow trusted producers to publish to a topic.
+Protect the message broker with its own authentication (e.g., Kafka or Redis access control), and do not expose the
+[`ZeroMQPublisher`][proxystore.stream.shims.zmq.ZeroMQPublisher] port outside a trusted network because ZeroMQ publishers and subscribers do not authenticate each other.
+The connectors of the stores used by producers need the same protection (see [Connector Security](../concepts/connector.md#security)).
