@@ -82,6 +82,15 @@ class EndpointP2PConfig(BaseModel):
             so peers can only be reached at their cached addresses (see
             [`PeerAddrCache`][proxystore.endpoint.p2p.addrs.PeerAddrCache])
             or by connecting to this endpoint first.
+        request_timeout: Seconds a request to or from a peer can go without
+            sending or receiving any data before it is abandoned. A request
+            to a peer includes the time the peer spends handling it, but a
+            request from a peer does not include the time this endpoint
+            spends handling it. If `0`, requests have no timeout.
+
+    Raises:
+        ValueError: If `relays` is an empty list or contains an invalid URL,
+            or if `request_timeout` is negative.
     """
 
     model_config = ConfigDict(extra='forbid')
@@ -89,6 +98,16 @@ class EndpointP2PConfig(BaseModel):
     enabled: bool = True
     relays: Literal['n0', 'none'] | list[str] = 'n0'
     discovery: Literal['n0', 'none'] = 'n0'
+    request_timeout: float = 60
+
+    @field_validator('request_timeout')
+    @classmethod
+    def _request_timeout_validator(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError(
+                'Request timeout must be zero (no timeout) or greater.',
+            )
+        return v
 
     @field_validator('relays')
     @classmethod

@@ -232,6 +232,12 @@ def test_validate_p2p_relays(relays: Any, error: str | None) -> None:
             EndpointP2PConfig(relays=relays)
 
 
+def test_validate_p2p_request_timeout() -> None:
+    assert EndpointP2PConfig(request_timeout=0).request_timeout == 0
+    with pytest.raises(ValueError, match=r'zero \(no timeout\) or greater'):
+        EndpointP2PConfig(request_timeout=-1)
+
+
 def test_read_config_name_mismatch(tmp_path: pathlib.Path) -> None:
     endpoint_dir = EndpointDir.create('my-ep', str(tmp_path), port=1234)
     config = endpoint_dir.read_config()

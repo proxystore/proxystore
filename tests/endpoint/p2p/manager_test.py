@@ -16,10 +16,14 @@ import pytest
 from proxystore.endpoint.config import EndpointP2PConfig
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerRequestTimeoutError
 from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.p2p.addrs import PeerAddrCache
+from proxystore.endpoint.p2p.manager import _abandon
 from proxystore.endpoint.p2p.manager import _read_message
+from proxystore.endpoint.p2p.manager import _STOP_TIMED_OUT
+from proxystore.endpoint.p2p.manager import _StreamTimer
 from proxystore.endpoint.p2p.manager import CloseCode
 from proxystore.endpoint.p2p.manager import PathInfo
 from proxystore.endpoint.p2p.manager import PeerConnection
@@ -344,6 +348,116 @@ async def test_connect_timeout() -> None:
             await _request(manager1, manager2.id, Op.GET)
     finally:
         await manager1.close()
+
+
+async def test_request_timeout() -> None:
+    calls = 0
+    release = asyncio.Event()
+
+    async def _handler(peer: EndpointId, request: Message) -> Message:
+        nonlocal calls
+        calls += 1
+        if decode_meta(request.meta).get('hang'):
+            await release.wait()
+        return Message(Status.OK)
+
+    manager1 = local_peer_manager()
+    manager2 = local_peer_manager()
+    await manager1.start(_handler)
+    await manager2.start(_handler)
+    try:
+        connect_peers(manager1, manager2)
+        await _request(manager1, manager2.id, Op.GET)
+        connection = manager1._preferred[manager2.id]
+
+        # Only the request which the peer never answers has a short timeout.
+        options = dataclasses.replace(LOCAL_PEER_OPTIONS, request_timeout=0.1)
+        with (
+            mock.patch.object(manager1, '_options', options),
+            pytest.raises(PeerRequestTimeoutError, match=r'0\.1 seconds'),
+        ):
+            await _request(manager1, manager2.id, Op.GET, {'hang': True})
+        # The request is not retried and the connection is kept.
+        assert calls == 2
+        assert manager1._preferred[manager2.id] is connection
+    finally:
+        release.set()
+        await manager1.close()
+        await manager2.close()
+
+
+async def test_handle_stream_timeout(managers, caplog) -> None:
+    caplog.set_level(logging.WARNING, logger=_MANAGER)
+    manager1, manager2, _ = managers
+
+    async def _hang(*args: Any) -> bytes:
+        await asyncio.sleep(10)
+        raise AssertionError('unreachable')
+
+    stream = mock.MagicMock()
+    stream.recv.return_value.read = _hang
+    stream.recv.return_value.stop = mock.AsyncMock()
+    stream.send.return_value.reset = mock.AsyncMock()
+    with mock.patch.object(
+        manager1,
+        '_options',
+        dataclasses.replace(LOCAL_PEER_OPTIONS, request_timeout=0.01),
+    ):
+        # The stream is handled in its own task, like in the manager, so the
+        # timeout cancels that task rather than the test.
+        await asyncio.create_task(manager1._handle_stream(manager2.id, stream))
+    stream.send.return_value.reset.assert_awaited_once_with(_STOP_TIMED_OUT)
+    stream.recv.return_value.stop.assert_awaited_once_with(_STOP_TIMED_OUT)
+    assert any(
+        'did not send or receive any data for 0.01 seconds' in r.message
+        for r in caplog.records
+    )
+
+
+async def test_stream_timer_restarts() -> None:
+    loop = asyncio.get_running_loop()
+    async with _StreamTimer(10) as timer:
+        deadline = timer._timeout.when()
+        assert deadline is not None
+        # The deadline is not moved until it is out of date by more than a
+        # tenth of the timeout.
+        with mock.patch.object(loop, 'time', return_value=deadline - 9.5):
+            timer.progress()
+        assert timer._timeout.when() == deadline
+        with mock.patch.object(loop, 'time', return_value=deadline - 8):
+            timer.progress()
+        assert timer._timeout.when() == deadline + 2
+
+        timer.pause()
+        assert timer._timeout.when() is None
+        timer.progress()
+        assert timer._timeout.when() is not None
+
+
+async def test_abandon_finished_stream() -> None:
+    stream = mock.MagicMock()
+    stream.send.return_value.reset = mock.AsyncMock(side_effect=_IrohError())
+    stream.recv.return_value.stop = mock.AsyncMock(side_effect=_IrohError())
+    await _abandon(stream)
+    stream.recv.return_value.stop.assert_awaited_once_with(_STOP_TIMED_OUT)
+
+
+async def test_read_message_large_data_timeout() -> None:
+    data = os.urandom(200)
+    head = Message(Op.SET, encode_meta({}), data).pack_head()
+
+    async def _hang(*args: Any) -> bytes:
+        await asyncio.sleep(10)
+        raise AssertionError('unreachable')
+
+    recv = _mock_recv(head + data[:50])
+    recv.read_exact = _hang
+    with (
+        mock.patch(f'{_MANAGER}._SMALL_SIZE', 100),
+        pytest.raises(TimeoutError),
+    ):
+        async with _StreamTimer(0.01) as timer:
+            await _read_message(recv, MessageReader(), timer)
 
 
 async def test_handle_incoming_accept_error(managers, caplog) -> None:
@@ -842,3 +956,9 @@ def test_peer_options_from_config(relays: Any, discovery: Any) -> None:
     else:
         assert isinstance(options.relay_mode, iroh.RelayMode)
     assert (options.online_timeout is None) == (relays == 'none')
+    assert options.request_timeout == 60
+
+
+def test_peer_options_from_config_no_request_timeout() -> None:
+    config = EndpointP2PConfig(request_timeout=0)
+    assert PeerOptions.from_config(config).request_timeout is None

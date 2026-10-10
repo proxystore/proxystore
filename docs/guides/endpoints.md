@@ -94,10 +94,11 @@ max_object_size = "100 MB"  # (7)!
 enabled = true  # (8)!
 relays = "n0"  # (9)!
 discovery = "n0"  # (10)!
+request_timeout = 60  # (11)!
 
 [storage]
-backend = "sqlite"  # (11)!
-database_path = "blobs.db"  # (12)!
+backend = "sqlite"  # (12)!
+database_path = "blobs.db"  # (13)!
 ```
 
 1. Format version of the configuration file. ProxyStore uses this to detect
@@ -123,10 +124,13 @@ database_path = "blobs.db"  # (12)!
 9. Relays used to connect to peers. See [Relays](#relays).
 10. Discovery service used to find the addresses of peers. See
     [Relays](#relays).
-11. Storage backend. `"memory"` (the default) stores objects in memory, and
+11. Seconds a request to or from a peer can go without sending or receiving
+    any data before it is abandoned, so a stuck peer does not hang
+    requests. Defaults to 60 if omitted. Set to `0` to disable the timeout.
+12. Storage backend. `"memory"` (the default) stores objects in memory, and
     `"sqlite"` persists objects to a SQLite database. See the tip below for
     more details.
-12. Optional path to the SQLite database, which defaults to `blobs.db`. A
+13. Optional path to the SQLite database, which defaults to `blobs.db`. A
     relative path is relative to the endpoint directory. Use an absolute
     path to store a large database elsewhere, such as a parallel file
     system. Only valid with the `"sqlite"` backend.
@@ -353,7 +357,12 @@ so a stuck endpoint does not hang the client. Large objects do not time out
 while the data keeps moving, but the timeout includes the time the endpoint
 spends handling a request (e.g., writing a large object to its storage).
 Requests for objects on peers are not timed out by the connector because the
-home endpoint only responds once the peer does. The connector also enables TCP keepalive so a home endpoint whose host
+home endpoint only responds once the peer does. Instead, the home endpoint
+abandons a request to a peer which sends or receives no data for the
+`request_timeout` in the `[p2p]` section of its configuration (60 seconds by
+default), and the request fails with a
+[`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError].
+The connector also enables TCP keepalive so a home endpoint whose host
 disappeared is detected even between requests.
 
 ```python linenums="1"
