@@ -22,7 +22,8 @@ EndpointError
         ├── PeeringDisabledError
         ├── PeerNotAllowedError
         └── PeerUnavailableError
-            └── PeerConnectionTimeoutError
+            ├── PeerConnectionTimeoutError
+            └── PeerRequestTimeoutError
 ```
 
 Some exceptions also derive from a built-in exception so they can be caught
@@ -167,6 +168,18 @@ class PeerUnavailableError(PeerError):
 class PeerConnectionTimeoutError(PeerUnavailableError):
     """Exception raised when connecting to a peer times out.
 
+    Clients receive a
+    [`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError]
+    rather than this more specific exception.
+    """
+
+
+class PeerRequestTimeoutError(PeerUnavailableError):
+    """Exception raised when a request to a peer stops making progress.
+
+    The request is abandoned if no data is sent to or received from the
+    peer for the request timeout (see
+    [`EndpointP2PConfig`][proxystore.endpoint.config.EndpointP2PConfig]).
     Clients receive a
     [`PeerUnavailableError`][proxystore.endpoint.exceptions.PeerUnavailableError]
     rather than this more specific exception.

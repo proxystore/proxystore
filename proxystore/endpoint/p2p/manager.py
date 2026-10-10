@@ -22,6 +22,7 @@ from proxystore.endpoint.exceptions import EndpointProtocolError
 from proxystore.endpoint.exceptions import ObjectSizeExceededError
 from proxystore.endpoint.exceptions import PeerConnectionTimeoutError
 from proxystore.endpoint.exceptions import PeerNotAllowedError
+from proxystore.endpoint.exceptions import PeerRequestTimeoutError
 from proxystore.endpoint.exceptions import PeerUnavailableError
 from proxystore.endpoint.identity import EndpointId
 from proxystore.endpoint.identity import SecretKey
@@ -51,6 +52,11 @@ _SMALL_SIZE = 64 * 1024
 
 _STOP_REJECTED = 1
 # Error code used to stop reading a request which is rejected.
+_STOP_TIMED_OUT = 2
+# Error code used to reset and stop a stream which timed out.
+_TIMER_SLACK = 0.1
+# Fraction of the timeout a stream timer's deadline can be out of date by
+# (see _StreamTimer).
 
 RequestHandler = Callable[[EndpointId, Message], Awaitable[Message]]
 """Handler of requests from peers.
@@ -217,6 +223,11 @@ class PeerOptions:
         bind_addr: Address to bind to (e.g., `"127.0.0.1:0"`) or `None` to
             bind to all interfaces on a random port.
         connect_timeout: Timeout in seconds when connecting to a peer.
+        request_timeout: Seconds a stream with a peer can go without
+            sending or receiving any data before it fails. This applies to
+            requests sent to peers, including while the peer handles the
+            request, and to requests from peers, except while this endpoint
+            handles the request. If `None`, streams have no timeout.
         online_timeout: Timeout in seconds to wait for the endpoint to
             connect to its home relay before logging a warning. If `None`,
             the endpoint does not wait (e.g., because relays are disabled).
@@ -226,6 +237,7 @@ class PeerOptions:
     relay_mode: iroh.RelayMode | None = None
     bind_addr: str | None = None
     connect_timeout: float = 30
+    request_timeout: float | None = 60
     online_timeout: float | None = 10
 
     @classmethod
@@ -235,6 +247,8 @@ class PeerOptions:
         The preset determines the discovery service, and the relay mode
         overrides the relays of the preset.
         """
+        # A request timeout of 0 in the configuration disables the timeout.
+        request_timeout = config.request_timeout or None
         # The n0 preset uses n0's relays and discovery. The minimal preset
         # uses neither.
         if config.discovery == 'n0':
@@ -245,17 +259,23 @@ class PeerOptions:
             n0_relays = iroh.RelayMode.default_mode()
 
         if config.relays == 'n0':
-            return cls(preset=preset, relay_mode=n0_relays)
+            return cls(
+                preset=preset,
+                relay_mode=n0_relays,
+                request_timeout=request_timeout,
+            )
         if config.relays == 'none':
             # Without relays, there is no home relay to wait on.
             return cls(
                 preset=preset,
                 relay_mode=iroh.RelayMode.disabled(),
+                request_timeout=request_timeout,
                 online_timeout=None,
             )
         return cls(
             preset=preset,
             relay_mode=iroh.RelayMode.custom_from_urls(config.relays),
+            request_timeout=request_timeout,
         )
 
 
@@ -496,6 +516,9 @@ class PeerManager:
             PeerNotAllowedError: If the peer is not in the allowlist or the
                 peer refused the connection.
             PeerConnectionTimeoutError: If connecting to the peer times out.
+            PeerRequestTimeoutError: If the stream of the request goes
+                without sending or receiving any data for the request
+                timeout.
             PeerUnavailableError: If the request fails.
         """
         if not self._enforce_policy(peer_id):
@@ -508,6 +531,10 @@ class PeerManager:
         if not fresh:
             try:
                 return await self._send(connection, request)
+            except PeerRequestTimeoutError:
+                # The peer is likely stuck rather than the connection
+                # closed, so the request is not retried.
+                raise
             except PeerUnavailableError as e:
                 # A cached connection may have been closed (e.g., because
                 # the peer restarted) so retry once with a new connection.
@@ -529,11 +556,20 @@ class PeerManager:
         Raises:
             PeerNotAllowedError: If the peer closed the connection because
                 this endpoint is not allowed.
+            PeerRequestTimeoutError: If the stream times out.
             PeerUnavailableError: If the request fails.
         """
         peer_id = connection.peer_id
         try:
             response = await self._exchange(connection.connection, request)
+        except TimeoutError:
+            # The connection is kept because a stuck peer may still serve
+            # other requests, and QUIC closes a connection which is idle.
+            raise PeerRequestTimeoutError(
+                f'Peer {peer_id} did not send or receive any data for '
+                f'{self._options.request_timeout} seconds, so the request '
+                'was abandoned.',
+            ) from None
         except iroh.IrohError as e:
             self._drop_preferred(connection)
             reason = connection.connection.close_reason()
@@ -556,20 +592,34 @@ class PeerManager:
         connection: iroh.Connection,
         request: Message,
     ) -> Message:
-        stream = await connection.open_bi()
+        timer = _StreamTimer(self._options.request_timeout)
+        stream: iroh.BiStream | None = None
         try:
-            await _write_message(stream.send(), request)
-        except iroh.IrohError as e:
-            # The peer stops reading a request it rejects (e.g., because the
-            # data is too large) but still sends a response with the reason.
-            write_error: iroh.IrohError | None = e
-        else:
-            write_error = None
-        try:
-            return await _read_message(stream.recv(), MessageReader())
-        except iroh.IrohError:
-            if write_error is not None:
-                raise write_error from None
+            async with timer:
+                stream = await connection.open_bi()
+                timer.progress()
+                try:
+                    await _write_message(stream.send(), request, timer)
+                except iroh.IrohError as e:
+                    # The peer stops reading a request it rejects (e.g.,
+                    # because the data is too large) but still sends a
+                    # response with the reason.
+                    write_error: iroh.IrohError | None = e
+                else:
+                    write_error = None
+                try:
+                    return await _read_message(
+                        stream.recv(),
+                        MessageReader(),
+                        timer,
+                    )
+                except iroh.IrohError:
+                    if write_error is not None:
+                        raise write_error from None
+                    raise
+        except TimeoutError:
+            if stream is not None:
+                await _abandon(stream)
             raise
 
     async def _get_connection(
@@ -836,31 +886,46 @@ class PeerManager:
         stream: iroh.BiStream,
     ) -> None:
         assert self._handler is not None
+        timer = _StreamTimer(self._options.request_timeout)
         response: Message
         try:
-            try:
-                request = await _read_message(
-                    stream.recv(),
-                    MessageReader(max_data_size=self._max_request_size),
-                )
-            except (EndpointProtocolError, ObjectSizeExceededError) as e:
-                # Stopping fails if the whole request was already read.
-                with contextlib.suppress(iroh.IrohError):
-                    await stream.recv().stop(_STOP_REJECTED)
-                response = Message.from_error(e)
-            else:
+            async with timer:
                 try:
-                    response = await self._handler(peer_id, request)
-                except Exception as e:
-                    logger.exception(
-                        'Unexpected error handling request from %s',
-                        self.peer_name(peer_id),
+                    request = await _read_message(
+                        stream.recv(),
+                        MessageReader(max_data_size=self._max_request_size),
+                        timer,
                     )
-                    response = Message.error(
-                        Status.ERROR,
-                        f'unexpected error: {e!r}',
-                    )
-            await _write_message(stream.send(), response)
+                except (EndpointProtocolError, ObjectSizeExceededError) as e:
+                    # Stopping fails if the whole request was already read.
+                    with contextlib.suppress(iroh.IrohError):
+                        await stream.recv().stop(_STOP_REJECTED)
+                    response = Message.from_error(e)
+                else:
+                    # The time this endpoint spends handling the request is
+                    # not part of the timeout.
+                    timer.pause()
+                    try:
+                        response = await self._handler(peer_id, request)
+                    except Exception as e:
+                        logger.exception(
+                            'Unexpected error handling request from %s',
+                            self.peer_name(peer_id),
+                        )
+                        response = Message.error(
+                            Status.ERROR,
+                            f'unexpected error: {e!r}',
+                        )
+                    timer.progress()
+                await _write_message(stream.send(), response, timer)
+        except TimeoutError:
+            logger.warning(
+                'Stream from peer %s did not send or receive any data for '
+                '%s seconds, so the request was abandoned',
+                self.peer_name(peer_id),
+                timer.seconds,
+            )
+            await _abandon(stream)
         except iroh.IrohError as e:
             logger.debug(
                 'Stream from %s failed: %s',
@@ -869,7 +934,67 @@ class PeerManager:
             )
 
 
-async def _write_message(stream: iroh.SendStream, message: Message) -> None:
+class _StreamTimer:
+    """Timeout of a stream which restarts each time the stream makes progress.
+
+    One timeout is used for each stream, rather than one for each call to
+    the bindings, and its deadline is only moved once it is out of date by
+    more than a tenth of the timeout, because rescheduling a timeout for
+    each call adds tens of microseconds to each request. A stream therefore
+    times out after 90-100% of the timeout without progress.
+
+    Args:
+        seconds: Seconds the stream can go without progress or `None` for
+            no timeout.
+    """
+
+    def __init__(self, seconds: float | None) -> None:
+        self.seconds = seconds
+        # The deadline is set once the timer is entered because it depends on
+        # the time of the event loop.
+        self._timeout = asyncio.Timeout(None)
+
+    async def __aenter__(self) -> Self:
+        await self._timeout.__aenter__()
+        self.progress()
+        return self
+
+    async def __aexit__(self, *args: Any) -> None:
+        await self._timeout.__aexit__(*args)
+
+    def progress(self) -> None:
+        """Restart the timeout after the stream sent or received data."""
+        if self.seconds is None:
+            return
+        deadline = asyncio.get_running_loop().time() + self.seconds
+        when = self._timeout.when()
+        if when is None or deadline - when > self.seconds * _TIMER_SLACK:
+            self._timeout.reschedule(deadline)
+
+    def pause(self) -> None:
+        """Stop the timeout until the next call to `progress()`."""
+        self._timeout.reschedule(None)
+
+
+_NO_TIMER = _StreamTimer(None)
+
+
+async def _abandon(stream: iroh.BiStream) -> None:
+    """Tell the peer a stream which timed out was abandoned."""
+    # Either side may already be finished or reset by the peer.
+    with contextlib.suppress(iroh.IrohError):
+        await stream.send().reset(_STOP_TIMED_OUT)
+    with contextlib.suppress(iroh.IrohError):
+        await stream.recv().stop(_STOP_TIMED_OUT)
+
+
+async def _write_message(
+    stream: iroh.SendStream,
+    message: Message,
+    timer: _StreamTimer = _NO_TIMER,
+) -> None:
+    # The timer is restarted after each call to the bindings so a large
+    # message does not time out while the data keeps moving.
     data = message.data
     view = memoryview(data).cast('B')
     head = message.pack_head()
@@ -878,6 +1003,7 @@ async def _write_message(stream: iroh.SendStream, message: Message) -> None:
     else:
         await stream.write_all(head)
         for start in range(0, len(view), _CHUNK_SIZE):
+            timer.progress()
             chunk = view[start : start + _CHUNK_SIZE]
             await stream.write_all(
                 data
@@ -885,15 +1011,19 @@ async def _write_message(stream: iroh.SendStream, message: Message) -> None:
                 # The bindings only accept bytes.
                 else chunk.tobytes(),
             )
+    timer.progress()
     await stream.finish()
+    timer.progress()
 
 
 async def _read_message(
     stream: iroh.RecvStream,
     reader: MessageReader,
+    timer: _StreamTimer = _NO_TIMER,
 ) -> Message:
     # Reading whatever data is available, rather than each part of the
-    # message separately, usually reads a small message with one call.
+    # message separately, usually reads a small message with one call. The
+    # timer is restarted after each read (see _write_message()).
     buffered = b''
     while not reader.done:
         size = reader.size
@@ -903,12 +1033,13 @@ async def _read_message(
                 # Raise the error of the bindings for a stream which ended
                 # before the message was read.
                 data = await stream.read_exact(size - len(buffered))
+            timer.progress()
             buffered += data
         elif len(buffered) >= size:
             reader.feed(buffered[:size])
             buffered = buffered[size:]
         else:
-            reader.feed(await _read_exact(stream, size, buffered))
+            reader.feed(await _read_exact(stream, size, buffered, timer))
             buffered = b''
     return reader.message
 
@@ -917,6 +1048,7 @@ async def _read_exact(
     stream: iroh.RecvStream,
     size: int,
     prefix: bytes = b'',
+    timer: _StreamTimer = _NO_TIMER,
 ) -> bytes | bytearray:
     """Read `size` bytes, starting with the already read `prefix`."""
     if len(prefix) == 0 and size <= _CHUNK_SIZE:
@@ -924,13 +1056,16 @@ async def _read_exact(
         # for data larger than _SMALL_SIZE because the head is written
         # separately (see _write_message()) so it is usually read without
         # any of the data.
-        return await stream.read_exact(size)
+        result = await stream.read_exact(size)
+        timer.progress()
+        return result
     data = bytearray(size)
     buffer = memoryview(data)
     buffer[: len(prefix)] = prefix
     for start in range(len(prefix), size, _CHUNK_SIZE):
         chunk = min(_CHUNK_SIZE, size - start)
         buffer[start : start + chunk] = await stream.read_exact(chunk)
+        timer.progress()
     return data
 
 
