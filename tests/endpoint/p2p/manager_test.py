@@ -403,7 +403,9 @@ async def test_handle_stream_timeout(managers, caplog) -> None:
         '_options',
         dataclasses.replace(LOCAL_PEER_OPTIONS, request_timeout=0.01),
     ):
-        await manager1._handle_stream(manager2.id, stream)
+        # The stream is handled in its own task, like in the manager, so the
+        # timeout cancels that task rather than the test.
+        await asyncio.create_task(manager1._handle_stream(manager2.id, stream))
     stream.send.return_value.reset.assert_awaited_once_with(_STOP_TIMED_OUT)
     stream.recv.return_value.stop.assert_awaited_once_with(_STOP_TIMED_OUT)
     assert any(
